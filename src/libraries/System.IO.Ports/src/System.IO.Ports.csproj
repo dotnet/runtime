@@ -4,12 +4,15 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);SERIAL_PORTS</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <Nullable>annotations</Nullable>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes for controlling serial ports.
 
 Commonly Used Types:
 System.IO.Ports.SerialPort</PackageDescription>
+
+    <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -35,9 +38,6 @@ System.IO.Ports.SerialPort</PackageDescription>
     <Compile Include="System\IO\Ports\SerialPort.cs" />
     <Compile Include="System\IO\Ports\SerialStream.cs" />
     <Compile Include="System\IO\Ports\StopBits.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and '$(TargetPlatformIdentifier)' != ''">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
@@ -140,7 +140,7 @@ System.IO.Ports.SerialPort</PackageDescription>
              Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToAsyncResult.cs" Link="Common\System\Threading\Tasks\TaskToAsyncResult.cs" />
   </ItemGroup>
 

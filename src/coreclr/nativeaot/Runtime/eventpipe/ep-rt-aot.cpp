@@ -23,14 +23,7 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
-
-#ifndef DIRECTORY_SEPARATOR_CHAR
-#ifdef TARGET_UNIX
-#define DIRECTORY_SEPARATOR_CHAR '/'
-#else // TARGET_UNIX
-#define DIRECTORY_SEPARATOR_CHAR '\\'
-#endif // TARGET_UNIX
-#endif
+#include "eventtrace_context.h"
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
 // This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
@@ -47,13 +40,6 @@ uint32_t *_ep_rt_aot_proc_group_offsets;
  */
 
 
-static
-void
-walk_managed_stack_for_threads (
-    ep_rt_thread_handle_t sampling_thread,
-    EventPipeEvent *sampling_event);
-
-
 bool
 ep_rt_aot_walk_managed_stack_for_thread (
     ep_rt_thread_handle_t thread,
@@ -63,14 +49,11 @@ ep_rt_aot_walk_managed_stack_for_thread (
     return false;
 }
 
-// The thread store lock must already be held by the thread before this function
-// is called.  ThreadSuspend::SuspendEE acquires the thread store lock.
-static
-void
-walk_managed_stack_for_threads (
-    ep_rt_thread_handle_t sampling_thread,
-    EventPipeEvent *sampling_event)
+bool
+ep_rt_aot_providers_validate_all_disabled (void)
 {
+    return !MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled
+        && !MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled;
 }
 
 void
@@ -81,7 +64,7 @@ ep_rt_aot_sample_profiler_write_sampling_event_for_threads (
 }
 
 const ep_char8_t *
-ep_rt_aot_entrypoint_assembly_name_get_utf8 (void) 
+ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
 {
     // We are (intentionally for now) using the module name rather than entry assembly
     // Cannot use __cpp_threadsafe_static_init feature since it will bring in the C++ runtime and need to use threadsafe way to initialize entrypoint_assembly_name
@@ -111,7 +94,7 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
             if (extension != NULL) {
                 len = extension - process_name_const;
             }
-            entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(process_name_const), len);
+            entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string_n(reinterpret_cast<const ep_char16_t *>(process_name_const), len);
 #else
             const ep_char8_t* process_name_const = strrchr(wszModuleFileName, DIRECTORY_SEPARATOR_CHAR);
             if (process_name_const != NULL) {
@@ -149,7 +132,7 @@ ep_rt_aot_diagnostics_command_line_get (void)
     // TODO: revisit commandline for AOT
 #ifdef TARGET_WINDOWS
     const ep_char16_t* command_line = reinterpret_cast<const ep_char16_t *>(::GetCommandLineW());
-    return ep_rt_utf16_to_utf8_string(command_line, -1);
+    return ep_rt_utf16_to_utf8_string(command_line);
 #elif TARGET_LINUX
     FILE *cmdline_file = ::fopen("/proc/self/cmdline", "r");
     if (cmdline_file == nullptr)
@@ -252,7 +235,7 @@ ep_rt_aot_atomic_inc_int64_t (volatile int64_t *value)
 }
 
 int64_t
-ep_rt_aot_atomic_dec_int64_t (volatile int64_t *value) { 
+ep_rt_aot_atomic_dec_int64_t (volatile int64_t *value) {
     STATIC_CONTRACT_NOTHROW;
 
     int64_t currentValue;
@@ -275,7 +258,7 @@ ep_rt_aot_atomic_compare_exchange_size_t (volatile size_t *target, size_t expect
 }
 
 ep_char8_t *
-ep_rt_aot_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value) { 
+ep_rt_aot_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value) {
     STATIC_CONTRACT_NOTHROW;
     return static_cast<ep_char8_t *>(PalInterlockedCompareExchangePointer ((void *volatile *)target, value, expected));
 }
@@ -315,8 +298,8 @@ ep_rt_aot_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 }
 
 bool
-ep_rt_aot_wait_event_set (ep_rt_wait_event_handle_t *wait_event) 
-{ 
+ep_rt_aot_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
+{
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
@@ -327,8 +310,8 @@ int32_t
 ep_rt_aot_wait_event_wait (
     ep_rt_wait_event_handle_t *wait_event,
     uint32_t timeout,
-    bool alertable) 
-{ 
+    bool alertable)
+{
     STATIC_CONTRACT_NOTHROW;
     EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
@@ -336,8 +319,8 @@ ep_rt_aot_wait_event_wait (
 }
 
 bool
-ep_rt_aot_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event) 
-{ 
+ep_rt_aot_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
+{
     STATIC_CONTRACT_NOTHROW;
 
     if (wait_event == NULL || wait_event->event == NULL)
@@ -448,6 +431,13 @@ ep_rt_aot_system_timestamp_get (void)
     return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
 }
 
+int32_t
+ep_rt_aot_get_os_page_size (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    return (int32_t)OS_PAGE_SIZE;
+}
+
 ep_rt_file_handle_t
 ep_rt_aot_file_open_write (const ep_char8_t *path)
 {
@@ -455,7 +445,7 @@ ep_rt_aot_file_open_write (const ep_char8_t *path)
         return INVALID_HANDLE_VALUE;
 
 #ifdef TARGET_WINDOWS
-    ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
+    ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path);
     if (!path_utf16)
         return INVALID_HANDLE_VALUE;
 
@@ -519,7 +509,7 @@ uint8_t *
 ep_rt_aot_valloc0 (size_t buffer_size)
 {
     STATIC_CONTRACT_NOTHROW;
-    return reinterpret_cast<uint8_t *>(PalVirtualAlloc (NULL, buffer_size, MEM_COMMIT, PAGE_READWRITE));
+    return reinterpret_cast<uint8_t *>(PalVirtualAlloc (buffer_size, PAGE_READWRITE));
 }
 
 void
@@ -530,7 +520,7 @@ ep_rt_aot_vfree (
     STATIC_CONTRACT_NOTHROW;
 
     if (buffer)
-        PalVirtualFree (buffer, 0, MEM_RELEASE);
+        PalVirtualFree (buffer, buffer_size);
 }
 
 void
@@ -731,7 +721,7 @@ bool ep_rt_aot_lock_release (ep_rt_lock_handle_t *lock)
 
 bool ep_rt_aot_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
 {
-    // In NativeAOT, we use a lock, instead of a SpinLock. 
+    // In NativeAOT, we use a lock, instead of a SpinLock.
     // The method signature matches the EventPipe library expectation of a SpinLock
     if (spin_lock) {
         spin_lock->lock->Enter();
@@ -742,7 +732,7 @@ bool ep_rt_aot_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
 
 bool ep_rt_aot_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
 {
-    // In NativeAOT, we use a lock, instead of a SpinLock. 
+    // In NativeAOT, we use a lock, instead of a SpinLock.
     // The method signature matches the EventPipe library expectation of a SpinLock
     if (spin_lock) {
         spin_lock->lock->Leave();
@@ -785,7 +775,7 @@ void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
 #else
     ep_char8_t **next = NULL;
     for (next = environ; *next != NULL; ++next)
-        dn_vector_ptr_push_back (env_array, ep_rt_utf8_to_utf16le_string (*next, -1));
+        dn_vector_ptr_push_back (env_array, ep_rt_utf8_to_utf16le_string (*next));
 #endif
 }
 
@@ -832,6 +822,13 @@ void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_le
 ep_rt_thread_handle_t ep_rt_aot_thread_get_handle (void)
 {
     return ThreadStore::GetCurrentThreadIfAvailable();
+}
+
+ep_rt_thread_handle_t ep_rt_aot_setup_thread (void)
+{
+    // This is expensive but need a valid thread that will only be used by EventPipe
+    ThreadStore::AttachCurrentThread();
+    return ThreadStore::GetCurrentThread();
 }
 
 ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle)

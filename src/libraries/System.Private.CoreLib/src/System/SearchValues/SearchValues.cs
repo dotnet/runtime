@@ -9,8 +9,6 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
-#pragma warning disable 8500 // address of managed types
-
 namespace System.Buffers
 {
     /// <summary>
@@ -25,6 +23,7 @@ namespace System.Buffers
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>
         /// <param name="values">The set of values.</param>
+        /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
         public static SearchValues<byte> Create(ReadOnlySpan<byte> values)
         {
             if (values.IsEmpty)
@@ -67,6 +66,7 @@ namespace System.Buffers
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>
         /// <param name="values">The set of values.</param>
+        /// /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
         public static SearchValues<char> Create(ReadOnlySpan<char> values)
         {
             if (values.IsEmpty)
@@ -134,12 +134,6 @@ namespace System.Buffers
                 return new Any5SearchValues<char, short>(shortValues);
             }
 
-            if (maxInclusive < 256)
-            {
-                // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported
-                return new Latin1CharSearchValues(values);
-            }
-
             scoped ReadOnlySpan<char> probabilisticValues = values;
 
             if (Vector128.IsHardwareAccelerated && values.Length < 8)
@@ -163,6 +157,23 @@ namespace System.Buffers
             }
 
             return new ProbabilisticCharSearchValues(probabilisticValues);
+        }
+
+        /// <summary>
+        /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
+        /// </summary>
+        /// <param name="values">The set of values.</param>
+        /// <param name="comparisonType">Specifies whether to use <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/> search semantics.</param>
+        /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
+        /// <remarks>Only <see cref="StringComparison.Ordinal"/> or <see cref="StringComparison.OrdinalIgnoreCase"/> may be used.</remarks>
+        public static SearchValues<string> Create(ReadOnlySpan<string> values, StringComparison comparisonType)
+        {
+            if (comparisonType is not (StringComparison.Ordinal or StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException(SR.Argument_SearchValues_UnsupportedStringComparison, nameof(comparisonType));
+            }
+
+            return StringSearchValues.Create(values, ignoreCase: comparisonType == StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool TryGetSingleRange<T>(ReadOnlySpan<T> values, out T minInclusive, out T maxInclusive)
@@ -209,12 +220,12 @@ namespace System.Buffers
             static abstract bool Value { get; }
         }
 
-        private readonly struct TrueConst : IRuntimeConst
+        internal readonly struct TrueConst : IRuntimeConst
         {
             public static bool Value => true;
         }
 
-        private readonly struct FalseConst : IRuntimeConst
+        internal readonly struct FalseConst : IRuntimeConst
         {
             public static bool Value => false;
         }

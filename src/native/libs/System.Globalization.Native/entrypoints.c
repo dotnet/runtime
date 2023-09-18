@@ -63,13 +63,17 @@ static const Entry s_globalizationNative[] =
     DllImportEntry(GlobalizationNative_ChangeCaseNative)
     DllImportEntry(GlobalizationNative_CompareStringNative)
     DllImportEntry(GlobalizationNative_EndsWithNative)
+    DllImportEntry(GlobalizationNative_GetCalendarInfoNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoIntNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative)
     DllImportEntry(GlobalizationNative_GetLocaleInfoStringNative)
     DllImportEntry(GlobalizationNative_GetLocaleNameNative)
     DllImportEntry(GlobalizationNative_GetLocaleTimeFormatNative)
+    DllImportEntry(GlobalizationNative_GetTimeZoneDisplayNameNative)
     DllImportEntry(GlobalizationNative_IndexOfNative)
+    DllImportEntry(GlobalizationNative_IsNormalizedNative)
+    DllImportEntry(GlobalizationNative_NormalizeStringNative)
     DllImportEntry(GlobalizationNative_StartsWithNative)
 #endif
 };

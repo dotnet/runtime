@@ -33,6 +33,10 @@ System.Net.Http.IHttpClientFactory</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\src\Microsoft.Extensions.Options.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Diagnostics\src\Microsoft.Extensions.Diagnostics.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Net.Http" />
   </ItemGroup>

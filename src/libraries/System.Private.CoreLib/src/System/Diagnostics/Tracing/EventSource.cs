@@ -3197,10 +3197,6 @@ namespace System.Diagnostics.Tracing
                     for (int i = 0; i < methods.Length; i++)
                     {
                         MethodInfo method = methods[i];
-                        ParameterInfo[] args = method.GetParameters();
-
-                        // Get the EventDescriptor (from the Custom attributes)
-                        EventAttribute? eventAttribute = (EventAttribute?)GetCustomAttributeHelper(method, typeof(EventAttribute), flags);
 
                         // Compat: until v4.5.1 we ignored any non-void returning methods as well as virtual methods for
                         // the only reason of limiting the number of methods considered to be events. This broke a common
@@ -3211,6 +3207,9 @@ namespace System.Diagnostics.Tracing
                         {
                             continue;
                         }
+
+                        // Get the EventDescriptor (from the Custom attributes)
+                        EventAttribute? eventAttribute = (EventAttribute?)GetCustomAttributeHelper(method, typeof(EventAttribute), flags);
 
                         if (eventSourceType.IsAbstract)
                         {
@@ -3311,6 +3310,8 @@ namespace System.Diagnostics.Tracing
                                 }
                             }
                         }
+
+                        ParameterInfo[] args = method.GetParameters();
 
                         bool hasRelatedActivityID = RemoveFirstArgIfRelatedActivityId(ref args);
                         if (!(source != null && source.SelfDescribingEvents))
@@ -4075,6 +4076,11 @@ namespace System.Diagnostics.Tracing
                 }
                 Validate();
             }
+
+#if FEATURE_PERFTRACING
+            // Remove the listener from the EventPipe dispatcher. EventCommand.Update with enable==false removes it.
+            EventPipeEventDispatcher.Instance.SendCommand(this, EventCommand.Update, false, EventLevel.LogAlways, (EventKeywords)0);
+#endif // FEATURE_PERFTRACING
         }
         // We don't expose a Dispose(bool), because the contract is that you don't have any non-syncronous
         // 'cleanup' associated with this object
@@ -4391,11 +4397,6 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
-
-#if FEATURE_PERFTRACING
-            // Remove the listener from the EventPipe dispatcher.
-            EventPipeEventDispatcher.Instance.RemoveEventListener(listenerToRemove);
-#endif // FEATURE_PERFTRACING
         }
 
 
@@ -5505,8 +5506,7 @@ namespace System.Diagnostics.Tracing
             {
                 templates?.Append(" map=\"").Append(type.Name).Append('"');
                 mapsTab ??= new Dictionary<string, Type>();
-                if (!mapsTab.ContainsKey(type.Name))
-                    mapsTab.Add(type.Name, type);        // Remember that we need to dump the type enumeration
+                mapsTab.TryAdd(type.Name, type);        // Remember that we need to dump the type enumeration
             }
 
             templates?.AppendLine("/>");

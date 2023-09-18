@@ -2734,7 +2734,7 @@ float FloatingPointUtils::maximumNumber(float x, float y)
 //
 // It propagates NaN inputs back to the caller and
 // otherwise returns the lesser of the inputs. It
-// treats +0 as lesser than -0 as per the specification.
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2763,7 +2763,7 @@ double FloatingPointUtils::minimum(double val1, double val2)
 //
 // It propagates NaN inputs back to the caller and
 // otherwise returns the input with a lesser magnitude.
-// It treats +0 as lesser than -0 as per the specification.
+// It treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    x - left operand
@@ -2856,7 +2856,7 @@ double FloatingPointUtils::minimumNumber(double x, double y)
 //
 // It propagates NaN inputs back to the caller and
 // otherwise returns the lesser of the inputs. It
-// treats +0 as lesser than -0 as per the specification.
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2885,7 +2885,7 @@ float FloatingPointUtils::minimum(float val1, float val2)
 //
 // It propagates NaN inputs back to the caller and
 // otherwise returns the input with a lesser magnitude.
-// It treats +0 as lesser than -0 as per the specification.
+// It treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    x - left operand
@@ -3855,7 +3855,6 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 {
     switch (toType)
     {
-        case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
@@ -3879,7 +3878,6 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 {
     switch (toType)
     {
-        case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
@@ -3994,7 +3992,6 @@ bool CastFromFloatOverflows(float fromValue, var_types toType)
     {
         case TYP_BYTE:
             return !(-129.0f < fromValue && fromValue < 128.0f);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return !(-1.0f < fromValue && fromValue < 256.0f);
         case TYP_SHORT:
@@ -4023,7 +4020,6 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType)
     {
         case TYP_BYTE:
             return !(-129.0 < fromValue && fromValue < 128.0);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return !(-1.0 < fromValue && fromValue < 256.0);
         case TYP_SHORT:

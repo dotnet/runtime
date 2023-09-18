@@ -20,37 +20,116 @@ namespace SharedTypes.ComInterfaces
         StatefulFinallyType ReturnPreserveSig();
     }
 
+    [GeneratedComClass]
+    internal partial class StatefulFinallyMarshalling : IStatefulFinallyMarshalling
+    {
+        public void Method(StatefulFinallyType param)
+        {
+            _ = param.i;
+        }
+        public void MethodIn(in StatefulFinallyType param)
+        {
+            _ = param.i;
+        }
+        public void MethodOut(out StatefulFinallyType param)
+        {
+            param = new StatefulFinallyType() { i = 42 };
+        }
+        public void MethodRef(ref StatefulFinallyType param)
+        {
+            _ = param.i;
+            param = new StatefulFinallyType() { i = 99 };
+        }
+        public StatefulFinallyType Return()
+            => new StatefulFinallyType() { i = 8 };
+        public StatefulFinallyType ReturnPreserveSig()
+            => new StatefulFinallyType() { i = 3 };
+    }
+
     [NativeMarshalling(typeof(StatefulFinallyTypeMarshaller))]
     internal class StatefulFinallyType
     {
+        public int i;
     }
 
-    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.Default, typeof(StatefulFinallyTypeMarshaller))]
+    internal struct StatefulFinallyNative
+    {
+        public int i;
+    }
+
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.UnmanagedToManagedOut, typeof(ManagedToUnmanaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.ManagedToUnmanagedOut, typeof(UnmanagedToManaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.UnmanagedToManagedIn, typeof(UnmanagedToManaged))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.UnmanagedToManagedRef, typeof(Bidirectional))]
+    [CustomMarshaller(typeof(StatefulFinallyType), MarshalMode.ManagedToUnmanagedRef, typeof(Bidirectional))]
     internal struct StatefulFinallyTypeMarshaller
     {
-        public void FromManaged(StatefulFinallyType managed)
+        internal struct Bidirectional
         {
-            throw new NotImplementedException();
+            int managed_i;
+            int unmanaged_i;
+
+            public void FromManaged(StatefulFinallyType managed)
+            {
+                managed_i = managed.i;
+            }
+
+            public StatefulFinallyNative ToUnmanaged()
+            {
+                return new StatefulFinallyNative() { i = this.managed_i };
+            }
+
+            public void FromUnmanaged(StatefulFinallyNative unmanaged)
+            {
+                unmanaged_i = unmanaged.i;
+            }
+
+            public StatefulFinallyType ToManagedFinally()
+            {
+                return new StatefulFinallyType() { i = unmanaged_i };
+            }
+
+            public void Free() { }
+
+            public void OnInvoked() { }
         }
 
-        public nint ToUnmanaged()
+        internal struct ManagedToUnmanaged
         {
-            throw new NotImplementedException();
+            int managed_i;
+
+            public void FromManaged(StatefulFinallyType managed)
+            {
+                managed_i = managed.i;
+            }
+
+            public StatefulFinallyNative ToUnmanaged()
+            {
+                return new StatefulFinallyNative() { i = this.managed_i };
+            }
+
+            public void Free() { }
+
+            public void OnInvoked() { }
         }
 
-        public void FromUnmanaged(nint unmanaged)
+        internal struct UnmanagedToManaged
         {
-            throw new NotImplementedException();
-        }
+            int unmanaged_i;
 
-        public StatefulFinallyType ToManagedFinally()
-        {
-            throw new NotImplementedException();
-        }
+            public void FromUnmanaged(StatefulFinallyNative unmanaged)
+            {
+                unmanaged_i = unmanaged.i;
+            }
+            public StatefulFinallyType ToManagedFinally()
+            {
+                return new StatefulFinallyType() { i = unmanaged_i };
+            }
 
-        public void Free()
-        {
-            throw new NotImplementedException();
+            public void Free() { }
+
+            public void OnInvoked() { }
         }
     }
 }

@@ -54,6 +54,11 @@
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'" >
+    <!-- https://github.com/dotnet/runtime/issues/91676 -->
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-minimal-config\Wasm.Browser.Config.Sample.csproj" />
+  </ItemGroup>
 
   <!-- wasm EAT/AOT -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(EnableAggressiveTrimming)' == 'true'">
@@ -240,14 +245,6 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(RunDisablediOSTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
-
-    <!-- Functional tests on devices have problems with return codes from mlaunch -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'iossimulator' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisablediOSTests)' != 'true'">
-    <!-- Functional tests on arm64 simulator have problems with return codes from mlaunch -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'tvos' and '$(RunDisablediOSTests)' != 'true'">
@@ -274,6 +271,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles\tests\System.IO.MemoryMappedFiles.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Numerics\tests\System.Runtime.Numerics.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
 
     <!--
       Test apps that are too large and take too long to build
@@ -283,9 +281,6 @@
     -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\UnitTests\System.Text.RegularExpressions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
-
-    <!-- Functional tests on devices have problems with return codes from mlaunch -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj" />
 
     <!-- https://github.com/dotnet/runtime/issues/73041 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp\tests\Microsoft.CSharp.Tests.csproj" />
@@ -301,6 +296,7 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'maccatalyst'">
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/XmlFormatWriterGeneratorAOT/iOS.Simulator.XmlFormatWriterGeneratorAot.Test.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/LibraryMode/iOS.Simulator.LibraryMode.Test.csproj" />
   </ItemGroup>
 
   <!-- Run only explicitly selected tests for Mac Catalyst in App Sandbox -->
@@ -324,6 +320,21 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
     <!-- Reference deleted by _CopyTestArchive https://github.com/dotnet/runtime/issues/80976 -->
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/StartupHook/iOS.Simulator.StartupHook.Test.csproj" />
+
+    <!-- Source generators tests. Not testing customer scenarios. Low priority -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\ComInterfaceGenerator.Unit.Tests\ComInterfaceGenerator.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\tests\SourceGenerationTests\Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options.ConfigurationExtensions\tests\SourceGenerationTests\Microsoft.Extensions.Options.ConfigurationExtensions.SourceGeneration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options/tests/SourceGenerationTests/Microsoft.Extensions.Options.SourceGeneration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Options/tests/SourceGeneration.Unit.Tests/Microsoft.Extensions.Options.SourceGeneration.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.CoreLib/tests/IntrinsicsInSystemPrivatecoreLibAnalyzer.Tests/IntrinsicsInSystemPrivateCoreLib.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' != 'true'">
@@ -360,6 +371,12 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates\tests\System.Security.Cryptography.X509Certificates.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Cose\tests\System.Security.Cryptography.Cose.Tests.csproj" />
+    <!-- https://github.com/dotnet/runtime/issues/91538 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj" />
+    <!-- https://github.com/dotnet/runtime/issues/91593 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels\tests\System.Threading.Channels.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread' and '$(RunDisabledWasmTests)' != 'true'">
@@ -519,7 +536,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+    <SmokeTestProject Condition="'$(UseNativeAOTRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
     <GrpcTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
@@ -615,7 +632,7 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(RunAOTCompilation)' == 'true'">
     <!-- Only System.Runtime tests on iOS for now -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
 
@@ -624,16 +641,20 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos') and '$(UseNativeAOTRuntime)' == 'true'">
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj"
+                    Exclude="@(ProjectExclusions)"
+                    BuildInParallel="false" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(IsManualOrRollingBuild)' == 'true'">
     <!-- These crash on tvOS, but do not on iOS. Run these only on the rolling builds -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles\tests\System.IO.MemoryMappedFiles.Tests.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime.Numerics\tests\System.Runtime.Numerics.Tests.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'iossimulator'">
-    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
@@ -646,8 +667,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'maccatalyst'">
-    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
@@ -669,7 +688,8 @@
 
   <PropertyGroup>
     <Samples_BuildInParallel Condition="'$(OS)' == 'Windows_NT'">false</Samples_BuildInParallel>
-    <Samples_BuildInParallel Condition="'$(OS)' != 'Windows_NT'">true</Samples_BuildInParallel>
+    <!-- prompted by https://github.com/dotnet/dnceng/issues/450 -->
+    <Samples_BuildInParallel Condition="'$(OS)' != 'Windows_NT'">false</Samples_BuildInParallel>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunWasmSamples)' == 'true' and '$(TargetOS)' == 'browser'">

@@ -1,0 +1,10 @@
+<linker>
+  <assembly fullname="System.Diagnostics.DiagnosticSource" feature="System.Diagnostics.Metrics.Meter.IsSupported" featurevalue="false">
+    <type fullname="System.Diagnostics.Metrics.Meter">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Diagnostics.Metrics.Instrument">
+      <method signature="System.Boolean get_Enabled()" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>

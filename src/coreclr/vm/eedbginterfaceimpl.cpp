@@ -630,7 +630,6 @@ PCODE EEDbgInterfaceImpl::GetFunctionAddress(MethodDesc *pFD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-
     return pFD->GetNativeCode();
 }
 
@@ -1089,7 +1088,7 @@ void EEDbgInterfaceImpl::MarkDebuggerUnattached(void)
 }
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 
 // Apply an EnC edit to the specified module
 HRESULT EEDbgInterfaceImpl::EnCApplyChanges(EditAndContinueModule *pModule,
@@ -1132,7 +1131,7 @@ void EEDbgInterfaceImpl::ResumeInUpdatedFunction(EditAndContinueModule *pModule,
                                      pContext);
 }
 
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 bool EEDbgInterfaceImpl::CrawlFrameIsGcSafe(CrawlFrame *pCF)
 {

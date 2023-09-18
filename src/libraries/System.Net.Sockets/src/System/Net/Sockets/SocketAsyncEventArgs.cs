@@ -65,7 +65,7 @@ namespace System.Net.Sockets
         private int _acceptAddressBufferCount;
 
         // Internal SocketAddress buffer.
-        internal Internals.SocketAddress? _socketAddress;
+        internal SocketAddress? _socketAddress;
 
         // Misc state variables.
         private readonly bool _flowExecutionContext;
@@ -866,7 +866,7 @@ namespace System.Net.Sockets
             {
                 case SocketAsyncOperation.Accept:
                     // Get the endpoint.
-                    Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_currentSocket!._rightEndPoint!);
+                    SocketAddress remoteSocketAddress = _currentSocket!._rightEndPoint!.Serialize();
 
                     socketError = FinishOperationAccept(remoteSocketAddress);
 
@@ -923,18 +923,17 @@ namespace System.Net.Sockets
                 case SocketAsyncOperation.ReceiveFrom:
                     // Deal with incoming address.
                     UpdateReceivedSocketAddress(_socketAddress!);
-                    Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
-                    if (!socketAddressOriginal.Equals(_socketAddress))
+                    if (_remoteEndPoint != null && !SocketAddressExtensions.Equals(_socketAddress!, _remoteEndPoint))
                     {
                         try
                         {
-                            if (_remoteEndPoint!.AddressFamily == _socketAddress!.Family)
-                            {
-                                _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress);
-                            }
-                            else if (_remoteEndPoint!.AddressFamily == AddressFamily.InterNetworkV6 && _socketAddress.Family == AddressFamily.InterNetwork)
+                            if (_remoteEndPoint!.AddressFamily == AddressFamily.InterNetworkV6 && _socketAddress!.Family == AddressFamily.InterNetwork)
                             {
                                 _remoteEndPoint = new IPEndPoint(_socketAddress.GetIPAddress().MapToIPv6(), _socketAddress.GetPort());
+                            }
+                            else
+                            {
+                                _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress!);
                             }
                         }
                         catch
@@ -946,12 +945,18 @@ namespace System.Net.Sockets
                 case SocketAsyncOperation.ReceiveMessageFrom:
                     // Deal with incoming address.
                     UpdateReceivedSocketAddress(_socketAddress!);
-                    socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint!);
-                    if (!socketAddressOriginal.Equals(_socketAddress))
+                    if (!SocketAddressExtensions.Equals(_socketAddress!, _remoteEndPoint))
                     {
                         try
                         {
-                            _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress!);
+                            if (_remoteEndPoint!.AddressFamily == AddressFamily.InterNetworkV6 && _socketAddress!.Family == AddressFamily.InterNetwork)
+                            {
+                                _remoteEndPoint = new IPEndPoint(_socketAddress.GetIPAddress().MapToIPv6(), _socketAddress.GetPort());
+                            }
+                            else
+                            {
+                                _remoteEndPoint = _remoteEndPoint!.Create(_socketAddress!);
+                            }
                         }
                         catch
                         {

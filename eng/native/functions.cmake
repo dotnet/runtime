@@ -588,21 +588,6 @@ function(disable_pax_mprotect targetName)
   endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 endfunction()
 
-if (CMAKE_VERSION VERSION_LESS "3.12")
-  # Polyfill add_compile_definitions when it is unavailable
-  function(add_compile_definitions)
-    get_directory_property(DIR_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
-    list(APPEND DIR_COMPILE_DEFINITIONS ${ARGV})
-    set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "${DIR_COMPILE_DEFINITIONS}")
-  endfunction()
-endif()
-
-if (CMAKE_VERSION VERSION_LESS "3.16")
-  # Provide a no-op polyfill for precompiled headers on old CMake versions
-  function(target_precompile_headers)
-  endfunction()
-endif()
-
 # add_linker_flag(Flag [Config1 Config2 ...])
 function(add_linker_flag Flag)
   if (ARGN STREQUAL "")

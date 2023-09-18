@@ -38,6 +38,7 @@ namespace Wasm.Build.Tests
         protected string _nugetPackagesDir = string.Empty;
         private ProjectProviderBase _providerOfBaseType;
 
+        private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
         private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         // changing Windows's language programistically is complicated and Node is using OS's language to determine
         // what is client's preferred locale and then to load corresponding ICU => skip automatic icu testing with Node
@@ -148,8 +149,7 @@ namespace Wasm.Build.Tests
                 buildType,
                 $"-bl:{logFilePath}",
                 $"-p:Configuration={config}",
-                "-nr:false",
-                !UseWebcil ? "-p:WasmEnableWebcil=false" : string.Empty,
+                "-nr:false"
             };
             commandLineArgs.AddRange(extraArgs);
 
@@ -228,7 +228,17 @@ namespace Wasm.Build.Tests
                                 );
 
             TestUtils.AssertSubstring("AOT: image 'System.Private.CoreLib' found.", output, contains: buildArgs.AOT);
-            TestUtils.AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
+
+            if (s_isWindows && buildArgs.ProjectName.Contains(s_unicodeChar))
+            {
+                // unicode chars in output on Windows are decoded in unknown way, so finding utf8 string is more complicated
+                string projectNameCore = buildArgs.ProjectName.Trim(new char[] {s_unicodeChar});
+                TestUtils.AssertMatches(@$"AOT: image '{projectNameCore}\S+' found.", output, contains: buildArgs.AOT);
+            }
+            else
+            {
+                TestUtils.AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
+            }
 
             if (test != null)
                 test(output);
@@ -335,6 +345,7 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
+            File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(dir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
             string targetNuGetConfigPath = Path.Combine(dir, "nuget.config");
             if (addNuGetSourceForLocalPackages)
@@ -575,6 +586,8 @@ namespace Wasm.Build.Tests
             if (_projectDir != null && _enablePerTestCleanup)
                 _buildContext.RemoveFromCache(_projectDir, keepDir: s_skipProjectCleanup);
         }
+
+        public static string GetRandomId() => TestUtils.FixupSymbolName(Path.GetRandomFileName());
 
         internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish = true)
         {

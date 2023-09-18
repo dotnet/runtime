@@ -61,6 +61,12 @@ char* SystemNative_GetDefaultTimeZone(void)
         return NULL;
     }
 }
+#elif !defined(__APPLE__)
+char* SystemNative_GetDefaultTimeZone(void)
+{
+    assert_err(false, "This function is not supported on this platform.", EINVAL);
+    return NULL;
+}
 #endif
 
 const char* SystemNative_GetTimeZoneData(const char* name, int* length)

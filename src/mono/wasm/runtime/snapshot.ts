@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
@@ -45,22 +44,35 @@ async function openCache(): Promise<Cache | null> {
     }
 }
 
-export async function getMemorySnapshotSize(): Promise<number | undefined> {
+export async function checkMemorySnapshotSize(): Promise<void> {
     try {
+        if (!runtimeHelpers.config.startupMemoryCache) {
+            // we could start downloading DLLs because snapshot is disabled
+            return;
+        }
+
         const cacheKey = await getCacheKey();
         if (!cacheKey) {
-            return undefined;
+            return;
         }
         const cache = await openCache();
         if (!cache) {
-            return undefined;
+            return;
         }
         const res = await cache.match(cacheKey);
         const contentLength = res?.headers.get("content-length");
-        return contentLength ? parseInt(contentLength) : undefined;
+        const memorySize = contentLength ? parseInt(contentLength) : undefined;
+
+        runtimeHelpers.loadedMemorySnapshotSize = memorySize;
+        runtimeHelpers.storeMemorySnapshotPending = !memorySize;
     } catch (ex) {
         mono_log_warn("Failed find memory snapshot in the cache", ex);
-        return undefined;
+    }
+    finally {
+        if (!runtimeHelpers.loadedMemorySnapshotSize) {
+            // we could start downloading DLLs because there is no snapshot yet
+            loaderHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
+        }
     }
 }
 
@@ -167,7 +179,7 @@ async function getCacheKey(): Promise<string | null> {
     delete inputs.exitAfterSnapshot;
     delete inputs.extensions;
 
-    inputs.GitHash = GitHash;
+    inputs.GitHash = loaderHelpers.gitHash;
     inputs.ProductVersion = ProductVersion;
 
     const inputsJson = JSON.stringify(inputs);

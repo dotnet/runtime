@@ -52,25 +52,6 @@ namespace ILCompiler.DependencyAnalysis
                 encoder.EmitCompareToZero(result);
                 encoder.EmitJE(GetBadSlotHelper(factory));
             }
-
-            switch (lookup.LookupResultReferenceType(factory))
-            {
-                case GenericLookupResultReferenceType.Indirect:
-                    // Do another indirection
-                    loadEntry = new AddrMode(result, null, 0, 0, AddrModeSize.Int64);
-                    encoder.EmitMOV(result, ref loadEntry);
-                    break;
-
-                case GenericLookupResultReferenceType.ConditionalIndirect:
-                    // Test result, 0x1
-                    // JEQ L1
-                    // mov result, [result-1]
-                    // L1:
-                    throw new NotImplementedException();
-
-                default:
-                    break;
-            }
         }
 
         protected sealed override void EmitCode(NodeFactory factory, ref X64Emitter encoder, bool relocsOnly)

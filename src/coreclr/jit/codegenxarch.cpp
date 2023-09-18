@@ -6735,7 +6735,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
         if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
         {
             instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
-            targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
+            targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
         }
     }
     GetEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
@@ -6906,7 +6906,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
             if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
             {
                 instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
-                targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
+                targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
             }
         }
 
@@ -8910,7 +8910,7 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         //  -saved bool for synchronized methods
 
         // slots for ret address + FP + EnC callee-saves
-        int preservedAreaSize = (2 + genCountBits(RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
+        int preservedAreaSize = (2 + genCountBits((uint64_t)RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
 
         if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
         {
@@ -10894,9 +10894,12 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         assert((blkSize + alignmentHiBlkSize) == (untrLclHi - untrLclLo));
 #endif // !defined(TARGET_AMD64)
 
+        const int maxSimdSize = (int)compiler->roundDownSIMDSize(blkSize);
+        assert((maxSimdSize >= XMM_REGSIZE_BYTES) && (maxSimdSize <= ZMM_REGSIZE_BYTES));
+
         // The loop is unrolled 3 times so we do not move to the loop block until it
         // will loop at least once so the threshold is 6.
-        if (blkSize < (6 * XMM_REGSIZE_BYTES))
+        if (blkSize < (6 * maxSimdSize))
         {
             // Generate the following code:
             //
@@ -10905,10 +10908,22 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             //   ...
             //   movups  xmmword ptr [ebp/esp-OFFS], xmm4
             //   mov      qword ptr [ebp/esp-OFFS], rax
-
+            //
+            // NOTE: it implicitly zeroes YMM4 and ZMM4 as well.
             emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg, zeroSIMDReg);
 
             int i = 0;
+            if (maxSimdSize > XMM_REGSIZE_BYTES)
+            {
+                for (; i <= blkSize - maxSimdSize; i += maxSimdSize)
+                {
+                    // We previously aligned data to 16 bytes which might not be aligned to maxSimdSize
+                    emit->emitIns_AR_R(simdUnalignedMovIns(), EA_ATTR(maxSimdSize), zeroSIMDReg, frameReg,
+                                       alignedLclLo + i);
+                }
+                // Remainder will be handled by the xmm loop below
+            }
+
             for (; i < blkSize; i += XMM_REGSIZE_BYTES)
             {
                 emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo + i);

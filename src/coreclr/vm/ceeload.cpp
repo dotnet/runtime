@@ -183,7 +183,7 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
     }
 }
 
-#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
 void Module::UpdateNewlyAddedTypes()
 {
     CONTRACTL
@@ -241,7 +241,7 @@ void Module::UpdateNewlyAddedTypes()
     m_dwExportedTypeCount = countExportedTypesAfterProfilerUpdate;
     m_dwCustomAttributeCount = countCustomAttributeCount;
 }
-#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
 #if PROFILING_SUPPORTED
 void Module::NotifyProfilerLoadFinished(HRESULT hr)
@@ -578,7 +578,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
 
     // Create the module
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (::IsEditAndContinueCapable(pAssembly, pPEAssembly))
     {
         // if file is EnCCapable, always create an EnC-module, but EnC won't necessarily be enabled.
@@ -588,7 +588,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
         pModule = new (pMemory) EditAndContinueModule(pAssembly, pPEAssembly);
     }
     else
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
     {
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(Module))));
         pModule = new (pMemory) Module(pAssembly, pPEAssembly);
@@ -616,9 +616,9 @@ void Module::ApplyMetaData()
     HRESULT hr = S_OK;
     ULONG ulCount;
 
-#if defined(PROFILING_SUPPORTED) || defined(EnC_SUPPORTED)
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
     UpdateNewlyAddedTypes();
-#endif // PROFILING_SUPPORTED || EnC_SUPPORTED
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
     // Ensure for TypeRef
     ulCount = GetMDImport()->GetCountWithTokenKind(mdtTypeRef) + 1;
@@ -1453,7 +1453,7 @@ BOOL Module::IsRuntimeWrapExceptions()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         if (IsRuntimeWrapExceptionsStatusComputed()) GC_NOTRIGGER; else GC_TRIGGERS;
         MODE_ANY;
     }
@@ -2221,8 +2221,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     // AddRef which we take inside the lock at the bottom of this method.
     CrstHolder holder(&m_ISymUnmanagedReaderCrst);
 
-    UINT lastErrorMode = 0;
-
     // If we haven't created a reader yet, do so now
     if (m_pISymUnmanagedReader == NULL)
     {
@@ -2278,7 +2276,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
 
         // Note: we change the error mode here so we don't get any popups as the PDB symbol reader attempts to search the
         // hard disk for files.
-        lastErrorMode = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+        ErrorModeHolder errorMode{};
 
         SafeComHolder<ISymUnmanagedReader> pReader;
 
@@ -2324,8 +2322,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             if (SUCCEEDED(hr))
                 hr = pBinder->GetReaderForFile(pUnk, path, NULL, &pReader);
         }
-
-        SetErrorMode(lastErrorMode);
 
         if (SUCCEEDED(hr))
         {
@@ -5126,7 +5122,7 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 
     ECall::EnumFCallMethods();
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     m_ClassList.EnumMemoryRegions();
 
     DPTR(PTR_EnCEEClassData) classData = m_ClassList.Table();
@@ -5141,7 +5137,7 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 
         classData++;
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 }
 
 FieldDesc *Module::LookupFieldDef(mdFieldDef token)

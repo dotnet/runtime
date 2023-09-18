@@ -17,6 +17,10 @@
 
 #include <sal.h>
 #include <stdarg.h>
+#ifdef TARGET_UNIX
+#include <pthread.h>
+#endif
+
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "gcenv.structs.h" // CRITICAL_SECTION
@@ -51,6 +55,12 @@
 
 #endif // !_MSC_VER
 
+#ifdef TARGET_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '/'
+#else // TARGET_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '\\'
+#endif // TARGET_UNIX
+
 #ifndef _INC_WINDOWS
 
 // There are some fairly primitive type definitions below but don't pull them into the rest of Redhawk unless
@@ -72,12 +82,6 @@ typedef char TCHAR;
 typedef wchar_t TCHAR;
 #define _T(s) L##s
 #endif
-
-#ifdef TARGET_UNIX
-#define DIRECTORY_SEPARATOR_CHAR '/'
-#else // TARGET_UNIX
-#define DIRECTORY_SEPARATOR_CHAR '\\'
-#endif // TARGET_UNIX
 
 typedef union _LARGE_INTEGER {
     struct {
@@ -508,11 +512,6 @@ typedef enum _EXCEPTION_DISPOSITION {
 
 #define INVALID_HANDLE_VALUE    ((HANDLE)(intptr_t)-1)
 
-#define DLL_PROCESS_ATTACH      1
-#define DLL_THREAD_ATTACH       2
-#define DLL_THREAD_DETACH       3
-#define DLL_PROCESS_DETACH      0
-
 #define INFINITE                0xFFFFFFFF
 
 #define DUPLICATE_CLOSE_SOURCE  0x00000001
@@ -529,19 +528,6 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define PAGE_GUARD              0x100
 #define PAGE_NOCACHE            0x200
 #define PAGE_WRITECOMBINE       0x400
-#define MEM_COMMIT              0x1000
-#define MEM_RESERVE             0x2000
-#define MEM_DECOMMIT            0x4000
-#define MEM_RELEASE             0x8000
-#define MEM_FREE                0x10000
-#define MEM_PRIVATE             0x20000
-#define MEM_MAPPED              0x40000
-#define MEM_RESET               0x80000
-#define MEM_TOP_DOWN            0x100000
-#define MEM_WRITE_WATCH         0x200000
-#define MEM_PHYSICAL            0x400000
-#define MEM_LARGE_PAGES         0x20000000
-#define MEM_4MB_PAGES           0x80000000
 
 #define WAIT_OBJECT_0           0
 #define WAIT_TIMEOUT            258
@@ -706,8 +692,8 @@ inline uint8_t * PalNtCurrentTeb()
 EXTERN_C void * __cdecl _alloca(size_t);
 #pragma intrinsic(_alloca)
 
-REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size, uint32_t freeType);
+REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect);
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
 REDHAWK_PALIMPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds);

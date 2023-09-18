@@ -10722,6 +10722,23 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
+// emitDispEmbBroadcastCount: Display the tag where embedded broadcast is activated to show how many elements are
+// broadcasted.
+//
+// Arguments:
+//   id - The instruction descriptor
+//
+void emitter::emitDispEmbBroadcastCount(instrDesc* id)
+{
+    if (!id->idIsEvexbContext())
+    {
+        return;
+    }
+    ssize_t baseSize   = GetInputSizeInBytes(id);
+    ssize_t vectorSize = (ssize_t)emitGetBaseMemOpSize(id);
+    printf(" {1to%d}", vectorSize / baseSize);
+}
+
 //--------------------------------------------------------------------
 // emitDispIns: Dump the given instruction to jitstdout.
 //
@@ -11123,6 +11140,7 @@ void emitter::emitDispIns(
         {
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             emitDispAddrMode(id);
+            emitDispEmbBroadcastCount(id);
             break;
         }
 
@@ -11395,6 +11413,7 @@ void emitter::emitDispIns(
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispEmbBroadcastCount(id);
             break;
         }
 
@@ -11899,6 +11918,7 @@ void emitter::emitDispIns(
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            emitDispEmbBroadcastCount(id);
             break;
         }
 
@@ -14078,11 +14098,11 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         {
             if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
             {
-                assert((reinterpret_cast<size_t>(addr) & 3) == 0);
+                assert(IS_ALIGNED(addr, 4));
             }
             else
             {
-                assert((reinterpret_cast<size_t>(addr) & (byteSize - 1)) == 0);
+                assert(IS_ALIGNED(addr, byteSize));
             }
         }
 #endif // DEBUG

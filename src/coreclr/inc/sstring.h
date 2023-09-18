@@ -127,19 +127,20 @@ private:
     SString();
 
     explicit SString(const SString &s);
+    SString(SString&& string) = default;
 
     SString(const SString &s1, const SString &s2);
     SString(const SString &s1, const SString &s2, const SString &s3);
     SString(const SString &s1, const SString &s2, const SString &s3, const SString &s4);
     SString(const SString &s, const CIterator &i, COUNT_T length);
     SString(const SString &s, const CIterator &start, const CIterator &end);
-    SString(const WCHAR *string);
+    explicit SString(const WCHAR *string);
     SString(const WCHAR *string, COUNT_T count);
     SString(enum tagASCII dummyTag, const ASCII *string);
     SString(enum tagASCII dummyTag, const ASCII *string, COUNT_T count);
     SString(enum tagUTF8 dummytag, const UTF8 *string);
     SString(enum tagUTF8 dummytag, const UTF8 *string, COUNT_T count);
-    SString(WCHAR character);
+    explicit SString(WCHAR character);
 
     // NOTE: Literals MUST be read-only never-freed strings.
     SString(enum tagLiteral dummytag, const CHAR *literal);
@@ -683,7 +684,9 @@ public:
     BOOL IsASCIIScanned() const;
     void SetASCIIScanned() const;
     void SetNormalized() const;
+public:
     BOOL IsNormalized() const;
+private:
     void ClearNormalized() const;
 
     void EnsureWritable() const;
@@ -782,6 +785,13 @@ public:
         Set(string, count);
     }
 
+    FORCEINLINE InlineSString(enum tagLiteral, const WCHAR *string)
+      : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
+    {
+        WRAPPER_NO_CONTRACT;
+        Set(string);
+    }
+
     FORCEINLINE InlineSString(enum tagASCII, const CHAR *string)
       : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
     {
@@ -867,7 +877,7 @@ typedef InlineSString<2 * 260> LongPathString;
 //        s = SL("My literal String");
 // ================================================================================
 
-#define SL(_literal) SString(SString::Literal, _literal)
+#define SL(_literal) SString{ SString::Literal, _literal }
 
 // ================================================================================
 // Special contract definition - THROWS_UNLESS_NORMALIZED

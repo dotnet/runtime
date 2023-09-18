@@ -12,7 +12,7 @@ namespace test
     {
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
 
             System.String[] array = new System.String[114];
@@ -131,7 +131,6 @@ namespace test
             array[112] = array[111] + "string0112";
             array[113] = array[112] + "string0113";
             System.Console.WriteLine("Max String Length = " + array[113].Length);
-            return 100;
         }
     }
 }

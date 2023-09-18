@@ -146,9 +146,8 @@ namespace Internal.IL.Stubs
                 universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
                         .MakeInstantiatedType(type));
 
-                if (flavor == "EqualityComparer")
-                    universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Enum{flavor}`1")
-                        .MakeInstantiatedType(type));
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Enum{flavor}`1")
+                    .MakeInstantiatedType(type));
 
                 universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Generic{flavor}`1")
                     .MakeInstantiatedType(type));
@@ -167,7 +166,7 @@ namespace Internal.IL.Stubs
             {
                 TypeDesc nullableType = type.Instantiation[0];
 
-                // This should only be reachabe for universal canon code.
+                // This should only be reachable for universal canon code.
                 // For specific canon, this should have been an exact match above.
                 Debug.Assert(context.IsCanonicalDefinitionType(nullableType, CanonicalFormKind.Universal));
 
@@ -195,15 +194,7 @@ namespace Internal.IL.Stubs
         private static bool? ImplementsInterfaceOfSelf(TypeDesc type, string interfaceName)
         {
             MetadataType interfaceType = null;
-            bool canonicalSubtype = false;
 
-            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-            {
-                type = type.GetTypeDefinition();
-                canonicalSubtype = true;
-            }
-
-            bool candidateFound = false;
             foreach (TypeDesc implementedInterface in type.RuntimeInterfaces)
             {
                 Instantiation interfaceInstantiation = implementedInterface.Instantiation;
@@ -213,25 +204,33 @@ namespace Internal.IL.Stubs
 
                     if (implementedInterface.GetTypeDefinition() == interfaceType)
                     {
-                        // Exact match
-                        if (interfaceInstantiation[0] == type)
-                            return true;
-
-                        candidateFound = true;
-                        break;
+                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        {
+                            // Ignore interface instantiations that cannot possibly be the interface of self
+                            if (implementedInterface.ConvertToCanonForm(CanonicalFormKind.Specific) !=
+                                interfaceType.MakeInstantiatedType(type).ConvertToCanonForm(CanonicalFormKind.Specific))
+                            {
+                                continue;
+                            }
+                            // Try to prove that the interface of self is always implemented using the type definition.
+                            TypeDesc typeDefinition = type.GetTypeDefinition();
+                            return typeDefinition.CanCastTo(interfaceType.MakeInstantiatedType(typeDefinition)) ? true : null;
+                        }
+                        else
+                        {
+                            // Shortcut for exact match
+                            if (interfaceInstantiation[0] == type)
+                            {
+                                Debug.Assert(type.CanCastTo(interfaceType.MakeInstantiatedType(type)));
+                                return true;
+                            }
+                            return type.CanCastTo(interfaceType.MakeInstantiatedType(type));
+                        }
                     }
                 }
             }
 
-            if (!candidateFound)
-                return false;
-
-            // Try inexact match
-            if (type.CanCastTo(interfaceType.MakeInstantiatedType(type)))
-                return true;
-
-            // Specific instantiation of the canonical subtype may implement the interface.
-            return canonicalSubtype ? null : false;
+            return false;
         }
 
         public static bool CanCompareValueTypeBits(MetadataType type, MethodDesc objectEqualsMethod)

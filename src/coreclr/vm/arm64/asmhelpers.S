@@ -208,7 +208,7 @@ LEAF_END ThePreStubPatch, _TEXT
 WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -16
 
-    // x0-x7 will contain intended new state
+    // x0-x7, x10 will contain intended new state
     // x8 will preserve skipEphemeralCheck
     // x12 will be used for pointers
 
@@ -223,32 +223,35 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     ldr  x1, [x12]
 #endif
 
-#ifdef WRITE_BARRIER_CHECK
-    PREPARE_EXTERNAL_VAR g_GCShadow, x12
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    PREPARE_EXTERNAL_VAR g_sw_ww_table, x12
     ldr  x2, [x12]
 #endif
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    PREPARE_EXTERNAL_VAR g_sw_ww_table, x12
-    ldr  x3, [x12]
-#endif
-
     PREPARE_EXTERNAL_VAR g_ephemeral_low, x12
-    ldr  x4, [x12]
+    ldr  x3, [x12]
 
     PREPARE_EXTERNAL_VAR g_ephemeral_high, x12
-    ldr  x5, [x12]
+    ldr  x4, [x12]
 
     cbz  x8, LOCAL_LABEL(EphemeralCheckEnabled)
-    movz x4, #0
-    movn x5, #0
+    movz x3, #0
+    movn x4, #0
 LOCAL_LABEL(EphemeralCheckEnabled):
 
     PREPARE_EXTERNAL_VAR g_lowest_address, x12
-    ldr  x6, [x12]
+    ldr  x5, [x12]
 
     PREPARE_EXTERNAL_VAR g_highest_address, x12
+    ldr  x6, [x12]
+
+#ifdef WRITE_BARRIER_CHECK
+    PREPARE_EXTERNAL_VAR g_GCShadow, x12
     ldr  x7, [x12]
+
+    PREPARE_EXTERNAL_VAR g_GCShadowEnd, x12
+    ldr  x10, [x12]
+#endif
 
     // Update wbs state
     PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Table_Loc, x12
@@ -258,7 +261,11 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     stp  x0, x1, [x12], 16
     stp  x2, x3, [x12], 16
     stp  x4, x5, [x12], 16
-    stp  x6, x7, [x12], 16
+    str  x6, [x12], 8
+#ifdef WRITE_BARRIER_CHECK
+    stp  x7, x10, [x12], 16
+#endif
+
 
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
     EPILOG_RETURN
@@ -367,8 +374,7 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     add  x12, x13, x12
 
     // if (pShadow >= g_GCShadowEnd) goto end
-    PREPARE_EXTERNAL_VAR g_GCShadowEnd, x13
-    ldr  x13, [x13]
+    ldr  x13, LOCAL_LABEL(wbs_GCShadowEnd)
     cmp  x12, x13
     bhs  LOCAL_LABEL(ShadowUpdateEnd)
 
@@ -460,8 +466,6 @@ LOCAL_LABEL(wbs_card_table):
     .quad 0
 LOCAL_LABEL(wbs_card_bundle_table):
     .quad 0
-LOCAL_LABEL(wbs_GCShadow):
-    .quad 0
 LOCAL_LABEL(wbs_sw_ww_table):
     .quad 0
 LOCAL_LABEL(wbs_ephemeral_low):
@@ -472,6 +476,12 @@ LOCAL_LABEL(wbs_lowest_address):
     .quad 0
 LOCAL_LABEL(wbs_highest_address):
     .quad 0
+#ifdef WRITE_BARRIER_CHECK
+LOCAL_LABEL(wbs_GCShadow):
+    .quad 0
+LOCAL_LABEL(wbs_GCShadowEnd):
+    .quad 0
+#endif
 WRITE_BARRIER_END JIT_WriteBarrier_Table
 
 
@@ -697,6 +707,30 @@ NESTED_END CallEHFilterFunclet, _TEXT
 
 .endm
 
+// ------------------------------------------------------------------
+//
+// Helpers for ThreadAbort exceptions
+//
+
+        NESTED_ENTRY RedirectForThreadAbort2, _TEXT, NoHandler
+        PROLOG_SAVE_REG_PAIR_INDEXED fp,lr, -16
+
+        // stack must be 16 byte aligned
+        CHECK_STACK_ALIGNMENT
+
+        // On entry:
+        //
+        // x0 = address of FaultingExceptionFrame
+        //
+        // Invoke the helper to setup the FaultingExceptionFrame and raise the exception
+        bl              C_FUNC(ThrowControlForThread)
+
+        // ThrowControlForThread doesn't return.
+        EMIT_BREAKPOINT
+
+        NESTED_END RedirectForThreadAbort2, _TEXT
+
+GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
@@ -905,12 +939,6 @@ LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
 // ------------------------------------------------------------------
-#define PROFILE_ENTER    1
-#define PROFILE_LEAVE    2
-#define PROFILE_TAILCALL 4
-#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 320
-
-// ------------------------------------------------------------------
 .macro GenerateProfileHelper helper, flags
 NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // On entry:
@@ -923,21 +951,21 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     //   Values of other volatile registers are not preserved.
 
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Allocate space and save Fp, Pc.
-    SAVE_ARGUMENT_REGISTERS sp, 16          // Save x8 and argument registers (x0-x7).
-    str     xzr, [sp, 88]                   // Clear functionId.
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96    // Save floating-point/SIMD registers (q0-q7).
-    add     x12, fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
-    stp     x12, x11, [sp, 224]             // Save probeSp, profiledSp.
-    str     xzr, [sp, 240]                  // Clear hiddenArg.
+    SAVE_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__x8  // Save x8 and argument registers (x0-x7).
+    str     xzr, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__functionId]  // Clear functionId.
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
+    add     x12, fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA  // Compute probeSp - initial value of Sp on entry to the helper.
+    stp     x12, x11, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp]  // Save probeSp, profiledSp.
+    str     xzr, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg]  // Clear hiddenArg.
     mov     w12, \flags
-    stp     w12, wzr, [sp, 248]             // Save flags and clear unused field.
+    stp     w12, wzr, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__flags]  // Save flags and clear unused field.
 
     mov     x0, x10
     mov     x1, sp
     bl      C_FUNC(\helper)
 
-    RESTORE_ARGUMENT_REGISTERS sp, 16       // Restore x8 and argument registers.
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 96 // Restore floating-point/SIMD registers.
+    RESTORE_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__x8  // Restore x8 and argument registers.
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters  // Restore floating-point/SIMD registers.
 
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA
     EPILOG_RETURN

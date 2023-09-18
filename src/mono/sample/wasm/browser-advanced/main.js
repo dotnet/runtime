@@ -30,6 +30,14 @@ try {
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured
         // It is preferred to use specific 'with***' methods instead in all other cases.
+        .withConfig({
+            startupMemoryCache: true,
+            resources: {
+                modulesAfterConfigLoaded: {
+                    "advanced-sample.lib.module.js": ""
+                }
+            }
+        })
         .withModuleConfig({
             configSrc: "./blazor.boot.json",
             onConfigLoaded: (config) => {

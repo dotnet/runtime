@@ -4,14 +4,14 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- Type not supported; property on type not suppported -->
     <NoWarn>SYSLIB1100,SYSLIB1101</NoWarn>
-    <!-- The SDK disables the configuration binding generator by default no matter how it was referenced, so we need to enable it here for testing. -->
+    <Features>$(Features);InterceptorsPreview</Features>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
 
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS;ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
     <DefineConstants Condition="'$(LaunchTestDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
-    <DefineConstants Condition="'$(SkipBaselines)' == 'true'">$(DefineConstants);SKIP_BASELINES</DefineConstants>
+    <DefineConstants Condition="'$(UpdateBaselines)' == 'true'">$(DefineConstants);UPDATE_BASELINES</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -28,6 +28,7 @@
     <Compile Include="..\Common\ConfigurationBinderTests.Helpers.cs" Link="Common\ConfigurationBinderTests.Helpers.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.TestClasses.cs" Link="Common\ConfigurationBinderTests.TestClasses.cs" />
     <Compile Include="..\Common\ConfigurationBinderTests.TestClasses.Collections.cs" Link="Common\ConfigurationBinderTests.TestClasses.Collections.cs" />
+    <Compile Include="ConfigurationBinderTests.Generator.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -50,9 +51,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 
-    <Compile Include="ConfigurationBindingGeneratorTests.cs" />
-    <Compile Include="ConfigurationBindingGeneratorTests.Baselines.cs" />
-    <Compile Include="ConfigurationBindingGeneratorTests.Baselines.Options.cs" />
+    <Compile Include="GeneratorTests.cs" />
+    <Compile Include="GeneratorTests.Baselines.cs" />
+    <Compile Include="GeneratorTests.Baselines.Options.cs" />
+    <Compile Include="GeneratorTests.Helpers.cs" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">

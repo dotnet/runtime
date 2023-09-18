@@ -429,7 +429,7 @@ namespace System.IO.Hashing
             accHigh ^= ReadUInt64LE(input1) + ReadUInt64LE(input1 + 8);
         }
 
-        [DebuggerDisplay("Low64: {" + nameof(Low64) + "}, High64: {" + nameof(High64) + "}")]
+        [DebuggerDisplay("Low64 = {" + nameof(Low64) + "}, High64 = {" + nameof(High64) + "}")]
         private readonly struct Hash128
         {
             public readonly ulong Low64;

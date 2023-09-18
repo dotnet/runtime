@@ -8,27 +8,43 @@
 #include "cpufeatures.h"
 #include "cpuid.h"
 
-#if TARGET_WINDOWS
+#if HOST_WINDOWS
 
 #include <Windows.h>
 
-#else // TARGET_WINDOWS
+#else // HOST_WINDOWS
 
 #include "minipalconfig.h"
 
 #if HAVE_AUXV_HWCAP_H
+
 #include <sys/auxv.h>
 #include <asm/hwcap.h>
+
+// Light-up for hardware capabilities that are not present in older headers used by the portable build.
+#ifndef HWCAP_ASIMDRDM
+#define HWCAP_ASIMDRDM  (1 << 12)
+#endif
+#ifndef HWCAP_LRCPC
+#define HWCAP_LRCPC     (1 << 15)
+#endif
+#ifndef HWCAP_ILRCPC
+#define HWCAP_ILRCPC    (1 << 26)
+#endif
+#ifndef HWCAP_ASIMDDP
+#define HWCAP_ASIMDDP   (1 << 20)
+#endif
+
 #endif
 
 #if HAVE_SYSCTLBYNAME
 #include <sys/sysctl.h>
 #endif
 
-#endif // !TARGET_WINDOWS
+#endif // !HOST_WINDOWS
 
-#if defined(TARGET_UNIX)
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_UNIX)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 
 static uint32_t xmmYmmStateSupport()
 {
@@ -48,7 +64,7 @@ static uint32_t xmmYmmStateSupport()
 
 static uint32_t avx512StateSupport()
 {
-#if defined(TARGET_APPLE)
+#if defined(HOST_APPLE)
     // MacOS has specialized behavior where it reports AVX512 support but doesnt
     // actually enable AVX512 until the first instruction is executed and does so
     // on a per thread basis. It does this by catching the faulting instruction and
@@ -82,11 +98,11 @@ static bool IsAvx512Enabled()
 {
     return true;
 }
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-#endif // TARGET_UNIX
+#endif // defined(HOST_X86) || defined(HOST_AMD64)
+#endif // HOST_UNIX
 
-#if defined(TARGET_WINDOWS)
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_WINDOWS)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 static uint32_t xmmYmmStateSupport()
 {
     // check OS has enabled both XMM and YMM state support
@@ -111,14 +127,14 @@ static bool IsAvx512Enabled()
     return ((FeatureMask & XSTATE_MASK_AVX512) != 0);
 }
 
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
-#endif // TARGET_WINDOWS
+#endif // defined(HOST_X86) || defined(HOST_AMD64)
+#endif // HOST_WINDOWS
 
 int minipal_getcpufeatures(void)
 {
     int result = 0;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 
     int cpuidInfo[4];
 
@@ -302,146 +318,43 @@ int minipal_getcpufeatures(void)
         }
 
     }
-#endif // TARGET_X86 || TARGET_AMD64
+#endif // HOST_X86 || HOST_AMD64
 
-#if defined(TARGET_ARM64)
-#if defined(TARGET_UNIX)
-    #if HAVE_AUXV_HWCAP_H
+#if defined(HOST_ARM64)
+#if defined(HOST_UNIX)
+
+#if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
 
-    // HWCAP_* flags are introduced by ARM into the Linux kernel as new extensions are published.
-    // For a given kernel, some of these flags may not be present yet.
-    // Use ifdef for each to allow for compilation with any vintage kernel.
-    // From a single binary distribution perspective, compiling with latest kernel asm/hwcap.h should
-    // include all published flags.  Given flags are merged to kernel and published before silicon is
-    // available, using the latest kernel for release should be sufficient.
-
-#ifdef HWCAP_AES
     if (hwCap & HWCAP_AES)
         result |= ARM64IntrinsicConstants_Aes;
-#endif
-#ifdef HWCAP_ATOMICS
+
     if (hwCap & HWCAP_ATOMICS)
         result |= ARM64IntrinsicConstants_Atomics;
-#endif
-#ifdef HWCAP_CRC32
+
     if (hwCap & HWCAP_CRC32)
         result |= ARM64IntrinsicConstants_Crc32;
-#endif
-#ifdef HWCAP_DCPOP
-//    if (hwCap & HWCAP_DCPOP)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP_ASIMDDP
+
     if (hwCap & HWCAP_ASIMDDP)
         result |= ARM64IntrinsicConstants_Dp;
-#endif
-#ifdef HWCAP_FCMA
-//    if (hwCap & HWCAP_FCMA)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP_FP
-//    if (hwCap & HWCAP_FP)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP_FPHP
-//    if (hwCap & HWCAP_FPHP)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP_JSCVT
-//    if (hwCap & HWCAP_JSCVT)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP_LRCPC
-      if (hwCap & HWCAP_LRCPC)
-          result |= ARM64IntrinsicConstants_Rcpc;
-#endif
-#ifdef HWCAP_PMULL
-//    if (hwCap & HWCAP_PMULL)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP_SHA1
+
+    if (hwCap & HWCAP_LRCPC)
+        result |= ARM64IntrinsicConstants_Rcpc;
+
+    if (hwCap & HWCAP_ILRCPC)
+        result |= ARM64IntrinsicConstants_Rcpc2;
+
     if (hwCap & HWCAP_SHA1)
         result |= ARM64IntrinsicConstants_Sha1;
-#endif
-#ifdef HWCAP_SHA2
+
     if (hwCap & HWCAP_SHA2)
         result |= ARM64IntrinsicConstants_Sha256;
-#endif
-#ifdef HWCAP_SHA512
-//    if (hwCap & HWCAP_SHA512)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP_SHA3
-//    if (hwCap & HWCAP_SHA3)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP_ASIMD
+
     if (hwCap & HWCAP_ASIMD)
         result |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
-#endif
-#ifdef HWCAP_ASIMDRDM
+
     if (hwCap & HWCAP_ASIMDRDM)
         result |= ARM64IntrinsicConstants_Rdm;
-#endif
-#ifdef HWCAP_ASIMDHP
-//    if (hwCap & HWCAP_ASIMDHP)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP_SM3
-//    if (hwCap & HWCAP_SM3)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP_SM4
-//    if (hwCap & HWCAP_SM4)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP_SVE
-//    if (hwCap & HWCAP_SVE)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-
-#ifdef AT_HWCAP2
-    unsigned long hwCap2 = getauxval(AT_HWCAP2);
-
-#ifdef HWCAP2_DCPODP
-//    if (hwCap2 & HWCAP2_DCPODP)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP2_SVE2
-//    if (hwCap2 & HWCAP2_SVE2)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP2_SVEAES
-//    if (hwCap2 & HWCAP2_SVEAES)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP2_SVEPMULL
-//    if (hwCap2 & HWCAP2_SVEPMULL)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP2_SVEBITPERM
-//    if (hwCap2 & HWCAP2_SVEBITPERM)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP2_SVESHA3
-//    if (hwCap2 & HWCAP2_SVESHA3)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP2_SVESM4
-//    if (hwCap2 & HWCAP2_SVESM4)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP2_FLAGM2
-//    if (hwCap2 & HWCAP2_FLAGM2)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-#ifdef HWCAP2_FRINT
-//    if (hwCap2 & HWCAP2_FRINT)
-//        result |= ARM64IntrinsicConstants_???;
-#endif
-
-#endif // AT_HWCAP2
 
 #else // !HAVE_AUXV_HWCAP_H
 
@@ -472,6 +385,9 @@ int minipal_getcpufeatures(void)
 
     if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Rcpc;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC2", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Rcpc2;
 #endif // HAVE_SYSCTLBYNAME
 
     // Every ARM64 CPU should support SIMD and FP
@@ -479,9 +395,9 @@ int minipal_getcpufeatures(void)
 
     result |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 #endif // HAVE_AUXV_HWCAP_H
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 
-#if defined(TARGET_WINDOWS)
+#if defined(HOST_WINDOWS)
     // FP and SIMD support are enabled by default
     result |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 
@@ -511,9 +427,12 @@ int minipal_getcpufeatures(void)
     {
         result |= ARM64IntrinsicConstants_Rcpc;
     }
-#endif // TARGET_WINDOWS
 
-#endif // TARGET_ARM64
+    // TODO: IsProcessorFeaturePresent doesn't support LRCPC2 yet.
+
+#endif // HOST_WINDOWS
+
+#endif // HOST_ARM64
 
     return result;
 }

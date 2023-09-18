@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -98,9 +99,7 @@ namespace Microsoft.Interop
             var setupStatements = new List<StatementSyntax>
             {
                 // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey(typeof(<containingTypeName>));
-                ExpressionStatement(
-                    AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
+                AssignmentStatement(
                         DeclarationExpression(
                             IdentifierName("var"),
                             ParenthesizedVariableDesignation(
@@ -110,16 +109,13 @@ namespace Microsoft.Interop
                                             Identifier(NativeThisParameterIdentifier)),
                                         SingleVariableDesignation(
                                             Identifier(VirtualMethodTableIdentifier))}))),
-                        InvocationExpression(
-                            MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
+                        MethodInvocation(
                                 ParenthesizedExpression(
                                     CastExpression(
-                                        ParseTypeName(TypeNames.IUnmanagedVirtualMethodTableProvider),
+                                        TypeSyntaxes.IUnmanagedVirtualMethodTableProvider,
                                         ThisExpression())),
-                                IdentifierName("GetVirtualMethodTableInfoForKey") ))
-                        .WithArgumentList(
-                            ArgumentList(SeparatedList(new[]{ Argument(TypeOfExpression(containingTypeName)) })))))
+                                IdentifierName("GetVirtualMethodTableInfoForKey"),
+                                Argument(TypeOfExpression(containingTypeName))))
             };
 
             GeneratedStatements statements = GeneratedStatements.Create(
@@ -127,25 +123,23 @@ namespace Microsoft.Interop
                 _context,
                 CreateFunctionPointerExpression(
                     // <vtableDeclaration>[<index>]
-                    ElementAccessExpression(IdentifierName(VirtualMethodTableIdentifier),
-                        BracketedArgumentList(SingletonSeparatedList(
-                            Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(index)))))),
+                    IndexExpression(IdentifierName(VirtualMethodTableIdentifier), Argument(IntLiteral(index))),
                     callConv));
-            bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
+            bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.CleanupCallerAllocated.IsEmpty || !statements.CleanupCalleeAllocated.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToUnmanaged(_marshallers, _context, shouldInitializeVariables);
 
             if (_setLastError)
             {
                 // Declare variable for last error
-                setupStatements.Add(MarshallerHelpers.Declare(
+                setupStatements.Add(Declare(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     LastErrorIdentifier,
                     initializeToDefault: false));
             }
 
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
-                setupStatements.Add(MarshallerHelpers.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
+                setupStatements.Add(Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
             }
 
             setupStatements.AddRange(declarations.Initializations);
@@ -171,38 +165,36 @@ namespace Microsoft.Interop
             }
             tryStatements.Add(statements.Pin.CastArray<FixedStatementSyntax>().NestFixedStatements(fixedBlock));
 
+            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+
             // <invokeSucceeded> = true;
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
                 tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                     IdentifierName(InvokeSucceededIdentifier),
                     LiteralExpression(SyntaxKind.TrueLiteralExpression))));
             }
 
-            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
-
             // Keep the this object alive across the native call, similar to how we handle marshalling managed delegates.
             // We do this right after the NotifyForSuccessfulInvoke phase as that phase is where the delegate objects are kept alive.
             // If we ever move the "this" object handling out of this type, we'll move the handling to be emitted in that phase.
             // GC.KeepAlive(this);
             tryStatements.Add(
-                ExpressionStatement(
-                    InvocationExpression(
-                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            ParseTypeName(TypeNames.System_GC),
-                            IdentifierName("KeepAlive")),
-                        ArgumentList(SingletonSeparatedList(Argument(ThisExpression()))))));
+                MethodInvocationStatement(
+                    TypeSyntaxes.System_GC,
+                    IdentifierName("KeepAlive"),
+                    Argument(ThisExpression())));
 
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;
             List<StatementSyntax> finallyStatements = new List<StatementSyntax>();
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
+            if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
-                finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal)));
+                finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal.Concat(statements.CleanupCalleeAllocated))));
             }
 
-            finallyStatements.AddRange(statements.Cleanup);
+            finallyStatements.AddRange(statements.CleanupCallerAllocated);
             if (finallyStatements.Count > 0)
             {
                 // Add try-finally block if there are any statements in the finally block

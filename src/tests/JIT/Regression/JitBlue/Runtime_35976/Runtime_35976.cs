@@ -25,9 +25,8 @@ public static class Runtime_35976
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         fo1(1);
-        return 100;
     }
 }

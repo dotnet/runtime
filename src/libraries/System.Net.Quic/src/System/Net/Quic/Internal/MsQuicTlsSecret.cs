@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #if DEBUG
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
@@ -15,7 +13,7 @@ namespace System.Net.Quic;
 internal sealed class MsQuicTlsSecret : IDisposable
 {
     private static readonly string? s_keyLogFile = Environment.GetEnvironmentVariable("SSLKEYLOGFILE");
-    private static readonly FileStream? s_fileStream = s_keyLogFile != null ? File.Open(s_keyLogFile, FileMode.Append, FileAccess.Write) : null;
+    private static readonly FileStream? s_fileStream = s_keyLogFile != null ? File.Open(s_keyLogFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite) : null;
 
     private unsafe QUIC_TLS_SECRETS* _tlsSecrets;
 
