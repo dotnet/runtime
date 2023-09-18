@@ -13,17 +13,12 @@ As of .NET Core 2.0 and .NET Standard 2.1, the C# language has support for math 
 
 ```C#
 using System;
-using System.MathF.
 
 internal static class Program
 {
     private static async Task Main()
-    {
-        Console.WriteLine("Starting...");
-        
+    {       
         Console.WriteLine(MathF.Max(1f, 5f)); // returns 5f
-
-        Console.WriteLine("Finished!");
     }
 }
 ```
