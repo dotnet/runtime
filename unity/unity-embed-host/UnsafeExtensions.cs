@@ -16,6 +16,7 @@ namespace Unity.CoreCLRHelpers;
 /// </summary>
 static class UnsafeExtensions
 {
+    private static readonly bool s_ReturnHandlesFromAPI = CoreCLRHost.UseRealGC() || CoreCLRHost.ReturnHandlesFromAPI();
     public static object ToManagedRepresentation(this nint intPtr)
     {
         var value = intPtr;
@@ -30,13 +31,18 @@ static class UnsafeExtensions
 
     public static nint ToNativeRepresentation(this object obj)
     {
-        var handle = (nuint)(nint)(IntPtr)GCHandle.Alloc(obj);
-        handle |= kHandleMask;
+        if (s_ReturnHandlesFromAPI)
+        {
+            var handle = (nuint)(nint)(IntPtr)GCHandle.Alloc(obj);
+            handle |= kHandleMask;
 
-        return (nint)handle;
+            return (nint)handle;
+        }
+
+        return Unsafe.As<object, nint>(ref obj);
     }
 
-    static bool IsHandle(IntPtr value) { return   (((nuint)(nint)value) & kHandleMask) == kHandleMask; }
+    static bool IsHandle(IntPtr value) { return   (((nuint)value) & kHandleMask) == kHandleMask; }
 
     const nuint kBitMask = 0b11;
     const nuint kHandleMask = 0b10; // the low bit may or may not be set depending on the runtime

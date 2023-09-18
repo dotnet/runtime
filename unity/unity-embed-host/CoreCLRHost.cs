@@ -733,6 +733,16 @@ static unsafe partial class CoreCLRHost
             _hostStructNative->unity_log(p);
     }
 
+    internal static bool UseRealGC()
+    {
+        return _hostStructNative->use_real_gc();
+    }
+
+    internal static bool ReturnHandlesFromAPI()
+    {
+        return _hostStructNative->return_handles_from_api();
+    }
+
     private static StringPtr StringToPtr(string s)
     {
         // Return raw object pointer for now with the NullGC.

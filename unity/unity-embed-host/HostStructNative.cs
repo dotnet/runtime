@@ -9,4 +9,6 @@ namespace Unity.CoreCLRHelpers;
 unsafe struct HostStructNative
 {
     public delegate* unmanaged<byte*, void> unity_log;
+    public delegate* unmanaged<bool> use_real_gc;
+    public delegate* unmanaged<bool> return_handles_from_api;
 }
