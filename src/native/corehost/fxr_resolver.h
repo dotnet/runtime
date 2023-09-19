@@ -67,18 +67,16 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
     if (status != StatusCode::Success)
         return status;
 
-    if (pal::file_exists(config_path))
+    hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
     {
-        hostfxr_initialize_parameters parameters {
-            sizeof(hostfxr_initialize_parameters),
-            host_path.c_str(),
-            dotnet_root.c_str()
-        };
-
-        hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
-
+        propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
+        if (pal::file_exists(config_path))
         {
-            propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
+            hostfxr_initialize_parameters parameters {
+                sizeof(hostfxr_initialize_parameters),
+                host_path.c_str(),
+                dotnet_root.c_str()
+            };
 
             hostfxr_handle context;
             int rc = hostfxr_initialize_for_runtime_config(config_path.c_str(), &parameters, &context);
@@ -98,11 +96,16 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
 
             return rc;
         }
-    }
-    else
-    {
-        // null context means use the current one, if none exists it will fail
-        return hostfxr_get_runtime_delegate(nullptr, type, delegate);
+        else
+        {
+            // null context means use the current one, if none exists it will fail
+            int rc = hostfxr_get_runtime_delegate(nullptr, type, delegate);
+            if (rc == StatusCode::HostInvalidState)
+            {
+                trace::error(_X("Expected active runtime context because runtimeconfig.json [%s] does not exist."), config_path.c_str());
+            }
+            return rc;
+        }
     }
 }
 
