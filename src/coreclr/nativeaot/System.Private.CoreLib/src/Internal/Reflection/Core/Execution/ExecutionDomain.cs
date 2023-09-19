@@ -103,7 +103,7 @@ namespace Internal.Reflection.Core.Execution
             if (qTypeDefinition.IsNativeFormatMetadataBased)
 #endif
             {
-                return qTypeDefinition.NativeFormatHandle.GetNamedType(qTypeDefinition.NativeFormatReader, typeHandle);
+                return qTypeDefinition.NativeFormatHandle.GetNamedType(qTypeDefinition.NativeFormatReader, typeHandle).ToType();
             }
 #if ECMA_METADATA_SUPPORT
             else
@@ -117,20 +117,20 @@ namespace Internal.Reflection.Core.Execution
 
         public Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            RuntimeTypeHandle elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle);
+            RuntimeTypeHandle elementTypeHandle = ExecutionEnvironment.GetArrayTypeElementType(typeHandle);
+            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle).ToType();
         }
 
         public Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
         {
-            RuntimeTypeHandle elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
-            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle);
+            RuntimeTypeHandle elementTypeHandle = ExecutionEnvironment.GetArrayTypeElementType(typeHandle);
+            return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle).ToType();
         }
 
         public Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
-            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
+            RuntimeTypeHandle targetTypeHandle = ExecutionEnvironment.GetPointerTypeTargetType(typeHandle);
+            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle).ToType();
         }
 
         public Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -147,13 +147,13 @@ namespace Internal.Reflection.Core.Execution
                 parameterTypes[i] = parameterHandles[i].GetTypeForRuntimeTypeHandle();
             }
 
-            return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged, typeHandle);
+            return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged, typeHandle).ToType();
         }
 
         public Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
-            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetByRefType(typeHandle);
+            RuntimeTypeHandle targetTypeHandle = ExecutionEnvironment.GetByRefTypeTargetType(typeHandle);
+            return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetByRefType(typeHandle).ToType();
         }
 
         public Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -169,7 +169,7 @@ namespace Internal.Reflection.Core.Execution
             {
                 genericTypeArguments[i] = genericTypeArgumentHandles[i].GetTypeForRuntimeTypeHandle();
             }
-            return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle);
+            return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, typeHandle).ToType();
         }
 
         //=======================================================================================
@@ -193,7 +193,7 @@ namespace Internal.Reflection.Core.Execution
             if (type is not RuntimeType)
                 return default(RuntimeTypeHandle);
 
-            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
+            RuntimeTypeInfo runtimeType = type.ToRuntimeTypeInfo();
             if (runtimeType == null)
                 return default(RuntimeTypeHandle);
             return runtimeType.InternalTypeHandleIfAvailable;

@@ -35,7 +35,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                return _declaringType;
+                return _declaringType.ToType();
             }
         }
 

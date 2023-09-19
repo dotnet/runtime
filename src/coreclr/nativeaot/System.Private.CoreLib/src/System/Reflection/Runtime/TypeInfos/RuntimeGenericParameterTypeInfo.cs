@@ -24,12 +24,12 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override bool IsTypeDefinition => false;
         public sealed override bool IsGenericTypeDefinition => false;
-        protected sealed override bool HasElementTypeImpl() => false;
-        protected sealed override bool IsArrayImpl() => false;
+        public sealed override bool HasElementType => false;
+        public sealed override bool IsArray => false;
         public sealed override bool IsSZArray => false;
         public sealed override bool IsVariableBoundArray => false;
-        protected sealed override bool IsByRefImpl() => false;
-        protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsByRef => false;
+        public sealed override bool IsPointer => false;
         public sealed override bool IsConstructedGenericType => false;
         public sealed override bool IsGenericParameter => true;
         public abstract override bool IsGenericTypeParameter { get; }
@@ -58,7 +58,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type[] GetGenericParameterConstraints()
         {
-            return ConstraintInfos.CloneTypeArray();
+            return ConstraintInfos.ToTypeArray();
         }
 
         public sealed override string FullName
@@ -110,10 +110,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return Name;
         }
 
-        protected sealed override TypeAttributes GetAttributeFlagsImpl()
-        {
-            return TypeAttributes.Public;
-        }
+        public sealed override TypeAttributes Attributes => TypeAttributes.Public;
 
         internal sealed override string InternalFullNameOfAssembly
         {
@@ -145,16 +142,16 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 QTypeDefRefOrSpec[] constraints = Constraints;
-                TypeInfo[] constraintInfos = ConstraintInfos;
+                RuntimeTypeInfo[] constraintInfos = ConstraintInfos;
                 for (int i = 0; i < constraints.Length; i++)
                 {
-                    TypeInfo constraintInfo = constraintInfos[i];
+                    RuntimeTypeInfo constraintInfo = constraintInfos[i];
                     if (constraintInfo.IsInterface)
                         continue;
                     return constraints[i];
                 }
 
-                RuntimeNamedTypeInfo objectTypeInfo = typeof(object).CastToRuntimeNamedTypeInfo();
+                RuntimeNamedTypeInfo objectTypeInfo = typeof(object).ToRuntimeNamedTypeInfo();
                 return objectTypeInfo.TypeDefinitionQHandle;
             }
         }
@@ -169,7 +166,7 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 LowLevelList<QTypeDefRefOrSpec> result = new LowLevelList<QTypeDefRefOrSpec>();
                 QTypeDefRefOrSpec[] constraints = Constraints;
-                TypeInfo[] constraintInfos = ConstraintInfos;
+                RuntimeTypeInfo[] constraintInfos = ConstraintInfos;
                 for (int i = 0; i < constraints.Length; i++)
                 {
                     if (constraintInfos[i].IsInterface)
@@ -181,14 +178,14 @@ namespace System.Reflection.Runtime.TypeInfos
 
         protected abstract QTypeDefRefOrSpec[] Constraints { get; }
 
-        private TypeInfo[] ConstraintInfos
+        private RuntimeTypeInfo[] ConstraintInfos
         {
             get
             {
                 QTypeDefRefOrSpec[] constraints = Constraints;
                 if (constraints.Length == 0)
-                    return Array.Empty<TypeInfo>();
-                TypeInfo[] constraintInfos = new TypeInfo[constraints.Length];
+                    return Array.Empty<RuntimeTypeInfo>();
+                RuntimeTypeInfo[] constraintInfos = new RuntimeTypeInfo[constraints.Length];
                 for (int i = 0; i < constraints.Length; i++)
                 {
                     constraintInfos[i] = constraints[i].Resolve(TypeContext);

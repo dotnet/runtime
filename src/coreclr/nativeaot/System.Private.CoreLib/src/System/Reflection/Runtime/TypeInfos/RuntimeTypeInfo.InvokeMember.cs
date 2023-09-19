@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Reflection.Runtime.BindingFlagSupport;
+using System.Reflection.Runtime.General;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -72,7 +73,7 @@ namespace System.Reflection.Runtime.TypeInfos
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
 
             #region Get a Binder
-            binder ??= DefaultBinder;
+            binder ??= Type.DefaultBinder;
 
             #endregion
 
@@ -83,7 +84,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     // "Can not specify both CreateInstance and another access type."
                     throw new ArgumentException(SR.Arg_CreatInstAccess, nameof(bindingFlags));
 
-                return Activator.CreateInstance(this, bindingFlags, binder, providedArgs, culture);
+                return Activator.CreateInstance(this.ToType(), bindingFlags, binder, providedArgs, culture);
             }
             #endregion
 

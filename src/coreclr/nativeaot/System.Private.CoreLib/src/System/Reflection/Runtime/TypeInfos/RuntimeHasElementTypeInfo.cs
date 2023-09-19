@@ -25,12 +25,12 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override bool IsTypeDefinition => false;
         public sealed override bool IsGenericTypeDefinition => false;
-        protected sealed override bool HasElementTypeImpl() => true;
-        protected abstract override bool IsArrayImpl();
+        public sealed override bool HasElementType => true;
+        public abstract override bool IsArray { get; }
         public abstract override bool IsSZArray { get; }
         public abstract override bool IsVariableBoundArray { get; }
-        protected abstract override bool IsByRefImpl();
-        protected abstract override bool IsPointerImpl();
+        public abstract override bool IsByRef { get; }
+        public abstract override bool IsPointer { get; }
         public sealed override bool IsConstructedGenericType => false;
         public sealed override bool IsGenericParameter => false;
         public sealed override bool IsGenericTypeParameter => false;
@@ -140,10 +140,13 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Left unsealed because this implementation is correct for ByRefs and Pointers but not Arrays.
         //
-        protected override TypeAttributes GetAttributeFlagsImpl()
+        public override TypeAttributes Attributes
         {
-            Debug.Assert(IsByRef || IsPointer);
-            return TypeAttributes.Public;
+            get
+            {
+                Debug.Assert(IsByRef || IsPointer);
+                return TypeAttributes.Public;
+            }
         }
 
         protected sealed override int InternalGetHashCode()

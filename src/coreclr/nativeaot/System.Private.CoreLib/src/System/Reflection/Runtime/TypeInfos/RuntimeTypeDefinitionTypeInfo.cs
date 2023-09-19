@@ -15,12 +15,12 @@ namespace System.Reflection.Runtime.TypeInfos
     {
         public sealed override bool IsTypeDefinition => true;
         public abstract override bool IsGenericTypeDefinition { get; }
-        protected sealed override bool HasElementTypeImpl() => false;
-        protected sealed override bool IsArrayImpl() => false;
+        public sealed override bool HasElementType => false;
+        public sealed override bool IsArray => false;
         public sealed override bool IsSZArray => false;
         public sealed override bool IsVariableBoundArray => false;
-        protected sealed override bool IsByRefImpl() => false;
-        protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsByRef => false;
+        public sealed override bool IsPointer => false;
         public sealed override bool IsConstructedGenericType => false;
         public sealed override bool IsGenericParameter => false;
         public sealed override bool IsGenericTypeParameter => false;
@@ -33,7 +33,8 @@ namespace System.Reflection.Runtime.TypeInfos
             ArgumentNullException.ThrowIfNull(other);
 
             // Do not rewrite as a call to IsConstructedGenericType - we haven't yet established that "other" is a runtime-implemented member yet!
-            if (other is RuntimeConstructedGenericTypeInfo otherConstructedGenericType)
+            // TODO!!!
+            if (other is Type otherType && otherType.ToRuntimeTypeInfo() is RuntimeConstructedGenericTypeInfo otherConstructedGenericType)
                 other = otherConstructedGenericType.GetGenericTypeDefinition();
 
             // Unlike most other MemberInfo objects, types never get cloned due to containing generic types being instantiated.

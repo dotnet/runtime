@@ -116,6 +116,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return null;
         }
 
+#pragma warning disable CA1822
         public MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
             ArgumentNullException.ThrowIfNull(member);
@@ -134,6 +135,7 @@ namespace System.Reflection.Runtime.TypeInfos
 #endif
             throw new ArgumentException(SR.Format(SR.Arg_MemberInfoNotFound, member.Name), nameof(member));
         }
+#pragma warning restore CS1822
 
         private MemberInfo GetDeclaredMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {

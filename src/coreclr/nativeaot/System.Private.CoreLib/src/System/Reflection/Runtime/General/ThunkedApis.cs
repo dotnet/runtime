@@ -150,6 +150,7 @@ namespace System.Reflection.Runtime.PropertyInfos
 
 namespace System.Reflection.Runtime.TypeInfos
 {
+    // TODO: !!! Move
     internal abstract partial class RuntimeTypeInfo
     {
         public Type[] GetGenericArguments()

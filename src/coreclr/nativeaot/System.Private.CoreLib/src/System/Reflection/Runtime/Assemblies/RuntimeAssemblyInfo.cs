@@ -156,12 +156,12 @@ namespace System.Reflection.Runtime.Assemblies
         ///
         /// Returns null if the type does not exist. Throws for all other error cases.
         /// </summary>
-        internal RuntimeTypeInfo GetTypeCore(string fullName, bool throwOnError, bool ignoreCase)
+        internal Type GetTypeCore(string fullName, bool throwOnError, bool ignoreCase)
         {
             RuntimeTypeInfo type = ignoreCase ? GetTypeCoreCaseInsensitive(fullName) : GetTypeCoreCaseSensitive(fullName);
             if (type == null && throwOnError)
                 throw Helpers.CreateTypeLoadException(fullName, this.FullName);
-            return type;
+            return type.ToType();
         }
 
         // Types that derive from RuntimeAssembly must implement the following public surface area members

@@ -32,20 +32,18 @@ namespace System.Reflection.Runtime.TypeInfos
             return _rank;
         }
 
-        protected sealed override bool IsArrayImpl() => true;
+        public sealed override bool IsArray => true;
         public sealed override bool IsSZArray => !_multiDim;
         public sealed override bool IsVariableBoundArray => _multiDim;
-        protected sealed override bool IsByRefImpl() => false;
-        protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsByRef => false;
+        public sealed override bool IsPointer => false;
 
-        protected sealed override TypeAttributes GetAttributeFlagsImpl()
-        {
 #pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
-            return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+        public sealed override TypeAttributes Attributes =>
+            TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
 #pragma warning restore SYSLIB0050
-        }
 
-        internal sealed override IEnumerable<RuntimeConstructorInfo> SyntheticConstructors
+    internal sealed override IEnumerable<RuntimeConstructorInfo> SyntheticConstructors
         {
             get
             {
@@ -53,7 +51,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 int rank = this.GetArrayRank();
 
                 RuntimeArrayTypeInfo arrayType = this;
-                RuntimeTypeInfo countType = typeof(int).CastToRuntimeTypeInfo();
+                RuntimeTypeInfo countType = typeof(int).ToRuntimeTypeInfo();
 
                 {
                     //
@@ -170,10 +168,10 @@ namespace System.Reflection.Runtime.TypeInfos
             {
                 int rank = this.GetArrayRank();
 
-                RuntimeTypeInfo indexType = typeof(int).CastToRuntimeTypeInfo();
+                RuntimeTypeInfo indexType = typeof(int).ToRuntimeTypeInfo();
                 RuntimeArrayTypeInfo arrayType = this;
                 RuntimeTypeInfo elementType = arrayType.InternalRuntimeElementType;
-                RuntimeTypeInfo voidType = typeof(void).CastToRuntimeTypeInfo();
+                RuntimeTypeInfo voidType = typeof(void).ToRuntimeTypeInfo();
 
                 {
                     RuntimeTypeInfo[] getParameters = new RuntimeTypeInfo[rank];

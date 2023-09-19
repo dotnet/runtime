@@ -187,11 +187,6 @@ namespace Internal.Reflection
             return RuntimeAugments.IsByRefType(_typeHandle);
         }
 
-        protected override bool IsCOMObjectImpl()
-        {
-            return false;
-        }
-
         protected override bool IsPointerImpl()
         {
             return RuntimeAugments.IsUnmanagedPointerType(_typeHandle);
@@ -218,6 +213,7 @@ namespace Internal.Reflection
             if (typeInfo is not RuntimeType)
                 return false;  // Desktop compat: If typeInfo is null, or implemented by a different Reflection implementation, return "false."
 
+            // !!!???
             RuntimeTypeInfo fromTypeInfo = (RuntimeTypeInfo)typeInfo;
 
             RuntimeTypeHandle toTypeHandle = toTypeInfo._typeHandle;

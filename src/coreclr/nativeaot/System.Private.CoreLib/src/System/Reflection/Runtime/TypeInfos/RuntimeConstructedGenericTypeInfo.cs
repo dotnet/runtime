@@ -29,12 +29,12 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override bool IsTypeDefinition => false;
         public sealed override bool IsGenericTypeDefinition => false;
-        protected sealed override bool HasElementTypeImpl() => false;
-        protected sealed override bool IsArrayImpl() => false;
+        public sealed override bool HasElementType => false;
+        public sealed override bool IsArray => false;
         public sealed override bool IsSZArray => false;
         public sealed override bool IsVariableBoundArray => false;
-        protected sealed override bool IsByRefImpl() => false;
-        protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsByRef => false;
+        public sealed override bool IsPointer => false;
         public sealed override bool IsConstructedGenericType => true;
         public sealed override bool IsGenericParameter => false;
         public sealed override bool IsGenericTypeParameter => false;
@@ -107,7 +107,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override Type GetGenericTypeDefinition()
         {
-            return GenericTypeDefinitionTypeInfo;
+            return GenericTypeDefinitionTypeInfo.ToType();
         }
 
         public sealed override Guid GUID
@@ -185,10 +185,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return sb.ToString();
         }
 
-        protected sealed override TypeAttributes GetAttributeFlagsImpl()
-        {
-            return GenericTypeDefinitionTypeInfo.Attributes;
-        }
+        public sealed override TypeAttributes Attributes => GenericTypeDefinitionTypeInfo.Attributes;
 
         protected sealed override int InternalGetHashCode()
         {

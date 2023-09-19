@@ -85,11 +85,13 @@ namespace System.Reflection.Runtime.Modules.NativeFormat
 
             if (types == null)
             {
-                return runtimeType.GetMethod(name, bindingAttr);
+                // !!!
+                // TODO: Shortcircuit ToType!
+                return runtimeType.ToType().GetMethod(name, bindingAttr);
             }
             else
             {
-                return runtimeType.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
+                return runtimeType.ToType().GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
             }
         }
 

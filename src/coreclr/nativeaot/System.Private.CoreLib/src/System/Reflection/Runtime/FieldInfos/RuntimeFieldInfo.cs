@@ -75,7 +75,7 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-                return _contextTypeInfo;
+                return _contextTypeInfo.ToType();
             }
         }
 
@@ -86,7 +86,7 @@ namespace System.Reflection.Runtime.FieldInfos
                 Type fieldType = _lazyFieldType;
                 if (fieldType == null)
                 {
-                    _lazyFieldType = fieldType = this.FieldRuntimeType;
+                    _lazyFieldType = fieldType = this.FieldRuntimeType.ToType();
                 }
 
                 return fieldType;
@@ -126,7 +126,7 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-                return _reflectedType;
+                return _reflectedType.ToType();
             }
         }
 

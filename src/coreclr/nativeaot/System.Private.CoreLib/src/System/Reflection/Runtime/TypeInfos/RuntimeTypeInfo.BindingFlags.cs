@@ -38,9 +38,9 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.AsSpan(), types);
+                return DefaultBinder.ExactBinding(candidates.AsSpan(), types);
 
-            binder ??= DefaultBinder;
+            binder ??= Type.DefaultBinder;
 
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
         }
@@ -106,7 +106,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (types.Length == 0 && candidates.Count == 1)
                     return candidates[0];
 
-                binder ??= DefaultBinder;
+                binder ??= Type.DefaultBinder;
 
                 return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
             }
@@ -173,9 +173,9 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
 
                 if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                    return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
+                    return DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
-                binder ??= DefaultBinder;
+                binder ??= Type.DefaultBinder;
 
                 return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
             }

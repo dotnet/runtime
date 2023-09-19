@@ -52,7 +52,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                     IEnumerable<TypeDefinitionHandle> allTopLevelTypes = reader.GetTopLevelTypes(allNamespaceHandles);
                     IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: false);
                     foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
-                        yield return typeDefinitionHandle.GetNamedType(reader);
+                        yield return typeDefinitionHandle.GetNamedType(reader).ToType();
                 }
             }
         }
@@ -71,7 +71,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                     IEnumerable<TypeDefinitionHandle> allTopLevelTypes = reader.GetTopLevelTypes(allNamespaceHandles);
                     IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: true);
                     foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
-                        yield return typeDefinitionHandle.ResolveTypeDefinition(reader);
+                        yield return typeDefinitionHandle.ResolveTypeDefinition(reader).ToType();
                 }
             }
         }

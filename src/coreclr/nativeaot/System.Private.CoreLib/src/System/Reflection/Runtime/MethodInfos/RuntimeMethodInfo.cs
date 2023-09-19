@@ -73,13 +73,15 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             ArgumentNullException.ThrowIfNull(delegateType);
 
-            if (!(delegateType is RuntimeTypeInfo runtimeDelegateType))
+            if (!(delegateType is RuntimeType runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
 
-            if (!runtimeDelegateType.IsDelegate)
+            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.ToRuntimeTypeInfo();
+
+            if (!runtimeDelegateTypeInfo.IsDelegate)
                 throw new ArgumentException(SR.Arg_MustBeDelegate);
 
-            Delegate result = CreateDelegateNoThrowOnBindFailure(runtimeDelegateType, target, allowClosed);
+            Delegate result = CreateDelegateNoThrowOnBindFailure(runtimeDelegateTypeInfo, target, allowClosed);
             if (result == null)
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
             return result;
@@ -94,7 +96,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return this.RuntimeDeclaringType;
+                return this.RuntimeDeclaringType.ToType();
             }
         }
 
@@ -127,7 +129,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override Type[] GetGenericArguments()
         {
-            return RuntimeGenericArgumentsOrParameters.CloneTypeArray();
+            return RuntimeGenericArgumentsOrParameters.ToTypeArray();
         }
 
         internal abstract override int GenericParameterCount { get; }
@@ -394,7 +396,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (targetParameterEnumerator.MoveNext())
                 return null;
 
-            return CreateDelegateWithoutSignatureValidation(runtimeDelegateType, target, isStatic: isStatic, isOpen: isOpen);
+            return CreateDelegateWithoutSignatureValidation(runtimeDelegateType.ToType(), target, isStatic: isStatic, isOpen: isOpen);
         }
 
         internal Delegate CreateDelegateWithoutSignatureValidation(Type delegateType, object target, bool isStatic, bool isOpen)

@@ -177,7 +177,7 @@ namespace System.Reflection.Runtime.General
             string name = typeReference.TypeName.GetString(reader);
             Handle parent = typeReference.ParentNamespaceOrType;
             HandleType parentType = parent.HandleType;
-            TypeInfo? outerTypeInfo = null;
+            RuntimeTypeInfo? outerTypeInfo = null;
 
             // Check if this is a reference to a nested type.
 
@@ -201,7 +201,7 @@ namespace System.Reflection.Runtime.General
                     exception = Helpers.CreateTypeLoadException(outerTypeInfo.FullName + "+" + name, outerTypeInfo.Assembly);
                     return null;
                 }
-                return resolvedType.CastToRuntimeTypeInfo();
+                return resolvedType.ToRuntimeTypeInfo();
             }
 
 
@@ -223,7 +223,7 @@ namespace System.Reflection.Runtime.General
                 exception = RuntimeAssemblyInfo.TryGetRuntimeAssembly(assemblyName, out runtimeAssembly);
                 if (exception != null)
                     return null;
-                RuntimeTypeInfo runtimeType = runtimeAssembly.GetTypeCore(fullName, throwOnError: false, ignoreCase: false);
+                RuntimeTypeInfo runtimeType = runtimeAssembly.GetTypeCore(fullName, throwOnError: false, ignoreCase: false).ToRuntimeTypeInfo();
                 if (runtimeType == null)
                 {
                     exception = Helpers.CreateTypeLoadException(fullName, assemblyName.FullName);

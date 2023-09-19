@@ -211,16 +211,18 @@ namespace System.Reflection.Runtime.General
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeTypeInfo runtimeDelegateType))
+            if (!(type is RuntimeType runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
             if (!(method is RuntimeMethodInfo runtimeMethodInfo))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(method));
 
-            if (!runtimeDelegateType.IsDelegate)
+            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.ToRuntimeTypeInfo();
+
+            if (!runtimeDelegateTypeInfo.IsDelegate)
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
 
-            Delegate result = runtimeMethodInfo.CreateDelegateNoThrowOnBindFailure(runtimeDelegateType, firstArgument, allowClosed);
+            Delegate result = runtimeMethodInfo.CreateDelegateNoThrowOnBindFailure(runtimeDelegateTypeInfo, firstArgument, allowClosed);
             if (result == null)
             {
                 if (throwOnBindFailure)
@@ -238,13 +240,15 @@ namespace System.Reflection.Runtime.General
             ArgumentNullException.ThrowIfNull(target);
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeTypeInfo runtimeDelegateType))
+            if (!(type is RuntimeType runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
-            if (!runtimeDelegateType.IsDelegate)
+
+            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.ToRuntimeTypeInfo();
+            if (!runtimeDelegateTypeInfo.IsDelegate)
                 throw new ArgumentException(SR.Arg_MustBeDelegate);
 
-            RuntimeTypeInfo runtimeContainingType = target.GetType().CastToRuntimeTypeInfo();
-            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateType, runtimeContainingType, method, isStatic: false, ignoreCase: ignoreCase);
+            RuntimeTypeInfo runtimeContainingType = target.GetType().ToRuntimeTypeInfo();
+            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateTypeInfo, runtimeContainingType, method, isStatic: false, ignoreCase: ignoreCase);
             if (runtimeMethodInfo == null)
             {
                 if (throwOnBindFailure)
@@ -263,16 +267,18 @@ namespace System.Reflection.Runtime.General
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeTypeInfo runtimeDelegateType))
+            if (!(type is RuntimeType runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
-            if (!(target is RuntimeTypeInfo runtimeContainingType))
+            if (!(target is RuntimeType runtimeContainingType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
 
-            if (!runtimeDelegateType.IsDelegate)
+            RuntimeTypeInfo runtimeDelegateTypeInfo = runtimeDelegateType.ToRuntimeTypeInfo();
+
+            if (!runtimeDelegateTypeInfo.IsDelegate)
                 throw new ArgumentException(SR.Arg_MustBeDelegate);
 
-            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateType, runtimeContainingType, method, isStatic: true, ignoreCase: ignoreCase);
+            RuntimeMethodInfo runtimeMethodInfo = LookupMethodForCreateDelegate(runtimeDelegateTypeInfo, runtimeContainingType.ToRuntimeTypeInfo(), method, isStatic: true, ignoreCase: ignoreCase);
             if (runtimeMethodInfo == null)
             {
                 if (throwOnBindFailure)
@@ -286,7 +292,7 @@ namespace System.Reflection.Runtime.General
         // Helper for the V1/V1.1 Delegate.CreateDelegate() api. These apis take method names rather than MethodInfo and only expect to create open static delegates
         // or closed instance delegates. For backward compatibility, they don't allow relaxed signature matching (which could make the choice of target method ambiguous.)
         //
-        private static RuntimeMethodInfo LookupMethodForCreateDelegate(RuntimeTypeInfo runtimeDelegateType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeTypeInfo containingType, string method, bool isStatic, bool ignoreCase)
+        private static RuntimeMethodInfo LookupMethodForCreateDelegate(RuntimeTypeInfo runtimeDelegateType, RuntimeTypeInfo containingType, string method, bool isStatic, bool ignoreCase)
         {
             Debug.Assert(runtimeDelegateType.IsDelegate);
 
@@ -312,15 +318,14 @@ namespace System.Reflection.Runtime.General
                 parameterTypes[i] = parameters[i].ParameterType;
             }
 
-            while (containingType != null)
+            Type? type = containingType.ToType();
+            while (type != null)
             {
-                MethodInfo? methodInfo = containingType.GetMethod(method, 0, bindingFlags, null, parameterTypes, null);
+                MethodInfo? methodInfo = type.GetMethod(method, 0, bindingFlags, null, parameterTypes, null);
                 if (methodInfo != null && methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
                     return (RuntimeMethodInfo)methodInfo; // This cast is safe since we already verified that containingType is runtime implemented.
 
-#pragma warning disable IL2072 // https://github.com/dotnet/linker/issues/2673
-                containingType = (RuntimeTypeInfo)(containingType.BaseType);
-#pragma warning restore
+                type = type.BaseType;
             }
             return null;
         }
@@ -386,7 +391,7 @@ namespace System.Reflection.Runtime.General
 
         public sealed override EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create)
         {
-            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
+            RuntimeTypeInfo runtimeType = type.ToRuntimeTypeInfo();
 
             var info = runtimeType.GenericCache as EnumInfo;
             if (info != null)
@@ -423,7 +428,7 @@ namespace System.Reflection.Runtime.General
 
         public sealed override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
         {
-            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
+            RuntimeTypeInfo runtimeType = type.ToRuntimeTypeInfo();
 
             DynamicInvokeInfo? info = runtimeType.GenericCache as DynamicInvokeInfo;
             if (info != null)

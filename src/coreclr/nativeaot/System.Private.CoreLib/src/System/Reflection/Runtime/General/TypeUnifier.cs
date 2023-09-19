@@ -66,7 +66,7 @@ namespace System.Reflection.Runtime.General
             RuntimeTypeHandle typeHandle = arrayType.InternalTypeHandleIfAvailable;
             if (IsTypeConstructionEagerlyValidated
                 && typeHandle.IsNull() && !elementType.ContainsGenericParameters)
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(arrayType);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(arrayType.ToType());
 
             return arrayType;
         }
@@ -105,7 +105,7 @@ namespace System.Reflection.Runtime.General
                         atLeastOneOpenType = true;
                 }
                 if (!atLeastOneOpenType)
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(genericType);
+                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(genericType.ToType());
             }
 
             return genericType;
@@ -114,7 +114,7 @@ namespace System.Reflection.Runtime.General
         public static RuntimeTypeInfo GetTypeForRuntimeTypeHandle(this RuntimeTypeHandle typeHandle)
         {
             Type type = Type.GetTypeFromHandle(typeHandle)!;
-            return type.CastToRuntimeTypeInfo();
+            return type.ToRuntimeTypeInfo();
         }
 
         //======================================================================================================

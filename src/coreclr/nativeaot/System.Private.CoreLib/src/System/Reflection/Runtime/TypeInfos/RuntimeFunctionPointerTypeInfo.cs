@@ -21,12 +21,12 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public override bool IsTypeDefinition => false;
         public override bool IsGenericTypeDefinition => false;
-        protected override bool HasElementTypeImpl() => false;
-        protected override bool IsArrayImpl() => false;
+        public override bool HasElementType => false;
+        public override bool IsArray => false;
         public override bool IsSZArray => false;
         public override bool IsVariableBoundArray => false;
-        protected override bool IsByRefImpl() => false;
-        protected override bool IsPointerImpl() => false;
+        public override bool IsByRef => false;
+        public override bool IsPointer => false;
         public override bool IsConstructedGenericType => false;
         public override bool IsGenericParameter => false;
         public override bool IsGenericTypeParameter => false;
@@ -95,14 +95,14 @@ namespace System.Reflection.Runtime.TypeInfos
         {
 
             if (_key.ParameterTypes.Length == 0)
-                return EmptyTypes;
+                return Type.EmptyTypes;
 
             Type[] result = new Type[_key.ParameterTypes.Length];
             Array.Copy(_key.ParameterTypes, result, result.Length);
             return result;
         }
 
-        public override Type GetFunctionPointerReturnType() => _key.ReturnType;
+        public override Type GetFunctionPointerReturnType() => _key.ReturnType.ToType();
 
         public override string Namespace => null!;
 
@@ -131,8 +131,8 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        protected override TypeAttributes GetAttributeFlagsImpl() => TypeAttributes.Public;
-        protected override int InternalGetHashCode() =>_key.GetHashCode();
+        public override TypeAttributes Attributes => TypeAttributes.Public;
+        protected override int InternalGetHashCode() => _key.GetHashCode();
         internal override Type InternalDeclaringType => null;
         public override string Name => string.Empty;
         internal override string InternalFullNameOfAssembly => string.Empty;

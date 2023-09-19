@@ -135,7 +135,7 @@ namespace System
         protected override bool HasElementTypeImpl() => throw new NotImplementedException();
         public override Type? GetElementType() => throw new NotImplementedException();
         protected override TypeAttributes GetAttributeFlagsImpl() => throw new NotImplementedException();
-        protected override bool IsCOMObjectImpl() => throw new NotImplementedException();
+        protected override bool IsCOMObjectImpl() => false;
         protected override bool IsPrimitiveImpl() => throw new NotImplementedException();
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) => throw new NotImplementedException();
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => throw new NotImplementedException();
