@@ -333,13 +333,13 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
         PEAssembly *pManifestFile = pAssembly->GetPEAssembly();
-        PTR_AssemblyBinder pBinder = pManifestFile->GetAssemblyBinder();
+        ASSEMBLYBINDERREF pBinder = pManifestFile->GetAssemblyBinder();
 
         //Step 0: Check if  the assembly was bound using TPA.
-        AssemblyBinder *pCurrentBinder = pBinder;
+        ASSEMBLYBINDERREF pCurrentBinder = pBinder;
 
         // For assemblies bound via default binder, we should use the standard mechanism to make the pinvoke call.
-        if (pCurrentBinder->IsDefault())
+        if (pCurrentBinder->m_isDefault)
         {
             return NULL;
         }
@@ -356,7 +356,7 @@ namespace
         GCPROTECT_BEGIN(pUnmanagedDllName);
 
         // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = pCurrentBinder->GetManagedAssemblyLoadContext();
+        INT_PTR ptrManagedAssemblyLoadContext = pCurrentBinder->m_managedALC;
 
         // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
@@ -377,8 +377,10 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        PTR_AssemblyBinder pBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
-        return pBinder->GetManagedAssemblyLoadContext();
+        GCX_COOP();
+
+        ASSEMBLYBINDERREF pBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
+        return pBinder->m_managedALC;
     }
 
     NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)
