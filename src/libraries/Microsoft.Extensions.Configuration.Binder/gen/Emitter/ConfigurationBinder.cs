@@ -148,7 +148,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             EmitCheckForNullArgument_WithBlankLine(Identifier.instance, voidReturn: true);
                             _writer.WriteLine($$"""
                                 var {{Identifier.typedObj}} = ({{type.EffectiveType.DisplayString}}){{Identifier.instance}};
-                                {{nameof(MethodsToGen_CoreBindingHelper.BindCore)}}({{configExpression}}, ref {{Identifier.typedObj}}, {{binderOptionsArg}});
+                                {{nameof(MethodsToGen_CoreBindingHelper.BindCore)}}({{configExpression}}, ref {{Identifier.typedObj}}, defaultValueIfNotFound: false, {{binderOptionsArg}});
                                 """);
                         }
 
