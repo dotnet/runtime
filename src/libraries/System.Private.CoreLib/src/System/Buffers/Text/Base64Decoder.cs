@@ -705,20 +705,20 @@ namespace System.Buffers.Text
                 if (Avx512Vbmi.IsSupported)
                 {
                     origIndex = Avx512Vbmi.PermuteVar64x8x2(vbmiLookup0, str, vbmiLookup1);
-                    ulong errorMask = (Vector512.BitwiseOr(origIndex.AsInt32(), str.AsInt32()).AsSByte()).ExtractMostSignificantBits();
-                    if (errorMask != 0)
+                    Vector512<sbyte> errorVec = (origIndex.AsInt32() | str.AsInt32()).AsSByte();
+                    if (errorVec.ExtractMostSignificantBits() != 0)
                     {
                         break;
                     }
                 }
                 else
                 {
-                    Vector512<sbyte> hiNibbles = Vector512.BitwiseAnd(Avx512F.ShiftRightLogical(str.AsInt32(), 4).AsSByte(), mask2F);
+                    Vector512<sbyte> hiNibbles = (Avx512F.ShiftRightLogical(str.AsInt32(), 4).AsSByte() & mask2F);
 
-                    Vector512<sbyte> loNibbles = Vector512.BitwiseAnd(str, mask2F);
+                    Vector512<sbyte> loNibbles = (str & mask2F);
                     Vector512<sbyte> hi = Avx512BW.Shuffle(lutHi, hiNibbles);
                     Vector512<sbyte> lo = Avx512BW.Shuffle(lutLo, loNibbles);
-                    if (!Vector512.EqualsAll(Vector512.BitwiseAnd(hi, lo), Vector512<sbyte>.Zero))
+                    if (!Vector512.EqualsAll((hi & lo), Vector512<sbyte>.Zero))
                     {
                         break;
                     }
