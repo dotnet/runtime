@@ -5,7 +5,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <!-- TODO: Remove InterceptorsPreview feature after 8.0 RC2 SDK is used for build -->
     <Features>$(Features);InterceptorsPreview</Features>
-    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.AspNetCore.Http.Generated</InterceptorsPreviewNamespaces>
+    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     <IsPackable>true</IsPackable>
     <PackageDescription>Configuration support for Microsoft.Extensions.Logging.</PackageDescription>
