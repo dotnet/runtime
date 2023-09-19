@@ -9,6 +9,7 @@
 
   <Import Project="$(RepositoryEngineeringDir)SubsetValidation.targets" />
   <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
   <Target Name="BuildLocalTasks"
           BeforeTargets="Build">

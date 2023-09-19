@@ -148,6 +148,10 @@
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)"
                            Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' != '' and
                                       '%(ResolvedRuntimePack.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
+      <ResolvedCrossgen2Pack PackageDirectory="$(ArtifactsBinDir)Microsoft.NETCore.App.Crossgen2"
+                             NuGetPackageVersion="$(ProductVersion)"
+                             Condition="'$(TestReadyToRun)' == 'true'" />
+                             <!-- NuGetPackageId="$(LocalFrameworkOverrideName).Crossgen2.linux-x64" /> -->
       <ResolvedFrameworkReference TargetingPackPath="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
                                   TargetingPackVersion="$(ProductVersion)"
                                   Condition="'%(Identity)' == '$(LocalFrameworkOverrideName)'">
