@@ -8,18 +8,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// Target framework identifier
-    /// </summary>
-    public enum TargetFramework
-    {
-        Unknown,
-        Framework,
-        Core,
-        Standard,
-        Net
-    }
-
-    /// <summary>
     /// An enumeration describing how a <see cref="TypePositionInfo"/> should be represented in its corresponding native signature element (parameter, field, or return value).
     /// </summary>
     public enum SignatureBehavior

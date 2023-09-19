@@ -44,14 +44,10 @@ namespace Microsoft.Interop
 
         public static IncrementalValueProvider<StubEnvironment> CreateStubEnvironmentProvider(this IncrementalGeneratorInitializationContext context)
         {
-            var tfmVersion = context.AnalyzerConfigOptionsProvider
-                .Select((options, ct) => options.GlobalOptions.GetTargetFrameworkSettings());
-
-            return tfmVersion
+            return context.CompilationProvider
                 .Combine(context.CreateEnvironmentFlagsProvider())
-                .Combine(context.CompilationProvider)
                 .Select((data, ct) =>
-                    new StubEnvironment(data.Right, data.Left.Left.TargetFramework, data.Left.Left.Version, data.Left.Right));
+                    new StubEnvironment(data.Left, data.Right));
         }
 
         public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<DiagnosticInfo> diagnostics)

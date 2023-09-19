@@ -11,7 +11,7 @@ namespace Microsoft.Interop
 {
     internal static class LibraryImportGeneratorHelpers
     {
-        public static MarshallingGeneratorFactoryKey<(TargetFramework, Version, LibraryImportGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, LibraryImportGeneratorOptions options)
+        public static MarshallingGeneratorFactoryKey<(TargetFrameworkSettings, LibraryImportGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, TargetFrameworkSettings tf, LibraryImportGeneratorOptions options)
         {
             IMarshallingGeneratorFactory generatorFactory;
 
@@ -21,7 +21,7 @@ namespace Microsoft.Interop
             }
             else
             {
-                if (env.TargetFramework != TargetFramework.Net || env.TargetFrameworkVersion.Major < 7)
+                if (tf.TargetFramework != TargetFramework.Net || tf.Version.Major < 7)
                 {
                     // If we're using our downstream support, fall back to the Forwarder marshaller when the TypePositionInfo is unhandled.
                     generatorFactory = new ForwarderMarshallingGeneratorFactory();
@@ -41,7 +41,7 @@ namespace Microsoft.Interop
                 InteropGenerationOptions interopGenerationOptions = new(options.UseMarshalType);
                 generatorFactory = new MarshalAsMarshallingGeneratorFactory(interopGenerationOptions, generatorFactory);
 
-                if (env.TargetFramework == TargetFramework.Net || env.TargetFrameworkVersion.Major >= 7)
+                if (tf.TargetFramework == TargetFramework.Net || tf.Version.Major >= 7)
                 {
                     IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(
                         // Since the char type in an array will not be part of the P/Invoke signature, we can
@@ -59,7 +59,7 @@ namespace Microsoft.Interop
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             }
 
-            return MarshallingGeneratorFactoryKey.Create((env.TargetFramework, env.TargetFrameworkVersion, options), generatorFactory);
+            return MarshallingGeneratorFactoryKey.Create((tf, options), generatorFactory);
         }
     }
 }

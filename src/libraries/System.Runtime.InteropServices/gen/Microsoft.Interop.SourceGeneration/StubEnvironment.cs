@@ -16,8 +16,6 @@ namespace Microsoft.Interop
 
     public sealed record StubEnvironment(
         Compilation Compilation,
-        TargetFramework TargetFramework,
-        Version TargetFrameworkVersion,
         EnvironmentFlags EnvironmentFlags)
     {
         private Optional<INamedTypeSymbol?> _lcidConversionAttrType;

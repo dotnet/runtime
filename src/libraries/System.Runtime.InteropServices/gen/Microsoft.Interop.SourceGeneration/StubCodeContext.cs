@@ -80,14 +80,7 @@ namespace Microsoft.Interop
             GuaranteedUnmarshal
         }
 
-        /// <summary>
-        /// Code options for codegen in this context.
-        /// These options are used for providing optional optimizations depending on available APIs.
-        /// </summary>
-        /// <param name="UnsafeSkipInit"></param>
-        public record struct CodeOptions(bool UnsafeSkipInit);
-
-        public CodeOptions CodeEmitOptions { get; init; } = new(UnsafeSkipInit: true);
+        public CodeEmitOptions CodeEmitOptions { get; init; } = new(SkipInit: true);
 
         /// <summary>
         /// The current stage being generated.

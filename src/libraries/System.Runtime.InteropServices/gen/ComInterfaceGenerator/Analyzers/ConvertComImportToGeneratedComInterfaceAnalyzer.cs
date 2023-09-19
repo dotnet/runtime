@@ -41,11 +41,8 @@ namespace Microsoft.Interop.Analyzers
                     return;
                 }
 
-                TargetFrameworkSettings targetFramework = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.GetTargetFrameworkSettings();
                 var env = new StubEnvironment(
                     context.Compilation,
-                    targetFramework.TargetFramework,
-                    targetFramework.Version,
                     context.Compilation.GetEnvironmentFlags());
 
                 context.RegisterSymbolAction(context =>
@@ -81,6 +78,7 @@ namespace Microsoft.Interop.Analyzers
                             method,
                             CreateComImportMarshallingInfoParser(env, diagnostics, method, comImportAttribute),
                             env,
+                            new CodeEmitOptions(SkipInit: true),
                             typeof(ConvertComImportToGeneratedComInterfaceAnalyzer).Assembly);
 
                         var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.ManagedToUnmanaged);

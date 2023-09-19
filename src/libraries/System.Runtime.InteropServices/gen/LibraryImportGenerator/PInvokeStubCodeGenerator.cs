@@ -50,7 +50,7 @@ namespace Microsoft.Interop
             bool setLastError,
             GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorFactory generatorFactory,
-            StubCodeContext.CodeOptions codeEmitOptions)
+            CodeEmitOptions codeEmitOptions)
         {
             _setLastError = setLastError;
 
