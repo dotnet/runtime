@@ -439,8 +439,7 @@ extends:
           - windows_arm64
           - linux_arm64
           jobParameters:
-            buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) /p:PgoInstrument=true
-            pgoType: 'PGO'
+            buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -pgoinstrument
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             nameSuffix: PGO
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -476,9 +475,9 @@ extends:
             - Build_tvossimulator_arm64_release_AllSubsets_Mono
             - Build_tvossimulator_x64_release_AllSubsets_Mono
             - Build_windows_x64_release_CrossAOT_Mono
-            - installer__coreclr__windows_x64_Release_
-            - installer__coreclr__windows_x86_Release_
-            - installer__coreclr__windows_arm64_Release_
+            - installer_coreclr__windows_x64_Release_
+            - installer_coreclr__windows_x86_Release_
+            - installer_coreclr__windows_arm64_Release_
 
     - ${{ if eq(variables.isOfficialBuild, true) }}:
       - template: /eng/pipelines/official/stages/publish.yml
