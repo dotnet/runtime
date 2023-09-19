@@ -80,7 +80,7 @@
   <PropertyGroup>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies -->
-    <MicrosoftDotNetApiCompatTaskVersion>9.0.100-alpha.1.23465.4</MicrosoftDotNetApiCompatTaskVersion>
+    <MicrosoftDotNetApiCompatTaskVersion>9.0.100-alpha.1.23468.31</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.23463.1</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23463.1</MicrosoftDotNetCodeAnalysisVersion>
@@ -101,10 +101,10 @@
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppRuntimewinx64Version>9.0.0-alpha.1.23460.2</MicrosoftNETCoreAppRuntimewinx64Version>
+    <MicrosoftNETCoreAppRuntimewinx64Version>9.0.0-alpha.1.23466.6</MicrosoftNETCoreAppRuntimewinx64Version>
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- CoreClr dependencies -->
-    <MicrosoftNETCoreILAsmVersion>9.0.0-alpha.1.23460.2</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion>9.0.0-alpha.1.23466.6</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNETCoreILAsmVersion>8.0.0-preview.7.23325.2</MicrosoftNETCoreILAsmVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23452.1</runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23452.1</runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>
@@ -132,12 +132,12 @@
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemSecurityPermissionsVersion>7.0.0</SystemSecurityPermissionsVersion>
-    <SystemTextJsonVersion>9.0.0-alpha.1.23460.2</SystemTextJsonVersion>
+    <SystemTextJsonVersion>9.0.0-alpha.1.23466.6</SystemTextJsonVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingAccessControlVersion>7.0.0</SystemThreadingAccessControlVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
-    <runtimenativeSystemIOPortsVersion>9.0.0-alpha.1.23460.2</runtimenativeSystemIOPortsVersion>
+    <runtimenativeSystemIOPortsVersion>9.0.0-alpha.1.23466.6</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>8.0.0-beta.23456.1</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>8.0.0-beta.23456.1</SystemComponentModelTypeConverterTestDataVersion>
@@ -207,11 +207,11 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>8.0.0-preview-20230828.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>9.0.0-alpha.1.23460.2</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>9.0.0-alpha.1.23466.6</MicrosoftNETILLinkTasksVersion>
     <!-- Mono Cecil -->
-    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23461.1</MicrosoftDotNetCecilVersion>
+    <MicrosoftDotNetCecilVersion>0.11.4-alpha.23468.2</MicrosoftDotNetCecilVersion>
     <!-- ILCompiler -->
-    <MicrosoftDotNetILCompilerVersion>9.0.0-alpha.1.23460.2</MicrosoftDotNetILCompilerVersion>
+    <MicrosoftDotNetILCompilerVersion>9.0.0-alpha.1.23466.6</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>9.0.0-alpha.1.23454.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
@@ -236,7 +236,7 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>9.0.0-alpha.1.23457.3</MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>9.0.0-alpha.1.23465.3</MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
