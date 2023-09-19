@@ -7,7 +7,6 @@ using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Quic;
-using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic;
 

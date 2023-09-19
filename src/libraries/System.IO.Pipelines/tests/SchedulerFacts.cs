@@ -181,6 +181,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task DefaultReaderSchedulerRunsOnThreadPool()
         {
             var pipe = new Pipe(new PipeOptions(useSynchronizationContext: false));
@@ -210,6 +211,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task DefaultWriterSchedulerRunsOnThreadPool()
         {
             using (var pool = new TestMemoryPool())
@@ -411,6 +413,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task FlushCallbackRunsOnWriterScheduler()
         {
             using (var pool = new TestMemoryPool())
@@ -456,6 +459,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task ReadAsyncCallbackRunsOnReaderScheduler()
         {
             using (var pool = new TestMemoryPool())
@@ -489,6 +493,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task ThreadPoolScheduler_SchedulesOnThreadPool()
         {
             var pipe = new Pipe(new PipeOptions(readerScheduler: PipeScheduler.ThreadPool, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));

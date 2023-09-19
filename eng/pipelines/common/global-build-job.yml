@@ -68,6 +68,7 @@ jobs:
     variables:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
+          - group: AzureDevOps-Artifact-Feeds-Pats
 
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
@@ -144,12 +145,61 @@ jobs:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
     steps:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - powershell: |
+          schtasks /change /tn "\Microsoft\VisualStudio\VSIX Auto Update" /disable
+
+          $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path -Path "$vswhere" -PathType Leaf))
+          {
+              Write-Error "Couldn't locate vswhere at $vswhere"
+              exit 1
+          }
+
+          $vsdir = &"$vswhere" -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $vsregedit = "$vsdir\Common7\IDE\VsRegEdit.exe"
+
+          if (-not (Test-Path -Path "$vsregedit" ))
+          {
+              Write-Error "VSWhere returned path: $vsdir, but regedit $vsregedit doesn't exist."
+              exit 1
+          }
+
+          Write-Output "VSWhere returned path: $vsdir, using regedit $vsregedit"
+          Write-Output "Disabling updates through VS Registry:"
+
+          &"$vsdir\Common7\IDE\VsRegEdit.exe" set local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword 0
+          &"$vsdir\Common7\IDE\VsRegEdit.exe" read local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword
+        displayName: Disable VSIX updates
+        condition: always()
+
     - checkout: self
       clean: true
-      fetchDepth: $(checkoutFetchDepth)
+      # If running in source build mode, a git stash will be used for the inner clone. Avoid setting a fetch depth,
+      # as a stash of a shallow cloned repo is not currently supported.
+      ${{ if ne(parameters.isSourceBuild, true) }}:
+        fetchDepth: $(checkoutFetchDepth)
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
+
+    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.hostedOs, 'windows')) }}:
+        - task: Bash@3
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+            arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
+      - ${{ else }}:
+        - task: PowerShell@2
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+            arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
     - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
       - task: DownloadPipelineArtifact@2
@@ -229,14 +279,19 @@ jobs:
           shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
+      - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
+        - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
+          displayName: Collect vslogs on exit
+          condition: always()
+
     - task: PublishBuildArtifacts@1
       displayName: Publish Logs
       inputs:
         PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
         PublishLocation: Container
         ${{ if notin(parameters.osGroup, 'browser', 'wasi') }}:
-          ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+          ArtifactName: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
         ${{ if in(parameters.osGroup, 'browser', 'wasi') }}:
-          ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+          ArtifactName: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
       continueOnError: true
       condition: always()

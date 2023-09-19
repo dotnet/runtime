@@ -285,10 +285,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task BrowserHttpHandler_StreamingRequest(bool useStringContent)
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_StreamingRequest()
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
 
@@ -296,30 +294,20 @@ namespace System.Net.Http.Functional.Tests
 
             req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
 
-            int size;
-            if (useStringContent)
-            {
-                string bodyContent = "Hello World";
-                size = bodyContent.Length;
-                req.Content = new StringContent(bodyContent);
-            }
-            else
-            {
-                size = 1500 * 1024 * 1024;
-                int remaining = size;
-                req.Content = new StreamContent(new DelegateStream(
-                    readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+            int size = 1500 * 1024 * 1024;
+            int remaining = size;
+            req.Content = new StreamContent(new DelegateStream(
+                readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                {
+                    if (remaining > 0)
                     {
-                        if (remaining > 0)
-                        {
-                            int send = Math.Min(remaining, count);
-                            buffer.AsSpan(offset, send).Fill(65);
-                            remaining -= send;
-                            return Task.FromResult(send);
-                        }
-                        return Task.FromResult(0);
-                    }));
-            }
+                        int send = Math.Min(remaining, count);
+                        buffer.AsSpan(offset, send).Fill(65);
+                        remaining -= send;
+                        return Task.FromResult(send);
+                    }
+                    return Task.FromResult(0);
+                }));
 
             req.Content.Headers.Add("Content-MD5-Skip", "browser");
 
@@ -329,11 +317,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.Equal(size.ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Body-Length")));
                 // Streaming requests can't set Content-Length
-                Assert.Equal(useStringContent, response.Headers.Contains("X-HttpRequest-Headers-ContentLength"));
-                if (useStringContent)
-                {
-                    Assert.Equal(size.ToString(), Assert.Single(response.Headers.GetValues("X-HttpRequest-Headers-ContentLength")));
-                }
+                Assert.False(response.Headers.Contains("X-HttpRequest-Headers-ContentLength"));
             }
         }
 

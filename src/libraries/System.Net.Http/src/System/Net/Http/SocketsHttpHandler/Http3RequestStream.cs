@@ -31,6 +31,8 @@ namespace System.Net.Http
         private TaskCompletionSource<bool>? _expect100ContinueCompletionSource; // True indicates we should send content (e.g. received 100 Continue).
         private bool _disposed;
         private readonly CancellationTokenSource _requestBodyCancellationSource;
+        private Task? _sendRequestTask; // Set with SendContentAsync, must be awaited before QuicStream.DisposeAsync();
+        private Task? _readResponseTask; // Set with ReadResponseAsync, must be awaited before QuicStream.DisposeAsync();
 
         // Allocated when we receive a :status header.
         private HttpResponseMessage? _response;
@@ -88,8 +90,24 @@ namespace System.Net.Http
             {
                 _disposed = true;
                 AbortStream();
+                // We aborted both sides, thus both task should unblock and should be finished before disposing the QuicStream.
+                WaitUnfinished(_sendRequestTask);
+                WaitUnfinished(_readResponseTask);
                 _stream.Dispose();
                 DisposeSyncHelper();
+            }
+
+            static void WaitUnfinished(Task? task)
+            {
+                if (task is not null && !task.IsCompleted)
+                {
+                    try
+                    {
+                        task.GetAwaiter().GetResult();
+                    }
+                    catch // Exceptions from both tasks are logged via _connection.LogException() in case they're not awaited in SendAsync, so the exception can be ignored here.
+                    { }
+                }
             }
         }
 
@@ -107,8 +125,24 @@ namespace System.Net.Http
             {
                 _disposed = true;
                 AbortStream();
+                // We aborted both sides, thus both task should unblock and should be finished before disposing the QuicStream.
+                await AwaitUnfinished(_sendRequestTask).ConfigureAwait(false);
+                await AwaitUnfinished(_readResponseTask).ConfigureAwait(false);
                 await _stream.DisposeAsync().ConfigureAwait(false);
                 DisposeSyncHelper();
+            }
+
+            static async ValueTask AwaitUnfinished(Task? task)
+            {
+                if (task is not null && !task.IsCompleted)
+                {
+                    try
+                    {
+                        await task.ConfigureAwait(false);
+                    }
+                    catch // Exceptions from both tasks are logged via _connection.LogException() in case they're not awaited in SendAsync, so the exception can be ignored here.
+                    { }
+                }
             }
         }
 
@@ -158,40 +192,39 @@ namespace System.Net.Http
                     await FlushSendBufferAsync(endStream: _request.Content == null, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                 }
 
-                Task sendContentTask;
                 if (_request.Content != null)
                 {
-                    sendContentTask = SendContentAsync(_request.Content!, _requestBodyCancellationSource.Token);
+                    _sendRequestTask = SendContentAsync(_request.Content!, _requestBodyCancellationSource.Token);
                 }
                 else
                 {
-                    sendContentTask = Task.CompletedTask;
+                    _sendRequestTask = Task.CompletedTask;
                 }
 
                 // In parallel, send content and read response.
                 // Depending on Expect 100 Continue usage, one will depend on the other making progress.
-                Task readResponseTask = ReadResponseAsync(_requestBodyCancellationSource.Token);
+                _readResponseTask = ReadResponseAsync(_requestBodyCancellationSource.Token);
                 bool sendContentObserved = false;
 
                 // If we're not doing duplex, wait for content to finish sending here.
                 // If we are doing duplex and have the unlikely event that it completes here, observe the result.
                 // See Http2Connection.SendAsync for a full comment on this logic -- it is identical behavior.
-                if (sendContentTask.IsCompleted ||
+                if (_sendRequestTask.IsCompleted ||
                     _request.Content?.AllowDuplex != true ||
-                    await Task.WhenAny(sendContentTask, readResponseTask).ConfigureAwait(false) == sendContentTask ||
-                    sendContentTask.IsCompleted)
+                    await Task.WhenAny(_sendRequestTask, _readResponseTask).ConfigureAwait(false) == _sendRequestTask ||
+                    _sendRequestTask.IsCompleted)
                 {
                     try
                     {
-                        await sendContentTask.ConfigureAwait(false);
+                        await _sendRequestTask.ConfigureAwait(false);
                         sendContentObserved = true;
                     }
                     catch
                     {
-                        // Exceptions will be bubbled up from sendContentTask here,
-                        // which means the result of readResponseTask won't be observed directly:
+                        // Exceptions will be bubbled up from _sendRequestTask here,
+                        // which means the result of _readResponseTask won't be observed directly:
                         // Do a background await to log any exceptions.
-                        _connection.LogExceptions(readResponseTask);
+                        _connection.LogExceptions(_readResponseTask);
                         throw;
                     }
                 }
@@ -199,11 +232,11 @@ namespace System.Net.Http
                 {
                     // Duplex is being used, so we can't wait for content to finish sending.
                     // Do a background await to log any exceptions.
-                    _connection.LogExceptions(sendContentTask);
+                    _connection.LogExceptions(_sendRequestTask);
                 }
 
                 // Wait for the response headers to be read.
-                await readResponseTask.ConfigureAwait(false);
+                await _readResponseTask.ConfigureAwait(false);
 
                 Debug.Assert(_response != null && _response.Content != null);
                 // Set our content stream.

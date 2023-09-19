@@ -209,28 +209,6 @@ namespace System.Text.Json.SourceGeneration
             return false;
         }
 
-        public static ITypeSymbol[] GetAllTypeArgumentsInScope(this INamedTypeSymbol type)
-        {
-            if (!type.IsGenericType)
-            {
-                return Array.Empty<ITypeSymbol>();
-            }
-
-            var args = new List<ITypeSymbol>();
-            TraverseContainingTypes(type);
-            return args.ToArray();
-
-            void TraverseContainingTypes(INamedTypeSymbol current)
-            {
-                if (current.ContainingType is INamedTypeSymbol parent)
-                {
-                    TraverseContainingTypes(parent);
-                }
-
-                args.AddRange(current.TypeArguments);
-            }
-        }
-
         public static ITypeSymbol GetMemberType(this ISymbol member)
         {
             Debug.Assert(member is IFieldSymbol or IPropertySymbol);

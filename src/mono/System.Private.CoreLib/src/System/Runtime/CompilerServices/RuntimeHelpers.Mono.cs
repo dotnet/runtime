@@ -48,9 +48,6 @@ namespace System.Runtime.CompilerServices
             return InternalGetHashCode(o);
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int InternalTryGetHashCode(object? o);
-
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
         /// returned.
@@ -65,7 +62,7 @@ namespace System.Runtime.CompilerServices
             // NOTE: the interpreter does not run this code.  It intrinsifies the whole RuntimeHelpers.TryGetHashCode function
             if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
                 return hash;
-            return InternalTryGetHashCode(o);
+            return 0;
         }
 
         public static new bool Equals(object? o1, object? o2)
