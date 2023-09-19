@@ -302,7 +302,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
         COMPlusThrow(kNotSupportedException);
     }
 
-    if (pMeth->GetMethodTable()->GetModule() == pModule)
+    if ((pMeth->GetMethodTable()->GetModule() == pModule) && !pMeth->IsAsyncThunkMethod())
     {
         // If the passed in method is defined in the same module, just return the MethodDef token
         memberRefE = pMeth->GetMemberDef();
@@ -317,7 +317,7 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleH
 
         ULONG           cbComSig;
         PCCOR_SIGNATURE pvComSig;
-        IfFailThrow(pMeth->GetMDImport()->GetSigOfMethodDef(pMeth->GetMemberDef(), &cbComSig, &pvComSig));
+        pMeth->GetSig(&pvComSig, &cbComSig);
 
         // Translate the method sig into this scope
         Assembly * pRefedAssembly = pMeth->GetModule()->GetAssembly();

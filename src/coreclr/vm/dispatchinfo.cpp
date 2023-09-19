@@ -448,7 +448,13 @@ ComMTMethodProps * DispatchMemberInfo::GetMemberProps(OBJECTREF MemberInfoObj, C
             ARG_SLOT GetMethodHandleArg = ObjToArgSlot(MemberInfoObj);
             MethodDesc* pMeth = (MethodDesc*) getMethodHandle.Call_RetLPVOID(&GetMethodHandleArg);
             if (pMeth)
+            {
+                if (pMeth->IsAsyncThunkMethod())
+                {
+                    ThrowHR(COR_E_NOTSUPPORTED);
+                }
                 pMemberProps = pMemberMap->GetMethodProps(pMeth->GetMemberDef(), pMeth->GetModule());
+            }
         }
         else if (CoreLibBinder::IsClass(pMemberInfoClass, CLASS__RT_FIELD_INFO))
         {
@@ -844,6 +850,10 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
     //
     // Initialize the parameter definition enum.
     //
+    if (pMD->IsAsyncThunkMethod())
+    {
+        ThrowHR(COR_E_NOTSUPPORTED);
+    }
     hEnumParams.EnumInit(mdtParamDef, pMD->GetMemberDef());
 
     //
@@ -2579,6 +2589,11 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
         // Check to see if the new method is a property accessor.
         mdToken tkMember = mdTokenNil;
         MethodTable *pDeclaringMT = pMDForProperty->GetMethodTable();
+        if (pMDForProperty->IsAsyncThunkMethod())
+        {
+            return false;
+        }
+        
         if (pMDForProperty->GetModule()->GetPropertyInfoForMethodDef(pMDForProperty->GetMemberDef(), &tkMember, NULL, NULL) == S_OK)
         {
             if (IsMemberVisibleFromCom(pDeclaringMT, tkMember, pMDForProperty->GetMemberDef()))

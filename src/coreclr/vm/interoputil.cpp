@@ -2345,6 +2345,10 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
                 {
                     pDeclaringMT = pProps->pMeth->GetMethodTable();
                     tkMb = pProps->pMeth->GetMemberDef();
+                    if (pProps->pMeth->IsAsyncThunkMethod())
+                    {
+                        ThrowHR(COR_E_NOTSUPPORTED);
+                    }
                     cbCur = GetStringizedMethodDef(pDeclaringMT, tkMb, rDef, cbCur);
                 }
                 else
@@ -2555,6 +2559,9 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD)
     mdProperty  pd;
     LPCUTF8     pPropName;
     ULONG       uSemantic;
+    if (pMD->IsAsyncThunkMethod())
+        return false;
+        
     mdMethodDef md = pMD->GetMemberDef();
 
     // See if there is property information for this member.

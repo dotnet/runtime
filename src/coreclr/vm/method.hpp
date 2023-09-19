@@ -184,6 +184,12 @@ enum MethodDescClassification
 
 #define METHOD_MAX_RVA                          0x7FFFFFFF
 
+enum class AsyncVariantLookup
+{
+    MatchingAsyncVariant = 0,
+    AsyncOtherVariant
+};
+
 
 // The size of this structure needs to be a multiple of MethodDesc::ALIGNMENT
 //
@@ -1524,12 +1530,18 @@ public:
                                                         BOOL allowInstParam,
                                                         BOOL forceRemotableMethod = FALSE,
                                                         BOOL allowCreate = TRUE,
+                                                        AsyncVariantLookup variantLookup = AsyncVariantLookup::MatchingAsyncVariant,
                                                         ClassLoadLevel level = CLASS_LOADED);
 
     // Normalize methoddesc for reflection
     static MethodDesc* FindOrCreateAssociatedMethodDescForReflection(MethodDesc *pMethod,
                                                                      TypeHandle instType,
                                                                      Instantiation methodInst);
+
+    MethodDesc* GetAsyncOtherVariant()
+    {
+        return GetMethodTable()->GetParallelMethodDesc(this, AsyncVariantLookup::AsyncOtherVariant);
+    }
 
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
@@ -1702,7 +1714,7 @@ public:
         m_wFlags |= mdcHasNativeCodeSlot;
     }
 
-    inline BOOL IsAsyncThunkMethod()
+    inline bool IsAsyncThunkMethod()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return (m_wFlags & mdcIsAsyncThunkMethod) != 0;
@@ -3430,7 +3442,8 @@ public:
     static InstantiatedMethodDesc* FindLoadedInstantiatedMethodDesc(MethodTable *pMT,
                                                                     mdMethodDef methodDef,
                                                                     Instantiation methodInst,
-                                                                    BOOL getSharedNotStub);
+                                                                    BOOL getSharedNotStub,
+                                                                    BOOL asyncThunk);
 
 private:
 

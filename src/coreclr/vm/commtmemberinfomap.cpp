@@ -688,6 +688,9 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
     // Generally don't munge function into a getter.
     rProps[ix].bFunction2Getter = FALSE;
 
+    if (pMeth->IsAsyncThunkMethod())
+        ThrowHR(COR_E_NOTSUPPORTED);
+
     // See if there is property information for this member.
     hr = pMeth->GetModule()->GetPropertyInfoForMethodDef(pMeth->GetMemberDef(), &pd, &pPropName, &uSemantic);
     IfFailThrow(hr);
@@ -1604,6 +1607,10 @@ void ComMTMemberInfoMap::PopulateMemberHashtable()
 
             // We are dealing with a method.
             MethodDesc *pMD = pProps->pMeth;
+            if (pMD->IsAsyncThunkMethod())
+            {
+                ThrowHR(COR_E_NOTSUPPORTED); // Probably this isn't right, and instead should be a skip, but a throw makes it easier to find if this is wrong
+            }
             EEModuleTokenPair Key(pMD->GetMemberDef(), pMD->GetModule());
             m_TokenToComMTMethodPropsMap.InsertValue(&Key, (HashDatum)pProps);
         }

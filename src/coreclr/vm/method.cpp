@@ -405,6 +405,13 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
             return;
         }
     }
+    if (IsAsyncThunkMethod())
+    {
+        Signature sig = GetAsyncThunkData().sig;
+        *ppSig = sig.GetRawSig();
+        *pcSig = sig.GetRawSigLen();
+        return;
+    }
 
     GetSigFromMetadata(GetMDImport(), ppSig, pcSig);
     PREFIX_ASSUME(*ppSig != NULL);
@@ -433,6 +440,7 @@ void MethodDesc::GetSigFromMetadata(IMDInternalImport * importer,
     }
     CONTRACTL_END
 
+    _ASSERTE(!IsAsyncThunkMethod());
     if (FAILED(importer->GetSigOfMethodDef(GetMemberDef(), pcSig, ppSig)))
     {   // Class loader already asked for signature, so this should always succeed (unless there's a
         // bug or a new code path)
@@ -680,7 +688,7 @@ BOOL MethodDesc::HasSameMethodDefAs(MethodDesc * pMD)
     if (this == pMD)
         return TRUE;
 
-    return (GetMemberDef() == pMD->GetMemberDef()) && (GetModule() == pMD->GetModule());
+    return (GetMemberDef() == pMD->GetMemberDef()) && (GetModule() == pMD->GetModule() && pMD->IsAsyncThunkMethod() == IsAsyncThunkMethod());
 }
 
 //*******************************************************************************

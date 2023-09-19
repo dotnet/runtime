@@ -182,6 +182,7 @@ enum EncodeMethodSigFlags
     ENCODE_METHOD_SIG_Constrained               = 0x20,
     ENCODE_METHOD_SIG_OwnerType                 = 0x40,
     ENCODE_METHOD_SIG_UpdateContext             = 0x80,
+    ENCODE_METHOD_SIG_AsyncThunk                = 0x100,
 };
 
 enum EncodeFieldSigFlags

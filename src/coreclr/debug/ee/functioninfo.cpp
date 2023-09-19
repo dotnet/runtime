@@ -2035,7 +2035,7 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module
         // have DJIs for every verision of a method that was EnCed.
         // This also handles the possibility of getting the same methoddesc back from the iterator.
         // It also lets EnC + generics play nice together (including if an generic method was EnC-ed)
-        LoadedMethodDescIterator it(pAppDomain, m_module, m_token);
+        LoadedMethodDescIterator it(pAppDomain, m_module, m_token, /* fIsAsyncThunk */false); // TODO! Debugger doesn't handle async thunks now
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
         while (it.Next(pDomainAssembly.This()))
         {

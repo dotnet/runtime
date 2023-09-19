@@ -34,6 +34,8 @@ class LoadedMethodDescIterator
     mdMethodDef  m_md;
     MethodDesc * m_mainMD;
     AppDomain *  m_pAppDomain;
+    bool         m_fIsAsyncThunk;
+
 
     // The following hold the state of the iteration....
     // Yes we iterate everything for the moment - we need
@@ -68,6 +70,7 @@ public:
     void Start(AppDomain * pAppDomain,
                Module *pModule,
                mdMethodDef md,
+               bool fIsAsyncThunk,
                AssemblyIterationFlags assemIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
     void Start(AppDomain * pAppDomain, Module *pModule, mdMethodDef md, MethodDesc *pDesc);
 
@@ -75,6 +78,7 @@ public:
         AppDomain * pAppDomain,
         Module *pModule,
         mdMethodDef md,
+        bool fIsAsyncThunk,
         AssemblyIterationFlags assemblyIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution))
     {
         LIMITED_METHOD_CONTRACT;

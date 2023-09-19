@@ -945,6 +945,8 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(!pMD->IsAsyncThunkMethod());
+
     ModuleBase *pOrigModule = pModule;
     ZapSig::Context    zapSigContext(pModule, (void *)pModule, ZapSig::NormalTokens);
     ZapSig::Context *  pZapSigContext = &zapSigContext;
@@ -1053,6 +1055,9 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     if (ReadyToRunCodeDisabled())
         return false;
 
+    if (pMD->IsAsyncThunkMethod())
+        return false;
+
     if (m_pgoInstrumentationDataHashtable.IsNull())
         return false;
 
@@ -1123,6 +1128,9 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
         goto done;
     // If R2R code is disabled for this module, simply behave as if it is never found
     if (ReadyToRunCodeDisabled())
+        goto done;
+
+    if (pMD->IsAsyncThunkMethod())
         goto done;
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);

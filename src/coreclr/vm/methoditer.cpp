@@ -57,6 +57,17 @@ BOOL LoadedMethodDescIterator::Next(
         return FALSE;
     }
 
+    if (m_fIsAsyncThunk)
+    {
+        m_mainMD = m_mainMD->GetMethodTable()->GetParallelMethodDesc(m_mainMD, AsyncVariantLookup::AsyncOtherVariant);
+
+        if (m_mainMD == NULL)
+        {
+            *pDomainAssemblyHolder = NULL;
+            return FALSE;
+        }
+    }
+
     // Needs to work w/ non-generic methods too.
     if (!m_mainMD->HasClassOrMethodInstantiation())
     {
@@ -146,6 +157,8 @@ ADVANCE_METHOD:
             goto ADVANCE_METHOD;
         if (m_methodIteratorEntry->GetMethod()->GetMemberDef() != m_md)
             goto ADVANCE_METHOD;
+        if (m_methodIteratorEntry->GetMethod()->IsAsyncThunkMethod() != m_fIsAsyncThunk)
+            goto ADVANCE_METHOD;
     }
     else if (m_startedNonGenericMethod)
     {
@@ -213,6 +226,7 @@ LoadedMethodDescIterator::Start(
     AppDomain * pAppDomain,
     Module *pModule,
     mdMethodDef md,
+    bool fIsAsyncThunk,
     AssemblyIterationFlags assemblyIterationFlags)
 {
     CONTRACTL
@@ -223,6 +237,8 @@ LoadedMethodDescIterator::Start(
         PRECONDITION(CheckPointer(pAppDomain, NULL_OK));
     }
     CONTRACTL_END;
+
+    m_fIsAsyncThunk = fIsAsyncThunk;
 
     m_assemIterationFlags = assemblyIterationFlags;
     m_mainMD = NULL;
@@ -244,7 +260,7 @@ LoadedMethodDescIterator::Start(
     mdMethodDef     md,
     MethodDesc      *pMethodDesc)
 {
-    Start(pAppDomain, pModule, md);
+    Start(pAppDomain, pModule, md, pMethodDesc->IsAsyncThunkMethod());
     m_mainMD = pMethodDesc;
 }
 
@@ -255,4 +271,5 @@ LoadedMethodDescIterator::LoadedMethodDescIterator(void)
     m_module = NULL;
     m_md = mdTokenNil;
     m_pAppDomain = NULL;
+    m_fIsAsyncThunk = false;
 }

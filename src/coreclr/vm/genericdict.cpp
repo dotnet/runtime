@@ -891,6 +891,7 @@ Dictionary::PopulateEntry(
 
             uint32_t methodSlot = -1;
             BOOL fRequiresDispatchStub = 0;
+            BOOL isAsyncThunk = 0;
 
             if (isReadyToRunModule)
             {
@@ -902,6 +903,7 @@ Dictionary::PopulateEntry(
                 isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0) || (kind == MethodEntrySlot);
                 isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
                 fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
+                isAsyncThunk = ((methodFlags & ENCODE_METHOD_SIG_AsyncThunk) != 0);
 
                 if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
                 {
@@ -952,6 +954,10 @@ Dictionary::PopulateEntry(
                         _ASSERTE(pZapSigContext->pInfoModule->IsFullModule());
                         pMethod = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pZapSigContext->pInfoModule), TokenFromRid(rid, mdtMethodDef), FALSE);
                     }
+                    if (isAsyncThunk)
+                    {
+                        pMethod = pMethod->GetAsyncOtherVariant();
+                    }
                 }
 
                 if (ownerType.IsNull())
@@ -995,6 +1001,7 @@ Dictionary::PopulateEntry(
                 isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0);
                 isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
                 fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
+                isAsyncThunk = ((methodFlags & ENCODE_METHOD_SIG_AsyncThunk) != 0);
 
                 if ((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) != 0)
                 {
@@ -1036,10 +1043,18 @@ Dictionary::PopulateEntry(
 
                     // The RID map should have been filled out if we fully loaded the class
                     pMethod = pMethodDefMT->GetModule()->LookupMethodDef(token);
+
+                    if (isAsyncThunk)
+                    {
+                        pMethod = pMethod->GetAsyncOtherVariant();
+                    }
+
                     _ASSERTE(pMethod != NULL);
                     pMethod->CheckRestore();
                 }
             }
+
+            _ASSERTE((!!isAsyncThunk) == pMethod->IsAsyncThunkMethod());
 
             if (fRequiresDispatchStub)
             {
@@ -1115,6 +1130,8 @@ Dictionary::PopulateEntry(
                 isUnboxingStub,
                 inst,
                 (!isInstantiatingStub && !isUnboxingStub));
+
+            _ASSERTE((!!isAsyncThunk) == pMethod->IsAsyncThunkMethod());
 
             if (kind == ConstrainedMethodEntrySlot)
             {

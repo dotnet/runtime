@@ -230,6 +230,11 @@ I4ARRAYREF SetUpWrapperInfo(MethodDesc *pMD)
 
         GCX_PREEMP();
 
+        if (pMD->IsAsyncThunkMethod())
+        {
+            ThrowHR(COR_E_NOTSUPPORTED);
+        }
+
         // Collects ParamDef information in an indexed array where element 0 represents
         // the return type.
         mdParamDef *params = (mdParamDef*)_alloca((numArgs+1) * sizeof(mdParamDef));
@@ -503,6 +508,11 @@ UINT32 CLRToCOMLateBoundWorker(
     mdProperty propToken;
     LPCUTF8 strMemberName;
     ULONG uSemantic;
+
+    if (pItfMD->IsAsyncThunkMethod())
+    {
+        ThrowHR(COR_E_NOTSUPPORTED);
+    }
 
     // See if there is property information for this member.
     hr = pItfMT->GetModule()->GetPropertyInfoForMethodDef(pItfMD->GetMemberDef(), &propToken, &strMemberName, &uSemantic);

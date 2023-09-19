@@ -994,7 +994,7 @@ MethodTableBuilder::bmtRTMethod::bmtRTMethod(
     MethodDesc *    pMD)
     : m_pOwningType(pOwningType),
       m_pMD(pMD),
-      m_methodSig(pMD->IsEEImpl()  // Handle Async2 methods
+      m_methodSig(pMD->IsAsyncThunkMethod()
        ? MethodSignature(pMD->GetModule(),
                          pMD->GetMemberDef(),
                          pMD->GetSignature(),
@@ -3530,6 +3530,7 @@ MethodTableBuilder::EnumerateClassMethods()
         // Create a new bmtMDMethod representing this method and add it to the
         // declared method list.
         //
+        bmtMDMethod *pDeclaredMethod = NULL;
         for (int insertCount = 0; insertCount < 2; insertCount++)
         {
             bmtMDMethod * pNewMethod;
@@ -3543,6 +3544,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     dwMethodRVA,
                     type,
                     implType);
+                pDeclaredMethod = pNewMethod;
             }
             else
             {
@@ -3590,6 +3592,9 @@ MethodTableBuilder::EnumerateClassMethods()
                     thunkType,
                     type,
                     implType);
+
+                pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
+                pDeclaredMethod->SetAsyncOtherVariant(pNewMethod);
             }
 
             bmtMethod->AddDeclaredMethod(pNewMethod);
@@ -6219,6 +6224,12 @@ MethodTableBuilder::ProcessMethodImpls()
                     if (declMethod.IsNull())
                     {   // Method not found, throw.
                         BuildMethodTableThrowException(IDS_CLASSLOAD_MI_DECLARATIONNOTFOUND, it.Token());
+                    }
+
+                    // When working with the thunk, we want the opposite type of async method
+                    if (it->GetAsyncThunkType() != AsyncThunkType::NotAThunk)
+                    {
+                        declMethod = declMethod.GetAsyncOtherVariant();;
                     }
 
                     if (!IsMdVirtual(declMethod.GetDeclAttrs()))

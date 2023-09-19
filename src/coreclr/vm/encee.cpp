@@ -343,6 +343,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
             appDomain,
             module,
             tkMethod,
+            pMethod->IsAsyncThunkMethod(),
             AssemblyIterationFlags(kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
         while (it.Next(pDomainAssembly.This()))

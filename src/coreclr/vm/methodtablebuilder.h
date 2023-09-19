@@ -676,7 +676,7 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // This constructor can be used with hard-coded signatures that are used for
-        // locating .ctor and .cctor methods.
+        // representing async thunk methods
         MethodSignature(
             Module *             pModule,
             mdToken              tok,
@@ -1068,6 +1068,9 @@ private:
             return m_asyncThunkType;
         }
 
+        bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
+        void              SetAsyncOtherVariant(bmtMDMethod* pAsyncOtherVariant) { m_asyncOtherVariant = pAsyncOtherVariant; }
+
     private:
         //-----------------------------------------------------------------------------------------
         bmtMDType *       m_pOwningType;
@@ -1079,6 +1082,7 @@ private:
         AsyncThunkType m_asyncThunkType;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
+        bmtMDMethod*      m_asyncOtherVariant = NULL;
 
         MethodDesc *      m_pMD;                // MethodDesc created and assigned to this method
         MethodDesc *      m_pUnboxedMD;         // Unboxing MethodDesc if this is a virtual method on a valuetype
@@ -1207,6 +1211,27 @@ private:
         // Returns the MethodDesc* associated with this method.
         MethodDesc *
         GetMethodDesc() const;
+
+        bmtMethodHandle GetAsyncOtherVariant() const
+        {
+            if (IsRTMethod())
+            {
+                bmtRTMethod *pRTMethod = AsRTMethod();
+                MethodDesc *pMD = pRTMethod->GetMethodDesc();
+                MethodDesc *pRTOtherMethod = pMD->GetAsyncOtherVariant();
+                _ASSERTE(pRTOtherMethod != NULL);
+                _ASSERTE(pRTOtherMethod->IsAsyncThunkMethod() || pRTMethod->GetMethodDesc()->IsAsyncThunkMethod());
+                _ASSERTE(FALSE);
+                return bmtMethodHandle((bmtRTMethod*)NULL); // TODO! Fix this to do the right thing here
+            }
+            else
+            {
+                bmtMDMethod* pMDOtherVariant = AsMDMethod()->GetAsyncOtherVariant();
+                _ASSERTE(pMDOtherVariant != NULL);
+                _ASSERTE(pMDOtherVariant->GetAsyncThunkType() != AsyncThunkType::NotAThunk || AsMDMethod()->GetAsyncThunkType() != AsyncThunkType::NotAThunk);
+                return pMDOtherVariant;
+            }
+        }
 
     protected:
         //-----------------------------------------------------------------------------------------

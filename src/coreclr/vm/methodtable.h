@@ -63,6 +63,7 @@ class ClassFactoryBase;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 class ArgDestination;
 enum class WellKnownAttribute : DWORD;
+enum class AsyncVariantLookup;
 
 enum class ResolveVirtualStaticMethodFlags
 {
@@ -1451,7 +1452,7 @@ public:
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
     // Used to map methods on the same slot between instantiations.
-    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD);
+    MethodDesc * GetParallelMethodDesc(MethodDesc * pDefMD, AsyncVariantLookup asyncVariantLookup = (AsyncVariantLookup)0);
 
     //-------------------------------------------------------------------
     // BoxedEntryPoint MethodDescs.

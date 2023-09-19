@@ -3353,6 +3353,10 @@ NoSpecialCase:
 
                 methodFlags |= ENCODE_METHOD_SIG_SlotInsteadOfToken;
             }
+            if (pTemplateMD->IsAsyncThunkMethod())
+            {
+                methodFlags |= ENCODE_METHOD_SIG_AsyncThunk;
+            }
 
             sigBuilder.AppendData(methodFlags);
 
