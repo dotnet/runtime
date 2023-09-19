@@ -79,8 +79,10 @@ namespace System.Runtime.Loader
                 }
 
                 // Pass the stream based assembly as IL in an attempt to bind and load it
-                Internal.Runtime.Binder.IVMAssembly loadedAssembly = AssemblyNative_LoadFromPEImage(assemblyBinder, pILImage);
-                RuntimeAssembly retAssembly = loadedAssembly.GetExposedObject();
+                IntPtr loadedAssembly = AssemblyNative_LoadFromPEImage(assemblyBinder, pILImage);
+                RuntimeAssembly? retAssembly = null;
+                Internal.Runtime.Binder.AssemblyBinder.Assembly_GetExposedObject(loadedAssembly, ObjectHandleOnStack.Create(ref retAssembly));
+                Debug.Assert(retAssembly != null);
 
                 // LOG((LF_CLASSLOADER,
                 //       LL_INFO100,
@@ -91,7 +93,7 @@ namespace System.Runtime.Loader
                 // we created above. We need pointer comparison instead of pe image equivalence
                 // to avoid mixed binaries/PDB pairs of other images.
                 // This applies to both Desktop CLR and CoreCLR, with or without fusion.
-                bool isSameAssembly = loadedAssembly.GetPEAssembly_GetPEImage() == pILImage;
+                bool isSameAssembly = Internal.Runtime.Binder.AssemblyBinder.Assembly_GetPEImage(loadedAssembly) == pILImage;
 
                 // Setting the PDB info is only applicable for our original assembly.
                 // This applies to both Desktop CLR and CoreCLR, with or without fusion.
@@ -100,7 +102,7 @@ namespace System.Runtime.Loader
                     // #ifdef DEBUGGING_SUPPORTED
                     if (ptrSymbols != null)
                     {
-                        loadedAssembly.GetModule_SetSymbolBytes(ptrAssemblyArray, iSymbolArrayLen);
+                        Internal.Runtime.Binder.AssemblyBinder.Assembly_SetSymbolBytes(loadedAssembly, ptrAssemblyArray, iSymbolArrayLen);
                     }
                     // #endif
                 }

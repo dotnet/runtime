@@ -1470,6 +1470,74 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported()
     return result;
 }
 
+extern "C" IMDInternalImport * QCALLTYPE AssemblyNative_GetMDImport(Assembly * pAssembly)
+{
+    QCALL_CONTRACT;
+
+    IMDInternalImport* result = NULL;
+
+    BEGIN_QCALL;
+
+    result = pAssembly->GetMDImport();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" LPCUTF8 QCALLTYPE AssemblyNative_GetSimpleNameNative(Assembly * pAssembly)
+{
+    QCALL_CONTRACT;
+
+    LPCUTF8 result = NULL;
+
+    BEGIN_QCALL;
+
+    result = pAssembly->GetSimpleName();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" void QCALLTYPE AssemblyNative_GetExposedObject(Assembly * pAssembly, QCall::ObjectHandleOnStack rtAssembly)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    rtAssembly.Set(pAssembly->GetExposedObject());
+
+    END_QCALL;
+}
+
+extern "C" PEImage * QCALLTYPE AssemblyNative_GetPEImage(Assembly * pAssembly)
+{
+    QCALL_CONTRACT;
+
+    PEImage* result = NULL;
+
+    BEGIN_QCALL;
+
+    result = pAssembly->GetPEAssembly()->GetPEImage();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" void QCALLTYPE AssemblyNative_SetSymbolBytes(Assembly * pAssembly, BYTE* ptrSymbolArray, int32_t cbSymbolArrayLength)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    pAssembly->GetModule()->SetSymbolBytes(ptrSymbolArray, (DWORD)cbSymbolArrayLength);
+
+    END_QCALL;
+}
+
 extern "C" IMDInternalImport * QCALLTYPE PEImage_BinderAcquireImport(PEImage * pPEImage, DWORD * pdwPAFlags)
 {
     QCALL_CONTRACT;

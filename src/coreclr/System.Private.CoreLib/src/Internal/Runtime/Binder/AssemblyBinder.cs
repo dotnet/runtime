@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
@@ -29,7 +30,7 @@ namespace Internal.Runtime.Binder
         public readonly AssemblyIdentityFlags IdentityFlags;
     }
 
-    internal abstract class AssemblyBinder
+    internal abstract partial class AssemblyBinder
     {
         // fields used by VM
         private GCHandle m_managedALC;
@@ -64,7 +65,8 @@ namespace Internal.Runtime.Binder
 
         // NativeImage* LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName);
 
-        public void AddLoadedAssembly(IVMAssembly loadedAssembly)
+        // called by vm
+        public void AddLoadedAssembly(IntPtr loadedAssembly)
         {
             // BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
             // TODO: is the lock shared outside this type?
@@ -157,7 +159,7 @@ namespace Internal.Runtime.Binder
 
             if (addAllLoadedModules)
             {
-                foreach (IVMAssembly assembly in _loadedAssemblies)
+                foreach (IntPtr assembly in _loadedAssemblies)
                 {
                     DeclareLoadedAssembly(assembly);
                 }
@@ -165,7 +167,7 @@ namespace Internal.Runtime.Binder
         }
 
         // Must be called under the LoadLock
-        private void DeclareLoadedAssembly(IVMAssembly loadedAssembly)
+        private unsafe void DeclareLoadedAssembly(IntPtr loadedAssembly)
         {
             // If table is empty, then no mvid dependencies have been declared, so we don't need to record this information
             if (_assemblySimpleNameMvidCheckHash.Count == 0)
@@ -173,8 +175,9 @@ namespace Internal.Runtime.Binder
                 return;
             }
 
-            loadedAssembly.GetMDImport().GetScopeProps(out Guid mvid);
-            string simpleName = loadedAssembly.SimpleName;
+            var mdImport = new System.Reflection.MetadataImport(Assembly_GetMDImport(loadedAssembly), null);
+            mdImport.GetScopeProps(out Guid mvid);
+            string simpleName = new MdUtf8String(Assembly_GetSimpleName(loadedAssembly)).ToString();
 
             ref SimpleNameToExpectedMVIDAndRequiringAssembly entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_assemblySimpleNameMvidCheckHash, simpleName, out bool found);
             if (!found)
@@ -227,22 +230,23 @@ namespace Internal.Runtime.Binder
         // comparisons are slow and have throwing scenarios, and this hash table
         // provides a best-effort match to prevent problems, not perfection
         private readonly Dictionary<string, SimpleNameToExpectedMVIDAndRequiringAssembly> _assemblySimpleNameMvidCheckHash = new Dictionary<string, SimpleNameToExpectedMVIDAndRequiringAssembly>();
-        private readonly List<IVMAssembly> _loadedAssemblies = new List<IVMAssembly>();
+        private readonly List<IntPtr> _loadedAssemblies = new List<IntPtr>();
 
         private static readonly object _loadLock = new object();
-    }
 
-    // Foo
-    internal interface IVMAssembly // coreclr/vm/assembly
-    {
-        public System.Reflection.MetadataImport GetMDImport();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetMDImport")]
+        private static partial IntPtr Assembly_GetMDImport(IntPtr pAssembly);
 
-        public string SimpleName { get; }
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetSimpleNameNative")]
+        private static unsafe partial byte* Assembly_GetSimpleName(IntPtr pAssembly);
 
-        public System.Reflection.RuntimeAssembly GetExposedObject();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExposedObject")]
+        internal static unsafe partial void Assembly_GetExposedObject(IntPtr pAssembly, ObjectHandleOnStack rtAssembly);
 
-        public IntPtr GetPEAssembly_GetPEImage();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetPEImage")]
+        internal static partial IntPtr Assembly_GetPEImage(IntPtr pAssembly);
 
-        public unsafe void GetModule_SetSymbolBytes(byte* ptrSymbolArray, int cbSymbolArrayLength);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_SetSymbolBytes")]
+        internal static unsafe partial void Assembly_SetSymbolBytes(IntPtr pAssembly, byte* ptrSymbolArray, int cbSymbolArrayLength);
     }
 }
