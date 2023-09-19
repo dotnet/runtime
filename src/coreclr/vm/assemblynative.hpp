@@ -171,4 +171,9 @@ extern "C" PEImage * QCALLTYPE PEImage_CreateFromHMODULE(HMODULE hMod);
 extern "C" BOOL QCALLTYPE PEImage_HasCorHeader(PEImage * pPEImage);
 #endif // TARGET_WINDOWS
 
+extern "C" PEAssembly * QCALLTYPE DomainAssembly_GetPEAssembly(DomainAssembly * pDomainAssembly);
+
+extern "C" LoaderAllocator * QCALLTYPE DomainAssembly_GetLoaderAllocator(DomainAssembly * pDomainAssembly);
+
+extern "C" INT_PTR QCALLTYPE PEAssembly_GetHostAssembly(PEAssembly * pPEAssembly);
 #endif

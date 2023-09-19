@@ -1643,3 +1643,48 @@ extern "C" BOOL QCALLTYPE PEImage_HasCorHeader(PEImage * pPEImage)
     return result;
 }
 #endif // TARGET_WINDOWS
+
+extern "C" PEAssembly * QCALLTYPE DomainAssembly_GetPEAssembly(DomainAssembly * pDomainAssembly)
+{
+    QCALL_CONTRACT;
+
+    PEAssembly* result = NULL;
+
+    BEGIN_QCALL;
+
+    result = pDomainAssembly->GetPEAssembly();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" LoaderAllocator * QCALLTYPE DomainAssembly_GetLoaderAllocator(DomainAssembly * pDomainAssembly)
+{
+    QCALL_CONTRACT;
+
+    LoaderAllocator * result = NULL;
+
+    BEGIN_QCALL;
+
+    result = pDomainAssembly->GetLoaderAllocator();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" INT_PTR QCALLTYPE PEAssembly_GetHostAssembly(PEAssembly * pPEAssembly)
+{
+    QCALL_CONTRACT;
+
+    INT_PTR result = NULL;
+
+    BEGIN_QCALL;
+
+    result = (INT_PTR)pPEAssembly->GetHostAssembly();
+
+    END_QCALL;
+
+    return result;
+}

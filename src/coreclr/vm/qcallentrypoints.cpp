@@ -205,12 +205,16 @@ static const Entry s_QCall[] =
     DllImportEntry(PEImage_CreateFromHMODULE)
     DllImportEntry(PEImage_HasCorHeader)
 #endif
+    DllImportEntry(DomainAssembly_GetPEAssembly)
+    DllImportEntry(DomainAssembly_GetLoaderAllocator)
+    DllImportEntry(PEAssembly_GetHostAssembly)
 #if defined(FEATURE_MULTICOREJIT)
     DllImportEntry(MultiCoreJIT_InternalSetProfileRoot)
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
     DllImportEntry(LoaderAllocator_EnsureReference)
+    DllImportEntry(LoaderAllocator_IsCollectible)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_InformThreadNameChange)

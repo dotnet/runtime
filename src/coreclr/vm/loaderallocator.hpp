@@ -838,6 +838,7 @@ typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
 
 extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator);
 extern "C" void QCALLTYPE LoaderAllocator_EnsureReference(QCall::LoaderAllocatorHandle pLA, QCall::LoaderAllocatorHandle pOtherLA);
+extern "C" BOOL QCALLTYPE LoaderAllocator_IsCollectible(QCall::LoaderAllocatorHandle pLA);
 
 class GlobalLoaderAllocator : public LoaderAllocator
 {

@@ -264,6 +264,21 @@ extern "C" void QCALLTYPE LoaderAllocator_EnsureReference(QCall::LoaderAllocator
     END_QCALL;
 }
 
+extern "C" BOOL QCALLTYPE LoaderAllocator_IsCollectible(QCall::LoaderAllocatorHandle pLA)
+{
+    QCALL_CONTRACT;
+
+    BOOL result = FALSE;
+
+    BEGIN_QCALL;
+
+    result = pLA->IsCollectible();
+
+    END_QCALL;
+
+    return result;
+}
+
 BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation inst)
 {
     CONTRACTL

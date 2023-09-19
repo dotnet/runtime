@@ -64,13 +64,14 @@ namespace System.Reflection
         internal Internal.Runtime.Binder.AssemblyBinder? m_binderToRelease;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_EnsureReference")]
-
         internal static partial void EnsureReference(IntPtr nativeLoaderAllocator, IntPtr otherNativeLoaderAllocator);
 
-        internal void EnsureReference(LoaderAllocator otherLA) => EnsureReference(m_scout.m_nativeLoaderAllocator, otherLA.m_scout.m_nativeLoaderAllocator);
+        internal void EnsureReference(IntPtr otherNativeLA) => EnsureReference(m_scout.m_nativeLoaderAllocator, otherNativeLA);
 
-        // Foo
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern bool IsCollectible();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_IsCollectible")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsCollectible(IntPtr nativeLoaderAllocator);
+
+        internal bool IsCollectible() => IsCollectible(m_scout.m_nativeLoaderAllocator);
     }
 }

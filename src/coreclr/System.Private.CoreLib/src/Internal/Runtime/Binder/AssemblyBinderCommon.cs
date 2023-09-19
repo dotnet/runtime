@@ -8,7 +8,6 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Loader;
 using Internal.Runtime.Binder.Tracing;
 
@@ -39,19 +38,14 @@ namespace Internal.Runtime.Binder
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_BinderAcquirePEImage", StringMarshalling = StringMarshalling.Utf8)]
         private static unsafe partial int BinderAcquirePEImage(string szAssemblyPath, out IntPtr ppPEImage, BundleFileLocation bundleFileLocation);
 
-        // Foo
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DomainAssembly_GetPEAssembly")]
+        private static partial IntPtr DomainAssembly_GetPEAssembly(IntPtr pDomainAssembly);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr DomainAssembly_GetPEAssembly(IntPtr pDomainAssembly);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEAssembly_GetHostAssembly")]
+        private static partial IntPtr PEAssembly_GetHostAssembly(IntPtr pPEAssembly);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool PEAssembly_HasHostAssembly(IntPtr pPEAssembly);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern Assembly PEAssembly_GetHostAssembly(IntPtr pPEAssembly);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern System.Reflection.LoaderAllocator DomainAssembly_GetLoaderAllocator(IntPtr pDomainAssembly);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DomainAssembly_GetLoaderAllocator")]
+        private static partial IntPtr DomainAssembly_GetLoaderAllocator(IntPtr pDomainAssembly);
 
         public static bool IsCompatibleAssemblyVersion(AssemblyName requestedName, AssemblyName foundName)
         {
@@ -936,7 +930,7 @@ namespace Internal.Runtime.Binder
                     else
                     {
                         pLoadedPEAssembly = DomainAssembly_GetPEAssembly(pDomainAssembly);
-                        if (!PEAssembly_HasHostAssembly(pLoadedPEAssembly))
+                        if (PEAssembly_GetHostAssembly(pLoadedPEAssembly) == IntPtr.Zero)
                         {
                             // Reflection emitted assemblies will not have a domain assembly.
                             fFailLoad = true;
@@ -954,7 +948,7 @@ namespace Internal.Runtime.Binder
                     // alive for all its lifetime.
                     if (rtAssembly.IsCollectible)
                     {
-                        System.Reflection.LoaderAllocator resultAssemblyLoaderAllocator = DomainAssembly_GetLoaderAllocator(pDomainAssembly);
+                        IntPtr resultAssemblyLoaderAllocator = DomainAssembly_GetLoaderAllocator(pDomainAssembly);
                         System.Reflection.LoaderAllocator? parentLoaderAllocator = binder.GetLoaderAllocator();
                         if (parentLoaderAllocator == null)
                         {
@@ -962,11 +956,11 @@ namespace Internal.Runtime.Binder
                             throw new NotSupportedException(SR.NotSupported_CollectibleBoundNonCollectible);
                         }
 
-                        Debug.Assert(resultAssemblyLoaderAllocator != null);
+                        Debug.Assert(resultAssemblyLoaderAllocator != IntPtr.Zero);
                         parentLoaderAllocator.EnsureReference(resultAssemblyLoaderAllocator);
                     }
 
-                    resolvedAssembly = PEAssembly_GetHostAssembly(pLoadedPEAssembly);
+                    resolvedAssembly = GCHandle.FromIntPtr(PEAssembly_GetHostAssembly(pLoadedPEAssembly)).Target as Assembly;
                 }
 
                 if (fResolvedAssembly)
