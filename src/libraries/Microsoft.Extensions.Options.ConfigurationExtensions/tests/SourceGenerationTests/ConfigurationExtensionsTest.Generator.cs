@@ -156,5 +156,22 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
                 )
                 ;
         }
+
+        [Fact]
+        public void TestBindAndConfigureWithNamedParameters()
+        {
+            OptionsBuilder<FakeOptions>? optionsBuilder = CreateOptionsBuilder();
+            IServiceCollection services = new ServiceCollection();
+
+            OptionsBuilderConfigurationExtensions.Bind(config: s_emptyConfig, optionsBuilder: optionsBuilder);
+            OptionsBuilderConfigurationExtensions.Bind(configureBinder: _ => { }, config: s_emptyConfig, optionsBuilder: optionsBuilder);
+
+            OptionsBuilderConfigurationExtensions.BindConfiguration(configureBinder: _ => { }, configSectionPath: "path", optionsBuilder: optionsBuilder);
+
+            OptionsConfigurationServiceCollectionExtensions.Configure<FakeOptions>(config: s_emptyConfig, services: services);
+            OptionsConfigurationServiceCollectionExtensions.Configure<FakeOptions>(name: "", config: s_emptyConfig, services: services);
+            OptionsConfigurationServiceCollectionExtensions.Configure<FakeOptions>(configureBinder: _ => { }, config: s_emptyConfig, services: services);
+            OptionsConfigurationServiceCollectionExtensions.Configure<FakeOptions>(name: "", configureBinder: _ => { }, config: s_emptyConfig, services: services);
+        }
     }
 }

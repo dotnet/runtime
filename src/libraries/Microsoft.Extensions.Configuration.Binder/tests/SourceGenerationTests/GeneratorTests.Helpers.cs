@@ -85,6 +85,14 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ServiceCollection,
         }
 
+        private static async Task VerifyThatSourceIsGenerated(string testSourceCode)
+        {
+            var (d, r) = await RunGenerator(testSourceCode);
+            Assert.Equal(1, r.Length);
+            Assert.Empty(d);
+            Assert.True(r[0].SourceText.Lines.Count > 10);
+        }
+
         private static async Task VerifyAgainstBaselineUsingFile(
             string filename,
             string testSourceCode,
