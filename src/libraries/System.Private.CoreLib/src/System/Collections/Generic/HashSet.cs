@@ -485,6 +485,26 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
 
+            // Mostly Union operation occurs on HashSets.
+            // When passed-in parameter is HashSet with same comparer,
+            // enumerator allocation, rehashing and overhead by looping can be avoided
+            if (other.GetType() == typeof(HashSet<T>))
+            {
+                HashSet<T> source = (HashSet<T>)other;
+                if (source.Count == 0)
+                {
+                    // Nothing to union with
+                    return;
+                }
+                if (EqualityComparersAreEqual(this, source))
+                {
+                    Entry[] newEntries = source._entries;
+                    // If comparers are the same, we can copy _entries without rehashing.
+                    CopyEntries(newEntries, source._count);
+                    return;
+                }
+            }
+
             foreach (T item in other)
             {
                 AddIfNotPresent(item, out _);
@@ -1182,6 +1202,34 @@ namespace System.Collections.Generic
             }
 
             return true;
+        }
+        /// <summary>
+        /// Adds entries into existing array without rehashing
+        /// </summary>
+        /// <param name="entries"></param>
+        /// <param name="count"></param>
+        private void CopyEntries(Entry[] entries, int count)
+        {
+            Debug.Assert(_entries is not null);
+
+            Entry[] newEntries = _entries;
+            int newCount = 0;
+            for (int i = 0; i < count; i++)
+            {
+                int hashCode = entries[i].HashCode;
+                if (entries[i].Next >= -1)
+                {
+                    ref Entry entry = ref newEntries[newCount];
+                    entry = entries[i];
+                    ref int bucket = ref GetBucketRef(hashCode);
+                    entry.Next = bucket - 1; // Value in _buckets is 1-based
+                    bucket = newCount + 1;
+                    newCount++;
+                }
+            }
+
+            _count = newCount;
+            _freeCount = 0;
         }
 
         /// <summary>
