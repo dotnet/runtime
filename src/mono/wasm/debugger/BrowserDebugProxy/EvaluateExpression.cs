@@ -278,7 +278,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             case "valuetype" when variable["isEnum"]?.Value<bool>() == true:
                                 typeRet = variable["className"]?.Value<string>();
-                                valueRet = $"({typeRet}) {value["value"].Value<double>()}";
+                                valueRet = $"({typeRet}) {value["value"]["value"].Value<double>()}";
                                 break;
                             case "object":
                             default:
