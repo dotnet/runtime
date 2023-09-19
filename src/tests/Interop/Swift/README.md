@@ -1,6 +1,6 @@
 # .NET Swift Interop
 
-Swift has a different ABI, runtime environment, and object model, making it non-trivial to call from the .NET runtime. Existing solutions like [Binding Tools for Swift](https://github.com/xamarin/binding-tools-for-swift) and [BeyondNet](https://github.com/royalapplications/beyondnet) rely on Swift /C# /C wrappers.
+Swift has a different ABI, runtime environment, and object model, making it non-trivial to call from the .NET runtime. Existing solutions like [Binding Tools for Swift](https://github.com/xamarin/binding-tools-for-swift) and [BeyondNet](https://github.com/royalapplications/beyondnet) rely on Swift and C# binding wrappers.
 
 This project aims to explore the possibilities and limitations of direct P/Invoke interop with Swift. For a comprehensive .NET-Swift Interop, the Binding Tools for Swift contains valuable components that should either be reused or built upon.
 
@@ -24,6 +24,10 @@ Interop should handle various types when calling from .NET, including blittable 
 
 Reference: https://github.com/xamarin/binding-tools-for-swift/blob/main/docs/ValueTypeModeling.md
 
+## Interop on LLVM IR level
+
+The Swift compiler uses an LLVM backend, which can be linked with Mono LLVM bitcode files (.bc).
+
 ## An example of direct P/Invoke
 
 Here's the flow for invoking a Swift function from .NET if a developer uses a direct P/Invoke and demangled name:
@@ -45,11 +49,11 @@ We should update the Binding Tools for Swift to be compatible with the latest ve
 
 ### Name mangling
 
-In order to simplify the testing we can use mangled name as the entry point. This provides a number of advantages, specifically for functions that have name overlap (i.e. functions with the same name that return different types) for which we cannot disambiguate from C#. The `Binding Tools for Swift` reads the dylib, pulls the public symbols and demangles them. However, we should discover in which cases extra wrappers may not be required and possibility to perform entry point mangling within the runtime. In this case, it may slow down the compiler for non-Swift interops and have limitations for functions that have name overlap.
+In order to simplify the testing we can use mangled name as the entry point. This provides a number of advantages, specifically for functions that have name overlap (i.e. functions with the same name that return different types) for which we cannot disambiguate from C#. The `Binding Tools for Swift` reads the dylib, pulls the public symbols and demangles them. However, we should discover the possibility to perform entry point name mangling within the runtime. In this case, it may slow down the compiler for non-Swift interops and have limitations for functions that have name overlap.
 
 ### P/Invoke thunks
 
-The P/Invoke thunks should simplify register juggling by using predefined set of registers for `self` and `error` cases. We should explore possibilities and limitations of P/Invoke with instance functions. Additionally, we should consider using COM Interop for instance functions as well.
+The P/Invoke thunks should simplify register juggling by using predefined set of registers for `self` and `error` cases. We should explore possibilities and limitations of P/Invoke with instance functions.
 
 ### Type marshalling
 
