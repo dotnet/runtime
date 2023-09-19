@@ -11415,7 +11415,7 @@ SPILLSTACK:
                 tempDsc->lvType     = TYP_BYREF;
                 reimportSpillClique = true;
             }
-            else if ((genActualType(tree) == TYP_INT) && (tempDsc->TypeGet() == TYP_BYREF)
+            else if ((genActualType(tree) == TYP_INT) && (tempDsc->TypeGet() == TYP_BYREF))
             {
                 // Spill clique has decided this should be "byref", but this block only pushes an "int".
                 // Insert a sign-extension to "native int" so we match the clique size.
