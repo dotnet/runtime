@@ -2780,6 +2780,9 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
     if (!comp->opts.OptimizationEnabled())
         return nullptr;
 
+    if (!JitConfig.EnableHWIntrinsic())
+        return nullptr;
+
     if (op->isContained())
         return nullptr;
 
