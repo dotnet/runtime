@@ -11044,20 +11044,6 @@ inline void Compiler::impReimportMarkBlock(BasicBlock* block)
 }
 
 /*****************************************************************************
- *  Mark the successors of the given block as unimported.
- *  Note that the caller is responsible for calling impImportBlockPending()
- *  for all the successors, with the appropriate stack-state.
- */
-
-void Compiler::impReimportMarkSuccessors(BasicBlock* block)
-{
-    for (BasicBlock* const succBlock : block->Succs())
-    {
-        impReimportMarkBlock(succBlock);
-    }
-}
-
-/*****************************************************************************
  *
  *  Filter wrapper to handle only passed in exception code
  *  from it).
