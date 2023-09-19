@@ -74,6 +74,7 @@ namespace System.Text.Json
 
         public const int MaximumFormatBooleanLength = 5;
         public const int MaximumFormatInt64Length = 20;   // 19 + sign (i.e. -9223372036854775808)
+        public const int MaximumFormatUInt32Length = 10;  // i.e. 4294967295
         public const int MaximumFormatUInt64Length = 20;  // i.e. 18446744073709551615
         public const int MaximumFormatDoubleLength = 128;  // default (i.e. 'G'), using 128 (rather than say 32) to be future-proof.
         public const int MaximumFormatSingleLength = 128;  // default (i.e. 'G'), using 128 (rather than say 32) to be future-proof.
