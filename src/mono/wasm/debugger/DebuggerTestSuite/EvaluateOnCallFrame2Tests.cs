@@ -742,7 +742,7 @@ namespace DebuggerTests
                 await EvaluateOnCallFrameAndCheck(id,
                    ("s_valueTypeEnum.ToString()", TString("no")),
                    ("mc.valueTypeEnum.ToString()", TString("yes"))
-                   // ("mc.valueTypeEnum.HasFlag(SampleEnum.no)", TBool(true)) // ToDo: FAILING
+                   // ("mc.valueTypeEnum.HasFlag(SampleEnum.no)", TBool(true)) // ToDo: https://github.com/dotnet/runtime/issues/92262
                 );
            });
     }
