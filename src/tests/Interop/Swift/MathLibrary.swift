@@ -65,8 +65,6 @@ public class MathLibrary {
         }
     }
 
-    public static let shared = MathLibrary()
-
     // Instance function
     public func factorial() -> Int {
         guard _internalValue >= 0 else {
@@ -74,8 +72,4 @@ public class MathLibrary {
         }
         return _internalValue == 0 ? 1 : _internalValue * MathLibrary(_internalValue: _internalValue - 1).factorial()
     }
-
-    public static func singleton () -> MathLibrary {
-        
-    } 
 }
