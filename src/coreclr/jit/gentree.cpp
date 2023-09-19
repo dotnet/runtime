@@ -25535,7 +25535,7 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
         {
             return GT_OR;
         }
-        
+
 #if defined(TARGET_XARCH)
         case NI_SSE_AndNot:
         case NI_SSE2_AndNot:
@@ -25543,7 +25543,7 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
         case NI_AVX2_AndNot:
         case NI_AVX512F_AndNot:
         case NI_AVX512DQ_AndNot:
-#endif 
+#endif
         {
             return GT_AND_NOT;
         }
