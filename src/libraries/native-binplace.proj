@@ -6,7 +6,6 @@
     <BinPlaceRuntime>false</BinPlaceRuntime>
     <BinPlaceNative>true</BinPlaceNative>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <IsSourceProject>false</IsSourceProject>
   </PropertyGroup>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
