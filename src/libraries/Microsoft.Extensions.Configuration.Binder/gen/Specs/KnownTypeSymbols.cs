@@ -13,6 +13,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal sealed record KnownTypeSymbols
     {
+        public CSharpCompilation Compilation { get; }
+
         public INamedTypeSymbol String { get; }
         public INamedTypeSymbol? CultureInfo { get; }
         public INamedTypeSymbol? DateOnly { get; }
@@ -57,6 +59,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public KnownTypeSymbols(CSharpCompilation compilation)
         {
+            Compilation = compilation;
+
             // Primitives (needed because they are Microsoft.CodeAnalysis.SpecialType.None)
             CultureInfo = compilation.GetBestTypeByMetadataName(typeof(CultureInfo));
             DateOnly = compilation.GetBestTypeByMetadataName("System.DateOnly");

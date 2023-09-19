@@ -12,7 +12,7 @@ Relying on key-value strings as part of initialization of the runtime comes with
 - Each property comes with non-trivial overhead. As the properties flow through the hosting layer, runtime, and libraries, multiple copies are made of each name and value.
 - Properties are pre-computed and set at startup. Every application, regardless of whether or not it requires a specific property, must pay the cost of all properties.
 
-To allow a more flexible and less costly way to pass information between the host and runtime, in .NET 8+, the host passes a contract to the runtime as a property. This contract servers as a mechanism for runtime to query for information from the host and for the host to provide structured information to the runtime.
+To allow a more flexible and less costly way to pass information between the host and runtime, in .NET 8+, the host passes a contract to the runtime as a property. This contract serves as a mechanism for runtime to query for information from the host and for the host to provide structured information to the runtime.
 
 `HOST_RUNTIME_CONTRACT`
 

@@ -67,11 +67,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return _sourceGenSpec;
             }
 
-            private static bool IsValidRootConfigType(ITypeSymbol? type)
+            private bool IsValidRootConfigType(ITypeSymbol? type)
             {
                 if (type is null ||
                     type.SpecialType is SpecialType.System_Object or SpecialType.System_Void ||
-                    !IsAccessibleFromGenBinders(type) ||
+                    !_typeSymbols.Compilation.IsSymbolAccessibleWithin(type, _typeSymbols.Compilation.Assembly) ||
                     type.TypeKind is TypeKind.TypeParameter or TypeKind.Pointer or TypeKind.Error ||
                     type.IsRefLikeType ||
                     ContainsGenericParameters(type))
@@ -80,27 +80,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 return true;
-
-                static bool IsAccessibleFromGenBinders(ITypeSymbol type)
-                {
-                    if (type is IArrayTypeSymbol array)
-                    {
-                        return IsAccessibleFromGenBinders(array.ElementType);
-                    }
-
-                    if (type is INamedTypeSymbol namedType && namedType.GetAllTypeArgumentsInScope() is List<ITypeSymbol> typeArgsInScope)
-                    {
-                        foreach (ITypeSymbol genericArg in typeArgsInScope)
-                        {
-                            if (!IsAccessibleFromGenBinders(genericArg))
-                            {
-                                return false;
-                            }
-                        }
-                    }
-
-                    return type.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.Friend;
-                }
             }
 
             private TypeSpec? GetTargetTypeForRootInvocation(ITypeSymbol? type, Location? invocationLocation)
@@ -928,27 +907,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _typeDiagnostics[causingType] = typeDiags;
                 }
             }
-        }
-    }
-
-    internal static class ParserExtensions
-    {
-        public static void RegisterCacheEntry<TKey, TValue, TEntry>(this Dictionary<TKey, TValue> cache, TKey key, TEntry entry)
-            where TKey : notnull
-            where TValue : ICollection<TEntry>, new()
-        {
-            if (!cache.TryGetValue(key, out TValue? entryCollection))
-            {
-                cache[key] = entryCollection = new TValue();
-            }
-
-            entryCollection.Add(entry);
-        }
-
-        public static void Deconstruct(this KeyValuePair<TypeSpec, List<InterceptorLocationInfo>> source, out ComplexTypeSpec Key, out List<InterceptorLocationInfo> Value)
-        {
-            Key = (ComplexTypeSpec)source.Key;
-            Value = source.Value;
         }
     }
 }

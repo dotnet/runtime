@@ -3,19 +3,24 @@
 
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
-using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     [DebuggerDisplay("Name={DisplayString}, Kind={SpecKind}")]
     internal abstract record TypeSpec
     {
+        private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
+
         public TypeSpec(ITypeSymbol type)
         {
             Namespace = type.ContainingNamespace?.ToDisplayString();
-            DisplayString = type.ToMinimalDisplayString();
+            DisplayString = type.ToDisplayString(s_minimalDisplayFormat);
             Name = (Namespace is null ? string.Empty : Namespace + ".") + DisplayString.Replace(".", "+");
-            IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring(useUniqueName: true);
+            IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring();
             IsValueType = type.IsValueType;
         }
 

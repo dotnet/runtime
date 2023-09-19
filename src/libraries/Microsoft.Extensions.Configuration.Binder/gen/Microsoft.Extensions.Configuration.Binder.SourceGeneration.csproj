@@ -37,6 +37,7 @@
     <Compile Include="Parser\BinderInvocation.cs" />
     <Compile Include="Parser\ConfigurationBinder.cs" />
     <Compile Include="Parser\Diagnostics.cs" />
+    <Compile Include="Parser\Extensions.cs" />
     <Compile Include="Parser\OptionsBuilderConfigurationExtensions.cs" />
     <Compile Include="Parser\OptionsConfigurationServiceCollectionExtensions.cs" />
     <Compile Include="Specs\InterceptorLocationInfo.cs" />

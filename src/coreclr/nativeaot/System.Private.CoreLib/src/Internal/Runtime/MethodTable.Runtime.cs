@@ -12,10 +12,10 @@ namespace Internal.Runtime
     internal unsafe partial struct MethodTable
     {
 #if !INPLACE_RUNTIME
-        internal MethodTable* GetArrayEEType()
+        internal static MethodTable* GetArrayEEType()
         {
 
-            return EETypePtr.EETypePtrOf<Array>().ToPointer();
+            return MethodTable.Of<Array>();
         }
 
         internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2)
