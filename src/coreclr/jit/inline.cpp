@@ -480,7 +480,7 @@ void InlineContext::DumpData(unsigned indent)
     {
         const char* inlineReason = InlGetObservationString(m_Observation);
         printf("%*s%u,\"%s\",\"%s\",", indent, "", GetOrdinal(), inlineReason, calleeName);
-        m_Policy->DumpData(jitstdout);
+        m_Policy->DumpData(jitstdout());
         printf("\n");
     }
 
