@@ -271,9 +271,9 @@ namespace ILCompiler
             }
         }
 
-        protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, bool isFullType)
+        protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
-            TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, type, "Reflectable type", isFullType);
+            TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, type, "Reflectable type");
 
             if (type.IsDelegate)
             {
@@ -385,9 +385,9 @@ namespace ILCompiler
             return false;
         }
 
-        public override void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, bool isFullType)
+        public override void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
-            base.GetDependenciesDueToEETypePresence(ref dependencies, factory, type, isFullType);
+            base.GetDependenciesDueToEETypePresence(ref dependencies, factory, type);
 
             DataflowAnalyzedTypeDefinitionNode.GetDependencies(ref dependencies, factory, FlowAnnotations, type);
         }
@@ -970,7 +970,7 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(MetadataType typeDef)
             {
-                return _factory.TypeMetadata(typeDef).Marked || _factory.TypeMetadataWithoutCustomAttributes(typeDef).Marked;
+                return _factory.TypeMetadata(typeDef).Marked;
             }
 
             public bool GeneratesMetadata(EcmaModule module, CustomAttributeHandle caHandle)

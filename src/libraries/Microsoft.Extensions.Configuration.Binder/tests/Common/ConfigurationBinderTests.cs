@@ -1581,6 +1581,53 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void CanBindNestedStructProperties_SetterCalledWithMissingConfigEntry()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "dmy", "dmy" },
+            });
+
+            IConfiguration config = configurationBuilder.Build();
+
+            var bound = config.Get<StructWithNestedStructAndSetterLogic>();
+            Assert.Null(bound.String);
+            Assert.Null(bound.NestedStruct.String);
+            Assert.Equal(42, bound.Int32);
+            Assert.Equal(0, bound.NestedStruct.Int32);
+        }
+
+        [Fact]
+        public void CanBindNestedStructProperties_SetterNotCalledWithMissingConfigSection()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                // An empty value will not trigger defaulting.
+            });
+
+            IConfiguration config = configurationBuilder.Build();
+
+            var bound = config.Get<StructWithNestedStructAndSetterLogic>();
+            Assert.Null(bound.String);
+            Assert.Null(bound.NestedStruct.String);
+            Assert.Equal(0, bound.Int32);
+            Assert.Equal(0, bound.NestedStruct.Int32);
+        }
+
+        [Fact]
+        public void CanBindNestedStructProperties_SetterCalledWithMissingConfig_Array()
+        {
+            var config = TestHelpers.GetConfigurationFromJsonString(
+                """{"value": [{ }]}""");
+
+            var bound = config.GetSection("value").Get<StructWithNestedStructAndSetterLogic[]>();
+            Assert.Null(bound[0].String);
+            Assert.Equal(0, bound[0].Int32);
+        }
+
+        [Fact]
         public void IgnoresReadOnlyNestedStructProperties()
         {
             ConfigurationBuilder configurationBuilder = new();
@@ -1712,13 +1759,29 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(2, options.ParsedBlacklist.Count); // should be initialized when calling the options.Blacklist setter.
 
             Assert.Equal(401, options.HttpStatusCode); // exists in configuration and properly sets the property
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            // Setter not called if there's no matching configuration value.
-            Assert.Equal(0, options.OtherCode);
-#else
-            // doesn't exist in configuration. the setter sets default value '2'
+
+            // This doesn't exist in configuration but the setter should be called which defaults the to '2' from input of '0'.
             Assert.Equal(2, options.OtherCode);
-#endif
+
+            // These don't exist in configuration and setters are not called since they are nullable.
+            Assert.Equal(0, options.OtherCodeNullable);
+            Assert.Equal("default", options.OtherCodeString);
+            Assert.Null(options.OtherCodeNull);
+            Assert.Null(options.OtherCodeUri);            
+        }
+
+        [Fact]
+        public void EnsureNotCallingSettersWhenGivenExistingInstanceNotInConfig()
+        {
+            var builder = new ConfigurationBuilder();
+            builder.AddInMemoryCollection(new KeyValuePair<string, string?>[] { });
+            var config = builder.Build();
+
+            ClassThatThrowsOnSetters instance = new();
+
+            // The setter for MyIntProperty throws, so this verifies that the setter is not called.
+            config.GetSection("Dmy").Bind(instance);
+            Assert.Equal(42, instance.MyIntProperty);
         }
 
         [Fact]
@@ -2320,6 +2383,26 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("MySection", obj.MySection.Value);
             Assert.Equal("MyObject", obj.MyObject);
             Assert.Equal("MyString", obj.MyString);
+        }
+
+        [Fact]
+        public void SharedChildInstance()
+        {
+            var builder = new ConfigurationBuilder();
+            builder.AddInMemoryCollection(new KeyValuePair<string, string?>[]
+            {
+                new("A:B:ConnectionString", "localhost"),
+            });
+
+            var config = builder.Build();
+
+            SharedChildInstance_Class instance = new();
+            config.GetSection("A:B").Bind(instance);
+            Assert.Equal("localhost", instance.ConnectionString);
+
+            // Binding to a new section should not set the value to null.
+            config.GetSection("A").Bind(instance);
+            Assert.Equal("localhost", instance.ConnectionString);
         }
     }
 }

@@ -1610,7 +1610,7 @@ namespace __OptionValidationStaticInstances
 
         // Run the generator with C# 7.0 and verify that it fails.
         var (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
-                new OptionValidatorGenerator(), refAssemblies.ToArray(), new[] { source }, includeBaseReferences: true, LanguageVersion.CSharp7).ConfigureAwait(false);
+                new OptionsValidatorGenerator(), refAssemblies.ToArray(), new[] { source }, includeBaseReferences: true, LanguageVersion.CSharp7).ConfigureAwait(false);
 
         Assert.NotEmpty(diagnostics);
         Assert.Equal("SYSLIB1216", diagnostics[0].Id);
@@ -1618,7 +1618,7 @@ namespace __OptionValidationStaticInstances
 
         // Run the generator with C# 8.0 and verify that it succeeds.
         (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
-            new OptionValidatorGenerator(), refAssemblies.ToArray(), new[] { source }, includeBaseReferences: true, LanguageVersion.CSharp8).ConfigureAwait(false);
+            new OptionsValidatorGenerator(), refAssemblies.ToArray(), new[] { source }, includeBaseReferences: true, LanguageVersion.CSharp8).ConfigureAwait(false);
 
         Assert.Empty(diagnostics);
         Assert.Single(generatedSources);
@@ -1799,7 +1799,7 @@ namespace __OptionValidationStaticInstances
             refAssemblies.Add(refAssembly);
         }
 
-        return await RoslynTestUtils.RunGenerator(new OptionValidatorGenerator(), refAssemblies.ToArray(), new List<string> { source }, includeBaseReferences: true, languageVersion).ConfigureAwait(false);
+        return await RoslynTestUtils.RunGenerator(new OptionsValidatorGenerator(), refAssemblies.ToArray(), new List<string> { source }, includeBaseReferences: true, languageVersion).ConfigureAwait(false);
     }
 
     private static async Task<(IReadOnlyList<Diagnostic> diagnostics, ImmutableArray<GeneratedSourceResult> generatedSources)> RunGenerator(
@@ -1856,7 +1856,7 @@ namespace __OptionValidationStaticInstances
             assemblies.Add(Assembly.GetAssembly(typeof(Microsoft.Extensions.Options.ValidateObjectMembersAttribute))!);
         }
 
-        var result = await RoslynTestUtils.RunGenerator(new OptionValidatorGenerator(), assemblies.ToArray(), new[] { text })
+        var result = await RoslynTestUtils.RunGenerator(new OptionsValidatorGenerator(), assemblies.ToArray(), new[] { text })
             .ConfigureAwait(false);
 
         return result;

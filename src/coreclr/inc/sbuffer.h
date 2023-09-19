@@ -142,11 +142,11 @@ class SBuffer
     // Preallocate some memory you expect to use.  This can prevent
     // multiple reallocations.  Note this does not change the visible
     // size of the buffer.
-    void Preallocate(COUNT_T allocation) const;
+    void Preallocate(COUNT_T allocation);
 
     // Shrink memory usage of buffer to minimal amount.  Note that
     // this does not change the visible size of the buffer.
-    void Trim() const;
+    void Trim();
 
     //--------------------------------------------------------------------
     // Content manipulation routines

@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 
-cmake_policy(SET CMP0091 NEW)
-
 project(mono)
 
 include(../../eng/native/configurepaths.cmake)
@@ -259,6 +257,8 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "wasi")
   add_definitions(-DDISABLE_SOCKET_TRANSPORT)
   add_definitions(-DDISABLE_EGD_SOCKET)
   add_definitions(-DDISABLE_EVENTPIPE)
+  add_compile_options(-Wno-strict-prototypes)
+  add_compile_options(-Wno-unused-but-set-variable)
   set(ENABLE_PERFTRACING 0)
   set(DISABLE_SHARED_LIBS 1)
   set(INTERNAL_ZLIB 1)

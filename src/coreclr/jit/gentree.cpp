@@ -481,9 +481,11 @@ void GenTree::ReportOperBashing(FILE* f)
 
 #if MEASURE_NODE_SIZE
 
-void GenTree::DumpNodeSizes(FILE* fp)
+void GenTree::DumpNodeSizes()
 {
     // Dump the sizes of the various GenTree flavors
+
+    FILE* fp = jitstdout();
 
     fprintf(fp, "Small tree node size = %zu bytes\n", TREE_NODE_SZ_SMALL);
     fprintf(fp, "Large tree node size = %zu bytes\n", TREE_NODE_SZ_LARGE);

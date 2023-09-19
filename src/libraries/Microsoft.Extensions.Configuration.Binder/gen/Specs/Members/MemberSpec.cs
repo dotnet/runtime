@@ -16,7 +16,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         }
 
         public string Name { get; }
-        public bool ErrorOnFailedBinding { get; protected set; }
         public string DefaultValueExpr { get; protected set; }
 
         public required TypeSpec Type { get; init; }

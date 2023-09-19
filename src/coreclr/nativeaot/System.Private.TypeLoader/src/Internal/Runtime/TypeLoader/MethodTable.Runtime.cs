@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.Runtime.TypeLoader;
@@ -19,11 +20,8 @@ namespace Internal.Runtime
 
         internal unsafe RuntimeTypeHandle ToRuntimeTypeHandle()
         {
-            fixed (MethodTable* pThis = &this)
-            {
-                IntPtr result = (IntPtr)pThis;
-                return *(RuntimeTypeHandle*)&result;
-            }
+            IntPtr result = (IntPtr)Unsafe.AsPointer(ref this);
+            return *(RuntimeTypeHandle*)&result;
         }
     }
 }
