@@ -2175,6 +2175,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_PPC64_NIP:    *valp = (unw_word_t)winContext->Nip; break;
 #elif defined(TARGET_RISCV64)
     case UNW_RISCV_X1:     *valp = (unw_word_t)winContext->Ra; break;
+    case UNW_RISCV_X2:     *valp = (unw_word_t)winContext->Sp; break;
     case UNW_RISCV_X3:     *valp = (unw_word_t)winContext->Gp; break;
     case UNW_RISCV_X4:     *valp = (unw_word_t)winContext->Tp; break;
     case UNW_RISCV_X8:     *valp = (unw_word_t)winContext->Fp; break;

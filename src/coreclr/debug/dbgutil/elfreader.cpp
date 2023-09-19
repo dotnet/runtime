@@ -115,7 +115,7 @@ ElfReader::PopulateForSymbolLookup(uint64_t baseAddress)
     // Enumerate program headers searching for the PT_DYNAMIC header, etc.
     if (!EnumerateProgramHeaders(
         baseAddress,
-#ifdef TARGET_LINUX_MUSL
+#if defined(TARGET_LINUX_MUSL) || defined(TARGET_RISCV64)
         // On musl based platforms (Alpine), the below dynamic entries for hash,
         // string table, etc. are RVAs instead of absolute address like on all
         // other Linux distros. Get the "loadbias" (basically the base address
