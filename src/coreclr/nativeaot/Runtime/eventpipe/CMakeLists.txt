@@ -18,6 +18,8 @@ set (GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES ${GENERATED_INCLUDE_DIR}/disab
 
 set(GENERATE_PLAT_AGNOSTIC_SCRIPT ${CLR_DIR}/scripts/genEventing.py)
 
+set(ETW_PROVIDER_SCRIPT ${CLR_DIR}/scripts/genEtwProvider.py)
+
 set (EventingHeaders
   ${GENERATED_INCLUDE_DIR}/etmdummy.h
   ${GENERATED_INCLUDE_DIR}/clretwallmain.h
@@ -27,9 +29,12 @@ set (EventingHeaders
   ${GENERATED_INCLUDE_DIR}/clretwallmain.cpp
 )
 
+
+
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp
   COMMAND ${Python_EXECUTABLE} ${GENERATE_PLAT_AGNOSTIC_SCRIPT} --man ${EVENT_MANIFEST} --incdir ${GENERATED_INCLUDE_DIR} --inc ${EVENT_INCLUSION_FILE} --dummy ${GENERATED_INCLUDE_DIR}/etmdummy.h  --runtimeflavor nativeaot ${NONEXTERN_ARG} ${NOXPLATHEADER_ARG}
+  COMMAND ${Python_EXECUTABLE} ${ETW_PROVIDER_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --intermediate ${GENERATED_INCLUDE_DIR}
   COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/aot_eventing_headers.timestamp
   DEPENDS ${EVENT_MANIFEST} ${GENERATE_PLAT_AGNOSTIC_SCRIPT}
   VERBATIM
@@ -153,6 +158,9 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 if (WIN32)
     set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${GEN_EVENTPIPE_PROVIDER_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    # set_source_files_properties(${AOT_EVENTTRACE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")    
 endif()
 
 list(APPEND AOT_EVENTPIPE_SHIM_SOURCES
@@ -190,7 +198,11 @@ if (FEATURE_EVENT_TRACE)
       ${RUNTIME_DIR}/eventtrace_gcheap.cpp
     )
   endif()
+
+  set_source_files_properties(${AOT_EVENTTRACE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")    
 endif()
+
+
 
 list(APPEND EVENTPIPE_SOURCES
   ${AOT_EVENTPIPE_SHIM_SOURCES}

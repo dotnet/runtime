@@ -44,7 +44,11 @@ typedef void* LPVOID;
 typedef uint32_t UINT;
 typedef void* PVOID;
 typedef uint64_t ULONGLONG;
+#ifdef TARGET_UNIX
 typedef uint32_t ULONG;
+#else
+typedef unsigned long ULONG;
+#endif
 typedef int64_t LONGLONG;
 typedef uint8_t BYTE;
 typedef uint16_t UINT16;

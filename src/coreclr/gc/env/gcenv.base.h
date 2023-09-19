@@ -52,10 +52,14 @@
 //
 
 typedef int BOOL;
-typedef uint32_t DWORD;
 typedef uint64_t DWORD64;
+#ifdef TARGET_UNIX
+typedef uint32_t DWORD;
 typedef uint32_t ULONG;
-
+#else
+typedef unsigned long DWORD;
+typedef unsigned long ULONG;
+#endif
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
 
@@ -239,7 +243,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 // but callers should only rely on it when the function returns TRUE;
 // otherwise, the stored value is undefined and varies by implementation
 // and hardware platform.
-inline uint8_t BitScanForward(uint32_t *bitIndex, uint32_t mask)
+inline uint8_t BitScanForward(DWORD *bitIndex, uint32_t mask)
 {
 #ifdef _MSC_VER
     return _BitScanForward((unsigned long*)bitIndex, mask);
@@ -257,7 +261,7 @@ inline uint8_t BitScanForward(uint32_t *bitIndex, uint32_t mask)
 // but callers should only rely on it when the function returns TRUE;
 // otherwise, the stored value is undefined and varies by implementation
 // and hardware platform.
-inline uint8_t BitScanForward64(uint32_t *bitIndex, uint64_t mask)
+inline uint8_t BitScanForward64(DWORD *bitIndex, uint64_t mask)
 {
 #ifdef _MSC_VER
  #if _WIN64
@@ -308,7 +312,7 @@ inline uint8_t BitScanReverse(uint32_t *bitIndex, uint32_t mask)
 }
 
 // Cross-platform wrapper for the _BitScanReverse64 compiler intrinsic.
-inline uint8_t BitScanReverse64(uint32_t *bitIndex, uint64_t mask)
+inline uint8_t BitScanReverse64(DWORD *bitIndex, uint64_t mask)
 {
 #ifdef _MSC_VER
  #if _WIN64
