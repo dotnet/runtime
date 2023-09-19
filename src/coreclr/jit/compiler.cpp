@@ -20,7 +20,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "rangecheck.h"
 #include "lower.h"
 #include "stacklevelsetter.h"
-#include "jittelemetry.h"
 #include "patchpointinfo.h"
 #include "jitstd/algorithm.h"
 
@@ -1078,7 +1077,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-                // On LOONGARCH64 struct that is 1-16 bytes is returned by value in one/two register(s)
+                // On LOONGARCH64/RISCV64 struct that is 1-16 bytes is returned by value in one/two register(s)
                 howToReturnStruct = SPK_ByValue;
                 useType           = TYP_STRUCT;
 
@@ -1854,19 +1853,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     activePhaseChecks = PhaseChecks::CHECK_NONE;
     activePhaseDumps  = PhaseDumps::DUMP_ALL;
 
-#ifdef FEATURE_TRACELOGGING
-    // Make sure JIT telemetry is initialized as soon as allocations can be made
-    // but no later than a point where noway_asserts can be thrown.
-    //    1. JIT telemetry could allocate some objects internally.
-    //    2. NowayAsserts are tracked through telemetry.
-    //    Note: JIT telemetry could gather data when compiler is not fully initialized.
-    //          So you have to initialize the compiler variables you use for telemetry.
-    assert((unsigned)PHASE_PRE_IMPORT == 0);
-    info.compILCodeSize = 0;
-    info.compMethodHnd  = nullptr;
-    compJitTelemetry.Initialize(this);
-#endif
-
     fgInit();
     lvaInit();
     optInit();
@@ -2368,16 +2354,8 @@ void DummyProfilerELTStub(UINT_PTR ProfilerHandle)
 
 #endif // PROFILING_SUPPORTED
 
-bool Compiler::compShouldThrowOnNoway(
-#ifdef FEATURE_TRACELOGGING
-    const char* filename, unsigned line
-#endif
-    )
+bool Compiler::compShouldThrowOnNoway()
 {
-#ifdef FEATURE_TRACELOGGING
-    compJitTelemetry.NotifyNowayAssert(filename, line);
-#endif
-
     // In min opts, we don't want the noway assert to go through the exception
     // path. Instead we want it to just silently go through codegen for
     // compat reasons.
@@ -2431,12 +2409,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE) || jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) ||
         jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
-    {
-        opts.compFlags = CLFLG_MINOPT;
-    }
-    // Don't optimize .cctors (except prejit) or if we're an inlinee
-    else if (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && ((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
-             !compIsForInlining())
     {
         opts.compFlags = CLFLG_MINOPT;
     }
@@ -2579,7 +2551,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         pfAltJit = &JitConfig.AltJit();
     }
 
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         if (pfAltJit->contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
@@ -2605,7 +2577,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         altJitVal = JitConfig.AltJit().list();
     }
 
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         // In release mode, you either get all methods or no methods. You must use "*" as the parameter, or we ignore
         // it. You don't get to give a regular expression of methods to match.
@@ -5081,6 +5053,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+
+        // Conditional to Switch conversion
+        //
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
     }
 
     // Determine start of cold region if we are hot/cold splitting
@@ -5202,10 +5178,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     RecordStateAtEndOfCompilation();
 
-#ifdef FEATURE_TRACELOGGING
-    compJitTelemetry.NotifyEndOfCompilation();
-#endif
-
     unsigned methodsCompiled = (unsigned)InterlockedIncrement((LONG*)&Compiler::jitTotalMethodCompiled);
 
     if (JitConfig.JitDisasmSummary() && !compIsForInlining())
@@ -5282,6 +5254,13 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
     weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
     BasicBlock*            bbHavingAlign         = nullptr;
     BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+    bool                   visitedLoopNum[BasicBlock::MAX_LOOP_NUM];
+    memset(visitedLoopNum, false, sizeof(visitedLoopNum));
+
+#ifdef DEBUG
+    unsigned visitedBlockForLoopNum[BasicBlock::MAX_LOOP_NUM];
+    memset(visitedBlockForLoopNum, 0, sizeof(visitedBlockForLoopNum));
+#endif
 
     if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
     {
@@ -5304,7 +5283,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is a unconditional jump (which is not part of callf/always pair)
+        // If there is an unconditional jump (which is not part of callf/always pair)
         if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
             // Track the lower weight blocks
@@ -5358,12 +5337,19 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
                 madeChanges       = true;
                 unmarkedLoopAlign = true;
             }
-            else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+            else if ((loopTop->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && visitedLoopNum[loopTop->bbNatLoopNum])
             {
+#ifdef DEBUG
+                char buffer[100];
+                sprintf_s(buffer, 100, "loop block " FMT_BB " appears before top of loop",
+                          visitedBlockForLoopNum[loopTop->bbNatLoopNum]);
+#endif
+
                 // In some odd cases we may see blocks within the loop before we see the
                 // top block of the loop. Just bail on aligning such loops.
                 //
-                loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
+
+                loopTop->unmarkLoopAlign(this DEBUG_ARG(buffer));
                 madeChanges       = true;
                 unmarkedLoopAlign = true;
             }
@@ -5397,6 +5383,20 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             {
                 break;
             }
+        }
+
+        if (block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+        {
+#ifdef DEBUG
+            if (!visitedLoopNum[block->bbNatLoopNum])
+            {
+                // Record the first block for which bbNatLoopNum was seen for
+                // debugging purpose.
+                visitedBlockForLoopNum[block->bbNatLoopNum] = block->bbNum;
+            }
+#endif
+            // If this block is part of loop, mark the loopNum as visited.
+            visitedLoopNum[block->bbNatLoopNum] = true;
         }
     }
 
@@ -8292,7 +8292,7 @@ double JitTimer::s_cyclesPerSec = CachedCyclesPerSecond();
 #endif
 #endif // FEATURE_JIT_METHOD_PERF
 
-#if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS || defined(FEATURE_TRACELOGGING)
+#if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
 const char* PhaseNames[] = {
 #define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) string_nm,
 #include "compphases.h"

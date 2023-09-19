@@ -70,15 +70,6 @@ jobs:
       value: ''
     - name: publishLogsArtifactPrefix
       value: 'BuildLogs_CoreCLR'
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-      # Variables used to publish packages to blob feed
-      - name: dotnetfeedUrl
-        value: https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json
-      - name: dotnetfeedPAT
-        value: $(dotnetfeed-storage-access-key-1)
-      # Variables used by arcade to gather asset manifests
-      - name: _DotNetPublishToBlobFeed
-        value: true
     - name: officialBuildIdArg
       value: ''
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -101,10 +92,7 @@ jobs:
       value: ''
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - name: clrRuntimeComponentsBuildArg
-        value: '-component runtime -component alljits -component paltests -component nativeaot -component spmi '
-    - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.archType, 'x86')) }}:
-      - name: clrRuntimeComponentsBuildArg
-        value: '-component runtime -component jit -component iltools -component spmi '
+        value: '-component runtime -component alljits -component nativeaot -component spmi '
 
     - name: pgoInstrumentArg
       value: ''
@@ -114,12 +102,6 @@ jobs:
 
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
-
-    - name: clrRuntimePortableBuildArg
-      value: ''
-    - ${{ if eq(parameters.osGroup, 'tizen') }}:
-      - name: clrRuntimePortableBuildArg
-        value: '-portablebuild=false'
 
     # Set a default empty argument for the pgo path.
     # This will be set during the 'native prerequisites' step if PGO optimization is enabled.
@@ -135,7 +117,6 @@ jobs:
     - ${{ parameters.variables }}
 
     steps:
-
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
@@ -162,6 +143,24 @@ jobs:
         continueOnError: false
         condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
+    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
+        - task: Bash@3
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+            arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - task: PowerShell@2
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+            arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
+
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
@@ -174,14 +173,14 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if or(eq(parameters.crossBuild, 'true'), ne(parameters.archType, 'x64')) }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg) $(clrRuntimePortableBuildArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg)
         displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x64 targeting x86)
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
@@ -191,12 +190,8 @@ jobs:
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - ${{ if or(ne(parameters.osGroup, 'linux'), ne(parameters.archType, 'x86')) }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+clr.paltestlist $(crossArg) $(compilerArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
-        displayName: Build managed product components and packages
-    - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.archType, 'x86')) }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
-        displayName: Build managed product components and packages
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages $(crossArg) $(compilerArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
+      displayName: Build managed product components and packages
 
     # Build native test components
     - ${{ if and(ne(parameters.isOfficialBuild, true), ne(parameters.disableClrTest, true)) }}:
@@ -278,25 +273,23 @@ jobs:
             artifactName: $(nativeTestArtifactName)
             displayName: 'native test components'
 
-    # Get key vault secrets for publishing
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-      - task: AzureKeyVault@1
-        inputs:
-          azureSubscription: 'DotNet-Engineering-Services_KeyVault'
-          KeyVaultName: EngKeyVault
-          SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
-
     # Save packages using the prepare-signed-artifacts format.
     - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:
       - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         parameters:
           name: ${{ parameters.platform }}
 
+    - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
+      - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
+        displayName: Collect vslogs on exit
+        condition: always()
+
+
     # Publish Logs
     - task: PublishPipelineArtifact@1
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '$(publishLogsArtifactPrefix)${{ parameters.pgoType }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: '$(publishLogsArtifactPrefix)_Attempt$(System.JobAttempt)_${{ parameters.pgoType }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

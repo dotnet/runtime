@@ -442,8 +442,6 @@ CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2) // Number of times 
 CONFIG_INTEGER(JitDoIfConversion, W("JitDoIfConversion"), 1) // Perform If conversion
 #endif                                                       // defined(OPT_CONFIG)
 
-CONFIG_INTEGER(JitTelemetry, W("JitTelemetry"), 1) // If non-zero, gather JIT telemetry data
-
 // Max # of MapSelect's considered for a particular top-level invocation.
 CONFIG_INTEGER(JitVNMapSelBudget, W("JitVNMapSelBudget"), DEFAULT_MAP_SELECT_BUDGET)
 
@@ -577,6 +575,7 @@ CONFIG_STRING(JitEnablePatchpointRange, W("JitEnablePatchpointRange"))
 // Profile instrumentation options
 CONFIG_INTEGER(JitInterlockedProfiling, W("JitInterlockedProfiling"), 0)
 CONFIG_INTEGER(JitScalableProfiling, W("JitScalableProfiling"), 1)
+CONFIG_INTEGER(JitCounterPadding, W("JitCounterPadding"), 0) // number of unused extra slots per counter
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 

@@ -41,7 +41,7 @@ public static class Repro
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
@@ -51,7 +51,6 @@ public static class Repro
         {
             Console.WriteLine(e);
         }
-        return 100;
     }
 }
 }

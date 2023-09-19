@@ -14098,11 +14098,11 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         {
             if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
             {
-                assert((reinterpret_cast<size_t>(addr) & 3) == 0);
+                assert(IS_ALIGNED(addr, 4));
             }
             else
             {
-                assert((reinterpret_cast<size_t>(addr) & (byteSize - 1)) == 0);
+                assert(IS_ALIGNED(addr, byteSize));
             }
         }
 #endif // DEBUG

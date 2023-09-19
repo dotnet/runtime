@@ -69,9 +69,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/Github/Runtime_76219/Runtime_76219/*">
             <Issue>https://github.com/dotnet/runtime/issues/78899</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_82535/Runtime_82535/*">
-          <Issue>https://github.com/dotnet/runtime/issues/89585</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
           <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
         </ExcludeList>
@@ -694,9 +691,6 @@
 
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Condition="'$(RuntimeConfiguration)' == 'checked'" Include="$(XunitTestBinBase)/JIT/Generics/Exceptions/GenericCatchInterfaceProgram/**">
-            <Issue>https://github.com/dotnet/runtime/issues/90848</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Regression/GetInterfaceMapWithStaticVirtualsAndConstraints/**">
             <Issue>https://github.com/dotnet/runtime/issues/89157</Issue>
         </ExcludeList>
@@ -1114,9 +1108,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/managed/Compilation/Compilation/**">
             <Issue>expects to see System.Private.CoreLib in CORE_ROOT</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/GlobalInstance/GlobalInstanceTrackerSupportTests_TargetUnix/**">
-            <Issue>https://github.com/dotnet/runtime/issues/86990</Issue>
-        </ExcludeList>
 
         <!-- Complex constrained calls -->
         <!-- https://github.com/dotnet/runtimelab/issues/1431 -->
@@ -1180,6 +1171,10 @@
 
         <!-- Requires Debug build -->
         <ExcludeList Include="$(XunitTestBinBase)/JIT\Directed\debugging\poisoning\poison\*" />
+
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
+            <Issue>Dynamic code generation is not supported on this platform</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
@@ -1209,9 +1204,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128TestFieldLayout/*">
             <Issue>https://github.com/dotnet/runtime/issues/74223</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
-            <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/54176</Issue>
         </ExcludeList>
@@ -1221,23 +1213,8 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse42.X64/Crc32_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/54185</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/X86Base*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base/DivRem*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/HardwareIntrinsics/X86/X86Base.X64/X86Base.X64*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/out_of_range_fp_to_int_conversions/*">
             <Issue>Mono does not define out of range fp to int conversions</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46174</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/*">
-            <Issue>https://github.com/dotnet/runtime/issues/46174</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/ShiftOperations/*">
           <Issue>There is a known undefined behavior with shifts and 0xFFFFFFFF overflows, so skip the test for mono.</Issue>
@@ -2239,6 +2216,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_74635/Runtime_74635_1/**">
             <Issue>https://github.com/dotnet/runtime/issues/74687</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XUnitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**">
+            <Issue>https://github.com/dotnet/runtime/issues/71656</Issue>
+        </ExcludeList>
         <!-- End interpreter issues -->
     </ItemGroup>
 
@@ -2477,10 +2457,6 @@
             <Issue>This test includes an intentionally-invalid UnmanagedCallersOnly method. Invalid UnmanagedCallersOnly methods cause failures at AOT-time.</Issue>
         </ExcludeList>
 
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/ArmBase/Yield_*/**">
-            <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
-        </ExcludeList>
-
         <ExcludeList Include="$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -2711,6 +2687,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/**">
+            <Issue>https://github.com/dotnet/runtime/issues/90605</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsWindows)' != 'true' " >
@@ -2933,6 +2912,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SetLastError/**">
+            <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/NestedStruct/**">
             <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
@@ -3233,6 +3215,9 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandled/**">
+            <Issue>System.Diagnostics.Process is not supported</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
             <Issue>System.Threading.Thread.UnsafeStart not supported</Issue>
         </ExcludeList>
@@ -3470,6 +3455,15 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/GenericContext/**">
             <Issue>https://github.com/dotnet/runtime/issues/67359</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/NestedStruct/**">
+            <Issue>https://github.com/dotnet/runtime/issues/91388</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/MainProgramHandle/MainProgramHandleTests/**">
+            <Issue>https://github.com/dotnet/runtime/issues/91388</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportSearchPaths/DllImportSearchPathsTest/**">
+            <Issue>https://github.com/dotnet/runtime/issues/91388</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'android' And '$(TargetArchitecture)' == 'arm64'">
@@ -3699,8 +3693,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/v2.0-beta1/149926/149926/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
-            <Issue>https://github.com/dotnet/runtime/issues/90012</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
+            <Issue>Dynamic code generation is not supported on this platform</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/**">
+            <Issue>System.Diagnostics.Process is not supported</Issue>
         </ExcludeList>
     </ItemGroup>
 

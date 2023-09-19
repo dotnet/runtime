@@ -1585,6 +1585,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pContext = NULL;
 
     *(pRD->pPC) = m_pCallerReturnAddress;
+    pRD->ControlPC = m_pCallerReturnAddress;
     pRD->SP = (DWORD) dac_cast<TADDR>(m_pCallSiteSP);
 
     pRD->IsCallerContextValid = FALSE;

@@ -2340,8 +2340,36 @@ void ReplaceVisitor::ReadBackAfterCall(GenTreeCall* call, GenTree* user)
 //
 //   If the remainder of the struct local is dying, then we expect that this
 //   entire struct local is now dying, since all field accesses are going to be
-//   replaced with other locals. The exception is if there is a queued read
-//   back for any of the fields.
+//   replaced with other locals.
+//
+//   There are two exceptions to the above:
+//
+//     1) If there is a queued readback for any of the fields, then there is
+//     live state in the struct local, so it is not dying.
+//
+//     2) If there are further uses of the local in the same statement then we cannot
+//     actually act on the last-use information we would provide here. That's because
+//     uses of locals occur at the user and we do not model that here. In the real model
+//     there are cases where we do not have any place to insert any IR between the two uses.
+//     For example, consider:
+//
+//       ▌  CALL      void   Program:Foo(Program+S,Program+S)
+//       ├──▌  LCL_VAR   struct<Program+S, 4> V01 loc0
+//       └──▌  LCL_VAR   struct<Program+S, 4> V01 loc0
+//
+//     If V01 is promoted fully then both uses of V01 are last uses here; but
+//     replacing the IR with
+//
+//       ▌  CALL      void   Program:Foo(Program+S,Program+S)
+//       ├──▌  LCL_VAR   struct<Program+S, 4> V01 loc0          (last use)
+//       └──▌  COMMA     struct
+//          ├──▌  STORE_LCL_FLD int    V01 loc0         [+0]
+//          │  └──▌  LCL_VAR   int    V02 tmp0
+//          └──▌  LCL_VAR   struct<Program+S, 4> V01 loc0          (last use)
+//
+//     would be illegal since the created store overlaps with the first local,
+//     and does not take into account that both uses occur simultaneously at
+//     the position of the CALL node.
 //
 bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
 {
@@ -2357,6 +2385,15 @@ bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
     for (Replacement& rep : agg->Replacements)
     {
         if (rep.NeedsReadBack)
+        {
+            return false;
+        }
+    }
+
+    for (GenTree* cur = lcl->gtNext; cur != nullptr; cur = cur->gtNext)
+    {
+        assert(cur->OperIsAnyLocal());
+        if (cur->TypeIs(TYP_STRUCT) && (cur->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum()))
         {
             return false;
         }
@@ -2577,7 +2614,7 @@ void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs
 
         GenTree*   readBack = Promotion::CreateWriteBack(m_compiler, lcl, rep);
         Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-        JITDUMP("Writing back %s before " FMT_STMT "\n", rep.Description, stmt->GetID());
+        JITDUMP("Writing back %s before " FMT_STMT "\n", rep.Description, m_currentStmt->GetID());
         DISPSTMT(stmt);
         m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
         ClearNeedsWriteBack(rep);

@@ -3316,8 +3316,12 @@ BOOL NDirect::MarshalingRequired(
                 FALLTHROUGH;
 
             case ELEMENT_TYPE_VALUETYPE:
+            case ELEMENT_TYPE_GENERICINST:
             {
                 TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
+                bool isValidGeneric = IsValidForGenericMarshalling(hndArgType.GetMethodTable(), false, runtimeMarshallingEnabled);
+                if(!hndArgType.IsValueType() ||  !isValidGeneric)
+                    return true;
 
                 if (hndArgType.GetMethodTable()->IsInt128OrHasInt128Fields())
                 {

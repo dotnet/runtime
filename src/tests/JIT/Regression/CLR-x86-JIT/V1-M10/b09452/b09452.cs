@@ -12,7 +12,7 @@ namespace DefaultNamespace
     public class X
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Object[,] obj = new Object[1, 1];
             //			IL_0000:  ldc.i4.1
@@ -29,7 +29,6 @@ namespace DefaultNamespace
 
             //    		IL_0015:  ret 
 
-            return 100;
         } // main
 
     } // X
