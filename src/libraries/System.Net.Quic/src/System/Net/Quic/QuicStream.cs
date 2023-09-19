@@ -89,7 +89,9 @@ public sealed partial class QuicStream
     private ReceiveBuffers _receiveBuffers = new ReceiveBuffers();
     private int _receivedNeedsEnable;
 
-    private readonly ResettableValueTaskSource _sendTcs = new ResettableValueTaskSource()
+    private readonly ResettableValueTaskSource _sendTcs;
+    // helper function since we need to pass the _shutdownTcs to the _sendTcs
+    private ResettableValueTaskSource CreateSendTaskCompletionSource() => new ResettableValueTaskSource()
     {
         CancellationAction = target =>
         {
@@ -106,7 +108,12 @@ public sealed partial class QuicStream
                 // when using CancellationTokenSource.CancelAfter.
                 // Ignore the exception
             }
-        }
+        },
+
+        // since we're using _sendTcs (Abortive) and _shutdownTcs (Graceful) for controlling write direction shutdown,
+        // CancellationAction above can race with disposing the stream. Holding _shutdownTcs will prevent Dispose from
+        // performing graceful shutdown while we are Aborting it.
+        CancellationActionLock = _shutdownTcs
     };
     private MsQuicBuffers _sendBuffers = new MsQuicBuffers();
     private readonly object _sendBuffersLock = new object();
@@ -185,6 +192,7 @@ public sealed partial class QuicStream
             _receiveTcs.TrySetResult(final: true);
         }
         _type = type;
+        _sendTcs = CreateSendTaskCompletionSource();
     }
 
     /// <summary>
@@ -211,6 +219,7 @@ public sealed partial class QuicStream
             context.Free();
             throw;
         }
+        _sendTcs = CreateSendTaskCompletionSource();
 
         _defaultErrorCode = defaultErrorCode;
 
@@ -355,15 +364,18 @@ public sealed partial class QuicStream
             return ValueTask.FromCanceled(cancellationToken);
         }
 
-        // Concurrent call, this one lost the race.
+        // attempt to reserve the task. If the token was already canceled, this will also invoke Abort(Write, DefaultErrorCode) and transition to final state.
         if (!_sendTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
         {
+            // Concurrent call, this one lost the race.
             throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"));
         }
 
-        // No need to call anything since we already have a result, most likely an exception.
+        // Task.Delay(TimeSpan.FromSeconds(1), CancellationToken.None).Wait(CancellationToken.None);
+
         if (valueTask.IsCompleted)
         {
+            // No need to continue since we already have a result, most likely an exception.
             return valueTask;
         }
 

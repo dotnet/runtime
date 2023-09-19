@@ -29,6 +29,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     private ManualResetValueTaskSourceCore<bool> _valueTaskSource;
     private CancellationTokenRegistration _cancellationRegistration;
     private Action<object?>? _cancellationAction;
+    private object? _cancellationActionLock;
     private GCHandle _keepAlive;
 
     private readonly TaskCompletionSource _finalTaskSource;
@@ -49,6 +50,11 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     /// The argument for the action is the <c>keepAlive</c> object from the same <see cref="TryGetValueTask(out ValueTask, object?, CancellationToken)"/> call.
     /// </summary>
     public Action<object?> CancellationAction { init { _cancellationAction = value; } }
+
+    /// <summary>
+    /// Optional lock object to be held during the <see cref="CancellationAction"/> callback. If no lock is provided, the callback will be invoked without holding any lock.
+    /// </summary>
+    public object? CancellationActionLock { init { _cancellationActionLock = value; } }
 
     /// <summary>
     /// Returns <c>true</c> is this task source has entered its final state, i.e. <see cref="TrySetResult(bool)"/> or <see cref="TrySetException(Exception, bool)"/>
@@ -91,10 +97,27 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     _cancellationRegistration = cancellationToken.UnsafeRegister(static (obj, cancellationToken) =>
                     {
                         (ResettableValueTaskSource thisRef, object? target) = ((ResettableValueTaskSource, object?))obj!;
-                        // This will transition the state to Ready.
-                        if (thisRef.TrySetException(new OperationCanceledException(cancellationToken)))
+
+                        object? lockObject = thisRef._cancellationActionLock;
+                        try
                         {
-                            thisRef._cancellationAction?.Invoke(target);
+                            if (lockObject != null)
+                            {
+                                Monitor.Enter(lockObject);
+                            }
+
+                            // This will transition the state to Ready.
+                            if (thisRef.TrySetException(new OperationCanceledException(cancellationToken)))
+                            {
+                                thisRef._cancellationAction?.Invoke(target);
+                            }
+                        }
+                        finally
+                        {
+                            if (lockObject != null)
+                            {
+                                Monitor.Exit(lockObject);
+                            }
                         }
                     }, (this, keepAlive));
                 }
