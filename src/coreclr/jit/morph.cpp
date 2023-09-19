@@ -10796,8 +10796,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             return node;
         }
 #if defined(TARGET_XARCH)
-        case NI_AVX512F_Add:
-        case NI_AVX512BW_Add:
         case NI_AVX512F_And:
         case NI_AVX512DQ_And:
         case NI_AVX512F_AndNot:
@@ -10839,13 +10837,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             switch (intrinsicId)
             {
-                case NI_AVX512F_Add:
-                case NI_AVX512BW_Add:
-                {
-                    maskIntrinsicId = NI_AVX512F_AddMask;
-                    break;
-                }
-
                 case NI_AVX512F_And:
                 case NI_AVX512DQ_And:
                 {
