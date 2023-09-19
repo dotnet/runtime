@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace Internal.Runtime.Binder
