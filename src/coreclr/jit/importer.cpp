@@ -11460,7 +11460,7 @@ SPILLSTACK:
             {
                 GenTree* addTree = addStmt->GetRootNode();
 
-                if (addTree->gtOper == GT_JTRUE)
+                if (addTree->OperIs(GT_JTRUE))
                 {
                     GenTree* relOp = addTree->AsOp()->gtOp1;
                     assert(relOp->OperIsCompare());
@@ -11485,7 +11485,7 @@ SPILLSTACK:
                 }
                 else
                 {
-                    assert((addTree->gtOper == GT_SWITCH) && genActualTypeIsIntOrI(addTree->AsOp()->gtOp1->TypeGet()));
+                    assert(addTree->OperIs(GT_SWITCH) && genActualTypeIsIntOrI(addTree->AsOp()->gtOp1->TypeGet()));
 
                     unsigned temp = lvaGrabTemp(true DEBUGARG("spill addStmt SWITCH"));
                     impStoreTemp(temp, addTree->AsOp()->gtOp1, level);
