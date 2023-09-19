@@ -86,6 +86,9 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     if (is_runtime_running() && runtimeHelpers.mono_wasm_exit) {
         runtimeHelpers.mono_wasm_exit(exit_code);
     }
+    if (loaderHelpers.config?.forwardConsoleLogsToWS) {
+        consoleWebSocket?.close(exit_code, reason);
+    }
     // just in case mono_wasm_exit didn't exit or throw
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
         if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
