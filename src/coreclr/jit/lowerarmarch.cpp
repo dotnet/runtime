@@ -2833,8 +2833,8 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
     {
         NamedIntrinsic intrinsicId =
             op->OperIs(GT_ADD) ? NI_ArmBase_Arm64_MultiplyLongAdd : NI_ArmBase_Arm64_MultiplyLongSub;
-        GenTreeHWIntrinsic* outOp = comp->gtNewScalarHWIntrinsicNode(TYP_LONG,
-                                                                     mul->gtOp1, mul->gtOp2, addVal, intrinsicId);
+        GenTreeHWIntrinsic* outOp =
+            comp->gtNewScalarHWIntrinsicNode(TYP_LONG, mul->gtOp1, mul->gtOp2, addVal, intrinsicId);
         outOp->SetSimdBaseJitType(mul->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG);
         op->ReplaceWith(outOp, comp);
     }
