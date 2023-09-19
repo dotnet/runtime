@@ -48,17 +48,20 @@ namespace Microsoft.Interop
                 InteropGenerationOptions interopGenerationOptions = new(options.UseMarshalType);
                 generatorFactory = new MarshalAsMarshallingGeneratorFactory(interopGenerationOptions, generatorFactory);
 
-                IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(
-                    // Since the char type in an array will not be part of the P/Invoke signature, we can
-                    // use the regular blittable marshaller in all cases.
-                    new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: true, TypeNames.LibraryImportAttribute_ShortName),
-                    new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut));
-                // We don't need to include the later generator factories for collection elements
-                // as the later generator factories only apply to parameters.
-                generatorFactory = new AttributedMarshallingModelGeneratorFactory(
-                    generatorFactory,
-                    elementFactory,
-                    new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ManagedToUnmanagedIn, MarshalMode.ManagedToUnmanagedRef, MarshalMode.ManagedToUnmanagedOut));
+                if (env.TargetFramework == TargetFramework.Net || env.TargetFrameworkVersion.Major >= 7)
+                {
+                    IMarshallingGeneratorFactory elementFactory = new AttributedMarshallingModelGeneratorFactory(
+                        // Since the char type in an array will not be part of the P/Invoke signature, we can
+                        // use the regular blittable marshaller in all cases.
+                        new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: true, TypeNames.LibraryImportAttribute_ShortName),
+                        new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut));
+                    // We don't need to include the later generator factories for collection elements
+                    // as the later generator factories only apply to parameters.
+                    generatorFactory = new AttributedMarshallingModelGeneratorFactory(
+                        generatorFactory,
+                        elementFactory,
+                        new AttributedMarshallingModelOptions(runtimeMarshallingDisabled, MarshalMode.ManagedToUnmanagedIn, MarshalMode.ManagedToUnmanagedRef, MarshalMode.ManagedToUnmanagedOut));
+                }
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             }

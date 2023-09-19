@@ -23,11 +23,6 @@ namespace Microsoft.Interop
             _isPinned = isPinned;
         }
 
-        public bool IsSupported(TargetFramework target, Version version)
-        {
-            return target is TargetFramework.Net && version.Major >= 6;
-        }
-
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
             return info.IsByRef ? ValueBoundaryBehavior.AddressOfNativeIdentifier : ValueBoundaryBehavior.NativeIdentifier;
