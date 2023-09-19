@@ -9,7 +9,7 @@
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
         <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
-        <target state="new">Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</target>
+        <target state="translated">Bağlama mantığı bir bağlayıcı çağrısı için oluşturulmadı. Desteklenmeyen giriş düzenleri şunları içerir: genel çağrılar, geçirilen kutulu nesneler ve ‘genel’ veya ‘iç’ olmayan geçirme türleri.</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">
