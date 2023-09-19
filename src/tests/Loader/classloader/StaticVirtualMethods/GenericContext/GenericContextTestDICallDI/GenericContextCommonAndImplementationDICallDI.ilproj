@@ -6,6 +6,6 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="GenericContextCommonAndImplementationDefaultImpCallDefaultImp.il" />
+    <Compile Include="GenericContextCommonAndImplementationDICallDI.il" />
   </ItemGroup>
 </Project>
