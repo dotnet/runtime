@@ -1504,6 +1504,7 @@ typedef enum CorTokenType
     mdtGenericParam         = 0x2a000000,       //
     mdtMethodSpec           = 0x2b000000,       //
     mdtGenericParamConstraint = 0x2c000000,
+    mdtGenericParamType     = 0x2d000000,       //
 
     mdtString               = 0x70000000,       //
     mdtName                 = 0x71000000,       //

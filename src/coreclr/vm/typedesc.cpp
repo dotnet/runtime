@@ -886,8 +886,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
         {
             LoaderAllocator* pAllocator = GetModule()->GetLoaderAllocator();
             // If there is a single class constraint we place it at index 0 of the array
-            AllocMemHolder<TypeHandle> constraints
-                (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints) * S_SIZE_T(sizeof(TypeHandle))));
+            AllocMemHolder<TypeHandle> constraints;
 
             DWORD i = 0;
             while (pInternalImport->EnumNext(&hEnum, &tkConstraint))
@@ -898,6 +897,21 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
                 {
                     GetModule()->GetAssembly()->ThrowTypeLoadException(pInternalImport, pMT->GetCl(), IDS_CLASSLOAD_BADFORMAT);
                 }
+
+                if (i == 0)
+                {
+                    // The first entry may be the type of type parameter, we need to skip it
+                    if (TypeFromToken(tkConstraintType) == mdtGenericParamType)
+                    {
+                        numConstraints--;
+                        continue;
+                    }
+                    else
+                    {
+                        constraints = (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints) * S_SIZE_T(sizeof(TypeHandle))));
+                    }
+                }
+
                 _ASSERTE(tkParam == GetToken());
                 TypeHandle thConstraint = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(GetModule(), tkConstraintType,
                                                                                       &typeContext,
@@ -1125,6 +1139,10 @@ TypeHandle LoadTypeVarConstraint(TypeVarTypeDesc *pTypeVar, mdGenericParamConstr
                                           pInstContext->m_pArgContext,
                                           ClassLoader::LoadTypes, CLASS_DEPENDENCIES_LOADED, FALSE,
                                           pInstContext->m_pSubstChain);
+    }
+    else if (TypeFromToken(tkConstraintType) == mdtGenericParamType)
+    {
+        return TypeHandle();
     }
     else
     {
@@ -1390,7 +1408,11 @@ void GatherConstraintsRecursive(TypeVarTypeDesc *pTyArg, ArrayList *pArgList, co
     {
         TypeHandle thConstraint = LoadTypeVarConstraint(pTyArg, tkConstraint, pInstContext);
 
-        if (thConstraint.IsGenericVariable())
+        if (thConstraint.IsNull())
+        {
+            continue;
+        }
+        else if (thConstraint.IsGenericVariable())
         {
             // see if it's safe to recursively call ourselves
             if (!TypeHandleList::Exists(pVisitedVars, thConstraint))
@@ -1577,6 +1599,9 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
     {
         mdToken tkConstraintType, tkParam;
         IfFailThrow(pInternalImport->GetGenericParamConstraintProps(tkConstraint, &tkParam, &tkConstraintType));
+
+        if (TypeFromToken(tkConstraintType) == mdtGenericParamType)
+            continue;
 
         _ASSERTE(tkParam == GetToken());
         TypeHandle thConstraint = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(GetModule(),

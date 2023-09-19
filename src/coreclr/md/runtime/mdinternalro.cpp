@@ -2489,7 +2489,21 @@ HRESULT MDInternalRO::GetGenericParamProps(        // S_OK or error.
     if (ptOwner)
         *ptOwner = m_LiteWeightStgdb.m_MiniMd.getOwnerOfGenericParam(pGenericParamRec);
     if (ptType)
-        *ptType = m_LiteWeightStgdb.m_MiniMd.SupportsConstGenerics() ? m_LiteWeightStgdb.m_MiniMd.getTypeOfGenericParam(pGenericParamRec) : NULL;
+    {
+        *ptType = NULL;
+        RID rid;
+        IfFailGo(m_LiteWeightStgdb.m_MiniMd.getGenericParamConstraintsForGenericParam(RidFromToken(rd), NULL, &rid));
+        if (rid != 0)
+        {
+            GenericParamConstraintRec* gpcRec;
+            IfFailGo(m_LiteWeightStgdb.m_MiniMd.GetGenericParamConstraintRecord(rid, &gpcRec));
+            mdToken tkType = m_LiteWeightStgdb.m_MiniMd.getConstraintOfGenericParamConstraint(gpcRec);
+            if (!IsNilToken(tkType) && (TypeFromToken(tkType) == mdtGenericParamType))
+            {
+                *ptType = (tkType & ~mdtGenericParamType) | mdtTypeSpec;
+            }
+        }
+    }
     if (szName != NULL)
     {
         IfFailGo(m_LiteWeightStgdb.m_MiniMd.getNameOfGenericParam(pGenericParamRec, szName));

@@ -37,10 +37,7 @@
 #define METAMODEL_MAJOR_VER_V2_0 2      // Major version for v2.0
 #define METAMODEL_MINOR_VER_V2_0 0      // Minor version for v2.0
 
-#define METAMODEL_MAJOR_VER_V3_0 3      // Major version for v3.0
-#define METAMODEL_MINOR_VER_V3_0 0      // Minor version for v3.0
-
-#define METAMODEL_MAJOR_VER 3
+#define METAMODEL_MAJOR_VER 2
 #define METAMODEL_MINOR_VER 0
 
 // Metadata version number up through Whidbey Beta2
@@ -558,6 +555,7 @@ public:
     //  use that value to index into an array of token types.
     //*****************************************************************************
     static const mdToken mdtTypeDefOrRef[3];
+    static const mdToken mdtTypeDefOrRefOrGpType[4];
     static const mdToken mdtHasConstant[3];
     static const mdToken mdtHasCustomAttribute[24];
     static const mdToken mdtHasFieldMarshal[2];
@@ -1981,7 +1979,6 @@ public:
     USHORT _GETFLD(GenericParam,Flags);
     mdToken _GETCDTKN(GenericParam,Owner,mdtTypeOrMethodDef);
     _GETSTR(GenericParam,Name);
-    mdToken _GETCDTKN(GenericParam,Type,mdtTypeDefOrRef)
 
     __checkReturn
     HRESULT getGenericParamConstraintsForGenericParam(RID rid, RID *pEnd, RID *pFoundRid)
@@ -1999,7 +1996,7 @@ public:
 
     //GenericParamConstraintRec
     mdToken _GETTKN(GenericParamConstraint,Owner,mdtGenericParam);
-    mdToken _GETCDTKN(GenericParamConstraint,Constraint,mdtTypeDefOrRef);
+    mdToken _GETCDTKN(GenericParamConstraint,Constraint,mdtTypeDefOrRefOrGpType);
 
     BOOL SupportsGenerics()
     {
@@ -2007,13 +2004,6 @@ public:
         return (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_0 ||
                 (m_Schema.m_major == METAMODEL_MAJOR_VER_B1 && m_Schema.m_minor == METAMODEL_MINOR_VER_B1));
     }// SupportGenerics
-    
-    BOOL SupportsConstGenerics()
-    {
-        // Only 3.0 of the metadata support const generics
-        return (m_Schema.m_major >= METAMODEL_MAJOR_VER_V3_0 ||
-                (m_Schema.m_major == METAMODEL_MAJOR_VER_V3_0 && m_Schema.m_minor >= METAMODEL_MINOR_VER_V3_0));
-    }// SupportsConstGenerics
 
     protected:
     //*****************************************************************************

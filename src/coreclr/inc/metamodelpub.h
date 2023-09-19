@@ -1401,53 +1401,7 @@ public:
 
 // Generics
 
-
 class GenericParamRec
-{
-METADATA_FIELDS_PROTECTION:
-    USHORT      m_Number;               // index; zero = first var
-    USHORT      m_Flags;                // index; zero = first var
-public:
-    enum {
-
-        COL_Number,                     // index; zero = first var
-        COL_Flags,                      // flags, for future use
-        COL_Owner,                      // typeDef/methodDef
-        COL_Name,                       // Purely descriptive, not used for binding purposes
-        COL_Type,
-        COL_COUNT,
-        COL_KEY = COL_Owner
-    };
-
-    USHORT GetNumber()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return GET_UNALIGNED_VAL16(&m_Number);
-    }
-    void SetNumber(USHORT Number)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_Number = VAL16(Number);
-    }
-
-    USHORT GetFlags()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return GET_UNALIGNED_VAL16(&m_Flags);
-    }
-    void SetFlags(USHORT Flags)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_Flags = VAL16(Flags);
-    }
-};
-
-// this definition is for reading the old GenericParamRec from a v2.0 assembly.
-class GenericParamV2_0Rec
 {
 METADATA_FIELDS_PROTECTION:
     USHORT      m_Number;               // index; zero = first var
@@ -1554,7 +1508,7 @@ public:
     enum {
 
         COL_Owner,                                      // GenericParam
-        COL_Constraint,                                 // typeDef/Ref/Spec
+        COL_Constraint,                                 // typeDef/Ref/Spec, can be masked by genericParamTypeMask
         COL_COUNT,
         COL_KEY = COL_Owner
     };
@@ -1774,20 +1728,21 @@ enum {
 #undef MiniMdTable
 
 // List of MiniMd coded token types.
-#define MiniMdCodedTokens()                 \
-    MiniMdCodedToken(TypeDefOrRef)          \
-    MiniMdCodedToken(HasConstant)           \
-    MiniMdCodedToken(HasCustomAttribute)    \
-    MiniMdCodedToken(HasFieldMarshal)       \
-    MiniMdCodedToken(HasDeclSecurity)       \
-    MiniMdCodedToken(MemberRefParent)       \
-    MiniMdCodedToken(HasSemantic)           \
-    MiniMdCodedToken(MethodDefOrRef)        \
-    MiniMdCodedToken(MemberForwarded)       \
-    MiniMdCodedToken(Implementation)        \
-    MiniMdCodedToken(CustomAttributeType)   \
-    MiniMdCodedToken(ResolutionScope)       \
-    MiniMdCodedToken(TypeOrMethodDef)       \
+#define MiniMdCodedTokens()                    \
+    MiniMdCodedToken(TypeDefOrRef)             \
+    MiniMdCodedToken(TypeDefOrRefOrGpType)     \
+    MiniMdCodedToken(HasConstant)              \
+    MiniMdCodedToken(HasCustomAttribute)       \
+    MiniMdCodedToken(HasFieldMarshal)          \
+    MiniMdCodedToken(HasDeclSecurity)          \
+    MiniMdCodedToken(MemberRefParent)          \
+    MiniMdCodedToken(HasSemantic)              \
+    MiniMdCodedToken(MethodDefOrRef)           \
+    MiniMdCodedToken(MemberForwarded)          \
+    MiniMdCodedToken(Implementation)           \
+    MiniMdCodedToken(CustomAttributeType)      \
+    MiniMdCodedToken(ResolutionScope)          \
+    MiniMdCodedToken(TypeOrMethodDef)          \
 
 #undef MiniMdCodedToken
 #define MiniMdCodedToken(x) CDTKN_##x,

@@ -4824,11 +4824,12 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
     IMDInternalImport *pInternalImport2 = pModule2->GetMDImport();
 
     DWORD specialConstraints1,specialConstraints2;
+    mdToken type1, type2;
 
      // check special constraints
     {
-        IfFailThrow(pInternalImport1->GetGenericParamProps(tok1, NULL, &specialConstraints1, NULL, NULL, NULL));
-        IfFailThrow(pInternalImport2->GetGenericParamProps(tok2, NULL, &specialConstraints2, NULL, NULL, NULL));
+        IfFailThrow(pInternalImport1->GetGenericParamProps(tok1, NULL, &specialConstraints1, NULL, &type1, NULL));
+        IfFailThrow(pInternalImport2->GetGenericParamProps(tok2, NULL, &specialConstraints2, NULL, &type2, NULL));
         specialConstraints1 = specialConstraints1 & gpSpecialConstraintMask;
         specialConstraints2 = specialConstraints2 & gpSpecialConstraintMask;
 
@@ -4852,6 +4853,10 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
             if ((specialConstraints2 & gpAcceptByRefLike) == 0)
                 return FALSE;
         }
+        if (type1 != type2)
+        {
+            return FALSE;
+        }
     }
 
 
@@ -4864,6 +4869,10 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
         mdToken tkConstraintType1, tkParam1;
         IfFailThrow(pInternalImport1->GetGenericParamConstraintProps(tkConstraint1, &tkParam1, &tkConstraintType1));
         _ASSERTE(tkParam1 == tok1);
+        if (TypeFromToken(tkConstraintType1) == mdtGenericParamType)
+        {
+            continue;
+        }
 
         // for each non-object constraint,
         // and, in the case of a notNullableValueType, each non-ValueType constraint,

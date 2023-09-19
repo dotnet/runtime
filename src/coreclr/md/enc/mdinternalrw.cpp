@@ -3261,7 +3261,21 @@ HRESULT MDInternalRW::GetGenericParamProps(        // S_OK or error.
     if (ptOwner)
         *ptOwner = m_pStgdb->m_MiniMd.getOwnerOfGenericParam(pGenericParamRec);
     if (ptType)
-        *ptType = m_pStgdb->m_MiniMd.SupportsConstGenerics() ? m_pStgdb->m_MiniMd.getTypeOfGenericParam(pGenericParamRec) : NULL;
+    {
+        *ptType = NULL;
+        RID rid;
+        IfFailGo(m_pStgdb->m_MiniMd.getGenericParamConstraintsForGenericParam(RidFromToken(rd), NULL, &rid));
+        if (rid != 0)
+        {
+            GenericParamConstraintRec* gpcRec;
+            IfFailGo(m_pStgdb->m_MiniMd.GetGenericParamConstraintRecord(rid, &gpcRec));
+            mdToken tkType = m_pStgdb->m_MiniMd.getConstraintOfGenericParamConstraint(gpcRec);
+            if (!IsNilToken(tkType) && (TypeFromToken(tkType) == mdtGenericParamType))
+            {
+                *ptType = (tkType & ~mdtGenericParamType) | mdtTypeSpec;
+            }
+        }
+    }
     if (szName != NULL)
     {
         IfFailGo(m_pStgdb->m_MiniMd.getNameOfGenericParam(pGenericParamRec, szName));

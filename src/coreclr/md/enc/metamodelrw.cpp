@@ -310,10 +310,14 @@ ULONG CMiniMdRW::GetTableForToken(      // Table index, or -1.
     mdToken     tkn)                    // Token to find.
 {
     ULONG       type = TypeFromToken(tkn);
-
     // Get the type -- if a string, no associated table.
     if (type >= mdtString)
         return (ULONG) -1;
+    // Type of generic param is TypeSpec
+    if (type == mdtGenericParamType)
+    {
+        type = mdtTypeSpec;
+    }
     // Table number is same as high-byte of token.
     ULONG ixTbl = type >> 24;
     // Make sure.

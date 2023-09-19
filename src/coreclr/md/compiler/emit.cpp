@@ -1657,8 +1657,6 @@ STDMETHODIMP RegMeta::DefineGenericParam(   // S_OK or error.
     // See if this version of the metadata can do Generics
     if (!m_pStgdb->m_MiniMd.SupportsGenerics())
         IfFailGo(CLDB_E_INCOMPATIBLE);
-    if (!m_pStgdb->m_MiniMd.SupportsConstGenerics())
-        IfFailGo(CLDB_E_INCOMPATIBLE);
 
     if ((tkOwnerType == mdtTypeDef) || (tkOwnerType == mdtMethodDef))
     {
@@ -1740,10 +1738,6 @@ STDMETHODIMP RegMeta::SetGenericParamProps(      // S_OK or error.
     if (!m_pStgdb->m_MiniMd.SupportsGenerics())
         IfFailGo(CLDB_E_INCOMPATIBLE);
     
-    // See if this version of the metadata can do Const Generics
-    if (!m_pStgdb->m_MiniMd.SupportsConstGenerics())
-        IfFailGo(CLDB_E_INCOMPATIBLE);
-
     if (TypeFromToken(gp) == mdtGenericParam)
     {
         GenericParamRec *pGenericParam;
@@ -1782,19 +1776,15 @@ HRESULT RegMeta::_SetGenericParamProps(     // S_OK or error.
         if ((szName != NULL) && (*szName != 0))
             IfFailGo(m_pStgdb->m_MiniMd.PutStringW(TBL_GenericParam, GenericParamRec::COL_Name,
                                                 pGenericParam, szName));
-        // If there is a type, set it
-        if (tkType != NULL)
-            IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_GenericParam, GenericParamRec::COL_Type,
-                                                pGenericParam, tkType));
 
         // If there are new flags, set them.
         if (dwParamFlags != (DWORD) -1)
             pGenericParam->SetFlags((USHORT)dwParamFlags);
 
-        // If there is a new array of constraints, apply it.
-        if (rtkConstraints != NULL)
+        // If there is a type or a new array of constraints, apply it.
+        if (rtkConstraints != NULL || RidFromToken(tkType) != 0)
         {
-            //Clear existing constraints
+            //Clear existing type and constraints
             GenericParamConstraintRec* pGPCRec;
             RID     ridGPC;
             RID     rid;
@@ -1812,18 +1802,34 @@ HRESULT RegMeta::_SetGenericParamProps(     // S_OK or error.
                 IfFailGo(UpdateENCLog(TokenFromRid(ridGPC,mdtGenericParamConstraint)));
             }
 
-            //Emit new constraints
-            mdToken* ptk;
-            for (ptk = rtkConstraints; (ptk != NULL)&&(RidFromToken(*ptk)!=0); ptk++)
+            if (RidFromToken(tkType) != 0)
             {
+                //Emit type
                 IfFailGo(m_pStgdb->m_MiniMd.AddGenericParamConstraintRecord(&pGPCRec, &ridGPC));
                 IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_GenericParamConstraint,
                                                      GenericParamConstraintRec::COL_Owner,
                                                     pGPCRec, RidFromToken(tkGP)));
                 IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_GenericParamConstraint,
                                                      GenericParamConstraintRec::COL_Constraint,
-                                                    pGPCRec, *ptk));
+                                                    pGPCRec, (tkType & ~mdtTypeSpec) | mdtGenericParamType));
                 IfFailGo(UpdateENCLog(TokenFromRid(ridGPC,mdtGenericParamConstraint)));
+            }
+
+            if (rtkConstraints != NULL)
+            {
+                //Emit new constraints
+                mdToken* ptk;
+                for (ptk = rtkConstraints; (ptk != NULL)&&(RidFromToken(*ptk)!=0); ptk++)
+                {
+                    IfFailGo(m_pStgdb->m_MiniMd.AddGenericParamConstraintRecord(&pGPCRec, &ridGPC));
+                    IfFailGo(m_pStgdb->m_MiniMd.PutCol(TBL_GenericParamConstraint,
+                                                         GenericParamConstraintRec::COL_Owner,
+                                                        pGPCRec, RidFromToken(tkGP)));
+                    IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_GenericParamConstraint,
+                                                         GenericParamConstraintRec::COL_Constraint,
+                                                        pGPCRec, *ptk));
+                    IfFailGo(UpdateENCLog(TokenFromRid(ridGPC,mdtGenericParamConstraint)));
+                }
             }
         }
     }

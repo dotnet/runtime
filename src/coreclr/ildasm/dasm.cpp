@@ -3099,21 +3099,36 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         {
             CQuickBytes out;
             mdToken tkConstrType,tkOwner;
-            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(");
             DWORD ix;
+            BOOL first = true, hasLiteralTypeParameter = false;
             for (ix=0; ix<NumConstrs; ix++)
             {
                 if (FAILED(g_pPubImport->GetGenericParamConstraintProps(tkConstr[ix], &tkOwner, &tkConstrType)))
                     return NULL;
-
-                if(ix) szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),", ");
+                if (TypeFromToken(tkConstrType) == mdtGenericParamType)
+                {
+                    hasLiteralTypeParameter = true;
+                    continue;
+                }
+                if(first)
+                {
+                    szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"(");
+                    first = false;
+                }
+                else
+                {
+                    szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),", ");
+                }
                 CHECK_REMAINING_SIZE;
                 out.Shrink(0);
                 szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"%s",PrettyPrintClass(&out,tkConstrType,g_pImport));
                 CHECK_REMAINING_SIZE;
             }
             if(ix < NumConstrs) break;
-            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),") ");
+            if (!hasLiteralTypeParameter || NumConstrs > 1)
+            {
+                szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),") ");
+            }
             CHECK_REMAINING_SIZE;
         }
         // re-get name, wzUniBuf may not contain it any more
