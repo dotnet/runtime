@@ -8,7 +8,7 @@ namespace System.Net.Mime
         /// <summary>Specifies the kind of application data in an email message attachment.</summary>
         public static class Application
         {
-            /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data is in URL encoded format.</summary>
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data consists of url-encoded key-value pairs.</summary>
             public const string FormUrlEncoded = "application/x-www-form-urlencoded";
 
             /// <summary>Specifies that the <see cref="MediaTypeNames.Application"/> data is in JSON format.</summary>
@@ -116,7 +116,7 @@ namespace System.Net.Mime
             /// <summary>Specifies that the <see cref="MediaTypeNames.Multipart"/> data consists of multiple byte ranges.</summary>
             public const string ByteRanges = "multipart/byteranges";
 
-            /// <summary>Specifies that the <see cref="MediaTypeNames.Multipart"/> data is in  format.</summary>
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Multipart"/> data is in form data format.</summary>
             public const string FormData = "multipart/form-data";
         }
 
@@ -132,7 +132,7 @@ namespace System.Net.Mime
             /// <summary>Specifies that the <see cref="MediaTypeNames.Text"/> data is in HTML format.</summary>
             public const string Html = "text/html";
 
-            /// <summary>Specifies that the <see cref="MediaTypeNames.Text"/> data is in Javascript format.</summary>
+            /// <summary>Specifies that the <see cref="MediaTypeNames.Text"/> data is in JavaScript format.</summary>
             public const string JavaScript = "text/javascript";
 
             /// <summary>Specifies that the <see cref="MediaTypeNames.Text"/> data is in Markdown format.</summary>
