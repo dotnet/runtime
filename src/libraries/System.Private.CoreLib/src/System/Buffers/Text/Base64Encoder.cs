@@ -144,7 +144,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Returns the maximum length (in bytes) of the result if you were to encode binary data within a byte span of size "length".
         /// </summary>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is less than 0 or larger than 1610612733 (since encode inflates the data by 4/3).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

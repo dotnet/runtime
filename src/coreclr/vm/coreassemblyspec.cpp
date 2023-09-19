@@ -28,21 +28,6 @@
 #include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
-static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        MODE_ANY;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    StackSString name;
-    pSpec->GetDisplayName(0, name);
-    EEFileLoadException::Throw(name, hr);
-}
-
 HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly)
 {
     CONTRACTL

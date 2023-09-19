@@ -28,8 +28,6 @@ namespace System.Net
         public void SspiPackageNotFound(string packageName) =>
             WriteEvent(SspiPackageNotFoundId, packageName);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "parameter intent is an enum and is trimmer safe")]
         [Event(AcquireDefaultCredentialId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
         public void AcquireDefaultCredential(string packageName, Interop.SspiCli.CredentialUse intent) =>
             WriteEvent(AcquireDefaultCredentialId, packageName, intent);
@@ -58,8 +56,6 @@ namespace System.Net
         private void AcceptSecurityContext(string credential, string context, Interop.SspiCli.ContextFlags inFlags) =>
             WriteEvent(AcceptSecuritContextId, credential, context, (int)inFlags);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "parameter errorCode is an enum and is trimmer safe")]
         [Event(OperationReturnedSomethingId, Keywords = Keywords.Default, Level = EventLevel.Informational, Message = "{0} returned {1}.")]
         public void OperationReturnedSomething(string operation, Interop.SECURITY_STATUS errorCode) =>
             WriteEvent(OperationReturnedSomethingId, operation, errorCode);

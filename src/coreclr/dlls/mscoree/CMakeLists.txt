@@ -11,7 +11,7 @@ set(CLR_SOURCES
 
 if(CLR_CMAKE_TARGET_WIN32)
 list(APPEND CLR_SOURCES
-    delayloadhook.cpp
+    ${CLR_SRC_NATIVE_DIR}/libs/Common/delayloadhook_windows.cpp
     Native.rc
 )
 

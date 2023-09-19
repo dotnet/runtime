@@ -7,6 +7,8 @@
 
     <!-- Crossgen2 currently targets x64 and ARM64 only -->
     <DisableProjectBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64'">true</DisableProjectBuild>
+    <!-- We skip the ReadyToRun tests when sanitized due to build complexity -->
+    <DisableProjectBuild Condition="'$(EnableNativeSanitizers)' != ''">true</DisableProjectBuild>
 
     <!-- This is an explicit crossgen test -->
     <CrossGenTest>false</CrossGenTest>

@@ -3,9 +3,13 @@
 #ifndef __HANDLETABLECONSTANTS_H__
 #define __HANDLETABLECONSTANTS_H__
 
- // Build support for async pinned handles into standalone GC to make it usable with older runtimes
+// Support for ref-counted handles is required on all platforms (FEATURE_COMINTEROP, FEATURE_COMWRAPPERS, FEATURE_OBJCMARSHAL)
+#define FEATURE_REFCOUNTED_HANDLES
+
+ // Build support for obsolete handles types into standalone GC to make it usable with older runtimes
 #if defined(BUILD_AS_STANDALONE) && !defined(FEATURE_NATIVEAOT)
-#define FEATURE_ASYNC_PINNED_HANDLES
+#define FEATURE_ASYNC_PINNED_HANDLES // No longer used in .NET 8+
+#define FEATURE_WEAK_NATIVE_COM_HANDLES // No longer used in .NET 8+
 #endif
 
 #define INITIAL_HANDLE_TABLE_ARRAY_SIZE 10

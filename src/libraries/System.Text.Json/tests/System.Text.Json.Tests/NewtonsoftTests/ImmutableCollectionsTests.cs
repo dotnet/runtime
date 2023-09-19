@@ -250,7 +250,8 @@ namespace System.Text.Json.Tests
 
             string json = JsonSerializer.Serialize(data, s_indentedOption);
 
-            ImmutableHashSet<string> a = JsonSerializer.Deserialize<ImmutableHashSet<string>>(json);
+            // Use ISet to disambiguate between ISet and IReadOnlySet overloads below
+            ISet<string> a = JsonSerializer.Deserialize<ImmutableHashSet<string>>(json);
             Assert.Equal(3, a.Count);
             Assert.Contains("One", a);
             Assert.Contains("II", a);
@@ -266,7 +267,8 @@ namespace System.Text.Json.Tests
   ""3""
 ]";
 
-            ImmutableHashSet<string> data = JsonSerializer.Deserialize<ImmutableHashSet<string>>(json);
+            // Use ISet to disambiguate between ISet and IReadOnlySet overloads below
+            ISet<string> data = JsonSerializer.Deserialize<ImmutableHashSet<string>>(json);
 
             Assert.Equal(3, data.Count);
             Assert.Contains("3", data);
@@ -316,7 +318,8 @@ namespace System.Text.Json.Tests
   ""3""
 ]";
 
-            ImmutableSortedSet<string> data = JsonSerializer.Deserialize<ImmutableSortedSet<string>>(json);
+            // Use ISet to disambiguate between ISet and IReadOnlySet overloads below
+            ISet<string> data = JsonSerializer.Deserialize<ImmutableSortedSet<string>>(json);
 
             Assert.Equal(3, data.Count);
             Assert.Contains("3", data);

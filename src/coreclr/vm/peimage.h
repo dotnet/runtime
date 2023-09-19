@@ -132,8 +132,6 @@ public:
     PTR_PEImageLayout GetLoadedLayout();
     PTR_PEImageLayout GetFlatLayout();
 
-    BOOL  HasPath();
-    ULONG GetPathHash();
     const SString& GetPath();
     const SString& GetPathToLoad();
     LPCWSTR GetPathForErrorMessages() { return GetPath(); }
@@ -232,8 +230,6 @@ private:
     static BOOL CompareImage(UPTR image1, UPTR image2);
     static BOOL CompareIJWDataBase(UPTR base, UPTR mapping);
 
-    void DECLSPEC_NORETURN ThrowFormat(HRESULT hr);
-
 public:
     class IJWFixupData
     {
@@ -290,6 +286,7 @@ private:
     // ------------------------------------------------------------
 
     SString   m_path;
+    ULONG     m_pathHash;
     LONG      m_refCount;
 
     // means this is a unique (deduped) instance.

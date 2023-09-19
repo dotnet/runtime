@@ -1,10 +1,6 @@
 <Project>
-  <PropertyGroup>
-    <!-- Don't use the prebuilt illink that is referenced by Arcade. -->
-    <UsingToolMicrosoftNetILLinkTasks>false</UsingToolMicrosoftNetILLinkTasks>
-  </PropertyGroup>
 
-  <Import Project="..\..\..\Directory.Build.props" />
+  <Import Project="..\Directory.Build.props" />
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>

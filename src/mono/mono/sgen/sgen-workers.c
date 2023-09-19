@@ -18,7 +18,7 @@
 #include "mono/sgen/sgen-gc.h"
 #include "mono/sgen/sgen-workers.h"
 #include "mono/sgen/sgen-thread-pool.h"
-#include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-memory-model.h"
 #include "mono/sgen/sgen-client.h"
 
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC

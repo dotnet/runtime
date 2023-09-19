@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
@@ -28,9 +27,22 @@ namespace Microsoft.Interop
             var methods = ImmutableArray.CreateBuilder<DiagnosticOr<(ComMethodInfo, IMethodSymbol)>>();
             foreach (var member in data.ifaceSymbol.GetMembers())
             {
-                if (IsComMethodCandidate(member))
+                if (member.IsStatic)
                 {
-                    methods.Add(CalculateMethodInfo(data.ifaceContext, (IMethodSymbol)member, ct));
+                    continue;
+                }
+
+                switch (member)
+                {
+                    case { Kind: SymbolKind.Property }:
+                        methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(member.CreateDiagnosticInfo(GeneratorDiagnostics.InstancePropertyDeclaredInInterface, member.Name, data.ifaceSymbol.ToDisplayString())));
+                        break;
+                    case { Kind: SymbolKind.Event }:
+                        methods.Add(DiagnosticOr<(ComMethodInfo, IMethodSymbol)>.From(member.CreateDiagnosticInfo(GeneratorDiagnostics.InstanceEventDeclaredInInterface, member.Name, data.ifaceSymbol.ToDisplayString())));
+                        break;
+                    case IMethodSymbol { MethodKind: MethodKind.Ordinary }:
+                        methods.Add(CalculateMethodInfo(data.ifaceContext, (IMethodSymbol)member, ct));
+                        break;
                 }
             }
             return methods.ToImmutable().ToSequenceEqual();
@@ -56,22 +68,17 @@ namespace Microsoft.Interop
             return null;
         }
 
-        private static bool IsComMethodCandidate(ISymbol member)
-        {
-            return member.Kind == SymbolKind.Method && !member.IsStatic;
-        }
-
         private static DiagnosticOr<(ComMethodInfo, IMethodSymbol)> CalculateMethodInfo(ComInterfaceInfo ifaceContext, IMethodSymbol method, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-            Debug.Assert(IsComMethodCandidate(method));
+            Debug.Assert(method is { IsStatic: false, MethodKind: MethodKind.Ordinary });
 
             // We only support methods that are defined in the same partial interface definition as the
             // [GeneratedComInterface] attribute.
             // This restriction not only makes finding the syntax for a given method cheaper,
             // but it also enables us to ensure that we can determine vtable method order easily.
-            CodeAnalysis.Location interfaceLocation = ifaceContext.Declaration.GetLocation();
-            CodeAnalysis.Location? methodLocationInAttributedInterfaceDeclaration = null;
+            Location interfaceLocation = ifaceContext.Declaration.GetLocation();
+            Location? methodLocationInAttributedInterfaceDeclaration = null;
             foreach (var methodLocation in method.Locations)
             {
                 if (methodLocation.SourceTree == interfaceLocation.SourceTree
@@ -93,7 +100,6 @@ namespace Microsoft.Interop
             foreach (var declaringSyntaxReference in method.DeclaringSyntaxReferences)
             {
                 var declaringSyntax = declaringSyntaxReference.GetSyntax(ct);
-                Debug.Assert(declaringSyntax.IsKind(SyntaxKind.MethodDeclaration));
                 if (declaringSyntax.GetLocation().SourceSpan.Contains(methodLocationInAttributedInterfaceDeclaration.SourceSpan))
                 {
                     comMethodDeclaringSyntax = (MethodDeclarationSyntax)declaringSyntax;

@@ -291,7 +291,7 @@ namespace System.Reflection
 
         private object? GetDefaultValueFromCustomAttributeData()
         {
-            foreach (CustomAttributeData attributeData in RuntimeCustomAttributeData.GetCustomAttributes(this))
+            foreach (CustomAttributeData attributeData in CustomAttributeData.GetCustomAttributes(this))
             {
                 Type attributeType = attributeData.AttributeType;
                 if (attributeType == typeof(DecimalConstantAttribute))
@@ -367,7 +367,7 @@ namespace System.Reflection
         private static decimal GetRawDecimalConstant(CustomAttributeData attr)
         {
             Debug.Assert(attr.Constructor.DeclaringType == typeof(DecimalConstantAttribute));
-            System.Collections.Generic.IList<CustomAttributeTypedArgument> args = attr.ConstructorArguments;
+            IList<CustomAttributeTypedArgument> args = attr.ConstructorArguments;
             Debug.Assert(args.Count == 5);
 
             return new decimal(

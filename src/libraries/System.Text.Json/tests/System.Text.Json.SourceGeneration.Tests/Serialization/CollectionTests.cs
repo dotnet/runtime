@@ -453,6 +453,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(KeyValuePair<int, int>))]
         [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, int>>))]
         [JsonSerializable(typeof(StackWrapper))]
+        [JsonSerializable(typeof(ClassWithRecursiveCollectionTypes))]
+        [JsonSerializable(typeof(MemoryOfTClass<byte>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<byte>))]
+        [JsonSerializable(typeof(MemoryOfTClass<int>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<int>))]
+        [JsonSerializable(typeof(MemoryOfTClass<EmptyClass>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<EmptyClass>))]
         internal sealed partial class CollectionTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -855,6 +862,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(KeyValuePair<int, int>))]
         [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, int>>))]
         [JsonSerializable(typeof(StackWrapper))]
+        [JsonSerializable(typeof(ClassWithRecursiveCollectionTypes))]
+        [JsonSerializable(typeof(MemoryOfTClass<byte>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<byte>))]
+        [JsonSerializable(typeof(MemoryOfTClass<int>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<int>))]
+        [JsonSerializable(typeof(MemoryOfTClass<EmptyClass>))]
+        [JsonSerializable(typeof(ReadOnlyMemoryOfTClass<EmptyClass>))]
         internal sealed partial class CollectionTestsContext_Default : JsonSerializerContext
         {
         }

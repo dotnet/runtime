@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="TrimmingBehaviors">
+    <type fullname="FeatureSwitches">
+      <method signature="System.Int32 GetCookie()" body="stub" value="100" />
+    </type>
+    <resource name="RemovedResource2" action="remove" />
+  </assembly>
+</linker>

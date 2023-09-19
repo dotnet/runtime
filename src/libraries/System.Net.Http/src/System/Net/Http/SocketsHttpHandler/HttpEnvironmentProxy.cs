@@ -128,10 +128,17 @@ namespace System.Net.Http
 
             int hostIndex = 0;
             string protocol = "http";
+            ushort port = 80;
 
             if (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
             {
                 hostIndex = 7;
+            }
+            else if (value.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                hostIndex = 8;
+                protocol = "https";
+                port = 443;
             }
             else if (value.StartsWith("socks4://", StringComparison.OrdinalIgnoreCase))
             {
@@ -156,7 +163,6 @@ namespace System.Net.Http
 
             string? user = null;
             string? password = null;
-            ushort port = 80;
             string host;
 
             // Check if there is authentication part with user and possibly password.

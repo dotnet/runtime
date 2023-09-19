@@ -40,7 +40,7 @@ namespace System.Threading
         private bool _disposed;
         /// <summary>ITimer used by CancelAfter and Timer-related ctors. Used instead of Timer to avoid extra allocations and because the rooted behavior is desired.</summary>
         private volatile ITimer? _timer;
-        /// <summary><see cref="System.Threading.WaitHandle"/> lazily initialized and returned from <see cref="WaitHandle"/>.</summary>
+        /// <summary><see cref="Threading.WaitHandle"/> lazily initialized and returned from <see cref="WaitHandle"/>.</summary>
         private volatile ManualResetEvent? _kernelEvent;
         /// <summary>Registration state for the source.</summary>
         /// <remarks>Lazily-initialized, also serving as the lock to protect its contained state.</remarks>
@@ -161,7 +161,7 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.delay);
             }
 
-            InitializeWithTimer((uint)totalMilliseconds, timeProvider);
+            InitializeWithTimer(delay, timeProvider);
         }
 
         /// <summary>
@@ -190,16 +190,16 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsDelay);
             }
 
-            InitializeWithTimer((uint)millisecondsDelay, TimeProvider.System);
+            InitializeWithTimer(TimeSpan.FromMilliseconds(millisecondsDelay), TimeProvider.System);
         }
 
         /// <summary>
         /// Common initialization logic when constructing a CTS with a delay parameter.
         /// A zero delay will result in immediate cancellation.
         /// </summary>
-        private void InitializeWithTimer(uint millisecondsDelay, TimeProvider timeProvider)
+        private void InitializeWithTimer(TimeSpan millisecondsDelay, TimeProvider timeProvider)
         {
-            if (millisecondsDelay == 0)
+            if (millisecondsDelay == TimeSpan.Zero)
             {
                 _state = NotifyingCompleteState;
             }
@@ -207,13 +207,13 @@ namespace System.Threading
             {
                 if (timeProvider == TimeProvider.System)
                 {
-                    _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                    _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.InfiniteTimeSpan, flowExecutionContext: false);
                 }
                 else
                 {
                     using (ExecutionContext.SuppressFlow())
                     {
-                        _timer = timeProvider.CreateTimer(s_timerCallback, this, TimeSpan.FromMilliseconds(millisecondsDelay), Timeout.InfiniteTimeSpan);
+                        _timer = timeProvider.CreateTimer(s_timerCallback, this, millisecondsDelay, Timeout.InfiniteTimeSpan);
                     }
                 }
                 // The timer roots this CTS instance while it's scheduled.  That is by design, so
@@ -249,7 +249,7 @@ namespace System.Threading
         /// <remarks>
         /// <para>
         /// The associated <see cref="CancellationToken" /> will be notified of the cancellation and will transition to a state where
-        /// <see cref="CancellationToken.IsCancellationRequested"/> returns true. Any callbacks or cancelable operationsregistered
+        /// <see cref="CancellationToken.IsCancellationRequested"/> returns true. Any callbacks or cancelable operations registered
         /// with the <see cref="CancellationToken"/>  will be executed.
         /// </para>
         /// <para>
@@ -276,6 +276,10 @@ namespace System.Threading
         }
 
         /// <summary>Communicates a request for cancellation asynchronously.</summary>
+        /// <returns>
+        /// A task that will complete after cancelable operations and callbacks registered with the associated
+        /// <see cref="CancellationToken" /> have completed.
+        /// </returns>
         /// <remarks>
         /// <para>
         /// The associated <see cref="CancellationToken" /> will be notified of the cancellation
@@ -860,7 +864,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="tokens">The <see cref="CancellationToken">CancellationToken</see> instances to observe.</param>
         /// <returns>A <see cref="CancellationTokenSource"/> that is linked to the source tokens.</returns>
-        /// <exception cref="System.ArgumentNullException"><paramref name="tokens"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="tokens"/> is null.</exception>
         public static CancellationTokenSource CreateLinkedTokenSource(params CancellationToken[] tokens)
         {
             ArgumentNullException.ThrowIfNull(tokens);

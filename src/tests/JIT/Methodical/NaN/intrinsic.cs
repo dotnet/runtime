@@ -64,7 +64,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Acos", res, arg, exp);
+            Fail("Acos", arg, exp, res);
         }
 
         private static void TestAsin(double arg, double exp)
@@ -86,7 +86,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Asin", res, arg, exp);
+            Fail("Asin", arg, exp, res);
         }
 
         private static void TestAtan(double arg, double exp)
@@ -108,7 +108,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Atan", res, arg, exp);
+            Fail("Atan", arg, exp, res);
         }
 
         private static void TestCeiling(double arg, double exp)
@@ -130,7 +130,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Ceiling", res, arg, exp);
+            Fail("Ceiling", arg, exp, res);
         }
 
         private static void TestCos(double arg, double exp)
@@ -152,7 +152,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Cos", res, arg, exp);
+            Fail("Cos", arg, exp, res);
         }
 
         private static void TestCosh(double arg, double exp)
@@ -174,7 +174,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Cosh", res, arg, exp);
+            Fail("Cosh", arg, exp, res);
         }
 
         private static void TestExp(double arg, double exp)
@@ -196,7 +196,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Exp", res, arg, exp);
+            Fail("Exp", arg, exp, res);
         }
 
         private static void TestFloor(double arg, double exp)
@@ -218,7 +218,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Floor", res, arg, exp);
+            Fail("Floor", arg, exp, res);
         }
 
         private static void TestLog(double arg, double exp)
@@ -240,7 +240,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Log", res, arg, exp);
+            Fail("Log", arg, exp, res);
         }
 
         private static void TestLog10(double arg, double exp)
@@ -284,7 +284,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Round", res, arg, exp);
+            Fail("Round", arg, exp, res);
         }
 
         private static void TestSign(double arg, double exp)
@@ -306,7 +306,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Sign", res, arg, exp);
+            Fail("Sign", arg, exp, res);
         }
 
         private static void TestSin(double arg, double exp)
@@ -328,7 +328,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Sin", res, arg, exp);
+            Fail("Sin", arg, exp, res);
         }
 
         private static void TestSinh(double arg, double exp)
@@ -350,7 +350,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Sinh", res, arg, exp);
+            Fail("Sinh", arg, exp, res);
         }
 
         private static void TestSqrt(double arg, double exp)
@@ -372,7 +372,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Sqrt", res, arg, exp);
+            Fail("Sqrt", arg, exp, res);
         }
 
         private static void TestTan(double arg, double exp)
@@ -394,7 +394,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Tan", res, arg, exp);
+            Fail("Tan", arg, exp, res);
         }
 
         private static void TestTanh(double arg, double exp)
@@ -416,7 +416,7 @@ namespace JitTest
 
                 return;
             }
-            Fail("Tanh", res, arg, exp);
+            Fail("Tanh", arg, exp, res);
         }
 
         private static void TestLog2(double arg1, double arg2, double exp)

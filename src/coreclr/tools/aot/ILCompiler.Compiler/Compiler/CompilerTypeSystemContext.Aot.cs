@@ -22,7 +22,9 @@ namespace ILCompiler
         // We want this to be high enough so that it doesn't cut off too early. But also not too
         // high because things that are recursive often end up expanding laterally as well
         // through various other generic code the deep code calls into.
-        public const int DefaultGenericCycleCutoffPoint = 4;
+        public const int DefaultGenericCycleDepthCutoff = 4;
+
+        public const int DefaultGenericCycleBreadthCutoff = 10;
 
         public SharedGenericsConfiguration GenericsConfig
         {
@@ -34,13 +36,16 @@ namespace ILCompiler
         private readonly VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private readonly VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private readonly Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
+        private readonly TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
 
         private TypeDesc[] _arrayOfTInterfaces;
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataType _arrayOfTType;
         private MetadataType _attributeType;
 
-        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures, int genericCycleCutoffPoint = DefaultGenericCycleCutoffPoint)
+        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures,
+            int genericCycleDepthCutoff = DefaultGenericCycleDepthCutoff,
+            int genericCycleBreadthCutoff = DefaultGenericCycleBreadthCutoff)
             : base(details)
         {
             _genericsMode = genericsMode;
@@ -48,10 +53,11 @@ namespace ILCompiler
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
+            _typeWithRepeatedFieldsFieldLayoutAlgorithm = new TypeWithRepeatedFieldsFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
             _delegateInfoHashtable = new DelegateInfoHashtable(delegateFeatures);
 
-            _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(genericCycleCutoffPoint);
+            _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(genericCycleDepthCutoff, genericCycleBreadthCutoff);
 
             GenericsConfig = new SharedGenericsConfiguration();
         }
@@ -74,6 +80,8 @@ namespace ILCompiler
                 return _vectorFieldLayoutAlgorithm;
             else if (Int128FieldLayoutAlgorithm.IsIntegerType(type))
                 return _int128FieldLayoutAlgorithm;
+            else if (type is TypeWithRepeatedFields)
+                return _typeWithRepeatedFieldsFieldLayoutAlgorithm;
             else
                 return _metadataFieldLayoutAlgorithm;
         }

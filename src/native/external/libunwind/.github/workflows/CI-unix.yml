@@ -1,0 +1,129 @@
+name: CI - Unix
+
+on:
+  pull_request:
+    paths:
+      - '**'
+      - '!README'
+      - '!INSTALL'
+      - '!NEWS'
+      - '!doc/**'
+      - '!.**'
+      - '.github/workflows/CI-unix.yml'
+  push:
+    branches:
+      - v[0-9].*
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: build-${{ join(matrix.*, ' ') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        HOST:
+          - x86_64-linux-gnu
+          - x86-linux-gnu
+          - arm-linux-gnueabihf
+          - aarch64-linux-gnu
+          - mipsel-linux-gnu
+          - powerpc64-linux-gnu
+        OPT:
+          - O0
+          - O3
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup
+        run: |
+          HOST=${{ matrix.HOST }}
+          if [ $HOST = 'x86-linux-gnu' ]; then
+            sudo apt-get update
+            sudo apt-get install -yqq -o=Dpkg::Use-Pty=0 g++-multilib
+          elif [ $HOST != 'x86_64-linux-gnu' ]; then
+            sudo apt-get update
+            sudo apt-get install -yqq -o=Dpkg::Use-Pty=0 g++-$HOST
+          fi
+      - name: Configure
+        run: |
+          set -x
+          HOST=${{ matrix.HOST }}
+          BUILD=x86_64-linux-gnu
+          if [ $HOST = 'x86-linux-gnu' ]; then
+            CFLAGS="-m32"
+            CXXFLAGS="-m32"
+            BUILD=x86-linux-gnu
+          fi
+          export CFLAGS="$CFLAGS -${{ matrix.OPT }}"
+          export CXXFLAGS="$CXXFLAGS -${{ matrix.OPT}}"
+          autoreconf -i
+          ./configure --build=$BUILD --host=$HOST
+          make -j8
+      - name: Test (native)
+        if: ${{ success() && (matrix.HOST == 'x86_64-linux-gnu' || matrix.HOST == 'x86-linux-gnu') }}
+        run: |
+          set -x
+          sudo bash -c 'echo core.%p.%p > /proc/sys/kernel/core_pattern'
+          ulimit -c unlimited
+          make check -j32
+      - name: Show Logs
+        if: ${{ failure() }}
+        run: |
+          cat tests/test-suite.log 2>/dev/null
+
+  build-cross-qemu:
+    runs-on: ubuntu-latest
+    name: build-cross-qemu-${{ matrix.config.target }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {target: arm,     toolchain: g++-arm-linux-gnueabi,       host: arm-linux-gnueabi,      qemu: arm     }
+          - {target: armhf,   toolchain: g++-arm-linux-gnueabihf,     host: arm-linux-gnueabihf,    qemu: arm     }
+          - {target: aarch64, toolchain: g++-aarch64-linux-gnu,       host: aarch64-linux-gnu,      qemu: aarch64 }
+          - {target: riscv64, toolchain: g++-riscv64-linux-gnu,       host: riscv64-linux-gnu,      qemu: riscv64 }
+          - {target: ppc,     toolchain: g++-powerpc-linux-gnu,       host: powerpc-linux-gnu,      qemu: ppc     }
+          - {target: ppc64,   toolchain: g++-powerpc64-linux-gnu,     host: powerpc64-linux-gnu,    qemu: ppc64   }
+          - {target: ppc64le, toolchain: g++-powerpc64le-linux-gnu,   host: powerpc64le-linux-gnu,  qemu: ppc64le }
+          - {target: s390x,   toolchain: g++-s390x-linux-gnu,         host: s390x-linux-gnu,        qemu: s390x   }
+          - {target: mips,    toolchain: g++-mips-linux-gnu,          host: mips-linux-gnu,         qemu: mips     }
+          - {target: mips64,  toolchain: g++-mips64-linux-gnuabi64,   host: mips64-linux-gnuabi64,  qemu: mips64   }
+          - {target: mipsel,  toolchain: g++-mipsel-linux-gnu,        host: mipsel-linux-gnu,       qemu: mipsel   }
+          - {target: mips64el,toolchain: g++-mips64el-linux-gnuabi64, host: mips64el-linux-gnuabi64,qemu: mips64el }
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install QEMU
+        # this ensure install latest qemu on ubuntu, apt get version is old
+        env:
+          QEMU_SRC: "http://archive.ubuntu.com/ubuntu/pool/universe/q/qemu"
+          QEMU_VER: "qemu-user-static_4\\.2-.*_amd64.deb$"
+        run: |
+          DEB=`curl -s $QEMU_SRC/ | grep -o -E 'href="([^"#]+)"' | cut -d'"' -f2 | grep $QEMU_VER | tail -1`
+          wget $QEMU_SRC/$DEB
+          sudo dpkg -i $DEB
+      - name: Install ${{ matrix.config.toolchain }}
+        run: |
+          sudo apt update
+          sudo apt install ${{ matrix.config.toolchain }} -y
+      - name: Configure with ${{ matrix.config.cc }}
+        run: |
+          set -x
+          autoreconf -i
+          BUILD=x86_64-linux-gnu
+          ./configure --build=$BUILD --host=${{ matrix.config.host }} --with-testdriver=$(pwd)/scripts/qemu-test-driver
+      - name: Build
+        run: |
+          make -j8
+      - name: Test
+        run: |
+          set -x
+          sudo bash -c 'echo core.%p.%p > /proc/sys/kernel/core_pattern'
+          ulimit -c unlimited
+          CROSS_LIB="/usr/${{ matrix.config.host }}"
+          make -j8 check LOG_DRIVER_FLAGS="--qemu-arch ${{ matrix.config.qemu }}" LDFLAGS="-L$CROSS_LIB/lib -static" QEMU_LD_PREFIX="$CROSS_LIB"
+      - name: Show Logs
+        if: ${{ failure() }}
+        run: |
+          cat tests/test-suite.log 2>/dev/null

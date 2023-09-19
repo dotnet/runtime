@@ -1018,6 +1018,15 @@ gboolean       mono_metadata_generic_inst_equal (gconstpointer ka, gconstpointer
 gboolean
 mono_metadata_signature_equal_no_ret (MonoMethodSignature *sig1, MonoMethodSignature *sig2);
 
+gboolean
+mono_metadata_signature_equal_ignore_custom_modifier (MonoMethodSignature *sig1, MonoMethodSignature *sig2);
+
+gboolean
+mono_metadata_signature_equal_vararg (MonoMethodSignature *sig1, MonoMethodSignature *sig2);
+
+gboolean
+mono_metadata_signature_equal_vararg_ignore_custom_modifier (MonoMethodSignature *sig1, MonoMethodSignature *sig2);
+
 MONO_API void
 mono_metadata_field_info_with_mempool (
 					  MonoImage *meta,

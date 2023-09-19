@@ -311,7 +311,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Returns the maximum length (in bytes) of the result if you were to decode base 64 encoded text within a byte span of size "length".
         /// </summary>
-        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="length"/> is less than 0.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

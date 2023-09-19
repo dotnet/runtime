@@ -6,12 +6,12 @@ using System.Runtime.CompilerServices;
 namespace System.Buffers
 {
     /// <summary>
-    /// Manager of <see cref="System.Memory{T}"/> that provides the implementation.
+    /// Manager of <see cref="Memory{T}"/> that provides the implementation.
     /// </summary>
     public abstract class MemoryManager<T> : IMemoryOwner<T>, IPinnable
     {
         /// <summary>
-        /// Returns a <see cref="System.Memory{T}"/>.
+        /// Returns a <see cref="Memory{T}"/>.
         /// </summary>
         public virtual Memory<T> Memory => new Memory<T>(this, GetSpan().Length);
 
@@ -32,14 +32,14 @@ namespace System.Buffers
         public abstract void Unpin();
 
         /// <summary>
-        /// Returns a <see cref="System.Memory{T}"/> for the current <see cref="MemoryManager{T}"/>.
+        /// Returns a <see cref="Memory{T}"/> for the current <see cref="MemoryManager{T}"/>.
         /// </summary>
         /// <param name="length">The element count in the memory, starting at offset 0.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected Memory<T> CreateMemory(int length) => new Memory<T>(this, length);
 
         /// <summary>
-        /// Returns a <see cref="System.Memory{T}"/> for the current <see cref="MemoryManager{T}"/>.
+        /// Returns a <see cref="Memory{T}"/> for the current <see cref="MemoryManager{T}"/>.
         /// </summary>
         /// <param name="start">The offset to the element which the returned memory starts at.</param>
         /// <param name="length">The element count in the memory, starting at element offset <paramref name="start"/>.</param>

@@ -476,7 +476,23 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 #ifndef DACCESS_COMPILE
 void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    WRAPPER_NO_CONTRACT;
+
+    //Initially
+    //a0 -This ptr
+    //a1 -ReturnBuffer
+    m_rgCode[0] = 0x00050f93; // addi  t6, a0, 0x0
+    m_rgCode[1] = 0x00058513; // addi  a0, a1, 0x0
+    m_rgCode[2] = 0x000f8593; // addi  a1, t6, 0x0
+    m_rgCode[3] = 0x00000f97; // auipc t6, 0
+    m_rgCode[4] = 0x00cfbf83; // ld    t6, 12(t6)
+    m_rgCode[5] = 0x000f8067; // jalr  x0, 0(t6)
+
+    _ASSERTE((UINT32*)&m_pTarget == &m_rgCode[6]);
+    _ASSERTE(6 == ARRAY_SIZE(m_rgCode));
+
+    m_pTarget = GetPreStubEntryPoint();
+    m_pMethodDesc = (TADDR)pMD;
 }
 
 #endif // !DACCESS_COMPILE
@@ -833,12 +849,6 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
     return *ppContext;
 }
 
-void RedirectForThreadAbort()
-{
-    // ThreadAbort is not supported in .net core
-    throw "NYI";
-}
-
 #if !defined(DACCESS_COMPILE)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
@@ -948,7 +958,15 @@ void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTarget
 
 void UMEntryThunkCode::Poison()
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
+    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
+
+    pThisRW->m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
+
+    // ld   a0, 24(t6)
+    pThisRW->m_code[1] = 0x018fb503;
+
+    ClrFlushInstructionCache(&m_code,sizeof(m_code));
 }
 
 #endif // DACCESS_COMPILE
@@ -1009,70 +1027,76 @@ BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDes
 // StubLinkerCPU methods
 // ----------------------------------------------------------------
 
-void StubLinkerCPU::EmitMovConstant(IntReg target, UINT64 constant)
+void StubLinkerCPU::EmitMovConstant(IntReg reg, UINT64 imm)
 {
-    if (0 == ((constant + 0x800) >> 32)) {
-        if (((constant + 0x800) >> 12) != 0)
-        {
-            Emit32((DWORD)(0x00000037 | (((constant + 0x800) >> 12) << 12) | (target << 7))); // lui target, (constant + 0x800) >> 12
-            if ((constant & 0xFFF) != 0)
-            {
-                Emit32((DWORD)(0x00000013 | (constant & 0xFFF) << 20 | (target << 7) | (target << 15))); // addi target, target, constant
-            }
-        }
-        else
-        {
-            Emit32((DWORD)(0x00000013 | (constant & 0xFFF) << 20 | (target << 7))); // addi target, x0, constant
-        }
+    // Adaptation of emitLoadImmediate
+
+    if (isValidSimm12(imm))
+    {
+        EmitAddImm(reg, 0 /* zero register */, imm & 0xFFF);
+        return;
+    }
+
+    // TODO-RISCV64: maybe optimized via emitDataConst(), check #86790
+
+    UINT32 msb;
+    UINT32 high31;
+
+    BitScanReverse64(&msb, imm);
+
+    if (msb > 30)
+    {
+        high31 = (imm >> (msb - 30)) & 0x7FffFFff;
     }
     else
     {
-        UINT32 upper = constant >> 32;
-        if (((upper + 0x800) >> 12) != 0)
+        high31 = imm & 0x7FffFFff;
+    }
+
+    // Since ADDIW use sign extension for immediate
+    // we have to adjust higher 19 bit loaded by LUI
+    // for case when low part is bigger than 0x800.
+    UINT32 high19 = (high31 + 0x800) >> 12;
+
+    EmitLuImm(reg, high19);
+    if (high31 & 0x800)
+    {
+        // EmitAddImm does not allow negative immediate values, so use EmitSubImm.
+        EmitSubImm(reg, reg, ~high31 + 1 & 0xFFF);
+    }
+    else
+    {
+        EmitAddImm(reg, reg, high31 & 0x7FF);
+    }
+
+    // And load remaining part by batches of 11 bits size.
+    INT32 remainingShift = msb - 30;
+
+    // shiftAccumulator usage is an optimization allows to exclude `slli addi` iteration
+    // if immediate bits `low11` for this iteration are zero.
+    UINT32 shiftAccumulator = 0;
+
+    while (remainingShift > 0)
+    {
+        UINT32 shift = remainingShift >= 11 ? 11 : remainingShift % 11;
+        UINT32 mask = 0x7ff >> (11 - shift);
+        remainingShift -= shift;
+        UINT32 low11 = (imm >> remainingShift) & mask;
+        shiftAccumulator += shift;
+
+        if (low11)
         {
-            Emit32((DWORD)(0x00000037 | (((upper + 0x800) >> 12) << 12) | (target << 7))); // lui target, (upper + 0x800) >> 12
-            if ((upper & 0xFFF) != 0)
-            {
-                Emit32((DWORD)(0x00000013 | (upper & 0xFFF) << 20 | (target << 7) | (target << 15))); // addi target, target, upper 
-            }
-        }
-        else
-        {
-            Emit32((DWORD)(0x00000013 | (upper & 0xFFF) << 20 | (target << 7))); // addi target, x0, upper 
-        }
-        UINT32 lower = (constant << 32) >> 32;
-        UINT32 shift = 0;
-        for (int i = 32; i >= 0; i -= 11)
-        {
-            shift += i > 11 ? 11 : i;
-            UINT32 current = lower >> (i < 11 ? 0 : i - 11);
-            if (current != 0)
-            {
-                Emit32((DWORD)(0x00001013 | (shift << 20) | (target << 7) | (target << 15))); // slli target, target, shift
-                Emit32((DWORD)(0x00000013 | (current & 0x7FF) << 20 | (target << 7) | (target << 15))); // addi target, target, current
-                shift = 0;
-            }
-        }
-        if (shift)
-        {
-            Emit32((DWORD)(0x00001013 | (shift << 20) | (target << 7) | (target << 15))); // slli target, target, shift
+            EmitSllImm(reg, reg, shiftAccumulator);
+            shiftAccumulator = 0;
+
+            EmitAddImm(reg, reg, low11);
         }
     }
-}
 
-void StubLinkerCPU::EmitCmpImm(IntReg reg, int imm)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-}
-
-void StubLinkerCPU::EmitCmpReg(IntReg Xn, IntReg Xm)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-}
-
-void StubLinkerCPU::EmitCondFlagJump(CodeLabel * target, UINT cond)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    if (shiftAccumulator)
+    {
+        EmitSllImm(reg, reg, shiftAccumulator);
+    }
 }
 
 void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
@@ -1080,100 +1104,85 @@ void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
     Emit32(0x00000067 | (regTarget << 15));
 }
 
-void StubLinkerCPU::EmitRet(IntReg Xn)
+// Instruction types as per RISC-V Spec, Chapter 24 RV32/64G Instruction Set Listings
+static unsigned ITypeInstr(unsigned opcode, unsigned funct3, unsigned rd, unsigned rs1, int imm12)
 {
-    Emit32((DWORD)(0x00000067 | (Xn << 15))); // jalr X0, 0(Xn)
+    _ASSERTE(!(opcode >> 7));
+    _ASSERTE(!(funct3 >> 3));
+    _ASSERTE(!(rd >> 5));
+    _ASSERTE(!(rs1 >> 5));
+    _ASSERTE(StubLinkerCPU::isValidSimm12(imm12));
+    return opcode | (rd << 7) | (funct3 << 12) | (rs1 << 15) | (imm12 << 20);
 }
 
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, IntReg Xt1, IntReg Xt2, IntReg Xn, int offset)
+static unsigned STypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, int imm12)
 {
-    _ASSERTE((-1024 <= offset) && (offset <= 1015));
-    _ASSERTE((offset & 7) == 0);
-
-    BOOL isLoad = flags & 1;
-    if (isLoad) {
-        // ld Xt1, offset(Xn));
-        Emit32((DWORD)(0x00003003 | (Xt1 << 7) | (Xn << 15) | (offset << 20)));
-        // ld Xt2, (offset+8)(Xn));
-        Emit32((DWORD)(0x00003003 | (Xt2 << 7) | (Xn << 15) | ((offset + 8) << 20)));
-    } else {
-        // sd Xt1, offset(Xn)
-        Emit32((DWORD)(0x00003023 | (Xt1 << 20) | (Xn << 15) | (offset & 0xF) << 7 | (((offset >> 4) & 0xFF) << 25)));
-        // sd Xt1, (offset + 8)(Xn)
-        Emit32((DWORD)(0x00003023 | (Xt2 << 20) | (Xn << 15) | ((offset + 8) & 0xF) << 7 | ((((offset + 8) >> 4) & 0xFF) << 25)));
-    }
+    _ASSERTE(!(opcode >> 7));
+    _ASSERTE(!(funct3 >> 3));
+    _ASSERTE(!(rs1 >> 5));
+    _ASSERTE(!(rs2 >> 5));
+    _ASSERTE(StubLinkerCPU::isValidSimm12(imm12));
+    int immLo5 = imm12 & 0x1f;
+    int immHi7 = (imm12 >> 5) & 0x7f;
+    return opcode | (immLo5 << 7) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (immHi7 << 25);
 }
 
-void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, FloatReg Ft1, FloatReg Ft2, IntReg Xn, int offset)
+static unsigned RTypeInstr(unsigned opcode, unsigned funct3, unsigned funct7, unsigned rd, unsigned rs1, unsigned rs2)
 {
-    _ASSERTE((-1024 <= offset) && (offset <= 1015));
-    _ASSERTE((offset & 7) == 0);
-
-    BOOL isLoad = flags & 1;
-    if (isLoad) {
-        // fld Ft, Xn, offset
-        Emit32((DWORD)(0x00003007 | (Xn << 15) | (Ft1 << 7) | (offset << 20)));
-        // fld Ft, Xn, offset + 8
-        Emit32((DWORD)(0x00003007 | (Xn << 15) | (Ft2 << 7) | ((offset + 8) << 20)));
-    } else {
-        // fsd Ft, offset(Xn)
-        Emit32((WORD)(0x00003027 | (Xn << 15) | (Ft1 << 20) | (offset & 0xF) << 7 | ((offset >> 4) & 0xFF)));
-        // fsd Ft, (offset + 8)(Xn)
-        Emit32((WORD)(0x00003027 | (Xn << 15) | (Ft2 << 20) | ((offset + 8) & 0xF) << 7 | (((offset + 8) >> 4) & 0xFF)));
-    }
+    _ASSERTE(!(opcode >> 7));
+    _ASSERTE(!(funct3 >> 3));
+    _ASSERTE(!(funct7 >> 7));
+    _ASSERTE(!(rd >> 5));
+    _ASSERTE(!(rs1 >> 5));
+    _ASSERTE(!(rs2 >> 5));
+    return opcode | (rd << 7) | (funct3 << 12) | (rs1 << 15) | (rs2 << 20) | (funct7 << 25);
 }
 
-void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset)
+void StubLinkerCPU::EmitLoad(IntReg dest, IntReg srcAddr, int offset)
 {
-    BOOL isLoad    = flags & 1;
-    if (isLoad) {
-        // ld regNum, offset(Xn);
-        Emit32((DWORD)(0x00003003 | (Xt << 7) | (Xn << 15) | (offset << 20)));
-    } else {
-        // sd regNum, offset(Xn)
-        Emit32((DWORD)(0x00003023 | (Xt << 20) | (Xn << 15) | (offset & 0xF) << 7 | (((offset >> 4) & 0xFF) << 25)));
-    }
+    Emit32(ITypeInstr(0x3, 0x3, dest, srcAddr, offset));  // ld
+}
+void StubLinkerCPU::EmitLoad(FloatReg dest, IntReg srcAddr, int offset)
+{
+    Emit32(ITypeInstr(0x7, 0x3, dest, srcAddr, offset));  // fld
 }
 
-void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Xn, int offset)
+void StubLinkerCPU:: EmitStore(IntReg src, IntReg destAddr, int offset)
 {
-    BOOL isLoad    = flags & 1;
-    if (isLoad) {
-        // fld Ft, Xn, offset
-        Emit32((DWORD)(0x00003007 | (Xn << 15) | (Ft << 7) | (offset << 20)));
-    } else {
-        // fsd Ft, offset(Xn)
-        Emit32((WORD)(0x00003027 | (Xn << 15) | (Ft << 20) | (offset & 0xF) << 7 | ((offset >> 4) & 0xFF)));
-    }
+    Emit32(STypeInstr(0x23, 0x3, destAddr, src, offset));  // sd
 }
-
-void StubLinkerCPU::EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset)
+void StubLinkerCPU::EmitStore(FloatReg src, IntReg destAddr, int offset)
 {
-    // fld ft,base,offset
-    _ASSERTE(offset <= 2047 && offset >= -2048);
-    Emit32(0x2b800000 | (base.reg << 15) | ((offset & 0xfff)<<20) | (ft.reg << 7));
+    Emit32(STypeInstr(0x27, 0x3, destAddr, src, offset));  // fsd
 }
 
 void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
 {
-    Emit32(0x00000013 | (Xm << 15) | (Xd << 7));
+    EmitAddImm(Xd, Xm, 0);
+}
+void StubLinkerCPU::EmitMovReg(FloatReg dest, FloatReg source)
+{
+    Emit32(RTypeInstr(0x53, 0, 0x11, dest, source, source));  // fsgnj.d
 }
 
 void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value)
 {
-    _ASSERTE((0 <= value) && (value <= 0x7FF));
-    Emit32((DWORD)(0x00000013 | (((~value + 0x1) & 0xFFF) << 20) | (Xn << 15) | (Xd << 7))); // addi Xd, Xn, (~value + 0x1) & 0xFFF
+    _ASSERTE(value <= 0x800);
+    EmitAddImm(Xd, Xn, ~value + 0x1);
 }
-
 void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value)
 {
-    _ASSERTE((0 <= value) && (value <= 0x7FF));
-    Emit32((DWORD)(0x00000013 | (value << 20) | (Xn << 15) | (Xd << 7))); // addi Xd, Xn, value
+    Emit32(ITypeInstr(0x13, 0, Xd, Xn, value));  // addi
 }
-
-void StubLinkerCPU::EmitCallRegister(IntReg reg)
+void StubLinkerCPU::EmitSllImm(IntReg Xd, IntReg Xn, unsigned int value)
 {
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
+    _ASSERTE(!(value >> 6));
+    Emit32(ITypeInstr(0x13, 0x1, Xd, Xn, value));  // slli
+}
+void StubLinkerCPU::EmitLuImm(IntReg Xd, unsigned int value)
+{
+    _ASSERTE(value <= 0xFFFFF);
+    Emit32((DWORD)(0x00000037 | (value << 12) | (Xd << 7))); // lui Xd, value
 }
 
 void StubLinkerCPU::Init()
@@ -1184,12 +1193,13 @@ void StubLinkerCPU::Init()
 // Emits code to adjust arguments for static delegate target.
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 {
+    static const int argRegBase = 10;  // first argument register: a0, fa0
+    static const IntReg t6 = 31, t5 = 30, a0 = argRegBase + 0;
     // On entry a0 holds the delegate instance. Look up the real target address stored in the MethodPtrAux
     // field and saved in t6. Tailcall to the target method after re-arranging the arguments
-    // ld  t6, a0, offsetof(DelegateObject, _methodPtrAux)
-    EmitLoadStoreRegImm(eLOAD, IntReg(31)/*t6*/, IntReg(10)/*a0*/, DelegateObject::GetOffsetOfMethodPtrAux());
-    // addi t5, a0, DelegateObject::GetOffsetOfMethodPtrAux() - load the indirection cell into t5 used by ResolveWorkerAsmStub
-    EmitAddImm(30/*t5*/, 10/*a0*/, DelegateObject::GetOffsetOfMethodPtrAux());
+    EmitLoad(t6, a0, DelegateObject::GetOffsetOfMethodPtrAux());
+    // load the indirection cell into t5 used by ResolveWorkerAsmStub
+    EmitAddImm(t5, a0, DelegateObject::GetOffsetOfMethodPtrAux());
 
     int delay_index[8] = {-1};
     bool is_store = false;
@@ -1209,9 +1219,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 
             if (pEntry->srcofs & ShuffleEntry::FPREGMASK)
             {
-                _ASSERTE(!"RISCV64: not validated on riscv64!!!");
-                // FirstFloatReg is 10;
-                int j = 10;
+                int j = 1;
                 while (pEntry[j].srcofs & ShuffleEntry::FPREGMASK)
                 {
                     j++;
@@ -1219,13 +1227,11 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                 assert((pEntry->dstofs - pEntry->srcofs) == index);
                 assert(8 > index);
 
-                int tmp_reg = 0; // f0.
+                int tmp_reg = 0; // ft0.
                 ShuffleEntry* tmp_entry = pShuffleEntryArray + delay_index[0];
                 while (index)
                 {
-                    // fld(Ft, sp, offset);
-                    _ASSERTE(isValidSimm12(tmp_entry->srcofs << 3));
-                    Emit32(0x3007 | (tmp_reg << 15) | (2 << 7/*sp*/) | ((tmp_entry->srcofs << 3) << 20));
+                    EmitLoad(FloatReg(tmp_reg), RegSp, tmp_entry->srcofs * sizeof(void*));
                     tmp_reg++;
                     index--;
                     tmp_entry++;
@@ -1236,34 +1242,35 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                 i += j;
                 while (pEntry[j].srcofs & ShuffleEntry::FPREGMASK)
                 {
-                    if (pEntry[j].dstofs & ShuffleEntry::FPREGMASK)// fsgnj.d fd, fs, fs
-                        Emit32(0x22000053 | ((pEntry[j].dstofs & ShuffleEntry::OFSREGMASK) << 7) | ((pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) << 15) | ((pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) << 20));
-                    else //// fsd(Ft, Rn, offset);
+                    FloatReg src = (pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) + argRegBase;
+                    if (pEntry[j].dstofs & ShuffleEntry::FPREGMASK) {
+                        FloatReg dst = (pEntry[j].dstofs & ShuffleEntry::OFSREGMASK) + argRegBase;
+                        EmitMovReg(dst, src);
+                    }
+                    else
                     {
-                        _ASSERTE(isValidSimm12((pEntry[j].dstofs * sizeof(long))));
-                        Emit32(0x3027 | ((pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) << 20) | (2 << 15 /*sp*/) | ((pEntry[j].dstofs * sizeof(long) & 0x1f) << 7) | ((pEntry[j].dstofs * sizeof(long) & 0x7f) << 25));
+                        EmitStore(src, RegSp, pEntry[j].dstofs * sizeof(void*));
                     }
                     j--;
                 }
-                assert(tmp_reg <= 11);
-                /*
-                while (tmp_reg > 11)
+
+                assert(tmp_reg <= 7);
+                while (tmp_reg > 0)
                 {
                     tmp_reg--;
-                    // fmov.d fd, fs
-                    Emit32(0x01149800 | index | (tmp_reg << 5));
+                    EmitMovReg(FloatReg(index + argRegBase), FloatReg(tmp_reg));
                     index++;
                 }
-                */
                 index = 0;
                 pEntry = tmp_entry;
             }
             else
             {
-                // 10 is the offset of FirstGenArgReg to FirstGenReg
                 assert(pEntry->dstofs & ShuffleEntry::REGMASK);
-                assert((pEntry->dstofs & ShuffleEntry::OFSMASK) < (pEntry->srcofs & ShuffleEntry::OFSMASK));
-                EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSMASK) + 10), IntReg((pEntry->srcofs & ShuffleEntry::OFSMASK) + 10));
+                IntReg dst = (pEntry->dstofs & ShuffleEntry::OFSREGMASK) + argRegBase;
+                IntReg src = (pEntry->srcofs & ShuffleEntry::OFSREGMASK) + argRegBase;
+                assert(dst < src);
+                EmitMovReg(dst, src);
             }
         }
         else if (pEntry->dstofs & ShuffleEntry::REGMASK)
@@ -1271,6 +1278,8 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             // source must be on the stack
             _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
 
+            int dstReg = (pEntry->dstofs & ShuffleEntry::OFSREGMASK) + argRegBase;
+            int srcOfs = (pEntry->srcofs & ShuffleEntry::OFSMASK) * sizeof(void*);
             if (pEntry->dstofs & ShuffleEntry::FPREGMASK)
             {
                 if (!is_store)
@@ -1278,30 +1287,27 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                     delay_index[index++] = i;
                     continue;
                 }
-                EmitLoadFloatRegImm(FloatReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK) + 10), RegSp, pEntry->srcofs * sizeof(void*));
+                EmitLoad(FloatReg(dstReg), RegSp, srcOfs);
             }
             else
             {
-                assert(pEntry->dstofs & ShuffleEntry::REGMASK);
-                EmitLoadStoreRegImm(eLOAD, IntReg((pEntry->dstofs & ShuffleEntry::OFSMASK) + 10), RegSp, pEntry->srcofs * sizeof(void*));
+                EmitLoad(IntReg(dstReg), RegSp, srcOfs);
             }
         }
         else
         {
-            // source must be on the stack
+            // source & dest must be on the stack
             _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
-
-            // dest must be on the stack
             _ASSERTE(!(pEntry->dstofs & ShuffleEntry::REGMASK));
 
-            EmitLoadStoreRegImm(eLOAD, IntReg(29)/*t4*/, RegSp, pEntry->srcofs * sizeof(void*));
-            EmitLoadStoreRegImm(eSTORE, IntReg(29)/*t4*/, RegSp, pEntry->dstofs * sizeof(void*));
+            IntReg t4 = 29;
+            EmitLoad(t4, RegSp, pEntry->srcofs * sizeof(void*));
+            EmitStore(t4, RegSp, pEntry->dstofs * sizeof(void*));
         }
     }
-
     // Tailcall to target
     // jalr x0, 0(t6)
-    EmitJumpRegister(31);
+    EmitJumpRegister(t6);
 }
 
 // Emits code to adjust arguments for static delegate target.
@@ -1318,7 +1324,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
         _ASSERTE(pEntry->dstofs != ShuffleEntry::HELPERREG);
         _ASSERTE(pEntry->srcofs != ShuffleEntry::HELPERREG);
 
-        EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK) + 4), IntReg((pEntry->srcofs & ShuffleEntry::OFSREGMASK) + 4));
+        EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK) + 10), IntReg((pEntry->srcofs & ShuffleEntry::OFSREGMASK) + 10));
     }
 
     MetaSig msig(pSharedMD);
@@ -1339,7 +1345,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
                 // Unboxing stub case
                 // Fill param arg with methodtable of this pointer
                 // ld regHidden, a0, 0
-                EmitLoadStoreRegImm(eLOAD, IntReg(regHidden), IntReg(10), 0);
+                EmitLoad(IntReg(regHidden), IntReg(10));
             }
         }
         else

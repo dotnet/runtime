@@ -49,7 +49,7 @@ namespace Mono.Linker
 			this.context = context;
 		}
 
-		void EnsureProcessed (AssemblyDefinition assembly)
+		public void EnsureProcessed (AssemblyDefinition assembly)
 		{
 			if (!assemblies.Add (assembly))
 				return;
@@ -57,6 +57,8 @@ namespace Mono.Linker
 			foreach (TypeDefinition type in assembly.MainModule.Types)
 				MapType (type);
 		}
+
+		public ICollection<MethodDefinition> MethodsWithOverrideInformation => override_methods.Keys;
 
 		/// <summary>
 		/// Returns a list of all known methods that override <paramref name="method"/>. The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet

@@ -460,7 +460,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(expectedType, entry.GetType());
         }
 
-        protected TarEntryType GetTarEntryTypeForTarEntryFormat(TarEntryType entryType, TarEntryFormat format)
+        protected static TarEntryType GetTarEntryTypeForTarEntryFormat(TarEntryType entryType, TarEntryFormat format)
         {
             if (format is TarEntryFormat.V7)
             {

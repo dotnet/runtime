@@ -5,7 +5,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -15,7 +14,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     [Generator]
     public sealed partial class ConfigurationBindingGenerator : IIncrementalGenerator
     {
-        internal const string ProjectName = "Microsoft.Extensions.Configuration.Binder.SourceGeneration";
+        private static readonly string ProjectName = Emitter.s_assemblyName.Name;
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -31,36 +30,32 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new CompilationData((CSharpCompilation)compilation)
                         : null);
 
-            IncrementalValuesProvider<BinderInvocationOperation> inputCalls = context.SyntaxProvider
+            IncrementalValuesProvider<BinderInvocation?> inputCalls = context.SyntaxProvider
                 .CreateSyntaxProvider(
-                    (node, _) => node is InvocationExpressionSyntax invocation,
-                    BinderInvocationOperation.Create)
-                .Where(operation => operation is not null);
+                    (node, _) => BinderInvocation.IsCandidateSyntaxNode(node),
+                    BinderInvocation.Create)
+                .Where(invocation => invocation is not null);
 
-            IncrementalValueProvider<(CompilationData?, ImmutableArray<BinderInvocationOperation>)> inputData = compilationData.Combine(inputCalls.Collect());
+            IncrementalValueProvider<(CompilationData?, ImmutableArray<BinderInvocation>)> inputData = compilationData.Combine(inputCalls.Collect());
 
             context.RegisterSourceOutput(inputData, (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
 
-        /// <summary>
-        /// Generates source code to optimize binding with ConfigurationBinder.
-        /// </summary>
-        private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocationOperation> inputCalls, SourceProductionContext context)
+        private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocation> inputCalls, SourceProductionContext context)
         {
             if (inputCalls.IsDefaultOrEmpty)
             {
                 return;
             }
 
-            if (compilationData?.LanguageVersionIsSupported != true)
+            if (compilationData?.LanguageVersionIsSupported is not true)
             {
                 context.ReportDiagnostic(Diagnostic.Create(Parser.Diagnostics.LanguageVersionNotSupported, location: null));
                 return;
             }
 
-            Parser parser = new(context, compilationData.TypeSymbols!);
-            SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(inputCalls);
-            if (spec is not null)
+            Parser parser = new(context, compilationData.TypeSymbols!, inputCalls);
+            if (parser.GetSourceGenerationSpec() is SourceGenerationSpec spec)
             {
                 Emitter emitter = new(context, spec);
                 emitter.Emit();
@@ -74,7 +69,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public CompilationData(CSharpCompilation compilation)
             {
-                LanguageVersionIsSupported = compilation.LanguageVersion >= LanguageVersion.CSharp11;
+                // We don't have a CSharp21 value available yet. Polyfill the value here for forward compat, rather than use the LangugeVersion.Preview enum value.
+                // https://github.com/dotnet/roslyn/blob/168689931cb4e3150641ec2fb188a64ce4b3b790/src/Compilers/CSharp/Portable/LanguageVersion.cs#L218-L232
+                const int LangVersion_CSharp12 = 1200;
+                LanguageVersionIsSupported = (int)compilation.LanguageVersion >= LangVersion_CSharp12;
+
                 if (LanguageVersionIsSupported)
                 {
                     TypeSymbols = new KnownTypeSymbols(compilation);

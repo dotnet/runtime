@@ -94,7 +94,7 @@ namespace System.Text.Json
         public static string Utf8GetString(ReadOnlySpan<byte> bytes)
         {
             return Encoding.UTF8.GetString(bytes
-#if NETSTANDARD2_0 || NETFRAMEWORK
+#if !NETCOREAPP
                         .ToArray()
 #endif
                 );
@@ -108,7 +108,7 @@ namespace System.Text.Json
             IEqualityComparer<TKey> comparer)
             where TKey : notnull
         {
-#if NETSTANDARD2_0 || NETFRAMEWORK
+#if !NETCOREAPP
             var dictionary = new Dictionary<TKey, TValue>(comparer);
 
             foreach (KeyValuePair<TKey, TValue> item in collection)

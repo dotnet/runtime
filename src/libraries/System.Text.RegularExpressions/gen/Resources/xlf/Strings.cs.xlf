@@ -167,11 +167,6 @@
         <target state="translated">Výsledek nelze volat pro shodu, která se nezdařila.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">Nahrazení regulárních výrazů pomocí substitucí skupin se u RegexOptions.NonBacktracking nepodporuje.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Kolekce je jen pro čtení.</target>

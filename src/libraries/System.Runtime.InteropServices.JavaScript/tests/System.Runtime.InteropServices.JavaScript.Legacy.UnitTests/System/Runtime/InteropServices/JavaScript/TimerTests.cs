@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             if (_module == null)
             {
-                _module = await JSHost.ImportAsync("Timers", "./timers.mjs");
+                _module = await JSHost.ImportAsync("Timers", "../timers.mjs");
             }
         }
 

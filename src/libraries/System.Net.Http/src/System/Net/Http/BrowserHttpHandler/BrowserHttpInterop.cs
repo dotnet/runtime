@@ -11,6 +11,9 @@ namespace System.Net.Http
 {
     internal static partial class BrowserHttpInterop
     {
+        [JSImport("INTERNAL.http_wasm_supports_streaming_request")]
+        public static partial bool SupportsStreamingRequest();
+
         [JSImport("INTERNAL.http_wasm_supports_streaming_response")]
         public static partial bool SupportsStreamingResponse();
 
@@ -24,6 +27,17 @@ namespace System.Net.Http
         [JSImport("INTERNAL.http_wasm_abort_response")]
         public static partial void AbortResponse(
             JSObject fetchResponse);
+
+        [JSImport("INTERNAL.http_wasm_readable_stream_controller_enqueue")]
+        public static partial void ReadableStreamControllerEnqueue(
+            [JSMarshalAs<JSType.Any>] object pullState,
+            IntPtr bufferPtr,
+            int bufferLength);
+
+        [JSImport("INTERNAL.http_wasm_readable_stream_controller_error")]
+        public static partial void ReadableStreamControllerError(
+            [JSMarshalAs<JSType.Any>] object pullState,
+            Exception error);
 
         [JSImport("INTERNAL.http_wasm_get_response_header_names")]
         private static partial string[] _GetResponseHeaderNames(
@@ -55,8 +69,18 @@ namespace System.Net.Http
             string[] headerValues,
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
+            JSObject abortControler);
+
+        [JSImport("INTERNAL.http_wasm_fetch_stream")]
+        public static partial Task<JSObject> Fetch(
+            string uri,
+            string[] headerNames,
+            string[] headerValues,
+            string[] optionNames,
+            [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
             JSObject abortControler,
-            string? body = null);
+            [JSMarshalAs<JSType.Function<JSType.Any>>] Action<object> pull,
+            [JSMarshalAs<JSType.Any>] object pullState);
 
         [JSImport("INTERNAL.http_wasm_fetch_bytes")]
         private static partial Task<JSObject> FetchBytes(
@@ -67,8 +91,7 @@ namespace System.Net.Http
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
             JSObject abortControler,
             IntPtr bodyPtr,
-            int bodyLength
-            );
+            int bodyLength);
 
         public static unsafe Task<JSObject> Fetch(string uri, string[] headerNames, string[] headerValues, string[] optionNames, object?[] optionValues, JSObject abortControler, byte[] body)
         {
@@ -94,7 +117,7 @@ namespace System.Net.Http
             [JSMarshalAs<JSType.MemoryView>] Span<byte> buffer);
 
 
-        public static async ValueTask<T> CancelationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject? abortController = null, JSObject? fetchResponse = null)
+        public static async ValueTask<T> CancelationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject? abortController, JSObject? fetchResponse)
         {
             if (promise.IsCompletedSuccessfully)
             {
@@ -104,16 +127,17 @@ namespace System.Net.Http
             {
                 using (var operationRegistration = cancellationToken.Register(() =>
                 {
-                    CancelablePromise.CancelPromise(promise);
-                    if (abortController != null)
+                    CancelablePromise.CancelPromise(promise, static (JSObject? _fetchResponse, JSObject? _abortController) =>
                     {
-                        AbortRequest(abortController);
-                    }
-                    if (fetchResponse != null)
-                    {
-                        AbortResponse(fetchResponse);
-                    }
-
+                        if (_abortController != null)
+                        {
+                            AbortRequest(_abortController);
+                        }
+                        if (_fetchResponse != null)
+                        {
+                            AbortResponse(_fetchResponse);
+                        }
+                    }, fetchResponse, abortController);
                 }))
                 {
                     return await promise.ConfigureAwait(true);

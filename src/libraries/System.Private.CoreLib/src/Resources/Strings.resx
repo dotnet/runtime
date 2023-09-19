@@ -193,6 +193,9 @@
   <data name="Arg_AmbiguousMatchException_MemberInfo" xml:space="preserve">
     <value>Ambiguous match found for '{0} {1}'.</value>
   </data>
+  <data name="Arg_AmbiguousMatchException_UnsafeAccessor" xml:space="preserve">
+    <value>Ambiguity in binding of UnsafeAccessorAttribute.</value>
+  </data>
   <data name="Arg_ApplicationException" xml:space="preserve">
     <value>Error in the application.</value>
   </data>
@@ -449,7 +452,7 @@
     <value>The signature Type array contains some invalid type (i.e. null, void)</value>
   </data>
   <data name="Arg_InvalidUTF8String" xml:space="preserve">
-    <value>The UTF8 string passed in could not be converted to Unicode.</value>
+    <value>The UTF-8 string passed in could not be converted to Unicode.</value>
   </data>
   <data name="Arg_IOException" xml:space="preserve">
     <value>I/O error occurred.</value>
@@ -1289,7 +1292,7 @@
     <value>The NativeDigits array must contain exactly ten members.</value>
   </data>
   <data name="Argument_InvalidNativeDigitValue" xml:space="preserve">
-    <value>Each member of the NativeDigits array must be a single text element (one or more UTF16 code points) with a Unicode Nd (Number, Decimal Digit) property indicating it is a digit.</value>
+    <value>Each member of the NativeDigits array must be a single text element (one or more UTF-16 code points) with a Unicode Nd (Number, Decimal Digit) property indicating it is a digit.</value>
   </data>
   <data name="Argument_InvalidNeutralRegionName" xml:space="preserve">
     <value>The region name {0} should not correspond to neutral culture; a specific culture name is required.</value>
@@ -1390,8 +1393,14 @@
   <data name="Argument_MustBeRuntimeFieldInfo" xml:space="preserve">
     <value>FieldInfo must be a runtime FieldInfo object.</value>
   </data>
+  <data name="Argument_MustBeRuntimeConstructorInfo" xml:space="preserve">
+    <value>ConstructorInfo must be a runtime ConstructorInfo object.</value>
+  </data>
   <data name="Argument_MustBeRuntimeMethodInfo" xml:space="preserve">
     <value>MethodInfo must be a runtime MethodInfo object.</value>
+  </data>
+  <data name="Argument_MustBeRuntimeMethod" xml:space="preserve">
+    <value>Method must be a runtime MethodInfo, ConstructorInfo or DynamicMethod object.</value>
   </data>
   <data name="Argument_MustBeRuntimeType" xml:space="preserve">
     <value>Type must be a runtime Type object.</value>
@@ -2066,6 +2075,9 @@
   <data name="EventSource_ChannelTypeDoesNotMatchEventChannelValue" xml:space="preserve">
     <value>Channel {0} does not match event channel value {1}.</value>
   </data>
+  <data name="EventSource_CouldNotEnableEventPipe" xml:space="preserve">
+    <value>Failed to open an EventPipe session for NativeRuntimeEventSource.</value>
+  </data>
   <data name="EventSource_DataDescriptorsOutOfRange" xml:space="preserve">
     <value>Data descriptors are out of range.</value>
   </data>
@@ -2604,6 +2616,9 @@
   </data>
   <data name="InvalidOperation_HandleIsNotPinned" xml:space="preserve">
     <value>Handle is not pinned.</value>
+  </data>
+  <data name="InvalidOperation_InvalidUtf8" xml:space="preserve">
+    <value>Formatted string contains characters not representable as valid UTF-8.</value>
   </data>
   <data name="InvalidOperation_HashInsertFailed" xml:space="preserve">
     <value>Hashtable insert failed. Load factor too high. The most common cause is multiple threads writing to the Hashtable simultaneously.</value>
@@ -4064,6 +4079,9 @@
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
     <value>CompareOptions = {0} are not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
+  <data name="PlatformNotSupported_HybridGlobalizationWithMixedCompositions" xml:space="preserve">
+    <value>Mixed compositions in string not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
+  </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
     <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
@@ -4166,6 +4184,9 @@
   <data name="InvalidOperation_ComInteropRequireComWrapperInstance" xml:space="preserve">
     <value>COM Interop requires ComWrapper instance registered for marshalling.</value>
   </data>
+  <data name="InvalidOperation_ComInteropRequireComWrapperTrackerInstance" xml:space="preserve">
+    <value>COM Interop requires ComWrapper instance registered for reference tracker support.</value>
+  </data>
   <data name="ArgumentOutOfRange_NotGreaterThanBufferLength" xml:space="preserve">
     <value>Must not be greater than the length of the buffer.</value>
   </data>
@@ -4228,5 +4249,8 @@
   </data>
   <data name="OutOfMemory_StringTooLong" xml:space="preserve">
     <value>String length exceeded supported range.</value>
+  </data>
+  <data name="Argument_SearchValues_UnsupportedStringComparison" xml:space="preserve">
+    <value>SearchValues&lt;string&gt; supports only StringComparison.Ordinal and StringComparison.OrdinalIgnoreCase.</value>
   </data>
 </root>

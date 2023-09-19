@@ -1,17 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
+
 import type {
     MonoArray, MonoAssembly, MonoClass,
-    MonoMethod, MonoObject, MonoString,
+    MonoMethod, MonoObject,
     MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments
 } from "./types/internal";
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
-import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
-import { disableLegacyJsInterop, Module } from "./globals";
+import { linkerDisableLegacyJsInterop, linkerEnableAotProfiler, linkerEnableBrowserProfiler, Module } from "./globals";
 import { mono_log_error } from "./logging";
+import { mono_assert } from "./globals";
 
-type SigLine = [lazy: boolean, name: string, returnType: string | null, argTypes?: string[], opts?: any];
+type SigLine = [lazyOrSkip: boolean | (() => boolean), name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
 const legacy_interop_cwraps: SigLine[] = WasmEnableLegacyJsInterop ? [
     [true, "mono_wasm_array_get_ref", "void", ["number", "number", "number"]],
@@ -27,6 +30,17 @@ const legacy_interop_cwraps: SigLine[] = WasmEnableLegacyJsInterop ? [
     [true, "mono_wasm_obj_array_new", "number", ["number"]],
     [true, "mono_wasm_obj_array_set", "void", ["number", "number", "number"]],
     [true, "mono_wasm_array_length_ref", "number", ["number"]],
+] : [];
+
+const diagnostics_cwraps: SigLine[] = MonoWasmThreads ? [
+    // MONO.diagnostics
+    [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
+    [true, "mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
+    [true, "mono_wasm_event_pipe_session_disable", "bool", ["number"]],
+    [true, "mono_wasm_diagnostic_server_create_thread", "bool", ["string", "number"]],
+    [true, "mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
+    [true, "mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
+    [true, "mono_wasm_diagnostic_server_create_stream", "number", []],
 ] : [];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
@@ -61,25 +75,18 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_assembly_get_entry_point", "number", ["number", "number"]],
     [true, "mono_wasm_class_get_type", "number", ["number"]],
 
-    // MONO.diagnostics
-    [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
-    [true, "mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
-    [true, "mono_wasm_event_pipe_session_disable", "bool", ["number"]],
-    [true, "mono_wasm_diagnostic_server_create_thread", "bool", ["string", "number"]],
-    [true, "mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
-    [true, "mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
-    [true, "mono_wasm_diagnostic_server_create_stream", "number", []],
-
     //INTERNAL
     [false, "mono_wasm_exit", "void", ["number"]],
+    [false, "mono_wasm_abort", "void", []],
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     [false, "mono_wasm_enable_on_demand_gc", "void", ["number"]],
     // These two need to be lazy because they may be missing
-    [true, "mono_wasm_profiler_init_aot", "void", ["string"]],
+    [() => !linkerEnableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
+    [() => !linkerEnableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
-    [false, "mono_wasm_invoke_method_bound", "number", ["number", "number"]],
+    [false, "mono_wasm_invoke_method_bound", "number", ["number", "number", "number"]],
     [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
     [true, "mono_wasm_copy_managed_pointer", "void", ["number", "number"]],
     [true, "mono_wasm_i52_to_f64", "number", ["number", "number"]],
@@ -132,6 +139,16 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_opcode_info", "number", ["number", "number"]],
     [true, "mono_wasm_is_zero_page_reserved", "number", []],
     [true, "mono_jiterp_is_special_interface", "number", ["number"]],
+    [true, "mono_jiterp_initialize_table", "void", ["number", "number", "number"]],
+    [true, "mono_jiterp_allocate_table_entry", "number", ["number"]],
+    [true, "mono_jiterp_get_interp_entry_func", "number", ["number"]],
+    [true, "mono_jiterp_get_counter", "number", ["number"]],
+    [true, "mono_jiterp_modify_counter", "number", ["number", "number"]],
+    [true, "mono_jiterp_tlqueue_next", "number", ["number"]],
+    [true, "mono_jiterp_tlqueue_add", "number", ["number", "number"]],
+    [true, "mono_jiterp_tlqueue_clear", "void", ["number"]],
+
+    ...diagnostics_cwraps,
     ...legacy_interop_cwraps
 ];
 
@@ -150,6 +167,22 @@ export interface t_LegacyCwraps {
     mono_wasm_obj_array_new(size: number): MonoArray;
     mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
     mono_wasm_array_length_ref(array: MonoObjectRef): number;
+}
+
+export interface t_DiagnosticsCwraps {
+    // MONO.diagnostics
+    mono_wasm_event_pipe_enable(outputPath: string | null, stream: VoidPtr, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
+    mono_wasm_event_pipe_session_start_streaming(sessionId: number): boolean;
+    mono_wasm_event_pipe_session_disable(sessionId: number): boolean;
+    mono_wasm_diagnostic_server_create_thread(websocketURL: string, threadIdOutPtr: VoidPtr): boolean;
+    mono_wasm_diagnostic_server_thread_attach_to_runtime(): void;
+    mono_wasm_diagnostic_server_post_resume_runtime(): void;
+    mono_wasm_diagnostic_server_create_stream(): VoidPtr;
+}
+
+export interface t_ProfilerCwraps {
+    mono_wasm_profiler_init_aot(desc: string): void;
+    mono_wasm_profiler_init_browser(desc: string): void;
 }
 
 export interface t_Cwraps {
@@ -182,25 +215,14 @@ export interface t_Cwraps {
     mono_wasm_assembly_get_entry_point(assembly: MonoAssembly, idx: number): MonoMethod;
     mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
 
-
-    // MONO.diagnostics
-    mono_wasm_event_pipe_enable(outputPath: string | null, stream: VoidPtr, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
-    mono_wasm_event_pipe_session_start_streaming(sessionId: number): boolean;
-    mono_wasm_event_pipe_session_disable(sessionId: number): boolean;
-    mono_wasm_diagnostic_server_create_thread(websocketURL: string, threadIdOutPtr: VoidPtr): boolean;
-    mono_wasm_diagnostic_server_thread_attach_to_runtime(): void;
-    mono_wasm_diagnostic_server_post_resume_runtime(): void;
-    mono_wasm_diagnostic_server_create_stream(): VoidPtr;
-
     //INTERNAL
-    mono_wasm_exit(exit_code: number): number;
+    mono_wasm_exit(exit_code: number): void;
+    mono_wasm_abort(): void;
     mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_enable_on_demand_gc(enable: number): void;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
-    mono_wasm_profiler_init_aot(desc: string): void;
-    mono_wasm_profiler_init_browser(desc: string): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
-    mono_wasm_invoke_method_bound(method: MonoMethod, args: JSMarshalerArguments): MonoString;
+    mono_wasm_invoke_method_bound(method: MonoMethod, args: JSMarshalerArguments, fail: MonoStringRef): number;
     mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
     mono_wasm_copy_managed_pointer(destination: VoidPtr | MonoObjectRef, source: VoidPtr | MonoObjectRef): void;
     mono_wasm_i52_to_f64(source: VoidPtr, error: Int32Ptr): number;
@@ -259,12 +281,24 @@ export interface t_Cwraps {
     mono_jiterp_get_opcode_info(opcode: number, type: number): number;
     mono_wasm_is_zero_page_reserved(): number;
     mono_jiterp_is_special_interface(klass: number): number;
+    mono_jiterp_initialize_table(type: number, firstIndex: number, lastIndex: number): void;
+    mono_jiterp_allocate_table_entry(type: number): number;
+    mono_jiterp_get_interp_entry_func(type: number): number;
+    mono_jiterp_get_counter(counter: number): number;
+    mono_jiterp_modify_counter(counter: number, delta: number): number;
+    // returns value or, if queue is empty, VoidPtrNull
+    mono_jiterp_tlqueue_next(queue: number): VoidPtr;
+    // returns new size of queue after add
+    mono_jiterp_tlqueue_add(queue: number, value: VoidPtr): number;
+    mono_jiterp_tlqueue_clear(queue: number): void;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};
 
 export default wrapped_c_functions;
 export const legacy_c_functions: t_LegacyCwraps & t_Cwraps = wrapped_c_functions as any;
+export const diagnostics_c_functions: t_DiagnosticsCwraps & t_Cwraps = wrapped_c_functions as any;
+export const profiler_c_functions: t_ProfilerCwraps & t_Cwraps = wrapped_c_functions as any;
 
 // see src/mono/wasm/driver.c I52_ERROR_xxx
 export const enum I52Error {
@@ -275,7 +309,7 @@ export const enum I52Error {
 
 const fastCwrapTypes = ["void", "number", null];
 
-function cwrap(name: string, returnType: string | null, argTypes: string[] | undefined, opts: any, throwOnError: boolean): Function {
+function cwrap(name: string, returnType: string | null, argTypes: string[] | undefined, opts: any): Function {
     // Attempt to bypass emscripten's generated wrapper if it is safe to do so
     let fce =
         // Special cwrap options disable the fast path
@@ -301,29 +335,29 @@ function cwrap(name: string, returnType: string | null, argTypes: string[] | und
 
     if (typeof (fce) !== "function") {
         const msg = `cwrap ${name} not found or not a function`;
-        if (throwOnError)
-            throw new Error(msg);
-        else
-            mono_log_error("" + msg);
+        throw new Error(msg);
     }
     return fce;
 }
 
 export function init_c_exports(): void {
-    const lfns = WasmEnableLegacyJsInterop && !disableLegacyJsInterop ? legacy_interop_cwraps : [];
+    const lfns = WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop ? legacy_interop_cwraps : [];
     const fns = [...fn_signatures, ...lfns];
     for (const sig of fns) {
         const wf: any = wrapped_c_functions;
-        const [lazy, name, returnType, argTypes, opts] = sig;
-        if (lazy) {
+        const [lazyOrSkip, name, returnType, argTypes, opts] = sig;
+        const maybeSkip = typeof lazyOrSkip === "function";
+        if (lazyOrSkip === true || maybeSkip) {
             // lazy init on first run
             wf[name] = function (...args: any[]) {
-                const fce = cwrap(name, returnType, argTypes, opts, true);
+                const isNotSkipped = !maybeSkip || !lazyOrSkip();
+                mono_assert(isNotSkipped, () => `cwrap ${name} should not be called when binding was skipped`);
+                const fce = cwrap(name, returnType, argTypes, opts);
                 wf[name] = fce;
                 return fce(...args);
             };
         } else {
-            const fce = cwrap(name, returnType, argTypes, opts, false);
+            const fce = cwrap(name, returnType, argTypes, opts);
             wf[name] = fce;
         }
     }

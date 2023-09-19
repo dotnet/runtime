@@ -86,7 +86,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type[] arr = new Type[] { typeof (TestType), typeof (TProperties), typeAll };
 			arr[0].RequiresAll ();
 			arr[1].RequiresPublicProperties ();
-			arr[1].RequiresPublicFields (); // Should warn
+			arr[1].RequiresPublicFields (); // Should warn - member types mismatch
 			arr[2].RequiresAll ();
 			arr[3].RequiresPublicMethods (); // Should warn - unknown value at this index
 		}

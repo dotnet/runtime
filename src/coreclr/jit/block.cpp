@@ -68,89 +68,39 @@ unsigned SsaStressHashHelper()
 }
 #endif
 
-EHSuccessorIterPosition::EHSuccessorIterPosition(Compiler* comp, BasicBlock* block)
-    : m_remainingRegSuccs(block->NumSucc(comp))
-    , m_numRegSuccs(m_remainingRegSuccs)
-    , m_curRegSucc(nullptr)
-    , m_curTry(comp->ehGetBlockExnFlowDsc(block))
+//------------------------------------------------------------------------
+//  AllSuccessorEnumerator: Construct an instance of the enumerator.
+//
+//  Arguments:
+//     comp  - Compiler instance
+//     block - The block whose successors are to be iterated
+//
+AllSuccessorEnumerator::AllSuccessorEnumerator(Compiler* comp, BasicBlock* block) : m_block(block)
 {
-    // If "block" is a "leave helper" block (the empty BBJ_ALWAYS block that pairs with a
-    // preceding BBJ_CALLFINALLY block to implement a "leave" IL instruction), then no exceptions
-    // can occur within it, so clear m_curTry if it's non-null.
-    if (m_curTry != nullptr)
-    {
-        if (block->isBBCallAlwaysPairTail())
+    m_numSuccs = 0;
+    block->VisitAllSuccs(comp, [this](BasicBlock* succ) {
+        if (m_numSuccs < ArrLen(m_successors))
         {
-            m_curTry = nullptr;
-        }
-    }
-
-    if (m_curTry == nullptr && m_remainingRegSuccs > 0)
-    {
-        // Examine the successors to see if any are the start of try blocks.
-        FindNextRegSuccTry(comp, block);
-    }
-}
-
-void EHSuccessorIterPosition::FindNextRegSuccTry(Compiler* comp, BasicBlock* block)
-{
-    assert(m_curTry == nullptr);
-
-    // Must now consider the next regular successor, if any.
-    while (m_remainingRegSuccs > 0)
-    {
-        m_curRegSucc = block->GetSucc(m_numRegSuccs - m_remainingRegSuccs, comp);
-        m_remainingRegSuccs--;
-        if (comp->bbIsTryBeg(m_curRegSucc))
-        {
-            assert(m_curRegSucc->hasTryIndex()); // Since it is a try begin.
-            unsigned newTryIndex = m_curRegSucc->getTryIndex();
-
-            // If the try region started by "m_curRegSucc" (represented by newTryIndex) contains m_block,
-            // we've already yielded its handler, as one of the EH handler successors of m_block itself.
-            if (comp->bbInExnFlowRegions(newTryIndex, block))
-            {
-                continue;
-            }
-
-            // Otherwise, consider this try.
-            m_curTry = comp->ehGetDsc(newTryIndex);
-            break;
-        }
-    }
-}
-
-void EHSuccessorIterPosition::Advance(Compiler* comp, BasicBlock* block)
-{
-    assert(m_curTry != nullptr);
-    if (m_curTry->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
-    {
-        m_curTry = comp->ehGetDsc(m_curTry->ebdEnclosingTryIndex);
-
-        // If we've gone over into considering try's containing successors,
-        // then the enclosing try must have the successor as its first block.
-        if (m_curRegSucc == nullptr || m_curTry->ebdTryBeg == m_curRegSucc)
-        {
-            return;
+            m_successors[m_numSuccs] = succ;
         }
 
-        // Otherwise, give up, try the next regular successor.
-        m_curTry = nullptr;
-    }
-    else
+        m_numSuccs++;
+        return BasicBlockVisit::Continue;
+    });
+
+    if (m_numSuccs > ArrLen(m_successors))
     {
-        m_curTry = nullptr;
+        m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
+
+        unsigned numSuccs = 0;
+        block->VisitAllSuccs(comp, [this, &numSuccs](BasicBlock* succ) {
+            assert(numSuccs < m_numSuccs);
+            m_pSuccessors[numSuccs++] = succ;
+            return BasicBlockVisit::Continue;
+        });
+
+        assert(numSuccs == m_numSuccs);
     }
-
-    // We've exhausted all try blocks.
-    // See if there are any remaining regular successors that start try blocks.
-    FindNextRegSuccTry(comp, block);
-}
-
-BasicBlock* EHSuccessorIterPosition::Current(Compiler* comp, BasicBlock* block)
-{
-    assert(m_curTry != nullptr);
-    return m_curTry->ExFlowBlock();
 }
 
 FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
@@ -197,6 +147,30 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
                 genFlowNodeCnt += 1;
                 genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
+            }
+        }
+
+        if (ehblk->HasFinallyOrFaultHandler() && (ehblk->ebdHndBeg == blk))
+        {
+            // block is a finally or fault handler; all enclosing filters are predecessors
+            unsigned enclosing = ehblk->ebdEnclosingTryIndex;
+            while (enclosing != EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                EHblkDsc* enclosingDsc = ehGetDsc(enclosing);
+                if (enclosingDsc->HasFilter())
+                {
+                    for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
+                         filterBlk             = filterBlk->bbNext)
+                    {
+                        res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+
+                        assert(filterBlk->VisitEHSecondPassSuccs(this, [blk](BasicBlock* succ) {
+                            return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
+                        }) == BasicBlockVisit::Abort);
+                    }
+                }
+
+                enclosing = enclosingDsc->ebdEnclosingTryIndex;
             }
         }
 
@@ -818,9 +792,6 @@ bool BasicBlock::IsLIR() const
 //------------------------------------------------------------------------
 // firstStmt: Returns the first statement in the block
 //
-// Arguments:
-//    None.
-//
 // Return Value:
 //    The first statement in the block's bbStmtList.
 //
@@ -830,10 +801,18 @@ Statement* BasicBlock::firstStmt() const
 }
 
 //------------------------------------------------------------------------
-// lastStmt: Returns the last statement in the block
+// hasSingleStmt: Returns true if block has a single statement
 //
-// Arguments:
-//    None.
+// Return Value:
+//    true if block has a single statement, false otherwise
+//
+bool BasicBlock::hasSingleStmt() const
+{
+    return (firstStmt() != nullptr) && (firstStmt() == lastStmt());
+}
+
+//------------------------------------------------------------------------
+// lastStmt: Returns the last statement in the block
 //
 // Return Value:
 //    The last statement in the block's bbStmtList.
@@ -896,7 +875,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 //
 // Return Value:
 //    The unique successor of a block, or nullptr if there is no unique successor.
-
+//
 BasicBlock* BasicBlock::GetUniqueSucc() const
 {
     if (bbJumpKind == BBJ_ALWAYS)
@@ -1715,9 +1694,9 @@ weight_t BasicBlock::getBBWeight(Compiler* comp)
     {
         weight_t calledCount = getCalledCount(comp);
 
-        // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
+        // Normalize the bbWeight.
         //
-        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
+        weight_t fullResult = (this->bbWeight / calledCount) * BB_UNITY_WEIGHT;
 
         return fullResult;
     }

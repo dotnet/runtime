@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -417,6 +418,49 @@ namespace System.Tests
                 Assert.Throws(exceptionType, () => long.Parse(value.AsSpan(), style, provider));
 
                 Assert.False(long.TryParse(value.AsSpan(), style, provider, out result));
+                Assert.Equal(0, result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, long expected)
+        {
+            long result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
+            {
+                Assert.True(long.TryParse(valueUtf8, out result));
+                Assert.Equal(expected, result);
+            }
+
+            Assert.Equal(expected, long.Parse(valueUtf8, style, provider));
+
+            Assert.True(long.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                long result;
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+
+                // Default style and provider
+                if (style == NumberStyles.Integer && provider == null)
+                {
+                    Assert.False(long.TryParse(valueUtf8, out result));
+                    Assert.Equal(0, result);
+                }
+
+                Assert.Throws(exceptionType, () => long.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(long.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(0, result);
             }
         }

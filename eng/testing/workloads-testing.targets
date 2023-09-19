@@ -9,6 +9,7 @@
     <_SdkForWorkloadTestingBasePath>$(ArtifactsBinDir)</_SdkForWorkloadTestingBasePath>
     <_SdkWithNoWorkloadPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-none'))</_SdkWithNoWorkloadPath>
     <_SdkWithNoWorkloadStampPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-for-none-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
+    <PreparePackagesForWorkloadInstall Condition="'$(PreparePackagesForWorkloadInstall)' == ''">true</PreparePackagesForWorkloadInstall>
     <InstallWorkloadUsingArtifactsDependsOn>
       $(InstallWorkloadUsingArtifactsDependsOn);
       _ProvisionDotNetForWorkloadTesting;
@@ -60,9 +61,9 @@
 
     <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
       <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 8.0</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 9.0</_DotNetInstallCommand>
       <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 8.0</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 9.0</_DotNetInstallCommand>
     </PropertyGroup>
 
     <DownloadFile SourceUrl="https://dot.net/v1/$(_DotNetInstallScriptName)"
@@ -75,15 +76,8 @@
           Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallCommand)" />
 
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
-
-    <!-- HACK: Remove the now invalid manifest `microsoft.net.workload.mono.toolchain` as a workaround
-               till the sdk removes it completely. -->
-    <ItemGroup>
-      <_ManifestsToRemove Include="$(_SdkWithNoWorkloadPath)\sdk-manifests\8.0.100\microsoft.net.workload.mono.toolchain" />
-    </ItemGroup>
-    <Message Text="Removing @(_ManifestsToRemove)" Condition="Exists(%(_ManifestsToRemove.Identity))" Importance="High" />
-    <RemoveDir Directories="@(_ManifestsToRemove)" Condition="Exists(%(_ManifestsToRemove.Identity))" />
   </Target>
 
   <Target Name="_GetDotNetVersion">
@@ -157,7 +151,7 @@
           DependsOnTargets="$(InstallWorkloadUsingArtifactsDependsOn)"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
-  <Target Name="GetNuGetsToBuildForWorkloadTesting" Returns="@(_NuGetsToBuild)" DependsOnTargets="$(GetNuGetsToBuildForWorkloadTestingDependsOn)">
+  <Target Name="GetNuGetsToBuildForWorkloadTesting" Returns="@(_NuGetsToBuild)" DependsOnTargets="$(GetNuGetsToBuildForWorkloadTestingDependsOn)" Condition="'$(PreparePackagesForWorkloadInstall)' == 'true'">
     <ItemGroup>
       <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Ref.$(PackageVersionForWorkloadManifests).nupkg"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
@@ -166,7 +160,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_PreparePackagesForWorkloadInstall" Inputs="%(_NuGetsToBuild.Project);%(_NuGetsToBuild.Dependencies)" Outputs="%(_NuGetsToBuild.Identity)">
+  <Target Name="_PreparePackagesForWorkloadInstall" Inputs="%(_NuGetsToBuild.Project);%(_NuGetsToBuild.Dependencies)" Outputs="%(_NuGetsToBuild.Identity)" Condition="'$(PreparePackagesForWorkloadInstall)' == 'true'">
     <Message Importance="High" Text="
 ** Building %(_NuGetsToBuild.Descriptor) **
       " />
@@ -196,6 +190,7 @@
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
+                     SkipUpdateAppRefPack="true"
       />
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />

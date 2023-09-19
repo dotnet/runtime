@@ -1,14 +1,11 @@
 using System;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes
 {
 	[SetupLinkerTrimMode ("link")]
-	[SkipPeVerify]
-
 	[KeptInterface (typeof (IUserData))]
 	public class MarshalAsCustomMarshalerInterface : IUserData
 	{

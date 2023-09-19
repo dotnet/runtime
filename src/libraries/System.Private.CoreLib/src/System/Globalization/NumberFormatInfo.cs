@@ -244,10 +244,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();
@@ -400,7 +397,7 @@ namespace System.Globalization
         {
             get
             {
-                System.Globalization.CultureInfo culture = CultureInfo.CurrentCulture;
+                CultureInfo culture = CultureInfo.CurrentCulture;
                 if (!culture._isInherited)
                 {
                     NumberFormatInfo? info = culture._numInfo;
@@ -441,12 +438,9 @@ namespace System.Globalization
             get => _currencyNegativePattern;
             set
             {
-                if (value < 0 || value > 15)
+                if (value < 0 || value > 16)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 15));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 16);
                 }
 
                 VerifyWritable();
@@ -462,10 +456,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to negNumberFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 4)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 4));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 4);
                 }
 
                 VerifyWritable();
@@ -481,10 +472,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to posPercentFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 3)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 3));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 3);
                 }
 
                 VerifyWritable();
@@ -500,10 +488,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to posPercentFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 11)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 11));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 11);
                 }
 
                 VerifyWritable();
@@ -563,10 +548,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();
@@ -623,10 +605,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 3)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 3));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 3);
                 }
 
                 VerifyWritable();
@@ -686,10 +665,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();

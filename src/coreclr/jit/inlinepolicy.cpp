@@ -2335,7 +2335,12 @@ bool DiscretionaryPolicy::PropagateNeverToRuntime() const
     //
     switch (m_Observation)
     {
+        // Not-profitable depends on call-site:
         case InlineObservation::CALLEE_NOT_PROFITABLE_INLINE:
+            return false;
+
+        // If we mark no-returns as noinline we won't be able to recognize them
+        // as no-returns in future inlines.
         case InlineObservation::CALLEE_DOES_NOT_RETURN:
             return false;
 

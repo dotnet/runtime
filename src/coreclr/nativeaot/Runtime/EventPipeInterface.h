@@ -1,21 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef __EVENTPIPE_INTERFACE_H__
-#define __EVENTPIPE_INTERFACE_H__
+#ifndef EVENTPIPE_INTERFACE_H
+#define EVENTPIPE_INTERFACE_H
 
 // Initialize EventPipe
-void EventPipeAdapter_Initialize();
-bool EventPipeAdapter_Enabled();
+void EventPipe_Initialize();
 
 // Initialize DS
-bool DiagnosticServerAdapter_Initialize();
-void DiagnosticServerAdapter_PauseForDiagnosticsMonitor();
+bool DiagnosticServer_Initialize();
+void DiagnosticServer_PauseForDiagnosticsMonitor();
 
+void EventPipe_FinishInitialize();
 
-void EventPipeAdapter_FinishInitialize();
+void EventPipe_ThreadShutdown();
 
-void EventPipeAdapter_Shutdown();
-bool DiagnosticServerAdapter_Shutdown();
+void EventPipe_Shutdown();
+bool DiagnosticServer_Shutdown();
 
-#endif //__EVENTPIPE_INTERFACE_H__
+void EventTracing_Initialize();
+#endif //EVENTPIPE_INTERFACE_H

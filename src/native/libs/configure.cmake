@@ -9,11 +9,6 @@ include(CheckTypeSize)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
 
-# CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
-if(POLICY CMP0075)
-    cmake_policy(SET CMP0075 NEW)
-endif()
-
 if (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
@@ -253,11 +248,6 @@ check_symbol_exists(
 check_include_files(
     gnu/lib-names.h
     HAVE_GNU_LIBNAMES_H)
-
-check_symbol_exists(
-    arc4random_buf
-    "stdlib.h"
-    HAVE_ARC4RANDOM_BUF)
 
 check_symbol_exists(
     TIOCGWINSZ

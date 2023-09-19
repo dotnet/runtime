@@ -21,9 +21,6 @@ namespace Microsoft.Interop
             _getPinnableReferenceType = getPinnableReferenceType;
         }
 
-        public bool IsSupported(TargetFramework target, Version version)
-            => _innerMarshallingGenerator.IsSupported(target, version);
-
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
             if (IsPinningPathSupported(info, context))
@@ -60,11 +57,6 @@ namespace Microsoft.Interop
             }
 
             return _innerMarshallingGenerator.Generate(info, context);
-        }
-
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
-        {
-            return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, context);
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
@@ -106,6 +98,11 @@ namespace Microsoft.Interop
                     ),
                     EmptyStatement());
             }
+        }
+
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+        {
+            return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, info, context, out diagnostic);
         }
     }
 }

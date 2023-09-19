@@ -674,7 +674,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     }
     else if (strcmp(filename, "stdout") == 0)
     {
-        fgxFile      = jitstdout;
+        fgxFile      = jitstdout();
         *wbDontClose = true;
     }
     else if (strcmp(filename, "stderr") == 0)
@@ -938,6 +938,49 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         fprintf(fgxFile, "A");
                     }
                     fprintf(fgxFile, "]");
+                }
+            }
+
+            // Optionally show GC Heap Mem SSA state and Memory Phis
+            //
+            if ((JitConfig.JitDumpFgMemorySsa() != 0) && (fgSsaPassesCompleted > 0))
+            {
+                fprintf(fgxFile, "\\n");
+
+                MemoryKind     k      = MemoryKind::GcHeap;
+                const unsigned ssaIn  = block->bbMemorySsaNumIn[k];
+                const unsigned ssaOut = block->bbMemorySsaNumOut[k];
+
+                if (ssaIn != SsaConfig::RESERVED_SSA_NUM)
+                {
+                    ValueNum                  vnIn   = GetMemoryPerSsaData(ssaIn)->m_vnPair.GetLiberal();
+                    BasicBlock::MemoryPhiArg* memPhi = block->bbMemorySsaPhiFunc[k];
+                    if ((memPhi != nullptr) && (memPhi != BasicBlock::EmptyMemoryPhiDef))
+                    {
+                        fprintf(fgxFile, "MI %d " FMT_VN " = PHI(", ssaIn, vnIn);
+                        bool first = true;
+                        for (; memPhi != nullptr; memPhi = memPhi->m_nextArg)
+                        {
+                            ValueNum phiVN = GetMemoryPerSsaData(memPhi->GetSsaNum())->m_vnPair.GetLiberal();
+                            fprintf(fgxFile, "%s%d " FMT_VN, first ? "" : ",", memPhi->m_ssaNum, phiVN);
+                            first = false;
+                        }
+                        fprintf(fgxFile, ")");
+                    }
+                    else
+                    {
+                        ValueNum vn = GetMemoryPerSsaData(block->bbMemorySsaNumIn[k])->m_vnPair.GetLiberal();
+                        fprintf(fgxFile, "MI %d " FMT_VN, block->bbMemorySsaNumIn[k], vn);
+                    }
+                    fprintf(fgxFile, "\\n");
+
+                    if (block->bbMemoryHavoc != 0)
+                    {
+                        fprintf(fgxFile, "** HAVOC **\\n");
+                    }
+
+                    ValueNum vnOut = GetMemoryPerSsaData(ssaOut)->m_vnPair.GetLiberal();
+                    fprintf(fgxFile, "MO %d " FMT_VN, ssaOut, vnOut);
                 }
             }
 
@@ -3109,6 +3152,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 // Some of these aren't handles to invariant data...
                 if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
                     (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
+                    (handleKind == GTF_ICON_FTN_ADDR) ||   // Pointer to a potentially mutable VM slot
                     (handleKind == GTF_ICON_GLOBAL_PTR))   // Pointer to mutable data from the VM state
                 {
                     // For statics, we expect the GTF_GLOB_REF to be set. However, we currently
@@ -3286,6 +3330,12 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
         // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
         //
         GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
+
+        if (tree->isIndir() && tree->AsIndir()->Addr()->IsIconHandle(GTF_ICON_FTN_ADDR))
+        {
+            // IND(ICON_FTN_ADDR) may or may not have GTF_IND_INVARIANT flag.
+            flagsToCheck &= ~GTF_IND_INVARIANT;
+        }
 
         if ((actualFlags & ~expectedFlags & flagsToCheck) != 0)
         {

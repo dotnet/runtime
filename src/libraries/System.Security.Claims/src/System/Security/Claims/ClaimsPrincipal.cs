@@ -15,7 +15,6 @@ namespace System.Security.Claims
     /// Concrete IPrincipal supporting multiple claims-based identities
     /// </summary>
     [DebuggerDisplay("{DebuggerToString(),nq}")]
-    [DebuggerTypeProxy(typeof(ClaimsPrincipalDebugProxy))]
     public class ClaimsPrincipal : IPrincipal
     {
         private enum SerializationMask
@@ -580,34 +579,19 @@ namespace System.Security.Claims
                 identitiesCount++;
             }
 
+            // Return debug string optimized for the case of one identity.
+            if (identitiesCount == 1 && Identity is ClaimsIdentity claimsIdentity)
+            {
+                return claimsIdentity.DebuggerToString();
+            }
+
             int claimsCount = 0;
             foreach (Claim item in Claims)
             {
                 claimsCount++;
             }
 
-            // Return debug string optimized for the case of one identity.
-            if (identitiesCount == 1 && Identity is ClaimsIdentity claimsIdentity)
-            {
-                return $"Principal {claimsIdentity.DebuggerToString()}";
-            }
-
-            return $"Principal Identities Count: {identitiesCount}, Claims Count: {claimsCount}";
-        }
-
-        private sealed class ClaimsPrincipalDebugProxy
-        {
-            private readonly ClaimsPrincipal _principal;
-
-            public ClaimsPrincipalDebugProxy(ClaimsPrincipal principal)
-            {
-                _principal = principal;
-            }
-
-            // List type has a friendly debugger view
-            public List<Claim> Claims => new List<Claim>(_principal.Claims);
-            public List<ClaimsIdentity> Identities => new List<ClaimsIdentity>(_principal.Identities);
-            public IIdentity? Identity => _principal.Identity;
+            return $"Identities = {identitiesCount}, Claims = {claimsCount}";
         }
     }
 }

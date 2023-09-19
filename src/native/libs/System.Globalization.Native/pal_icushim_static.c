@@ -171,9 +171,14 @@ int32_t
 GlobalizationNative_LoadICUData(const char* path)
 {
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+    if (path && path[0] != '/')
+    {
+        // if the path is relative, prepend the app bundle root
+        path = GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(path);
+    }
     if (!path)
     {
-        // fallback to icudt.dat in the app bundle root in case the path isn't set
+        // fallback to icudt.dat in the app bundle resources in case the path isn't set
         path = GlobalizationNative_GetICUDataPathFallback();
     }
 #endif

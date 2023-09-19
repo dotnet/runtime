@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class HybridGlobalizationTests : BuildTestBase
+    public class HybridGlobalizationTests : TestMainJsTestBase
     {
         public HybridGlobalizationTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)

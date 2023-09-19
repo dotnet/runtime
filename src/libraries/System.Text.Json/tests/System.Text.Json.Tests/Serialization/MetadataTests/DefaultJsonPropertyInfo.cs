@@ -9,79 +9,30 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class DefaultJsonPropertyInfoTests_DefaultJsonTypeInfoResolver : DefaultJsonPropertyInfoTests
     {
-        protected override IJsonTypeInfoResolver CreateResolverWithModifiers(params Action<JsonTypeInfo>[] modifiers)
-        {
-            var resolver = new DefaultJsonTypeInfoResolver();
-
-            foreach (var modifier in modifiers)
-            {
-                resolver.Modifiers.Add(modifier);
-            }
-
-            return resolver;
-        }
+        protected override IJsonTypeInfoResolver Resolver { get; } = new DefaultJsonTypeInfoResolver();
     }
 
     public class DefaultJsonPropertyInfoTests_SerializerContextNoWrapping : DefaultJsonPropertyInfoTests
     {
-        protected override bool ModifiersNotSupported => true;
-
-        protected override IJsonTypeInfoResolver CreateResolverWithModifiers(params Action<JsonTypeInfo>[] modifiers)
-        {
-            if (modifiers.Length != 0)
-            {
-                Assert.Fail($"Testing non wrapped JsonSerializerContext but modifier is provided. Make sure to check {nameof(ModifiersNotSupported)}.");
-            }
-
-            return Context.Default;
-        }
+        protected override IJsonTypeInfoResolver Resolver { get; } = Context.Default;
     }
 
     public class DefaultJsonPropertyInfoTests_SerializerContextWrapped : DefaultJsonPropertyInfoTests
     {
-        protected override IJsonTypeInfoResolver CreateResolverWithModifiers(params Action<JsonTypeInfo>[] modifiers)
-            => new ContextWithModifiers(Context.Default, modifiers);
-
-        private class ContextWithModifiers : IJsonTypeInfoResolver
-        {
-            private IJsonTypeInfoResolver _context;
-            private Action<JsonTypeInfo>[] _modifiers;
-
-            public ContextWithModifiers(JsonSerializerContext context, Action<JsonTypeInfo>[] modifiers)
-            {
-                _context = context;
-                _modifiers = modifiers;
-            }
-
-            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
-            {
-                JsonTypeInfo? typeInfo = _context.GetTypeInfo(type, options);
-
-                if (typeInfo != null)
-                {
-                    foreach (var modifier in _modifiers)
-                    {
-                        modifier(typeInfo);
-                    }
-                }
-
-                return typeInfo;
-            }
-        }
+        protected override IJsonTypeInfoResolver Resolver { get; } = Context.Default;
     }
 
     public abstract partial class DefaultJsonPropertyInfoTests
     {
-        protected virtual bool ModifiersNotSupported => false;
-        protected abstract IJsonTypeInfoResolver CreateResolverWithModifiers(params Action<JsonTypeInfo>[] modifiers);
+        protected abstract IJsonTypeInfoResolver Resolver { get; }
 
-        private JsonSerializerOptions CreateOptionsWithModifiers(params Action<JsonTypeInfo>[] modifiers)
-            => new JsonSerializerOptions()
+        private JsonSerializerOptions CreateOptionsWithModifier(Action<JsonTypeInfo> modifier)
+            => new JsonSerializerOptions
             {
-                TypeInfoResolver = CreateResolverWithModifiers(modifiers)
+                TypeInfoResolver = Resolver.WithAddedModifier(modifier)
             };
 
-        private JsonSerializerOptions CreateOptions() => CreateOptionsWithModifiers();
+        private JsonSerializerOptions CreateOptions() => new JsonSerializerOptions { TypeInfoResolver = Resolver };
 
         [Fact]
         public void RequiredAttributesGetDetectedAndFailDeserializationWhenValuesNotPresent()
@@ -136,10 +87,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void RequiredMemberCanBeModifiedToNonRequired()
         {
-            if (ModifiersNotSupported)
-                return;
-
-            JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
+            JsonSerializerOptions options = CreateOptionsWithModifier(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributes))
                 {
@@ -184,10 +132,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void NonRequiredMemberCanBeModifiedToRequired()
         {
-            if (ModifiersNotSupported)
-                return;
-
-            JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
+            JsonSerializerOptions options = CreateOptionsWithModifier(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributes))
                 {
@@ -241,10 +186,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void RequiredExtensionDataPropertyCanBeFixedToNotBeRequiredWithResolver()
         {
-            if (ModifiersNotSupported)
-                return;
-
-            JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
+            JsonSerializerOptions options = CreateOptionsWithModifier(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributeAndDataExtensionProperty))
                 {
@@ -275,10 +217,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void RequiredExtensionDataPropertyCanBeFixedToNotBeExtensionDataWithResolver()
         {
-            if (ModifiersNotSupported)
-                return;
-
-            JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
+            JsonSerializerOptions options = CreateOptionsWithModifier(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributeAndDataExtensionProperty))
                 {
@@ -319,10 +258,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void RequiredReadOnlyPropertyCanBeFixedToNotBeRequiredWithResolver()
         {
-            if (ModifiersNotSupported)
-                return;
-
-            JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
+            JsonSerializerOptions options = CreateOptionsWithModifier(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributeAndReadOnlyProperty))
                 {
@@ -354,10 +290,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void RequiredReadOnlyPropertyCanBeFixedToBeWritableWithResolver()
         {
-            if (ModifiersNotSupported)
-                return;
-
-            JsonSerializerOptions options = CreateOptionsWithModifiers(ti =>
+            JsonSerializerOptions options = CreateOptionsWithModifier(ti =>
             {
                 if (ti.Type == typeof(ClassWithRequiredCustomAttributeAndReadOnlyProperty))
                 {

@@ -108,10 +108,10 @@ namespace System.Runtime.InteropServices
         /// <returns><see cref="ComInterfaceEntry" /> pointer containing memory for all COM interface entries.</returns>
         /// <remarks>
         /// All memory returned from this function must either be unmanaged memory, pinned managed memory, or have been
-        /// allocated with the <see cref="System.Runtime.CompilerServices.RuntimeHelpers.AllocateTypeAssociatedMemory(Type, int)"/> API.
+        /// allocated with the <see cref="CompilerServices.RuntimeHelpers.AllocateTypeAssociatedMemory(Type, int)"/> API.
         ///
         /// If the interface entries cannot be created and a negative <paramref name="count" /> or <code>null</code> and a non-zero <paramref name="count" /> are returned,
-        /// the call to <see cref="ComWrappers.GetOrCreateComInterfaceForObject(object, CreateComInterfaceFlags)"/> will throw a <see cref="System.ArgumentException"/>.
+        /// the call to <see cref="GetOrCreateComInterfaceForObject(object, CreateComInterfaceFlags)"/> will throw a <see cref="ArgumentException"/>.
         /// </remarks>
         protected abstract unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
@@ -122,7 +122,7 @@ namespace System.Runtime.InteropServices
         /// <param name="flags">Flags used to describe the external object.</param>
         /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
         /// <remarks>
-        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/> will throw a <see cref="System.ArgumentNullException"/>.
+        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="GetOrCreateObjectForComInstance(nint, CreateObjectFlags)"/> will throw a <see cref="ArgumentNullException"/>.
         /// </remarks>
         protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
 

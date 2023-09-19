@@ -901,23 +901,22 @@ namespace System.Text.RegularExpressions
                         Ldloc(textSpanLocal);
                     }
 
-                    Debug.Assert(!primarySet.Negated || (primarySet.Chars is null && primarySet.AsciiSet is null));
-
                     if (primarySet.Chars is not null)
                     {
+                        Debug.Assert(primarySet.Chars.Length > 0);
                         switch (primarySet.Chars.Length)
                         {
                             case 1:
                                 // tmp = ...IndexOf(setChars[0]);
                                 Ldc(primarySet.Chars[0]);
-                                Call(s_spanIndexOfChar);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptChar : s_spanIndexOfChar);
                                 break;
 
                             case 2:
                                 // tmp = ...IndexOfAny(setChars[0], setChars[1]);
                                 Ldc(primarySet.Chars[0]);
                                 Ldc(primarySet.Chars[1]);
-                                Call(s_spanIndexOfAnyCharChar);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptCharChar : s_spanIndexOfAnyCharChar);
                                 break;
 
                             case 3:
@@ -925,21 +924,25 @@ namespace System.Text.RegularExpressions
                                 Ldc(primarySet.Chars[0]);
                                 Ldc(primarySet.Chars[1]);
                                 Ldc(primarySet.Chars[2]);
-                                Call(s_spanIndexOfAnyCharCharChar);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptCharCharChar : s_spanIndexOfAnyCharCharChar);
+                                break;
+
+                            case 4 or 5:
+                                // tmp = ...IndexOfAny("abcd");
+                                // Note that this case differs slightly from the source generator, where it might choose to use
+                                // SearchValues instead of a literal, but there's extra cost to doing so for RegexCompiler so
+                                // it just always uses IndexOfAny(span).
+                                Ldstr(new string(primarySet.Chars));
+                                Call(s_stringAsSpanMethod);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptSpan : s_spanIndexOfAnySpan);
                                 break;
 
                             default:
-                                Ldstr(new string(primarySet.Chars));
-                                Call(s_stringAsSpanMethod);
-                                Call(s_spanIndexOfAnySpan);
+                                // tmp = ...IndexOfAny(s_searchValues);
+                                LoadSearchValues(primarySet.Chars);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptSearchValues : s_spanIndexOfAnySearchValues);
                                 break;
                         }
-                    }
-                    else if (primarySet.AsciiSet is not null)
-                    {
-                        Debug.Assert(!primarySet.Negated);
-                        LoadSearchValues(primarySet.AsciiSet);
-                        Call(s_spanIndexOfAnySearchValues);
                     }
                     else if (primarySet.Range is not null)
                     {
@@ -1166,6 +1169,8 @@ namespace System.Text.RegularExpressions
 
                 if (set.Chars is { Length: 1 })
                 {
+                    Debug.Assert(!set.Negated);
+
                     // pos = inputSpan.Slice(0, pos).LastIndexOf(set.Chars[0]);
                     Ldloca(inputSpan);
                     Ldc(0);

@@ -1,5 +1,4 @@
-﻿using System;
-namespace Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies
+﻿namespace Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies
 {
 	public class DynamicDependencyMethodInAssemblyLibrary
 	{

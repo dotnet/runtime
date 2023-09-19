@@ -937,7 +937,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SI_0B: // SI_0B   ................ ....bbbb........               imm4 - barrier
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             datasize = id->idOpSize();
             assert(isGeneralRegister(id->idReg1()));
             assert(datasize == EA_8BYTE);
@@ -1059,6 +1059,9 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
             assert(emitInsIsLoad(ins));
             return true;
 
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
+            return ins == INS_mrs_tpid0;
+
         default:
             return false;
     }
@@ -1154,7 +1157,9 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
         case INS_ldrb:
         case INS_strb:
         case INS_ldurb:
+        case INS_ldapurb:
         case INS_sturb:
+        case INS_stlurb:
             result = EA_4BYTE;
             break;
 
@@ -1169,6 +1174,8 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
         case INS_strh:
         case INS_ldurh:
         case INS_sturh:
+        case INS_ldapurh:
+        case INS_stlurh:
             result = EA_4BYTE;
             break;
 
@@ -1206,6 +1213,8 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
         case INS_str:
         case INS_ldur:
         case INS_stur:
+        case INS_ldapur:
+        case INS_stlur:
             result = id->idOpSize();
             break;
 
@@ -1234,7 +1243,9 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
         case INS_ldrb:
         case INS_strb:
         case INS_ldurb:
+        case INS_ldapurb:
         case INS_sturb:
+        case INS_stlurb:
         case INS_ldrsb:
         case INS_ldursb:
             result = EA_1BYTE;
@@ -1249,6 +1260,8 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
         case INS_sturh:
         case INS_ldrsh:
         case INS_ldursh:
+        case INS_ldapurh:
+        case INS_stlurh:
             result = EA_2BYTE;
             break;
 
@@ -1272,6 +1285,8 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
         case INS_str:
         case INS_ldur:
         case INS_stur:
+        case INS_ldapur:
+        case INS_stlur:
             result = id->idOpSize();
             break;
 
@@ -1352,7 +1367,7 @@ static const char * const  bRegNames[] =
 // Return value:
 //    A string that represents a general-purpose register name or SIMD and floating-point scalar register name.
 //
-const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
+const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) const
 {
     assert(reg < REG_COUNT);
 
@@ -2367,6 +2382,12 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         return true;
 
     return false;
+}
+
+// true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
+/*static*/ bool emitter::emitIns_valid_imm_for_unscaled_ldst_offset(INT64 imm)
+{
+    return (imm >= -256) && (imm <= 255);
 }
 
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
@@ -3736,6 +3757,12 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
         case INS_dczva:
             assert(isGeneralRegister(reg));
             assert(attr == EA_8BYTE);
+            id = emitNewInstrSmall(attr);
+            id->idReg1(reg);
+            fmt = IF_SR_1A;
+            break;
+
+        case INS_mrs_tpid0:
             id = emitNewInstrSmall(attr);
             id->idReg1(reg);
             fmt = IF_SR_1A;
@@ -5153,6 +5180,9 @@ void emitter::emitIns_R_R_I(
             assert(isVectorRegister(reg2));
             isRightShift = emitInsIsVectorRightShift(ins);
 
+            assert(!isRightShift ||
+                   (imm != 0 && "instructions for vector right-shift do not allow zero as an immediate value"));
+
             if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
@@ -5493,6 +5523,8 @@ void emitter::emitIns_R_R_I(
             isLdSt     = true;
             break;
 
+        case INS_ldapurb:
+        case INS_stlurb:
         case INS_ldurb:
         case INS_sturb:
             // size is ignored
@@ -5510,7 +5542,9 @@ void emitter::emitIns_R_R_I(
             break;
 
         case INS_ldurh:
+        case INS_ldapurh:
         case INS_sturh:
+        case INS_stlurh:
             // size is ignored
             unscaledOp = true;
             scale      = 0;
@@ -5538,6 +5572,8 @@ void emitter::emitIns_R_R_I(
 
         case INS_ldur:
         case INS_stur:
+        case INS_ldapur:
+        case INS_stlur:
             // Is the target a vector register?
             if (isVectorRegister(reg1))
             {
@@ -8801,8 +8837,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
 
-        id->idSetIsCallRegPtr();
-
         if (isJump)
         {
             ins = INS_br_tail; // INS_br_tail  Reg
@@ -8874,6 +8908,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     dispIns(id);
     appendToCurIG(id);
+    emitLastMemBarrier = nullptr; // Cannot optimize away future memory barriers
 }
 
 /*****************************************************************************
@@ -10132,7 +10167,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = 4;
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = %08XH\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
                dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs, distVal);
     }
 #endif
@@ -10222,10 +10257,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             assert(fmt == IF_BI_0A);
             assert((distVal & 1) == 0);
-            code_t     code             = emitInsCode(ins, fmt);
-            const bool recordRelocation = emitComp->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
+            code_t     code               = emitInsCode(ins, fmt);
+            const bool doRecordRelocation = emitComp->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
 
-            if (recordRelocation)
+            if (doRecordRelocation)
             {
                 // dst isn't an actual final target location, just some intermediate
                 // location.  Thus we cannot make any guarantees about distVal (not
@@ -10246,7 +10281,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             const unsigned instrSize = emitOutput_Instr(dst, code);
 
-            if (recordRelocation)
+            if (doRecordRelocation)
             {
                 assert(id->idjKeepLong);
                 if (emitComp->info.compMatchedVM)
@@ -11793,7 +11828,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             assert(insOptsNone(id->idInsOpt()));
             code = emitInsCode(ins, fmt);
             code |= insEncodeReg_Rt(id->idReg1()); // ttttt
@@ -12595,14 +12630,10 @@ void emitter::emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, boo
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
-#ifdef DEBUG
-    if (!emitComp->opts.disAddr)
+    if (!emitComp->opts.disCodeBytes)
     {
         return;
     }
-#else // DEBUG
-    return;
-#endif
 
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
@@ -13925,8 +13956,16 @@ void emitter::emitDispInsHelp(
             emitDispBarrier((insBarrier)emitGetInsSC(id));
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
-            emitDispReg(id->idReg1(), size, false);
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
+            if (ins == INS_mrs_tpid0)
+            {
+                emitDispReg(id->idReg1(), size, true);
+                printf("tpidr_el0");
+            }
+            else
+            {
+                emitDispReg(id->idReg1(), size, false);
+            }
             break;
 
         default:
@@ -16599,6 +16638,15 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     emitAttr  prevSize   = emitLastIns->idOpSize();
     ssize_t   prevImm    = emitGetInsSC(emitLastIns);
 
+    // If we have this format, the 'imm' and/or 'prevImm' are not scaled(encoded),
+    // therefore we cannot proceed.
+    // TODO: In this context, 'imm' and 'prevImm' are assumed to be scaled(encoded).
+    //       They should never be scaled(encoded) until its about to be written to the buffer.
+    if (fmt == IF_LS_2C || lastInsFmt == IF_LS_2C)
+    {
+        return eRO_none;
+    }
+
     // Signed, *raw* immediate value fits in 7 bits, so for LDP/ STP the raw value is from -64 to +63.
     // For LDR/ STR, there are 9 bits, so we need to limit the range explicitly in software.
     if ((imm < -64) || (imm > 63) || (prevImm < -64) || (prevImm > 63))
@@ -16757,4 +16805,32 @@ bool emitter::IsOptimizableLdrToMov(
 
     return true;
 }
+
+#if defined(FEATURE_SIMD)
+//-----------------------------------------------------------------------------------
+// emitStoreSimd12ToLclOffset: store SIMD12 value from dataReg to varNum+offset.
+//
+// Arguments:
+//     varNum         - the variable on the stack to use as a base;
+//     offset         - the offset from the varNum;
+//     dataReg        - the src reg with SIMD12 value;
+//     tmpRegProvider - a tree to grab a tmp reg from if needed.
+//
+void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider)
+{
+    assert(varNum != BAD_VAR_NUM);
+    assert(isVectorRegister(dataReg));
+
+    // store lower 8 bytes
+    emitIns_S_R(INS_str, EA_8BYTE, dataReg, varNum, offset);
+
+    // Extract upper 4-bytes from data
+    regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
+    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
+
+    // 4-byte write
+    emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
+}
+#endif // FEATURE_SIMD
+
 #endif // defined(TARGET_ARM64)

@@ -217,8 +217,8 @@ namespace System.Globalization
                             continue;
                         }
 
-                        char aUpper = OrdinalCasing.ToUpper(a);
-                        char bUpper = OrdinalCasing.ToUpper(b);
+                        char aUpper = ToUpper(a);
+                        char bUpper = ToUpper(b);
 
                         if (aUpper == bUpper)
                         {

@@ -170,6 +170,12 @@ namespace System
             return corElemType == CorElementType.ELEMENT_TYPE_PTR;
         }
 
+        internal static bool IsFunctionPointer(RuntimeType type)
+        {
+            CorElementType corElemType = GetCorElementType(type);
+            return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
+        }
+
         internal static bool IsArray(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);

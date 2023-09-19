@@ -74,11 +74,9 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                 .Substring("ID=".Length)
                 .Trim('\"', '\'');
 
-            // This gets burned in at publish time on NativeAOT
-            if (PlatformDetection.IsNativeAot)
-                expectedOSName = "linux";
-
-            Assert.StartsWith(expectedOSName, RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
+            // Should either start with linux (portable builds or NativeAOT) or the OS name (source builds)
+            Assert.True(RuntimeInformation.RuntimeIdentifier.StartsWith("linux", StringComparison.OrdinalIgnoreCase)
+                || RuntimeInformation.RuntimeIdentifier.StartsWith(expectedOSName, StringComparison.OrdinalIgnoreCase));
         }
 
         [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]

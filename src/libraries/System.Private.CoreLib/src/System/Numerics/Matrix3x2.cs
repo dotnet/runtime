@@ -110,7 +110,7 @@ namespace System.Numerics
         /// <param name="value1">The first matrix.</param>
         /// <param name="value2">The second matrix.</param>
         /// <returns>The matrix that contains the summed values.</returns>
-        /// <remarks>The <see cref="System.Numerics.Matrix3x2.op_Addition" /> method defines the operation of the addition operator for <see cref="System.Numerics.Matrix3x2" /> objects.</remarks>
+        /// <remarks>The <see cref="op_Addition" /> method defines the operation of the addition operator for <see cref="Matrix3x2" /> objects.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix3x2 operator +(Matrix3x2 value1, Matrix3x2 value2)
             => (value1.AsImpl() + value2.AsImpl()).AsM3x2();
@@ -136,7 +136,7 @@ namespace System.Numerics
         /// <param name="value1">The first matrix.</param>
         /// <param name="value2">The second matrix.</param>
         /// <returns>The product matrix.</returns>
-        /// <remarks>The <see cref="System.Numerics.Matrix3x2.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="System.Numerics.Matrix3x2" /> objects.</remarks>
+        /// <remarks>The <see cref="Matrix3x2.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="Matrix3x2" /> objects.</remarks>
         public static Matrix3x2 operator *(Matrix3x2 value1, Matrix3x2 value2)
             => (value1.AsImpl() * value2.AsImpl()).AsM3x2();
 
@@ -144,7 +144,7 @@ namespace System.Numerics
         /// <param name="value1">The matrix to scale.</param>
         /// <param name="value2">The scaling value to use.</param>
         /// <returns>The scaled matrix.</returns>
-        /// <remarks>The <see cref="System.Numerics.Matrix3x2.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="System.Numerics.Matrix3x2" /> objects.</remarks>
+        /// <remarks>The <see cref="Matrix3x2.op_Multiply" /> method defines the operation of the multiplication operator for <see cref="Matrix3x2" /> objects.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix3x2 operator *(Matrix3x2 value1, float value2)
             => (value1.AsImpl() * value2).AsM3x2();
@@ -153,7 +153,7 @@ namespace System.Numerics
         /// <param name="value1">The first matrix.</param>
         /// <param name="value2">The second matrix.</param>
         /// <returns>The matrix containing the values that result from subtracting each element in <paramref name="value2" /> from its corresponding element in <paramref name="value1" />.</returns>
-        /// <remarks>The <see cref="System.Numerics.Matrix3x2.Subtract" /> method defines the operation of the subtraction operator for <see cref="System.Numerics.Matrix3x2" /> objects.</remarks>
+        /// <remarks>The <see cref="Subtract" /> method defines the operation of the subtraction operator for <see cref="Matrix3x2" /> objects.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix3x2 operator -(Matrix3x2 value1, Matrix3x2 value2)
             => (value1.AsImpl() - value2.AsImpl()).AsM3x2();
@@ -161,7 +161,7 @@ namespace System.Numerics
         /// <summary>Negates the specified matrix by multiplying all its values by -1.</summary>
         /// <param name="value">The matrix to negate.</param>
         /// <returns>The negated matrix.</returns>
-        /// <altmember cref="System.Numerics.Matrix3x2.Negate(System.Numerics.Matrix3x2)"/>
+        /// <altmember cref="Negate(Matrix3x2)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix3x2 operator -(Matrix3x2 value)
             => (-value.AsImpl()).AsM3x2();
@@ -309,7 +309,7 @@ namespace System.Numerics
         /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><see langword="true" /> if the current instance and <paramref name="obj" /> are equal; otherwise, <see langword="false" />. If <paramref name="obj" /> is <see langword="null" />, the method returns <see langword="false" />.</returns>
-        /// <remarks>The current instance and <paramref name="obj" /> are equal if <paramref name="obj" /> is a <see cref="System.Numerics.Matrix3x2" /> object and the corresponding elements of each matrix are equal.</remarks>
+        /// <remarks>The current instance and <paramref name="obj" /> are equal if <paramref name="obj" /> is a <see cref="Matrix3x2" /> object and the corresponding elements of each matrix are equal.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override readonly bool Equals([NotNullWhen(true)] object? obj)
             => AsROImpl().Equals(obj);

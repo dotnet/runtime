@@ -27,6 +27,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public bool HasProperty(string propertyName)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             return JavaScriptImports.HasProperty(this, propertyName);
         }
 
@@ -39,6 +42,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public string GetTypeOfProperty(string propertyName)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             return JavaScriptImports.GetTypeOfProperty(this, propertyName);
         }
 
@@ -54,6 +60,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public bool GetPropertyAsBoolean(string propertyName)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             return JavaScriptImports.GetPropertyAsBoolean(this, propertyName);
         }
 
@@ -69,6 +78,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public int GetPropertyAsInt32(string propertyName)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             return JavaScriptImports.GetPropertyAsInt32(this, propertyName);
         }
 
@@ -84,6 +96,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public double GetPropertyAsDouble(string propertyName)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             return JavaScriptImports.GetPropertyAsDouble(this, propertyName);
         }
 
@@ -99,6 +114,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public string? GetPropertyAsString(string propertyName)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             return JavaScriptImports.GetPropertyAsString(this, propertyName);
         }
 
@@ -114,6 +132,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public JSObject? GetPropertyAsJSObject(string propertyName)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             return JavaScriptImports.GetPropertyAsJSObject(this, propertyName);
         }
 
@@ -130,6 +151,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public byte[]? GetPropertyAsByteArray(string propertyName)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             return JavaScriptImports.GetPropertyAsByteArray(this, propertyName);
         }
 
@@ -142,6 +166,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public void SetProperty(string propertyName, bool value)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             JavaScriptImports.SetPropertyBool(this, propertyName, value);
         }
 
@@ -154,6 +181,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public void SetProperty(string propertyName, int value)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             JavaScriptImports.SetPropertyInt(this, propertyName, value);
         }
 
@@ -166,6 +196,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public void SetProperty(string propertyName, double value)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             JavaScriptImports.SetPropertyDouble(this, propertyName, value);
         }
 
@@ -190,6 +223,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public void SetProperty(string propertyName, JSObject? value)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             JavaScriptImports.SetPropertyJSObject(this, propertyName, value);
         }
 
@@ -203,6 +239,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public void SetProperty(string propertyName, byte[]? value)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+#if FEATURE_WASM_THREADS
+            JSObject.AssertThreadAffinity(this);
+#endif
             JavaScriptImports.SetPropertyBytes(this, propertyName, value);
         }
     }

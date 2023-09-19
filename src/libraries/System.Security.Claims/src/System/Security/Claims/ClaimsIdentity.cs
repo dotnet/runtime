@@ -14,7 +14,6 @@ namespace System.Security.Claims
     /// An Identity that is represented by a set of claims.
     /// </summary>
     [DebuggerDisplay("{DebuggerToString(),nq}")]
-    [DebuggerTypeProxy(typeof(ClaimsIdentityDebugProxy))]
     public class ClaimsIdentity : IIdentity
     {
         private enum SerializationMask
@@ -946,28 +945,21 @@ namespace System.Security.Claims
                 claimsCount++;
             }
 
-            return $"Identity Name = {Name ?? "(null)"}, IsAuthenticated = {IsAuthenticated}, Claims Count = {claimsCount}";
-        }
-
-        private sealed class ClaimsIdentityDebugProxy
-        {
-            private readonly ClaimsIdentity _identity;
-
-            public ClaimsIdentityDebugProxy(ClaimsIdentity identity)
+            string debugText = $"IsAuthenticated = {(IsAuthenticated ? "true" : "false")}";
+            if (Name != null)
             {
-                _identity = identity;
+                // The ClaimsIdentity.Name property requires that ClaimsIdentity.NameClaimType is correctly
+                // configured to match the name of the logical name claim type of the identity.
+                // Because of this, only include name if the ClaimsIdentity.Name property has a value.
+                // Not including the name is to avoid developer confusion at seeing "Name = (null)" on an authenticated identity.
+                debugText += $", Name = {Name}";
+            }
+            if (claimsCount > 0)
+            {
+                debugText += $", Claims = {claimsCount}";
             }
 
-            public ClaimsIdentity? Actor => _identity.Actor;
-            public string? AuthenticationType => _identity.AuthenticationType;
-            public object? BootstrapContext => _identity.BootstrapContext;
-            // List type has a friendly debugger view
-            public List<Claim> Claims => new List<Claim>(_identity.Claims);
-            public bool IsAuthenticated => _identity.IsAuthenticated;
-            public string? Label => _identity.Label;
-            public string? Name => _identity.Name;
-            public string NameClaimType => _identity.NameClaimType;
-            public string RoleClaimType => _identity.RoleClaimType;
+            return debugText;
         }
     }
 }

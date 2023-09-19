@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);netstandard2.1</TargetFrameworks>
     <IsPackable>true</IsPackable>
@@ -10,9 +11,12 @@ System.IAsyncDisposable
 System.Collections.Generic.IAsyncEnumerable
 System.Collections.Generic.IAsyncEnumerator</PackageDescription>
   </PropertyGroup>
+
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="'$(TargetFramework)' == 'netstandard2.1'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Threading\Tasks\Sources\ManualResetValueTaskSourceCore.cs" />
     <Compile Include="System\Runtime\CompilerServices\AsyncIteratorMethodBuilder.cs" />
@@ -40,8 +44,11 @@ System.Collections.Generic.IAsyncEnumerator</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs">
       <Link>System.Private.CoreLib\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs</Link>
     </Compile>
+
   </ItemGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
+
 </Project>

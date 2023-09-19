@@ -103,7 +103,7 @@ public class Test_structfpseh5_1
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         S sM = new S("test");
         S sM2 = new S("test2");
@@ -118,6 +118,5 @@ public class Test_structfpseh5_1
         {
             c(1, 2, 3, sM, sM2, sM3, sM4, 4);
         }
-        return 100;
     }
 }

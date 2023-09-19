@@ -56,6 +56,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <FeatureComWrappers>true</FeatureComWrappers>
+    <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">FEATURE_COMWRAPPERS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <FeatureObjCMarshal>false</FeatureObjCMarshal>
@@ -65,8 +66,7 @@
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">FEATURE_OBJCMARSHAL;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <FeaturePerfTracing>false</FeaturePerfTracing>
-    <FeaturePerfTracing Condition="'$(TargetsWindows)' == 'true' or ('$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetstvOS)' != 'true')">true</FeaturePerfTracing>
+    <FeaturePerfTracing>true</FeaturePerfTracing>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">FEATURE_PERFTRACING;$(DefineConstants)</DefineConstants>

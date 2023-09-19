@@ -130,14 +130,14 @@ namespace System
                     // we are in the situation were we may be using default values.
                     for (j = args.Length; j < par.Length - 1; j++)
                     {
-                        if (par[j].DefaultValue == System.DBNull.Value)
+                        if (par[j].DefaultValue == DBNull.Value)
                             break;
                     }
 
                     if (j != par.Length - 1)
                         continue;
 
-                    if (par[j].DefaultValue == System.DBNull.Value)
+                    if (par[j].DefaultValue == DBNull.Value)
                     {
                         if (!par[j].ParameterType.IsArray)
                             continue;
@@ -354,7 +354,7 @@ namespace System
                         int paramArrayPos = parms.Length - 1;
                         Array.Copy(args, objs, paramArrayPos);
                         objs[paramArrayPos] = Array.CreateInstance(paramArrayTypes[0], args.Length - paramArrayPos);
-                        Array.Copy(args, paramArrayPos, (System.Array)objs[paramArrayPos], 0, args.Length - paramArrayPos);
+                        Array.Copy(args, paramArrayPos, (Array)objs[paramArrayPos], 0, args.Length - paramArrayPos);
                         args = objs;
                     }
                 }
@@ -439,7 +439,7 @@ namespace System
                     int paramArrayPos = parameters.Length - 1;
                     Array.Copy(args, objs, paramArrayPos);
                     objs[paramArrayPos] = Array.CreateInstance(paramArrayTypes[currentMin], args.Length - paramArrayPos);
-                    Array.Copy(args, paramArrayPos, (System.Array)objs[paramArrayPos], 0, args.Length - paramArrayPos);
+                    Array.Copy(args, paramArrayPos, (Array)objs[paramArrayPos], 0, args.Length - paramArrayPos);
                     args = objs;
                 }
             }

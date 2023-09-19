@@ -31,6 +31,8 @@ namespace System.Net.Http
         private TaskCompletionSource<bool>? _expect100ContinueCompletionSource; // True indicates we should send content (e.g. received 100 Continue).
         private bool _disposed;
         private readonly CancellationTokenSource _requestBodyCancellationSource;
+        private Task? _sendRequestTask; // Set with SendContentAsync, must be awaited before QuicStream.DisposeAsync();
+        private Task? _readResponseTask; // Set with ReadResponseAsync, must be awaited before QuicStream.DisposeAsync();
 
         // Allocated when we receive a :status header.
         private HttpResponseMessage? _response;
@@ -88,8 +90,24 @@ namespace System.Net.Http
             {
                 _disposed = true;
                 AbortStream();
+                // We aborted both sides, thus both task should unblock and should be finished before disposing the QuicStream.
+                WaitUnfinished(_sendRequestTask);
+                WaitUnfinished(_readResponseTask);
                 _stream.Dispose();
                 DisposeSyncHelper();
+            }
+
+            static void WaitUnfinished(Task? task)
+            {
+                if (task is not null && !task.IsCompleted)
+                {
+                    try
+                    {
+                        task.GetAwaiter().GetResult();
+                    }
+                    catch // Exceptions from both tasks are logged via _connection.LogException() in case they're not awaited in SendAsync, so the exception can be ignored here.
+                    { }
+                }
             }
         }
 
@@ -107,8 +125,24 @@ namespace System.Net.Http
             {
                 _disposed = true;
                 AbortStream();
+                // We aborted both sides, thus both task should unblock and should be finished before disposing the QuicStream.
+                await AwaitUnfinished(_sendRequestTask).ConfigureAwait(false);
+                await AwaitUnfinished(_readResponseTask).ConfigureAwait(false);
                 await _stream.DisposeAsync().ConfigureAwait(false);
                 DisposeSyncHelper();
+            }
+
+            static async ValueTask AwaitUnfinished(Task? task)
+            {
+                if (task is not null && !task.IsCompleted)
+                {
+                    try
+                    {
+                        await task.ConfigureAwait(false);
+                    }
+                    catch // Exceptions from both tasks are logged via _connection.LogException() in case they're not awaited in SendAsync, so the exception can be ignored here.
+                    { }
+                }
             }
         }
 
@@ -158,40 +192,39 @@ namespace System.Net.Http
                     await FlushSendBufferAsync(endStream: _request.Content == null, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                 }
 
-                Task sendContentTask;
                 if (_request.Content != null)
                 {
-                    sendContentTask = SendContentAsync(_request.Content!, _requestBodyCancellationSource.Token);
+                    _sendRequestTask = SendContentAsync(_request.Content!, _requestBodyCancellationSource.Token);
                 }
                 else
                 {
-                    sendContentTask = Task.CompletedTask;
+                    _sendRequestTask = Task.CompletedTask;
                 }
 
                 // In parallel, send content and read response.
                 // Depending on Expect 100 Continue usage, one will depend on the other making progress.
-                Task readResponseTask = ReadResponseAsync(_requestBodyCancellationSource.Token);
+                _readResponseTask = ReadResponseAsync(_requestBodyCancellationSource.Token);
                 bool sendContentObserved = false;
 
                 // If we're not doing duplex, wait for content to finish sending here.
                 // If we are doing duplex and have the unlikely event that it completes here, observe the result.
                 // See Http2Connection.SendAsync for a full comment on this logic -- it is identical behavior.
-                if (sendContentTask.IsCompleted ||
+                if (_sendRequestTask.IsCompleted ||
                     _request.Content?.AllowDuplex != true ||
-                    await Task.WhenAny(sendContentTask, readResponseTask).ConfigureAwait(false) == sendContentTask ||
-                    sendContentTask.IsCompleted)
+                    await Task.WhenAny(_sendRequestTask, _readResponseTask).ConfigureAwait(false) == _sendRequestTask ||
+                    _sendRequestTask.IsCompleted)
                 {
                     try
                     {
-                        await sendContentTask.ConfigureAwait(false);
+                        await _sendRequestTask.ConfigureAwait(false);
                         sendContentObserved = true;
                     }
                     catch
                     {
-                        // Exceptions will be bubbled up from sendContentTask here,
-                        // which means the result of readResponseTask won't be observed directly:
+                        // Exceptions will be bubbled up from _sendRequestTask here,
+                        // which means the result of _readResponseTask won't be observed directly:
                         // Do a background await to log any exceptions.
-                        _connection.LogExceptions(readResponseTask);
+                        _connection.LogExceptions(_readResponseTask);
                         throw;
                     }
                 }
@@ -199,11 +232,11 @@ namespace System.Net.Http
                 {
                     // Duplex is being used, so we can't wait for content to finish sending.
                     // Do a background await to log any exceptions.
-                    _connection.LogExceptions(sendContentTask);
+                    _connection.LogExceptions(_sendRequestTask);
                 }
 
                 // Wait for the response headers to be read.
-                await readResponseTask.ConfigureAwait(false);
+                await _readResponseTask.ConfigureAwait(false);
 
                 Debug.Assert(_response != null && _response.Content != null);
                 // Set our content stream.
@@ -252,15 +285,18 @@ namespace System.Net.Http
                 {
                     case Http3ErrorCode.VersionFallback:
                         // The server is requesting us fall back to an older HTTP version.
-                        throw new HttpRequestException(SR.net_http_retry_on_older_version, ex, RequestRetryType.RetryOnLowerHttpVersion);
+                        throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_retry_on_older_version, ex, RequestRetryType.RetryOnLowerHttpVersion);
 
                     case Http3ErrorCode.RequestRejected:
                         // The server is rejecting the request without processing it, retry it on a different connection.
-                        throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
+                        HttpProtocolException rejectedException = HttpProtocolException.CreateHttp3StreamException(code, ex);
+                        throw new HttpRequestException(HttpRequestError.HttpProtocolError, SR.net_http_request_aborted, rejectedException, RequestRetryType.RetryOnConnectionFailure);
 
                     default:
                         // Our stream was reset.
-                        throw new HttpRequestException(SR.net_http_client_execution_error, _connection.AbortException ?? HttpProtocolException.CreateHttp3StreamException(code));
+                        Exception innerException = _connection.AbortException ?? HttpProtocolException.CreateHttp3StreamException(code, ex);
+                        HttpRequestError httpRequestError = innerException is HttpProtocolException ? HttpRequestError.HttpProtocolError : HttpRequestError.Unknown;
+                        throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, innerException);
                 }
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
@@ -270,12 +306,12 @@ namespace System.Net.Http
                 Http3ErrorCode code = (Http3ErrorCode)ex.ApplicationErrorCode.Value;
 
                 Exception abortException = _connection.Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
-                throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
+                throw new HttpRequestException(HttpRequestError.HttpProtocolError, SR.net_http_client_execution_error, abortException);
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && _connection.AbortException != null)
             {
                 // we close the connection, propagate the AbortException
-                throw new HttpRequestException(SR.net_http_client_execution_error, _connection.AbortException);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, _connection.AbortException);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
             catch (OperationCanceledException ex) when (ex.CancellationToken == _requestBodyCancellationSource.Token || ex.CancellationToken == cancellationToken)
@@ -289,14 +325,13 @@ namespace System.Net.Http
                 else
                 {
                     Debug.Assert(_requestBodyCancellationSource.IsCancellationRequested);
-                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
+                    throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
                 }
             }
-            catch (HttpProtocolException ex)
+            catch (HttpIOException ex)
             {
-                // A connection-level protocol error has occurred on our stream.
                 _connection.Abort(ex);
-                throw new HttpRequestException(SR.net_http_client_execution_error, ex);
+                throw new HttpRequestException(ex.HttpRequestError, SR.net_http_client_execution_error, ex);
             }
             catch (Exception ex)
             {
@@ -305,7 +340,7 @@ namespace System.Net.Http
                 {
                     throw;
                 }
-                throw new HttpRequestException(SR.net_http_client_execution_error, ex);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, ex);
             }
             finally
             {
@@ -342,7 +377,7 @@ namespace System.Net.Http
                     {
                         Trace($"Expected HEADERS as first response frame; received {frameType}.");
                     }
-                    throw new HttpRequestException(SR.net_http_invalid_response);
+                    throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response);
                 }
 
                 await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
@@ -528,7 +563,7 @@ namespace System.Net.Http
                             {
                                 Trace("Response content exceeded Content-Length.");
                             }
-                            throw new HttpRequestException(SR.net_http_invalid_response);
+                            throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response);
                         }
                         break;
                     default:
@@ -552,7 +587,7 @@ namespace System.Net.Http
 
         private void BufferHeaders(HttpRequestMessage request)
         {
-            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(_connection.Id);
 
             // Reserve space for the header frame envelope.
             // The envelope needs to be written after headers are serialized, as we need to know the payload length first.
@@ -824,7 +859,7 @@ namespace System.Net.Http
                     else
                     {
                         // Our buffer has partial frame data in it but not enough to complete the read: bail out.
-                        throw new HttpRequestException(SR.net_http_invalid_response_premature_eof);
+                        throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof);
                     }
                 }
 
@@ -868,7 +903,7 @@ namespace System.Net.Http
             if (headersLength > _headerBudgetRemaining)
             {
                 _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.ExcessiveLoad);
-                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength));
+                throw new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength));
             }
 
             _headerBudgetRemaining -= (int)headersLength;
@@ -887,7 +922,7 @@ namespace System.Net.Http
                     else
                     {
                         if (NetEventSource.Log.IsEnabled()) Trace($"Server closed response stream before entire header payload could be read. {headersLength:N0} bytes remaining.");
-                        throw new HttpRequestException(SR.net_http_invalid_response_premature_eof);
+                        throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof);
                     }
                 }
 
@@ -909,7 +944,7 @@ namespace System.Net.Http
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
             {
                 // Invalid header name
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
             }
             OnHeader(staticIndex: null, descriptor, staticValue: default, literalValue: value);
         }
@@ -1147,7 +1182,7 @@ namespace System.Net.Http
 
                         if (bytesRead == 0 && buffer.Length != 0)
                         {
-                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
+                            throw new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
                         }
 
                         totalBytesRead += bytesRead;
@@ -1219,7 +1254,7 @@ namespace System.Net.Http
 
                         if (bytesRead == 0 && buffer.Length != 0)
                         {
-                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
+                            throw new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
                         }
 
                         totalBytesRead += bytesRead;
@@ -1254,7 +1289,7 @@ namespace System.Net.Http
                 case QuicException e when (e.QuicError == QuicError.StreamAborted):
                     // Peer aborted the stream
                     Debug.Assert(e.ApplicationErrorCode.HasValue);
-                    throw HttpProtocolException.CreateHttp3StreamException((Http3ErrorCode)e.ApplicationErrorCode.Value);
+                    throw HttpProtocolException.CreateHttp3StreamException((Http3ErrorCode)e.ApplicationErrorCode.Value, e);
 
                 case QuicException e when (e.QuicError == QuicError.ConnectionAborted):
                     // Our connection was reset. Start aborting the connection.
@@ -1263,8 +1298,7 @@ namespace System.Net.Http
                     _connection.Abort(exception);
                     throw exception;
 
-                case HttpProtocolException:
-                    // A connection-level protocol error has occurred on our stream.
+                case HttpIOException:
                     _connection.Abort(ex);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
                     return; // Never reached.
@@ -1276,7 +1310,7 @@ namespace System.Net.Http
             }
 
             _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.InternalError);
-            throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
+            throw new HttpIOException(HttpRequestError.Unknown, SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
         }
 
         private async ValueTask<bool> ReadNextDataFrameAsync(HttpResponseMessage response, CancellationToken cancellationToken)

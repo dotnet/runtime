@@ -3038,7 +3038,7 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(LotsOfCommentsTests))]
         public static void SkipLotsOfComments(string valueString, bool insideArray, string expectedString)
         {
-            var builder = new StringBuilder();
+            var builder = new StringBuilder(2_000_000);
             if (insideArray)
             {
                 builder.Append("[");
@@ -3116,7 +3116,7 @@ namespace System.Text.Json.Tests
         [MemberData(nameof(LotsOfCommentsTests))]
         public static void ConsumeLotsOfComments(string valueString, bool insideArray, string expectedString)
         {
-            var builder = new StringBuilder();
+            var builder = new StringBuilder(2_000_000);
             if (insideArray)
             {
                 builder.Append("[");

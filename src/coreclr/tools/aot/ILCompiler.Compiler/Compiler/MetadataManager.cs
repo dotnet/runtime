@@ -14,16 +14,16 @@ using ReadyToRunSectionType = Internal.Runtime.ReadyToRunSectionType;
 using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using CombinedDependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry;
 using MethodIL = Internal.IL.MethodIL;
 using CustomAttributeValue = System.Reflection.Metadata.CustomAttributeValue<Internal.TypeSystem.TypeDesc>;
 
 using MetadataRecord = Internal.Metadata.NativeFormat.Writer.MetadataRecord;
-using MemberReference = Internal.Metadata.NativeFormat.Writer.MemberReference;
 using TypeReference = Internal.Metadata.NativeFormat.Writer.TypeReference;
 using TypeSpecification = Internal.Metadata.NativeFormat.Writer.TypeSpecification;
 using ConstantStringValue = Internal.Metadata.NativeFormat.Writer.ConstantStringValue;
 using TypeInstantiationSignature = Internal.Metadata.NativeFormat.Writer.TypeInstantiationSignature;
-using MethodInstantiation = Internal.Metadata.NativeFormat.Writer.MethodInstantiation;
+using ConstantStringArray = Internal.Metadata.NativeFormat.Writer.ConstantStringArray;
 
 namespace ILCompiler
 {
@@ -42,7 +42,7 @@ namespace ILCompiler
         private List<MetadataMapping<MetadataType>> _typeMappings;
         private List<MetadataMapping<FieldDesc>> _fieldMappings;
         private List<MetadataMapping<MethodDesc>> _methodMappings;
-        private List<MetadataMapping<MethodDesc>> _stackTraceMappings;
+        private List<StackTraceMapping> _stackTraceMappings;
 
         protected readonly CompilerTypeSystemContext _typeSystemContext;
         protected readonly MetadataBlockingPolicy _blockingPolicy;
@@ -65,6 +65,7 @@ namespace ILCompiler
         private HashSet<NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries = new HashSet<NativeLayoutTemplateMethodSignatureVertexNode>();
         private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MetadataType> _typesWithGenericStaticBaseInfo = new SortedSet<MetadataType>(TypeSystemComparer.Instance);
+        private readonly SortedSet<MethodDesc> _genericMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -301,6 +302,11 @@ namespace ILCompiler
             {
                 _typesWithGenericStaticBaseInfo.Add(genericStaticBaseInfo.Type);
             }
+
+            if (obj is GenericMethodsHashtableEntryNode genericMethodsHashtableEntryNode)
+            {
+                _genericMethodHashtableEntries.Add(genericMethodsHashtableEntryNode.Method);
+            }
         }
 
         protected virtual bool AllMethodsCanBeReflectable => false;
@@ -377,6 +383,29 @@ namespace ILCompiler
                 return false;
 
             return true;
+        }
+
+        public void GetDependenciesDueToGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            MetadataCategory category = GetMetadataCategory(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+
+            if ((category & MetadataCategory.RuntimeMapping) != 0)
+            {
+                // If the method is visible from reflection, we need to keep track of this statically generated
+                // dictionary to make sure MakeGenericMethod works even without a type loader template
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.GenericMethodsHashtableEntry(method), "Reflection visible dictionary");
+            }
+        }
+
+        public IEnumerable<CombinedDependencyListEntry> GetConditionalDependenciesDueToGenericDictionary(NodeFactory factory, MethodDesc method)
+        {
+            // If there's a template for this method, we need to keep track of the dictionary so that we
+            // don't accidentally create a new dictionary for the same method at runtime.
+            yield return new CombinedDependencyListEntry(
+                factory.GenericMethodsHashtableEntry(method),
+                factory.NativeLayout.TemplateMethodEntry(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                "Runtime-constructable dictionary");
         }
 
         /// <summary>
@@ -588,20 +617,22 @@ namespace ILCompiler
                                                 out List<MetadataMapping<MetadataType>> typeMappings,
                                                 out List<MetadataMapping<MethodDesc>> methodMappings,
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings,
-                                                out List<MetadataMapping<MethodDesc>> stackTraceMapping);
+                                                out List<StackTraceMapping> stackTraceMapping);
 
-        protected MetadataRecord CreateStackTraceRecord(Metadata.MetadataTransform transform, MethodDesc method)
+        protected StackTraceRecordData CreateStackTraceRecord(Metadata.MetadataTransform transform, MethodDesc method, bool isHidden)
         {
             // In the metadata, we only represent the generic definition
             MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
-            MetadataRecord record = transform.HandleQualifiedMethod(methodToGenerateMetadataFor);
 
-            // If we're generating a MemberReference to a method on a generic type, the owning type
+            ConstantStringValue name = (ConstantStringValue)methodToGenerateMetadataFor.Name;
+            MetadataRecord signature = transform.HandleMethodSignature(methodToGenerateMetadataFor.Signature);
+            MetadataRecord owningType = transform.HandleType(methodToGenerateMetadataFor.OwningType);
+
+            // If we're generating record for a method on a generic type, the owning type
             // should appear as if instantiated over its formals
             TypeDesc owningTypeToGenerateMetadataFor = methodToGenerateMetadataFor.OwningType;
             if (owningTypeToGenerateMetadataFor.HasInstantiation
-                && record is MemberReference memberRefRecord
-                && memberRefRecord.Parent is TypeReference)
+                && owningType is TypeReference)
             {
                 List<MetadataRecord> genericArgs = new List<MetadataRecord>();
                 foreach (Internal.TypeSystem.Ecma.EcmaGenericParameter genericParam in owningTypeToGenerateMetadataFor.Instantiation)
@@ -612,36 +643,32 @@ namespace ILCompiler
                     });
                 }
 
-                memberRefRecord.Parent = new TypeSpecification
+                owningType = new TypeSpecification
                 {
                     Signature = new TypeInstantiationSignature
                     {
-                        GenericType = memberRefRecord.Parent,
+                        GenericType = owningType,
                         GenericTypeArguments = genericArgs,
                     }
                 };
             }
 
-            // As a twist, instantiated generic methods appear as if instantiated over their formals.
+            // Generate metadata for the method instantiation arguments
+            ConstantStringArray methodInst;
             if (methodToGenerateMetadataFor.HasInstantiation)
             {
-                var methodInst = new MethodInstantiation
-                {
-                    Method = record,
-                };
-                methodInst.GenericTypeArguments.Capacity = methodToGenerateMetadataFor.Instantiation.Length;
+                methodInst = new ConstantStringArray();
                 foreach (Internal.TypeSystem.Ecma.EcmaGenericParameter typeArgument in methodToGenerateMetadataFor.Instantiation)
                 {
-                    var genericParam = new TypeReference
-                    {
-                        TypeName = (ConstantStringValue)typeArgument.Name,
-                    };
-                    methodInst.GenericTypeArguments.Add(genericParam);
+                    methodInst.Value.Add((ConstantStringValue)typeArgument.Name);
                 }
-                record = methodInst;
+            }
+            else
+            {
+                methodInst = null;
             }
 
-            return record;
+            return new StackTraceRecordData(method, owningType, signature, name, methodInst, isHidden);
         }
 
         /// <summary>
@@ -673,7 +700,7 @@ namespace ILCompiler
             return _fieldMappings;
         }
 
-        public IEnumerable<MetadataMapping<MethodDesc>> GetStackTraceMapping(NodeFactory factory)
+        public IEnumerable<StackTraceMapping> GetStackTraceMapping(NodeFactory factory)
         {
             EnsureMetadataGenerated(factory);
             return _stackTraceMappings;
@@ -732,6 +759,11 @@ namespace ILCompiler
         public IEnumerable<MetadataType> GetTypesWithGenericStaticBaseInfos()
         {
             return _typesWithGenericStaticBaseInfo;
+        }
+
+        public IEnumerable<MethodDesc> GetGenericMethodHashtableEntries()
+        {
+            return _genericMethodHashtableEntries;
         }
 
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()
@@ -902,16 +934,41 @@ namespace ILCompiler
         }
     }
 
-    public struct MetadataMapping<TEntity>
+    public readonly struct MetadataMapping<TEntity>
     {
         public readonly TEntity Entity;
         public readonly int MetadataHandle;
 
         public MetadataMapping(TEntity entity, int metadataHandle)
-        {
-            Entity = entity;
-            MetadataHandle = metadataHandle;
-        }
+            => (Entity, MetadataHandle) = (entity, metadataHandle);
+    }
+
+    public readonly struct StackTraceMapping
+    {
+        public readonly MethodDesc Method;
+        public readonly int OwningTypeHandle;
+        public readonly int MethodSignatureHandle;
+        public readonly int MethodNameHandle;
+        public readonly int MethodInstantiationArgumentCollectionHandle;
+        public readonly bool IsHidden;
+
+        public StackTraceMapping(MethodDesc method, int owningTypeHandle, int methodSignatureHandle, int methodNameHandle, int methodInstantiationArgumentCollectionHandle, bool isHidden)
+            => (Method, OwningTypeHandle, MethodSignatureHandle, MethodNameHandle, MethodInstantiationArgumentCollectionHandle, IsHidden)
+            = (method, owningTypeHandle, methodSignatureHandle, methodNameHandle, methodInstantiationArgumentCollectionHandle, isHidden);
+    }
+
+    public readonly struct StackTraceRecordData
+    {
+        public readonly MethodDesc Method;
+        public readonly MetadataRecord OwningType;
+        public readonly MetadataRecord MethodSignature;
+        public readonly MetadataRecord MethodName;
+        public readonly MetadataRecord MethodInstantiationArgumentCollection;
+        public readonly bool IsHidden;
+
+        public StackTraceRecordData(MethodDesc method, MetadataRecord owningType, MetadataRecord methodSignature, MetadataRecord methodName, MetadataRecord methodInstantiationArgumentCollection, bool isHidden)
+            => (Method, OwningType, MethodSignature, MethodName, MethodInstantiationArgumentCollection, IsHidden)
+            = (method, owningType, methodSignature, methodName, methodInstantiationArgumentCollection, isHidden);
     }
 
     [Flags]

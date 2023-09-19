@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
+import BuildConfiguration from "consts:configuration";
+
 import { isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
 import { assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import {
     ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
     set_arg_length, get_arg, get_signature_arg1_type, get_signature_arg2_type, js_to_cs_marshalers,
     get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
     get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr, IDisposable,
-    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize
+    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
@@ -20,11 +22,13 @@ import { stringToMonoStringRoot } from "./strings";
 import { GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
+import { mono_log_warn } from "./logging";
 
+export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
 export function initialize_marshalers_to_cs(): void {
     if (js_to_cs_marshalers.size == 0) {
-        js_to_cs_marshalers.set(MarshalerType.Array, _marshal_array_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.Array, marshal_array_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Span, _marshal_span_to_cs);
         js_to_cs_marshalers.set(MarshalerType.ArraySegment, _marshal_array_segment_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Boolean, _marshal_bool_to_cs);
@@ -42,7 +46,7 @@ export function initialize_marshalers_to_cs(): void {
         js_to_cs_marshalers.set(MarshalerType.String, _marshal_string_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Exception, marshal_exception_to_cs);
         js_to_cs_marshalers.set(MarshalerType.JSException, marshal_exception_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.JSObject, _marshal_js_object_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.JSObject, marshal_js_object_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Object, _marshal_cs_object_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Task, _marshal_task_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Action, _marshal_function_to_cs);
@@ -194,7 +198,7 @@ function _marshal_date_time_to_cs(arg: JSMarshalerArgument, value: Date): void {
         set_arg_type(arg, MarshalerType.None);
     }
     else {
-        mono_assert(value instanceof Date, "Value is not a Date");
+        mono_check(value instanceof Date, "Value is not a Date");
         set_arg_type(arg, MarshalerType.DateTime);
         set_arg_date(arg, value);
     }
@@ -205,7 +209,7 @@ function _marshal_date_time_offset_to_cs(arg: JSMarshalerArgument, value: Date):
         set_arg_type(arg, MarshalerType.None);
     }
     else {
-        mono_assert(value instanceof Date, "Value is not a Date");
+        mono_check(value instanceof Date, "Value is not a Date");
         set_arg_type(arg, MarshalerType.DateTimeOffset);
         set_arg_date(arg, value);
     }
@@ -217,7 +221,7 @@ function _marshal_string_to_cs(arg: JSMarshalerArgument, value: string) {
     }
     else {
         set_arg_type(arg, MarshalerType.String);
-        mono_assert(typeof value === "string", "Value is not a String");
+        mono_check(typeof value === "string", "Value is not a String");
         _marshal_string_to_cs_impl(arg, value);
     }
 }
@@ -241,10 +245,10 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
         set_arg_type(arg, MarshalerType.None);
         return;
     }
-    mono_assert(value && value instanceof Function, "Value is not a Function");
+    mono_check(value && value instanceof Function, "Value is not a Function");
 
     // TODO: we could try to cache value -> existing JSHandle
-    const marshal_function_to_cs_wrapper: any = (args: JSMarshalerArguments) => {
+    const wrapper: any = (args: JSMarshalerArguments) => {
         const exc = get_arg(args, 0);
         const res = get_arg(args, 1);
         const arg1 = get_arg(args, 2);
@@ -252,6 +256,8 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
         const arg3 = get_arg(args, 4);
 
         try {
+            mono_assert(!MonoWasmThreads || !wrapper.isDisposed, "Function is disposed and should not be invoked anymore.");
+
             let arg1_js: any = undefined;
             let arg2_js: any = undefined;
             let arg3_js: any = undefined;
@@ -274,8 +280,13 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
         }
     };
 
-    marshal_function_to_cs_wrapper[bound_js_function_symbol] = true;
-    const bound_function_handle = mono_wasm_get_js_handle(marshal_function_to_cs_wrapper)!;
+    wrapper[bound_js_function_symbol] = true;
+    wrapper.isDisposed = false;
+    wrapper.dispose = () => { wrapper.isDisposed = true; };
+    const bound_function_handle = mono_wasm_get_js_handle(wrapper)!;
+    if (BuildConfiguration === "Debug") {
+        wrapper[proxy_debug_symbol] = `Proxy of JS Function with JSHandle ${bound_function_handle}: ${value.toString()}`;
+    }
     set_js_handle(arg, bound_function_handle);
     set_arg_type(arg, MarshalerType.Function);//TODO or action ?
 }
@@ -301,27 +312,46 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         set_arg_type(arg, MarshalerType.None);
         return;
     }
-    mono_assert(isThenable(value), "Value is not a Promise");
+    mono_check(isThenable(value), "Value is not a Promise");
 
     const gc_handle: GCHandle = runtimeHelpers.javaScriptExports.create_task_callback();
     set_gc_handle(arg, gc_handle);
     set_arg_type(arg, MarshalerType.Task);
     const holder = new TaskCallbackHolder(value);
     setup_managed_proxy(holder, gc_handle);
+    if (BuildConfiguration === "Debug") {
+        (holder as any)[proxy_debug_symbol] = `C# Task with GCHandle ${gc_handle}`;
+    }
 
     if (MonoWasmThreads)
         addUnsettledPromise();
 
     value.then(data => {
-        if (MonoWasmThreads)
-            settleUnsettledPromise();
-        runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
-        teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
+        try {
+            loaderHelpers.assert_runtime_running();
+            mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
+            if (MonoWasmThreads)
+                settleUnsettledPromise();
+            runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
+            teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
+        }
+        catch (ex) {
+            mono_log_warn("Exception marshalling result of JS promise to CS: ", ex);
+        }
     }).catch(reason => {
-        if (MonoWasmThreads)
-            settleUnsettledPromise();
-        runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
-        teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
+        try {
+            loaderHelpers.assert_runtime_running();
+            mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
+            if (MonoWasmThreads)
+                settleUnsettledPromise();
+            runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
+            teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
+        }
+        catch (ex) {
+            if (!loaderHelpers.is_exited()) {
+                mono_log_warn("Exception marshalling error of JS promise to CS: ", ex);
+            }
+        }
     });
 }
 
@@ -336,33 +366,38 @@ export function marshal_exception_to_cs(arg: JSMarshalerArgument, value: any): v
         set_gc_handle(arg, gc_handle);
     }
     else {
-        mono_assert(typeof value === "object" || typeof value === "string", () => `Value is not an Error ${typeof value}`);
+        mono_check(typeof value === "object" || typeof value === "string", () => `Value is not an Error ${typeof value}`);
         set_arg_type(arg, MarshalerType.JSException);
         const message = value.toString();
         _marshal_string_to_cs_impl(arg, message);
-
         const known_js_handle = value[cs_owned_js_handle_symbol];
         if (known_js_handle) {
             set_js_handle(arg, known_js_handle);
         }
         else {
             const js_handle = mono_wasm_get_js_handle(value)!;
+            if (BuildConfiguration === "Debug" && Object.isExtensible(value)) {
+                value[proxy_debug_symbol] = `JS Error with JSHandle ${js_handle}`;
+            }
             set_js_handle(arg, js_handle);
         }
     }
 }
 
-function _marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): void {
+export function marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === undefined || value === null) {
         set_arg_type(arg, MarshalerType.None);
     }
     else {
         // if value was ManagedObject, it would be double proxied, but the C# signature requires that
-        mono_assert(value[js_owned_gc_handle_symbol] === undefined, "JSObject proxy of ManagedObject proxy is not supported");
-        mono_assert(typeof value === "function" || typeof value === "object", () => `JSObject proxy of ${typeof value} is not supported`);
+        mono_check(value[js_owned_gc_handle_symbol] === undefined, () => `JSObject proxy of ManagedObject proxy is not supported. ${jsinteropDoc}`);
+        mono_check(typeof value === "function" || typeof value === "object", () => `JSObject proxy of ${typeof value} is not supported`);
 
         set_arg_type(arg, MarshalerType.JSObject);
         const js_handle = mono_wasm_get_js_handle(value)!;
+        if (BuildConfiguration === "Debug" && Object.isExtensible(value)) {
+            value[proxy_debug_symbol] = `JS Object with JSHandle ${js_handle}`;
+        }
         set_js_handle(arg, js_handle);
     }
 }
@@ -428,6 +463,9 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
             else if (js_type == "object") {
                 const js_handle = mono_wasm_get_js_handle(value);
                 set_arg_type(arg, MarshalerType.JSObject);
+                if (BuildConfiguration === "Debug" && Object.isExtensible(value)) {
+                    value[proxy_debug_symbol] = `JS Object with JSHandle ${js_handle}`;
+                }
                 set_js_handle(arg, js_handle);
             }
             else {
@@ -437,7 +475,7 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
         else {
             assert_not_disposed(value);
             if (value instanceof ArraySegment) {
-                throw new Error("NotImplementedException: ArraySegment");
+                throw new Error("NotImplementedException: ArraySegment. " + jsinteropDoc);
             }
             else if (value instanceof ManagedError) {
                 set_arg_type(arg, MarshalerType.Exception);
@@ -447,18 +485,18 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
                 set_arg_type(arg, MarshalerType.Object);
                 set_gc_handle(arg, gc_handle);
             } else {
-                throw new Error("NotImplementedException " + js_type);
+                throw new Error("NotImplementedException " + js_type + ". " + jsinteropDoc);
             }
         }
     }
 }
 
-function _marshal_array_to_cs(arg: JSMarshalerArgument, value: Array<any> | TypedArray, element_type?: MarshalerType): void {
+export function marshal_array_to_cs(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined | null, element_type?: MarshalerType): void {
     mono_assert(!!element_type, "Expected valid element_type parameter");
     marshal_array_to_cs_impl(arg, value, element_type);
 }
 
-export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined, element_type: MarshalerType): void {
+export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined | null, element_type: MarshalerType): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     }
@@ -469,7 +507,7 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
         const buffer_length = element_size * length;
         const buffer_ptr = <any>Module._malloc(buffer_length);
         if (element_type == MarshalerType.String) {
-            mono_assert(Array.isArray(value), "Value is not an Array");
+            mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
             cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
             for (let index = 0; index < length; index++) {
@@ -478,7 +516,7 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
             }
         }
         else if (element_type == MarshalerType.Object) {
-            mono_assert(Array.isArray(value), "Value is not an Array");
+            mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
             cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
             for (let index = 0; index < length; index++) {
@@ -487,25 +525,25 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
             }
         }
         else if (element_type == MarshalerType.JSObject) {
-            mono_assert(Array.isArray(value), "Value is not an Array");
+            mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
             for (let index = 0; index < length; index++) {
                 const element_arg = get_arg(buffer_ptr, index);
-                _marshal_js_object_to_cs(element_arg, value[index]);
+                marshal_js_object_to_cs(element_arg, value[index]);
             }
         }
         else if (element_type == MarshalerType.Byte) {
-            mono_assert(Array.isArray(value) || value instanceof Uint8Array, "Value is not an Array or Uint8Array");
+            mono_check(Array.isArray(value) || value instanceof Uint8Array, "Value is not an Array or Uint8Array");
             const targetView = localHeapViewU8().subarray(<any>buffer_ptr, buffer_ptr + length);
             targetView.set(value);
         }
         else if (element_type == MarshalerType.Int32) {
-            mono_assert(Array.isArray(value) || value instanceof Int32Array, "Value is not an Array or Int32Array");
+            mono_check(Array.isArray(value) || value instanceof Int32Array, "Value is not an Array or Int32Array");
             const targetView = localHeapViewI32().subarray(<any>buffer_ptr >> 2, (buffer_ptr >> 2) + length);
             targetView.set(value);
         }
         else if (element_type == MarshalerType.Double) {
-            mono_assert(Array.isArray(value) || value instanceof Float64Array, "Value is not an Array or Float64Array");
+            mono_check(Array.isArray(value) || value instanceof Float64Array, "Value is not an Array or Float64Array");
             const targetView = localHeapViewF64().subarray(<any>buffer_ptr >> 3, (buffer_ptr >> 3) + length);
             targetView.set(value);
         }
@@ -521,7 +559,7 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
 
 function _marshal_span_to_cs(arg: JSMarshalerArgument, value: Span, element_type?: MarshalerType): void {
     mono_assert(!!element_type, "Expected valid element_type parameter");
-    mono_assert(!value.isDisposed, "ObjectDisposedException");
+    mono_check(!value.isDisposed, "ObjectDisposedException");
     checkViewType(element_type, value._viewType);
 
     set_arg_type(arg, MarshalerType.Span);
@@ -543,13 +581,13 @@ function _marshal_array_segment_to_cs(arg: JSMarshalerArgument, value: ArraySegm
 
 function checkViewType(element_type: MarshalerType, viewType: MemoryViewType) {
     if (element_type == MarshalerType.Byte) {
-        mono_assert(MemoryViewType.Byte == viewType, "Expected MemoryViewType.Byte");
+        mono_check(MemoryViewType.Byte == viewType, "Expected MemoryViewType.Byte");
     }
     else if (element_type == MarshalerType.Int32) {
-        mono_assert(MemoryViewType.Int32 == viewType, "Expected MemoryViewType.Int32");
+        mono_check(MemoryViewType.Int32 == viewType, "Expected MemoryViewType.Int32");
     }
     else if (element_type == MarshalerType.Double) {
-        mono_assert(MemoryViewType.Double == viewType, "Expected MemoryViewType.Double");
+        mono_check(MemoryViewType.Double == viewType, "Expected MemoryViewType.Double");
     }
     else {
         throw new Error(`NotImplementedException ${MarshalerType[element_type]} `);

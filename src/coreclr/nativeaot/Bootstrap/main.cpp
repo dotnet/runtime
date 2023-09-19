@@ -93,7 +93,7 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // _MSC_VER
 
-extern "C" bool RhInitialize();
+extern "C" bool RhInitialize(bool isDll);
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 extern "C" bool RhRegisterOSModule(void * pModule,
@@ -164,7 +164,13 @@ extern "C" void __managed__Startup();
 
 static int InitializeRuntime()
 {
-    if (!RhInitialize())
+    if (!RhInitialize(
+#ifdef NATIVEAOT_DLL
+        /* isDll */ true
+#else
+        /* isDll */ false
+#endif
+        ))
         return -1;
 
     void * osModule = PalGetModuleHandleFromPointer((void*)&NATIVEAOT_ENTRYPOINT);
@@ -217,6 +223,15 @@ int main(int argc, char* argv[])
 
     return __managed__Main(argc, argv);
 }
+
+#ifdef HAS_ADDRESS_SANITIZER
+// We need to build the bootstrapper as a single object file, to ensure
+// the linker can detect that we have ASAN components early enough in the build.
+// Include our asan support sources for executable projects here to ensure they
+// are compiled into the bootstrapper object.
+#include "minipal/asansupport.cpp"
+#endif // HAS_ADDRESS_SANITIZER
+
 #endif // !NATIVEAOT_DLL
 
 #ifdef NATIVEAOT_DLL
@@ -227,11 +242,4 @@ static struct InitializeRuntimePointerHelper
         RhSetRuntimeInitializationCallback(&InitializeRuntime);
     }
 } initializeRuntimePointerHelper;
-
-extern "C" void* NativeAOT_StaticInitialization();
-
-void* NativeAOT_StaticInitialization()
-{
-    return &initializeRuntimePointerHelper;
-}
 #endif // NATIVEAOT_DLL

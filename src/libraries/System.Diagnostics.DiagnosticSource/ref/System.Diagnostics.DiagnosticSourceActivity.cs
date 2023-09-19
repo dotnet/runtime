@@ -365,6 +365,10 @@ namespace System.Diagnostics.Metrics
         public void Record(T value, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
         public void Record(T value, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
     }
+    public interface IMeterFactory : System.IDisposable
+    {
+        System.Diagnostics.Metrics.Meter Create(System.Diagnostics.Metrics.MeterOptions options);
+    }
     public abstract class Instrument
     {
         public string? Description { get {throw null;} }
@@ -388,15 +392,6 @@ namespace System.Diagnostics.Metrics
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  { throw null; }
         protected void RecordMeasurement(T measurement, in TagList tagList) { throw null; }
         protected void RecordMeasurement(T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
-    }
-    public sealed class InstrumentRecorder<T> : IDisposable where T : struct
-    {
-        public InstrumentRecorder(Instrument instrument) { throw null; }
-        public InstrumentRecorder(object? scopeFilter, string meterName, string instrumentName) { throw null; }
-        public InstrumentRecorder(Meter meter, string instrumentName) { throw null; }
-        public Instrument? Instrument { get { throw null; }  }
-        public System.Collections.Generic.IEnumerable<Measurement<T>> GetMeasurements(bool clear = false) { throw null; }
-        public void Dispose() { throw null; }
     }
     public readonly struct Measurement<T> where T : struct
     {
@@ -526,6 +521,10 @@ namespace System.Diagnostics.Metrics
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? Tags { get { throw null; }  }
         public object? Scope { get { throw null; }  }
     }
+    public static class MeterFactoryExtensions
+    {
+        public static System.Diagnostics.Metrics.Meter Create(this System.Diagnostics.Metrics.IMeterFactory meterFactory, string name, string? version = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) { return null!; }
+    }
     public sealed class MeterListener : IDisposable
     {
         public object? DisableMeasurementEvents(Instrument instrument) { throw null; }
@@ -545,7 +544,7 @@ namespace System.Diagnostics.Metrics
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object?>>? Tags { get { throw null;} set { throw null;} }
         public object? Scope { get { throw null;} set { throw null;} }
         public MeterOptions(string name) { throw null;}
-    }    
+    }
     public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : struct
     {
         internal ObservableCounter(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }

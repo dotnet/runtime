@@ -3,13 +3,17 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, runtimeHelpers } from "./globals";
-import { WasmOpcode, WasmSimdOpcode } from "./jiterpreter-opcodes";
+import { Module, mono_assert, runtimeHelpers, linkerRunAOTCompilation } from "./globals";
+import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
-import { localHeapViewU8 } from "./memory";
+import { localHeapViewU8, localHeapViewU32 } from "./memory";
 import { utf8ToString } from "./strings";
+import {
+    JiterpNumberMode, BailoutReason, JiterpreterTable,
+    JiterpCounter, JiterpMember
+} from "./jiterpreter-enums";
 
 export const maxFailures = 2,
     maxMemsetSize = 64,
@@ -20,73 +24,6 @@ export const maxFailures = 2,
 export declare interface MintOpcodePtr extends NativePointer {
     __brand: "MintOpcodePtr"
 }
-
-export const enum JiterpNumberMode {
-    U32 = 0,
-    I32 = 1,
-    F32 = 2,
-    F64 = 3
-}
-
-export const enum BailoutReason {
-    Unknown,
-    InterpreterTiering,
-    NullCheck,
-    VtableNotInitialized,
-    Branch,
-    BackwardBranch,
-    ConditionalBranch,
-    ConditionalBackwardBranch,
-    ComplexBranch,
-    ArrayLoadFailed,
-    ArrayStoreFailed,
-    StringOperationFailed,
-    DivideByZero,
-    Overflow,
-    Return,
-    Call,
-    Throw,
-    AllocFailed,
-    SpanOperationFailed,
-    CastFailed,
-    SafepointBranchTaken,
-    UnboxFailed,
-    CallDelegate,
-    Debugging,
-    Icall,
-    UnexpectedRetIp,
-    LeaveCheck,
-}
-
-export const BailoutReasonNames = [
-    "Unknown",
-    "InterpreterTiering",
-    "NullCheck",
-    "VtableNotInitialized",
-    "Branch",
-    "BackwardBranch",
-    "ConditionalBranch",
-    "ConditionalBackwardBranch",
-    "ComplexBranch",
-    "ArrayLoadFailed",
-    "ArrayStoreFailed",
-    "StringOperationFailed",
-    "DivideByZero",
-    "Overflow",
-    "Return",
-    "Call",
-    "Throw",
-    "AllocFailed",
-    "SpanOperationFailed",
-    "CastFailed",
-    "SafepointBranchTaken",
-    "UnboxFailed",
-    "CallDelegate",
-    "Debugging",
-    "Icall",
-    "UnexpectedRetIp",
-    "LeaveCheck",
-];
 
 type FunctionType = [
     index: FunctionTypeIndex,
@@ -158,6 +95,7 @@ export class WasmBuilder {
     argumentCount!: number;
     activeBlocks!: number;
     base!: MintOpcodePtr;
+    traceIndex!: number;
     frame: NativePointer = <any>0;
     traceBuf: Array<string> = [];
     branchTargets = new Set<MintOpcodePtr>();
@@ -239,10 +177,12 @@ export class WasmBuilder {
     }
 
     getWasmImports(): WebAssembly.Imports {
+        const memory = (<any>Module).getMemory();
+        mono_assert(memory instanceof WebAssembly.Memory, () => `expected heap import to be WebAssembly.Memory but was ${memory}`);
+
         const result: any = {
             c: <any>this.getConstants(),
-            m: { h: (<any>Module).asm.memory },
-            f: { f: getWasmFunctionTable() },
+            m: { h: memory },
         };
 
         const importsToEmit = this.getImportsToEmit();
@@ -297,9 +237,10 @@ export class WasmBuilder {
         return this.current.appendU8(value);
     }
 
-    appendSimd(value: WasmSimdOpcode) {
+    appendSimd(value: WasmSimdOpcode, allowLoad?: boolean) {
         this.current.appendU8(WasmOpcode.PREFIX_simd);
         // Yes that's right. We're using LEB128 to encode 8-bit opcodes. Why? I don't know
+        mono_assert(((value | 0) !== 0) || ((value === WasmSimdOpcode.v128_load) && (allowLoad === true)), "Expected non-v128_load simd opcode or allowLoad==true");
         return this.current.appendULeb(value);
     }
 
@@ -386,13 +327,22 @@ export class WasmBuilder {
                 this.i52_const(0);
                 this.appendSimd(WasmSimdOpcode.i64x2_splat);
             */
-            this.appendSimd(WasmSimdOpcode.v128_const);
-            for (let i = 0; i < 16; i++)
-                this.appendU8(0);
+            this.local("v128_zero");
         } else if (typeof (value) === "object") {
             mono_assert(value.byteLength === 16, "Expected v128_const arg to be 16 bytes in size");
-            this.appendSimd(WasmSimdOpcode.v128_const);
-            this.appendBytes(value);
+            let isZero = true;
+            for (let i = 0; i < 16; i++) {
+                if (value[i] !== 0)
+                    isZero = false;
+            }
+
+            if (isZero) {
+                // mono_log_info("Detected that literal v128_const was zero");
+                this.local("v128_zero");
+            } else {
+                this.appendSimd(WasmSimdOpcode.v128_const);
+                this.appendBytes(value);
+            }
         } else {
             throw new Error("Expected v128_const arg to be 0 or a Uint8Array");
         }
@@ -510,6 +460,9 @@ export class WasmBuilder {
         const importsToEmit = this.getImportsToEmit();
         this.lockImports = true;
 
+        if (includeFunctionTable !== false)
+            throw new Error("function table imports are disabled");
+
         // Import section
         this.beginSection(2);
         this.appendULeb(
@@ -537,11 +490,20 @@ export class WasmBuilder {
 
         this.appendName("m");
         this.appendName("h");
-        // memtype (limits = { min=0x01, max=infinity })
-        this.appendU8(0x02);
-        this.appendU8(0x00);
-        // Minimum size is in 64k pages, not bytes
-        this.appendULeb(0x01);
+        if (MonoWasmThreads) {
+            // memtype (limits = 0x03 n:u32 m:u32    => {min n, max m, shared})
+            this.appendU8(0x02);
+            this.appendU8(0x03);
+            // emcc seems to generate this min/max by default
+            this.appendULeb(256);
+            this.appendULeb(32768);
+        } else {
+            // memtype (limits = { min=0x01, max=infinity })
+            this.appendU8(0x02);
+            this.appendU8(0x00);
+            // Minimum size is in 64k pages, not bytes
+            this.appendULeb(0x01);
+        }
 
         if (includeFunctionTable !== false) {
             this.appendName("f");
@@ -626,9 +588,21 @@ export class WasmBuilder {
                 exportCount++;
 
             this.beginFunction(func.typeName, func.locals);
-            func.blob = func.generator();
-            if (!func.blob)
-                func.blob = this.endFunction(false);
+            try {
+                func.blob = func.generator();
+            } finally {
+                // If func.generator failed due to an error or didn't return a blob, we want
+                //  to call endFunction to pop the stack and create the blob automatically.
+                // We may be in the middle of handling an exception so don't let this automatic
+                //  logic throw and suppress the original exception being handled
+                try {
+                    if (!func.blob)
+                        func.blob = this.endFunction(false);
+                } catch {
+                    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+                    ;
+                }
+            }
         }
 
         this._generateImportSection(includeFunctionTable);
@@ -665,7 +639,9 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    call_indirect(functionTypeName: string, tableIndex: number) {
+    call_indirect(/* functionTypeName: string, tableIndex: number */) {
+        throw new Error("call_indirect unavailable");
+        /*
         const type = this.functionTypes[functionTypeName];
         if (!type)
             throw new Error("No function type named " + functionTypeName);
@@ -673,6 +649,7 @@ export class WasmBuilder {
         this.appendU8(WasmOpcode.call_indirect);
         this.appendULeb(typeIndex);
         this.appendULeb(tableIndex);
+        */
     }
 
     callImport(name: string) {
@@ -723,6 +700,7 @@ export class WasmBuilder {
         counts[WasmValtype.i64] = 0;
         counts[WasmValtype.f32] = 0;
         counts[WasmValtype.f64] = 0;
+        counts[WasmValtype.v128] = 0;
 
         for (const k in locals) {
             const ty = locals[k];
@@ -734,34 +712,39 @@ export class WasmBuilder {
         const offi32 = 0,
             offi64 = counts[WasmValtype.i32],
             offf32 = offi64 + counts[WasmValtype.i64],
-            offf64 = offf32 + counts[WasmValtype.f32];
+            offf64 = offf32 + counts[WasmValtype.f32],
+            offv128 = offf64 + counts[WasmValtype.f64];
 
         counts[WasmValtype.i32] = 0;
         counts[WasmValtype.i64] = 0;
         counts[WasmValtype.f32] = 0;
         counts[WasmValtype.f64] = 0;
+        counts[WasmValtype.v128] = 0;
 
         for (const k in locals) {
             const ty = locals[k];
-            let idx = 0;
+            let idx = 0, offset;
             switch (ty) {
                 case WasmValtype.i32:
-                    idx = (counts[ty]++) + offi32 + base;
-                    this.locals.set(k, idx);
+                    offset = offi32;
                     break;
                 case WasmValtype.i64:
-                    idx = (counts[ty]++) + offi64 + base;
-                    this.locals.set(k, idx);
+                    offset = offi64;
                     break;
                 case WasmValtype.f32:
-                    idx = (counts[ty]++) + offf32 + base;
-                    this.locals.set(k, idx);
+                    offset = offf32;
                     break;
                 case WasmValtype.f64:
-                    idx = (counts[ty]++) + offf64 + base;
-                    this.locals.set(k, idx);
+                    offset = offf64;
                     break;
+                case WasmValtype.v128:
+                    offset = offv128;
+                    break;
+                default:
+                    throw new Error(`Unimplemented valtype: ${ty}`);
             }
+            idx = (counts[ty]++) + offset + base;
+            this.locals.set(k, idx);
             // mono_log_info(`local ${k} ${locals[k]} -> ${idx}`);
         }
 
@@ -780,7 +763,7 @@ export class WasmBuilder {
         this.locals.clear();
         this.branchTargets.clear();
         let counts: any = {};
-        const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64];
+        const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64, WasmValtype.v128];
 
         // We first assign the parameters local indices and then
         //  we assign the named locals indices, because parameters
@@ -966,6 +949,7 @@ export class BlobBuilder {
     }
 
     appendULeb(value: number) {
+        mono_assert(typeof (value) === "number", () => `appendULeb expected number but got ${value}`);
         mono_assert(value >= 0, "cannot pass negative value to appendULeb");
         if (value < 0x7F) {
             if (this.size + 1 >= this.capacity)
@@ -986,6 +970,7 @@ export class BlobBuilder {
     }
 
     appendLeb(value: number) {
+        mono_assert(typeof (value) === "number", () => `appendLeb expected number but got ${value}`);
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
 
@@ -1093,10 +1078,17 @@ type CfgBranch = {
     from: MintOpcodePtr;
     target: MintOpcodePtr;
     isBackward: boolean; // FIXME: This should be inferred automatically
-    isConditional: boolean;
+    branchType: CfgBranchType;
 }
 
 type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch;
+
+export const enum CfgBranchType {
+    Unconditional,
+    Conditional,
+    SafepointUnconditional,
+    SafepointConditional,
+}
 
 class Cfg {
     builder: WasmBuilder;
@@ -1177,7 +1169,7 @@ class Cfg {
         this.overheadBytes += 1; // each branch block just costs us an end
     }
 
-    branch(target: MintOpcodePtr, isBackward: boolean, isConditional: boolean) {
+    branch(target: MintOpcodePtr, isBackward: boolean, branchType: CfgBranchType) {
         this.observedBranchTargets.add(target);
         this.appendBlob();
         this.segments.push({
@@ -1185,7 +1177,7 @@ class Cfg {
             from: this.ip,
             target,
             isBackward,
-            isConditional,
+            branchType: branchType,
         });
         // some branches will generate bailouts instead so we allocate 4 bytes per branch
         //  to try and balance this out and avoid underestimating too much
@@ -1197,6 +1189,14 @@ class Cfg {
             // i32.const <n>
             // set_local <disp>
             this.overheadBytes += 11;
+        }
+
+        // Account for the size of the safepoint
+        if (
+            (branchType === CfgBranchType.SafepointConditional) ||
+            (branchType === CfgBranchType.SafepointUnconditional)
+        ) {
+            this.overheadBytes += 17;
         }
     }
 
@@ -1360,10 +1360,32 @@ class Cfg {
                     }
 
                     if ((indexInStack >= 0) || successfulBackBranch) {
-                        // Conditional branches are nested in an extra block, so the depth is +1
-                        const offset = segment.isConditional ? 1 : 0;
-                        this.builder.appendU8(WasmOpcode.br);
+                        let offset = 0;
+                        switch (segment.branchType) {
+                            case CfgBranchType.SafepointUnconditional:
+                                append_safepoint(this.builder, segment.from);
+                                this.builder.appendU8(WasmOpcode.br);
+                                break;
+                            case CfgBranchType.SafepointConditional:
+                                // Wrap the safepoint + branch in an if
+                                this.builder.block(WasmValtype.void, WasmOpcode.if_);
+                                append_safepoint(this.builder, segment.from);
+                                this.builder.appendU8(WasmOpcode.br);
+                                offset = 1;
+                                break;
+                            case CfgBranchType.Unconditional:
+                                this.builder.appendU8(WasmOpcode.br);
+                                break;
+                            case CfgBranchType.Conditional:
+                                this.builder.appendU8(WasmOpcode.br_if);
+                                break;
+                            default:
+                                throw new Error("Unimplemented branch type");
+                        }
+
                         this.builder.appendULeb(offset + indexInStack);
+                        if (offset) // close the if
+                            this.builder.endBlock();
                         if (this.trace > 1)
                             mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} breaking out ${offset + indexInStack + 1} level(s)`);
                     } else {
@@ -1374,7 +1396,14 @@ class Cfg {
                             else if (this.trace > 1)
                                 mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (outside of trace 0x${base.toString(16)} - 0x${(<any>this.exitIp).toString(16)})`);
                         }
+
+                        const isConditional = (segment.branchType === CfgBranchType.Conditional) ||
+                            (segment.branchType === CfgBranchType.SafepointConditional);
+                        if (isConditional)
+                            this.builder.block(WasmValtype.void, WasmOpcode.if_);
                         append_bailout(this.builder, segment.target, BailoutReason.Branch);
+                        if (isConditional)
+                            this.builder.endBlock();
                     }
                     break;
                 }
@@ -1406,39 +1435,9 @@ class Cfg {
     }
 }
 
-export const enum WasmValtype {
-    void = 0x40,
-    i32 = 0x7F,
-    i64 = 0x7E,
-    f32 = 0x7D,
-    f64 = 0x7C,
-}
-
 let wasmTable: WebAssembly.Table | undefined;
-let wasmNextFunctionIndex = -1, wasmFunctionIndicesFree = 0;
-
-// eslint-disable-next-line prefer-const
-export const elapsedTimes = {
-    generation: 0,
-    compilation: 0
-};
 
 export const simdFallbackCounters: { [name: string]: number } = {
-};
-
-export const counters = {
-    traceCandidates: 0,
-    tracesCompiled: 0,
-    entryWrappersCompiled: 0,
-    jitCallsCompiled: 0,
-    directJitCallsCompiled: 0,
-    failures: 0,
-    bytesGenerated: 0,
-    nullChecksEliminated: 0,
-    nullChecksFused: 0,
-    backBranchesEmitted: 0,
-    backBranchesNotEmitted: 0,
-    simdFallback: simdFallbackCounters,
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)
@@ -1447,10 +1446,24 @@ export const _now = (globalThis.performance && globalThis.performance.now)
 
 let scratchBuffer: NativePointer = <any>0;
 
+export function append_safepoint(builder: WasmBuilder, ip: MintOpcodePtr) {
+    // Check whether a safepoint is required
+    builder.ptr_const(cwraps.mono_jiterp_get_polling_required_address());
+    builder.appendU8(WasmOpcode.i32_load);
+    builder.appendMemarg(0, 2);
+    // If the polling flag is set we call mono_jiterp_do_safepoint()
+    builder.block(WasmValtype.void, WasmOpcode.if_);
+    builder.local("frame");
+    // Not ip_const, because we can't pass relative IP to do_safepoint
+    builder.i32_const(ip);
+    builder.callImport("safepoint");
+    builder.endBlock();
+}
+
 export function append_bailout(builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
-        builder.i32_const(builder.base);
+        builder.i32_const(builder.traceIndex);
         builder.i32_const(reason);
         builder.callImport("bailout");
     }
@@ -1475,7 +1488,7 @@ export function append_exit(builder: WasmBuilder, ip: MintOpcodePtr, opcodeCount
 
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
-        builder.i32_const(builder.base);
+        builder.i32_const(builder.traceIndex);
         builder.i32_const(reason);
         builder.callImport("bailout");
     }
@@ -1492,28 +1505,29 @@ export function copyIntoScratchBuffer(src: NativePointer, size: number): NativeP
     return scratchBuffer;
 }
 
-export function getWasmFunctionTable() {
+export function getWasmFunctionTable(module?: any) {
+    const theModule = (<any>Module || module);
+    mono_assert (theModule, "Module not available yet");
+    mono_assert (theModule["asm"], "Module['asm'] not available yet");
     if (!wasmTable)
-        wasmTable = (<any>Module)["asm"]["__indirect_function_table"];
+        wasmTable = theModule["asm"]["__indirect_function_table"];
     if (!wasmTable)
         throw new Error("Module did not export the indirect function table");
     return wasmTable;
 }
 
-export function addWasmFunctionPointer(f: Function) {
+export function addWasmFunctionPointer(table: JiterpreterTable, f: Function) {
     mono_assert(f, "Attempting to set null function into table");
     mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
-    const table = getWasmFunctionTable();
-    if (wasmFunctionIndicesFree <= 0) {
-        wasmNextFunctionIndex = table.length;
-        wasmFunctionIndicesFree = 512;
-        table.grow(wasmFunctionIndicesFree);
+    const index = cwraps.mono_jiterp_allocate_table_entry(table);
+    if (index > 0) {
+        // mono_log_info(`Allocated table ${table} slot ${index} for ${f}`);
+        const fnTable = getWasmFunctionTable();
+        fnTable.set(index, f);
+    } else {
+        // mono_log_error(`Table ${table} is full, no space for ${f}`);
     }
-    const index = wasmNextFunctionIndex;
-    wasmNextFunctionIndex++;
-    wasmFunctionIndicesFree--;
-    table.set(index, f);
     return index;
 }
 
@@ -1531,9 +1545,9 @@ export function try_append_memset_fast(builder: WasmBuilder, localOffset: number
     if (value !== 0)
         return false;
 
-    const destLocal = destOnStack ? "math_lhs32" : "pLocals";
+    const destLocal = destOnStack ? "memop_dest" : "pLocals";
     if (destOnStack)
-        builder.local("math_lhs32", WasmOpcode.set_local);
+        builder.local(destLocal, WasmOpcode.set_local);
 
     let offset = destOnStack ? 0 : localOffset;
 
@@ -1616,8 +1630,9 @@ export function try_append_memmove_fast(
         return false;
 
     if (addressesOnStack) {
-        destLocal = destLocal || "math_lhs32";
-        srcLocal = srcLocal || "math_rhs32";
+        destLocal = destLocal || "memop_dest";
+        srcLocal = srcLocal || "memop_src";
+        // Stack layout is [..., dest, src]
         builder.local(srcLocal, WasmOpcode.set_local);
         builder.local(destLocal, WasmOpcode.set_local);
     } else if (!destLocal || !srcLocal) {
@@ -1634,7 +1649,7 @@ export function try_append_memmove_fast(
         while (count >= sizeofV128) {
             builder.local(destLocal);
             builder.local(srcLocal);
-            builder.appendSimd(WasmSimdOpcode.v128_load);
+            builder.appendSimd(WasmSimdOpcode.v128_load, true);
             builder.appendMemarg(srcOffset, 0);
             builder.appendSimd(WasmSimdOpcode.v128_store);
             builder.appendMemarg(destOffset, 0);
@@ -1714,37 +1729,15 @@ export function append_memmove_dest_src(builder: WasmBuilder, count: number) {
 }
 
 export function recordFailure(): void {
-    counters.failures++;
-    if (counters.failures >= maxFailures) {
-        mono_log_info(`Disabling jiterpreter after ${counters.failures} failures`);
+    const result = modifyCounter(JiterpCounter.Failures, 1);
+    if (result >= maxFailures) {
+        mono_log_info(`Disabling jiterpreter after ${result} failures`);
         applyOptions(<any>{
             enableTraces: false,
             enableInterpEntry: false,
             enableJitCall: false
         });
     }
-}
-
-export const enum JiterpMember {
-    VtableInitialized = 0,
-    ArrayData = 1,
-    StringLength = 2,
-    StringData = 3,
-    Imethod = 4,
-    DataItems = 5,
-    Rmethod = 6,
-    SpanLength = 7,
-    SpanData = 8,
-    ArrayLength = 9,
-    BackwardBranchOffsets = 10,
-    BackwardBranchOffsetsCount = 11,
-    ClauseDataOffsets = 12,
-    ParamsCount = 13,
-    VTable = 14,
-    VTableKlass = 15,
-    ClassRank = 16,
-    ClassElementClass = 17,
-    BoxedValueData = 18,
 }
 
 const memberOffsets: { [index: number]: number } = {};
@@ -1784,6 +1777,8 @@ export function bytesFromHex(hex: string): Uint8Array {
     return bytes;
 }
 
+let observedTaintedZeroPage: boolean | undefined;
+
 export function isZeroPageReserved(): boolean {
     // FIXME: This check will always return true on worker threads.
     // Right now the jiterpreter is disabled when threading is active, so that's not an issue.
@@ -1793,14 +1788,26 @@ export function isZeroPageReserved(): boolean {
     if (!cwraps.mono_wasm_is_zero_page_reserved())
         return false;
 
+    // If we ever saw garbage written to the zero page, never use it
+    if (observedTaintedZeroPage === true)
+        return false;
+
     // Determine whether emscripten's stack checker or some other troublemaker has
     //  written junk at the start of memory. The previous cwraps call will have
     //  checked whether the stack starts at zero or not (on the main thread).
     // We can't do this in the C helper because emcc/asan might be checking pointers.
-    return (Module.HEAPU32[0] === 0) &&
-        (Module.HEAPU32[1] === 0) &&
-        (Module.HEAPU32[2] === 0) &&
-        (Module.HEAPU32[3] === 0);
+    const heapU32 = localHeapViewU32();
+    for (let i = 0; i < 8; i++) {
+        if (heapU32[i] !== 0) {
+            if (observedTaintedZeroPage === false)
+                mono_log_error(`Zero page optimizations are enabled but garbage appeared in memory at address ${i * 4}: ${heapU32[i]}`);
+            observedTaintedZeroPage = true;
+            return false;
+        }
+    }
+
+    observedTaintedZeroPage = false;
+    return true;
 }
 
 export type JiterpreterOptions = {
@@ -1845,6 +1852,8 @@ export type JiterpreterOptions = {
     interpEntryFlushThreshold: number;
     // Maximum total number of wasm bytes to generate
     wasmBytesLimit: number;
+    tableSize: number;
+    aotTableSize: number;
 }
 
 const optionNames: { [jsName: string]: string } = {
@@ -1877,6 +1886,8 @@ const optionNames: { [jsName: string]: string } = {
     "interpEntryHitCount": "jiterpreter-interp-entry-hit-count",
     "interpEntryFlushThreshold": "jiterpreter-interp-entry-queue-flush-threshold",
     "wasmBytesLimit": "jiterpreter-wasm-bytes-limit",
+    "tableSize": "jiterpreter-table-size",
+    "aotTableSize": "jiterpreter-aot-table-size",
 };
 
 let optionsVersion = -1;
@@ -1901,6 +1912,14 @@ export function applyOptions(options: JiterpreterOptions) {
     }
 }
 
+export function getCounter(counter: JiterpCounter): number {
+    return cwraps.mono_jiterp_get_counter(counter);
+}
+
+export function modifyCounter(counter: JiterpCounter, delta: number): number {
+    return cwraps.mono_jiterp_modify_counter(counter, delta);
+}
+
 // returns the current jiterpreter configuration. do not mutate the return value!
 export function getOptions() {
     const currentVersion = cwraps.mono_jiterp_get_options_version();
@@ -1922,4 +1941,61 @@ function updateOptions() {
         const info = optionNames[k];
         (<any>optionTable)[k] = blob[info];
     }
+}
+
+function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: number, fillValue: Function) {
+    const wasmTable = getWasmFunctionTable();
+    const firstIndex = base, lastIndex = firstIndex + size - 1;
+    mono_assert(lastIndex < wasmTable.length, () => `Last index out of range: ${lastIndex} >= ${wasmTable.length}`);
+    // HACK: Always populate the first slot
+    wasmTable.set(firstIndex, fillValue);
+    // In threaded builds we need to populate all the reserved slots with safe placeholder functions
+    // This operation is expensive in v8, so avoid doing it in single-threaded builds (which SHOULD
+    //  be safe, since it was previously not necessary)
+    if (MonoWasmThreads) {
+        // HACK: If possible, we want to copy any backing state associated with the first placeholder item,
+        //  so that additional work doesn't have to be done by the runtime for the following table sets
+        const preparedValue = wasmTable.get(firstIndex);
+        for (let i = firstIndex + 1; i <= lastIndex; i++)
+            wasmTable.set(i, preparedValue);
+    }
+    cwraps.mono_jiterp_initialize_table(type, firstIndex, lastIndex);
+    return base + size;
+}
+
+// a single js worker might end up hosting multiple managed threads over its lifetime.
+// we need to ensure we only ever initialize tables once on each js worker.
+let jiterpreter_tables_allocated = false;
+
+export function jiterpreter_allocate_tables(module: any) {
+    if (jiterpreter_tables_allocated)
+        return;
+    jiterpreter_tables_allocated = true;
+
+    const options = getOptions();
+    // FIXME: Unfortunately the interp entry tables need to be REALLY big. I'm not sure why.
+    // A partial solution would be to merge the tables based on argument count instead of exact type,
+    //  then create special placeholder functions that examine the rmethod to determine which kind
+    //  of method is being called.
+    const traceTableSize = options.tableSize,
+        jitCallTableSize = linkerRunAOTCompilation ? options.tableSize : 1,
+        interpEntryTableSize = linkerRunAOTCompilation ? options.aotTableSize : 1,
+        numInterpEntryTables = JiterpreterTable.LAST - JiterpreterTable.InterpEntryStatic0 + 1,
+        totalSize = traceTableSize + jitCallTableSize + (numInterpEntryTables * interpEntryTableSize) + 1,
+        wasmTable = getWasmFunctionTable(module);
+    let base = wasmTable.length;
+    const beforeGrow = performance.now();
+    wasmTable.grow(totalSize);
+    const afterGrow = performance.now();
+    if (options.enableStats)
+        mono_log_info(`Allocated ${totalSize} function table entries for jiterpreter, bringing total table size to ${wasmTable.length}`);
+    base = jiterpreter_allocate_table(JiterpreterTable.Trace, base, traceTableSize, getRawCwrap("mono_jiterp_placeholder_trace"));
+    // FIXME: Install mono_jiterp_do_jit_call_indirect somehow.
+    base = jiterpreter_allocate_table(JiterpreterTable.DoJitCall, base, 1, getRawCwrap("mono_llvm_cpp_catch_exception"));
+    base = jiterpreter_allocate_table(JiterpreterTable.JitCall, base, jitCallTableSize, getRawCwrap("mono_jiterp_placeholder_jit_call"));
+    for (let table = JiterpreterTable.InterpEntryStatic0; table <= JiterpreterTable.LAST; table++)
+        base = jiterpreter_allocate_table(table, base, interpEntryTableSize, wasmTable.get(cwraps.mono_jiterp_get_interp_entry_func(table)));
+    const afterTables = performance.now();
+    if (options.enableStats)
+        mono_log_info(`Growing wasm function table took ${afterGrow - beforeGrow}. Filling table took ${afterTables - afterGrow}.`);
 }

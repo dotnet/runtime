@@ -195,9 +195,9 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().RawValue;
         }
 
-        public static TypeManagerHandle GetModuleFromTypeHandle(RuntimeTypeHandle typeHandle)
+        public static unsafe TypeManagerHandle GetModuleFromTypeHandle(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetModuleFromEEType(GetPointerFromTypeHandle(typeHandle));
+            return typeHandle.ToMethodTable()->TypeManager;
         }
 
         public static RuntimeTypeHandle CreateRuntimeTypeHandle(IntPtr ldTokenResult)
@@ -569,11 +569,6 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().HasCctor;
         }
 
-        public static RuntimeTypeHandle RuntimeTypeHandleOf<T>()
-        {
-            return new RuntimeTypeHandle(EETypePtr.EETypePtrOf<T>());
-        }
-
         public static IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
         {
             return RuntimeImports.RhResolveDispatchOnType(CreateEETypePtr(instanceType), CreateEETypePtr(interfaceType), checked((ushort)slot));
@@ -678,7 +673,7 @@ namespace Internal.Runtime.Augments
             return true;
         }
 
-        public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
+        public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle? binderBundle)
         {
             return InvokeUtils.CheckArgument(srcObject, dstType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
         }
@@ -811,30 +806,15 @@ namespace Internal.Runtime.Augments
             if (ip == IntPtr.Zero)
                 return null;
 
-            return callbacks.TryGetMethodNameFromStartAddress(ip);
+            return callbacks.TryGetMethodNameFromStartAddress(ip, out _);
         }
 
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
 
-        public static void ReportUnhandledException(Exception exception)
-        {
-            RuntimeExceptionHelpers.ReportUnhandledException(exception);
-        }
-
-        public static unsafe RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
-        {
-            return new RuntimeTypeHandle(obj.GetEETypePtr());
-        }
-
-        public static IntPtr GetUniversalTransitionThunk()
-        {
-            return RuntimeImports.RhGetUniversalTransitionThunk();
-        }
-
         public static object CreateThunksHeap(IntPtr commonStubAddress)
         {
-            object newHeap = RuntimeImports.RhCreateThunksHeap(commonStubAddress);
+            object? newHeap = ThunksHeap.CreateThunksHeap(commonStubAddress);
             if (newHeap == null)
                 throw new OutOfMemoryException();
             return newHeap;
@@ -842,7 +822,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr AllocateThunk(object thunksHeap)
         {
-            IntPtr newThunk = RuntimeImports.RhAllocateThunk(thunksHeap);
+            IntPtr newThunk = ((ThunksHeap)thunksHeap).AllocateThunk();
             if (newThunk == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return newThunk;
@@ -850,38 +830,22 @@ namespace Internal.Runtime.Augments
 
         public static void FreeThunk(object thunksHeap, IntPtr thunkAddress)
         {
-            RuntimeImports.RhFreeThunk(thunksHeap, thunkAddress);
+            ((ThunksHeap)thunksHeap).FreeThunk(thunkAddress);
         }
 
         public static void SetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target)
         {
-            RuntimeImports.RhSetThunkData(thunksHeap, thunkAddress, context, target);
+            ((ThunksHeap)thunksHeap).SetThunkData(thunkAddress, context, target);
         }
 
         public static bool TryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target)
         {
-            return RuntimeImports.RhTryGetThunkData(thunksHeap, thunkAddress, out context, out target);
+            return ((ThunksHeap)thunksHeap).TryGetThunkData(thunkAddress, out context, out target);
         }
 
         public static int GetThunkSize()
         {
-            return RuntimeImports.RhGetThunkSize();
-        }
-
-        [DebuggerStepThrough]
-        /* TEMP workaround due to bug 149078 */
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void CallDescrWorker(IntPtr callDescr)
-        {
-            RuntimeImports.RhCallDescrWorker(callDescr);
-        }
-
-        [DebuggerStepThrough]
-        /* TEMP workaround due to bug 149078 */
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void CallDescrWorkerNative(IntPtr callDescr)
-        {
-            RuntimeImports.RhCallDescrWorkerNative(callDescr);
+            return RuntimeImports.RhpGetThunkSize();
         }
 
         public static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> invoker)

@@ -10,7 +10,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using System.Reflection;
 
-namespace IntelHardwareIntrinsicTest._CpuId
+namespace XarchHardwareIntrinsicTest._CpuId
 {
     public class Program
     {
@@ -60,6 +60,8 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000001, 0x00000000);
 
+            int xarchCpuInfo = eax;
+
             if (IsBitIncorrect(edx, 25, typeof(Sse), Sse.IsSupported, "SSE", ref isHierarchyDisabled))
             {
                 testResult = Fail;
@@ -84,7 +86,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isSse2HierarchyDisabled;
+            isHierarchyDisabled = isSse2HierarchyDisabled | !GetDotnetEnable("SSE3_4");
 
             if (IsBitIncorrect(ecx, 0, typeof(Sse3), Sse3.IsSupported, "SSE3", ref isHierarchyDisabled))
             {
@@ -145,12 +147,14 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             bool isAvx2HierarchyDisabled = isHierarchyDisabled;
 
+            isHierarchyDisabled = isAvxHierarchyDisabled;
+
             if (IsBitIncorrect(ebx, 3, typeof(Bmi1), Bmi1.IsSupported, "BMI1", ref isHierarchyDisabled))
             {
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isAvx2HierarchyDisabled;
+            isHierarchyDisabled = isAvxHierarchyDisabled;
 
             if (IsBitIncorrect(ebx, 8, typeof(Bmi2), Bmi2.IsSupported, "BMI2", ref isHierarchyDisabled))
             {
@@ -208,6 +212,55 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
             bool isAvx512HierarchyDisabled = isHierarchyDisabled;
 
+            int preferredVectorBitWidth = (GetDotnetEnvVar("PreferredVectorBitWidth", defaultValue: 0) / 128) * 128;
+            int preferredVectorByteLength = preferredVectorBitWidth / 8;
+
+            if (preferredVectorByteLength == 0)
+            {
+                bool isVector512Throttling = false;
+
+                if (isGenuineIntel)
+                {
+                    int steppingId = xarchCpuInfo & 0b1111;
+                    int model = (xarchCpuInfo >> 4) & 0b1111;
+                    int familyID = (xarchCpuInfo >> 8) & 0b1111;
+                    int extendedModelID = (xarchCpuInfo >> 16) & 0b1111;
+
+                    if (familyID == 0x06)
+                    {
+                        if (extendedModelID == 0x05)
+                        {
+                            if (model == 0x05)
+                            {
+                                // * Skylake (Server)
+                                // * Cascade Lake
+                                // * Cooper Lake
+
+                                isVector512Throttling = true;
+                            }
+                        }
+                        else if (extendedModelID == 0x06)
+                        {
+                            if (model == 0x06)
+                            {
+                                // * Cannon Lake
+
+                                isVector512Throttling = true;
+                            }
+                        }
+                    }
+                }
+
+                if (isAvx512HierarchyDisabled || isVector512Throttling)
+                {
+                    preferredVectorByteLength = 256 / 8;
+                }
+                else
+                {
+                    preferredVectorByteLength = 512 / 8;
+                }
+            }
+
             if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi), Avx512Vbmi.IsSupported, "AVX512VBMI", ref isHierarchyDisabled))
             {
                 testResult = Fail;
@@ -264,12 +317,12 @@ namespace IntelHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            if (IsIncorrect(typeof(Vector256), Vector256.IsHardwareAccelerated, isAvx2HierarchyDisabled))
+            if (IsIncorrect(typeof(Vector256), Vector256.IsHardwareAccelerated, isAvx2HierarchyDisabled || (preferredVectorByteLength < 32)))
             {
                 testResult = Fail;
             }
 
-            if (IsIncorrect(typeof(Vector512), Vector512.IsHardwareAccelerated, isAvx512HierarchyDisabled))
+            if (IsIncorrect(typeof(Vector512), Vector512.IsHardwareAccelerated, isAvx512HierarchyDisabled || (preferredVectorByteLength < 64)))
             {
                 testResult = Fail;
             }
@@ -313,7 +366,7 @@ namespace IntelHardwareIntrinsicTest._CpuId
         static bool IsBitIncorrect(int register, int bitNumber, Type isa, bool isSupported, string name, ref bool isHierarchyDisabled)
         {
             bool isSupportedByHardware = (register & (1 << bitNumber)) != 0;
-            isHierarchyDisabled |= !GetDotnetEnable(name);
+            isHierarchyDisabled |= (!isSupported || !GetDotnetEnable(name));
 
             if (isSupported)
             {
@@ -379,15 +432,20 @@ namespace IntelHardwareIntrinsicTest._CpuId
 
         static bool GetDotnetEnable(string name)
         {
-            string? stringValue = Environment.GetEnvironmentVariable($"DOTNET_Enable{name}");
+            // Hardware Intrinsic configuration knobs default to true
+            return GetDotnetEnvVar($"Enable{name}", defaultValue: 1) != 0;
+        }
+
+        static int GetDotnetEnvVar(string name, int defaultValue)
+        {
+            string? stringValue = Environment.GetEnvironmentVariable($"DOTNET_{name}");
 
             if ((stringValue is null) || !int.TryParse(stringValue, out int value))
             {
-                // Hardware Intrinsic configuration knobs default to true
-                return true;
+                return defaultValue;
             }
 
-            return value != 0;
+            return value;
         }
     }
 }

@@ -22,10 +22,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return VerifyRequiresAssemblyFilesAnalyzer (source, null, expected);
 		}
 
-		static async Task VerifyRequiresAssemblyFilesAnalyzer (string source, IEnumerable<MetadataReference>? additionalReferences, params DiagnosticResult[] expected)
+		static async Task VerifyRequiresAssemblyFilesAnalyzer (
+			string source,
+			IEnumerable<MetadataReference>? additionalReferences,
+			params DiagnosticResult[] expected)
 		{
 
-			await VerifyCS.VerifyAnalyzerAsync (source,
+			await VerifyCS.VerifyAnalyzerAsync (
+				source,
+				consoleApplication: false,
 				TestCaseUtils.UseMSBuildProperties (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer),
 				additionalReferences ?? Array.Empty<MetadataReference> (),
 				expected);
@@ -338,7 +343,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			// If 'PublishSingleFile' is not set to true, no diagnostics should be produced by the analyzer. This will
 			// effectively verify that the number of produced diagnostics matches the number of expected ones (zero).
-			return VerifyCS.VerifyAnalyzerAsync (src);
+			return VerifyCS.VerifyAnalyzerAsync (src, consoleApplication: false);
 		}
 
 		[Fact]

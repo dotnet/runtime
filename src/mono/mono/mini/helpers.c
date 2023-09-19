@@ -130,7 +130,6 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #endif
 	char *as_file;
 	char *o_file;
-	int unused G_GNUC_UNUSED;
 
 #ifdef HOST_WIN32
 	as_file = g_strdup_printf ("%s/test.s", tmp);
@@ -255,6 +254,7 @@ MONO_RESTORE_WARNING
 #endif
 
 #ifdef HAVE_SYSTEM
+	int unused G_GNUC_UNUSED;
 	char *cmd = g_strdup_printf (ARCH_PREFIX AS_CMD " %s -o %s", as_file, o_file);
 	unused = system (cmd);
 	g_free (cmd);

@@ -160,7 +160,7 @@ namespace Wasm.Build.Tests
         }
     }
 
-    public class WasmBuildAppBase : BuildTestBase
+    public class WasmBuildAppBase : TestMainJsTestBase
     {
         public static IEnumerable<object?[]> MainMethodTestData(bool aot, RunHost host)
             => ConfigWithAOTData(aot)

@@ -379,7 +379,7 @@ function InitializeVisualStudioMSBuild([bool]$install, [object]$vsRequirements =
   }
 
   # Minimum VS version to require.
-  $vsMinVersionReqdStr = '16.8'
+  $vsMinVersionReqdStr = '17.6'
   $vsMinVersionReqd = [Version]::new($vsMinVersionReqdStr)
 
   # If the version of msbuild is going to be xcopied,
@@ -671,6 +671,10 @@ function InitializeNativeTools() {
   }
 }
 
+function Read-ArcadeSdkVersion() {
+  return $GlobalJson.'msbuild-sdks'.'Microsoft.DotNet.Arcade.Sdk'
+}
+
 function InitializeToolset() {
   if (Test-Path variable:global:_ToolsetBuildProj) {
     return $global:_ToolsetBuildProj
@@ -678,7 +682,7 @@ function InitializeToolset() {
 
   $nugetCache = GetNuGetPackageCachePath
 
-  $toolsetVersion = $GlobalJson.'msbuild-sdks'.'Microsoft.DotNet.Arcade.Sdk'
+  $toolsetVersion = Read-ArcadeSdkVersion
   $toolsetLocationFile = Join-Path $ToolsetDir "$toolsetVersion.txt"
 
   if (Test-Path $toolsetLocationFile) {

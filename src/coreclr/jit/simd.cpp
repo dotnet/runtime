@@ -145,9 +145,15 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
 //    If the size of the struct is already known call structSizeMightRepresentSIMDType
 //    to determine if this api needs to be called.
 //
+//    The type handle passed here can only be used in a subset of JIT-EE calls
+//    since it may be called by promotion during prejit of a method that does
+//    not version with SPC. See CORINFO_TYPE_LAYOUT_NODE for the contract on
+//    the supported JIT-EE calls.
+//
 // TODO-Throughput: current implementation parses class name to find base type. Change
 //         this when we implement  SIMD intrinsic identification for the final
 //         product.
+//
 CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
 {
     if (m_simdHandleCache == nullptr)
@@ -299,7 +305,10 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                         JITDUMP(" Found Vector<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
                         size = getVectorTByteLength();
 
-                        assert(size != 0);
+                        if (size == 0)
+                        {
+                            return CORINFO_TYPE_UNDEF;
+                        }
                         break;
                     }
 
@@ -380,7 +389,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                     return CORINFO_TYPE_UNDEF;
                 }
 
-                if (!compExactlyDependsOn(InstructionSet_AVX))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX))
                 {
                     // We must treat as a regular struct if AVX isn't supported
                     return CORINFO_TYPE_UNDEF;
@@ -405,7 +414,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                     return CORINFO_TYPE_UNDEF;
                 }
 
-                if (!compExactlyDependsOn(InstructionSet_AVX512F))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                 {
                     // We must treat as a regular struct if AVX512F isn't supported
                     return CORINFO_TYPE_UNDEF;
