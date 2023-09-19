@@ -8,7 +8,7 @@
     <Compile Include="System.Numerics.Tensors.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Compile Include="System.Numerics.Tensors.netcore.cs" />
   </ItemGroup>
 
