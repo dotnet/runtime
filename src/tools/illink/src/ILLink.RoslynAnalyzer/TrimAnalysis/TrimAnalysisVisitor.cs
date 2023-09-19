@@ -295,8 +295,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			return methodReturnValue;
 		}
 
-		public override void HandleReturnValue (IMethodSymbol method, MultiValue returnValue, IOperation operation)
+		public override void HandleReturnValue (MultiValue returnValue, IOperation operation)
 		{
+			Debug.Assert (OwningSymbol is IMethodSymbol);
+			if (OwningSymbol is not IMethodSymbol method)
+				return;
+
 			if (method.ReturnType.IsTypeInterestingForDataflow ()) {
 				var returnParameter = new MethodReturnValue (method);
 

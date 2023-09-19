@@ -75,6 +75,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 			// If not, the BranchValue represents a return or throw value associated with the FallThroughSuccessor of this block.
 			// (ConditionalSuccessor == null iff ConditionKind == None).
+			// If we get here, we should be analyzing a method body, not an attribute instance since attributes can't have throws or return statements
+			Debug.Assert (OwningSymbol is IMethodSymbol);
 
 			// The BranchValue for a thrown value is not involved in dataflow tracking.
 			if (block.Block.FallThroughSuccessor?.Semantics == ControlFlowBranchSemantics.Throw)
@@ -85,10 +87,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 			// Use the branch value operation as the key for the warning store and the location of the warning.
 			// We don't want the return operation because this might have multiple possible return values in general.
-			Debug.Assert (OwningSymbol is IMethodSymbol);
-			if (OwningSymbol is not IMethodSymbol methodSymbol)
-				return;
-			HandleReturnValue (methodSymbol, branchValue, branchValueOperation);
+			HandleReturnValue (branchValue, branchValueOperation);
 		}
 
 		public abstract TValue GetFieldTargetValue (IFieldSymbol field);
@@ -103,7 +102,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		// This takes an IOperation rather than an IReturnOperation because the return value
 		// may (must?) come from BranchValue of an operation whose FallThroughSuccessor is the exit block.
-		public abstract void HandleReturnValue (IMethodSymbol method, TValue returnValue, IOperation operation);
+		public abstract void HandleReturnValue (TValue returnValue, IOperation operation);
 
 		// This is called for any method call, which includes:
 		// - Normal invocation operation
@@ -482,9 +481,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			if (operation.ReturnedValue != null) {
 				var value = Visit (operation.ReturnedValue, state);
-				Debug.Assert (OwningSymbol is IMethodSymbol);
-				if (OwningSymbol is IMethodSymbol methodSymbol)
-					HandleReturnValue (methodSymbol, value, operation);
+				HandleReturnValue (value, operation);
 				return value;
 			}
 

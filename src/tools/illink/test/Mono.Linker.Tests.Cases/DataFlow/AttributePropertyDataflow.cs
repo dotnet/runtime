@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AttributesOnProperty.Test ();
 			AttributesOnField.Test ();
 			AttributesOnEvent.Test ();
+			AttributeWithConditionalExpression.Test ();
 			RecursivePropertyDataFlow.Test ();
 			RecursiveMethodDataFlow.Test ();
 			RecursiveEventDataFlow.Test ();
@@ -35,7 +36,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[KeepsPublicMethods (TypeName = "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributesOnMethod+ClassWithKeptPublicMethods")]
 			[KeepsPublicFields (Type = null, TypeName = null)]
 			[TypeArray (Types = new Type[] { typeof (AttributePropertyDataflow) })]
-			// Trimmer only for now - https://github.com/dotnet/linker/issues/2273
+			// Trimmer/NativeAot only for now - https://github.com/dotnet/linker/issues/2273
 			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			public static void Test () {
 				typeof (AttributesOnMethod).GetMethod ("Test").GetCustomAttribute (typeof (KeepsPublicConstructorsAttribute));
@@ -148,6 +149,40 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				Event_FieldSyntax += (sender, args) => { };
 				Event_PropertySyntax += (sender, args) => { };
 			}
+
+			[Kept]
+			class ClassWithKeptPublicMethods
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--ClassWithKeptPublicMethods--")]
+				public static void KeptMethod () { }
+				static void Method () { }
+			}
+		}
+
+		class AttributeWithConditionalExpression
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
+			// Trimmer/NativeAot only for now - https://github.com/dotnet/linker/issues/2273
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[KeepsPublicMethods (TypeName = 1 + 1 == 2 ? "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethods" : null)]
+			public static void Test ()
+			{
+				typeof (AttributeWithConditionalExpression).GetMethod ("Test").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+				typeof (AttributeWithConditionalExpression).GetField ("field").GetCustomAttribute (typeof (KeepsPublicMethodsAttribute));
+			}
+
+			// This testcase is an example where the analyzer may have a branch value while analyzing an attribute,
+			// where the owning symbol is not a method.
+			[Kept]
+			[KeptAttributeAttribute (typeof (KeepsPublicMethodsAttribute))]
+			// NativeAot doesn't handle the type name on fields: https://github.com/dotnet/runtime/issues/92259
+			[ExpectedWarning ("IL2105", "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethods", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", ProducedBy = Tool.Trimmer)]
+			[KeepsPublicMethods (TypeName = 1 + 1 == 2 ? "Mono.Linker.Tests.Cases.DataFlow.AttributePropertyDataflow+AttributeWithConditionalExpression+ClassWithKeptPublicMethods" : null)]
+			public static int field;
 
 			[Kept]
 			class ClassWithKeptPublicMethods
