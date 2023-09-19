@@ -105,17 +105,15 @@ g_file_error_from_errno (gint err_no)
 	}
 }
 
-FILE *
-g_fopen (const char *path, const char *mode)
+FILE*
+g_fopen (const gchar *path, const gchar *mode)
 {
 	FILE *fp;
 
 	if (!path)
 		return NULL;
 
-#ifndef HOST_WIN32
-	fp = fopen (path, mode);
-#else
+#ifdef HOST_WIN32
 	gunichar2 *wPath = g_utf8_to_utf16 (path, -1, 0, 0, 0);
 	gunichar2 *wMode = g_utf8_to_utf16 (mode, -1, 0, 0, 0);
 
@@ -125,7 +123,47 @@ g_fopen (const char *path, const char *mode)
 	fp = _wfopen ((wchar_t *) wPath, (wchar_t *) wMode);
 	g_free (wPath);
 	g_free (wMode);
+#else
+	fp = fopen (path, mode);
 #endif
 
 	return fp;
+}
+
+int
+g_rename (const gchar *src_path, const gchar *dst_path)
+{
+#ifdef HOST_WIN32
+	gunichar2 *wSrcPath = g_utf8_to_utf16 (src_path, -1, 0, 0, 0);
+	gunichar2 *wDstPath = g_utf8_to_utf16 (dst_path, -1, 0, 0, 0);
+
+	if (!wSrcPath || !wDstPath)
+		return -1;
+
+	int ret = _wrename ((wchar_t *) wSrcPath, (wchar_t *) wDstPath);
+	g_free (wSrcPath);
+	g_free (wDstPath);
+
+	return ret;
+#else
+	return rename (src_path, dst_path);
+#endif
+}
+
+int
+g_unlink (const gchar *path)
+{
+#ifdef HOST_WIN32
+	gunichar2 *wPath = g_utf8_to_utf16 (path, -1, 0, 0, 0);
+
+	if (!wPath)
+		return -1;
+
+	int ret = _wunlink ((wchar_t *) wPath);
+	g_free (wPath);
+
+	return ret;
+#else
+	return unlink (path);
+#endif
 }

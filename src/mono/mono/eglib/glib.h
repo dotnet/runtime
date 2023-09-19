@@ -962,7 +962,9 @@ typedef enum {
 
 G_ENUM_FUNCTIONS (GFileTest)
 
-FILE *     g_fopen (const char *path, const char *mode);
+FILE*      g_fopen (const gchar *path, const gchar *mode);
+int        g_rename (const gchar *src_path, const gchar *dst_path);
+int        g_unlink (const gchar *path);
 gboolean   g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GError **gerror);
 GFileError g_file_error_from_errno (gint err_no);
 gint       g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **gerror);
@@ -972,11 +974,6 @@ gboolean   g_file_test (const gchar *filename, GFileTest test);
 #define g_open _open
 #else
 #define g_open open
-#endif
-#ifdef G_OS_WIN32
-#define g_unlink _unlink
-#else
-#define g_unlink unlink
 #endif
 #ifdef G_OS_WIN32
 #define g_write _write
