@@ -382,6 +382,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 await stream.DisposeAsync().ConfigureAwait(false);
             }
+
+            // Propagate ODE if disposed in the meantime.
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             // Propagate connection error if present.
             if (_acceptQueue.Reader.Completion.IsFaulted)
             {
