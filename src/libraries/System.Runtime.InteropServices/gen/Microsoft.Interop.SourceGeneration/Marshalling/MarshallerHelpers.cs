@@ -245,7 +245,7 @@ namespace Microsoft.Interop
         {
             if (info.ManagedType is not PointerTypeInfo
                 && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
-                && context.CodeEmitOptions.UnsafeSkipInit)
+                && context.CodeEmitOptions.SkipInit)
             {
                 // Use the Unsafe.SkipInit<T> API when available and
                 // managed type is usable as a generic parameter.
