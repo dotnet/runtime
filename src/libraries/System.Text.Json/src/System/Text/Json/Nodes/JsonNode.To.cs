@@ -1,10 +1,21 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
+
 namespace System.Text.Json.Nodes
 {
     public abstract partial class JsonNode
     {
+        /// <summary>Lazily-initialized options that set the <see cref="JsonSerializerOptions.MaxDepth"/> to match the <see cref="JsonWriterOptions"/> default.</summary>
+        private static JsonSerializerOptions? s_unindentedToStringOptions;
+
+        /// <summary>
+        /// Lazily-initialized options that set the <see cref="JsonSerializerOptions.MaxDepth"/> to match the <see cref="JsonWriterOptions"/> default
+        /// and that sets <see cref="JsonSerializerOptions.WriteIndented"/> to true.
+        /// </summary>
+        private static JsonSerializerOptions? s_indentedToStringOptions;
+
         /// <summary>
         ///   Converts the current instance to string in JSON format.
         /// </summary>
@@ -12,8 +23,11 @@ namespace System.Text.Json.Nodes
         /// <returns>JSON representation of current instance.</returns>
         public string ToJsonString(JsonSerializerOptions? options = null)
         {
-            using PooledByteBufferWriter output = WriteToPooledBuffer(options, options?.GetWriterOptions() ?? default);
-            return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
+            options ??=
+                s_unindentedToStringOptions ??
+                Interlocked.CompareExchange(ref s_unindentedToStringOptions, new JsonSerializerOptions { MaxDepth = JsonWriterOptions.DefaultMaxDepth }, null) ??
+                s_unindentedToStringOptions;
+            return JsonSerializer.Serialize(this, options);
         }
 
         /// <summary>
@@ -37,8 +51,13 @@ namespace System.Text.Json.Nodes
                 }
             }
 
-            using PooledByteBufferWriter output = WriteToPooledBuffer(writerOptions: new JsonWriterOptions { Indented = true });
-            return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
+#pragma warning disable CA1869 // TODO https://github.com/dotnet/roslyn-analyzers/issues/6957
+            JsonSerializerOptions options =
+                s_indentedToStringOptions ??
+                Interlocked.CompareExchange(ref s_indentedToStringOptions, new JsonSerializerOptions { MaxDepth = JsonWriterOptions.DefaultMaxDepth, WriteIndented = true, }, null) ??
+                s_indentedToStringOptions;
+#pragma warning restore CA1869
+            return JsonSerializer.Serialize(this, options);
         }
 
         /// <summary>
