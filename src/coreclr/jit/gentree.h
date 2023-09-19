@@ -2311,7 +2311,7 @@ public:
     void SetIndirExceptionFlags(Compiler* comp);
 
 #if MEASURE_NODE_SIZE
-    static void DumpNodeSizes(FILE* fp);
+    static void DumpNodeSizes();
 #endif
 
 #ifdef DEBUG
@@ -6342,6 +6342,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 
     static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
+
+    genTreeOps HWOperGet();
 
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);

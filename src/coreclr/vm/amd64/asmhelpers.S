@@ -8,45 +8,12 @@
 #define real4 dword
 #define real8 qword
 
-#
-#    file: profile.cpp
-#    typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
-#    {
-#        FunctionID *functionId; # function ID comes in the r11 register
-#        void       *rbp;
-#        void       *probersp;
-#        void       *ip;
-#        void       *profiledRsp;
-#        UINT64      rax;
-#        LPVOID      hiddenArg;
-#        UINT64      flt0;
-#        UINT64      flt1;
-#        UINT64      flt2;
-#        UINT64      flt3;
-#        UINT64      flt4;
-#        UINT64      flt5;
-#        UINT64      flt6;
-#        UINT64      flt7;
-#        UINT64      rdi;
-#        UINT64      rsi;
-#        UINT64      rdx;
-#        UINT64      rcx;
-#        UINT64      r8;
-#        UINT64      r9;
-#        UINT32      flags;
-#        UINT64      buffer[PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE];
-#    } PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
-
 # On linux arguments can be passed in non-sequential registers. Integer arguments are
 # passed in sequential integer registers and floating point registers are passed in
 # sequential floating point registers. This presents a problem when we go to pass the
 # struct argument as a COR_PRF_FUNCTION_ARGUMENT_RANGE which expects the arguments are
 # in one contiguous range. This space is a scratch space that the ArgIterator can use
 # to copy the structs to so they are sequential.
-.equ SIZEOF_PROFILE_STRUCT_BUFFER, 0x8*16
-
-# Space for register spilling
-.equ SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA, 0x8*22 + SIZEOF_PROFILE_STRUCT_BUFFER
 
 # Pad the frame size by 0x8 so when the xmm0 and xmm1 register store/restore happens
 # we can align to 16 and be guaranteed to not exceed the frame size
@@ -57,11 +24,7 @@
 # data struct that we spill the general purpose registers to, then space to
 # spill xmm0 and xmm1, then finally 8 bytes of padding to ensure that the xmm
 # register reads/writes are aligned on 16 bytes.
-.equ SIZEOF_STACK_FRAME, SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA + STACK_FUDGE_FACTOR
-
-.equ PROFILE_ENTER, 0x1
-.equ PROFILE_LEAVE, 0x2
-.equ PROFILE_TAILCALL, 0x4
+.equ SIZEOF_STACK_FRAME, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA + STACK_FUDGE_FACTOR
 
 # ***********************************************************
 #   NOTE:
@@ -102,29 +65,29 @@ NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
 
   # setup ProfilePlatformSpecificData structure
   xor                     r11, r11 # nullify r11
-  mov                     [rsp + 0x0], r11    # r11 is null     -- struct functionId field
-  save_reg_postrsp        rbp, 0x8             #                 -- struct rbp field
-  mov                     [rsp + 0x10], rax    # caller rsp      -- struct probeRsp field
-  mov                     [rsp + 0x18], r10    # return address  -- struct ip field
-  mov                     [rsp + 0x20], r15    #                 -- struct profiledRsp field
-  mov                     [rsp + 0x28], r11    # return value    -- struct rax field
-  mov                     [rsp + 0x30], r11    # r11 is null     -- struct hiddenArg field
-  movsd                   real8 ptr [rsp + 0x38], xmm0    #      -- struct flt0 field
-  movsd                   real8 ptr [rsp + 0x40], xmm1    #      -- struct flt1 field
-  movsd                   real8 ptr [rsp + 0x48], xmm2    #      -- struct flt2 field
-  movsd                   real8 ptr [rsp + 0x50], xmm3    #      -- struct flt3 field
-  movsd                   real8 ptr [rsp + 0x58], xmm4    #      -- struct flt4 field
-  movsd                   real8 ptr [rsp + 0x60], xmm5    #      -- struct flt5 field
-  movsd                   real8 ptr [rsp + 0x68], xmm6    #      -- struct flt6 field
-  movsd                   real8 ptr [rsp + 0x70], xmm7    #      -- struct flt7 field
-  mov                     [rsp + 0x78], rdi               #      -- struct rdi field
-  mov                     [rsp + 0x80], rsi               #      -- struct rsi field
-  mov                     [rsp + 0x88], rdx               #      -- struct rdx field
-  mov                     [rsp + 0x90], rcx               #      -- struct rcx field
-  mov                     [rsp + 0x98], r8                #      -- struct r8 field
-  mov                     [rsp + 0xa0], r9                #      -- struct r9 field
-  mov                     r10, 0x1 # PROFILE_ENTER
-  mov                     [rsp + 0xa8], r10d              #      -- struct flags field
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__functionId], r11
+  save_reg_postrsp        rbp, PROFILE_PLATFORM_SPECIFIC_DATA__rbp
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__probeRsp], rax    # caller rsp
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__ip], r10    # return address
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__profiledRsp], r15
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rax], r11    # return value
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg], r11    # r11 is null
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt0], xmm0
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt1], xmm1
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt2], xmm2
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt3], xmm3
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt4], xmm4
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt5], xmm5
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt6], xmm6
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt7], xmm7
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rdi], rdi
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rsi], rsi
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rdx], rdx
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rcx], rcx
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__r8], r8
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__r9], r9
+  mov                     r10, PROFILE_ENTER
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flags], r10d
 
   END_PROLOGUE
 
@@ -134,22 +97,22 @@ NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
   call                    C_FUNC(ProfileEnter)
 
   # restore fp return registers
-  movsd                   xmm0, real8 ptr [rsp + 0x38]    #      -- struct flt0 field
-  movsd                   xmm1, real8 ptr [rsp + 0x40]    #      -- struct flt1 field
-  movsd                   xmm2, real8 ptr [rsp + 0x48]    #      -- struct flt2 field
-  movsd                   xmm3, real8 ptr [rsp + 0x50]    #      -- struct flt3 field
-  movsd                   xmm4, real8 ptr [rsp + 0x58]    #      -- struct flt4 field
-  movsd                   xmm5, real8 ptr [rsp + 0x60]    #      -- struct flt5 field
-  movsd                   xmm6, real8 ptr [rsp + 0x68]    #      -- struct flt6 field
-  movsd                   xmm7, real8 ptr [rsp + 0x70]    #      -- struct flt7 field
+  movsd                   xmm0, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt0]
+  movsd                   xmm1, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt1]
+  movsd                   xmm2, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt2]
+  movsd                   xmm3, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt3]
+  movsd                   xmm4, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt4]
+  movsd                   xmm5, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt5]
+  movsd                   xmm6, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt6]
+  movsd                   xmm7, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt7]
 
   # restore arg registers
-  mov                     rdi, [rsp + 0x78]
-  mov                     rsi, [rsp + 0x80]
-  mov                     rdx, [rsp + 0x88]
-  mov                     rcx, [rsp + 0x90]
-  mov                     r8, [rsp + 0x98]
-  mov                     r9, [rsp + 0xa0]
+  mov                     rdi, [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rdi]
+  mov                     rsi, [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rsi]
+  mov                     rdx, [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rdx]
+  mov                     rcx, [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rcx]
+  mov                     r8, [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__r8]
+  mov                     r9, [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__r9]
 
   # begin epilogue
   free_stack              SIZEOF_STACK_FRAME
@@ -182,29 +145,29 @@ NESTED_ENTRY ProfileLeaveNaked, _TEXT, NoHandler
 
   # setup ProfilePlatformSpecificData structure
   xor                     r11, r11  # nullify r11
-  mov                     [rsp +  0x0], r11    # r11 is null     -- struct functionId field
-  save_reg_postrsp        rbp, 0x8             #                 -- struct rbp field
-  mov                     [rsp + 0x10], rbx    # caller rsp      -- struct probeRsp field
-  mov                     [rsp + 0x18], r10    # return address  -- struct ip field
-  mov                     [rsp + 0x20], rsi    #                 -- struct profiledRsp field
-  mov                     [rsp + 0x28], rax    # return value    -- struct rax field
-  mov                     [rsp + 0x30], r11    # r11 is null     -- struct hiddenArg field
-  movsd                   real8 ptr [rsp + 0x38], xmm0    #      -- struct flt0 field
-  movsd                   real8 ptr [rsp + 0x40], xmm1    #      -- struct flt1 field
-  movsd                   real8 ptr [rsp + 0x48], xmm2    #      -- struct flt2 field
-  movsd                   real8 ptr [rsp + 0x50], xmm3    #      -- struct flt3 field
-  movsd                   real8 ptr [rsp + 0x58], xmm4    #      -- struct flt4 field
-  movsd                   real8 ptr [rsp + 0x60], xmm5    #      -- struct flt5 field
-  movsd                   real8 ptr [rsp + 0x68], xmm6    #      -- struct flt6 field
-  movsd                   real8 ptr [rsp + 0x70], xmm7    #      -- struct flt7 field
-  mov                     [rsp + 0x78], r11     #                -- struct rdi field
-  mov                     [rsp + 0x80], r11     #                -- struct rsi field
-  mov                     [rsp + 0x88], rdx     #                -- struct rdx field
-  mov                     [rsp + 0x90], r11     #                -- struct rcx field
-  mov                     [rsp + 0x98], r11     #                -- struct r8 field
-  mov                     [rsp + 0xa0], r11    #                -- struct r9 field
-  mov                     r10, 0x2  # PROFILE_LEAVE
-  mov                     [rsp + 0xa8], r10d   # flags           -- struct flags field
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__functionId], r11    # r11 is null
+  save_reg_postrsp        rbp, PROFILE_PLATFORM_SPECIFIC_DATA__rbp
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__probeRsp], rbx    # caller rsp
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__ip], r10    # return address
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__profiledRsp], rsi
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rax], rax    # return value
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg], r11    # r11 is null
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt0], xmm0
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt1], xmm1
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt2], xmm2
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt3], xmm3
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt4], xmm4
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt5], xmm5
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt6], xmm6
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt7], xmm7
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rdi], r11
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rsi], r11
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rdx], rdx
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rcx], r11
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__r8], r11
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__r9], r11
+  mov                     r10, PROFILE_LEAVE
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flags], r10d
 
   END_PROLOGUE
 
@@ -213,17 +176,17 @@ NESTED_ENTRY ProfileLeaveNaked, _TEXT, NoHandler
   call                    C_FUNC(ProfileLeave)
 
   # restore fp return registers
-  movsd                   xmm0, real8 ptr [rsp + 0x38]    #      -- struct flt0 field
-  movsd                   xmm1, real8 ptr [rsp + 0x40]    #      -- struct flt1 field
-  movsd                   xmm2, real8 ptr [rsp + 0x48]    #      -- struct flt2 field
-  movsd                   xmm3, real8 ptr [rsp + 0x50]    #      -- struct flt3 field
-  movsd                   xmm4, real8 ptr [rsp + 0x58]    #      -- struct flt4 field
-  movsd                   xmm5, real8 ptr [rsp + 0x60]    #      -- struct flt5 field
-  movsd                   xmm6, real8 ptr [rsp + 0x68]    #      -- struct flt6 field
-  movsd                   xmm7, real8 ptr [rsp + 0x70]    #      -- struct flt7 field
+  movsd                   xmm0, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt0]
+  movsd                   xmm1, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt1]
+  movsd                   xmm2, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt2]
+  movsd                   xmm3, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt3]
+  movsd                   xmm4, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt4]
+  movsd                   xmm5, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt5]
+  movsd                   xmm6, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt6]
+  movsd                   xmm7, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt7]
 
   # restore int return register
-  mov                     rax, [rsp + 0x28]
+  mov                     rax, [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rax]
 
   # begin epilogue
   free_stack              SIZEOF_STACK_FRAME
@@ -256,29 +219,29 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
 
   # setup ProfilePlatformSpecificData structure
   xor                     r11, r11  # nullify r11
-  mov                     [rsp +  0x0], r11    # r11 is null     -- struct functionId field
-  save_reg_postrsp        rbp, 0x8             #                 -- struct rbp field
-  mov                     [rsp + 0x10], rbx    # caller rsp      -- struct probeRsp field
-  mov                     [rsp + 0x18], r10    # return address  -- struct ip field
-  mov                     [rsp + 0x20], rsi    #                 -- struct profiledRsp field
-  mov                     [rsp + 0x28], rax    # return value    -- struct rax field
-  mov                     [rsp + 0x30], r11    # r11 is null     -- struct hiddenArg field
-  movsd                   real8 ptr [rsp + 0x38], xmm0    #      -- struct flt0 field
-  movsd                   real8 ptr [rsp + 0x40], xmm1    #      -- struct flt1 field
-  movsd                   real8 ptr [rsp + 0x48], xmm2    #      -- struct flt2 field
-  movsd                   real8 ptr [rsp + 0x50], xmm3    #      -- struct flt3 field
-  movsd                   real8 ptr [rsp + 0x58], xmm4    #      -- struct flt4 field
-  movsd                   real8 ptr [rsp + 0x60], xmm5    #      -- struct flt5 field
-  movsd                   real8 ptr [rsp + 0x68], xmm6    #      -- struct flt6 field
-  movsd                   real8 ptr [rsp + 0x70], xmm7    #      -- struct flt7 field
-  mov                     [rsp + 0x78], r11     #                -- struct rdi field
-  mov                     [rsp + 0x80], r11     #                -- struct rsi field
-  mov                     [rsp + 0x88], rdx     #                -- struct rdx field
-  mov                     [rsp + 0x90], r11     #                -- struct rcx field
-  mov                     [rsp + 0x98], r11     #                -- struct r8 field
-  mov                     [rsp + 0xa0], r11     #                -- struct r9 field
-  mov                     r10, 0x2  # PROFILE_LEAVE
-  mov                     [rsp + 0xa8], r10d   # flags           -- struct flags field
+  mov                     [rsp +  PROFILE_PLATFORM_SPECIFIC_DATA__functionId], r11  # r11 is null
+  save_reg_postrsp        rbp, PROFILE_PLATFORM_SPECIFIC_DATA__rbp
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__probeRsp], rbx  # caller rsp
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__ip], r10  # return address
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__profiledRsp], rsi
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rax], rax  # return value
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg], r11  # r11 is null
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt0], xmm0
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt1], xmm1
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt2], xmm2
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt3], xmm3
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt4], xmm4
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt5], xmm5
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt6], xmm6
+  movsd                   real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt7], xmm7
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rdi], r11
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rsi], r11
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rdx], rdx
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rcx], r11
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__r8], r11
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__r9], r11
+  mov                     r10, PROFILE_LEAVE
+  mov                     [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flags], r10d
 
   END_PROLOGUE
 
@@ -287,17 +250,17 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
   call                    C_FUNC(ProfileTailcall)
 
   # restore fp return registers
-  movsd                   xmm0, real8 ptr [rsp + 0x38]    #      -- struct flt0 field
-  movsd                   xmm1, real8 ptr [rsp + 0x40]    #      -- struct flt1 field
-  movsd                   xmm2, real8 ptr [rsp + 0x48]    #      -- struct flt2 field
-  movsd                   xmm3, real8 ptr [rsp + 0x50]    #      -- struct flt3 field
-  movsd                   xmm4, real8 ptr [rsp + 0x58]    #      -- struct flt4 field
-  movsd                   xmm5, real8 ptr [rsp + 0x60]    #      -- struct flt5 field
-  movsd                   xmm6, real8 ptr [rsp + 0x68]    #      -- struct flt6 field
-  movsd                   xmm7, real8 ptr [rsp + 0x70]    #      -- struct flt7 field
+  movsd                   xmm0, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt0]
+  movsd                   xmm1, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt1]
+  movsd                   xmm2, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt2]
+  movsd                   xmm3, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt3]
+  movsd                   xmm4, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt4]
+  movsd                   xmm5, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt5]
+  movsd                   xmm6, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt6]
+  movsd                   xmm7, real8 ptr [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__flt7]
 
   # restore int return register
-  mov                     rax, [rsp + 0x28]
+  mov                     rax, [rsp + PROFILE_PLATFORM_SPECIFIC_DATA__rax]
 
   # begin epilogue
   free_stack              SIZEOF_STACK_FRAME

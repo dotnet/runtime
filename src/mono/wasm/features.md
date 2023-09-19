@@ -157,6 +157,8 @@ The following shows the structure for a Release build, but except the name in th
 
 Note: You can flatten the `_framework` folder away by putting `<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>` in a property group in the project file.
 
+Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../my-frontend/wwwroot</WasmAppDir>` in a property group in the project file.
+
 #### `_framework` folder structure
 - `dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
 - `dotnet.native.js` - is posix emulation layer provided by the [Emscripten](https://github.com/emscripten-core/emscripten) project
@@ -422,4 +424,4 @@ We have initial implementation of diagnostic server and [event pipe](https://lea
 
 At the moment it requires multi-threaded build of the runtime.
 
-For more details see [diagnostic-server.md](runtime\diagnostics\diagnostic-server.md)
+For more details see [diagnostic-server.md](runtime/diagnostics/diagnostic-server.md)

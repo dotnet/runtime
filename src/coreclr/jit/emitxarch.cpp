@@ -5485,6 +5485,13 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     {
         assert(!src->isContained()); // there must be one non-contained src
 
+        if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
+        {
+            GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
+            emitIns_S_R(ins, attr, src->GetRegNum(), lclVar->GetLclNum(), lclVar->GetLclOffs());
+            return;
+        }
+
         // ind, reg
         id = emitNewInstrAmd(attr, offset);
         emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
@@ -14098,11 +14105,11 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         {
             if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
             {
-                assert((reinterpret_cast<size_t>(addr) & 3) == 0);
+                assert(IS_ALIGNED(addr, 4));
             }
             else
             {
-                assert((reinterpret_cast<size_t>(addr) & (byteSize - 1)) == 0);
+                assert(IS_ALIGNED(addr, byteSize));
             }
         }
 #endif // DEBUG

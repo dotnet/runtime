@@ -2011,7 +2011,7 @@ void CodeGen::genEmitMachineCode()
 #if TRACK_LSRA_STATS
         if (JitConfig.DisplayLsraStats() == 3)
         {
-            compiler->m_pLinearScan->dumpLsraStatsSummary(jitstdout);
+            compiler->m_pLinearScan->dumpLsraStatsSummary(jitstdout());
         }
 #endif // TRACK_LSRA_STATS
 
@@ -2104,7 +2104,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
         genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
 
 #ifdef DEBUG
-    FILE* dmpf = jitstdout;
+    FILE* dmpf = jitstdout();
 
     compiler->opts.dmpHex = false;
     if (!strcmp(compiler->info.compMethodName, "<name of method you want the hex dump for"))
@@ -2157,7 +2157,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
         fflush(dmpf);
     }
 
-    if (dmpf != jitstdout)
+    if (dmpf != jitstdout())
     {
         fclose(dmpf);
     }

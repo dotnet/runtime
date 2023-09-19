@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
 
-cmake_policy(SET CMP0091 NEW)
-
 project(mono)
 
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 if (MSVC)
   # Also set by configurecompiler.cmake, which isn't used by mono yet
@@ -15,9 +16,6 @@ if (MSVC)
   if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
     add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif()
-
-  # FIXME: Remove the line below when https://github.com/dotnet/runtime/issues/91249 is fixed.
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>) # conversion from 'type1' to 'type2', possible loss of data
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
@@ -259,6 +257,8 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "wasi")
   add_definitions(-DDISABLE_SOCKET_TRANSPORT)
   add_definitions(-DDISABLE_EGD_SOCKET)
   add_definitions(-DDISABLE_EVENTPIPE)
+  add_compile_options(-Wno-strict-prototypes)
+  add_compile_options(-Wno-unused-but-set-variable)
   set(ENABLE_PERFTRACING 0)
   set(DISABLE_SHARED_LIBS 1)
   set(INTERNAL_ZLIB 1)
@@ -523,13 +523,8 @@ include(configure)
 ######################################
 
 if(GCC)
-  if(HOST_WASI)
-    # WASI SDK only includes some required definitions if the C version is at least this new
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-  else()
-    # We require C99 with some GNU extensions, e.g. `linux` macro
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-  endif()
+  # We require C11 with some GNU extensions, e.g. `linux` macro
+  set(CMAKE_C_EXTENSIONS ON)
 
   # Turn off floating point expression contraction because it is considered a value changing
   # optimization in the IEEE 754 specification and is therefore considered unsafe.
@@ -833,7 +828,7 @@ set(EGLIB_GSSIZE "ptrdiff_t")
 #
 
 ######################################
-# DEBUG BUILD CHECKS
+# CHECKED BUILD CHECKS
 ######################################
 function(process_checked_build)
   string(REPLACE "," ";" tmp1 "${CHECKED_BUILD}")
@@ -843,17 +838,15 @@ function(process_checked_build)
   endforeach(arg)
 endfunction()
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  # if no explicit -DCHECKED_BUILD=args option, just do ENABLE_CHECKED_BUILD_PRIVATE_TYPES
-  if (CHECKED_BUILD)
-    set(ENABLE_CHECKED_BUILD 1)
-    process_checked_build()
-  else()
-    set(ENABLE_CHECKED_BUILD 1)
-    set(ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1)
-  endif()
+if(CHECKED_BUILD)
+  set(ENABLE_CHECKED_BUILD 1)
+  process_checked_build()
+elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # if no explicit -DCHECKED_BUILD=args option and we're building debug, just do ENABLE_CHECKED_BUILD_PRIVATE_TYPES
+  set(ENABLE_CHECKED_BUILD 1)
+  set(ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1)
 endif()
-### End of debug build checks
+### End of checked build checks
 
 ######################################
 # COMPONENT BUILD CHECKS
