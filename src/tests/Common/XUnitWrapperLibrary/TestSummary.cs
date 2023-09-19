@@ -5,7 +5,6 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
-using System.Xml;
 namespace XUnitWrapperLibrary;
 
 public class TestSummary
@@ -44,7 +43,7 @@ public class TestSummary
                               + $@" method=""{MethodName}"" time=""{Duration.TotalSeconds:F6}""");
 
             string outputElement = !string.IsNullOrWhiteSpace(Output)
-                                 ? $"<output><![CDATA[{XmlConvert.EncodeName(Output)}]]></output>"
+                                 ? $"<output><![CDATA[{Output}]]></output>"
                                  : string.Empty;
 
             if (Exception is not null)
@@ -97,10 +96,10 @@ public class TestSummary
         }
     }
 
-    public int PassedTests { get; private set; }
-    public int FailedTests { get; private set; }
-    public int SkippedTests { get; private set; }
-    public int TotalTests { get; private set; }
+    public int PassedTests { get; private set; } = 0;
+    public int FailedTests { get; private set; } = 0;
+    public int SkippedTests { get; private set; } = 0;
+    public int TotalTests { get; private set; } = 0;
 
     private readonly List<TestResult> _testResults = new();
     private DateTime _testRunStart = DateTime.Now;
