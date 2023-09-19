@@ -1538,6 +1538,24 @@ extern "C" void QCALLTYPE AssemblyNative_SetSymbolBytes(Assembly * pAssembly, BY
     END_QCALL;
 }
 
+extern "C" Assembly * QCALLTYPE AssemblyNative_LoadFromPEImage(QCall::ObjectHandleOnStack pBinder, PEImage * pPEImage, BOOL excludeAppPaths)
+{
+    QCALL_CONTRACT;
+
+    Assembly* result = NULL;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    ASSEMBLYBINDERREF binder = (ASSEMBLYBINDERREF)pBinder.Get();
+    result = AssemblyNative::LoadFromPEImage(binder, pPEImage, excludeAppPaths);
+
+    END_QCALL;
+
+    return result;
+}
+
 extern "C" IMDInternalImport * QCALLTYPE PEImage_BinderAcquireImport(PEImage * pPEImage, DWORD * pdwPAFlags)
 {
     QCALL_CONTRACT;

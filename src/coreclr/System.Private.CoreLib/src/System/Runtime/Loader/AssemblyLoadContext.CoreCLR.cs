@@ -15,9 +15,8 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetDefaultAssemblyBinder")]
         internal static partial IntPtr GetDefaultAssemblyBinder();
 
-        // Foo
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern Internal.Runtime.Binder.IVMAssembly AssemblyNative_LoadFromPEImage(Internal.Runtime.Binder.AssemblyBinder pBinder, IntPtr pPEImage, bool excludeAppPaths = false);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPEImage")]
+        private static partial IntPtr LoadFromPEImage(ObjectHandleOnStack pBinder, IntPtr pPEImage, [MarshalAs(UnmanagedType.Bool)] bool excludeAppPaths = false);
 
         private static Internal.Runtime.Binder.AssemblyBinder InitializeAssemblyLoadContext(GCHandle ptrAssemblyLoadContext, bool representsTPALoadContext, bool isCollectible)
         {
@@ -79,7 +78,7 @@ namespace System.Runtime.Loader
                 }
 
                 // Pass the stream based assembly as IL in an attempt to bind and load it
-                IntPtr loadedAssembly = AssemblyNative_LoadFromPEImage(assemblyBinder, pILImage);
+                IntPtr loadedAssembly = LoadFromPEImage(ObjectHandleOnStack.Create(ref assemblyBinder), pILImage);
                 RuntimeAssembly? retAssembly = null;
                 Internal.Runtime.Binder.AssemblyBinder.Assembly_GetExposedObject(loadedAssembly, ObjectHandleOnStack.Create(ref retAssembly));
                 Debug.Assert(retAssembly != null);
@@ -152,8 +151,11 @@ namespace System.Runtime.Loader
                         throw new BadImageFormatException($"Cannot load a mixed assembly into a collectible AssemblyLoadContext. The format of the file '{ilPath}' is invalid.");
                     }
 
-                    Internal.Runtime.Binder.IVMAssembly loadedAssembly = AssemblyNative_LoadFromPEImage(assemblyBinder, pILImage);
-                    return loadedAssembly.GetExposedObject();
+                    IntPtr loadedAssembly = LoadFromPEImage(ObjectHandleOnStack.Create(ref assemblyBinder), pILImage);
+                    RuntimeAssembly? retAssembly = null;
+                    Internal.Runtime.Binder.AssemblyBinder.Assembly_GetExposedObject(loadedAssembly, ObjectHandleOnStack.Create(ref retAssembly));
+                    Debug.Assert(retAssembly != null);
+                    return retAssembly;
 
                     // LOG((LF_CLASSLOADER,
                     //       LL_INFO100,
@@ -222,8 +224,11 @@ namespace System.Runtime.Loader
                     throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
 
                 // Pass the in memory module as IL in an attempt to bind and load it
-                Internal.Runtime.Binder.IVMAssembly loadedAssembly = AssemblyNative_LoadFromPEImage(assemblyBinder, pILImage);
-                return loadedAssembly.GetExposedObject();
+                IntPtr loadedAssembly = LoadFromPEImage(ObjectHandleOnStack.Create(ref assemblyBinder), pILImage);
+                RuntimeAssembly? retAssembly = null;
+                Internal.Runtime.Binder.AssemblyBinder.Assembly_GetExposedObject(loadedAssembly, ObjectHandleOnStack.Create(ref retAssembly));
+                Debug.Assert(retAssembly != null);
+                return retAssembly;
 
                 // LOG((LF_CLASSLOADER,
                 //       LL_INFO100,

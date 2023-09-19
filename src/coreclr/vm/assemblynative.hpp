@@ -159,6 +159,8 @@ extern "C" PEImage * QCALLTYPE AssemblyNative_GetPEImage(Assembly * pAssembly);
 
 extern "C" void QCALLTYPE AssemblyNative_SetSymbolBytes(Assembly * pAssembly, BYTE* ptrSymbolArray, int32_t cbSymbolArrayLength);
 
+extern "C" Assembly * QCALLTYPE AssemblyNative_LoadFromPEImage(QCall::ObjectHandleOnStack pBinder, PEImage * pPEImage, BOOL excludeAppPaths);
+
 extern "C" IMDInternalImport * QCALLTYPE PEImage_BinderAcquireImport(PEImage * pPEImage, DWORD * pdwPAFlags);
 
 extern "C" HRESULT QCALLTYPE PEImage_BinderAcquirePEImage(LPCWSTR wszAssemblyPath, PEImage * *ppPEImage, BundleFileLocation bundleFileLocation);
