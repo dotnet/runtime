@@ -3700,10 +3700,10 @@
             <Issue>System.Diagnostics.Process is not supported</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**">
-            <Issue>needs triage</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
         </ExcludeList>
     </ItemGroup>
 
