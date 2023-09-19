@@ -18,8 +18,7 @@
       "description": ".NET WebAssembly experimental tooling for net8.0",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Templates.net8",
-        "Microsoft.NETCore.App.Runtime.Mono.multithread.net8.browser-wasm",
-        "Microsoft.NETCore.App.Runtime.Mono.perftrace.net8.browser-wasm"
+        "Microsoft.NETCore.App.Runtime.Mono.multithread.net8.browser-wasm"
       ],
       "extends": [ "wasm-tools-net8" ],
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64" ]
@@ -449,13 +448,6 @@
       "version": "${PackageVersionNet8}",
       "alias-to": {
         "any": "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm"
-      }
-    },
-    "Microsoft.NETCore.App.Runtime.Mono.perftrace.net8.browser-wasm" : {
-      "kind": "framework",
-      "version": "${PackageVersionNet8}",
-      "alias-to": {
-        "any": "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm"
       }
     },
     "Microsoft.NETCore.App.Runtime.net8.win-x64" : {
