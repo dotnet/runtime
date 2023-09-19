@@ -25292,16 +25292,9 @@ bool GenTreeHWIntrinsic::OperIsCreateScalarUnsafe() const
 // Return Value:
 //    Whether "this" is a bitwise logic intrinsic node.
 //
-bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
+bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic()
 {
-#if defined(TARGET_XARCH)
-    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
-    return Compiler::gtIsBitwiseIntrinsic(intrinsicId, GT_AND) || Compiler::gtIsBitwiseIntrinsic(intrinsicId, GT_OR) ||
-           Compiler::gtIsBitwiseIntrinsic(intrinsicId, GT_XOR) ||
-           Compiler::gtIsBitwiseIntrinsic(intrinsicId, GT_AND_NOT);
-#else // !TARGET_XARCH
-    return false;
-#endif
+    return HWOperGet() == GT_AND || HWOperGet() == GT_OR || HWOperGet() == GT_XOR || HWOperGet() == GT_AND_NOT;
 }
 
 //------------------------------------------------------------------------------
@@ -25501,6 +25494,8 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
         case NI_SSE2_And:
         case NI_AVX_And:
         case NI_AVX2_And:
+        case NI_AVX512F_And:
+        case NI_AVX512DQ_And:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_And:
 #endif
@@ -25520,6 +25515,8 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
         case NI_SSE2_Xor:
         case NI_AVX_Xor:
         case NI_AVX2_Xor:
+        case NI_AVX512F_Xor:
+        case NI_AVX512DQ_Xor:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Xor:
 #endif
@@ -25527,6 +25524,29 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
             return GT_XOR;
         }
 
+#if defined(TARGET_XARCH)
+        case NI_SSE_Or:
+        case NI_SSE2_Or:
+        case NI_AVX_Or:
+        case NI_AVX2_Or:
+        case NI_AVX512F_Or:
+        case NI_AVX512DQ_Or:
+#endif
+        {
+            return GT_OR;
+        }
+        
+#if defined(TARGET_XARCH)
+        case NI_SSE_AndNot:
+        case NI_SSE2_AndNot:
+        case NI_AVX_AndNot:
+        case NI_AVX2_AndNot:
+        case NI_AVX512F_AndNot:
+        case NI_AVX512DQ_AndNot:
+#endif 
+        {
+            return GT_AND_NOT;
+        }
         // TODO: Handle other cases
 
         default:
@@ -26319,7 +26339,7 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree
 // with given logic nodes on the input.
 //
 // Return value: the value of the ternary control byte.
-uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) const
+uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second)
 {
     // we assume we have a structure like:
     /*
@@ -26351,15 +26371,15 @@ uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) co
     uint8_t AB  = 0;
     uint8_t ABC = 0;
 
-    if (Compiler::gtIsBitwiseIntrinsic(firstLogic, GT_AND))
+    if (HWOperGet() == GT_AND)
     {
         AB = A & B;
     }
-    else if (Compiler::gtIsBitwiseIntrinsic(firstLogic, GT_OR))
+    else if (HWOperGet() == GT_OR)
     {
         AB = A | B;
     }
-    else if (Compiler::gtIsBitwiseIntrinsic(firstLogic, GT_XOR))
+    else if (HWOperGet() == GT_XOR)
     {
         AB = A ^ B;
     }
@@ -26368,15 +26388,15 @@ uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) co
         unreached();
     }
 
-    if (Compiler::gtIsBitwiseIntrinsic(secondLogic, GT_AND))
+    if (second->HWOperGet() == GT_AND)
     {
         ABC = AB & C;
     }
-    else if (Compiler::gtIsBitwiseIntrinsic(secondLogic, GT_OR))
+    else if (second->HWOperGet() == GT_OR)
     {
         ABC = AB | C;
     }
-    else if (Compiler::gtIsBitwiseIntrinsic(secondLogic, GT_XOR))
+    else if (second->HWOperGet() == GT_XOR)
     {
         ABC = AB ^ C;
     }

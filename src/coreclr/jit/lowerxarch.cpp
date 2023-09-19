@@ -1707,9 +1707,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                if (Compiler::gtIsBitwiseIntrinsic(second->AsHWIntrinsic()->GetHWIntrinsicId(), GT_AND_NOT))
+                if (second->AsHWIntrinsic()->HWOperGet() == GT_AND_NOT)
                 {
-                    // ANDNOT logic cannot be optimized by the ternary node.
+                    // currently ANDNOT logic cannot be optimized by the ternary node.
                     break;
                 }
                 GenTree* op3 = second->AsHWIntrinsic()->Op(1) == node ? second->AsHWIntrinsic()->Op(2)
