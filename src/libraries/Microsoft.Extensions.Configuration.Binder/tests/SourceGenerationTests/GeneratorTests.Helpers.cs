@@ -85,6 +85,14 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ServiceCollection,
         }
 
+        private static async Task VerifyThatSourceIsGenerated(string testSourceCode)
+        {
+            var (d, r) = await RunGenerator(testSourceCode);
+            Assert.Equal(1, r.Length);
+            Assert.Empty(d);
+            Assert.True(r[0].SourceText.Lines.Count > 10);
+        }
+
         private static async Task VerifyAgainstBaselineUsingFile(
             string filename,
             string testSourceCode,
@@ -105,8 +113,11 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 #if UPDATE_BASELINES
             if (!success)
             {
-                string? repoRootDir = Environment.GetEnvironmentVariable("RepoRootDir");
-                Assert.True(repoRootDir is not null, "To update baselines, specifiy the root runtime repo dir");
+                const string envVarName = "RepoRootDir"
+                string errMessage = $"To update baselines, specify a '{envVarName}' environment variable. See this assembly's README.md doc for more details."
+
+                string? repoRootDir = Environment.GetEnvironmentVariable(envVarName);
+                Assert.True(repoRootDir is not null, errMessage);
 
                 IEnumerable<string> lines = r[0].SourceText.Lines.Select(l => l.ToString());
                 string source = string.Join(Environment.NewLine, lines).TrimEnd(Environment.NewLine.ToCharArray()) + Environment.NewLine;
@@ -129,7 +140,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             IEnumerable<Assembly>? references = null)
         {
             using var workspace = RoslynTestUtils.CreateTestWorkspace();
-            CSharpParseOptions parseOptions = new CSharpParseOptions(langVersion).WithFeatures(new[] { new KeyValuePair<string, string>("InterceptorsPreview", "") });
+            CSharpParseOptions parseOptions = new CSharpParseOptions(langVersion).WithFeatures(new[] {
+                new KeyValuePair<string, string>("InterceptorsPreview", ""),
+                new KeyValuePair<string, string>("InterceptorsPreviewNamespaces", "Microsoft.Extensions.Configuration.Binder.SourceGeneration")
+            });
 
             Project proj = RoslynTestUtils.CreateTestProject(workspace, references ?? s_compilationAssemblyRefs, langVersion: langVersion)
                 .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Annotations))
@@ -145,7 +159,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             if (validateOutputCompDiags)
             {
-                Assert.False(outputCompilation.GetDiagnostics().Any(d => d.Severity > DiagnosticSeverity.Info));
+                ImmutableArray<Diagnostic> diagnostics = outputCompilation.GetDiagnostics();
+                Assert.False(diagnostics.Any(d => d.Severity > DiagnosticSeverity.Info));
             }
 
             return (runResult.Results[0].Diagnostics, runResult.Results[0].GeneratedSources);

@@ -1,6 +1,6 @@
 <Project>
 
-  <Import Project="..\..\..\Directory.Build.props" />
+  <Import Project="..\Directory.Build.props" />
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>

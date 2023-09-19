@@ -951,7 +951,7 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     ErrorModeHolder errorMode{};
     {
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
-        hMod = WszLoadLibraryEx(lpLibFileName, hFile, dwFlags);
+        hMod = WszLoadLibrary(lpLibFileName, hFile, dwFlags);
         *pLastError = GetLastError();
     }
     return hMod;

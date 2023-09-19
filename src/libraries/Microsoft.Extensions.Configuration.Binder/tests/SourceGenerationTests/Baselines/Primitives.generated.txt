@@ -45,14 +45,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             var typedObj = (Program.MyClass)instance;
-            BindCore(configuration, ref typedObj, binderOptions: null);
+            BindCore(configuration, ref typedObj, defaultValueIfNotFound: false, binderOptions: null);
         }
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Prop0", "Prop1", "Prop2", "Prop3", "Prop4", "Prop5", "Prop6", "Prop8", "Prop9", "Prop10", "Prop13", "Prop14", "Prop15", "Prop16", "Prop17", "Prop19", "Prop20", "Prop21", "Prop23", "Prop24", "Prop25", "Prop26", "Prop27", "Prop7", "Prop11", "Prop12", "Prop18", "Prop22", "Prop28", "Prop29", "Prop30" });
 
-        public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
@@ -60,65 +60,119 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop0 = ParseBool(value0, () => configuration.GetSection("Prop0").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop0 = default;
+            }
 
             if (configuration["Prop1"] is string value1)
             {
                 instance.Prop1 = ParseByte(value1, () => configuration.GetSection("Prop1").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop1 = default;
             }
 
             if (configuration["Prop2"] is string value2)
             {
                 instance.Prop2 = ParseSbyte(value2, () => configuration.GetSection("Prop2").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop2 = default;
+            }
 
             if (configuration["Prop3"] is string value3)
             {
                 instance.Prop3 = ParseChar(value3, () => configuration.GetSection("Prop3").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop3 = default;
             }
 
             if (configuration["Prop4"] is string value4)
             {
                 instance.Prop4 = ParseDouble(value4, () => configuration.GetSection("Prop4").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop4 = default;
+            }
 
-            instance.Prop5 = configuration["Prop5"]!;
+            if (configuration["Prop5"] is string value5)
+            {
+                instance.Prop5 = value5;
+            }
 
             if (configuration["Prop6"] is string value6)
             {
                 instance.Prop6 = ParseInt(value6, () => configuration.GetSection("Prop6").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop6 = default;
             }
 
             if (configuration["Prop8"] is string value7)
             {
                 instance.Prop8 = ParseShort(value7, () => configuration.GetSection("Prop8").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop8 = default;
+            }
 
             if (configuration["Prop9"] is string value8)
             {
                 instance.Prop9 = ParseLong(value8, () => configuration.GetSection("Prop9").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop9 = default;
             }
 
             if (configuration["Prop10"] is string value9)
             {
                 instance.Prop10 = ParseFloat(value9, () => configuration.GetSection("Prop10").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop10 = default;
+            }
 
             if (configuration["Prop13"] is string value10)
             {
                 instance.Prop13 = ParseUshort(value10, () => configuration.GetSection("Prop13").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop13 = default;
             }
 
             if (configuration["Prop14"] is string value11)
             {
                 instance.Prop14 = ParseUint(value11, () => configuration.GetSection("Prop14").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop14 = default;
+            }
 
             if (configuration["Prop15"] is string value12)
             {
                 instance.Prop15 = ParseUlong(value12, () => configuration.GetSection("Prop15").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop15 = default;
+            }
 
-            instance.Prop16 = configuration["Prop16"]!;
+            if (configuration["Prop16"] is string value13)
+            {
+                instance.Prop16 = value13;
+            }
 
             if (configuration["Prop17"] is string value14)
             {
@@ -129,25 +183,45 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop19 = ParseDateTime(value15, () => configuration.GetSection("Prop19").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop19 = default;
+            }
 
             if (configuration["Prop20"] is string value16)
             {
                 instance.Prop20 = ParseDateTimeOffset(value16, () => configuration.GetSection("Prop20").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop20 = default;
             }
 
             if (configuration["Prop21"] is string value17)
             {
                 instance.Prop21 = ParseDecimal(value17, () => configuration.GetSection("Prop21").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop21 = default;
+            }
 
             if (configuration["Prop23"] is string value18)
             {
                 instance.Prop23 = ParseTimeSpan(value18, () => configuration.GetSection("Prop23").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop23 = default;
+            }
 
             if (configuration["Prop24"] is string value19)
             {
                 instance.Prop24 = ParseGuid(value19, () => configuration.GetSection("Prop24").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop24 = default;
             }
 
             if (configuration["Prop25"] is string value20)
@@ -164,30 +238,54 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop27 = ParseEnum<DayOfWeek>(value22, () => configuration.GetSection("Prop27").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop27 = default;
+            }
 
             if (configuration["Prop7"] is string value23)
             {
                 instance.Prop7 = ParseInt128(value23, () => configuration.GetSection("Prop7").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop7 = default;
             }
 
             if (configuration["Prop11"] is string value24)
             {
                 instance.Prop11 = ParseHalf(value24, () => configuration.GetSection("Prop11").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop11 = default;
+            }
 
             if (configuration["Prop12"] is string value25)
             {
                 instance.Prop12 = ParseUInt128(value25, () => configuration.GetSection("Prop12").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop12 = default;
             }
 
             if (configuration["Prop18"] is string value26)
             {
                 instance.Prop18 = ParseDateOnly(value26, () => configuration.GetSection("Prop18").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop18 = default;
+            }
 
             if (configuration["Prop22"] is string value27)
             {
                 instance.Prop22 = ParseTimeOnly(value27, () => configuration.GetSection("Prop22").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop22 = default;
             }
 
             if (configuration["Prop28"] is string value28)
@@ -199,10 +297,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 instance.Prop29 = ParseInt(value29, () => configuration.GetSection("Prop29").Path);
             }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop29 = default;
+            }
 
             if (configuration["Prop30"] is string value30)
             {
                 instance.Prop30 = ParseDateTime(value30, () => configuration.GetSection("Prop30").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop30 = default;
             }
         }
 

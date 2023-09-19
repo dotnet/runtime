@@ -8909,6 +8909,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             break;
 #endif
 
+        case GT_COMMA:
+            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
+            {
+                typ = tree->gtType = TYP_VOID;
+            }
+
+            break;
+
         default:
             break;
     }
@@ -10788,8 +10796,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             return node;
         }
 #if defined(TARGET_XARCH)
-        case NI_AVX512F_Add:
-        case NI_AVX512BW_Add:
         case NI_AVX512F_And:
         case NI_AVX512DQ_And:
         case NI_AVX512F_AndNot:
@@ -10831,13 +10837,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             switch (intrinsicId)
             {
-                case NI_AVX512F_Add:
-                case NI_AVX512BW_Add:
-                {
-                    maskIntrinsicId = NI_AVX512F_AddMask;
-                    break;
-                }
-
                 case NI_AVX512F_And:
                 case NI_AVX512DQ_And:
                 {
@@ -11020,7 +11019,16 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
 
-            if (lhs == nullptr || rhs == nullptr)
+            if ((lhs == nullptr) || (rhs == nullptr))
+            {
+                break;
+            }
+
+            // Filter out side effecting cases for several reasons:
+            // 1. gtNewSimdBinOpNode may swap operand order.
+            // 2. The code above will swap operand order.
+            // 3. The code above does not handle GTF_REVERSE_OPS.
+            if (((lhs->gtFlags | rhs->gtFlags) & GTF_ALL_EFFECT) != 0)
             {
                 break;
             }

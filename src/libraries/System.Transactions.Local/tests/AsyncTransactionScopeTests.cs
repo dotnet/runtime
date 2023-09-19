@@ -437,6 +437,7 @@ namespace System.Transactions.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true, false, null)]
         [InlineData(true, true, null)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void AsyncTSAndDependantClone(bool requiresNew, bool synchronizeScope, string txId)
         {
             string txId1 = null;
@@ -527,6 +528,7 @@ namespace System.Transactions.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true, false, null)]
         [InlineData(true, true, null)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void NestedAsyncTSAndDependantClone(bool parentrequiresNew, bool childRequiresNew, string txId)
         {
             string txId1;
@@ -1107,6 +1109,7 @@ namespace System.Transactions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void VerifyBYOTOpenConnSimulationTest()
         {
             // Create threads to do work

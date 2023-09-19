@@ -15,6 +15,112 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         public async Task Bind() =>
             await VerifyAgainstBaselineUsingFile("Bind.generated.txt", BindCallSampleCode, extType: ExtensionClassType.ConfigurationBinder);
 
+        [Theory]
+        [InlineData("ConfigurationBinder.Bind(instance: configObj, configuration: config);")]
+        [InlineData("""ConfigurationBinder.Bind(key: "", instance: configObj, configuration: config);""")]
+        [InlineData("""ConfigurationBinder.Bind(instance: configObj, key: "", configuration: config);""")]
+        [InlineData("ConfigurationBinder.Bind(configureOptions: _ => { }, configuration: config, instance: configObj);")]
+        [InlineData("ConfigurationBinder.Bind(configuration: config, configureOptions: _ => { }, instance: configObj);")]
+        public async Task Bind_NamedParameters_OutOfOrder(string row)
+        {
+            string source = $$"""
+                        using System.Collections.Generic;
+                        using Microsoft.Extensions.Configuration;
+
+                        public class Program
+                        {
+                            public static void Main()
+                            {
+                                ConfigurationBuilder configurationBuilder = new();
+                                IConfigurationRoot config = configurationBuilder.Build();
+
+                                MyClass configObj = new();
+                                {{row}}
+                            }
+
+                            public class MyClass
+                            {
+                                public string MyString { get; set; }
+                                public int MyInt { get; set; }
+                                public List<int> MyList { get; set; }
+                                public Dictionary<string, string> MyDictionary { get; set; }
+                            }
+                        }
+                    """;
+
+            await VerifyThatSourceIsGenerated(source);
+        }
+
+        [Theory]
+        [InlineData("var obj = ConfigurationBinder.Get(type: typeof(MyClass), configuration: config);")]
+        [InlineData("var obj = ConfigurationBinder.Get<MyClass>(configureOptions: _ => { }, configuration: config);")]
+        [InlineData("var obj = ConfigurationBinder.Get(configureOptions: _ => { }, type: typeof(MyClass), configuration: config);")]
+        [InlineData("var obj =  ConfigurationBinder.Get(type: typeof(MyClass), configureOptions: _ => { }, configuration: config);")]
+        public async Task Get_TypeOf_NamedParametersOutOfOrder(string row)
+        {
+            string source = $$"""
+                        using System.Collections.Generic;
+                        using Microsoft.Extensions.Configuration;
+
+                        public class Program
+                        {
+                            public static void Main()
+                            {
+                                ConfigurationBuilder configurationBuilder = new();
+                                IConfigurationRoot config = configurationBuilder.Build();
+
+                                MyClass configObj = new();
+                                {{row}}
+                            }
+
+                            public class MyClass
+                            {
+                                public string MyString { get; set; }
+                                public int MyInt { get; set; }
+                                public List<int> MyList { get; set; }
+                                public Dictionary<string, string> MyDictionary { get; set; }
+                            }
+                        }
+                    """;
+
+            await VerifyThatSourceIsGenerated(source);
+        }
+
+        [Theory]
+        [InlineData("""var str = ConfigurationBinder.GetValue(key: "key", configuration: config, type: typeof(string));""")]
+        [InlineData("""var str = ConfigurationBinder.GetValue<string>(key: "key", configuration: config);""")]
+        [InlineData("""var str = ConfigurationBinder.GetValue<string>(key: "key", defaultValue: "default", configuration: config);""")]
+        [InlineData("""var str = ConfigurationBinder.GetValue<string>(configuration: config, key: "key", defaultValue: "default");""")]
+        [InlineData("""var str = ConfigurationBinder.GetValue(defaultValue: "default", key: "key", configuration: config, type: typeof(string));""")]
+        [InlineData("""var str = ConfigurationBinder.GetValue(defaultValue: "default", type: typeof(string), key: "key", configuration: config);""")]
+        public async Task GetValue_NamedParametersOutOfOrder(string row)
+        {
+            string source = $$"""
+                        using System.Collections.Generic;
+                        using Microsoft.Extensions.Configuration;
+
+                        public class Program
+                        {
+                            public static void Main()
+                            {
+                                ConfigurationBuilder configurationBuilder = new();
+                                IConfigurationRoot config = configurationBuilder.Build();
+                                {{row}}
+                            }
+
+                            public class MyClass
+                            {
+                                public string MyString { get; set; }
+                                public int MyInt { get; set; }
+                                public List<int> MyList { get; set; }
+                                public Dictionary<string, string> MyDictionary { get; set; }
+                            }
+                        }
+                    """;
+
+            await VerifyThatSourceIsGenerated(source);
+        }
+
         [Fact]
         public async Task Bind_Instance()
         {
@@ -115,6 +221,49 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     """;
 
             await VerifyAgainstBaselineUsingFile("Bind_Key_Instance.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        [Fact]
+        public async Task Bind_CanParseTargetConfigType_FromMethodParam()
+        {
+            string source = """
+                using System;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        BindOptions(config, new MyClass0());
+                        BindOptions(config, new MyClass1(), _ => { });
+                        BindOptions(config, "", new MyClass2());
+                    }
+
+                    private static void BindOptions(IConfiguration config, MyClass0 instance)
+                    {
+                        config.Bind(instance);
+                    }
+
+                    private static void BindOptions(IConfiguration config, MyClass1 instance, Action<BinderOptions>? configureOptions)
+                    {
+                        config.Bind(instance, configureOptions);
+                    }
+
+                    private static void BindOptions(IConfiguration config, string path, MyClass2 instance)
+                    {
+                        config.Bind(path, instance);
+                    }
+
+                    public class MyClass0 { }
+                    public class MyClass1 { }
+                    public class MyClass2 { }
+                }
+                """;
+
+            await VerifyAgainstBaselineUsingFile("Bind_ParseTypeFromMethodParam.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
         [Fact]
@@ -621,6 +770,55 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 Assert.Equal(3, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
                 Assert.Equal(6, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
             });
+        }
+
+        [Fact]
+        public async Task MinimalGenerationIfNoBindableMembers()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
+                
+                public class Program
+                {
+                	public static void Main()
+                	{
+                		ConfigurationBuilder configurationBuilder = new();
+                		IConfiguration configuration = configurationBuilder.Build();
+
+                        TypeWithNoMembers obj = new();
+                        configuration.Bind(obj);
+
+                        TypeWithNoMembers_Wrapper obj2 = new();
+                        configuration.Bind(obj2);
+
+                        List<AbstractType_CannotInit> obj3 = new();
+                        configuration.Bind(obj3);
+                    }
+                }
+
+                public class TypeWithNoMembers
+                {
+                }
+
+                public class TypeWithNoMembers_Wrapper
+                {
+                    public TypeWithNoMembers Member { get; set; }
+                }
+
+                public abstract class AbstractType_CannotInit
+                {
+                }
+                """;
+
+            await VerifyAgainstBaselineUsingFile(
+                "EmptyConfigType.generated.txt",
+                source,
+                assessDiagnostics: (d) =>
+                {
+                    Assert.Equal(2, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+                },
+                validateOutputCompDiags: false);
         }
     }
 }

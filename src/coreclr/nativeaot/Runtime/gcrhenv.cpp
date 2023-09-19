@@ -489,23 +489,6 @@ void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, voi
     UNREFERENCED_PARAMETER(pContext);
 }
 
-// Enumerate all the object roots located in handle tables. It is only safe to call this from the context of a
-// GC.
-//
-// static
-void RedhawkGCInterface::ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext)
-{
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
-    ScanRootsContext sContext;
-    sContext.m_pfnCallback = pfnScanCallback;
-    sContext.m_pContext = pContext;
-    Ref_ScanPointers(2, 2, (EnumGcRefScanContext*)&sContext, ScanRootsCallbackWrapper);
-#else
-    UNREFERENCED_PARAMETER(pfnScanCallback);
-    UNREFERENCED_PARAMETER(pContext);
-#endif // !DACCESS_COMPILE
-}
-
 #ifndef DACCESS_COMPILE
 
 uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)

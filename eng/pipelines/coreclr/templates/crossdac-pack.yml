@@ -70,6 +70,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'CrossDacPackagingLogs'
+        artifactName: 'CrossDacPackagingLogs_Attempt$(System.JobAttempt)'
       continueOnError: true
       condition: always()
