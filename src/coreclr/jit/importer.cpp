@@ -11387,19 +11387,17 @@ SPILLSTACK:
         {
             GenTree* tree = verCurrentState.esStack[level].val;
 
-            /* VC generates code where it pushes a byref from one branch, and an int (ldc.i4 0) from
-               the other. This should merge to a byref in unverifiable code.
-               However, if the branch which leaves the TYP_I_IMPL on the stack is imported first, the
-               successor would be imported assuming there was a TYP_I_IMPL on
-               the stack. Thus the value would not get GC-tracked. Hence,
-               change the temp to TYP_BYREF and reimport the successors.
-               Note: We should only allow this in unverifiable code.
-            */
+            // VC generates code where it pushes a byref from one branch, and an int (ldc.i4 0) from
+            // the other. This should merge to a byref in unverifiable code.
+            // However, if the branch which leaves the TYP_I_IMPL on the stack is imported first, the
+            // successor would be imported assuming there was a TYP_I_IMPL on
+            // the stack. Thus the value would not get GC-tracked. Hence,
+            // change the temp to TYP_BYREF and reimport the clique.
+            // Note: We should only allow this in unverifiable code.
             if (tree->gtType == TYP_BYREF && lvaTable[tempNum].lvType == TYP_I_IMPL)
             {
                 lvaTable[tempNum].lvType = TYP_BYREF;
-                impReimportMarkSuccessors(block);
-                markImport = true;
+                reimportSpillClique      = true;
             }
 
 #ifdef TARGET_64BIT
