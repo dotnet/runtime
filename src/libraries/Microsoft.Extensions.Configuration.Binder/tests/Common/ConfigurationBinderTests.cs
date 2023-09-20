@@ -12,6 +12,7 @@ using System.Reflection;
 using Microsoft.Extensions.Configuration;
 #endif
 using Microsoft.Extensions.Configuration.Test;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Extensions
@@ -2403,6 +2404,28 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             // Binding to a new section should not set the value to null.
             config.GetSection("A").Bind(instance);
             Assert.Equal("localhost", instance.ConnectionString);
+        }
+
+        [Fact]
+        public void CanBindToMockConfiugrationSection()
+        {
+            double expectedLatitude = 42.0002d;
+            var mockConfSection = new Mock<IConfigurationSection>();
+            var latitudeSection = new Mock<IConfigurationSection>();
+            latitudeSection.Setup(m => m.Value).Returns(expectedLatitude.ToString());
+
+            // only mock one of the two properties, the other will return a null section.
+            // runtime binder uses GetSection
+            mockConfSection.Setup(config => config.GetSection(nameof(GeolocationClass.Latitude))).Returns(latitudeSection.Object);
+            // source gen uses indexer
+            mockConfSection.Setup(config => config[nameof(GeolocationClass.Latitude)]).Returns(latitudeSection.Object?.Value);
+            mockConfSection.Setup(config => config.GetChildren()).Returns(new[] { latitudeSection.Object });
+
+            GeolocationClass result = new();
+            mockConfSection.Object.Bind(result);
+
+            Assert.Equal(expectedLatitude, result.Latitude);
+            Assert.Equal(default(double), result.Longitude);
         }
     }
 }
