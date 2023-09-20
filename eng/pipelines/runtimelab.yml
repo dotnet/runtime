@@ -65,7 +65,7 @@ extends:
               timeoutInMinutes: 100
               testGroup: innerloop
               buildArgs: -s clr+libs+host+packs -c debug -runtimeConfiguration Checked
-              extraStepsTemplates:
+              postBuildSteps:
                 - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
                   parameters:
                     uploadRuntimeTests: true
@@ -84,7 +84,7 @@ extends:
             timeoutInMinutes: 100
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             testGroup: innerloop
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
                 parameters:
                   uploadLibrariesTests: ${{ eq(variables.isOfficialBuild, false) }}
@@ -109,7 +109,7 @@ extends:
             nameSuffix: AllConfigurations
             buildArgs: -s libs -c $(_BuildConfig) -allConfigurations
             ${{ if eq(variables.isOfficialBuild, true) }}:
-              extraStepsTemplates:
+              postBuildSteps:
                 - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
                   parameters:
                     uploadIntermediateArtifacts: true

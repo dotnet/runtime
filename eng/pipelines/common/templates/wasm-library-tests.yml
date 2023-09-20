@@ -62,7 +62,7 @@ jobs:
           eq(variables['alwaysRunVar'], true),
           eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
       # extra steps, run tests
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot

@@ -103,7 +103,7 @@ extends:
             testGroup: innerloop
             nameSuffix: Native_GCC
             buildArgs: -s clr.native+libs.native+mono+host.native -c $(_BuildConfig) -gcc
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
                 parameters:
                   testBuildArgs: skipmanaged skipgeneratelayout skiprestorepackages -gcc
@@ -250,7 +250,7 @@ extends:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot
@@ -288,7 +288,7 @@ extends:
             timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot
@@ -332,7 +332,7 @@ extends:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release -hc Release
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot
@@ -370,7 +370,7 @@ extends:
             buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
-            extraStepsTemplates:
+            postBuildSteps:
              - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -632,7 +632,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -675,7 +675,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -719,7 +719,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -1261,7 +1261,7 @@ extends:
                     eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                     eq(variables['isRollingBuild'], true))
 
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
               parameters:
                 creator: dotnet-bot
@@ -1297,7 +1297,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
               parameters:
                 creator: dotnet-bot
@@ -1335,7 +1335,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot

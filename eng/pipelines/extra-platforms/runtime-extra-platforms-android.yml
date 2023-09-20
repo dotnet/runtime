@@ -44,7 +44,7 @@ jobs:
       # Turn off the testing for now, until https://github.com/dotnet/runtime/issues/60128 gets resolved
       # ${{ if eq(variables['isRollingBuild'], true) }}:
       #   # extra steps, run tests
-      #   extraStepsTemplates:
+      #   postBuildSteps:
       #     - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
       #       parameters:
       #         creator: dotnet-bot
@@ -78,7 +78,7 @@ jobs:
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAdditionalTimezoneChecks=true
       timeoutInMinutes: 480
       # extra steps, run tests
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot

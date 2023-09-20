@@ -38,7 +38,7 @@ extends:
             buildArgs: -s clr+libs -c $(_BuildConfig) $(_nativeSanitizersArg)
             timeoutInMinutes: 300
             # extra steps, run tests
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -73,7 +73,7 @@ extends:
             buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked $(_nativeSanitizersArg) /p:ArchiveTests=true
             timeoutInMinutes: 180
             # extra steps, run tests
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -100,7 +100,7 @@ extends:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release $(_nativeSanitizersArg)
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot

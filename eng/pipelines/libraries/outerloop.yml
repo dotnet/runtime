@@ -45,7 +45,7 @@ extends:
               timeoutInMinutes: 180
               includeAllPlatforms: ${{ variables['isRollingBuild'] }}
               # extra steps, run tests
-              extraStepsTemplates:
+              postBuildSteps:
                 - template: /eng/pipelines/libraries/helix.yml
                   parameters:
                     testScope: outerloop
@@ -74,7 +74,7 @@ extends:
                 timeoutInMinutes: 180
                 includeAllPlatforms: ${{ variables['isRollingBuild'] }}
                 # extra steps, run tests
-                extraStepsTemplates:
+                postBuildSteps:
                   - template: /eng/pipelines/libraries/helix.yml
                     parameters:
                       testScope: outerloop
@@ -99,7 +99,7 @@ extends:
                 timeoutInMinutes: 180
                 includeAllPlatforms: ${{ variables['isRollingBuild'] }}
                 # extra steps, run tests
-                extraStepsTemplates:
+                postBuildSteps:
                   - template: /eng/pipelines/libraries/helix.yml
                     parameters:
                       testScope: outerloop

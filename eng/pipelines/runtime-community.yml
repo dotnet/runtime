@@ -71,7 +71,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -139,7 +139,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
             ${{ if eq(variables['isRollingBuild'], true) }}:
               # extra steps, run tests
-              extraStepsTemplates:
+              postBuildSteps:
                 - template: /eng/pipelines/libraries/helix.yml
                   parameters:
                     creator: dotnet-bot

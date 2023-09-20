@@ -117,7 +117,7 @@ jobs:
             eq(variables['isDefaultPipeline'], variables['shouldRunWasmBuildTestsOnDefaultPipeline']))
 
         # extra steps, run tests
-        extraStepsTemplates:
+        postBuildSteps:
           - template: /eng/pipelines/libraries/helix.yml
             parameters:
               creator: dotnet-bot

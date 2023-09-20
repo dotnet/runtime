@@ -25,7 +25,7 @@ jobs:
           buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           nameSuffix: wasm
           isOfficialBuild: false
-          extraStepsTemplates:
+          postBuildSteps:
             - template: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
               parameters:
                 configForBuild: Release
@@ -93,7 +93,7 @@ jobs:
           buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           nameSuffix: wasm
           isOfficialBuild: false
-          extraStepsTemplates:
+          postBuildSteps:
             - template: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
               parameters:
                 configForBuild: Release

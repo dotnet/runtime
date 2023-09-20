@@ -37,7 +37,7 @@ jobs:
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 180
       # extra steps, run tests
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
@@ -71,7 +71,7 @@ jobs:
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true /p:EnableAppSandbox=true
       timeoutInMinutes: 180
       # extra steps, run tests
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot

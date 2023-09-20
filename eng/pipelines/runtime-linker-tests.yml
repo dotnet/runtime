@@ -127,7 +127,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true))
-            extraStepsTemplates:
+            postBuildSteps:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
                 parameters:
                     extraTestArgs: '/p:WasmBuildNative=false'

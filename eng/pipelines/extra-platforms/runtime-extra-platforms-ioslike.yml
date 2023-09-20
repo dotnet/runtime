@@ -38,7 +38,7 @@ jobs:
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:IsManualOrRollingBuild=true
       timeoutInMinutes: 480
       # extra steps, run tests
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
@@ -81,7 +81,7 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
             testGroup: innerloop
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot
@@ -118,7 +118,7 @@ jobs:
       buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
       timeoutInMinutes: 180
       # extra steps, run tests
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
@@ -154,7 +154,7 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
             testGroup: innerloop
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot

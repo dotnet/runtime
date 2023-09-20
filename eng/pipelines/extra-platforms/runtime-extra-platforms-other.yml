@@ -96,7 +96,7 @@ jobs:
       buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
       timeoutInMinutes: 300 # doesn't normally take this long, but I've seen Helix queues backed up for 160 minutes
       # extra steps, run tests
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
@@ -126,7 +126,7 @@ jobs:
       buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true
       timeoutInMinutes: 360
       # extra steps, run tests
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
@@ -156,7 +156,7 @@ jobs:
       buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Size
       timeoutInMinutes: 240
       # extra steps, run tests
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
@@ -186,7 +186,7 @@ jobs:
       buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) -rc Checked /p:TestNativeAot=true /p:ArchiveTests=true /p:OptimizationPreference=Speed
       timeoutInMinutes: 240
       # extra steps, run tests
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
@@ -218,7 +218,7 @@ jobs:
       timeoutInMinutes: 240
       nameSuffix: NativeAOT_Pri0
       buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
           parameters:
             creator: dotnet-bot
@@ -284,7 +284,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       # extra steps, run tests
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
@@ -386,7 +386,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
-      extraStepsTemplates:
+      postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
             creator: dotnet-bot

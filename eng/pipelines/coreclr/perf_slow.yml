@@ -101,7 +101,7 @@ extends:
               buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
               nameSuffix: AOT
               isOfficialBuild: false
-              extraStepsTemplates:
+              postBuildSteps:
                 - template: /eng/pipelines/common/upload-artifact-step.yml
               parameters:
                 rootFolder: '$(Build.SourcesDirectory)/artifacts/'
