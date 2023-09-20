@@ -23,20 +23,20 @@ namespace System.Net
 
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {
-            if (UseManagedNtlm)
-            {
-                switch (clientOptions.Package)
-                {
-                    case NegotiationInfoClass.NTLM:
-                        return new ManagedNtlmNegotiateAuthenticationPal(clientOptions);
-
-                    case NegotiationInfoClass.Negotiate:
-                        return new ManagedSpnegoNegotiateAuthenticationPal(clientOptions, supportKerberos: true);
-                }
-            }
-
             try
             {
+                if (UseManagedNtlm)
+                {
+                    switch (clientOptions.Package)
+                    {
+                        case NegotiationInfoClass.NTLM:
+                            return new ManagedNtlmNegotiateAuthenticationPal(clientOptions);
+
+                        case NegotiationInfoClass.Negotiate:
+                            return new ManagedSpnegoNegotiateAuthenticationPal(clientOptions, supportKerberos: true);
+                    }
+                }
+
                 return new UnixNegotiateAuthenticationPal(clientOptions);
             }
             catch (Win32Exception)

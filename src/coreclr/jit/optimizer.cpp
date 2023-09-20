@@ -8875,9 +8875,15 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
     }
 #endif
 
-    // Extract side effects
+    // TODO-Bug: We really should be extracting all side effects from the
+    // length and index here, but the length typically involves a GT_ARR_LENGTH
+    // that we would preserve. Usually, as part of proving that the range check
+    // passes, we have also proven that the ARR_LENGTH is non-faulting. We need
+    // a good way to communicate to this function that it is ok to ignore side
+    // effects of the ARR_LENGTH.
     GenTree* sideEffList = nullptr;
-    gtExtractSideEffList(check, &sideEffList, GTF_ASG);
+    gtExtractSideEffList(check->GetArrayLength(), &sideEffList, GTF_ASG);
+    gtExtractSideEffList(check->GetIndex(), &sideEffList);
 
     if (sideEffList != nullptr)
     {
@@ -9031,9 +9037,9 @@ void Compiler::optRemoveRedundantZeroInits()
     CompAllocator   allocator(getAllocator(CMK_ZeroInit));
     LclVarRefCounts refCounts(allocator);
     BitVecTraits    bitVecTraits(lvaCount, this);
-    BitVec          zeroInitLocals = BitVecOps::MakeEmpty(&bitVecTraits);
-    bool            hasGCSafePoint = false;
-    bool            canThrow       = false;
+    BitVec          zeroInitLocals         = BitVecOps::MakeEmpty(&bitVecTraits);
+    bool            hasGCSafePoint         = false;
+    bool            hasImplicitControlFlow = false;
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
 
@@ -9044,6 +9050,8 @@ void Compiler::optRemoveRedundantZeroInits()
         CompAllocator   allocator(getAllocator(CMK_ZeroInit));
         LclVarRefCounts defsInBlock(allocator);
         bool            removedTrackedDefs = false;
+        bool            hasEHSuccs         = block->HasPotentialEHSuccs(this);
+
         for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr;)
         {
             Statement* next = stmt->GetNextStmt();
@@ -9054,10 +9062,7 @@ void Compiler::optRemoveRedundantZeroInits()
                     hasGCSafePoint = true;
                 }
 
-                if ((tree->gtFlags & GTF_EXCEPT) != 0)
-                {
-                    canThrow = true;
-                }
+                hasImplicitControlFlow |= hasEHSuccs && ((tree->gtFlags & GTF_EXCEPT) != 0);
 
                 switch (tree->gtOper)
                 {
@@ -9203,7 +9208,8 @@ void Compiler::optRemoveRedundantZeroInits()
                             }
                         }
 
-                        if (!removedExplicitZeroInit && isEntire && (!canThrow || !lclDsc->lvLiveInOutOfHndlr))
+                        if (!removedExplicitZeroInit && isEntire &&
+                            (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->lvLiveInOutOfHndlr)))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
