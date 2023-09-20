@@ -63,7 +63,7 @@ jobs:
     # minijit and monointerpreter do not use separate product builds.
     - ${{ if or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')) }}:
       - name : buildProductArtifactName
-        value : 'MonoProduct__$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        value : 'MonoProduct___$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
       - name : buildProductArtifactName
