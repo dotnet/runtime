@@ -775,8 +775,8 @@ public:
 #endif
 
 #if defined(TARGET_RISCV64)
-    static bool IsRiscv64OnlyOneField(MethodTable * pMT);
-    static int GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+    static bool IsRiscV64OnlyOneField(MethodTable * pMT);
+    static int GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
