@@ -115,9 +115,12 @@ namespace System.Diagnostics
         {
             Interop.libSystem.mach_timebase_info_data_t timeBase = default;
             var returnCode = Interop.libSystem.mach_timebase_info(&timeBase);
+            Debug.Assert(returnCode == 0, $"Non-zero exit code from mach_timebase_info: {returnCode}");
             if (returnCode != 0)
             {
-                throw new Win32Exception(returnCode);
+                // Fallback: let's assume that the time values are in nanoseconds,
+                // i.e. the time base is 1/1.
+                timeBase.numer = timeBase.denom = 1;
             }
             return timeBase;
         }
