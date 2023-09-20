@@ -6193,6 +6193,49 @@ emit_llvmonly_interp_entry (MonoCompile *cfg, MonoMethodHeader *header)
 	link_bblock (cfg, cfg->cbb, cfg->bb_exit);
 }
 
+static void
+method_make_alwaysthrow_typeloadfailure (MonoCompile* cfg, MonoClass* klass)
+{
+	// Get rid of all out-BBs from the entry BB. (all but init BB)
+	for (gint16 i = cfg->bb_entry->out_count - 1; i >= 0; i--) {
+		if (cfg->bb_entry->out_bb [i] != cfg->bb_init) {
+			mono_unlink_bblock (cfg, cfg->bb_entry, cfg->bb_entry->out_bb [i]);
+			mono_remove_bblock (cfg, cfg->bb_entry->out_bb [i]);
+		}
+	}
+
+	// Discard all out-BBs from the init BB.
+	for (gint16 i = cfg->bb_init->out_count - 1; i >= 0; i--) {
+		if (cfg->bb_init->out_bb [i] != cfg->bb_exit) {
+			mono_unlink_bblock (cfg, cfg->bb_init, cfg->bb_init->out_bb [i]);
+			mono_remove_bblock (cfg, cfg->bb_init->out_bb [i]);
+		}
+	}
+	
+	// Maintain linked list consistency. This BB should have been added as the last,
+	// ignoring the ones that held actual method code.
+	cfg->cbb = cfg->bb_init;
+
+	// Create a new BB that only throws, link it after the entry.
+	MonoBasicBlock* bb;
+	NEW_BBLOCK (cfg, bb);
+	bb->cil_code = NULL;
+	bb->cil_length = 0;
+	cfg->cbb->next_bb = bb;
+	cfg->cbb = bb;
+
+	emit_type_load_failure (cfg, klass);
+	MonoInst* ins;
+	MONO_INST_NEW (cfg, ins, OP_NOT_REACHED);
+	MONO_ADD_INS (cfg->cbb, ins);
+
+	ADD_BBLOCK (cfg, bb);
+	mono_link_bblock (cfg, cfg->bb_init, bb);
+	mono_link_bblock (cfg, bb, cfg->bb_exit);
+
+	cfg->disable_inline = TRUE;
+}
+
 typedef union _MonoOpcodeParameter {
 	gint32 i32;
 	gint64 i64;
@@ -9939,19 +9982,10 @@ calli_end:
 							EMIT_NEW_PCONST (cfg, *sp, NULL);
 							sp++;
 						} else if (il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDSFLD) {
-							// An object is expected. Make best effort to find its type and push that. If that
-							// attempt fails, push a pointer to balance the stack. 
-							mono_class_init_internal (klass);
-							field = mono_class_get_field (klass, token);
-
-							if (field == NULL) {
-								// FIXME: this may be incorrect. Either find the correct type to push or skip the rest of BB.
-								EMIT_NEW_PCONST (cfg, *sp, NULL);
-								sp++;
-							} else {
-								ftype = mono_field_get_type_internal (field);
-								goto fld_emit_stage;
-							}
+							// An object is expected here. It may be impossible to correctly infer its type,
+							// we turn this entire method into a throw.
+							method_make_alwaysthrow_typeloadfailure (cfg, klass);
+							goto all_bbs_done;
 						}
 
 						break;	
@@ -10349,7 +10383,6 @@ calli_end:
 					if (!addr)
 						addr = mono_static_field_get_addr (vtable, field);
 
-fld_emit_stage:
 					ro_type = ftype->type;
 					if (ro_type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (ftype->data.klass)) {
 						ro_type = mono_class_enum_basetype_internal (ftype->data.klass)->type;
@@ -12079,6 +12112,7 @@ mono_ldptr:
 	}
 	if (start_new_bblock != 1)
 		UNVERIFIED;
+all_bbs_done:
 
 	cfg->cbb->cil_length = GPTRDIFF_TO_INT32 (ip - cfg->cbb->cil_code);
 	if (cfg->cbb->next_bb) {
