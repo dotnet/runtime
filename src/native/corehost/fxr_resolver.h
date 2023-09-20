@@ -70,7 +70,7 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
     hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
     {
         propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
-        if (pal::file_exists(config_path))
+        if (!try_ignore_missing_config || pal::file_exists(config_path))
         {
             hostfxr_initialize_parameters parameters {
                 sizeof(hostfxr_initialize_parameters),
