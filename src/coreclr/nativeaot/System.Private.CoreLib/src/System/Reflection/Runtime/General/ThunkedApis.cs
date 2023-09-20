@@ -164,13 +164,8 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public bool IsGenericType => IsConstructedGenericType || IsGenericTypeDefinition;
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public Type[] GetInterfaces() => ImplementedInterfaces.ToArray();
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2073:UnrecognizedReflectionPattern",
-            Justification = "The returned interface is one of the interfaces implemented by this type and does have DynamicallyAccessedMemberTypes.Interfaces")]
         public Type? GetInterface(string name, bool ignoreCase)
         {
             ArgumentNullException.ThrowIfNull(name, "fullname" /* Yep, CoreCLR names this different than the ref assembly */);

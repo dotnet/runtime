@@ -10,17 +10,14 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        [DynamicallyAccessedMembers(Type.GetAllMembers)]
         public MemberInfo[] GetMembers(BindingFlags bindingAttr) => GetMemberImpl(null, MemberTypes.All, bindingAttr);
 
-        [DynamicallyAccessedMembers(Type.GetAllMembers)]
         public MemberInfo[] GetMember(string name, BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(name);
             return GetMemberImpl(name, MemberTypes.All, bindingAttr);
         }
 
-        [DynamicallyAccessedMembers(Type.GetAllMembers)]
         public MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(name);

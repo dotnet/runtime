@@ -170,13 +170,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        [DynamicallyAccessedMembers(
-                DynamicallyAccessedMemberTypes.PublicFields
-                | DynamicallyAccessedMemberTypes.PublicMethods
-                | DynamicallyAccessedMemberTypes.PublicEvents
-                | DynamicallyAccessedMemberTypes.PublicProperties
-                | DynamicallyAccessedMemberTypes.PublicConstructors
-                | DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public MemberInfo[] GetDefaultMembers()
         {
             string? defaultMemberName = GetDefaultMemberName();
@@ -255,9 +248,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public IEnumerable<Type> ImplementedInterfaces
         {
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification = "Interface lists on base types will be preserved same as for the current type")]
             get
             {
                 LowLevelListWithIList<Type> result = new LowLevelListWithIList<Type>();

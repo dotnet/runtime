@@ -156,7 +156,7 @@ namespace System.Reflection.Runtime.General
 
         private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Delegates always generate metadata for the Invoke method")]
         public static RuntimeMethodInfo GetInvokeMethod(this RuntimeTypeInfo delegateType)
         {
