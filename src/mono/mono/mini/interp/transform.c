@@ -3647,9 +3647,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 		if (interp_inline_method (td, target_method, mheader, error)) {
 			td->ip += 5;
-			mono_metadata_free_mh (mheader);
 			goto done;
 		}
+		mono_metadata_free_mh (mheader);
 	}
 
 	/*
