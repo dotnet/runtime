@@ -71,20 +71,20 @@ void ETW::GCLog::FireGcStart(ETW_GC_INFO* pGcInfo)
     }
 }
 
-// void EventTracing_Initialize()
-// {
-// #ifdef FEATURE_ETW
-//     MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
-//     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled = FALSE;
+void EventTracing_Initialize()
+{
+#ifdef FEATURE_ETW
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled = FALSE;
 
-//     // Register the ETW providers with the system.
-//     RH_ETW_REGISTER_Microsoft_Windows_DotNETRuntimePrivate();
-//     RH_ETW_REGISTER_Microsoft_Windows_DotNETRuntime();
+    // Register the ETW providers with the system.
+    EventRegisterMicrosoft_Windows_DotNETRuntimePrivate();
+    EventRegisterMicrosoft_Windows_DotNETRuntime();
 
-//     MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimePrivateHandle;
-//     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimeHandle;
-// #endif // FEATURE_ETW
-// }
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimePrivateHandle;
+    MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimeHandle;
+#endif // FEATURE_ETW
+}
 
 enum CallbackProviderIndex
 {

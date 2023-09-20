@@ -782,7 +782,10 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             Clrallevents.write('#include <PalRedhawk.h>\n')
             Clrallevents.write('#include "clretwallmain.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
-            Clrallevents.write('#include "ClrEtwAll.h"\n\n')
+            Clrallevents.write('#ifdef WIN32\n')
+            Clrallevents.write('#include "ClrEtwAll.h"\n')
+            Clrallevents.write('#endif\n')
+            Clrallevents.write('\n')
         elif generatedFileType == "source-impl-noop":
             Clrallevents.write('#include <CommonTypes.h>\n')
             Clrallevents.write('#include <CommonMacros.h>\n\n')

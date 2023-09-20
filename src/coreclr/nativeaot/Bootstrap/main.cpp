@@ -104,7 +104,7 @@ extern "C" bool RhRegisterOSModule(void * pModule,
 extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
 
 extern "C" void GetRuntimeException();
-extern "C" void FailFast();
+extern "C" void RuntimeFailFast();
 extern "C" void AppendExceptionStackFrame();
 extern "C" void GetSystemArrayEEType();
 extern "C" void OnFirstChanceException();
@@ -122,7 +122,7 @@ typedef void(*pfn)();
 
 static const pfn c_classlibFunctions[] = {
     &GetRuntimeException,
-    &FailFast,
+    &RuntimeFailFast,
     nullptr, // &UnhandledExceptionHandler,
     &AppendExceptionStackFrame,
     nullptr, // &CheckStaticClassConstruction,

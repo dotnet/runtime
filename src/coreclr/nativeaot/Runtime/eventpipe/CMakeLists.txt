@@ -225,7 +225,9 @@ if (FEATURE_EVENT_TRACE)
     )
   endif()
 
-  set_source_files_properties(${AOT_EVENTTRACE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")    
+  if(CLR_CMAKE_TARGET_WIN32)
+    set_source_files_properties(${AOT_EVENTTRACE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+  endif()
 endif()
 
 
