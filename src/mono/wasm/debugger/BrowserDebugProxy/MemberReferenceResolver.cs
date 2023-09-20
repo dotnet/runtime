@@ -371,7 +371,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             try
             {
                 JObject rootObject = null;
-                List<JObject> indexObjects = new List<JObject>();
+                // keeps JObjects and LiteralExpressionSyntaxes:
+                List<object> indexObjects = new List<object>();
                 string elementAccessStrExpression = elementAccess.Expression.ToString();
                 rootObject = await Resolve(elementAccessStrExpression, token);
 
@@ -450,9 +451,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 {
                                     if (!CheckParametersCompatibility(paramInfo, indexObjects))
                                         continue;
-                                    ArraySegment<byte> buffer = indexObjects.Count == 0 ?
-                                        await WriteLiteralExpressionAsIndex(objectId, elementIdxInfo.IndexingExpression, elementIdxInfo.ElementIdxStr) :
-                                        await WriteJObjectsAsIndices(objectId, indexObjects, paramInfo);
+                                    ArraySegment<byte> buffer = await WriteIndexObjectAsIndices(objectId, indexObjects, paramInfo);
                                     JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
                                     return (JObject)getItemRetObj["value"];
                                 }
@@ -473,11 +472,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                 throw new ReturnAsErrorException($"Unable to evaluate element access '{elementAccess}': {ex.Message}", ex.GetType().Name);
             }
 
-            async Task<ElementIndexInfo> GetElementIndexInfo(List<JObject> indexObjects)
+            async Task<ElementIndexInfo> GetElementIndexInfo(List<object> indexObjects)
             {
+                // ToDo: cleanup in the funtion and in ElementIndexInfo - there is redundant info
                 // e.g. x[a[0]], x[a[b[1]]] etc.
                 if (indexObjects.Count != 0)
-                    return new ElementIndexInfo(ElementIdxStr: indexObjects[0]["value"].ToString());
+                {
+                    if (indexObjects[0] is JObject idxJObj)
+                        return new ElementIndexInfo(ElementIdxStr: idxJObj["value"].ToString());
+                    if (indexObjects[0] is LiteralExpressionSyntax expr)
+                        return new ElementIndexInfo(ElementIdxStr: expr.ToString());
+                    throw new Exception("Unknown type of index.");
+                }
 
                 if (elementAccess.ArgumentList is null)
                     return null;
@@ -498,7 +504,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (arg.Expression is LiteralExpressionSyntax)
                     {
                         indexingExpression = arg.Expression as LiteralExpressionSyntax;
-                        elementIdxStr.Append(indexingExpression.ToString());
+                        string expression = indexingExpression.ToString();
+                        elementIdxStr.Append(expression);
+                        indexObjects.Add(indexingExpression);
                     }
 
                     // e.g. x[a] or x[a.b]
@@ -533,37 +541,42 @@ namespace Microsoft.WebAssembly.Diagnostics
                     IndexingExpression: indexingExpression);
             }
 
-            async Task<ArraySegment<byte>> WriteJObjectsAsIndices(DotnetObjectId rootObjId, List<JObject> indexObjects, ParameterInfo[] paramInfo)
+            async Task<ArraySegment<byte>> WriteIndexObjectAsIndices(DotnetObjectId rootObjId, List<object> indexObjects, ParameterInfo[] paramInfo)
             {
                 using var writer = new MonoBinaryWriter();
                 writer.WriteObj(rootObjId, context.SdbAgent);
                 writer.Write(indexObjects.Count); // number of method args
-                foreach ((ParameterInfo pi, JObject indexObj) in paramInfo.Zip(indexObjects))
+                foreach ((ParameterInfo pi, object indexObject) in paramInfo.Zip(indexObjects))
                 {
-                    if (!await writer.WriteJsonValue(indexObj, context.SdbAgent, pi.TypeCode, token))
-                        throw new InternalErrorException($"Parsing index of type {indexObj["type"].Value<string>()} to write it into the buffer failed.");
+                    if (indexObject is JObject indexJObject)
+                    {
+                        // indexed by an identifier name syntax
+                        if (!await writer.WriteJsonValue(indexJObject, context.SdbAgent, pi.TypeCode, token))
+                            throw new InternalErrorException($"Parsing index of type {indexJObject["type"].Value<string>()} to write it into the buffer failed.");
+                    }
+                    else if (indexObject is LiteralExpressionSyntax expression)
+                    {
+                        // indexed by a literal expression syntax
+                        if (!await writer.WriteConst(expression, context.SdbAgent, token))
+                            throw new InternalErrorException($"Parsing literal expression index = {expression} to write it into the buffer failed.");
+                    }
+                    else
+                    {
+                        throw new InternalErrorException($"Unexpected index type.");
+                    }
                 }
-                return writer.GetParameterBuffer();
-            }
-
-            async Task<ArraySegment<byte>> WriteLiteralExpressionAsIndex(DotnetObjectId rootObjId, LiteralExpressionSyntax indexingExpression, string elementIdxStr)
-            {
-                using var writer = new MonoBinaryWriter();
-                writer.WriteObj(rootObjId, context.SdbAgent);
-                writer.Write(1); // number of method args
-                if (!await writer.WriteConst(indexingExpression, context.SdbAgent, token))
-                    throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
                 return writer.GetParameterBuffer();
             }
         }
 
-        private static bool CheckParametersCompatibility(ParameterInfo[] paramInfos, List<JObject> indexObjects)
+        private static bool CheckParametersCompatibility(ParameterInfo[] paramInfos, List<object> indexObjects)
         {
             if (paramInfos.Length != indexObjects.Count)
                 return false;
-            foreach ((ParameterInfo paramInfo, JObject indexObj) in paramInfos.Zip(indexObjects))
+            foreach ((ParameterInfo paramInfo, object indexObj) in paramInfos.Zip(indexObjects))
             {
-                if (!CheckParameterCompatibility(paramInfo.TypeCode, indexObj))
+                // shouldn't we check LiteralExpressionSyntax for compatibility as well?
+                if (indexObj is JObject indexJObj && !CheckParameterCompatibility(paramInfo.TypeCode, indexJObj))
                     return false;
             }
             return true;
