@@ -361,13 +361,21 @@ namespace System.Net.Http
             _transformStream = transformStream;
         }
 
-        private async Task WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        private Task WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            using (Buffers.MemoryHandle handle = buffer.Pin())
+#if FEATURE_WASM_THREADS
+            return _transformStream.SynchronizationContext.Send(() => Impl(this, buffer, cancellationToken));
+#else
+            return Impl(this, buffer, cancellationToken);
+#endif
+            static async Task Impl(WasmHttpWriteStream self, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
-                Task writePromise = TransformStreamWriteUnsafe(_transformStream, buffer, handle);
-                await BrowserHttpInterop.CancelationHelper(writePromise, cancellationToken).ConfigureAwait(true);
+                using (Buffers.MemoryHandle handle = buffer.Pin())
+                {
+                    Task writePromise = TransformStreamWriteUnsafe(self._transformStream, buffer, handle);
+                    await BrowserHttpInterop.CancelationHelper(writePromise, cancellationToken).ConfigureAwait(true);
+                }
             }
 
             static unsafe Task TransformStreamWriteUnsafe(JSObject transformStream, ReadOnlyMemory<byte> buffer, Buffers.MemoryHandle handle)
