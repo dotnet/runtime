@@ -397,10 +397,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     if (pAssemblyNameParts->_pName == NULL || pAssemblyNameParts->_pName[0] == '\0')
         COMPlusThrow(kArgumentException, W("ArgumentNull_AssemblyNameName"));
 
-    if (COMCharacter::nativeIsWhiteSpace(pAssemblyNameParts->_pName[0])
-        || u16_strchr(pAssemblyNameParts->_pName, '\\') != NULL
-        || u16_strchr(pAssemblyNameParts->_pName, ':') != NULL
-        || u16_strchr(pAssemblyNameParts->_pName, '/') != NULL)
+    if (COMCharacter::nativeIsWhiteSpace(pAssemblyNameParts->_pName[0]))
     {
         COMPlusThrow(kArgumentException, W("InvalidAssemblyName"));
     }
@@ -1132,7 +1129,7 @@ void Assembly::AddDiagnosticStartupHookPath(LPCWSTR wszPath)
     size_t cchDiagnosticStartupHookPathsLocal = 0;
     if (nullptr != wszDiagnosticStartupHookPathsLocal)
     {
-        cchDiagnosticStartupHookPathsLocal = u16_strlen(wszDiagnosticStartupHookPathsLocal); 
+        cchDiagnosticStartupHookPathsLocal = u16_strlen(wszDiagnosticStartupHookPathsLocal);
         // Add 1 for the path separator
         cchDiagnosticStartupHookPathsNew += cchDiagnosticStartupHookPathsLocal + 1;
     }
