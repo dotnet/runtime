@@ -371,29 +371,105 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData("\r\n")]
         [InlineData("\n")]
+        public async Task GetAsync_ResponseHasNormalLineEndings_Success_1(string lineEnding)
+        {
+            for (int i = 0; i < 10; i++) await GetAsync_ResponseHasNormalLineEndings_Success(lineEnding);
+        }
+
+        [Theory]
+        [InlineData("\r\n")]
+        [InlineData("\n")]
+        public async Task GetAsync_ResponseHasNormalLineEndings_Success_2(string lineEnding)
+        {
+            for (int i = 0; i < 10; i++) await GetAsync_ResponseHasNormalLineEndings_Success(lineEnding);
+        }
+
+        [Theory]
+        [InlineData("\r\n")]
+        [InlineData("\n")]
+        public async Task GetAsync_ResponseHasNormalLineEndings_Success_3(string lineEnding)
+        {
+            for (int i = 0; i < 10; i++) await GetAsync_ResponseHasNormalLineEndings_Success(lineEnding);
+        }
+
+        [Theory]
+        [InlineData("\r\n")]
+        [InlineData("\n")]
+        public async Task GetAsync_ResponseHasNormalLineEndings_Success_4(string lineEnding)
+        {
+            for (int i = 0; i < 10; i++) await GetAsync_ResponseHasNormalLineEndings_Success(lineEnding);
+        }
+
+        [Theory]
+        [InlineData("\r\n")]
+        [InlineData("\n")]
+        public async Task GetAsync_ResponseHasNormalLineEndings_Success_5(string lineEnding)
+        {
+            for (int i = 0; i < 10; i++) await GetAsync_ResponseHasNormalLineEndings_Success(lineEnding);
+        }
+
+        [Theory]
+        [InlineData("\r\n")]
+        [InlineData("\n")]
+        public async Task GetAsync_ResponseHasNormalLineEndings_Success_6(string lineEnding)
+        {
+            for (int i = 0; i < 10; i++) await GetAsync_ResponseHasNormalLineEndings_Success(lineEnding);
+        }
+
+        [Theory]
+        [InlineData("\r\n")]
+        [InlineData("\n")]
+        public async Task GetAsync_ResponseHasNormalLineEndings_Success_7(string lineEnding)
+        {
+            for (int i = 0; i < 10; i++) await GetAsync_ResponseHasNormalLineEndings_Success(lineEnding);
+        }
+
+        [Theory]
+        [InlineData("\r\n")]
+        [InlineData("\n")]
+        public async Task GetAsync_ResponseHasNormalLineEndings_Success_8(string lineEnding)
+        {
+            for (int i = 0; i < 10; i++) await GetAsync_ResponseHasNormalLineEndings_Success(lineEnding);
+        }
+
+        [Theory]
+        [InlineData("\r\n")]
+        [InlineData("\n")]
+        public async Task GetAsync_ResponseHasNormalLineEndings_Success_9(string lineEnding)
+        {
+            for (int i = 0; i < 10; i++) await GetAsync_ResponseHasNormalLineEndings_Success(lineEnding);
+        }
+
+        [Theory]
+        [InlineData("\r\n")]
+        [InlineData("\n")]
+        public async Task GetAsync_ResponseHasNormalLineEndings_Success_10(string lineEnding)
+        {
+            for (int i = 0; i < 10; i++) await GetAsync_ResponseHasNormalLineEndings_Success(lineEnding);
+        }
+
+        [Theory]
+        [InlineData("\r\n")]
+        [InlineData("\n")]
         public async Task GetAsync_ResponseHasNormalLineEndings_Success(string lineEnding)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
-                using (HttpClient client = CreateHttpClient())
-                {
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Version = HttpVersion.Version11;
+                using HttpClient client = CreateHttpClient();
 
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                        $"HTTP/1.1 200 OK{lineEnding}Connection: close{lineEnding}Date: {DateTimeOffset.UtcNow:R}{lineEnding}Server: TestServer{lineEnding}Content-Length: 0{lineEnding}{lineEnding}");
+                using HttpResponseMessage response = await client.GetAsync(url).WaitAsync(TestHelper.PassingTestTimeout);
 
-                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
-
-                    using (HttpResponseMessage response = await getResponseTask)
-                    {
-                        Assert.Equal(200, (int)response.StatusCode);
-                        Assert.Equal("OK", response.ReasonPhrase);
-                        Assert.Equal("TestServer", response.Headers.Server.ToString());
-                    }
-                }
-            }, new LoopbackServer.Options { StreamWrapper = GetStream });
+                Assert.Equal(200, (int)response.StatusCode);
+                Assert.Equal("OK", response.ReasonPhrase);
+                Assert.Equal("TestServer", response.Headers.Server.ToString());
+            },
+            async server =>
+            {
+                await server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                    $"HTTP/1.1 200 OK{lineEnding}Connection: close{lineEnding}Date: {DateTimeOffset.UtcNow:R}{lineEnding}Server: TestServer{lineEnding}Content-Length: 0{lineEnding}{lineEnding}")
+                    .WaitAsync(TestHelper.PassingTestTimeout);
+            },
+            new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
         public static IEnumerable<object[]> GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly_MemberData()
