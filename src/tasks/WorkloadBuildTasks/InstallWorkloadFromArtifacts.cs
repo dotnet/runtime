@@ -40,13 +40,16 @@ namespace Microsoft.Workload.Build.Tasks
         public string?        TemplateNuGetConfigPath { get; set; }
 
         [Required, NotNull]
+        public string         SdkPlainInstallPath { get; set; } = string.Empty;
+
+        [Required, NotNull]
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
         public bool           SkipUpdateAppRefPack { get; set; }
         public bool           OnlyUpdateManifests{ get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
-        private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
+        private string AllManifestsStampPath => Path.Combine(SdkPlainInstallPath, ".all-manifests.stamp");
         private string _tempDir = string.Empty;
         private string _nugetCachePath = string.Empty;
         private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
@@ -68,12 +71,19 @@ namespace Microsoft.Workload.Build.Tasks
 
             try
             {
-                if (!Directory.Exists(SdkWithNoWorkloadInstalledPath))
-                    throw new LogAsErrorException($"Cannot find {nameof(SdkWithNoWorkloadInstalledPath)}={SdkWithNoWorkloadInstalledPath}");
+                if (!Directory.Exists(SdkPlainInstallPath))
+                    throw new LogAsErrorException($"Cannot find {nameof(SdkPlainInstallPath)}={SdkPlainInstallPath}");
 
                 if (!Directory.Exists(LocalNuGetsPath))
                     throw new LogAsErrorException($"Cannot find {nameof(LocalNuGetsPath)}={LocalNuGetsPath} . " +
                                                     "Set it to the Shipping packages directory in artifacts.");
+
+                // FIXME:
+                // make -none
+                if (Directory.Exists(SdkWithNoWorkloadInstalledPath))
+                    Directory.Delete(SdkWithNoWorkloadInstalledPath, recursive: true);
+                Log.LogMessage(MessageImportance.High, $"Copying {SdkPlainInstallPath} to {SdkWithNoWorkloadInstalledPath}");
+                Utils.DirectoryCopy(SdkPlainInstallPath, SdkWithNoWorkloadInstalledPath);
 
                 if (!InstallAllManifests())
                     return false;
@@ -152,8 +162,8 @@ namespace Microsoft.Workload.Build.Tasks
                 return false;
             }
 
-            Log.LogMessage(MessageImportance.Low, $"Duplicating {SdkWithNoWorkloadInstalledPath} into {req.TargetPath}");
-            Utils.DirectoryCopy(SdkWithNoWorkloadInstalledPath, req.TargetPath);
+            Log.LogMessage(MessageImportance.Low, $"Duplicating {SdkPlainInstallPath} into {req.TargetPath}");
+            Utils.DirectoryCopy(SdkPlainInstallPath, req.TargetPath);
 
             string nugetConfigContents = GetNuGetConfig();
             if (!InstallPacks(req, nugetConfigContents))
@@ -200,7 +210,7 @@ namespace Microsoft.Workload.Build.Tasks
                 if (!InstallWorkloadManifest(workload,
                                              req.ManifestName,
                                              req.Version,
-                                             SdkWithNoWorkloadInstalledPath,
+                                             SdkPlainInstallPath,
                                              nugetConfigContents,
                                              stopOnMissing: true))
                 {

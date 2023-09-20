@@ -7,8 +7,10 @@
 
   <PropertyGroup Condition="'$(InstallWorkloadForTesting)' == 'true'">
     <_SdkForWorkloadTestingBasePath>$(ArtifactsBinDir)</_SdkForWorkloadTestingBasePath>
+    <_SdkPlainInstallPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-plain'))</_SdkPlainInstallPath>
     <_SdkWithNoWorkloadPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-none'))</_SdkWithNoWorkloadPath>
     <_SdkWithNoWorkloadStampPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-for-none-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
+    <_SdkPlainStampPath>$([MSBuild]::NormalizePath($(_SdkPlainInstallPath), '.version-for-plain-$(SdkVersionForWorkloadTesting).stamp'))</_SdkPlainStampPath>
     <PreparePackagesForWorkloadInstall Condition="'$(PreparePackagesForWorkloadInstall)' == ''">true</PreparePackagesForWorkloadInstall>
     <InstallWorkloadUsingArtifactsDependsOn>
       $(InstallWorkloadUsingArtifactsDependsOn);
@@ -29,21 +31,21 @@
     <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
   </ItemGroup>
 
-  <Target Name="_ProvisionDotNetForWorkloadTesting" Condition="!Exists($(_SdkWithNoWorkloadStampPath))">
-    <Error Text="%24(_SdkWithNoWorkloadPath) is not set" Condition="'$(_SdkWithNoWorkloadPath)' == ''" />
+  <Target Name="_ProvisionDotNetForWorkloadTesting" Condition="!Exists($(_SdkPlainStampPath))">
+    <Error Text="%24(_SdkPlainInstallPath) is not set" Condition="'$(_SdkPlainInstallPath)' == ''" />
 
-    <Message Text="** Installing sdk $(SdkVersionForWorkloadTesting) for workload based tests into $(_SdkWithNoWorkloadPath)"
+    <Message Text="** Installing sdk $(SdkVersionForWorkloadTesting) for workload based tests into $(_SdkPlainInstallPath)"
              Condition="'$(SdkVersionForWorkloadTesting)' != ''"
              Importance="High" />
-    <Message Text="** Installing latest sdk for workload based tests into $(_SdkWithNoWorkloadPath)"
+    <Message Text="** Installing latest sdk for workload based tests into $(_SdkPlainInstallPath)"
              Condition="'$(SdkVersionForWorkloadTesting)' == ''"
              Importance="High" />
 
-    <ItemGroup>
-      <_SdkWithNoWorkloadTarget Include="none" InstallPath="$(_SdkWithNoWorkloadPath)" />
-    </ItemGroup>
-    <RemoveDir Directories="$(_SdkWithNoWorkloadPath)" />
-    <MakeDir Directories="$(_SdkWithNoWorkloadPath)" />
+    <!--<ItemGroup>-->
+      <!--<_SdkPlainTarget Include="none" InstallPath="$(_SdkPlainInstallPath)" />-->
+    <!--</ItemGroup>-->
+    <RemoveDir Directories="$(_SdkPlainInstallPath)" />
+    <MakeDir Directories="$(_SdkPlainInstallPath)" />
 
     <PropertyGroup>
       <_DotNetInstallScriptName Condition="!$([MSBuild]::IsOSPlatform('windows'))">dotnet-install.sh</_DotNetInstallScriptName>
@@ -54,16 +56,16 @@
 
     <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' != ''">
       <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -i $(_SdkPlainInstallPath) -v $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
       <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Version $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkPlainInstallPath) -Version $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
       <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 9.0</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -i $(_SdkPlainInstallPath) -v latest -q daily --channel 9.0</_DotNetInstallCommand>
       <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 9.0</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkPlainInstallPath) -Quality daily -Channel 9.0</_DotNetInstallCommand>
     </PropertyGroup>
 
     <DownloadFile SourceUrl="https://dot.net/v1/$(_DotNetInstallScriptName)"
@@ -78,11 +80,13 @@
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
+
+    <Touch Files="$(_SdkPlainStampPath)" AlwaysCreate="true" />
   </Target>
 
   <Target Name="_GetDotNetVersion">
     <PropertyGroup>
-      <_DotNetPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), 'dotnet'))</_DotNetPath>
+      <_DotNetPath>$([MSBuild]::NormalizePath($(_SdkPlainInstallPath), 'dotnet'))</_DotNetPath>
       <_DotNetPath Condition="$([MSBuild]::IsOSPlatform('windows'))">$(_DotNetPath).exe</_DotNetPath>
       <_DotNetVersionCommand>$(_DotNetPath) --version</_DotNetVersionCommand>
     </PropertyGroup>
@@ -175,7 +179,7 @@
 
   <Target Name="_InstallWorkloads"
           Inputs="@(AvailableNuGetsInArtifacts)"
-          Outputs="@(_SdkWithWorkloadToInstall->'%(StampPath)');$(_SdkWithNoWorkloadStampPath)">
+          Outputs="@(_SdkWithWorkloadToInstall->'%(StampPath)');$(_SdkWithNoWorkloadStampPath);$(_SdkPlainStampPath)">
     <ItemGroup>
       <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
     </ItemGroup>
@@ -189,6 +193,7 @@
                      VersionBandForManifestPackages="$(SdkBandVersionForWorkload_FromRuntimeVersions)"
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
+                     SdkPlainInstallPath="$(_SdkPlainInstallPath)"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
                      SkipUpdateAppRefPack="true"
       />
