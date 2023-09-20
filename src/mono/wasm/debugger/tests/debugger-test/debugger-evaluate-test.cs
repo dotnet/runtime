@@ -506,6 +506,8 @@ namespace DebuggerTests
 
     public class EvaluateLocalsWithIndexingTests
     {
+        public record Indexer(int index);
+
         public enum EnumIndexer
         {
             High,
@@ -540,6 +542,7 @@ namespace DebuggerTests
             public int this[double key] => (int)key;
             public int this[float key] => (int)key;
             public int this[decimal key] => (int)key;
+            public int this[Indexer indexer] => indexer.index;
             public string this[EnumIndexer indexer] => $"Index is {indexer}";
             public bool this[StructIndexer indexer] => indexer.HasIndex;
 
@@ -574,6 +577,7 @@ namespace DebuggerTests
             float aFloat = 1.23f;
             double aDouble = 2.34;
             decimal aDecimal = 3.34m;
+            Indexer objIdx = new(index: 123);
             EnumIndexer enumIdx = EnumIndexer.High;
             StructIndexer structIdx = new() { HasIndex = true };
         }

@@ -93,11 +93,22 @@ namespace System.Text.Json
         /// <returns></returns>
         public static string Utf8GetString(ReadOnlySpan<byte> bytes)
         {
-            return Encoding.UTF8.GetString(bytes
-#if !NETCOREAPP
-                        .ToArray()
+#if NETCOREAPP
+            return Encoding.UTF8.GetString(bytes);
+#else
+            if (bytes.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            unsafe
+            {
+                fixed (byte* bytesPtr = bytes)
+                {
+                    return Encoding.UTF8.GetString(bytesPtr, bytes.Length);
+                }
+            }
 #endif
-                );
         }
 
         /// <summary>

@@ -95,14 +95,6 @@ namespace Microsoft.Interop
     public interface IMarshallingGenerator
     {
         /// <summary>
-        /// Determine if the generator is supported for the supplied version of the framework.
-        /// </summary>
-        /// <param name="target">The framework to target.</param>
-        /// <param name="version">The version of the framework.</param>
-        /// <returns>True if the marshaller is supported, otherwise false.</returns>
-        bool IsSupported(TargetFramework target, Version version);
-
-        /// <summary>
         /// Get the native type syntax for <paramref name="info"/>
         /// </summary>
         /// <param name="info">Object to marshal</param>

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
@@ -33,12 +34,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public TrimAnalysisVisitor (
 			LocalStateLattice<MultiValue, ValueSetLattice<SingleValue>> lattice,
-			IMethodSymbol method,
+			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
 			TrimAnalysisPatternStore trimAnalysisPatterns,
 			InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState
-		) : base (lattice, method, methodCFG, lValueFlowCaptures, interproceduralState)
+		) : base (lattice, owningSymbol, methodCFG, lValueFlowCaptures, interproceduralState)
 		{
 			_multiValueLattice = lattice.Lattice.ValueLattice;
 			TrimAnalysisPatterns = trimAnalysisPatterns;
@@ -112,8 +113,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			// The instance reference operation represents a 'this' or 'base' reference to the containing type,
 			// so we get the annotation from the containing method.
-			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow ())
-				return new MethodParameterValue (Method, (ParameterIndex) 0, Method.GetDynamicallyAccessedMemberTypes ());
+			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow ()) {
+				Debug.Assert (OwningSymbol is IMethodSymbol);
+				if (OwningSymbol is IMethodSymbol method)
+					return new MethodParameterValue (method, (ParameterIndex) 0, method.GetDynamicallyAccessedMemberTypes ());
+			}
 
 			return TopValue;
 		}
@@ -250,7 +254,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			//   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
 			var diagnosticContext = DiagnosticContext.CreateDisabled ();
-			var handleCallAction = new HandleCallAction (diagnosticContext, Method, operation);
+			var handleCallAction = new HandleCallAction (diagnosticContext, OwningSymbol, operation);
 			MethodProxy method = new (calledMethod);
 			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
 
@@ -279,7 +283,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				instance,
 				arguments,
 				operation,
-				Method));
+				OwningSymbol));
 
 			foreach (var argument in arguments) {
 				foreach (var argumentValue in argument) {
@@ -293,8 +297,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override void HandleReturnValue (MultiValue returnValue, IOperation operation)
 		{
-			if (Method.ReturnType.IsTypeInterestingForDataflow ()) {
-				var returnParameter = new MethodReturnValue (Method);
+			Debug.Assert (OwningSymbol is IMethodSymbol);
+			if (OwningSymbol is not IMethodSymbol method)
+				return;
+
+			if (method.ReturnType.IsTypeInterestingForDataflow ()) {
+				var returnParameter = new MethodReturnValue (method);
 
 				TrimAnalysisPatterns.Add (
 					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation),
