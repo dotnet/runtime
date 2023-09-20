@@ -3551,16 +3551,16 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	CHECK_STACK_RET (td, csignature->param_count + csignature->hasthis, FALSE);
-	MonoMethodHeader *mheader = NULL;
+	MonoMethodHeader *mh = NULL;
 	if (tailcall && target_method != NULL)
-		mheader = interp_method_get_header (target_method, error);
+		mh = interp_method_get_header (target_method, error);
 
 	if (tailcall && !td->gen_sdb_seq_points && !calli && op == -1 &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
 		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) &&
-		mheader != NULL &&
-		mheader->code_size != 0) {
+		mh != NULL &&
+		mh->code_size != 0) {
 		(void)mono_class_vtable_checked (target_method->klass, error);
 		return_val_if_nok (error, FALSE);
 
@@ -3607,7 +3607,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	mono_metadata_free_mh (mheader);
+	mono_metadata_free_mh (mh);
 
 	// Attempt to devirtualize the call
 	if (is_virtual) {
