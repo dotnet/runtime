@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices
 
             private void PreProcessSignature()
             {
-                ParameterInfo[] parameters = Delegate.Method.GetParameters();
+                ReadOnlySpan<ParameterInfo> parameters = Delegate.Method.GetParametersAsSpan();
                 _expectedParamsCount = parameters.Length;
 
                 Type?[]? targetTypes = null;
