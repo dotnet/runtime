@@ -1054,7 +1054,6 @@ Dictionary::PopulateEntry(
                 }
             }
 
-            _ASSERTE((!!isAsyncThunk) == pMethod->IsAsyncThunkMethod());
 
             if (fRequiresDispatchStub)
             {
@@ -1086,6 +1085,8 @@ Dictionary::PopulateEntry(
                 result = (CORINFO_GENERIC_HANDLE)pMgr->GenerateStubIndirection(addr);
                 break;
             }
+
+            _ASSERTE((!!isAsyncThunk) == pMethod->IsAsyncThunkMethod());
 
             Instantiation inst;
 
