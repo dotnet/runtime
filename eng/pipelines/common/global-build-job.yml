@@ -27,8 +27,7 @@ parameters:
   helixQueues: ''
   enablePublishTestResults: false
   testResultsFormat: ''
-  extraStepsTemplate: ''
-  extraStepsParameters: {}
+  extraStepsTemplates: []
   extraVariablesTemplates: []
   isManualCodeQLBuild: false
   preBuildSteps: []
@@ -262,8 +261,8 @@ jobs:
         condition: always()
 
       # If intended to send extra steps after regular build add them here.
-    - ${{ if ne(parameters.extraStepsTemplate, '') }}:
-      - template: ${{ parameters.extraStepsTemplate }}
+    - ${{ each stepTemplate in parameters.extraStepsTemplates }}:
+      - template: ${{ stepTemplate.template }}
         parameters:
           osGroup: ${{ parameters.osGroup }}
           osSubgroup: ${{ parameters.osSubgroup }}
@@ -277,7 +276,11 @@ jobs:
           platform: ${{ parameters.platform }}
           pgoType: ${{ parameters.pgoType }}
           shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-          ${{ insert }}: ${{ parameters.extraStepsParameters }}
+          ${{ if ne(stepTemplate.forwardedParameters, '') }}:
+            ${{ each parameter in stepTemplate.forwardedParameters }}:
+              ${{ parameter }}: ${{ parameters[parameter] }}
+          ${{ if ne(stepTemplate.parameters, '') }}:
+            ${{ insert }}: ${{ stepTemplate.parameters }}
 
       - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
         - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
