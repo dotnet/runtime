@@ -2634,16 +2634,30 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
     assert(!data->isContainedIntOrIImmed());
 
-    genTreeOps op = treeNode->gtOper;
-    // clang-format off
-    instruction ins =
-        op == GT_XORR ? (is4 ? INS_amoor_w   : INS_amoor_d) :
-        op == GT_XAND ? (is4 ? INS_amoand_w  : INS_amoand_d) :
-        op == GT_XCHG ? (is4 ? INS_amoswap_w : INS_amoswap_d) :
-        op == GT_XADD ? (is4 ? INS_amoadd_w  : INS_amoadd_d) :
-        (assert(!"Unexpected treeNode->gtOper"), INS_none);
-    // clang-format on
+    instruction ins = INS_none;
+    switch (treeNode->gtOper)
+    {
+        case GT_XORR:
+            ins = is4 ? INS_amoor_w : INS_amoor_d;
+            break;
+        case GT_XAND:
+            ins = is4 ? INS_amoand_w : INS_amoand_d;
+            break;
+        case GT_XCHG:
+            ins = is4 ? INS_amoswap_w : INS_amoswap_d;
+            break;
+        case GT_XADD:
+            ins = is4 ? INS_amoadd_w : INS_amoadd_d;
+            break;
+        default:
+            noway_assert(!"Unexpected treeNode->gtOper");
+    }
     GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
+
+    if (targetReg != REG_R0)
+    {
+        genProduceReg(treeNode);
+    }
 }
 
 //------------------------------------------------------------------------

@@ -395,17 +395,14 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_XADD:
         case GT_XCHG:
         {
-            assert(dstCount == (tree->TypeGet() == TYP_VOID) ? 0 : 1);
+            assert(dstCount == tree->TypeIs(TYP_VOID) ? 0 : 1);
             GenTree* addr = tree->gtGetOp1();
             GenTree* data = tree->gtGetOp2();
             assert(!addr->isContained() && !data->isContained());
             srcCount = 2;
 
-            buildInternalIntRegisterDefForNode(tree);
-
             BuildUse(addr);
             BuildUse(data);
-            buildInternalRegisterUses();
             if (dstCount == 1)
             {
                 BuildDef(tree);
