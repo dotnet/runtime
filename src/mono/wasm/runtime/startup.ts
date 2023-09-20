@@ -41,12 +41,7 @@ import { assertNoProxies } from "./gc-handles";
 const MONO_PTHREAD_POOL_SIZE = 4;
 
 export async function configureRuntimeStartup(): Promise<void> {
-    if (linkerWasmEnableSIMD) {
-        mono_assert(await loaderHelpers.simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
-    }
-    if (linkerWasmEnableEH) {
-        mono_assert(await loaderHelpers.exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
-    }
+    
 
     await init_polyfills_async();
 
@@ -388,7 +383,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     mono_log_debug("mono_wasm_pre_init_essential_async");
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
 
-
     if (MonoWasmThreads) {
         preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, runtimeHelpers.config);
     }
@@ -470,6 +464,8 @@ async function instantiate_wasm_module(
 
         replace_linker_placeholders(imports);
         const assetToLoad = await loaderHelpers.wasmDownloadPromise.promise;
+
+        await ensureWasmUsedFeatures();
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
         assetToLoad.pendingDownloadInternal = null as any; // GC
         assetToLoad.pendingDownload = null as any; // GC
@@ -499,6 +495,15 @@ async function instantiate_wasm_module(
         throw err;
     }
     Module.removeRunDependency("instantiate_wasm_module");
+}
+
+async function ensureWasmUsedFeatures() {
+    if (linkerWasmEnableSIMD) {
+        mono_assert(await loaderHelpers.simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    }
+    if (linkerWasmEnableEH) {
+        mono_assert(await loaderHelpers.exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    }
 }
 
 async function mono_wasm_before_memory_snapshot() {
