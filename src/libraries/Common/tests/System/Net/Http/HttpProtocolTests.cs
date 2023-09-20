@@ -453,6 +453,8 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("\n")]
         public async Task GetAsync_ResponseHasNormalLineEndings_Success(string lineEnding)
         {
+            EnableDebugLogs();
+
             await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using HttpClient client = CreateHttpClient();
