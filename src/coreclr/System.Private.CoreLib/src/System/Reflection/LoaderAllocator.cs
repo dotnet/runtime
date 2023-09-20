@@ -57,11 +57,10 @@ namespace System.Reflection
 #pragma warning disable CA1823, 414, 169
         private LoaderAllocatorScout m_scout;
         private object[] m_slots;
+        internal Internal.Runtime.Binder.AssemblyBinder? m_binderToRelease;
         internal CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> m_methodInstantiations;
         private int m_slotsUsed;
 #pragma warning restore CA1823, 414, 169
-
-        internal Internal.Runtime.Binder.AssemblyBinder? m_binderToRelease;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_EnsureReference")]
         internal static partial void EnsureReference(IntPtr nativeLoaderAllocator, IntPtr otherNativeLoaderAllocator);

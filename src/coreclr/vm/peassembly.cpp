@@ -665,7 +665,7 @@ PEAssembly::PEAssembly(
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(pEmit, NULL_OK));
-        PRECONDITION(pBindResultInfo == NULL || pPEImage == NULL);
+        // PRECONDITION(pBindResultInfo == NULL || pPEImage == NULL); // disabled for corelib
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
@@ -844,7 +844,7 @@ PEAssembly *PEAssembly::DoOpenSystem()
     IfFailThrow(((DefaultAssemblyBinder*)NULL)->BindToSystem(&pBoundAssembly));
 
     // TODO: Is HostAssembly ever used for CoreLib?
-    RETURN new PEAssembly(NULL, NULL, TRUE);
+    RETURN new PEAssembly(NULL, NULL, TRUE, pBoundAssembly->GetPEImage());
 }
 
 PEAssembly* PEAssembly::Open(BINDERASSEMBLYREF pManagedBindResult)

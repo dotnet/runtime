@@ -1161,6 +1161,8 @@ void SystemDomain::Init()
 
         // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
+
+        GetAppDomain()->CreateDefaultBinder();
     }
 
 #ifdef _DEBUG
@@ -1777,7 +1779,7 @@ void AppDomain::Create()
     pDomain->InitThreadStaticBlockTypeMap();
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
-    pDomain->CreateDefaultBinder();
+    // pDomain->CreateDefaultBinder(); // Should be delayed after CoreLib loaded
 
     pDomain.SuppressRelease();
 
@@ -2810,7 +2812,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
             result->EnsureLoadLevel(targetLevel);
         }
 
-        if (registerNewAssembly)
+        if (registerNewAssembly && !pDomainAssembly->GetAssembly()->IsSystem()) // CoreLib bootstrap
         {
             GCX_COOP();
 
@@ -2827,16 +2829,16 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         result->EnsureLoadLevel(targetLevel);
 
     // Cache result in all cases, since found pPEAssembly could be from a different AssemblyRef than pIdentity
-    if (pIdentity == NULL)
-    {
-        AssemblySpec spec;
-        spec.InitializeSpec(result->GetPEAssembly());
-        GetAppDomain()->AddAssemblyToCache(&spec, result);
-    }
-    else
-    {
-        GetAppDomain()->AddAssemblyToCache(pIdentity, result);
-    }
+    //if (pIdentity == NULL)
+    //{
+    //    AssemblySpec spec;
+    //    spec.InitializeSpec(result->GetPEAssembly());
+    //    GetAppDomain()->AddAssemblyToCache(&spec, result);
+    //}
+    //else
+    //{
+    //    GetAppDomain()->AddAssemblyToCache(pIdentity, result);
+    //}
 
     RETURN result;
 } // AppDomain::LoadDomainAssembly

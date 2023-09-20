@@ -208,10 +208,12 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     OBJECTHANDLE pCurrentBinder = GetBinder();
     if (pCurrentBinder == NULL)
     {
-        ASSEMBLYBINDERREF pExpectedBinder = pFile->GetAssemblyBinder();
-        // We should always have the binding context in the PEAssembly.
-        _ASSERTE(pExpectedBinder != NULL);
-        SetBinder(GetAppDomain()->CreateHandle(pExpectedBinder));
+        // unblock CoreLib bootstrap
+
+        //ASSEMBLYBINDERREF pExpectedBinder = pFile->GetAssemblyBinder();
+        //// We should always have the binding context in the PEAssembly.
+        //_ASSERTE(pExpectedBinder != NULL);
+        //SetBinder(GetAppDomain()->CreateHandle(pExpectedBinder));
     }
 }
 

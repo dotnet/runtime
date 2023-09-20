@@ -758,7 +758,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
             int32_t manifestAssemblyCount = 0;
             GUID emptyGuid  = {0};
 
-            ASSEMBLYBINDERREF binder = pModule != NULL ? pModule->GetPEAssembly()->GetAssemblyBinder() : (ASSEMBLYBINDERREF)ObjectFromHandle(pNativeImage->GetAssemblyBinder());
+            // ASSEMBLYBINDERREF binder = pModule != NULL ? pModule->GetPEAssembly()->GetAssemblyBinder() : (ASSEMBLYBINDERREF)ObjectFromHandle(pNativeImage->GetAssemblyBinder());
             auto pComponentAssemblyMvids = FindSection(ReadyToRunSectionType::ManifestAssemblyMvids);
             if (pComponentAssemblyMvids != NULL)
             {
@@ -782,18 +782,20 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                     IfFailThrow(pNativeMDImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL));
 
                     {
-                        // TODO: GC mode
-                        MethodDescCallSite methDeclareDependencyOnMvid(METHOD__BINDER_ASSEMBLYBINDER__DECLAREDEPENDENCYONMVID);
-                        ARG_SLOT args[5] =
-                        {
-                            ObjToArgSlot(binder),
-                            PtrToArgSlot(componentMvid),
-                            PtrToArgSlot(assemblyName),
-                            BoolToArgSlot(pNativeImage != NULL),
-                            PtrToArgSlot(pModule != NULL ? pModule->GetSimpleName() : pNativeImage->GetFileName())
-                        };
+                        // disabled for CoreLib bootstrap
 
-                        methDeclareDependencyOnMvid.Call(args);
+                        // TODO: GC mode
+                        //MethodDescCallSite methDeclareDependencyOnMvid(METHOD__BINDER_ASSEMBLYBINDER__DECLAREDEPENDENCYONMVID);
+                        //ARG_SLOT args[5] =
+                        //{
+                        //    ObjToArgSlot(binder),
+                        //    PtrToArgSlot(componentMvid),
+                        //    PtrToArgSlot(assemblyName),
+                        //    BoolToArgSlot(pNativeImage != NULL),
+                        //    PtrToArgSlot(pModule != NULL ? pModule->GetSimpleName() : pNativeImage->GetFileName())
+                        //};
+
+                        //methDeclareDependencyOnMvid.Call(args);
                     }
 
                     manifestAssemblyCount++;
