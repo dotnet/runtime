@@ -4,8 +4,6 @@
 
   <!--
       Required public items/properties:
-      - $(WasmMainJSPath)
-
       - $(EMSDK_PATH)      - points to the emscripten sdk location.
 
       Public properties (optional):
