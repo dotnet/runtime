@@ -333,9 +333,9 @@ extends:
               runtimeVariant: LLVMJIT
               isOfficialBuild: ${{ variables.isOfficialBuild }}
               postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
+                - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                  parameters:
+                    name: MonoRuntimePacks
           #LLVMAOT
           - jobTemplate: /eng/pipelines/common/global-build-job.yml
             buildConfig: release
@@ -347,9 +347,9 @@ extends:
               runtimeVariant: LLVMAOT
               isOfficialBuild: ${{ variables.isOfficialBuild }}
               postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
+                - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                  parameters:
+                    name: MonoRuntimePacks
 
       #
       # Build libraries using live CoreLib from CoreCLR

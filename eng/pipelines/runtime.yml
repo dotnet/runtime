@@ -371,7 +371,7 @@ extends:
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
             postBuildSteps:
-             - template: /eng/pipelines/libraries/helix.yml
+              - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
