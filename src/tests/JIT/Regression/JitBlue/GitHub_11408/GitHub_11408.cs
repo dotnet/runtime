@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class GitHub_11408
+public class GitHub_11408
 {
     const int Pass = 100;
     const int Fail = -1;

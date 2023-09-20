@@ -674,7 +674,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     }
     else if (strcmp(filename, "stdout") == 0)
     {
-        fgxFile      = jitstdout;
+        fgxFile      = jitstdout();
         *wbDontClose = true;
     }
     else if (strcmp(filename, "stderr") == 0)
@@ -3152,6 +3152,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 // Some of these aren't handles to invariant data...
                 if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
                     (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
+                    (handleKind == GTF_ICON_FTN_ADDR) ||   // Pointer to a potentially mutable VM slot
                     (handleKind == GTF_ICON_GLOBAL_PTR))   // Pointer to mutable data from the VM state
                 {
                     // For statics, we expect the GTF_GLOB_REF to be set. However, we currently
@@ -3329,6 +3330,12 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
         // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
         //
         GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
+
+        if (tree->isIndir() && tree->AsIndir()->Addr()->IsIconHandle(GTF_ICON_FTN_ADDR))
+        {
+            // IND(ICON_FTN_ADDR) may or may not have GTF_IND_INVARIANT flag.
+            flagsToCheck &= ~GTF_IND_INVARIANT;
+        }
 
         if ((actualFlags & ~expectedFlags & flagsToCheck) != 0)
         {

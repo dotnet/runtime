@@ -10,89 +10,78 @@ using Xunit;
 public class Test
 {
     // This is trying to verify that we properly zero-extend on all platforms.
-	public class Program
-	{
-		public static long s_15;
-		public static sbyte s_17;
-		public static ushort s_21 = 36659;
-		public static int Test()
-		{
-			s_15 = ~1;
-			return M40(0);
-		}
+    public class Program
+    {
+        public static long s_15;
+        public static sbyte s_17;
+        public static ushort s_21 = 36659;
 
-		[MethodImpl(MethodImplOptions.NoInlining)]
-		public static void Consume(ushort x) { }
+        [Fact]
+        public static int Test()
+        {
+            s_15 = ~1;
+            return M40(0);
+        }
 
-		[MethodImpl(MethodImplOptions.NoInlining)]
-		public static int M40(ushort arg0)
-		{
-			for (int var0 = 0; var0 < 2; var0++)
-			{
-				arg0 = 65535;
-				arg0 &= (ushort)(s_15++ >> s_17);
-				arg0 %= s_21;
-			}
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Consume(ushort x) { }
 
-			Consume(arg0);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int M40(ushort arg0)
+        {
+            for (int var0 = 0; var0 < 2; var0++)
+            {
+                arg0 = 65535;
+                arg0 &= (ushort)(s_15++ >> s_17);
+                arg0 %= s_21;
+            }
 
-			if (arg0 != 28876)
-			{
-				return 0;
-			}
-			return 100;
-		}
-	}
+            Consume(arg0);
 
-	public class Program2
-	{
-		public static long s_15;
-		public static sbyte s_17;
-		public static ushort s_21 = 36659;
-		public static int Test()
-		{
-			s_15 = ~1;
-			return M40();
-		}
+            if (arg0 != 28876)
+            {
+                return 0;
+            }
+            return 100;
+        }
+    }
 
-		[MethodImpl(MethodImplOptions.NoInlining)]
-		public static void Consume(ushort x) { }
+    public class Program2
+    {
+        public static long s_15;
+        public static sbyte s_17;
+        public static ushort s_21 = 36659;
 
-		[MethodImpl(MethodImplOptions.NoInlining)]
-		public static int M40()
-		{
-			S s = default;
-			for (int var0 = 0; var0 < 2; var0++)
-			{
-				s.U = 65535;
-				s.U &= (ushort)(s_15++ >> s_17);
-				s.U %= s_21;
-			}
+        [Fact]
+        public static int Test()
+        {
+            s_15 = ~1;
+            return M40();
+        }
 
-			Consume(s.U);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void Consume(ushort x) { }
 
-			if (s.U != 28876)
-			{
-				return 0;
-			}
-			return 100;
-		}
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int M40()
+        {
+            S s = default;
+            for (int var0 = 0; var0 < 2; var0++)
+            {
+                s.U = 65535;
+                s.U &= (ushort)(s_15++ >> s_17);
+                s.U %= s_21;
+            }
 
-		public struct S { public ushort U; }
-	}
+            Consume(s.U);
 
-	[Fact]
-	public static int TestEntryPoint() {
-		if (Test.Program.Test() != 100)
-		{
-			return 0;
-		}
+            if (s.U != 28876)
+            {
+                return 0;
+            }
+            return 100;
+        }
 
-		if (Test.Program2.Test() != 100)
-		{
-			return 0;
-		}
-
-		return 100;
-	}
+        public struct S { public ushort U; }
+    }
 }

@@ -121,7 +121,7 @@
     <value>The collection type is not supported: '{0}'.</value>
   </data>
   <data name="CouldNotDetermineTypeInfoMessageFormat" xml:space="preserve">
-    <value>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</value>
+    <value>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</value>
   </data>
   <data name="CouldNotDetermineTypeInfoTitle" xml:space="preserve">
     <value>The target type for a binder call could not be determined</value>

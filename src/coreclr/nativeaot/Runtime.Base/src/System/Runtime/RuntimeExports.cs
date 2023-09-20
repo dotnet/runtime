@@ -253,7 +253,7 @@ namespace System.Runtime
             Debug.Assert((pUnboxToEEType == null) || UnboxAnyTypeCompare(pEEType, pUnboxToEEType) || pUnboxToEEType->IsNullable);
             if (pUnboxToEEType != null && pUnboxToEEType->IsNullable)
             {
-                Debug.Assert(pUnboxToEEType->NullableType->IsEquivalentTo(pEEType));
+                Debug.Assert(pUnboxToEEType->NullableType == pEEType);
 
                 // Set the first field of the Nullable to true to indicate the value is present.
                 Unsafe.As<byte, bool>(ref data) = true;

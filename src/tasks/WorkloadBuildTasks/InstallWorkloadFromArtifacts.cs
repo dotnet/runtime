@@ -42,12 +42,18 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
+        public bool           SkipUpdateAppRefPack { get; set; }
         public bool           OnlyUpdateManifests{ get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
         private string _tempDir = string.Empty;
         private string _nugetCachePath = string.Empty;
+        private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip
+        };
 
         [GeneratedRegex(@"^\d+\.\d+\.\d+(-[A-z]*\.*\d*)?")]
         private static partial Regex bandVersionRegex();
@@ -153,7 +159,10 @@ namespace Microsoft.Workload.Build.Tasks
             if (!InstallPacks(req, nugetConfigContents))
                 return false;
 
-            UpdateAppRef(req.TargetPath, req.Version);
+            if (!SkipUpdateAppRefPack)
+                UpdateAppRef(req.TargetPath, req.Version);
+            else
+                Log.LogMessage(MessageImportance.Low, "Skipping update of app.ref pack");
 
             return !Log.HasLoggedErrors;
         }
@@ -221,6 +230,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                         ["NUGET_PACKAGES"] = _nugetCachePath
                                                     },
                                                     logStdErrAsMessage: req.IgnoreErrors,
+                                                    silent: false,
                                                     debugMessageImportance: MessageImportance.Normal);
             if (exitCode != 0)
             {
@@ -325,11 +335,7 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 manifest = JsonSerializer.Deserialize<ManifestInformation>(
                                                     File.ReadAllBytes(jsonPath),
-                                                    new JsonSerializerOptions(JsonSerializerDefaults.Web)
-                                                    {
-                                                        AllowTrailingCommas = true,
-                                                        ReadCommentHandling = JsonCommentHandling.Skip
-                                                    });
+                                                    s_jsonOptions);
 
                 if (manifest == null)
                 {

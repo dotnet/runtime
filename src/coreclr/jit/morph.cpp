@@ -8909,6 +8909,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             break;
 #endif
 
+        case GT_COMMA:
+            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
+            {
+                typ = tree->gtType = TYP_VOID;
+            }
+
+            break;
+
         default:
             break;
     }
@@ -10787,10 +10795,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
-
 #if defined(TARGET_XARCH)
-        case NI_AVX512F_Add:
-        case NI_AVX512BW_Add:
         case NI_AVX512F_And:
         case NI_AVX512DQ_And:
         case NI_AVX512F_AndNot:
@@ -10832,13 +10837,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             switch (intrinsicId)
             {
-                case NI_AVX512F_Add:
-                case NI_AVX512BW_Add:
-                {
-                    maskIntrinsicId = NI_AVX512F_AddMask;
-                    break;
-                }
-
                 case NI_AVX512F_And:
                 case NI_AVX512DQ_And:
                 {
@@ -10945,6 +10943,107 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         }
 #endif // TARGET_XARCH
 
+        default:
+        {
+            break;
+        }
+    }
+
+    // Transforms:
+    // 1.(~v1 & v2) to VectorXxx.AndNot(v1, v2)
+    // 2.(v1 & (~v2)) to VectorXxx.AndNot(v2, v1)
+    switch (node->HWOperGet())
+    {
+        case GT_AND:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+            GenTree* lhs = nullptr;
+            GenTree* rhs = nullptr;
+
+            if (op1->OperIsHWIntrinsic())
+            {
+                // Try handle: ~op1 & op2
+                GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
+                genTreeOps          hwOper = hw->HWOperGet();
+
+                if (hwOper == GT_NOT)
+                {
+                    lhs = op2;
+                    rhs = hw->Op(1);
+                }
+                else if (hwOper == GT_XOR)
+                {
+                    GenTree* hwOp1 = hw->Op(1);
+                    GenTree* hwOp2 = hw->Op(2);
+
+                    if (hwOp1->IsVectorAllBitsSet())
+                    {
+                        lhs = op2;
+                        rhs = hwOp2;
+                    }
+                    else if (hwOp2->IsVectorAllBitsSet())
+                    {
+                        lhs = op2;
+                        rhs = hwOp1;
+                    }
+                }
+            }
+
+            if ((lhs == nullptr) && op2->OperIsHWIntrinsic())
+            {
+                // Try handle: op1 & ~op2
+                GenTreeHWIntrinsic* hw     = op2->AsHWIntrinsic();
+                genTreeOps          hwOper = hw->HWOperGet();
+
+                if (hwOper == GT_NOT)
+                {
+                    lhs = op1;
+                    rhs = hw->Op(1);
+                }
+                else if (hwOper == GT_XOR)
+                {
+                    GenTree* hwOp1 = hw->Op(1);
+                    GenTree* hwOp2 = hw->Op(2);
+
+                    if (hwOp1->IsVectorAllBitsSet())
+                    {
+                        lhs = op1;
+                        rhs = hwOp2;
+                    }
+                    else if (hwOp2->IsVectorAllBitsSet())
+                    {
+                        lhs = op1;
+                        rhs = hwOp1;
+                    }
+                }
+            }
+
+            if ((lhs == nullptr) || (rhs == nullptr))
+            {
+                break;
+            }
+
+            // Filter out side effecting cases for several reasons:
+            // 1. gtNewSimdBinOpNode may swap operand order.
+            // 2. The code above will swap operand order.
+            // 3. The code above does not handle GTF_REVERSE_OPS.
+            if (((lhs->gtFlags | rhs->gtFlags) & GTF_ALL_EFFECT) != 0)
+            {
+                break;
+            }
+
+            var_types    simdType        = node->TypeGet();
+            CorInfoType  simdBaseJitType = node->GetSimdBaseJitType();
+            unsigned int simdSize        = node->GetSimdSize();
+
+            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, simdType, lhs, rhs, simdBaseJitType, simdSize);
+
+            DEBUG_DESTROY_NODE(node);
+            INDEBUG(andnNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return andnNode;
+        }
         default:
         {
             break;

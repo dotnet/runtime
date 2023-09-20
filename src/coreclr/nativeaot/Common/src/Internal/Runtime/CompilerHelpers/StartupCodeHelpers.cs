@@ -139,7 +139,7 @@ namespace Internal.Runtime.CompilerHelpers
                 // Call write barrier directly. Assigning object reference does a type check.
                 Debug.Assert((uint)moduleIndex < (uint)gcStaticBaseSpines.Length);
                 ref object rawSpineIndexData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(gcStaticBaseSpines).Data);
-                InternalCalls.RhpAssignRef(ref Unsafe.Add(ref rawSpineIndexData, moduleIndex), spine);
+                Unsafe.Add(ref rawSpineIndexData, moduleIndex) = spine;
             }
 
             // Initialize frozen object segment for the module with GC present
@@ -229,7 +229,7 @@ namespace Internal.Runtime.CompilerHelpers
 
                     // Call write barrier directly. Assigning object reference does a type check.
                     Debug.Assert(currentBase < spine.Length);
-                    InternalCalls.RhpAssignRef(ref Unsafe.Add(ref rawSpineData, currentBase), obj);
+                    Unsafe.Add(ref rawSpineData, currentBase) = obj;
 
                     // Update the base pointer to point to the pinned object
                     *pBlock = *(IntPtr*)Unsafe.AsPointer(ref obj);

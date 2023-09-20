@@ -231,11 +231,9 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
             Link="Common\Interop\Windows\WinMm\Interop.waveOutWrite.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
             Link="Common\System\Obsoletions.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0-windows'))">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
-             Link="Common\DisableRuntimeMarshalling.cs" />
+             Link="Common\DisableRuntimeMarshalling.cs"
+             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">

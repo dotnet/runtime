@@ -8855,7 +8855,7 @@ set_value:
 		buffer_add_objid (buf, obj);
 		if (CHECK_ICORDBG (TRUE))
 		{
-			buffer_add_byte(buf, m_class_is_valuetype (klass));
+			buffer_add_byte(buf, GINT_TO_UINT8(m_class_is_valuetype (klass)));
 			if (m_class_is_valuetype (klass))
 			{
 				int nfields = 0;
@@ -8950,7 +8950,7 @@ set_value:
 	case MDBGPROT_CMD_TYPE_ELEMENT_TYPE: 
 	{
 		buffer_add_int (buf, m_class_get_byval_arg (klass)->type);
-		buffer_add_byte (buf, MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (klass)));
+		buffer_add_byte (buf, GINT_TO_UINT8 (MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (klass))));
 		break;
 	}
 	case MDBGPROT_CMD_TYPE_RANK: 
@@ -10141,7 +10141,7 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			{
 				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
 				if (CHECK_ICORDBG (TRUE))
-					buffer_add_byte (buf, MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))));
+					buffer_add_byte (buf, GINT_TO_UINT8 (MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)))));
 			}
 		}
 		break;

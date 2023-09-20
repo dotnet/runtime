@@ -16,6 +16,7 @@ using Xunit;
 public static class XmlDictionaryWriterTest
 {
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
     public static void XmlBaseWriter_WriteBase64Async()
     {
         string actual;
@@ -63,6 +64,7 @@ public static class XmlDictionaryWriterTest
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
     public static void XmlBaseWriter_FlushAsync()
     {
         string actual = null;
@@ -143,6 +145,7 @@ public static class XmlDictionaryWriterTest
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
     public static void XmlBaseWriter_CheckAsync_ThrowInvalidOperationException()
     {
         int byteSize = 1024;
@@ -518,7 +521,7 @@ public static class XmlDictionaryWriterTest
             {
                 for (int i = 0; i < chars.Length; ++i)
                     chars[i] = (char)(i % 128);
-                chars[^1] = '\u00E4'; // 'ä' - Latin Small Letter a with Diaeresis. Latin-1 Supplement.
+                chars[^1] = '\u00E4'; // 'ï¿½' - Latin Small Letter a with Diaeresis. Latin-1 Supplement.
             });
 
             int numBytes = Encoding.UTF8.GetBytes(allAscii, buffer);

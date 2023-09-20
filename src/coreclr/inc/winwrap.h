@@ -71,8 +71,6 @@
 #undef OpenSemaphore
 #undef CreateWaitableTimer
 #undef CreateFileMapping
-#undef LoadLibrary
-#undef LoadLibraryEx
 #undef GetModuleFileName
 #undef GetModuleHandle
 #undef GetModuleHandleEx
@@ -191,12 +189,10 @@
 //Note only the functions which are currently used are defined
 #ifdef HOST_WINDOWS
 #define WszLoadLibrary         LoadLibraryExWrapper
-#define WszLoadLibraryEx       LoadLibraryExWrapper
 #define WszCreateFile          CreateFileWrapper
 #define WszGetFileAttributesEx GetFileAttributesExWrapper
 #else // HOST_WINDOWS
-#define WszLoadLibrary         LoadLibraryW
-#define WszLoadLibraryEx       LoadLibraryExW
+#define WszLoadLibrary         LoadLibraryExW
 #define WszCreateFile          CreateFileW
 #define WszGetFileAttributesEx GetFileAttributesExW
 #endif // HOST_WINDOWS
