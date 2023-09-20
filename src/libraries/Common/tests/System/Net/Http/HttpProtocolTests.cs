@@ -266,7 +266,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Version = HttpVersion.Version11;
+
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
+
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         getResponseTask,
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
@@ -356,7 +360,10 @@ namespace System.Net.Http.Functional.Tests
                     Task ignoredServerTask = server.AcceptConnectionSendCustomResponseAndCloseAsync(
                         responseString + "\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
 
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Version = HttpVersion.Version11;
+
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
                 }
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
@@ -370,9 +377,12 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Version = HttpVersion.Version11;
+
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
                     Task<List<string>> serverTask = server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                        $"HTTP/1.1 200 OK{lineEnding}Connection: close\r\nDate: {DateTimeOffset.UtcNow:R}{lineEnding}Server: TestServer{lineEnding}Content-Length: 0{lineEnding}{lineEnding}");
+                        $"HTTP/1.1 200 OK{lineEnding}Connection: close{lineEnding}Date: {DateTimeOffset.UtcNow:R}{lineEnding}Server: TestServer{lineEnding}Content-Length: 0{lineEnding}{lineEnding}");
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
