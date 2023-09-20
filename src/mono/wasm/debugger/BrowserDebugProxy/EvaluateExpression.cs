@@ -472,6 +472,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (!invokeToStringInObject || definition.Obj?["type"]?.Value<string>() != "object")
                 {
+                    if (definition.Obj?["type"]?.Value<string>() == "object" &&
+                        definition.Obj?["isValueType"]?.Value<bool>() == true &&
+                        definition.Obj?["isEnum"]?.Value<bool>() == true)
+                    {
+                        JObject value = definition.Obj?["value"]["value"]?.Value<JObject>();
+                        string strigifiedDefinition = ConvertJSToCSharpLocalVariableAssignment(definition.IdName, value);
+                        variableDefStrings.Add(strigifiedDefinition);
+                        continue;
+                    }
                     variableDefStrings.Add(definition.Definition);
                     continue;
                 }
