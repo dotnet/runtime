@@ -342,7 +342,7 @@ async function run() {
         const runArgs = await getArgs();
         console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
 
-        if (is_browser && runArgs.memorySnapshot) {
+        if (ENVIRONMENT_IS_WEB && runArgs.memorySnapshot) {
             const dryOk = await dry_run(runArgs);
             if (!dryOk) {
                 mono_exit(1, "Failed during dry run");
