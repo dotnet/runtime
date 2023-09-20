@@ -277,8 +277,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                         switch (objectId?.Scheme)
                         {
                             case "valuetype" when variable["isEnum"]?.Value<bool>() == true:
-                                typeRet = variable["className"]?.Value<string>();
-                                valueRet = $"({typeRet}) {value["value"]["value"].Value<double>()}";
+                                 // using Enum Type from variable["className"] requires adding references to assemblies
+                                 // with this type definition - it's easier to use the underlying numeric type
+                                typeRet = "double";
+                                // when indexing with enums, enum object is packed in another enum
+                                // which is not the case in other scenarios
+                                try
+                                {
+                                    valueRet = $"({typeRet}) {value["value"].Value<double>()}";
+                                }
+                                catch (InvalidCastException)
+                                {
+                                    // value["value"] is JObject with another "value" field
+                                    valueRet = $"({typeRet}) {value["value"]["value"].Value<double>()}";
+                                }
                                 break;
                             case "object":
                             default:
@@ -476,7 +488,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         definition.Obj?["isValueType"]?.Value<bool>() == true &&
                         definition.Obj?["isEnum"]?.Value<bool>() == true)
                     {
-                        JObject value = definition.Obj?["value"]["value"]?.Value<JObject>();
+                        JObject value = definition.Obj?["value"]?.Value<JObject>();
                         string strigifiedDefinition = ConvertJSToCSharpLocalVariableAssignment(definition.IdName, value);
                         variableDefStrings.Add(strigifiedDefinition);
                         continue;
