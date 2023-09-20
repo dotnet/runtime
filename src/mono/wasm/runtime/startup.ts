@@ -236,6 +236,15 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         // wait for previous stage
         await runtimeHelpers.afterPreRun.promise;
         mono_log_debug("onRuntimeInitialized");
+
+        runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
+        runtimeHelpers.abort = (reason: any) => {
+            if (!loaderHelpers.is_exited()) {
+                cwraps.mono_wasm_abort();
+            }
+            throw reason;
+        };
+
         const mark = startMeasure();
         // signal this stage, this will allow pending assets to allocate memory
         runtimeHelpers.beforeOnRuntimeInitialized.promise_control.resolve();
@@ -358,11 +367,10 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     }
 
     init_c_exports();
-    runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
+    runtimeHelpers.mono_wasm_exit = () => {
+        throw new Error("Mono shutdown");
+    };
     runtimeHelpers.abort = (reason: any) => {
-        if (!loaderHelpers.is_exited()) {
-            cwraps.mono_wasm_abort();
-        }
         throw reason;
     };
     cwraps_internal(INTERNAL);
