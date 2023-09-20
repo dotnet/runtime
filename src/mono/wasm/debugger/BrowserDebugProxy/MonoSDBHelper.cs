@@ -564,7 +564,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public void WriteObj(DotnetObjectId objectId, MonoSDBHelper SdbHelper)
         {
-            if (objectId.Scheme == "object")
+            if (objectId.Scheme == "object" || objectId.Scheme == "array")
             {
                 Write(ElementType.Class, objectId.Value);
             }
