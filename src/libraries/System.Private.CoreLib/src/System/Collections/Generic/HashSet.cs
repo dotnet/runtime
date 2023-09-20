@@ -110,7 +110,7 @@ namespace System.Collections.Generic
 
                 UnionWith(collection);
 
-                if (_count > 0 && _entries!.Length / _count > ShrinkThreshold)
+                if (IsTrimNeeded())
                 {
                     TrimExcess();
                 }
@@ -139,49 +139,6 @@ namespace System.Collections.Generic
             // fail.  For the time being, we'll just cache this.  The graph is not valid until
             // OnDeserialization has been called.
             HashHelpers.SerializationInfoTable.Add(this, info);
-        }
-
-        /// <summary>Initializes the HashSet from another HashSet with the same element type and equality comparer.</summary>
-        private void ConstructFrom(HashSet<T> source)
-        {
-            if (source.Count == 0)
-            {
-                // As well as short-circuiting on the rest of the work done,
-                // this avoids errors from trying to access source._buckets
-                // or source._entries when they aren't initialized.
-                return;
-            }
-
-            int capacity = source._buckets!.Length;
-            int threshold = HashHelpers.ExpandPrime(source.Count + 1);
-
-            if (threshold >= capacity)
-            {
-                _buckets = (int[])source._buckets.Clone();
-                _entries = (Entry[])source._entries!.Clone();
-                _freeList = source._freeList;
-                _freeCount = source._freeCount;
-                _count = source._count;
-#if TARGET_64BIT
-                _fastModMultiplier = source._fastModMultiplier;
-#endif
-            }
-            else
-            {
-                Initialize(source.Count);
-
-                Entry[]? entries = source._entries;
-                for (int i = 0; i < source._count; i++)
-                {
-                    ref Entry entry = ref entries![i];
-                    if (entry.Next >= -1)
-                    {
-                        AddIfNotPresent(entry.Value, out _);
-                    }
-                }
-            }
-
-            Debug.Assert(Count == source.Count);
         }
 
         #endregion
@@ -486,21 +443,19 @@ namespace System.Collections.Generic
             }
 
             // Mostly Union operation occurs on HashSets.
-            // When passed-in parameter is HashSet with same comparer,
+            // When passed-in parameter is HashSet with same comparer and current _count is 0,
             // enumerator allocation, rehashing and overhead by looping can be avoided
-            if (other.GetType() == typeof(HashSet<T>))
+            if (_count == 0 && other.GetType() == typeof(HashSet<T>))
             {
-                HashSet<T> source = (HashSet<T>)other;
-                if (source.Count == 0)
+                HashSet<T> hashSet = (HashSet<T>)other;
+                if (hashSet.Count == 0)
                 {
                     // Nothing to union with
                     return;
                 }
-                if (EqualityComparersAreEqual(this, source))
+                if (EqualityComparersAreEqual(this, hashSet))
                 {
-                    Entry[] newEntries = source._entries;
-                    // If comparers are the same, we can copy _entries without rehashing.
-                    CopyEntries(newEntries, source._count);
+                    ConstructFrom(hashSet);
                     return;
                 }
             }
@@ -1027,38 +982,55 @@ namespace System.Collections.Generic
         /// </summary>
         public void TrimExcess()
         {
-            int capacity = Count;
-
-            int newSize = HashHelpers.GetPrime(capacity);
-            Entry[]? oldEntries = _entries;
-            int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
-            if (newSize >= currentCapacity)
+            int newCapacity = HashHelpers.GetPrime(_count);
+            int currentCapacity = _entries == null ? 0 : _entries.Length;
+            if (newCapacity >= currentCapacity)
             {
                 return;
             }
-
+            Entry[]? oldEntries = _entries;
             int oldCount = _count;
+            TrimAndCopy(oldEntries, oldCount);
+        }
+
+        /// <summary>
+        /// Sets capacity based on given count and copies entries in new array
+        /// </summary>
+        /// <param name="entries"></param>
+        /// <param name="count"></param>
+        private void TrimAndCopy(Entry[]? entries, int count)
+        {
+            int newSize = HashHelpers.GetPrime(count);
             _version++;
             Initialize(newSize);
-            Entry[]? entries = _entries;
-            int count = 0;
-            for (int i = 0; i < oldCount; i++)
+            CopyEntries(entries, count);
+        }
+
+        /// <summary>
+        /// Copies entries into current _entries array
+        /// </summary>
+        /// <param name="entries"></param>
+        /// <param name="count"></param>
+        private void CopyEntries(Entry[]? entries, int count)
+        {
+            int newCount = 0;
+            for (int i = 0; i < count; i++)
             {
-                int hashCode = oldEntries![i].HashCode; // At this point, we know we have entries.
-                if (oldEntries[i].Next >= -1)
+                if (entries![i].Next >= -1)
                 {
-                    ref Entry entry = ref entries![count];
-                    entry = oldEntries[i];
+                    int hashCode = entries![i].HashCode; // At this point, we know we have entries.
+                    ref Entry entry = ref _entries![count];
+                    entry = entries![i];
                     ref int bucket = ref GetBucketRef(hashCode);
                     entry.Next = bucket - 1; // Value in _buckets is 1-based
-                    bucket = count + 1;
-                    count++;
+                    bucket = newCount + 1;
+                    newCount++;
                 }
             }
-
-            _count = capacity;
+            _count = newCount;
             _freeCount = 0;
         }
+
 
         #endregion
 
@@ -1087,6 +1059,58 @@ namespace System.Collections.Generic
 
             return size;
         }
+
+        /// <summary>
+        /// Checks if trim excess is needed based on ratio of entries length to count
+        /// </summary>
+        /// <returns></returns>
+        private bool IsTrimNeeded()
+        {
+            return _count > 0 && _entries!.Length / _count > ShrinkThreshold;
+        }
+
+        /// <summary>
+        /// Initializes the HashSet from another HashSet with the same element type and equality comparer
+        /// </summary>
+        /// <param name="source"></param>
+        private void ConstructFrom(HashSet<T> source)
+        {
+            Debug.Assert(_count == 0);
+            if (source.Count == 0)
+            {
+                // As well as short-circuiting on the rest of the work done,
+                // this avoids errors from trying to access source._buckets
+                // or source._entries when they aren't initialized.
+                return;
+            }
+            if (!IsTrimNeeded())
+            {
+                if (_buckets != null && _entries != null && _buckets.Length >= source._buckets!.Length && _entries.Length >= source._entries!.Length)
+                {
+                    source._buckets.CopyTo(_buckets, 0);
+                    source._entries.CopyTo(_entries, 0);
+                }
+                else
+                {
+                    _buckets = (int[])source._buckets!.Clone();
+                    _entries = (Entry[])source._entries!.Clone();
+                }
+                _version++;
+                _freeList = source._freeList;
+                _freeCount = source._freeCount;
+                _count = source._count;
+#if TARGET_64BIT
+                _fastModMultiplier = source._fastModMultiplier;
+#endif
+            }
+            else
+            {
+                TrimAndCopy(source._entries, source._count);
+                _freeList = source._freeList;
+            }
+            Debug.Assert(Count == source.Count);
+        }
+
 
         /// <summary>Adds the specified element to the set if it's not already contained.</summary>
         /// <param name="value">The element to add to the set.</param>
@@ -1202,34 +1226,6 @@ namespace System.Collections.Generic
             }
 
             return true;
-        }
-        /// <summary>
-        /// Adds entries into existing array without rehashing
-        /// </summary>
-        /// <param name="entries"></param>
-        /// <param name="count"></param>
-        private void CopyEntries(Entry[] entries, int count)
-        {
-            Debug.Assert(_entries is not null);
-
-            Entry[] newEntries = _entries;
-            int newCount = 0;
-            for (int i = 0; i < count; i++)
-            {
-                int hashCode = entries[i].HashCode;
-                if (entries[i].Next >= -1)
-                {
-                    ref Entry entry = ref newEntries[newCount];
-                    entry = entries[i];
-                    ref int bucket = ref GetBucketRef(hashCode);
-                    entry.Next = bucket - 1; // Value in _buckets is 1-based
-                    bucket = newCount + 1;
-                    newCount++;
-                }
-            }
-
-            _count = newCount;
-            _freeCount = 0;
         }
 
         /// <summary>
