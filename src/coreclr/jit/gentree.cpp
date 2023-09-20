@@ -25292,9 +25292,10 @@ bool GenTreeHWIntrinsic::OperIsCreateScalarUnsafe() const
 // Return Value:
 //    Whether "this" is a bitwise logic intrinsic node.
 //
-bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic()
+bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
 {
-    return HWOperGet() == GT_AND || HWOperGet() == GT_OR || HWOperGet() == GT_XOR || HWOperGet() == GT_AND_NOT;
+    genTreeOps Oper = HWOperGet();
+    return Oper == GT_AND || Oper == GT_OR || Oper == GT_XOR || Oper == GT_AND_NOT;
 }
 
 //------------------------------------------------------------------------------
@@ -25485,7 +25486,7 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 //------------------------------------------------------------------------------
 // HWOperGet : Returns Oper based on the HWIntrinsicId
 //
-genTreeOps GenTreeHWIntrinsic::HWOperGet()
+genTreeOps GenTreeHWIntrinsic::HWOperGet() const
 {
     switch (GetHWIntrinsicId())
     {
@@ -25531,6 +25532,8 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
         case NI_AVX2_Or:
         case NI_AVX512F_Or:
         case NI_AVX512DQ_Or:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_Or:
 #endif
         {
             return GT_OR;
@@ -25543,10 +25546,10 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet()
         case NI_AVX2_AndNot:
         case NI_AVX512F_AndNot:
         case NI_AVX512DQ_AndNot:
-#endif
         {
             return GT_AND_NOT;
         }
+#endif
         // TODO: Handle other cases
 
         default:
@@ -26339,7 +26342,7 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree
 // with given logic nodes on the input.
 //
 // Return value: the value of the ternary control byte.
-uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second)
+uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) const
 {
     // we assume we have a structure like:
     /*
@@ -26361,25 +26364,25 @@ uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second)
     // To compute the correct control byte, you simply perform the corresponding operation on these keys. So, if you
     // wanted to do (A & B) ^ C, you would compute (0xF0 & 0xCC) ^ 0xAA or 0x6A.
     assert(second->Op(1) == this || second->Op(2) == this);
-    const uint8_t A = 240; // 0xF0
-    const uint8_t B = 204; // 0xCC
-    const uint8_t C = 170; // 0xAA
+    const uint8_t A = 0xF0;
+    const uint8_t B = 0xCC;
+    const uint8_t C = 0xAA;
 
-    NamedIntrinsic firstLogic  = GetHWIntrinsicId();
-    NamedIntrinsic secondLogic = second->GetHWIntrinsicId();
+    genTreeOps firstOper  = HWOperGet();
+    genTreeOps secondOper = second->HWOperGet();
 
     uint8_t AB  = 0;
     uint8_t ABC = 0;
 
-    if (HWOperGet() == GT_AND)
+    if (firstOper == GT_AND)
     {
         AB = A & B;
     }
-    else if (HWOperGet() == GT_OR)
+    else if (firstOper == GT_OR)
     {
         AB = A | B;
     }
-    else if (HWOperGet() == GT_XOR)
+    else if (firstOper == GT_XOR)
     {
         AB = A ^ B;
     }
@@ -26388,15 +26391,15 @@ uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second)
         unreached();
     }
 
-    if (second->HWOperGet() == GT_AND)
+    if (secondOper == GT_AND)
     {
         ABC = AB & C;
     }
-    else if (second->HWOperGet() == GT_OR)
+    else if (secondOper == GT_OR)
     {
         ABC = AB | C;
     }
-    else if (second->HWOperGet() == GT_XOR)
+    else if (secondOper == GT_XOR)
     {
         ABC = AB ^ C;
     }
