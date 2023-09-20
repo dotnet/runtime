@@ -18,7 +18,7 @@ namespace fxr_resolver
 }
 
 template<typename THostPathToConfigCallback, typename TBeforeRunCallback>
-int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallback host_path_to_config_path, TBeforeRunCallback on_before_run, void** delegate)
+int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallback host_path_to_config_path, TBeforeRunCallback on_before_run, void** delegate, bool try_ignore_missing_config)
 {
     pal::dll_t fxr;
 
