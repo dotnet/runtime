@@ -2272,7 +2272,7 @@ namespace Mono.Linker.Steps
 				MarkTypeWithDebuggerDisplayAttributeValue(type, attribute, (string) attribute.ConstructorArguments[0].Value);
 				if (attribute.HasProperties) {
 					foreach (var  property in attribute.Properties) {
-						if (property.Name == "Name") {
+						if (property.Name is "Name" or "Type") {
 							MarkTypeWithDebuggerDisplayAttributeValue (type, attribute, (string) property.Argument.Value);
 						}
 					}
