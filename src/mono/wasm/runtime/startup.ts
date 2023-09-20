@@ -365,12 +365,6 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     }
 
     init_c_exports();
-    runtimeHelpers.mono_wasm_exit = () => {
-        throw new Error("Mono shutdown");
-    };
-    runtimeHelpers.abort = (reason: any) => {
-        throw reason;
-    };
     cwraps_internal(INTERNAL);
     if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         cwraps_mono_api(MONO);
@@ -471,7 +465,7 @@ async function instantiate_wasm_module(
         replace_linker_placeholders(imports);
         const assetToLoad = await loaderHelpers.wasmDownloadPromise.promise;
 
-        await ensureWasmUsedFeatures();
+        await ensureUsedWasmFeatures();
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
         assetToLoad.pendingDownloadInternal = null as any; // GC
         assetToLoad.pendingDownload = null as any; // GC
@@ -503,7 +497,7 @@ async function instantiate_wasm_module(
     Module.removeRunDependency("instantiate_wasm_module");
 }
 
-async function ensureWasmUsedFeatures() {
+async function ensureUsedWasmFeatures() {
     if (linkerWasmEnableSIMD) {
         mono_assert(await loaderHelpers.simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
