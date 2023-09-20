@@ -74,24 +74,6 @@ namespace JIT.HardwareIntrinsics.General._Vector128
             }
         }
 
-        private struct TestStruct
-        {
-            public Vector128<Single> _fld1;
-            public Vector128<Single> _fld2;
-
-            public static TestStruct Create()
-            {
-                var testStruct = new TestStruct();
-
-                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = 123; }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref testStruct._fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-                for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = 123; }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref testStruct._fld2), ref Unsafe.As<Single, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-
-                return testStruct;
-            }
-        }
-
         private static readonly int LargestVectorSize = 16;
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
@@ -100,33 +82,11 @@ namespace JIT.HardwareIntrinsics.General._Vector128
         private static Single[] _data1 = new Single[Op1ElementCount];
         private static Single[] _data2 = new Single[Op2ElementCount];
 
-        private static Vector128<Single> _clsVar1;
-        private static Vector128<Single> _clsVar2;
-
-        private Vector128<Single> _fld1;
-        private Vector128<Single> _fld2;
-
         private DataTable _dataTable;
-
-        static VectorBooleanBinaryOpTest__LessThanOrEqualAnySingle()
-        {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = Single.MaxValue; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = Single.MaxValue; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar2), ref Unsafe.As<Single, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-        }
 
         public VectorBooleanBinaryOpTest__LessThanOrEqualAnySingle()
         {
             Succeeded = true;
-
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = 0.168625f; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = 0.5899811f; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld2), ref Unsafe.As<Single, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = 0.8042229f; }
-            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = 0.8173325f; }
 
             _data1[0] = 0.168625f;
             _data1[1] = 0.5899811f;
