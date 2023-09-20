@@ -10708,13 +10708,13 @@ execute_system (const char * command)
 
 #ifdef ENABLE_LLVM
 
-#ifdef TARGET_WIN32
+#ifdef HOST_WIN32
 #define OPT_NAME "opt.exe"
 #else
 #define OPT_NAME "opt"
 #endif
 
-#ifdef TARGET_WIN32
+#ifdef HOST_WIN32
 #define LLC_NAME "llc.exe"
 #else
 #define LLC_NAME "llc"
