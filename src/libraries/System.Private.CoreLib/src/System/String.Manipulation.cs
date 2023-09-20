@@ -1240,11 +1240,11 @@ namespace System
                 // Find all occurrences of the oldValue character.
                 char c = oldValue[0];
                 int i = 0;
+                nuint offset = 0;
 
                 if (Vector512.IsHardwareAccelerated && this.Length >= (uint)Vector512<ushort>.Count*2)
                 {
                     nuint lengthToExamine = (uint)this.Length;
-                    nuint offset = 0;
                     ref char source = ref MemoryMarshal.GetReference(this.AsSpan());
                     Vector512<ushort> v1 = Vector512.Create((ushort)c);
                     do
@@ -1270,7 +1270,6 @@ namespace System
                 else if (Vector256.IsHardwareAccelerated && this.Length >= (uint)Vector256<ushort>.Count*2)
                 {
                     nuint lengthToExamine = (uint)this.Length;
-                    nuint offset = 0;
                     ref char source = ref MemoryMarshal.GetReference(this.AsSpan());
                     Vector256<ushort> v1 = Vector256.Create((ushort)c);
                     do
@@ -1296,7 +1295,6 @@ namespace System
                 else if (Vector128.IsHardwareAccelerated && this.Length >= (uint)Vector128<ushort>.Count*2)
                 {
                     nuint lengthToExamine = (uint)this.Length;
-                    nuint offset = 0;
                     ref char source = ref MemoryMarshal.GetReference(this.AsSpan());
                     Vector128<ushort> v1 = Vector128.Create((ushort)c);
                     do
@@ -1321,6 +1319,7 @@ namespace System
                 }
                 else if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
                 {
+                    i = (int)offset;
                     while (true)
                     {
                         int pos = PackedSpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
@@ -1334,6 +1333,7 @@ namespace System
                 }
                 else
                 {
+                    i = (int)offset;
                     while (true)
                     {
                         int pos = SpanHelpers.NonPackedIndexOfChar(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
