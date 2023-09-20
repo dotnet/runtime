@@ -41,6 +41,7 @@
     <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs" Link="Common\System\Net\EventSourceTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackProxyServer.cs" Link="Common\System\Net\Http\LoopbackProxyServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs" Link="Common\System\Net\Http\LoopbackServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpDebug.cs" Link="Common\System\Net\Http\HttpDebug.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackServer.cs" Link="Common\System\Net\Http\Http2LoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackConnection.cs" Link="Common\System\Net\Http\Http2LoopbackConnection.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2Frames.cs" Link="Common\System\Net\Http\Http2Frames.cs" />

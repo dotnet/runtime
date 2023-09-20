@@ -58,6 +58,8 @@
              Link="Common\System\Net\Http\Http2Frames.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HPackEncoder.cs"
              Link="Common\System\Net\Http\HPackEncoder.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Http\HttpDebug.cs"
+             Link="Common\System\Net\Http\HttpDebug.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackServer.cs"
              Link="Common\System\Net\Http\Http2LoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackConnection.cs"

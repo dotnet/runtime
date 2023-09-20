@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-#if !NETCOREAPP
 using System.Diagnostics;
-#endif
 using System.IO;
+using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
@@ -28,8 +27,13 @@ namespace System.Net.Http.Functional.Tests
 
         public HttpClientHandlerTestBase(ITestOutputHelper output)
         {
-            _output = output;
+            if (output is not null)
+            {
+                _output = new TestOutputWithTimestampHelper(output);
+            }
         }
+
+        public void EnableDebugLogs() => HttpDebug.DebugThisTest(_output);
 
         protected virtual HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
 
@@ -125,6 +129,25 @@ namespace System.Net.Http.Functional.Tests
 
                 return response;
             }
+        }
+
+        private sealed class TestOutputWithTimestampHelper(ITestOutputHelper output) : ITestOutputHelper
+        {
+            private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
+
+            private string TimestampPrefix
+            {
+                get
+                {
+                    TimeSpan elapsed = _stopwatch.Elapsed;
+
+                    return $"[{(int)elapsed.TotalSeconds}.{elapsed.Milliseconds:D4}]";
+                }
+            }
+
+            public void WriteLine(string message) => output.WriteLine($"{TimestampPrefix} {message}");
+
+            public void WriteLine(string format, params object[] args) => output.WriteLine($"{TimestampPrefix} {format}", args);
         }
     }
 
