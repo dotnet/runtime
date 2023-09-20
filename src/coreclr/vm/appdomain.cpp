@@ -3934,7 +3934,8 @@ OBJECTHANDLE AppDomain::CreateDefaultBinder()
         GCPROTECT_BEGIN(managedBinder);
 
         MethodDescCallSite ctor(METHOD__BINDER_DEFAULTASSEMBLYBINDER__CTOR);
-        ctor.Call((ARG_SLOT*)NULL);
+        ARG_SLOT arg = ObjToArgSlot(managedBinder);
+        ctor.Call(&arg);
 
         m_pManagedDefaultBinder = CreateHandle(managedBinder);
 

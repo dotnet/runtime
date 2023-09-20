@@ -70,4 +70,4 @@
 #define g_ExceptionServicesNS         g_RuntimeNS ".ExceptionServices"
 
 #define g_LoaderNS         g_RuntimeNS ".Loader"
-#define g_InternalLoaderNS "Internal.Runtime.Loader"
+#define g_InternalBinderNS "Internal.Runtime.Binder"

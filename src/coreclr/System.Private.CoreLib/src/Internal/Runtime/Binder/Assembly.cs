@@ -28,7 +28,6 @@ namespace Internal.Runtime.Binder
 
         public bool IsInTPA { get; }
 
-
         public Assembly(nint pPEImage, bool isInTPA)
         {
             // Get assembly name def from meta data import and store it for later refs access
