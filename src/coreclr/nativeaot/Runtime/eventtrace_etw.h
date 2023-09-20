@@ -10,7 +10,7 @@
 
 #ifdef FEATURE_ETW
 
-#include "EtwEvents.h"
+#include "ClrEtwAll.h"
 
 #undef ETW_TRACING_INITIALIZED
 #define ETW_TRACING_INITIALIZED(RegHandle) (RegHandle != NULL)
