@@ -8205,7 +8205,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             var_types parentBaseType = parentNode->GetSimdBaseType();
             var_types childBaseType  = hwintrinsic->GetSimdBaseType();
 
-            if (varTypeIsSmall(parentBaseType) || varTypeIsSmall(childBaseType))
+            if (varTypeIsSmall(parentBaseType) || (genTypeSize(parentBaseType) != genTypeSize(childBaseType)))
             {
                 // early return if either base type is not embedded broadcast compatible.
                 return false;
@@ -8251,12 +8251,11 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             var_types parentBaseType = parentNode->GetSimdBaseType();
             var_types childBaseType  = hwintrinsic->GetSimdBaseType();
 
-            if (varTypeIsSmall(parentBaseType))
+            if (varTypeIsSmall(parentBaseType) || (genTypeSize(parentBaseType) != genTypeSize(childBaseType)))
             {
                 // early return if either base type is not embedded broadcast compatible.
                 return false;
             }
-            assert(!varTypeIsSmall(childBaseType));
 
             return parentNode->OperIsEmbBroadcastCompatible();
         }
