@@ -626,7 +626,7 @@ namespace ILCompiler.ObjectWriter
             _compactUnwindCodes.Add(new CompactUnwindCode(
                 PcStartSymbolName: startSymbolName,
                 PcLength: (uint)length,
-                Code: encoding,
+                Code: encoding | (encoding != _compactUnwindDwarfCode && lsdaSymbolName != null ? 0x40000000u : 0), // UNWIND_HAS_LSDA
                 LsdaSymbolName: encoding != _compactUnwindDwarfCode ? lsdaSymbolName : null
             ));
 
