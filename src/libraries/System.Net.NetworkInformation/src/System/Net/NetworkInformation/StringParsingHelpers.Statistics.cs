@@ -414,7 +414,12 @@ namespace System.Net.NetworkInformation
                     if (line.Contains(name))
                     {
                         ReadOnlySpan<char> lineSpan = line;
-                        lineSpan.SplitAny(pieces, " :", StringSplitOptions.RemoveEmptyEntries);
+                        int pieceCount = lineSpan.SplitAny(pieces, " :", StringSplitOptions.RemoveEmptyEntries);
+
+                        if (pieceCount < 17)
+                        {
+                            continue;
+                        }
 
                         if (!lineSpan[pieces[0]].SequenceEqual(name))
                         {
