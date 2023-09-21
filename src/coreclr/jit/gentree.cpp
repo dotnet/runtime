@@ -26466,9 +26466,7 @@ bool GenTree::OperIsHWIntrinsicSIMDScalar()
     NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
 
 #if defined(TARGET_AMD64)
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwintrinsic->GetHWIntrinsicId());
-
-    switch (category)
+    switch (HWIntrinsicInfo::lookupCategory(intrinsicId))
     {
         case HW_Category_SIMDScalar:
             return true;
