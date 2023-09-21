@@ -1,5 +1,6 @@
 parameters:
   filesToSign: []
+  timeoutInMinutes: '30'
 
 steps:
   - task: UseDotNet@2
@@ -29,7 +30,7 @@ steps:
       includeRootFolder: true
       replaceExistingArchive: true
 
-  - task: EsrpCodeSigning@1
+  - task: EsrpCodeSigning@4
     displayName: 'ESRP CodeSigning'
     inputs:
       ConnectedServiceName: 'ESRP CodeSigning'
@@ -49,6 +50,10 @@ steps:
             "toolVersion": "1.0"
           }
         ]  
+      SessionTimeout: ${{ parameters.timeoutInMinutes }}
+      MaxConcurrency: '50'
+      MaxRetryAttempts: '5'
+      PendingAnalysisWaitTimeoutMinutes: '5'
     env:
       DOTNET_MULTILEVEL_LOOKUP: 0
       DOTNET_ROOT: '$(Agent.TempDirectory)/dotnet'
