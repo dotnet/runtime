@@ -2,7 +2,8 @@ parameters:
   archType: ''
   buildConfig: ''
   container: ''
-  crossDacPlatforms: {}
+  crossDacPlatforms: []
+  globalBuildCrossDacPlatforms: []
   dependOnEvaluatePaths: false
   isOfficialBuild: false
   osGroup: ''
@@ -48,6 +49,10 @@ jobs:
     - ${{ if ne(parameters.crossDacPlatforms, '') }}:
       - ${{ each platform in parameters.crossDacPlatforms }}:
         - ${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_product_build_${{ platform }}_${{ parameters.buildConfig }}
+
+    - ${{ if ne(parameters.globalBuildCrossDacPlatforms, '') }}:
+      - ${{ each platform in parameters.globalBuildCrossDacPlatforms }}:
+        - build_${{ platform }}_${{ parameters.buildConfig }}_AllSubsets_CoreCLR
 
     steps:
     - task: DownloadBuildArtifacts@0

@@ -65,14 +65,6 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: release
           platforms:
-          - osx_arm64
-          - osx_x64
-          - linux_x64
-          - linux_arm
-          - linux_arm64
-          - linux_musl_x64
-          - linux_musl_arm
-          - linux_musl_arm64
           - windows_x86
           - windows_x64
           - windows_arm64
@@ -80,6 +72,105 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             signBinaries: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
+      
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - osx_arm64
+          - osx_x64
+          jobParameters:
+            buildArgs: -s clr.runtime+clr.alljits -c $(_BuildConfig) -bl $(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+            nameSuffix: AllSubsets_CoreCLR
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 120
+          postBuildSteps:
+            - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+              parameters:
+                filesToSign:
+                - name: createdump
+                  path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
+                  entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
+                - name: corerun
+                  path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
+                  entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+
+            - task: CopyFiles@2
+              displayName: 'Copy signed createdump to sharedFramework'
+              inputs:
+                contents: createdump
+                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
+                targetFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/sharedFramework
+                overWrite: true
+            
+            # Now that we've entitled and signed createdump, we can build the rest.
+            - template: /eng/pipelines/common/templates/global-build-step.yml
+              parameters:
+                buildArgs: -s libs+host+packs -c $(_BuildConfig)
+            
+            # Upload the results.
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              parameters:
+                name: CoreCLR_$(osGroup)$(osSubgroup)_$(archType)
+
+      #
+      # Build CoreCLR and upload CoreCLR runtime for CrossDac packaging
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - linux_musl_x64
+          - linux_musl_arm
+          - linux_musl_arm64
+          jobParameters:
+            buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
+            nameSuffix: AllSubsets_CoreCLR
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 120
+          postBuildSteps:
+            # Upload libcoreclr.so for CrossDac packaging
+            - task: CopyFiles@2
+              displayName: Gather runtime for CrossDac
+              inputs:
+                SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
+                Contents: libcoreclr.so
+                TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGrup).$(osSubgroup).$(archType).$(buildConfigUpper)/$(crossDacHostArch)
+            - task: PublishBuildArtifacts@1
+              displayName: Publish runtime for CrossDac
+              inputs:
+                pathToPublish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
+                PublishLocation: Container
+                artifactName: CoreCLRCrossDacArtifacts
+            # Create RPMs and DEBs
+            - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+              parameters:
+                packageType: deb
+                target: debpkg
+                packageStepDescription: Runtime Deps, Runtime, Framework Packs Deb installers
+                subsetArg: -s packs.installers
+                packagingArgs: /p:BuildDebPackage=true
+                condition: and(eq(variables.osSubgroup, ''), eq(variables.archType, 'x64'))
+            - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+              parameters:
+                packageType: rpm
+                target: rpmpkg
+                packageStepDescription: Runtime Deps, Runtime, Framework Packs RPM installers
+                subsetArg: -s packs.installers
+                packagingArgs: /p:BuildRpmPackage=true
+                condition: and(eq(variables.osSubgroup, ''), in(variables.archType, 'x64', 'arm64'))
+            
+            # Upload the results.
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              parameters:
+                name: CoreCLR_$(osGroup)$(osSubgroup)_$(archType)
+          extraVariablesTemplates:
+            - template: /eng/pipelines/coreclr/templates/crossdac-hostarch.yml
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -91,14 +182,15 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             crossDacPlatforms:
+            - windows_x64
+            - windows_arm64
+            globalBuildCrossDacPlatforms:
             - linux_x64
             - linux_arm
             - linux_arm64
             - linux_musl_x64
             - linux_musl_arm
             - linux_musl_arm64
-            - windows_x64
-            - windows_arm64
 
       #
       # Build NativeAOT runtime packs
@@ -359,17 +451,11 @@ extends:
           jobTemplate: /eng/pipelines/libraries/build-job.yml
           buildConfig: Release
           platforms:
-          - osx_arm64
-          - osx_x64
-          - linux_x64
-          - linux_arm
-          - linux_arm64
-          - linux_musl_x64
-          - linux_musl_arm
-          - linux_musl_arm64
           - windows_x86
           - windows_x64
           - windows_arm64
+          - linux_x64
+          - linux_arm64
           jobParameters:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeBuildConfig: release
@@ -422,14 +508,6 @@ extends:
             liveLibrariesBuildConfig: Release
             isOfficialBuild: ${{ variables.isOfficialBuild }}
           platforms:
-          - osx_arm64
-          - osx_x64
-          - linux_x64
-          - linux_arm
-          - linux_arm64
-          - linux_musl_x64
-          - linux_musl_arm
-          - linux_musl_arm64
           - windows_x86
           - windows_x64
           - windows_arm64
