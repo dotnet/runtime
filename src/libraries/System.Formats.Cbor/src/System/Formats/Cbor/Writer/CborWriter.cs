@@ -205,11 +205,19 @@ namespace System.Formats.Cbor
                 throw new OverflowException();
             }
 
-            if (_buffer is null || _buffer.Length - _offset < pendingCount)
+            int currentCapacity = _buffer is null ? 0 : _buffer.Length;
+            int requiredCapacity = _offset + pendingCount;
+            if (currentCapacity < requiredCapacity)
             {
-                const int BlockSize = 1024;
-                int blocks = checked(_offset + pendingCount + (BlockSize - 1)) / BlockSize;
-                Array.Resize(ref _buffer, BlockSize * blocks);
+                int newCapacity = currentCapacity == 0 ? 1024 : currentCapacity * 2;
+                if ((uint)newCapacity > (uint)Array.MaxLength)
+                    newCapacity = Array.MaxLength;
+                if (newCapacity < requiredCapacity)
+                    newCapacity = requiredCapacity;
+
+                byte[] newBuffer = new byte[newCapacity];
+                new ReadOnlySpan<byte>(_buffer, 0, _offset).CopyTo(newBuffer);
+                _buffer = newBuffer;
             }
         }
 
