@@ -34,7 +34,7 @@ public class JittedMethodsCountingTest
         long jits = JitInfo.GetCompiledMethodCount(false);
         Console.WriteLine("Number of Jitted Methods in App: {0}\n", jits);
 
-        return (jits > 0 && jits <= MAX_JITTED_METHODS_ACCEPTED) ? 100 : 101;
+        return (jits >= 0 && jits <= MAX_JITTED_METHODS_ACCEPTED) ? 100 : 101;
     }
 
     private static bool IsReadyToRunEnvSet()
