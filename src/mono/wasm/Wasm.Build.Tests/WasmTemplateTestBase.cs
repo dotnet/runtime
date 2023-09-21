@@ -41,7 +41,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
 
         new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
-                .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
+                .ExecuteWithCapturedOutput($"new {template} -f {DefaultTargetFramework} {extraArgs}")
                 .EnsureSuccessful();
 
         string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
