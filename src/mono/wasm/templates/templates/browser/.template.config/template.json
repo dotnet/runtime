@@ -4,7 +4,7 @@
   "classifications": [ "Web", "WebAssembly", "Browser" ],
   "generatorVersions": "[1.0.0.0-*)",
   "groupIdentity": "WebAssembly.Browser",
-  "precedence": 8000,
+  "precedence": 9000,
   "identity": "WebAssembly.Browser.9.0",
   "name": "WebAssembly Browser App",
   "description": "A project template for creating a .NET app that runs on WebAssembly in a browser",
