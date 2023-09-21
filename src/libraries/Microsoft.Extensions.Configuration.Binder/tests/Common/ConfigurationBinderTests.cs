@@ -11,8 +11,8 @@ using System.Reflection;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
+using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.Configuration.Test;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Extensions
@@ -2406,28 +2406,37 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("localhost", instance.ConnectionString);
         }
 
-        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        public void CanBindToMockConfiugrationSection()
+        [Fact]
+        public void CanBindToMockConfigurationSection()
         {
             const string expectedA = "hello";
 
-            var mockConfSection = new Mock<IConfigurationSection>();
-            var aSection = new Mock<IConfigurationSection>();
-            aSection.Setup(m => m.Value).Returns(expectedA);
-
-            // only mock one of the two properties, the other will return a null section.
-            // runtime binder uses GetSection
-            mockConfSection.Setup(config => config.GetSection(nameof(SimplePoco.A))).Returns(aSection.Object);
-            // source gen uses indexer
-            mockConfSection.Setup(config => config[nameof(SimplePoco.A)]).Returns(aSection.Object?.Value);
-            mockConfSection.Setup(config => config.GetChildren()).Returns(new[] { aSection.Object });
+            var configSource = new MemoryConfigurationSource()
+            {
+                InitialData = new Dictionary<string, string?>()
+                {
+                    [$":{nameof(SimplePoco.A)}"] = expectedA,
+                }
+            };
+            var configRoot = new MockConfigurationRoot(new[] { configSource.Build(null) });
+            var configSection = new ConfigurationSection(configRoot, string.Empty);
 
             SimplePoco result = new();
-            mockConfSection.Object.Bind(result);
+            configSection.Bind(result);
 
             Assert.Equal(expectedA, result.A);
             Assert.Equal(default(string), result.B);
+        }
+
+        // a mock configuration root that will return null for undefined Sections,
+        // as is common when Configuration interfaces are mocked
+        class MockConfigurationRoot : ConfigurationRoot, IConfigurationRoot
+        {
+            public MockConfigurationRoot(IList<IConfigurationProvider> providers) : base(providers)
+            { }
+
+            IConfigurationSection IConfiguration.GetSection(string key) => 
+                this[key] is null ? null : new ConfigurationSection(this, key); 
         }
     }
 }
