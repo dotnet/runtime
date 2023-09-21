@@ -556,12 +556,7 @@ MONO_RESTORE_WARNING
 		t = mini_get_underlying_type (t);
 		if (cfg->gshared && t != ctx->method_inst->type_argv [0] && MONO_TYPE_ISSTRUCT (t) && mono_class_check_context_used (mono_class_from_mono_type_internal (t)))
 			cfg->prefer_instances = TRUE;
-
-		#ifdef NO_UNALIGNED_ACCESS
-			return mini_emit_memory_load (cfg, t, args [0], 0, MONO_INST_UNALIGNED);
-		#else
-			return mini_emit_memory_load (cfg, t, args [0], 0, 0);
-		#endif
+		return mini_emit_memory_load (cfg, t, args [0], 0, MONO_INST_UNALIGNED);
 	} else if (!strcmp (cmethod->name, "WriteUnaligned")) {
 		g_assert (ctx);
 		g_assert (ctx->method_inst);
