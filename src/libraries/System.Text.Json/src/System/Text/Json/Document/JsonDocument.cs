@@ -878,7 +878,9 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            WritePropertyName(_parsedData.Get(index - DbRow.Size), writer);
+            DbRow row = _parsedData.Get(index - DbRow.Size);
+            Debug.Assert(row.TokenType == JsonTokenType.PropertyName);
+            WritePropertyName(row, writer);
         }
 
         private void WritePropertyName(in DbRow row, Utf8JsonWriter writer)
