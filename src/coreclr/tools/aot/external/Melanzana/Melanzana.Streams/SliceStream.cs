@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using System.Buffers;
 
 namespace Melanzana.Streams
 {
@@ -147,6 +148,31 @@ namespace Melanzana.Streams
             {
                 throw new InvalidOperationException("Cannot write outside of this stream slice");
             }
+        }
+
+        public override void CopyTo(Stream destination, int bufferSize)
+        {
+            var savedPosition = _baseStream.Position;
+            _baseStream.Position = _basePosition + _localPosition;
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            try
+            {
+                int bytesRead;
+                long remaining = _length - _localPosition;
+                while (remaining > 0 && (bytesRead = _baseStream.Read(buffer, 0, (int)Math.Min(buffer.Length, remaining))) != 0)
+                {
+                    _localPosition += bytesRead;
+                    remaining = _length - _localPosition;
+                    destination.Write(buffer, 0, bytesRead);
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            _baseStream.Position = savedPosition;
         }
     }
 }
