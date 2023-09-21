@@ -525,6 +525,19 @@ int main(const int argc, const pal::char_t *argv[])
             return -1;
         }
 
+        // 2 optional arguments indicating whether we should start the runtime
+        if (argc > 5)
+        {
+            const pal::string_t hostfxr_path = argv[4];
+            const pal::char_t* config_path = argv[5];
+            pal::stringstream_t test_output;
+            if (!host_context_test::config(host_context_test::check_properties::none, hostfxr_path, config_path, 0, nullptr, test_output))
+            {
+                std::cout << "Failed to start runtime from path: " << tostr(hostfxr_path).data() << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+
         const pal::string_t ijw_library_path = argv[2];
         std::vector<char> entry_point_name = tostr(argv[3]);
 
