@@ -192,14 +192,15 @@ namespace ILCompiler.ObjectWriter
                 _ => section.Type == SectionType.Uninitialized ? MachSectionType.ZeroFill : MachSectionType.Regular
             };
 
-            MachSection machSection = new MachSection(_objectFile, segmentName, sectionName)
+            sectionStream = new ObjectWriterStream();
+
+            MachSection machSection = new MachSection(_objectFile, segmentName, sectionName, sectionStream)
             {
                 Log2Alignment = 1,
                 Type = type,
                 Attributes = attributes,
             };
 
-            sectionStream = machSection.GetWriteStream();
             _segment.Sections.Add(machSection);
         }
 
