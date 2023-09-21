@@ -18,17 +18,30 @@ public static class Runtime_92357
             return;
         }
 
-        int y = 5;
+        int y1 = 5;
 
-        Vector256<short> actual = Test(Vector256.Create((short)1), ref y);
-        Vector256<short> expected = Vector256.Create(10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0);
+        Vector256<short> actual1 = Test1(Vector256.Create((short)1), ref y1);
+        Vector256<short> expected1 = Vector256.Create(10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0, 10, 0);
 
-        Assert.Equal(expected, actual);
+        Assert.Equal(expected1, actual1);
+
+        long y2 = 5;
+
+        Vector256<int> actual2 = Test2(Vector256.Create((int)1), ref y2);
+        Vector256<int> expected2 = Vector256.Create(10, 0, 10, 0, 10, 0, 10, 0);
+
+        Assert.Equal(expected2, actual2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    public static Vector256<short> Test(Vector256<short> x, ref int y)
+    public static Vector256<short> Test1(Vector256<short> x, ref int y)
     {
         return Avx2.MultiplyLow(x + x, Vector256.Create(y).AsInt16());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    public static Vector256<int> Test2(Vector256<int> x, ref long y)
+    {
+        return Avx2.MultiplyLow(x + x, Vector256.Create(y).AsInt32());
     }
 }
