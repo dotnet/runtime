@@ -3793,6 +3793,16 @@ SetLastError(
          IN DWORD dwErrCode);
 
 PALIMPORT
+VOID
+PALAPI
+PAL_BeginTrackingSystemCallErrors();
+
+PALIMPORT
+LPCSTR
+PALAPI
+PAL_EndTrackingSystemCallErrors(bool getSystemCallErrors);
+
+PALIMPORT
 LPWSTR
 PALAPI
 GetCommandLineW();

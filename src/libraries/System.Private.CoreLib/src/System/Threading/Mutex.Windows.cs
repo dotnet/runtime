@@ -4,6 +4,7 @@
 using System.IO;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace System.Threading
 {
@@ -18,8 +19,20 @@ namespace System.Threading
         private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
         {
             uint mutexFlags = initiallyOwned ? Interop.Kernel32.CREATE_MUTEX_INITIAL_OWNER : 0;
-            SafeWaitHandle mutexHandle = Interop.Kernel32.CreateMutexEx(IntPtr.Zero, name, mutexFlags, AccessRights);
-            int errorCode = Marshal.GetLastPInvokeError();
+            SafeWaitHandle mutexHandle = null;
+            int errorCode;
+            string? systemCallErrors;
+            Marshal.BeginTrackingSystemCallErrors();
+            try
+            {
+                mutexHandle = Interop.Kernel32.CreateMutexEx(IntPtr.Zero, name, mutexFlags, AccessRights);
+                errorCode = Marshal.GetLastPInvokeError();
+            }
+            finally
+            {
+                systemCallErrors =
+                    Marshal.EndTrackingSystemCallErrors(getSystemCallErrors: mutexHandle != null && mutexHandle.IsInvalid);
+            }
 
             if (mutexHandle.IsInvalid)
             {
@@ -32,7 +45,7 @@ namespace System.Threading
                 if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+                throw GetExceptionForWin32ErrorWithSystemCallError(errorCode, name, systemCallErrors);
             }
 
             createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
@@ -44,16 +57,30 @@ namespace System.Threading
             ArgumentException.ThrowIfNullOrEmpty(name);
 
             result = null;
-            // To allow users to view & edit the ACL's, call OpenMutex
-            // with parameters to allow us to view & edit the ACL.  This will
-            // fail if we don't have permission to view or edit the ACL's.
-            // If that happens, ask for less permissions.
-            SafeWaitHandle myHandle = Interop.Kernel32.OpenMutex(AccessRights, false, name);
+            SafeWaitHandle myHandle = null;
+            int errorCode = 0;
+            string? systemCallErrors;
+            Marshal.BeginTrackingSystemCallErrors();
+            try
+            {
+                // To allow users to view & edit the ACL's, call OpenMutex
+                // with parameters to allow us to view & edit the ACL.  This will
+                // fail if we don't have permission to view or edit the ACL's.
+                // If that happens, ask for less permissions.
+                myHandle = Interop.Kernel32.OpenMutex(AccessRights, false, name);
+                if (myHandle.IsInvalid)
+                {
+                    errorCode = Marshal.GetLastPInvokeError();
+                }
+            }
+            finally
+            {
+                systemCallErrors =
+                    Marshal.EndTrackingSystemCallErrors(getSystemCallErrors: myHandle != null && myHandle.IsInvalid);
+            }
 
             if (myHandle.IsInvalid)
             {
-                int errorCode = Marshal.GetLastPInvokeError();
-
                 myHandle.Dispose();
 
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
@@ -70,7 +97,7 @@ namespace System.Threading
                 if (Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
 
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+                throw GetExceptionForWin32ErrorWithSystemCallError(errorCode, name, systemCallErrors);
             }
 
             result = new Mutex(myHandle);
@@ -82,10 +109,41 @@ namespace System.Threading
         // in a Mutex's ACL is MUTEX_ALL_ACCESS (0x1F0001).
         public void ReleaseMutex()
         {
-            if (!Interop.Kernel32.ReleaseMutex(SafeWaitHandle))
+            bool success = true;
+            string? systemCallErrors;
+            Marshal.BeginTrackingSystemCallErrors();
+            try
             {
-                throw new ApplicationException(SR.Arg_SynchronizationLockException);
+                success = Interop.Kernel32.ReleaseMutex(SafeWaitHandle);
             }
+            finally
+            {
+                systemCallErrors = Marshal.EndTrackingSystemCallErrors(getSystemCallErrors: !success);
+            }
+
+            if (!success)
+            {
+                SystemException? innerEx =
+                    string.IsNullOrEmpty(systemCallErrors) ? null : GetInnerExceptionForSystemCallErrors(systemCallErrors);
+                throw new ApplicationException(SR.Arg_SynchronizationLockException, innerEx);
+            }
+        }
+
+        private static SystemException GetInnerExceptionForSystemCallErrors(string systemCallErrors) =>
+            new SystemException(SR.Format(SR.SystemException_SystemCallErrors, systemCallErrors));
+
+        private static Exception GetExceptionForWin32ErrorWithSystemCallError(
+            int errorCode,
+            string? path,
+            string? systemCallErrors)
+        {
+            Exception ex = Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+            if (string.IsNullOrEmpty(systemCallErrors) || ex.GetType() != typeof(IOException))
+            {
+                return ex;
+            }
+
+            return new IOException(ex.Message, GetInnerExceptionForSystemCallErrors(systemCallErrors)) { HResult = ex.HResult };
         }
     }
 }

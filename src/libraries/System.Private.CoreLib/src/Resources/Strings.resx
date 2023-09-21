@@ -3461,6 +3461,9 @@
   <data name="StackTrace_InFileLineNumber" xml:space="preserve">
     <value>in {0}:line {1}</value>
   </data>
+  <data name="SystemException_SystemCallErrors" xml:space="preserve">
+    <value>One or more system calls failed. Details: {0}</value>
+  </data>
   <data name="TargetInvocation_MethodCannotBeInvoked" xml:space="preserve">
     <value>Method cannot be invoked.</value>
   </data>

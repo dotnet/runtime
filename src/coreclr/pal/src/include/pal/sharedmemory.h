@@ -114,10 +114,12 @@ public:
     static int CreateOrOpenFile(LPCSTR path, bool createIfNotExist = true, bool *createdRef = nullptr);
     static void CloseFile(int fileDescriptor);
 
-    static SIZE_T GetFileSize(int fileDescriptor);
-    static void SetFileSize(int fileDescriptor, SIZE_T byteCount);
+    static int ChangeMode(LPCSTR path, mode_t mode);
 
-    static void *MemoryMapFile(int fileDescriptor, SIZE_T byteCount);
+    static SIZE_T GetFileSize(LPCSTR filePath, int fileDescriptor);
+    static void SetFileSize(LPCSTR filePath, int fileDescriptor, SIZE_T byteCount);
+
+    static void *MemoryMapFile(LPCSTR filePath, int fileDescriptor, SIZE_T byteCount);
 
     static bool TryAcquireFileLock(int fileDescriptor, int operation);
     static void ReleaseFileLock(int fileDescriptor);

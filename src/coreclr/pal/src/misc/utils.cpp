@@ -366,3 +366,61 @@ BOOL IsRunningOnMojaveHardenedRuntime()
 }
 
 #endif // __APPLE__
+
+const char *GetFriendlyErrorCodeString(int errorCode, char (&rawErrorCodeStringBuffer)[RawErrorCodeStringBufferSize])
+{
+    switch (errorCode)
+    {
+        case EACCES: return "EACCES";
+        case EBADF: return "EBADF";
+        case EBUSY: return "EBUSY";
+        case EDQUOT: return "EDQUOT";
+        case EEXIST: return "EEXIST";
+        case EFAULT: return "EFAULT";
+        case EFBIG: return "EFBIG";
+        case EINVAL: return "EINVAL";
+        case EINTR: return "EINTR";
+        case EIO: return "EIO";
+        case EISDIR: return "EISDIR";
+        case ELOOP: return "ELOOP";
+        case EMFILE: return "EMFILE";
+        case EMLINK: return "EMLINK";
+        case ENAMETOOLONG: return "ENAMETOOLONG";
+        case ENFILE: return "ENFILE";
+        case ENODEV: return "ENODEV";
+        case ENOENT: return "ENOENT";
+        case ENOLCK: return "ENOLCK";
+        case ENOMEM: return "ENOMEM";
+        case ENOSPC: return "ENOSPC";
+        case ENOTDIR: return "ENOTDIR";
+        case ENOTEMPTY: return "ENOTEMPTY";
+        case ENXIO: return "ENXIO";
+        case EOVERFLOW: return "EOVERFLOW";
+        case EPERM: return "EPERM";
+        case EROFS: return "EROFS";
+        case ETXTBSY: return "ETXTBSY";
+        case EXDEV: return "EXDEV";
+    }
+
+    if (errorCode == EAGAIN || errorCode == EWOULDBLOCK)
+    {
+        if (EAGAIN == EWOULDBLOCK) return "EAGAIN/EWOULDBLOCK";
+        if (errorCode == EAGAIN) return "EAGAIN";
+        return "EWOULDBLOCK";
+    }
+    else if (errorCode == ENOTSUP || errorCode == EOPNOTSUPP)
+    {
+        if (ENOTSUP == EOPNOTSUPP) return "ENOTSUP/EOPNOTSUPP";
+        if (errorCode == ENOTSUP) return "ENOTSUP";
+        return "EOPNOTSUPP";
+    }
+
+    int result =
+        _snprintf_s(rawErrorCodeStringBuffer, RawErrorCodeStringBufferSize, RawErrorCodeStringBufferSize - 1, "%d", errorCode);
+    if (result <= 0 || result >= RawErrorCodeStringBufferSize)
+    {
+        rawErrorCodeStringBuffer[0] = '\0';
+    }
+
+    return rawErrorCodeStringBuffer;
+}

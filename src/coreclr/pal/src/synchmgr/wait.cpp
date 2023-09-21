@@ -229,6 +229,7 @@ SignalObjectAndWait(
         bAlertable ? "TRUE" : "FALSE");
 
     CPalThread *thread = InternalGetCurrentThread();
+
     DWORD result = InternalSignalObjectAndWait(thread, hObjectToSignal, hObjectToWaitOn, dwMilliseconds, bAlertable);
 
     LOGEXIT("SignalObjectAndWait returns DWORD %u\n", result);

@@ -23,6 +23,7 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do t
 #include "pal/mutex.hpp"
 #include "pal/file.hpp"
 #include "pal/thread.hpp"
+#include "pal/utils.h"
 
 #include "../synchmgr/synchmanager.hpp"
 
@@ -750,6 +751,8 @@ void MutexHelpers::InitializeProcessSharedRobustRecursiveMutex(pthread_mutex_t *
 {
     _ASSERTE(mutex != nullptr);
 
+    char rawErrorCodeStringBuffer[RawErrorCodeStringBufferSize];
+
     struct AutoCleanup
     {
         pthread_mutexattr_t *m_mutexAttributes;
@@ -772,6 +775,9 @@ void MutexHelpers::InitializeProcessSharedRobustRecursiveMutex(pthread_mutex_t *
     int error = pthread_mutexattr_init(&mutexAttributes);
     if (error != 0)
     {
+        CPalThread::AppendSystemCallError(
+            "pthread_mutexattr_init(...) == %d;",
+            GetFriendlyErrorCodeString(error, rawErrorCodeStringBuffer));
         throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::OutOfMemory));
     }
     autoCleanup.m_mutexAttributes = &mutexAttributes;
@@ -788,6 +794,9 @@ void MutexHelpers::InitializeProcessSharedRobustRecursiveMutex(pthread_mutex_t *
     error = pthread_mutex_init(mutex, &mutexAttributes);
     if (error != 0)
     {
+        CPalThread::AppendSystemCallError(
+            "pthread_mutex_init(...) == %d;",
+            GetFriendlyErrorCodeString(error, rawErrorCodeStringBuffer));
         throw SharedMemoryException(static_cast<DWORD>(error == EPERM ? SharedMemoryError::IO : SharedMemoryError::OutOfMemory));
     }
 }
@@ -850,7 +859,16 @@ MutexTryAcquireLockResult MutexHelpers::TryAcquireLock(pthread_mutex_t *mutex, D
             throw SharedMemoryException(static_cast<DWORD>(NamedMutexError::MaximumRecursiveLocksReached));
 
         default:
+        {
+            char rawErrorCodeStringBuffer[RawErrorCodeStringBufferSize];
+            CPalThread::AppendSystemCallError(
+                "%s(...) == %d;",
+                timeoutMilliseconds == (DWORD)-1 ? "pthread_mutex_lock"
+                : timeoutMilliseconds == 0 ? "pthread_mutex_trylock"
+                : "pthread_mutex_timedlock",
+                GetFriendlyErrorCodeString(lockResult, rawErrorCodeStringBuffer));
             throw SharedMemoryException(static_cast<DWORD>(NamedMutexError::Unknown));
+        }
     }
 }
 
@@ -917,6 +935,7 @@ void NamedMutexSharedData::IncTimedWaiterCount()
     ULONG newValue = InterlockedIncrement(reinterpret_cast<LONG *>(&m_timedWaiterCount));
     if (newValue == 0)
     {
+        InterlockedDecrement(reinterpret_cast<LONG *>(&m_timedWaiterCount));
         throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::OutOfMemory));
     }
 }
@@ -1138,8 +1157,12 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
             _ASSERTE(!created);
             if (createIfNotExist)
             {
+                CPalThread::AppendSystemCallError(
+                    "open(\"%s\", O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, 0) == -1; errno == ENOENT;",
+                    (const char *)lockFilePath);
                 throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
             }
+
             return nullptr;
         }
         autoCleanup.m_createdLockFile = created;

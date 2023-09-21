@@ -212,3 +212,6 @@ class StringHolder
 
    };
 #endif /* _PAL_UTILS_H_ */
+
+const int RawErrorCodeStringBufferSize = 12;
+const char *GetFriendlyErrorCodeString(int errorCode, char (&rawErrorCodeStringBuffer)[RawErrorCodeStringBufferSize]);

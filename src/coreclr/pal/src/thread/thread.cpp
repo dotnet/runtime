@@ -2258,6 +2258,8 @@ CPalThread::~CPalThread()
         iError = pthread_mutex_destroy(&m_startMutex);
         _ASSERTE(0 == iError);
     }
+
+    delete m_systemCallErrors;
 }
 
 void
@@ -2697,6 +2699,96 @@ CPalThread::GetCachedStackLimit()
     }
 
     return m_stackLimit;
+}
+
+void
+CPalThread::BeginTrackingSystemCallErrors()
+{
+    _ASSERTE(!m_isTrackingSystemCallErrors);
+
+    m_isTrackingSystemCallErrors = true;
+    m_systemCallErrorsLength = 0;
+    if (m_systemCallErrors != nullptr)
+    {
+        m_systemCallErrors[0] = '\0';
+    }
+}
+
+void
+CPalThread::AppendSystemCallError(
+    LPCSTR format,
+    ...
+    )
+{
+    CPalThread *thread = GetCurrentPalThread();
+    if (thread == nullptr || !thread->m_isTrackingSystemCallErrors)
+    {
+        return;
+    }
+
+    const int BufferSize = 256;
+    char *buffer = thread->m_systemCallErrors;
+    if (buffer == nullptr)
+    {
+        buffer = new(std::nothrow) char[BufferSize];
+        if (buffer == nullptr)
+        {
+            return;
+        }
+
+        buffer[0] = '\0';
+        thread->m_systemCallErrors = buffer;
+    }
+
+    int length = thread->m_systemCallErrorsLength;
+    _ASSERTE(length < BufferSize);
+    _ASSERTE(buffer[length] == '\0');
+    if (length >= BufferSize - 1)
+    {
+        return;
+    }
+
+    if (length != 0)
+    {
+        length++; // the previous null terminator will be changed to a space if the append succeeds
+    }
+
+    va_list args;
+    va_start(args, format);
+    int result = _vsnprintf_s(buffer + length, BufferSize - length, BufferSize - 1 - length, format, args);
+    va_end(args);
+
+    if (result == 0)
+    {
+        return;
+    }
+
+    if (result < 0 || result >= BufferSize - length)
+    {
+        // There's not enough space to append this error, discard the append and stop tracking system call errors
+        if (length == 0)
+        {
+            buffer[0] = '\0';
+        }
+        thread->m_isTrackingSystemCallErrors = false;
+        return;
+    }
+
+    if (length != 0)
+    {
+        buffer[length - 1] = ' '; // change the previous null terminator to a space
+    }
+
+    length += result;
+    _ASSERTE(thread->m_systemCallErrors[length] == '\0');
+    thread->m_systemCallErrorsLength = length;
+}
+
+LPCSTR
+CPalThread::EndTrackingSystemCallErrors(bool getSystemCallErrors)
+{
+    m_isTrackingSystemCallErrors = false;
+    return getSystemCallErrors ? m_systemCallErrors : nullptr;
 }
 
 PVOID
