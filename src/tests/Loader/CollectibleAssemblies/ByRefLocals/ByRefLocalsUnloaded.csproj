@@ -2,10 +2,9 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="Accessor.csproj" />
-    <Compile Include="Unloaded.cs" />
+    <ProjectReference Include="SpanAccessor.csproj" />
+    <Compile Include="ByRefLocalsUnloaded.cs" />
   </ItemGroup>
 </Project>

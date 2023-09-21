@@ -31,7 +31,7 @@ public class Program
     {
         var currentALC = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
         var alc = new TestALC(currentALC);
-        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Unloaded.dll"));
+        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "StaticsUnloaded.dll"));
 
         var accessor = (IStaticTest)Activator.CreateInstance(a.GetType("StaticTest"));
         accessor.SetStatic(12759, 548739, 5468, 8518, 9995);

@@ -5,7 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="Unloaded.csproj" />
+    <ProjectReference Include="StaticsUnloaded.csproj" />
     <ProjectReference Include="Accessor.csproj" />
     <Compile Include="CollectibleStatics.cs" />
   </ItemGroup>

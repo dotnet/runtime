@@ -92,7 +92,7 @@ public class Program
     {
         var currentALC = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
         var alc = new TestALC(currentALC);
-        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Unloaded.dll"));
+        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ByRefLocalsUnloaded.dll"));
         gchToAssembly = GCHandle.Alloc(a, GCHandleType.WeakTrackResurrection);
 
         var spanAccessor = (IReturnSpan)Activator.CreateInstance(a.GetType("SpanAccessor"));
