@@ -9937,8 +9937,6 @@ calli_end:
 			MonoType *ftype;
 			MonoInst *store_val = NULL;
 			MonoInst *thread_ins;
-			int ro_type;
-			gboolean is_typeload_failure = FALSE;
 			ins = NULL;
 
 			is_instance = (il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDFLDA || il_op == MONO_CEE_STFLD);
@@ -9969,7 +9967,6 @@ calli_end:
 				field = mono_field_from_token_checked (image, token, &klass, generic_context, cfg->error);
 				if (!field || CLASS_HAS_FAILURE (klass)) {
 						HANDLE_TYPELOAD_ERROR (cfg, klass);
-						is_typeload_failure = TRUE;
 
 						// Reached only in AOT. Cannot turn a token into a class. We silence the compilation error
 						// and generate a runtime exception.
@@ -10371,7 +10368,7 @@ calli_end:
 			} else {
 				gboolean is_const = FALSE;
 				MonoVTable *vtable = NULL;
-				
+
 				addr = NULL;
 				if (!context_used) {
 					vtable = mono_class_vtable_checked (klass, cfg->error);
@@ -10380,17 +10377,12 @@ calli_end:
 				}
 				if ((ftype->attrs & FIELD_ATTRIBUTE_INIT_ONLY) && (((addr = mono_aot_readonly_field_override (field)) != NULL) ||
 						(!context_used && !cfg->compile_aot && vtable->initialized))) {
+					int ro_type = ftype->type;
 					if (!addr)
 						addr = mono_static_field_get_addr (vtable, field);
-
-					ro_type = ftype->type;
 					if (ro_type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (ftype->data.klass)) {
 						ro_type = mono_class_enum_basetype_internal (ftype->data.klass)->type;
 					}
-
-					gint64 dummy_zero = 0;
-					if (is_typeload_failure && !addr)
-						addr = &dummy_zero;
 
 					GSHAREDVT_FAILURE (il_op);
 
