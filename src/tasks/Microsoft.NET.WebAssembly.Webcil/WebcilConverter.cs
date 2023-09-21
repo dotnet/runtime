@@ -175,7 +175,7 @@ public class WebcilConverter
                                 SectionStart: firstWCSection);
     }
 
-    private static void WriteHeader(Stream s, WebcilHeader header)
+    private static void WriteHeader(Stream s, WebcilHeader webcilHeader)
     {
         if (!BitConverter.IsLittleEndian)
         {
@@ -187,7 +187,7 @@ public class WebcilConverter
             webcilHeader.pe_debug_rva = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_debug_rva);
             webcilHeader.pe_debug_size = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_debug_size);
         }
-        WriteStructure(s, header);
+        WriteStructure(s, webcilHeader);
     }
 
     private static void WriteSectionHeaders(Stream s, ImmutableArray<WebcilSectionHeader> sectionsHeaders)
