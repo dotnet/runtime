@@ -567,9 +567,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             switch (objectId.Scheme)
             {
                 case "object":
-                case "array":
                 {
                     Write(ElementType.Class, objectId.Value);
+                    break;
+                }
+                case "array":
+                {
+                    Write(ElementType.Array, objectId.Value);
                     break;
                 }
                 case "valuetype":

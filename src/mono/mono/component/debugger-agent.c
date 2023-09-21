@@ -5512,7 +5512,9 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_FNPTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE) &&
-		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT)) {
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT) &&
+		!(t->type == MONO_TYPE_SZARRAY && type == MONO_TYPE_SZARRAY) &&
+		!(t->type == MONO_TYPE_ARRAY && type == MONO_TYPE_ARRAY)) {
 		char *name = mono_type_full_name (t);
 		PRINT_DEBUG_MSG (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer) (gsize) mono_native_thread_id_get (), name, type);
 		g_free (name);
@@ -5580,16 +5582,20 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
-			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
+			PRINT_DEBUG_MSG (1, "[ILONA] MONO_TYPE_IS_REFERENCE\n");
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING || type == MONO_TYPE_ARRAY || type == MONO_TYPE_SZARRAY) {
+				PRINT_DEBUG_MSG (1, "[ILONA] inside of if\n");
 				ret += sizeof(MonoObject*);
 				decode_objid (buf, &buf, limit);
 			} else if (type == VALUE_TYPE_ID_NULL) {
+				PRINT_DEBUG_MSG (1, "[ILONA] inside of if VALUE_TYPE_ID_NULL\n");
 				ret += sizeof(MonoObject*);
 				if (CHECK_PROTOCOL_VERSION (2, 59)) {
 					decode_byte (buf, &buf, limit);
 					decode_int (buf, &buf, limit); //not used
 				}
 			} else if (type == MONO_TYPE_VALUETYPE) {
+				PRINT_DEBUG_MSG (1, "[ILONA] inside of if MONO_TYPE_VALUETYPE\n");
 				MonoDomain *d;
 				decode_byte (buf, &buf, limit);
 				if (CHECK_PROTOCOL_VERSION(2, 61))
@@ -5604,8 +5610,10 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 		} else if ((t->type == MONO_TYPE_GENERICINST) &&
 					mono_metadata_generic_class_is_valuetype (t->data.generic_class) &&
 					m_class_is_enumtype (t->data.generic_class->container_class)){
+			PRINT_DEBUG_MSG (1, "[ILONA] inside of if MONO_TYPE_GENERICINST\n");
 			ret += decode_vtype_compute_size (t, domain, buf, &buf, limit, from_by_ref_value_type);
 		} else {
+			PRINT_DEBUG_MSG (1, "[ILONA] inside of if NOT_IMPLEMENTED\n");
 			NOT_IMPLEMENTED;
 		}
 		break;
@@ -5635,7 +5643,9 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_FNPTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE) &&
-		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT)) {
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT) &&
+		!(t->type == MONO_TYPE_SZARRAY && type == MONO_TYPE_SZARRAY) &&
+		!(t->type == MONO_TYPE_ARRAY && type == MONO_TYPE_ARRAY)) {
 		char *name = mono_type_full_name (t);
 		PRINT_DEBUG_MSG (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer) (gsize) mono_native_thread_id_get (), name, type);
 		g_free (name);
@@ -5728,7 +5738,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
-			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING || type == MONO_TYPE_ARRAY || type == MONO_TYPE_SZARRAY) {
 				int objid = decode_objid (buf, &buf, limit);
 				MonoObject *obj;
 
