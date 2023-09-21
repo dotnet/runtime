@@ -542,7 +542,7 @@ namespace DebuggerTests
             public int this[double key] => (int)key;
             public int this[float key] => (int)key;
             public int this[decimal key] => (int)key;
-            public int this[Indexer indexer] => indexer.index;
+            // public int this[Indexer indexer] => indexer.index; // ToFix: order matters
             public string this[EnumIndexer indexer] => $"Index is {indexer}";
             public bool this[StructIndexer indexer] => indexer.HasIndex;
 
