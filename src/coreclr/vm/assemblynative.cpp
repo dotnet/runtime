@@ -186,8 +186,25 @@ Assembly* AssemblyNative::LoadFromPEImage(ASSEMBLYBINDERREF pBinder, PEImage *pI
     RETURN pDomainAssembly->GetAssembly();
 }
 
-// unused
-extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyBinder, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly)
+LoaderAllocator* AssemblyBinder_GetNativeLoaderAllocator(ASSEMBLYBINDERREF pBinder)
+{
+    GCX_COOP();
+
+    LoaderAllocator* pNativeLA = NULL;
+
+    GCPROTECT_BEGIN(pBinder);
+
+    MethodDescCallSite getLA(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR);
+    ARG_SLOT arg = ObjToArgSlot(pBinder);
+    LOADERALLOCATORREF pManagedLA = (LOADERALLOCATORREF)getLA.Call_RetOBJECTREF(&arg);
+    pNativeLA = pManagedLA->GetNativeLoaderAllocator();
+
+    GCPROTECT_END();
+
+    return pNativeLA;
+}
+
+extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(QCall::ObjectHandleOnStack ptrNativeAssemblyBinder, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly)
 {
     QCALL_CONTRACT;
 
@@ -195,8 +212,10 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 
     PTR_AppDomain pCurDomain = GetAppDomain();
 
+    GCX_COOP();
+
     // Get the binder context in which the assembly will be loaded.
-    AssemblyBinder *pBinder = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyBinder);
+    ASSEMBLYBINDERREF pBinder = (ASSEMBLYBINDERREF)ptrNativeAssemblyBinder.Get();
     _ASSERTE(pBinder != NULL);
 
     // Form the PEImage for the ILAssembly. In case of an exception, the holder will ensure
@@ -213,7 +232,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
         if (!pILImage->CheckILFormat())
             THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
 
-        LoaderAllocator* pLoaderAllocator = pBinder->GetLoaderAllocator();
+        LoaderAllocator* pLoaderAllocator = AssemblyBinder_GetNativeLoaderAllocator(pBinder);
         if (pLoaderAllocator && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
         {
             // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
@@ -236,8 +255,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromPath(INT_PTR ptrNativeAssemblyB
 }
 
 /*static */
-// unused
-extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssemblyBinder, INT_PTR ptrAssemblyArray,
+extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(QCall::ObjectHandleOnStack ptrNativeAssemblyBinder, INT_PTR ptrAssemblyArray,
                                               INT32 cbAssemblyArrayLength, INT_PTR ptrSymbolArray, INT32 cbSymbolArrayLength,
                                               QCall::ObjectHandleOnStack retLoadedAssembly)
 {
@@ -246,7 +264,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
     BEGIN_QCALL;
 
     // Ensure that the invariants are in place
-    _ASSERTE(ptrNativeAssemblyBinder != NULL);
+    _ASSERTE(ptrNativeAssemblyBinder.Get() != NULL);
     _ASSERTE((ptrAssemblyArray != NULL) && (cbAssemblyArrayLength > 0));
     _ASSERTE((ptrSymbolArray == NULL) || (cbSymbolArrayLength > 0));
 
@@ -255,11 +273,13 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
     // Need to verify that this is a valid CLR assembly.
     if (!pILImage->CheckILFormat())
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
+    
+    GCX_COOP();
 
     // Get the binder context in which the assembly will be loaded
-    AssemblyBinder *pBinder = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyBinder);
+    ASSEMBLYBINDERREF pBinder = (ASSEMBLYBINDERREF)ptrNativeAssemblyBinder.Get();
 
-    LoaderAllocator* pLoaderAllocator = pBinder->GetLoaderAllocator();
+    LoaderAllocator* pLoaderAllocator = AssemblyBinder_GetNativeLoaderAllocator(pBinder);
     if (pLoaderAllocator && pLoaderAllocator->IsCollectible() && !pILImage->IsILOnly())
     {
         // Loading IJW assemblies into a collectible AssemblyLoadContext is not allowed
@@ -267,9 +287,8 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
     }
 
     // Pass the stream based assembly as IL in an attempt to bind and load it
-    Assembly* pLoadedAssembly = /*AssemblyNative::LoadFromPEImage(pBinder, pILImage)*/ NULL;
+    Assembly* pLoadedAssembly = AssemblyNative::LoadFromPEImage(pBinder, pILImage);
     {
-        GCX_COOP();
         retLoadedAssembly.Set(pLoadedAssembly->GetExposedObject());
     }
 
@@ -303,15 +322,14 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
 
 #ifdef TARGET_WINDOWS
 /*static */
-// unused
-extern "C" void QCALLTYPE AssemblyNative_LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyBinder, INT_PTR hModule, QCall::ObjectHandleOnStack retLoadedAssembly)
+extern "C" void QCALLTYPE AssemblyNative_LoadFromInMemoryModule(QCall::ObjectHandleOnStack ptrNativeAssemblyBinder, INT_PTR hModule, QCall::ObjectHandleOnStack retLoadedAssembly)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
     // Ensure that the invariants are in place
-    _ASSERTE(ptrNativeAssemblyBinder != NULL);
+    _ASSERTE(ptrNativeAssemblyBinder.Get() != NULL);
     _ASSERTE(hModule != NULL);
 
     PEImageHolder pILImage(PEImage::CreateFromHMODULE((HMODULE)hModule));
@@ -321,7 +339,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromInMemoryModule(INT_PTR ptrNativ
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
     // Get the binder context in which the assembly will be loaded
-    AssemblyBinder *pBinder = reinterpret_cast<AssemblyBinder*>(ptrNativeAssemblyBinder);
+    ASSEMBLYBINDERREF pBinder = (ASSEMBLYBINDERREF)ptrNativeAssemblyBinder.Get();
 
     // Pass the in memory module as IL in an attempt to bind and load it
     Assembly* pLoadedAssembly = /*AssemblyNative::LoadFromPEImage(pBinder, pILImage)*/ NULL;
