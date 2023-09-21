@@ -210,7 +210,8 @@ namespace System.Formats.Cbor
             if (currentCapacity < requiredCapacity)
             {
                 int newCapacity = currentCapacity == 0 ? 1024 : currentCapacity * 2;
-                if ((uint)newCapacity > (uint)Array.MaxLength || newCapacity < requiredCapacity)
+                const uint MaxArrayLength = 0x7FFFFFC7; // Array.MaxLength
+                if ((uint)newCapacity > MaxArrayLength || newCapacity < requiredCapacity)
                 {
                     newCapacity = requiredCapacity;
                 }
