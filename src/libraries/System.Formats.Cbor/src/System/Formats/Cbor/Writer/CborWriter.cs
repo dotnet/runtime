@@ -210,9 +210,7 @@ namespace System.Formats.Cbor
             if (currentCapacity < requiredCapacity)
             {
                 int newCapacity = currentCapacity == 0 ? 1024 : currentCapacity * 2;
-                if ((uint)newCapacity > (uint)Array.MaxLength)
-                    newCapacity = Array.MaxLength;
-                if (newCapacity < requiredCapacity)
+                if ((uint)newCapacity > (uint)Array.MaxLength || newCapacity < requiredCapacity)
                     newCapacity = requiredCapacity;
 
                 byte[] newBuffer = new byte[newCapacity];
