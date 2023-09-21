@@ -42,5 +42,17 @@ namespace System.Globalization.Tests
             DateTime dTest = jCal.ToDateTime(1, 1, 8, 0, 0, 0, 0, 4);
             Assert.Equal(dTest, new DateTime(1989, 1, 8));
         }
+        
+        [Theory]
+        [InlineData(@"Thg 1", 1)]
+        [InlineData(@"Thg 2", 2)]
+        [InlineData(@"Thg 10", 10)]
+        [InlineData(@"Thg 11", 11)]
+        [InlineData(@"Thg 12", 12)]
+        public void VietnameseTest_MatchAbbreviatedMonthName_ContinuesSearchAfterMatch(string monthAbberavition, int expectedMonthNum)
+        {
+            var vi = new System.Globalization.CultureInfo("vi-VN");
+            Assert.Equal(expectedMonthNum, DateTime.ParseExact(monthAbberavition, "MMM", vi.DateTimeFormat).Month);
+        }
     }
 }
