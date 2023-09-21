@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Reflection;
+using Xunit;
 
 public class test
 {
     private static double numtests = 4.0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("Test1: new AssemblyName(\"server2\")");
         AssemblyName asmN1 = new AssemblyName("server2");

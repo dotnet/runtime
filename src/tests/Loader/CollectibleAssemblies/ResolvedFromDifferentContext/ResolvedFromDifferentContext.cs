@@ -14,6 +14,7 @@ using System.Runtime.Loader;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.IO;
+using Xunit;
 
 class TestAssemblyLoadContext : AssemblyLoadContext
 {
@@ -40,7 +41,7 @@ class TestAssemblyLoadContext : AssemblyLoadContext
     }
 }
 
-class Test
+public class Test
 {
     static AssemblyLoadContext alc1 = null;
     static WeakReference interfaceAssemblyRef = null;
@@ -206,7 +207,8 @@ class Test
         return 100;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int status = 100;
         foreach (TestCase testCase in Enum.GetValues(typeof(TestCase)))

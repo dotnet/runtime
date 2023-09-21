@@ -23,7 +23,7 @@ namespace ContextualReflectionTest
         public MockAssembly() {}
     }
 
-    class Program : IProgram
+    public class Program : IProgram
     {
         public AssemblyLoadContext alc { get; set; }
         public Assembly alcAssembly { get; set; }
@@ -31,7 +31,8 @@ namespace ContextualReflectionTest
         public IProgram alcProgramInstance { get; set; }
         public Assembly defaultAssembly { get; set; }
 
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Program program = new Program(isolated:false);
 

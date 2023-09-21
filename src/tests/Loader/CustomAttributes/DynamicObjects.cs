@@ -12,7 +12,8 @@ using Xunit;
 namespace DynamicObjects {
     public class M {
         public const string ObjectRequiredMessage = "some string";
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             var instance = createObject();
             var attrs = instance.GetType().GetProperty("prop1").GetCustomAttributes();
