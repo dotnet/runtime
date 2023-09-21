@@ -71,11 +71,6 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT release build (checked runtime) and libraries tests
@@ -100,11 +95,6 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: NativeAOT_Checked_$(_BuildConfig)
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT release build (checked runtime) - SizeOpt and libraries tests
@@ -129,11 +119,6 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: NativeAOT_Checked_SizeOpt_$(_BuildConfig)
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT release build (checked runtime) - SpeedOpt and libraries tests
@@ -158,11 +143,6 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: NativeAOT_Checked_SpeedOpt_$(_BuildConfig)
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT checked build and Pri0 tests
@@ -196,8 +176,3 @@ extends:
                 parameters:
                   testGroup: innerloop
                   liveLibrariesBuildConfig: Release
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
