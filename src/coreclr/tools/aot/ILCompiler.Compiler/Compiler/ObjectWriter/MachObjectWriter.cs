@@ -51,6 +51,7 @@ namespace ILCompiler.ObjectWriter
             _objectFile = new MachObjectFile();
             _objectFile.FileType = MachFileType.Object;
             _objectFile.IsLittleEndian = true;
+            _objectFile.Flags = MachHeaderFlags.SubsectionsViaSymbols;
 
             switch (factory.Target.Architecture)
             {
