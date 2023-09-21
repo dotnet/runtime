@@ -3438,6 +3438,7 @@ void LinearScan::AddDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
 {
     assert(useRefPosition != nullptr);
 
+#if 0
     Interval* rmwInterval  = nullptr;
     bool      rmwIsLastUse = false;
     GenTree*  addr         = nullptr;
@@ -3457,6 +3458,9 @@ void LinearScan::AddDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
     {
         setDelayFree(useRefPosition);
     }
+#endif
+
+    setDelayFree(useRefPosition);
 }
 
 //------------------------------------------------------------------------
