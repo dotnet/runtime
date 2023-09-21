@@ -81,7 +81,7 @@ extends:
           - osx_arm64
           - osx_x64
           jobParameters:
-            buildArgs: -s clr.runtime+clr.alljits -c $(_BuildConfig) -bl $(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+            buildArgs: -s clr.runtime+clr.alljits -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
