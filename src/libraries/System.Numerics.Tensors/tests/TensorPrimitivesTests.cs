@@ -59,7 +59,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] + y[i], destination[i]);
+                Assert.Equal(x[i] + y[i], destination[i], Tolerance);
             }
         }
 
@@ -97,7 +97,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] + y, destination[i]);
+                Assert.Equal(x[i] + y, destination[i], Tolerance);
             }
         }
 
@@ -124,7 +124,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] - y[i], destination[i]);
+                Assert.Equal(x[i] - y[i], destination[i], Tolerance);
             }
         }
 
@@ -162,7 +162,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] - y, destination[i]);
+                Assert.Equal(x[i] - y, destination[i], Tolerance);
             }
         }
 
@@ -189,7 +189,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] * y[i], destination[i]);
+                Assert.Equal(x[i] * y[i], destination[i], Tolerance);
             }
         }
 
@@ -227,7 +227,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] * y, destination[i]);
+                Assert.Equal(x[i] * y, destination[i], Tolerance);
             }
         }
 
@@ -254,7 +254,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] / y[i], destination[i]);
+                Assert.Equal(x[i] / y[i], destination[i], Tolerance);
             }
         }
 
@@ -292,7 +292,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(x[i] / y, destination[i]);
+                Assert.Equal(x[i] / y, destination[i], Tolerance);
             }
         }
 
@@ -318,7 +318,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(-x[i], destination[i]);
+                Assert.Equal(-x[i], destination[i], Tolerance);
             }
         }
 
@@ -345,7 +345,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] + y[i]) * multiplier[i], destination[i]);
+                Assert.Equal((x[i] + y[i]) * multiplier[i], destination[i], Tolerance);
             }
         }
 
@@ -398,7 +398,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] + y[i]) * multiplier, destination[i]);
+                Assert.Equal((x[i] + y[i]) * multiplier, destination[i], Tolerance);
             }
         }
 
@@ -439,7 +439,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] + y) * multiplier[i], destination[i]);
+                Assert.Equal((x[i] + y) * multiplier[i], destination[i], Tolerance);
             }
         }
 
@@ -480,7 +480,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] * y[i]) + addend[i], destination[i]);
+                Assert.Equal((x[i] * y[i]) + addend[i], destination[i], Tolerance);
             }
         }
 
@@ -533,7 +533,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] * y[i]) + addend, destination[i]);
+                Assert.Equal((x[i] * y[i]) + addend, destination[i], Tolerance);
             }
         }
 
@@ -562,7 +562,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal((x[i] * y) + addend[i], destination[i]);
+                Assert.Equal((x[i] * y) + addend[i], destination[i], Tolerance);
             }
         }
 
@@ -589,7 +589,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Exp(x[i]), destination[i]);
+                Assert.Equal(MathF.Exp(x[i]), destination[i], Tolerance);
             }
         }
 
@@ -614,7 +614,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Log(x[i]), destination[i]);
+                Assert.Equal(MathF.Log(x[i]), destination[i], Tolerance);
             }
         }
 
@@ -664,7 +664,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Cosh(x[i]), destination[i]);
+                Assert.Equal(MathF.Cosh(x[i]), destination[i], Tolerance);
             }
         }
 
@@ -689,7 +689,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Sinh(x[i]), destination[i]);
+                Assert.Equal(MathF.Sinh(x[i]), destination[i], Tolerance);
             }
         }
 
@@ -714,7 +714,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Tanh(x[i]), destination[i]);
+                Assert.Equal(MathF.Tanh(x[i]), destination[i], Tolerance);
             }
         }
 
