@@ -13,6 +13,11 @@ public static class Runtime_92357
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static void Problem()
     {
+        if (!Avx2.IsSupported)
+        {
+            return;
+        }
+
         int y = 5;
 
         Vector256<short> actual = Test(Vector256.Create((short)1), ref y);
