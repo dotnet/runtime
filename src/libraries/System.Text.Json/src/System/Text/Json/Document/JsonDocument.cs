@@ -881,48 +881,6 @@ namespace System.Text.Json
             WritePropertyName(_parsedData.Get(index - DbRow.Size), writer);
         }
 
-        private void WritePropertyNameNew(in DbRow row, Utf8JsonWriter writer)
-        {
-            // To be determined whether to use this or the original WritePropertyName.
-            // This method is ~10% faster than the original one
-            // when the property name contains escaped characters.
-
-            Debug.Assert(row.TokenType == JsonTokenType.PropertyName);
-            int loc = row.Location;
-            int length = row.SizeOrLength;
-            ReadOnlySpan<byte> rawName = _utf8Json.Slice(loc, length).Span;
-
-            int firstBackSlashIndex = rawName.IndexOf(JsonConstants.BackSlash);
-
-            if (firstBackSlashIndex < 0)
-            {
-                writer.WritePropertyName(rawName);
-                return;
-            }
-
-            // If the name needs unescaping
-
-            ArraySegment<byte> rented = default;
-
-            Span<byte> utf8Unescaped = length <= JsonConstants.StackallocByteThreshold ?
-                stackalloc byte[JsonConstants.StackallocByteThreshold] :
-                (rented = new ArraySegment<byte>(ArrayPool<byte>.Shared.Rent(length), 0, length));
-
-            try
-            {
-                int written = 0;
-
-                JsonReaderHelper.Unescape(rawName, utf8Unescaped, firstBackSlashIndex, out written);
-                ReadOnlySpan<byte> propertyName = utf8Unescaped.Slice(0, written);
-
-                writer.WritePropertyName(propertyName);
-            }
-            finally
-            {
-                ClearAndReturn(rented);
-            }
-        }
-
         private void WritePropertyName(in DbRow row, Utf8JsonWriter writer)
         {
             ArraySegment<byte> rented = default;
