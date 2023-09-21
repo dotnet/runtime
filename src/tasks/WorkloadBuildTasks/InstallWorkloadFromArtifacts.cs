@@ -215,7 +215,7 @@ namespace Microsoft.Workload.Build.Tasks
             (int exitCode, string output) = Utils.TryRunProcess(
                                                     Log,
                                                     Path.Combine(req.TargetPath, "dotnet"),
-                                                    $"workload install --skip-manifest-update --configfile \"{nugetConfigPath}\" --temp-dir \"{_tempDir}/workload-install-temp\" {req.WorkloadId}",
+                                                    $"workload install --skip-manifest-update --skip-sign-check --configfile \"{nugetConfigPath}\" --temp-dir \"{_tempDir}/workload-install-temp\" {req.WorkloadId}",
                                                     workingDir: _tempDir,
                                                     envVars: new Dictionary<string, string> () {
                                                         ["NUGET_PACKAGES"] = _nugetCachePath
