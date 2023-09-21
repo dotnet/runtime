@@ -416,7 +416,7 @@ void LinearScan::updateRegsFreeBusyState(RefPosition& refPosition,
 //    It is unlikely, if an internal register is the only use of floating point,
 //    that it will select a callee-save register.  But to be safe, we restrict
 //    the set of candidates if compFloatingPointUsed is not already set.
-
+//
 regMaskTP LinearScan::internalFloatRegCandidates()
 {
     needNonIntegerRegisters = true;
@@ -451,7 +451,7 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 // minRegCount registers, otherwise returns regMaskActual.
 //
 // Arguments:
-//     refposition        -  RefPosition for which we want to constain.
+//     refPosition        -  RefPosition which we want to constrain.
 //     regMaskActual      -  regMask that needs to be constrained
 //     regMaskConstraint  -  regMask constraint that needs to be
 //                           applied to regMaskActual
@@ -459,8 +459,9 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 //                           be present in new regMask.
 //
 // Return Value:
-//     New regMask that has minRegCount registers after instersection.
+//     New regMask that has minRegCount registers after intersection.
 //     Otherwise returns regMaskActual.
+//
 regMaskTP LinearScan::getConstrainedRegMask(RefPosition* refPosition,
                                             regMaskTP    regMaskActual,
                                             regMaskTP    regMaskConstraint,
@@ -500,7 +501,7 @@ regMaskTP LinearScan::getConstrainedRegMask(RefPosition* refPosition,
 // Notes:
 //    This is the method used to implement the stress options that limit
 //    the set of registers considered for allocation.
-
+//
 regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
 {
 #ifdef TARGET_ARM64
@@ -588,7 +589,7 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
 //
 // Assumptions:
 //    'refPosition is non-null.
-
+//
 bool LinearScan::conflictingFixedRegReference(regNumber regNum, RefPosition* refPosition)
 {
     // Is this a fixed reference of this register?  If so, there is no conflict.
@@ -697,7 +698,7 @@ LinearScanInterface* getLinearScanAllocator(Compiler* comp)
 //    The constructor takes care of initializing the data structures that are used
 //    during Lowering, including (in DEBUG) getting the stress environment variables,
 //    as they may affect the block ordering.
-
+//
 LinearScan::LinearScan(Compiler* theCompiler)
     : compiler(theCompiler)
     , intervals(theCompiler->getAllocator(CMK_LSRA_Interval))
@@ -850,7 +851,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 //    However, a block may be in the list and already selected, if it was subsequently
 //    encountered as both a flow and layout successor of the most recently selected
 //    block.
-
+//
 BasicBlock* LinearScan::getNextCandidateFromWorkList()
 {
     BasicBlockList* nextWorkList = nullptr;
@@ -881,7 +882,7 @@ BasicBlock* LinearScan::getNextCandidateFromWorkList()
 //    will be allocated.
 //    This method clears the bbVisitedSet on LinearScan, and when it returns the set
 //    contains all the bbNums for the block.
-
+//
 void LinearScan::setBlockSequence()
 {
     assert(!blockSequencingDone); // The method should be called only once.
@@ -1124,6 +1125,7 @@ void LinearScan::setBlockSequence()
 //
 // Notes:
 //    See addToBlockSequenceWorkList.
+//
 int LinearScan::compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block2, bool useBlockWeights)
 {
     if (useBlockWeights)
@@ -1186,6 +1188,7 @@ int LinearScan::compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block
 //    Note also that, when random traversal order is implemented, this method
 //    should insert the blocks into the list in random order, so that we can always
 //    simply select the first block in the list.
+//
 void LinearScan::addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlock* block, BlockSet& predSet)
 {
     // The block that is being added is not already sequenced
@@ -1302,7 +1305,7 @@ BasicBlock* LinearScan::startBlockSequence()
 // Notes:
 //    This method is used when the next block is actually going to be handled.
 //    It changes curBBNum.
-
+//
 BasicBlock* LinearScan::moveToNextBlock()
 {
     BasicBlock* nextBlock = getNextBlock();
@@ -1326,7 +1329,7 @@ BasicBlock* LinearScan::moveToNextBlock()
 // Notes:
 //    This method does not actually change the current block - it is used simply
 //    to determine which block will be next.
-
+//
 BasicBlock* LinearScan::getNextBlock()
 {
     assert(blockSequencingDone);
@@ -1450,7 +1453,7 @@ PhaseStatus LinearScan::doLinearScan()
 //    CodeGen will take care of updating the reg masks and the current var liveness,
 //    after calling this method.
 //    This is because we need to kill off the dead registers before setting the newly live ones.
-
+//
 void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
 {
     if (!enregisterLocalVars)
@@ -2463,7 +2466,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 //                                    For this case, the block returned is the same as for LSRA_BLOCK_BOUNDARY_PRED, but
 //                                    the register locations will be "rotated" to stress the resolution and allocation
 //                                    code.
-
+//
 BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                                                BasicBlock* prevBlock DEBUGARG(bool* pPredBlockIsAllocated))
 {
@@ -2789,7 +2792,7 @@ bool copyOrMoveRegInUse(RefPosition* ref, LsraLocation loc)
 //    of a RefTypeUse RefPosition (i.e. not when we are only looking at the type of an interval, nor when
 //    we are interested in the "defining" type of the interval).  This is because the situation of interest
 //    only happens at the use (where it must be copied to an integer register).
-
+//
 RegisterType LinearScan::getRegisterType(Interval* currentInterval, RefPosition* refPosition)
 {
     assert(refPosition->getInterval() == currentInterval);
@@ -2905,6 +2908,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 // Arguments:
 //    currentInterval: The interval for the current allocation
 //    refPosition:     The RefPosition of the current Interval for which a register is being allocated
+//
 // Return Value:
 //    The regNumber, if any, allocated to the RefPosition.
 //    Returns REG_NA only if 'refPosition->RegOptional()' is true, and there are
@@ -3148,9 +3152,9 @@ void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
 //    refLocation - the LsraLocation at which we want to know if it is active
 //
 // Return Value:
-//    True  - if this RefPosition occurs at the given location, OR
+//    true  - if this RefPosition occurs at the given location, OR
 //            if it occurs at the previous location and is marked delayRegFree.
-//    False - otherwise
+//    false - otherwise
 //
 bool LinearScan::isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation)
 {
@@ -3523,7 +3527,7 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
 // Notes:
 //    This method is used to unassign a register when an interval needs to be moved to a
 //    different register, but not (yet) spilled.
-
+//
 void LinearScan::unassignPhysRegNoSpill(RegRecord* regRec)
 {
     Interval* assignedInterval = regRec->assignedInterval;
@@ -3900,7 +3904,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 // Notes:
 //    Calls processBlockEndLocations() to set the outVarToRegMap, then gets the next block,
 //    and sets the inVarToRegMap appropriately.
-
+//
 void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
 {
     assert(currentBlock != nullptr);
@@ -3938,7 +3942,7 @@ void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
 //
 // Return Value:
 //    The new register to use.
-
+//
 #ifdef DEBUG
 regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber targetReg, regMaskTP availableRegs)
 {
@@ -4035,6 +4039,7 @@ RegRecord* LinearScan::getSecondHalfRegRec(RegRecord* regRec)
 
     return secondHalfRegRec;
 }
+
 //------------------------------------------------------------------------------------------
 // findAnotherHalfRegRec: Find another half RegRecord which forms same ARM32 double register
 //
@@ -4052,6 +4057,7 @@ RegRecord* LinearScan::findAnotherHalfRegRec(RegRecord* regRec)
     regNumber anotherHalfRegNum = findAnotherHalfRegNum(regRec->regNum);
     return getRegisterRecord(anotherHalfRegNum);
 }
+
 //------------------------------------------------------------------------------------------
 // findAnotherHalfRegNum: Find another half register's number which forms same ARM32 double register
 //
@@ -4085,7 +4091,7 @@ regNumber LinearScan::findAnotherHalfRegNum(regNumber regNum)
 
     return anotherHalfRegNum;
 }
-#endif
+#endif // TARGET_ARM
 
 //--------------------------------------------------------------------------------------
 // canRestorePreviousInterval: Test if we can restore previous interval
@@ -4205,6 +4211,7 @@ void LinearScan::resetAllRegistersState()
 //    During the resolution (write-back when allocationPassComplete = true) pass, we only
 //    modify the inVarToRegMap in cases where a lclVar was spilled after the block had been
 //    completed.
+//
 void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 {
     // If we have no register candidates we should only call this method during allocation.
@@ -4561,7 +4568,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 //    This is because we need to have the outVarToRegMap locations in order to set the locations
 //    at successor blocks during allocation time, but if lclVars are spilled after a block has been
 //    completed, we need to record the REG_STK location for those variables at resolution time.
-
+//
 void LinearScan::processBlockEndLocations(BasicBlock* currentBlock)
 {
     assert(currentBlock != nullptr && currentBlock->bbNum == curBBNum);
@@ -6232,6 +6239,7 @@ void LinearScan::writeLocalReg(GenTreeLclVar* lclNode, unsigned varNum, regNumbe
 // Description:
 //      Update the graph for a local reference.
 //      Also, track the register (if any) that is currently occupied.
+//
 // Arguments:
 //      treeNode: The lclVar that's being resolved
 //      currentRefPosition: the RefPosition associated with the treeNode
@@ -6908,7 +6916,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
 //
 // Assumptions:
 //    This is called before any calls to updateMaxSpill().
-
+//
 void LinearScan::initMaxSpill()
 {
     needDoubleTmpForFPCall = false;
@@ -6933,7 +6941,7 @@ void LinearScan::initMaxSpill()
 // Assumptions:
 //    This is called after updateMaxSpill() has been called for all "real"
 //    RefPositions.
-
+//
 void LinearScan::recordMaxSpill()
 {
     // Note: due to the temp normalization process (see tmpNormalizeType)
@@ -7075,7 +7083,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
 }
 
 // This is the final phase of register allocation.  It writes the register assignments to
-// the tree, and performs resolution across joins and backedges.
+// the tree, and performs resolution across joins and back edges.
 //
 template <bool localVarsEnregistered>
 void           LinearScan::resolveRegisters()
@@ -7858,7 +7866,7 @@ void LinearScan::insertSwap(
 //    It is up to the caller to check the return value, and to determine whether a register is
 //    available, and to handle that case appropriately.
 //    It is also up to the caller to cache the return value, as this is not cheap to compute.
-
+//
 regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
                                               BasicBlock*      toBlock,
                                               var_types        type,
@@ -8128,7 +8136,7 @@ void LinearScan::addResolution(BasicBlock* block,
 //    For all outgoing critical edges (i.e. any successor of this block which is
 //    a join edge), if there are any conflicts, split the edge by adding a new block,
 //    and generate the resolution code into that block.
-
+//
 void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 {
     VARSET_TP outResolutionSet(VarSetOps::Intersection(compiler, block->bbLiveOut, resolutionCandidateVars));
@@ -8461,7 +8469,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 //      'join' resolution at the end of this block.
 //    Note that a block may have both 'split' or 'critical' incoming edge(s) and 'join' outgoing
 //    edges.
-
+//
 void LinearScan::resolveEdges()
 {
     JITDUMP("RESOLVING EDGES\n");
@@ -8678,7 +8686,7 @@ void LinearScan::resolveEdges()
 //    new home (register/stack), it first does the register-to-stack moves (to free those
 //    registers), then the register to register moves, ensuring that the target register
 //    is free before the move, and then finally the stack to register moves.
-
+//
 void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                              BasicBlock*      toBlock,
                              ResolveType      resolveType,
@@ -10598,6 +10606,7 @@ void LinearScan::dumpRegRecordTitleLines()
     }
     printf("%s\n", rightBox);
 }
+
 void LinearScan::dumpRegRecordTitle()
 {
     dumpRegRecordTitleLines();
@@ -11397,6 +11406,7 @@ void LinearScan::verifyFinalAllocation()
 //
 // Notes:
 //    If verbose is set, this will also dump the moves into the table of final allocations.
+//
 void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation currentLocation)
 {
     GenTree* dst = resolutionMove;

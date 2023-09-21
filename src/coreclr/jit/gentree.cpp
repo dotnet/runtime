@@ -10621,11 +10621,11 @@ void Compiler::gtDispNodeName(GenTree* tree)
     {
         GenTreeAddrMode* lea = tree->AsAddrMode();
         bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " %s(", name);
-        if (lea->Base() != nullptr)
+        if (lea->HasBase())
         {
             bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), "b+");
         }
-        if (lea->Index() != nullptr)
+        if (lea->HasIndex())
         {
             bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), "(i*%d)+", lea->gtScale);
         }

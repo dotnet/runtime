@@ -6664,17 +6664,17 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     emitAttr size = emitTypeSize(lea);
     genConsumeOperands(lea);
 
-    if (lea->Base() && lea->Index())
+    if (lea->HasBase() && lea->HasIndex())
     {
         regNumber baseReg  = lea->Base()->GetRegNum();
         regNumber indexReg = lea->Index()->GetRegNum();
         GetEmitter()->emitIns_R_ARX(INS_lea, size, lea->GetRegNum(), baseReg, indexReg, lea->gtScale, lea->Offset());
     }
-    else if (lea->Base())
+    else if (lea->HasBase())
     {
         GetEmitter()->emitIns_R_AR(INS_lea, size, lea->GetRegNum(), lea->Base()->GetRegNum(), lea->Offset());
     }
-    else if (lea->Index())
+    else if (lea->HasIndex())
     {
         GetEmitter()->emitIns_R_ARX(INS_lea, size, lea->GetRegNum(), REG_NA, lea->Index()->GetRegNum(), lea->gtScale,
                                     lea->Offset());

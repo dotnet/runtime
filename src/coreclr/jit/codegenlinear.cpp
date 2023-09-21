@@ -2347,8 +2347,8 @@ void CodeGen::genEmitCallIndir(int                   callType,
     int argSize = 0;
 #endif // !defined(TARGET_X86)
 
-    regNumber iReg = (indir->Base()  != nullptr) ? indir->Base()->GetRegNum() : REG_NA;
-    regNumber xReg = (indir->Index() != nullptr) ? indir->Index()->GetRegNum() : REG_NA;
+    regNumber iReg = indir->HasBase()  ? indir->Base()->GetRegNum() : REG_NA;
+    regNumber xReg = indir->HasIndex() ? indir->Index()->GetRegNum() : REG_NA;
 
     // These should have been put in volatile registers to ensure they do not
     // get overridden by epilog sequence during tailcall.
