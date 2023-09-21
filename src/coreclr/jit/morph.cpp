@@ -10086,11 +10086,6 @@ GenTree* Compiler::fgOptimizeCastOnStore(GenTree* store)
     if (!src->OperIs(GT_CAST))
         return store;
 
-    // SIMD scalar operations may be specialized for stores, but not when the store expects a small type.
-    // Therefore, we keep the CAST.
-    if (src->gtGetOp1()->OperIsHWIntrinsicSIMDScalar() && varTypeIsSmall(store))
-        return store;
-
     if (store->OperIs(GT_STORE_LCL_VAR))
     {
         LclVarDsc* varDsc = lvaGetDesc(store->AsLclVarCommon()->GetLclNum());
@@ -11899,11 +11894,6 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
                 if (op2->gtOper == GT_CAST && !op2->gtOverflow())
                 {
-                    // SIMD scalar operations may be specialized for stores, but not when the store expects a small type.
-                    // Therefore, we keep the CAST.
-                    if (op2->gtGetOp1()->OperIsHWIntrinsicSIMDScalar() && varTypeIsSmall(tree))
-                        break;
-
                     var_types srct;
                     var_types cast;
                     var_types dstt;

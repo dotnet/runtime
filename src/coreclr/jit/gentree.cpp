@@ -26448,31 +26448,3 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
     // Not enough known information; therefore we might overflow.
     return true;
 }
-
-//------------------------------------------------------------------------
-// OperIsHWIntrinsicSIMDScalar: returns true if the given tree is GT_HWINTRINSIC and
-//                              is a SIMD scalar operation
-//
-// Return Value:
-//    true if the given tree is a hwintrinsic and a SIMD scalar operation
-//
-bool GenTree::OperIsHWIntrinsicSIMDScalar()
-{
-#if defined(FEATURE_HW_INTRINSICS)
-
-    if (!this->OperIsHWIntrinsic())
-        return false;
-
-    GenTreeHWIntrinsic* hwintrinsic = this->AsHWIntrinsic();
-    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-
-#if defined(TARGET_AMD64)
-    return HWIntrinsicInfo::lookupCategory(intrinsicId) == HW_Category_SIMDScalar;
-#elif defined(TARGET_ARM64)
-    return HWIntrinsicInfo::SIMDScalar(intrinsicId);
-#endif // TARGET_ARM64 && !TARGET_AMD64
-
-#endif // FEATURE_HW_INTRINSICS
-
-    return false;
-}
