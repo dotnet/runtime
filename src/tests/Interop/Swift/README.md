@@ -66,7 +66,7 @@ The Binding Tools for Swift resolves that by reading the native library, extract
 
 ## Goals
 
-The goal of this experiment is to explore the possibilities and limitations of direct P/Invoke interop with Swift. It should implement runtime mechanisms for handling Swift ABI differences. In this phase of the experiment, we want to implement on marshalling of blittable types and handling `self` context and `error` handling on Mono AOT targeting MacCatalyst.
+The goal of this experiment is to explore the possibilities and limitations of direct P/Invoke interop with Swift. It should implement runtime mechanisms for handling Swift ABI differences. In the first iteration of the experiment, our focus will be on the self context and error handling calling conventions with blittable types targeting MacCatalyst. After that, we plan to expand support for non-blittable types using binding wrappers and to include other Apple targets.
 
 We can choose to first support Mono AOT either with or without LLVM according to the initial analysis.
 
