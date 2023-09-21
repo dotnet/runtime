@@ -3312,7 +3312,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
             regNumber tmpReg = call->GetSingleTempReg();
             // Register where we save call address in should not be overridden by epilog.
-            assert((tmpReg & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == tmpReg);
+            assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == genRegMask(tmpReg));
 
             regNumber callAddrReg =
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
@@ -3572,7 +3572,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             else
             {
                 // Register where we save call address in should not be overridden by epilog.
-                assert((targetAddrReg & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == targetAddrReg);
+                assert((genRegMask(targetAddrReg) & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == genRegMask(targetAddrReg));
             }
 
             // We have now generated code loading the target address from the indirection cell into `targetAddrReg`.
