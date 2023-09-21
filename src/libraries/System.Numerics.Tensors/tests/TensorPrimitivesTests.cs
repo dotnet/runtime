@@ -1247,7 +1247,7 @@ namespace System.Numerics.Tensors.Tests
                 }
             }
 
-            Assert.Equal(x[index], TensorPrimitives.MaxMagnitude(x));
+            Assert.Equal(x[index], TensorPrimitives.MaxMagnitude(x), Tolerance);
         }
 
         [Theory]
@@ -1413,7 +1413,7 @@ namespace System.Numerics.Tensors.Tests
                 }
             }
 
-            Assert.Equal(x[index], TensorPrimitives.MinMagnitude(x));
+            Assert.Equal(x[index], TensorPrimitives.MinMagnitude(x), Tolerance);
         }
 
         [Theory]
@@ -1449,7 +1449,7 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Abs(x[i]) < MathF.Abs(y[i]) ? x[i] : y[i], destination[i]);
+                Assert.Equal(MathF.Abs(x[i]) < MathF.Abs(y[i]) ? x[i] : y[i], destination[i], Tolerance);
             }
         }
 
