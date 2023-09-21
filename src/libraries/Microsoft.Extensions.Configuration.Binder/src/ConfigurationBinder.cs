@@ -298,7 +298,7 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            if (config == null)
+            if (config is null)
             {
                 return;
             }

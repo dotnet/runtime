@@ -1768,7 +1768,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(0, options.OtherCodeNullable);
             Assert.Equal("default", options.OtherCodeString);
             Assert.Null(options.OtherCodeNull);
-            Assert.Null(options.OtherCodeUri);            
+            Assert.Null(options.OtherCodeUri);
         }
 
         [Fact]
@@ -2239,7 +2239,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(GeolocationClass), key, new GeolocationClass()));
                 Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key));
                 Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key, defaultValue: null));
-                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key, default(Geolocation)));    
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key, default(Geolocation)));
             }
         }
 
@@ -2406,26 +2406,28 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("localhost", instance.ConnectionString);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CanBindToMockConfiugrationSection()
         {
-            double expectedLatitude = 42.0002d;
+            const string expectedA = "hello";
+
             var mockConfSection = new Mock<IConfigurationSection>();
-            var latitudeSection = new Mock<IConfigurationSection>();
-            latitudeSection.Setup(m => m.Value).Returns(expectedLatitude.ToString());
+            var aSection = new Mock<IConfigurationSection>();
+            aSection.Setup(m => m.Value).Returns(expectedA);
 
             // only mock one of the two properties, the other will return a null section.
             // runtime binder uses GetSection
-            mockConfSection.Setup(config => config.GetSection(nameof(GeolocationClass.Latitude))).Returns(latitudeSection.Object);
+            mockConfSection.Setup(config => config.GetSection(nameof(SimplePoco.A))).Returns(aSection.Object);
             // source gen uses indexer
-            mockConfSection.Setup(config => config[nameof(GeolocationClass.Latitude)]).Returns(latitudeSection.Object?.Value);
-            mockConfSection.Setup(config => config.GetChildren()).Returns(new[] { latitudeSection.Object });
+            mockConfSection.Setup(config => config[nameof(SimplePoco.A)]).Returns(aSection.Object?.Value);
+            mockConfSection.Setup(config => config.GetChildren()).Returns(new[] { aSection.Object });
 
-            GeolocationClass result = new();
+            SimplePoco result = new();
             mockConfSection.Object.Bind(result);
 
-            Assert.Equal(expectedLatitude, result.Latitude);
-            Assert.Equal(default(double), result.Longitude);
+            Assert.Equal(expectedA, result.A);
+            Assert.Equal(default(string), result.B);
         }
     }
 }
