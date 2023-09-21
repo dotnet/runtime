@@ -90,9 +90,9 @@
       <Sha>89be445dd4936157533ad96bafb95f701430653a</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100.Transport" Version="8.0.0-rtm.23469.3">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100.Transport" Version="8.0.0-rtm.23470.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>50bf805c8b5ca52abd34fde390609d8a54640246</Sha>
+      <Sha>446eeb331fcbf2f48c14a377601a8ab950ec942e</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="8.0.0-alpha.1.23469.1">
@@ -397,6 +397,10 @@
     <Dependency Name="Nuget.ProjectModel" Version="6.2.4">
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="8.0.100-rc.2.23470.7">
+      <Uri>https://github.com/dotnet/installer</Uri>
+      <Sha>dbeae1ac71d95355452952059f35960991cb3fd2</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
