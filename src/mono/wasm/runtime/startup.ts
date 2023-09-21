@@ -522,14 +522,6 @@ async function mono_wasm_before_memory_snapshot() {
         else
             throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
     }
-    if (runtimeHelpers.config.virtualWorkingDirectory) {
-        const FS = Module.FS;
-        const cwd = runtimeHelpers.config.virtualWorkingDirectory;
-        const wds = FS.stat(cwd);
-        // TODO should we create the directory if it doesn't exist?
-        mono_assert(wds && FS.isDir(wds.mode), () => `Could not find working directory ${cwd}`);
-        FS.chdir(cwd);
-    }
     if (runtimeHelpers.config.startupMemoryCache) {
         // disable the trampoline for now, we will re-enable it after we stored the snapshot
         cwraps.mono_jiterp_update_jit_call_dispatcher(0);
@@ -544,6 +536,15 @@ async function mono_wasm_before_memory_snapshot() {
         mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
 
     mono_wasm_load_runtime("unused", runtimeHelpers.config.debugLevel);
+
+    if (runtimeHelpers.config.virtualWorkingDirectory) {
+        const FS = Module.FS;
+        const cwd = runtimeHelpers.config.virtualWorkingDirectory;
+        const wds = FS.stat(cwd);
+        // TODO should we create the directory if it doesn't exist?
+        mono_assert(wds && FS.isDir(wds.mode), () => `Could not find working directory ${cwd}`);
+        FS.chdir(cwd);
+    }
 
     // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
     if (runtimeHelpers.config.startupMemoryCache) {
