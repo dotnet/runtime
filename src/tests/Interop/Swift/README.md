@@ -1,47 +1,87 @@
 # .NET Swift Interop
 
-Swift has a different ABI, runtime environment, and object model, making it non-trivial to call from the .NET runtime. Existing solutions like [Binding Tools for Swift](https://github.com/xamarin/binding-tools-for-swift) and [BeyondNet](https://github.com/royalapplications/beyondnet) rely on Swift and C# binding wrappers.
+The Swift programming language has a different ABI, runtime environment, and object model, making it challenging to call from the .NET runtime. Existing solutions, like [Binding Tools for Swift](https://github.com/xamarin/binding-tools-for-swift) and [BeyondNet](https://github.com/royalapplications/beyondnet).
 
-This project aims to explore the possibilities and limitations of direct P/Invoke interop with Swift. For a comprehensive .NET-Swift Interop, the Binding Tools for Swift contains valuable components that should either be reused or built upon.
+This project aims to explore the possibilities and limitations of direct P/Invoke interop with Swift. It should implement runtime mechanisms for handling Swift ABI differences. For a comprehensive .NET Swift interop, the Binding Tools for Swift contains valuable components that could be reused or built upon. 
 
-## Calling convention
+We want to focus on the runtime support for direct P/Invoke interop with Swift, which Xamarin bindings will consume to support running Maui apps with third-party Swift libraries. Ideally, we want to avoid generating extra wrappers and attempt to directly call all kinds of Swift functions. While external tools can be helpful, they may introduce additional complexity, and we intend to integrate them into the .NET toolchain ecosystem. 
 
-In Swift, functions parameters can be passed differently, either by reference or value. This is called "pass-by-X" for consistency. Swift allows l-values parameters to be marked as pass-by-reference with"`in/out`. It's assumed the caller ensures validity and ownership of parameters in both cases. On a physical level, it's valuable to return common value types in registers instead of indirectly. The `self` parameter for both static and instance methods is always passed through a register since it's heavily used. Also, many methods call other methods on the same object, so it's best if the register storing `self` remains stable across different method signatures. Error handling is also handled through registers, so the caller needs to check for errors and throw if necessary. Registers allocation: https://github.com/apple/swift/blob/main/docs/ABI/CallConvSummary.rst. 
+## Swift ABI in a nutshell
 
-Swift's default function types are `thick` meaning they have an optional context object implicitly passed when calling the function. It would be ideal to create a thick function from a thin one without introducing a thunk just to move parameters with the missing context parameter.
+The Swift ABI specifies how to call functions and how their data and metadata are represented in memory. Here are important components of the ABI that we need to consider.
 
-## Name mangling
+### Type layout
 
-Swift uses mangling for generating unique names. This process can change in different major versions (i.e. Swift 4 vs Swift 5). The Swift compiler puts mangled names in binary images to encode type references for runtime instantiation and reflection. In a binary, these mangled names may contain pointers to runtime data structures to represent locally-defined types more efficiently. When calling in from .NET, it is necessary to mangle the name during the runtime or AOT compilation.
+The types we want to support are: blittable value types, non-blittable value types, tuples, classes/actors, existential containers, generics types, protocols with associated types, and closures. Objects of types are stored in registers or memory. A data member of an object is any value that requires layout within the object itself. Data members include an object's stored properties and associated values. A layout for static types is determined during the compilation, while the layout for  opaque types is not determined until the runtime. For each type the alignment, size, and offset are calculated.
 
-## Memory management
 
-In Swift, memory management is handled by [Automatic Reference Counting](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/automaticreferencecounting/).
+Enabling library evolution simplifies marshaling rules to some extent. For each entry point, the Swift compiler generates a thunk that is forward compatible. For instance, if there is an enum parameter that would typically fit into registers, the created thunk takes the value by reference rather than by value to account for potential changes in the enum's size. Additionally, there are some edge cases where Swift compiler tries to optimize structs by allocating spare bits from the alignment.
 
-## Types and marshalling
+Memory management is handled by [Automatic Reference Counting](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/automaticreferencecounting/).
 
-Interop should handle various types when calling from .NET, including blittable value types, non-blittable value types, tuples, classes/actors, existential containers, generic types, protocols with associated types, and closures. Enabling library evolution simplifies marshaling rules to some extent. For each entry point, the Swift compiler generates a thunk that is forward compatible. For instance, if you have an enum parameter that would typically fit into registers, the created thunk takes the value by reference rather than by value to account for potential changes in the enum's size.
+### Type metadata
 
-Reference: https://github.com/xamarin/binding-tools-for-swift/blob/main/docs/ValueTypeModeling.md
+The Swift runtime keeps a metadata record for every type used in a program, including every instantiation of generic types. They can be used for class methods, reflection and debugger tools. The metadata layout consists of common properties and type-specific metadata. Common properties are value witness table pointer and kind. The value witness table references a vtable of functions that implement the value semantics of the type (alloc, copy, destroy, move). Additionally, it contains size, alignment, and type. The value witness table pointer is at`offset -1` from the metadata pointer, that is, the pointer-sized word immediately before the pointer's referenced address. This field is at offset 0 from the metadata pointer.
 
-## Interop on LLVM IR level
+### Name mangling
 
-The Swift compiler uses an LLVM backend, which can be linked with Mono LLVM bitcode files (.bc).
+Swift uses mangling for generating unique names in a binary. This process can change in different major versions (i.e. Swift 4 vs Swift 5). The Swift compiler puts mangled names in binary images to encode type references for runtime instantiation and reflection. In a binary, these mangled names may contain pointers to runtime data structures to represent locally-defined types more efficiently.
+
+Be aware of the edge cases that can't be mapped 1:1 in C#. Consider the following example in Swift:
+```swift
+public static func getValue() -> Double {
+    return 5.0
+}
+
+public static func getValue() -> Int {
+    return 5
+}
+```
+
+The Swift compiler generates the following mangled names for the functions:
+```
+_$s11MathLibraryAAC8getValueSdyFZ ---> static MathLibrary.MathLibrary.getValue() -> Swift.Double
+_$s11MathLibraryAAC8getValueSiyFZ ---> static MathLibrary.MathLibrary.getValue() -> Swift.Int
+```
+
+In such case, generating entry points automatically from the C# would be problematic because both methods have the same name and parameter list, but different return types. According to the C# documentation, a return type of a method is not part of the signature of the method for the purposes of method overloading.
+
+https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/methods#method-signatures
+
+The Binding Tools for Swift resolves that by reading the native library, extracting the public symbols, and demangling them. On the runtime level the user is supposed to provide the mangled name as the entry point.
+
+### Calling convention
+
+In Swift programming language, functions parameters can be passed either by reference or value. This is called "pass-by-X" for consistency. Swift allows l-values parameters to be marked as pass-by-reference with"`in/out`. It's assumed the caller ensures validity and ownership of parameters in both cases. 
+
+According to the calling convention, the `self`` context has dedicated registers, and it is always passed through them since it's heavily used. Methods calling other methods on the same object can share the self context. 
+
+Here are cases when `self` context is passed via register:
+ - Instance methods on class types: pointer to self
+ - Class methods: pointer to type metadata (which may be subclass metadata)
+ - Mutating method on value types: pointer to the value (i.e. value is passed indirectly)
+ - Non-mutating methods on value types: self may fit in one or more registers, else passed indirectly
+ - Thick closures, i.e. closures requiring a context: the closure context
+
+Error handling is also handled through registers, so the caller needs to check for errors and throw if necessary. Similarly, the calling convention allows a function to return value types that are not opaque through a combination of registers if those values fit within the size and alignment constraints of the register. More details available at https://github.com/apple/swift/blob/main/docs/ABI/CallConvSummary.rst.
 
 ## An example of direct P/Invoke
 
-Here's the flow for invoking a Swift function from .NET if a developer uses a direct P/Invoke and demangled name:
-1. An entry point name should be mangled using the `Binding Tools for Swift`. It creates function wrappers which could be invoked using demangled names.
-2. Function parameters should be automatically marshalled without any wrappers.
-3. A thunk should be emitted to handle the different calling convention, especially for instance functions and functions with error handling.
-4. The result should be retrieved from the register, stack, or indirectly.
-5. An error should be thrown if an error register is set.
-6. Cleanup may be required.
+Here's the flow for invoking a Swift function from .NET if a developer uses a direct P/Invoke and mangled names:
+1. Function parameters should be automatically marshalled without any wrappers
+2. A thunk should be emitted to handle the `self` and `error` registers
+3. The result should be retrieved from the register, stack, or indirectly
+4. An error should be thrown if the `error` register is set
+5. Cleanup may be required
 
-## Tasks
+## Goals
 
-The goal of this experiment is to explore the possibilities and limitations of direct P/Invoke interop with Swift. Ideally, we want to eliminate extra wrappers.
-Outcome of this experiment should be a document with limitations and list of tasks that needs to be done in order to officially support .NET Swift Interop.
+The goal of this experiment is to explore the possibilities and limitations of direct P/Invoke interop with Swift. It should implement runtime mechanisms for handling Swift ABI differences.
+The goals below are **outdated** and should be updated. Here is list of goals we want to focus on:
+ - Type marshalling
+ - Swift metadata marshalling
+ - Thunks for `self` context
+ - Thunks for `error` handling
 
 ### Update Binding Tools for Swift to work with latest version of Mono runtime
 
