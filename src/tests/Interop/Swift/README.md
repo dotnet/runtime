@@ -14,7 +14,6 @@ The Swift ABI specifies how to call functions and how their data and metadata ar
 
 The types we want to support are: blittable value types, non-blittable value types, tuples, classes/actors, existential containers, generics types, protocols with associated types, and closures. Objects of types are stored in registers or memory. A data member of an object is any value that requires layout within the object itself. Data members include an object's stored properties and associated values. A layout for static types is determined during the compilation, while the layout for  opaque types is not determined until the runtime. For each type the alignment, size, and offset are calculated.
 
-
 Enabling library evolution simplifies marshaling rules to some extent. For each entry point, the Swift compiler generates a thunk that is forward compatible. For instance, if there is an enum parameter that would typically fit into registers, the created thunk takes the value by reference rather than by value to account for potential changes in the enum's size. Additionally, there are some edge cases where Swift compiler tries to optimize structs by allocating spare bits from the alignment.
 
 Memory management is handled by [Automatic Reference Counting](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/automaticreferencecounting/).
@@ -22,6 +21,21 @@ Memory management is handled by [Automatic Reference Counting](https://docs.swif
 ### Type metadata
 
 The Swift runtime keeps a metadata record for every type used in a program, including every instantiation of generic types. They can be used for class methods, reflection and debugger tools. The metadata layout consists of common properties and type-specific metadata. Common properties are value witness table pointer and kind. The value witness table references a vtable of functions that implement the value semantics of the type (alloc, copy, destroy, move). Additionally, it contains size, alignment, and type. The value witness table pointer is at`offset -1` from the metadata pointer, that is, the pointer-sized word immediately before the pointer's referenced address. This field is at offset 0 from the metadata pointer.
+
+### Calling convention
+
+In Swift programming language, functions parameters can be passed either by reference or value. This is called "pass-by-X" for consistency. Swift allows l-values parameters to be marked as pass-by-reference with"`in/out`. It's assumed the caller ensures validity and ownership of parameters in both cases. 
+
+According to the calling convention, the `self`` context has dedicated registers, and it is always passed through them since it's heavily used. Methods calling other methods on the same object can share the self context. 
+
+Here are cases when `self` context is passed via register:
+ - Instance methods on class types: pointer to self
+ - Class methods: pointer to type metadata (which may be subclass metadata)
+ - Mutating method on value types: pointer to the value (i.e. value is passed indirectly)
+ - Non-mutating methods on value types: self may fit in one or more registers, else passed indirectly
+ - Thick closures, i.e. closures requiring a context: the closure context
+
+Error handling is also handled through registers, so the caller needs to check for errors and throw if necessary. Similarly, the calling convention allows a function to return value types that are not opaque through a combination of registers if those values fit within the size and alignment constraints of the register. More details available at https://github.com/apple/swift/blob/main/docs/ABI/CallConvSummary.rst.
 
 ### Name mangling
 
@@ -50,22 +64,15 @@ https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-st
 
 The Binding Tools for Swift resolves that by reading the native library, extracting the public symbols, and demangling them. On the runtime level the user is supposed to provide the mangled name as the entry point.
 
-### Calling convention
+## Goals
 
-In Swift programming language, functions parameters can be passed either by reference or value. This is called "pass-by-X" for consistency. Swift allows l-values parameters to be marked as pass-by-reference with"`in/out`. It's assumed the caller ensures validity and ownership of parameters in both cases. 
+The goal of this experiment is to explore the possibilities and limitations of direct P/Invoke interop with Swift. It should implement runtime mechanisms for handling Swift ABI differences. In this phase of the experiment, we want to implement on marshalling of blittable types and handling `self` context and `error` handling on Mono AOT targeting MacCatalyst.
 
-According to the calling convention, the `self`` context has dedicated registers, and it is always passed through them since it's heavily used. Methods calling other methods on the same object can share the self context. 
+We can choose to first support Mono AOT either with or without LLVM according to the initial analysis.
 
-Here are cases when `self` context is passed via register:
- - Instance methods on class types: pointer to self
- - Class methods: pointer to type metadata (which may be subclass metadata)
- - Mutating method on value types: pointer to the value (i.e. value is passed indirectly)
- - Non-mutating methods on value types: self may fit in one or more registers, else passed indirectly
- - Thick closures, i.e. closures requiring a context: the closure context
+## Tasks
 
-Error handling is also handled through registers, so the caller needs to check for errors and throw if necessary. Similarly, the calling convention allows a function to return value types that are not opaque through a combination of registers if those values fit within the size and alignment constraints of the register. More details available at https://github.com/apple/swift/blob/main/docs/ABI/CallConvSummary.rst.
-
-## An example of direct P/Invoke
+Templates are used to set the definition of done (DoD) and contains of a set of unit tests that will be be implemented. Each unit test is designed to cover a specific invocation type using different input types. In the first iteration of the experiment, we want to focus on blittable types targeting MacCatalyst only. Later, we plan to include support for non-blittable types and other Apple targets.
 
 Here's the flow for invoking a Swift function from .NET if a developer uses a direct P/Invoke and mangled names:
 1. Function parameters should be automatically marshalled without any wrappers
@@ -74,39 +81,15 @@ Here's the flow for invoking a Swift function from .NET if a developer uses a di
 4. An error should be thrown if the `error` register is set
 5. Cleanup may be required
 
-## Goals
+### Type marshalling and metadata conversions
 
-The goal of this experiment is to explore the possibilities and limitations of direct P/Invoke interop with Swift. It should implement runtime mechanisms for handling Swift ABI differences. Here is list of goals we want to focus on:
- - Type marshalling
- - Swift metadata marshalling
- - Thunks for `self` context
- - Thunks for `error` handling
+Type marshalling should ideally be automated, with an initial focus on supporting blittable types. Later, we can extend support to include non-blittable types. Here are some tasks (not a full list):
+ - Create a mapping between C# and Swift types
+ - Investigate and determine which types lack marshalling support
+ - Investigate and determine how to generate types metadata
 
-## The goals below are outdated and should be updated
 
-### Update Binding Tools for Swift to work with latest version of Mono runtime
-
-We should update the Binding Tools for Swift to be compatible with the latest version of the Mono runtime and Xcode.
-
-### Name mangling
-
-In order to simplify the testing we can use mangled name as the entry point. This provides a number of advantages, specifically for functions that have name overlap (i.e. functions with the same name that return different types) for which we cannot disambiguate from C#. The `Binding Tools for Swift` reads the dylib, pulls the public symbols and demangles them. However, we should discover the possibility to perform entry point name mangling within the runtime. In this case, it may slow down the compiler for non-Swift interops and have limitations for functions that have name overlap.
-
-### P/Invoke thunks
-
-The P/Invoke thunks should simplify register juggling by using predefined set of registers for `self` and `error` cases. We should explore possibilities and limitations of P/Invoke with instance functions.
-
-### Type marshalling
-
-Type marshalling should ideally be automated, with an initial focus on supporting blittable types. Later, we can extend support to include non-blittable types.
-
-## Template
-
-Template is used to set the definition of done (DoD) and contains of a set of unit tests that must be implemented. Each unit test is designed to cover a specific invocation type using different input types. The tests should be expanded with all Swift types.
-
-### Global/Static functions
-
-This is the simplest case that should be implemented.
+This is the simplest case that should be implemented. It should be expanded with other types.
 
 ```swift
 public static func add(_ a: Double, _ b: Double) -> Double {
@@ -117,6 +100,29 @@ public static func subtract(_ a: Double, _ b: Double) -> Double {
     return a - b
 }
 ```
+
+### Self context
+
+In order to support Swift calling convention, it is necessary to implement register handling by emitting thunks in the above-mentioned cases.
+
+```swift
+public func factorial() -> Int {
+    guard _internalValue >= 0 else {
+        fatalError("Factorial is undefined for negative numbers")
+    }
+    return _internalValue == 0 ? 1 : _internalValue * MathLibrary(_internalValue: _internalValue - 1).factorial()
+}
+```
+
+### Error handling
+
+In order to support Swift calling convention, it is necessary to implement error handling by emitting thunks in the above-mentioned cases.
+
+### Update Binding Tools for Swift to work with latest version of Mono runtime
+
+We should update the Binding Tools for Swift to be compatible with the latest version of the Mono runtime and Xcode.
+
+## Other examples
 
 ### Function with default params
 
@@ -176,19 +182,6 @@ public var value: Int {
     set {
         _internalValue = newValue
     }
-}
-```
-
-### Instance functions
-
-This case is important for handling self and errors via registers.
-
-```swift
-public func factorial() -> Int {
-    guard _internalValue >= 0 else {
-        fatalError("Factorial is undefined for negative numbers")
-    }
-    return _internalValue == 0 ? 1 : _internalValue * MathLibrary(_internalValue: _internalValue - 1).factorial()
 }
 ```
 
