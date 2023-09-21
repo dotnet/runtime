@@ -397,11 +397,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     if (pAssemblyNameParts->_pName == NULL || pAssemblyNameParts->_pName[0] == '\0')
         COMPlusThrow(kArgumentException, W("ArgumentNull_AssemblyNameName"));
 
-    if (COMCharacter::nativeIsWhiteSpace(pAssemblyNameParts->_pName[0]))
-    {
-        COMPlusThrow(kArgumentException, W("InvalidAssemblyName"));
-    }
-
     // Set up the assembly manifest metadata
     // When we create dynamic assembly, we always use a working copy of IMetaDataAssemblyEmit
     // to store temporary runtime assembly information. This is to preserve the invariant that

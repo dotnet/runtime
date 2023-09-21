@@ -102,6 +102,8 @@ namespace System.Reflection.Tests
         [InlineData("aaaa, custom=10", "aaaa")]
         [InlineData("aaaa, custom=10, custom=20", "aaaa")]
         [InlineData("aaaa, custom=lalala", "aaaa")]
+        [InlineData("/a", "/a")]
+        [InlineData("aa/name ", "aa/name")]
         public void Ctor_String_Valid_Legacy(string name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName(name);
