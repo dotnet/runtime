@@ -171,12 +171,11 @@ public class Test_GetTotalAllocatedBytes
             thr.Join();
     }
 
-    public static int Main() 
+    public static void Main() 
     {
         TestSingleThreaded();
         TestSingleThreadedLOH();
         TestAnotherThread();
         TestLohSohConcurrently();
-        return 100;
     }
 }

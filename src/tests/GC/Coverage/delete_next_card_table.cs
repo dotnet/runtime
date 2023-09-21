@@ -12,10 +12,9 @@ using System.Collections;
 
 public class delete_next_card_table
 {
-    public static int Main()
+    public static void Main()
     {
         new delete_next_card_table().DoMemoryChurn();
-        return 100;
     }
 
     // this function attempts to allocate & free large amounts

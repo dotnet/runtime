@@ -6,7 +6,7 @@ namespace DefaultNamespace {
 
     internal class ArrCpy
     {
-        public static int Main()
+        public static void Main()
         {
             int iSize = 100;
             int iRep = 10;
@@ -27,8 +27,6 @@ namespace DefaultNamespace {
                 }
                 GC.Collect();
             }
-            return 100;
-
         }
 
 

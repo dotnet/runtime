@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 internal class List
 {
     const int LOOP = 847;
-    public SmallGC dat;
+    internal SmallGC dat;
     public List next;
 
     public static void Main()

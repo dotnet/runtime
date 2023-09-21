@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-class GCHandleTest
+public class GCHandleTest
 {         
     // test variables
     private Object[] m_objectArray;
@@ -12,7 +12,7 @@ class GCHandleTest
     private const int m_numGCHs = 50;
     private long m_numIters;
     
-    static void Main()
+    public static void Main()
     {
         long iterations    = 200;
     

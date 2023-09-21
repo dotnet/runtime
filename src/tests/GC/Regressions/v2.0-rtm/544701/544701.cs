@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal class AllocBug
+public class AllocBug
 {
     public int ret = 0;
     public AllocBug()
     {
     }
 
-    private static int Main()
+    public static int Main()
     {
         AllocBug ab = new AllocBug();
 
