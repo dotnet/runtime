@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 
@@ -24,7 +26,9 @@ namespace Microsoft.NET.HostModel.AppHost
 
                 // https://en.wikipedia.org/wiki/Portable_Executable
                 // Validate that we're looking at Windows PE file
-                if (((ushort*)bytes)[0] != PEOffsets.DosImageSignature
+                ReadOnlySpan<byte> signatureBytes = new(bytes, sizeof(ushort));
+                ushort signature = BinaryPrimitives.ReadUInt16LittleEndian(signatureBytes);
+                if (signature != PEOffsets.DosImageSignature
                     || accessor.Capacity < PEOffsets.DosStub.PESignatureOffset + sizeof(uint))
                 {
                     return false;
@@ -68,24 +72,26 @@ namespace Microsoft.NET.HostModel.AppHost
                 byte* bytes = pointer + accessor.PointerOffset;
 
                 // https://en.wikipedia.org/wiki/Portable_Executable
-                uint peHeaderOffset = ((uint*)(bytes + PEOffsets.DosStub.PESignatureOffset))[0];
+                ReadOnlySpan<byte> peHeaderOffsetBytes = new(bytes + PEOffsets.DosStub.PESignatureOffset, sizeof(uint));
+                uint peHeaderOffset = BinaryPrimitives.ReadUInt32LittleEndian(peHeaderOffsetBytes);
 
                 if (accessor.Capacity < peHeaderOffset + PEOffsets.PEHeader.Subsystem + sizeof(ushort))
                 {
                     throw new AppHostNotPEFileException("Subsystem offset out of file range.");
                 }
 
-                ushort* subsystem = ((ushort*)(bytes + peHeaderOffset + PEOffsets.PEHeader.Subsystem));
+                Span<byte> subsystemBytes = new(bytes + peHeaderOffset + PEOffsets.PEHeader.Subsystem, sizeof(ushort));
+                ushort subsystem = BinaryPrimitives.ReadUInt16LittleEndian(subsystemBytes);
 
                 // https://docs.microsoft.com/en-us/windows/desktop/Debug/pe-format#windows-subsystem
                 // The subsystem of the prebuilt apphost should be set to CUI
-                if (subsystem[0] != (ushort)PEOffsets.Subsystem.WindowsCui)
+                if (subsystem != (ushort)PEOffsets.Subsystem.WindowsCui)
                 {
-                    throw new AppHostNotCUIException(subsystem[0]);
+                    throw new AppHostNotCUIException(subsystem);
                 }
 
                 // Set the subsystem to GUI
-                subsystem[0] = (ushort)PEOffsets.Subsystem.WindowsGui;
+                BinaryPrimitives.WriteUInt16LittleEndian(subsystemBytes, (ushort)PEOffsets.Subsystem.WindowsGui);
             }
             finally
             {
@@ -121,16 +127,16 @@ namespace Microsoft.NET.HostModel.AppHost
                 byte* bytes = pointer + accessor.PointerOffset;
 
                 // https://en.wikipedia.org/wiki/Portable_Executable
-                uint peHeaderOffset = ((uint*)(bytes + PEOffsets.DosStub.PESignatureOffset))[0];
+                ReadOnlySpan<byte> peHeaderOffsetBytes = new(bytes + PEOffsets.DosStub.PESignatureOffset, sizeof(uint));
+                uint peHeaderOffset = BinaryPrimitives.ReadUInt32LittleEndian(peHeaderOffsetBytes);
 
                 if (accessor.Capacity < peHeaderOffset + PEOffsets.PEHeader.Subsystem + sizeof(ushort))
                 {
                     throw new AppHostNotPEFileException("Subsystem offset out of file range.");
                 }
 
-                ushort* subsystem = ((ushort*)(bytes + peHeaderOffset + PEOffsets.PEHeader.Subsystem));
-
-                return subsystem[0];
+                ReadOnlySpan<byte> subsystemBytes = new(bytes + peHeaderOffset + PEOffsets.PEHeader.Subsystem, sizeof(ushort));
+                return BinaryPrimitives.ReadUInt16LittleEndian(subsystemBytes);
             }
             finally
             {
