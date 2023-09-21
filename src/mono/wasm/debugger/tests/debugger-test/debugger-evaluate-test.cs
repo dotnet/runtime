@@ -2060,6 +2060,20 @@ namespace DebuggerTests
             var localString = "aB.c[";
         }
     }
+
+    public static class EvaluateMethodsOnEnum
+    {
+        public static SampleEnum s_valueTypeEnum = SampleEnum.no;
+        public class MemberClass
+        {
+            public SampleEnum valueTypeEnum = SampleEnum.yes;
+        }
+        public static void run()
+        {
+            MemberClass mc = new();
+            Console.WriteLine("Break here");
+        }
+    }
 }
 
 namespace DebuggerTestsV2

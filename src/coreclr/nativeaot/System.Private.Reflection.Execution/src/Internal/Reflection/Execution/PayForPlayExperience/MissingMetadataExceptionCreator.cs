@@ -43,7 +43,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     // write out actual parameters
                     friendlyName.Append('(');
                     first = true;
-                    foreach (ParameterInfo parameter in method.GetParametersNoCopy())
+                    foreach (ParameterInfo parameter in method.GetParametersAsSpan())
                     {
                         if (!first)
                             friendlyName.Append(',');
