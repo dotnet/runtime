@@ -62,7 +62,7 @@ namespace ILCompiler.ObjectWriter
                 section.Name == "rdata" ? ".rodata" :
                 (section.Name.StartsWith("_") || section.Name.StartsWith(".") ? section.Name : "." + section.Name);
 
-            sectionStream = new MemoryStream();
+            sectionStream = new ObjectWriterStream();
 
             if (section.Type == SectionType.Uninitialized)
             {
@@ -79,7 +79,6 @@ namespace ILCompiler.ObjectWriter
             }
             else
             {
-                sectionStream = new MemoryStream();
                 ElfSection elfSection = new ElfBinarySection(sectionStream)
                 {
                     Name = sectionName,
