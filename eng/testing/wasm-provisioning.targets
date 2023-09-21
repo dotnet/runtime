@@ -5,8 +5,8 @@
     -->
     <ChromeChannel>stable</ChromeChannel>
 
-    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('windows'))">win</ChromeOSIdentifier>
-    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('linux'))">linux</ChromeOSIdentifier>
+    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('windows'))">Windows</ChromeOSIdentifier>
+    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('linux'))">Linux</ChromeOSIdentifier>
     <ChromeOSIdentifier Condition="'$(ChromeOSIdentifier)' == ''">unsupported-platform</ChromeOSIdentifier>
 
     <!-- disable by default on unsupported platforms -->
