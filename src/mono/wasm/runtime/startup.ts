@@ -464,10 +464,12 @@ async function instantiate_wasm_module(
         await runtimeHelpers.beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
 
+        const wasmFeaturePromise = ensureUsedWasmFeatures();
+        
         replace_linker_placeholders(imports);
         const assetToLoad = await loaderHelpers.wasmDownloadPromise.promise;
-
-        await ensureUsedWasmFeatures();
+        
+        await wasmFeaturePromise;
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
         assetToLoad.pendingDownloadInternal = null as any; // GC
         assetToLoad.pendingDownload = null as any; // GC
