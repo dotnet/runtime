@@ -40,10 +40,7 @@ import { assertNoProxies } from "./gc-handles";
 const MONO_PTHREAD_POOL_SIZE = 4;
 
 export async function configureRuntimeStartup(): Promise<void> {
-    
-
     await init_polyfills_async();
-
     await checkMemorySnapshotSize();
 }
 
@@ -463,7 +460,7 @@ async function instantiate_wasm_module(
         Module.addRunDependency("instantiate_wasm_module");
 
         const wasmFeaturePromise = ensureUsedWasmFeatures();
-        
+
         replace_linker_placeholders(imports);
         const assetToLoad = await loaderHelpers.wasmDownloadPromise.promise;
         
