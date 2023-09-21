@@ -75,13 +75,14 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 
 				void M()
 				{
-					var handler = E;
+					E += (sender, e) => { };
+					var evt = E;
 				}
 			}
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (TestRequiresAssemblyFieldsOnEvent,
 				// (11,17): warning IL3002: Using member 'C.E' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 17, 11, 18).WithArguments ("C.E", "", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 3, 11, 4).WithArguments ("C.E.add", "", ""));
 		}
 
 		[Fact]

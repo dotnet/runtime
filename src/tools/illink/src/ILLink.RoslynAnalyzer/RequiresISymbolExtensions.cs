@@ -18,16 +18,8 @@ namespace ILLink.RoslynAnalyzer
 			if (!member.IsStaticConstructor () && member.TryGetAttribute (requiresAttribute, out requiresAttributeData))
 				return true;
 
-			if (member is IMethodSymbol method) {
-				switch (method.MethodKind) {
-					case MethodKind.PropertyGet:
-					case MethodKind.PropertySet:
-						var propertySymbol = (IPropertySymbol) method.AssociatedSymbol!;
-						if (propertySymbol.TryGetAttribute (requiresAttribute, out requiresAttributeData))
-							return true;
-						break;
-				}
-			}
+			if (member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.TryGetAttribute (requiresAttribute, out requiresAttributeData))
+				return true;
 
 			// Also check the containing type
 			if (member.IsStatic || member.IsConstructor ())

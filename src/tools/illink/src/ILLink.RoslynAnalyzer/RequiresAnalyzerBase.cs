@@ -54,13 +54,6 @@ namespace ILLink.RoslynAnalyzer
 					CheckMatchingAttributesInInterfaces (symbolAnalysisContext, typeSymbol);
 				}, SymbolKind.NamedType);
 
-				context.RegisterSymbolAction (symbolAnalysisContext => {
-					var eventSymbol = (IEventSymbol) symbolAnalysisContext.Symbol;
-					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event)) {
-						CheckMatchingAttributesInOverrides (symbolAnalysisContext, eventSymbol);
-					}
-				}, SymbolKind.Event);
-
 				context.RegisterOperationAction (operationContext => {
 					var methodInvocation = (IInvocationOperation) operationContext.Operation;
 					CheckCalledMember (operationContext, methodInvocation.TargetMethod, incompatibleMembers);
@@ -103,9 +96,6 @@ namespace ILLink.RoslynAnalyzer
 
 					if (eventSymbol.RaiseMethod is IMethodSymbol eventRaiseMethod)
 						CheckCalledMember (operationContext, eventRaiseMethod, incompatibleMembers);
-
-					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event))
-						CheckCalledMember (operationContext, eventSymbol, incompatibleMembers);
 				}, OperationKind.EventReference);
 
 				context.RegisterOperationAction (operationContext => {
