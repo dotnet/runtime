@@ -3167,8 +3167,6 @@ interp_inline_newobj (TransformData *td, MonoMethod *target_method, MonoMethodSi
 	if (!interp_inline_method (td, target_method, mheader, error))
 		goto fail;
 
-	mono_metadata_free_mh (mheader);
-
 	if (is_vt) {
 		interp_add_ins (td, MINT_DUMMY_USE);
 		interp_ins_set_sreg (td->last_ins, dreg);
@@ -3651,7 +3649,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->ip += 5;
 			goto done;
 		}
-		mono_metadata_free_mh (mheader);
 	}
 
 	/*
