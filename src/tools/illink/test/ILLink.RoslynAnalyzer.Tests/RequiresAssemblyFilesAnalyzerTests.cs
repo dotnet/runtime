@@ -105,9 +105,9 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (TestRequiresAssemblyFilesOnProperty,
 				// (11,3): warning IL3002: Using member 'C.P' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 3, 11, 4).WithArguments ("C.P", "", ""),
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 3, 11, 4).WithArguments ("C.P.set", "", ""),
 				// (12,35): warning IL3002: Using member 'C.P' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (12, 35, 12, 36).WithArguments ("C.P", "", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (12, 35, 12, 36).WithArguments ("C.P.get", "", ""));
 		}
 
 		[Fact]
@@ -142,7 +142,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (TestRequiresAssemblyFilesOnMethodInsideProperty,
 				// (23,3): warning IL3002: Using member 'C.P' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (23, 3, 23, 4).WithArguments ("C.P", "", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (23, 3, 23, 4).WithArguments ("C.P.set", "", ""));
 		}
 
 		[Fact]
@@ -227,7 +227,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 
 			return VerifyRequiresAssemblyFilesAnalyzer (src,
 				// (5,26): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
-				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (4, 23, 4, 63).WithArguments ("System.Reflection.Assembly.Location"));
+				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (4, 23, 4, 63).WithArguments ("System.Reflection.Assembly.Location.get"));
 		}
 
 		[Fact]
@@ -249,7 +249,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (src,
 				// (7,7): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
-				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (7, 7, 7, 17).WithArguments ("System.Reflection.Assembly.Location")
+				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (7, 7, 7, 17).WithArguments ("System.Reflection.Assembly.Location.get")
 			);
 		}
 
@@ -297,9 +297,9 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 				// (8,7): warning SYSLIB0044: 'AssemblyName.EscapedCodeBase' is obsolete: 'AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.'
 				DiagnosticResult.CompilerWarning ("SYSLIB0044").WithSpan (8, 7, 8, 24).WithArguments ("System.Reflection.AssemblyName.EscapedCodeBase", "AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported."),
 				// (7,7): warning IL3000: 'System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
-				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (7, 7, 7, 17).WithArguments ("System.Reflection.AssemblyName.CodeBase"),
+				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (7, 7, 7, 17).WithArguments ("System.Reflection.AssemblyName.CodeBase.get"),
 				// (8,7): warning IL3000: 'System.Reflection.AssemblyName.EscapedCodeBase' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
-				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (8, 7, 8, 24).WithArguments ("System.Reflection.AssemblyName.EscapedCodeBase")
+				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (8, 7, 8, 24).WithArguments ("System.Reflection.AssemblyName.EscapedCodeBase.get")
 				);
 		}
 
@@ -322,7 +322,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (src,
 				// (7,7): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
-				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (7, 7, 7, 17).WithArguments ("System.Reflection.Assembly.Location"),
+				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (7, 7, 7, 17).WithArguments ("System.Reflection.Assembly.Location.get"),
 				// (8,7): warning IL3001: Assemblies embedded in a single-file app cannot have additional files in the manifest.
 				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (8, 7, 8, 19).WithArguments ("System.Reflection.Assembly.GetFiles()")
 				);
@@ -476,7 +476,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 				fixedSource: fixtest,
 				baselineExpected: new[] {
 					// /0/Test0.cs(6,24): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
-					VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (6, 24, 6, 41).WithArguments ("System.Reflection.Assembly.Location", "", ""),
+					VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (6, 24, 6, 41).WithArguments ("System.Reflection.Assembly.Location.get", "", ""),
 					// /0/Test0.cs(8,7): warning IL3001: 'System.Reflection.Assembly.GetFiles()' will throw for assemblies embedded in a single-file app
 					VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (8, 7, 8, 26).WithArguments("System.Reflection.Assembly.GetFiles()", "", ""),
 				},
