@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
-class Program
+public class Program
 {
     class TestALC : AssemblyLoadContext
     {
@@ -25,7 +25,7 @@ class Program
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         var holdResult = HoldAssembliesAliveThroughByRefFields(out GCHandle gch1, out GCHandle gch2);
         if (holdResult != 100)
