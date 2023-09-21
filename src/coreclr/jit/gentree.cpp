@@ -26458,25 +26458,20 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 //
 bool GenTree::OperIsHWIntrinsicSIMDScalar()
 {
+#if defined(FEATURE_HW_INTRINSICS)
+
     if (!this->OperIsHWIntrinsic())
         return false;
 
-#if defined(FEATURE_HW_INTRINSICS)
     GenTreeHWIntrinsic* hwintrinsic = this->AsHWIntrinsic();
     NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
 
 #if defined(TARGET_AMD64)
-    switch (HWIntrinsicInfo::lookupCategory(intrinsicId))
-    {
-        case HW_Category_SIMDScalar:
-            return true;
-
-        default:
-            break;
-    }
+    return HWIntrinsicInfo::lookupCategory(intrinsicId) == HW_Category_SIMDScalar;
 #elif defined(TARGET_ARM64)
     return HWIntrinsicInfo::SIMDScalar(intrinsicId);
 #endif // TARGET_ARM64 && !TARGET_AMD64
+
 #endif // FEATURE_HW_INTRINSICS
 
     return false;
