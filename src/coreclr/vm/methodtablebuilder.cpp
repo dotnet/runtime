@@ -916,22 +916,26 @@ MethodTableBuilder::MethodSignature::GetMethodAttributes() const
     STANDARD_VM_CONTRACT;
 
     IMDInternalImport * pIMD = GetModule()->GetMDImport();
+    DWORD cSig;
+    PCCOR_SIGNATURE pSig;
     if (TypeFromToken(GetToken()) == mdtMethodDef)
     {
-        DWORD cSig;
-        if (FAILED(pIMD->GetNameAndSigOfMethodDef(GetToken(), &m_pSig, &cSig, &m_szName)))
+        if (FAILED(pIMD->GetNameAndSigOfMethodDef(GetToken(), &pSig, &cSig, &m_szName)))
         {   // We have empty name or signature on error, do nothing
         }
-        m_cSig = static_cast<size_t>(cSig);
     }
     else
     {
         CONSISTENCY_CHECK(TypeFromToken(m_tok) == mdtMemberRef);
-        DWORD cSig;
-        if (FAILED(pIMD->GetNameAndSigOfMemberRef(GetToken(), &m_pSig, &cSig, &m_szName)))
+        if (FAILED(pIMD->GetNameAndSigOfMemberRef(GetToken(), &pSig, &cSig, &m_szName)))
         {   // We have empty name or signature on error, do nothing
         }
+    }
+    // Don't overwrite signature that may have already been provided for AsyncThunk method
+    if (m_cSig == 0)
+    {
         m_cSig = static_cast<size_t>(cSig);
+        m_pSig = pSig;
     }
 }
 
@@ -3550,35 +3554,68 @@ MethodTableBuilder::EnumerateClassMethods()
             {
                 ULONG cAsyncThunkMemberSignature = cMemberSignature;
                 AsyncThunkType thunkType;
+                ULONG originalTokenOffsetFromAsyncDetailsOffset;
+                ULONG newTokenOffsetFromAsyncDetailsOffset;
+                ULONG originalPrefixSize;
+                ULONG originalSuffixSize;
+                ULONG newSuffixSize;
+                ULONG newPrefixSize;
 
                 if (asyncMethodType == AsyncTaskMethod::Async2Method)
                 {
-                    cAsyncThunkMemberSignature += 1;
+                    cAsyncThunkMemberSignature += 2;
+                    originalTokenOffsetFromAsyncDetailsOffset = 1;
+                    newTokenOffsetFromAsyncDetailsOffset = 2;
                     thunkType = AsyncThunkType::AsyncToTask;
+                    originalPrefixSize = 1;
+                    newPrefixSize = 2;
+                    originalSuffixSize = 0;
+                    newSuffixSize = 1;
                 }
                 else
                 {
-                    cAsyncThunkMemberSignature -= 1;
+                    cAsyncThunkMemberSignature -= 2;
+                    originalTokenOffsetFromAsyncDetailsOffset = 2;
+                    newTokenOffsetFromAsyncDetailsOffset = 1;
                     thunkType = AsyncThunkType::TaskToAsync;
+                    originalPrefixSize = 2;
+                    newPrefixSize = 1;
+                    originalSuffixSize = 1;
+                    newSuffixSize = 0;
                 }
 
                 BYTE* pNewMemberSignature = AllocateFromHighFrequencyHeap(S_SIZE_T(cAsyncThunkMemberSignature));
-                ULONG tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + 1]);
-                ULONG initialCopyLen = offsetOfAsyncDetails + 1 + tokenLen;
+                ULONG tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + originalTokenOffsetFromAsyncDetailsOffset]);
+                ULONG originalTokenOffset = offsetOfAsyncDetails + originalTokenOffsetFromAsyncDetailsOffset;
+                ULONG newTokenOffset = offsetOfAsyncDetails + newTokenOffsetFromAsyncDetailsOffset;
+                ULONG originalRemainingSigOffset = offsetOfAsyncDetails + originalPrefixSize + tokenLen + originalSuffixSize;
+                ULONG newRemainingSigOffset = offsetOfAsyncDetails + newPrefixSize + tokenLen + newSuffixSize;
+
+                ULONG initialCopyLen = offsetOfAsyncDetails;
                 memcpy(pNewMemberSignature, pMemberSignature, initialCopyLen);
+                memcpy(pNewMemberSignature + newTokenOffset, pMemberSignature + originalTokenOffset, tokenLen);
+
+                _ASSERTE((cMemberSignature - originalRemainingSigOffset) == (cAsyncThunkMemberSignature - newRemainingSigOffset));
+                memcpy(pNewMemberSignature + newRemainingSigOffset, pMemberSignature + originalRemainingSigOffset, cMemberSignature - originalRemainingSigOffset);
 
                 if (asyncMethodType == AsyncTaskMethod::Async2Method)
                 {
+                    // Incoming sig will look something like ... E_T_CMOD_OPT <TokenOfTask> E_T_I4 ....
+                    // And needs to be translated to E_T_GENERICINST E_T_CLASS <TokenOfTask> 1 E_T_I4
+
                     // Replace the ELEMENT_TYPE_CMOD with ELEMENT_TYPE_GENERICINST, and then add a 1 after the token which refers to Task<T>
+
                     pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_GENERICINST;
-                    pNewMemberSignature[initialCopyLen] = 1;
-                    memcpy(pNewMemberSignature + initialCopyLen + 1, pMemberSignature + initialCopyLen, cMemberSignature - initialCopyLen);
+                    pNewMemberSignature[offsetOfAsyncDetails + 1] = ELEMENT_TYPE_CLASS;
+                    pNewMemberSignature[newRemainingSigOffset - 1] = 1;
                 }
                 else
                 {
+                    // Incoming sig will look something like ... E_T_GENERICINST E_T_CLASS <TokenOfTask> 1 E_T_I4 ....
+                    // And needs to be translated to E_T_CMOD_OPT <TokenOfTask> E_T_I4
+
                     // Replace the ELEMENT_TYPE_GENERICINST with ELEMENT_TYPE_CMOD_OPT, and then remove the 1 which specifies the generic arg count for Task<T>
                     pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_OPT;
-                    memcpy(pNewMemberSignature + initialCopyLen, pMemberSignature + initialCopyLen + 1, cMemberSignature - (initialCopyLen + 1));
                 }
 
                 Signature newMemberSig(pNewMemberSignature, cAsyncThunkMemberSignature);
@@ -6564,6 +6601,13 @@ MethodTableBuilder::InitMethodDesc(
 #endif // !_DEBUG
         pNewMD->SetSynchronized();
 
+    if (thunkType != AsyncThunkType::NotAThunk)
+    {
+        AsyncThunkData* pThunkData = pNewMD->GetAddrOfAsyncThunkData();
+        pThunkData->sig = sig;
+        pThunkData->type = thunkType;
+    }
+
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = (LPUTF8)pszDebugMethodName;
     pNewMD->m_pszDebugClassName  = (LPUTF8)pszDebugClassName;
@@ -6574,13 +6618,6 @@ MethodTableBuilder::InitMethodDesc(
     else
         pNewMD->m_pszDebugMethodSignature = pszDebugMethodSignature;
 #endif // _DEBUG
-
-    if (thunkType != AsyncThunkType::NotAThunk)
-    {
-        AsyncThunkData* pThunkData = pNewMD->GetAddrOfAsyncThunkData();
-        pThunkData->sig = sig;
-        pThunkData->type = thunkType;
-    }
 } // MethodTableBuilder::InitMethodDesc
 
 //*******************************************************************************
