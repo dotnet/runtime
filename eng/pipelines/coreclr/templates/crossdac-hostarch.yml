@@ -6,4 +6,4 @@ variables:
     value: x64
   - ${{ if eq(parameters.archType, 'arm') }}:
     - name: crossDacHostArch
-    value: x86
+      value: x86
