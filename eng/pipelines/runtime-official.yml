@@ -85,34 +85,34 @@ extends:
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
-          postBuildSteps:
-            - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
-              parameters:
-                filesToSign:
-                - name: createdump
-                  path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
-                  entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
-                - name: corerun
-                  path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
-                  entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+            postBuildSteps:
+              - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+                parameters:
+                  filesToSign:
+                  - name: createdump
+                    path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
+                    entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
+                  - name: corerun
+                    path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
+                    entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
-            - task: CopyFiles@2
-              displayName: 'Copy signed createdump to sharedFramework'
-              inputs:
-                contents: createdump
-                sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
-                targetFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/sharedFramework
-                overWrite: true
-            
-            # Now that we've entitled and signed createdump, we can build the rest.
-            - template: /eng/pipelines/common/templates/global-build-step.yml
-              parameters:
-                buildArgs: -s clr.aot+libs+host+packs -c $(_BuildConfig)
-            
-            # Upload the results.
-            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-              parameters:
-                name: CoreCLR_$(osGroup)$(osSubgroup)_$(archType)
+              - task: CopyFiles@2
+                displayName: 'Copy signed createdump to sharedFramework'
+                inputs:
+                  contents: createdump
+                  sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
+                  targetFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/sharedFramework
+                  overWrite: true
+              
+              # Now that we've entitled and signed createdump, we can build the rest.
+              - template: /eng/pipelines/common/templates/global-build-step.yml
+                parameters:
+                  buildArgs: -s clr.aot+libs+host+packs -c $(_BuildConfig)
+              
+              # Upload the results.
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: CoreCLR_$(osGroup)$(osSubgroup)_$(archType)
 
       #
       # Build CoreCLR and upload CoreCLR runtime for CrossDac packaging
@@ -133,44 +133,44 @@ extends:
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
-          postBuildSteps:
-            # Upload libcoreclr.so for CrossDac packaging
-            - task: CopyFiles@2
-              displayName: Gather runtime for CrossDac
-              inputs:
-                SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
-                Contents: libcoreclr.so
-                TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGrup).$(osSubgroup).$(archType).$(buildConfigUpper)/$(crossDacHostArch)
-            - task: PublishBuildArtifacts@1
-              displayName: Publish runtime for CrossDac
-              inputs:
-                pathToPublish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
-                PublishLocation: Container
-                artifactName: CoreCLRCrossDacArtifacts
-            # Create RPMs and DEBs
-            - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
-              parameters:
-                packageType: deb
-                target: debpkg
-                packageStepDescription: Runtime Deps, Runtime, Framework Packs Deb installers
-                subsetArg: -s packs.installers
-                packagingArgs: /p:BuildDebPackage=true
-                condition: and(eq(variables.osSubgroup, ''), eq(variables.archType, 'x64'))
-            - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
-              parameters:
-                packageType: rpm
-                target: rpmpkg
-                packageStepDescription: Runtime Deps, Runtime, Framework Packs RPM installers
-                subsetArg: -s packs.installers
-                packagingArgs: /p:BuildRpmPackage=true
-                condition: and(eq(variables.osSubgroup, ''), in(variables.archType, 'x64', 'arm64'))
-            
-            # Upload the results.
-            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-              parameters:
-                name: CoreCLR_$(osGroup)$(osSubgroup)_$(archType)
-          extraVariablesTemplates:
-            - template: /eng/pipelines/coreclr/templates/crossdac-hostarch.yml
+            postBuildSteps:
+              # Upload libcoreclr.so for CrossDac packaging
+              - task: CopyFiles@2
+                displayName: Gather runtime for CrossDac
+                inputs:
+                  SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)
+                  Contents: libcoreclr.so
+                  TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGroup).$(osSubgroup).$(archType).$(buildConfigUpper)/$(crossDacHostArch)
+              - task: PublishBuildArtifacts@1
+                displayName: Publish runtime for CrossDac
+                inputs:
+                  pathToPublish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
+                  PublishLocation: Container
+                  artifactName: CoreCLRCrossDacArtifacts
+              # Create RPMs and DEBs
+              - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+                parameters:
+                  packageType: deb
+                  target: debpkg
+                  packageStepDescription: Runtime Deps, Runtime, Framework Packs Deb installers
+                  subsetArg: -s packs.installers
+                  packagingArgs: /p:BuildDebPackage=true
+                  condition: and(eq(variables.osSubgroup, ''), eq(variables.archType, 'x64'))
+              - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
+                parameters:
+                  packageType: rpm
+                  target: rpmpkg
+                  packageStepDescription: Runtime Deps, Runtime, Framework Packs RPM installers
+                  subsetArg: -s packs.installers
+                  packagingArgs: /p:BuildRpmPackage=true
+                  condition: and(eq(variables.osSubgroup, ''), in(variables.archType, 'x64', 'arm64'))
+              
+              # Upload the results.
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: CoreCLR_$(osGroup)$(osSubgroup)_$(archType)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/coreclr/templates/crossdac-hostarch.yml
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
