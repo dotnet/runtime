@@ -1556,24 +1556,6 @@ extern "C" void QCALLTYPE AssemblyNative_SetSymbolBytes(Assembly * pAssembly, BY
     END_QCALL;
 }
 
-extern "C" Assembly * QCALLTYPE AssemblyNative_LoadFromPEImage(QCall::ObjectHandleOnStack pBinder, PEImage * pPEImage, BOOL excludeAppPaths)
-{
-    QCALL_CONTRACT;
-
-    Assembly* result = NULL;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    ASSEMBLYBINDERREF binder = (ASSEMBLYBINDERREF)pBinder.Get();
-    result = AssemblyNative::LoadFromPEImage(binder, pPEImage, excludeAppPaths);
-
-    END_QCALL;
-
-    return result;
-}
-
 extern "C" IMDInternalImport * QCALLTYPE PEImage_BinderAcquireImport(PEImage * pPEImage, DWORD * pdwPAFlags)
 {
     QCALL_CONTRACT;
@@ -1634,66 +1616,6 @@ extern "C" HRESULT QCALLTYPE PEImage_BinderAcquirePEImage(LPCWSTR wszAssemblyPat
     return hr;
 }
 
-extern "C" PEImage * QCALLTYPE PEImage_OpenImage(LPCWSTR pPath, MDInternalImportFlags flags, BundleFileLocation bundleFileLocation)
-{
-    QCALL_CONTRACT;
-
-    PEImage* result = NULL;
-
-    BEGIN_QCALL;
-
-    result = PEImage::OpenImage(pPath, flags, bundleFileLocation);
-
-    END_QCALL;
-
-    return result;
-}
-
-extern "C" PEImage * QCALLTYPE PEImage_CreateFromByteArray(BYTE* array, DWORD size)
-{
-    QCALL_CONTRACT;
-
-    PEImage * result = NULL;
-
-    BEGIN_QCALL;
-
-    result = PEImage::CreateFromByteArray(array, (COUNT_T)size);
-
-    END_QCALL;
-
-    return result;
-}
-
-extern "C" BOOL QCALLTYPE PEImage_CheckILFormat(PEImage * pPEImage)
-{
-    QCALL_CONTRACT;
-
-    BOOL result = false;
-
-    BEGIN_QCALL;
-
-    result = pPEImage->CheckILFormat();
-
-    END_QCALL;
-
-    return result;
-}
-
-extern "C" BOOL QCALLTYPE PEImage_IsILOnly(PEImage * pPEImage)
-{
-    QCALL_CONTRACT;
-
-    BOOL result = false;
-
-    BEGIN_QCALL;
-
-    result = pPEImage->IsILOnly();
-
-    END_QCALL;
-
-    return result;
-}
-
 extern "C" void QCALLTYPE PEImage_Release(PEImage * pPEImage)
 {
     QCALL_CONTRACT;
@@ -1715,38 +1637,6 @@ extern "C" void QCALLTYPE PEImage_GetMVID(PEImage * pPEImage, GUID* pMVID)
 
     END_QCALL;
 }
-
-#ifdef TARGET_WINDOWS
-extern "C" PEImage * QCALLTYPE PEImage_CreateFromHMODULE(HMODULE hMod)
-{
-    QCALL_CONTRACT;
-
-    PEImage * result = NULL;
-
-    BEGIN_QCALL;
-
-    result = PEImage::CreateFromHMODULE(hMod);
-
-    END_QCALL;
-
-    return result;
-}
-
-extern "C" BOOL QCALLTYPE PEImage_HasCorHeader(PEImage * pPEImage)
-{
-    QCALL_CONTRACT;
-
-    BOOL result = false;
-
-    BEGIN_QCALL;
-
-    result = pPEImage->HasCorHeader();
-
-    END_QCALL;
-
-    return result;
-}
-#endif // TARGET_WINDOWS
 
 extern "C" PEAssembly * QCALLTYPE DomainAssembly_GetPEAssembly(DomainAssembly * pDomainAssembly)
 {

@@ -15,9 +15,6 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetDefaultAssemblyBinder")]
         internal static partial IntPtr GetDefaultAssemblyBinder();
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPEImage")]
-        private static partial IntPtr LoadFromPEImage(ObjectHandleOnStack pBinder, IntPtr pPEImage, [MarshalAs(UnmanagedType.Bool)] bool excludeAppPaths = false);
-
         private static Internal.Runtime.Binder.AssemblyBinder InitializeAssemblyLoadContext(GCHandle ptrAssemblyLoadContext, bool representsTPALoadContext, bool isCollectible)
         {
             // We do not need to take a lock since this method is invoked from the ctor of AssemblyLoadContext managed type and
@@ -187,34 +184,11 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLoadContextForAssembly")]
         private static partial IntPtr GetLoadContextForAssembly(QCallAssembly assembly);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_OpenImage", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial IntPtr PEImage_OpenImage(string path, int mdInternalImportFlags, Internal.Runtime.Binder.BundleFileLocation bundleFileLocation = default);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_CreateFromByteArray")]
-        private static unsafe partial IntPtr PEImage_CreateFromByteArray(byte* ptrArray, int size);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_CheckILFormat")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool PEImage_CheckILFormat(IntPtr pPEImage);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_IsILOnly")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool PEImage_IsILOnly(IntPtr pPEImage);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_Release")]
         internal static partial void PEImage_Release(IntPtr pPEImage);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_GetMVID")]
         internal static partial void PEImage_GetMVID(IntPtr pPEImage, out Guid mvid);
-
-#if TARGET_WINDOWS
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_CreateFromHMODULE")]
-        private static unsafe partial IntPtr PEImage_CreateFromHMODULE(IntPtr hMod);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_HasCorHeader")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool PEImage_HasCorHeader(IntPtr pPEImage);
-#endif
 
         // Returns the load context in which the specified assembly has been loaded
         public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
