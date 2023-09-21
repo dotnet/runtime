@@ -142,12 +142,13 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
 
-            if (m_dispatchTask != null)
+            if (m_dispatchTaskCancellationSource?.IsCancellationRequested ?? true)
             {
-                Debug.Assert(m_dispatchTaskCancellationSource != null);
-                m_dispatchTaskCancellationSource?.Cancel();
-                EventPipeInternal.SignalSession(m_sessionID);
+                return;
             }
+
+            m_dispatchTaskCancellationSource.Cancel();
+            EventPipeInternal.SignalSession(m_sessionID);
         }
 
         private unsafe void DispatchEventsToEventListeners(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency, Task? previousDispatchTask, CancellationToken token)
