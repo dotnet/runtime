@@ -295,7 +295,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     }
                                     catch (Exception ex)
                                     {
-                                        throw new Exception($"Internal Error: failed converting variable = {variable}.");
+                                        throw new Exception($"Internal Error: failed converting variable = {variable}. Inner exception: {ex}");
                                     }
                                 }
                                 break;
