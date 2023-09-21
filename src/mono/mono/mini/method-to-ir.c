@@ -12048,8 +12048,8 @@ mono_ldptr:
 				klass = mini_get_class (method, token, generic_context);
 				if (CLASS_HAS_FAILURE (klass)) {
 					HANDLE_TYPELOAD_ERROR (cfg, klass);
-					//EMIT_NEW_ICONST(cfg, ins, 0);
-					//*sp++ = ins;
+					EMIT_NEW_ICONST(cfg, ins, 0);
+					*sp++ = ins;
 					break;
 				}
 
