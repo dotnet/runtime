@@ -96,23 +96,34 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         }
     }
 
-#if defined(FEATURE_HW_INTRINSICS)
-    if (comp->IsBaselineVector512IsaSupportedOpportunistically() && node->Data()->OperIs(GT_CNS_VEC) &&
-        node->Data()->AsVecCon()->TypeIs(TYP_SIMD64))
-    {
-        if (!node->Data()->AsVecCon()->IsAllBitsSet() && !node->Data()->AsVecCon()->IsZero())
-        {
-            // To avoid some unexpected regression, this optimization only applies to non-all 1/0 constant vectors.
-            TryCompressConstVecData(node);
-        }
-    }
-#endif
     // Optimization: do not unnecessarily zero-extend the result of setcc.
     if (varTypeIsByte(node) && (node->Data()->OperIsCompare() || node->Data()->OperIs(GT_SETCC)))
     {
         node->Data()->ChangeType(TYP_BYTE);
     }
     ContainCheckStoreIndir(node);
+
+#if defined(FEATURE_HW_INTRINSICS)
+    if (comp->IsBaselineVector512IsaSupportedOpportunistically() || comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+    {
+        if (!node->Data()->OperIs(GT_CNS_VEC))
+        {
+            return;
+        }
+
+        if(!node->Data()->AsVecCon()->TypeIs(TYP_SIMD32) && !node->Data()->AsVecCon()->TypeIs(TYP_SIMD64))
+        {
+            return;
+        }
+        if (node->Data()->AsVecCon()->IsAllBitsSet() || node->Data()->AsVecCon()->IsZero())
+        {
+            // To avoid some unexpected regression, this optimization only applies to non-all 1/0 constant vectors.
+            return;
+        }
+
+        TryCompressConstVecData(node);
+    }
+#endif
 }
 
 //----------------------------------------------------------------------------------------------
@@ -7673,7 +7684,9 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         {
             switch (parentIntrinsicId)
             {
+                case NI_AVX2_BroadcastVector128ToVector256:
                 case NI_AVX512F_BroadcastVector128ToVector512:
+                case NI_AVX512F_BroadcastVector256ToVector512:
                 {
                     if (parentNode->OperIsMemoryLoad())
                     {
@@ -8546,31 +8559,71 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 //
 //  Return:
 //     return true if compress success.
-bool Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
+void Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
 {
     assert(node->Data()->OperIs(GT_CNS_VEC));
     GenTreeVecCon* vecCon = node->Data()->AsVecCon();
-    // Try use broadcasti128
-    if (vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[1] &&
+    GenTreeHWIntrinsic* broadcast = nullptr;
+
+   if(vecCon->TypeIs(TYP_SIMD32))
+   {
+        assert(comp->compOpportunisticallyDependsOn(InstructionSet_AVX2));
+        if(vecCon->gtSimd32Val.v128[0] == vecCon->gtSimdVal.v128[1])
+        {
+            simd16_t simd16Val              = {};
+            simd16Val.f64[0]                = vecCon->gtSimd32Val.f64[0];
+            simd16Val.f64[1]                = vecCon->gtSimd32Val.f64[1];
+            GenTreeVecCon* compressedVecCon = comp->gtNewVconNode(TYP_SIMD16);
+            memcpy(&compressedVecCon->gtSimdVal, &simd16Val, sizeof(simd16_t));
+            BlockRange().InsertBefore(node->Data(), compressedVecCon);
+            BlockRange().Remove(vecCon);
+            broadcast =
+                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, compressedVecCon, NI_AVX2_BroadcastVector128ToVector256,
+                                            CORINFO_TYPE_UINT, 32);
+        }
+   }
+   else
+   {
+        assert(vecCon->TypeIs(TYP_SIMD64));
+        assert(comp->IsBaselineVector512IsaSupportedOpportunistically());
+        if (vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[1] &&
         vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[2] &&
         vecCon->gtSimd64Val.v128[0] == vecCon->gtSimd64Val.v128[3])
-    {
-        simd16_t simd16Val              = {};
-        simd16Val.f64[0]                = vecCon->gtSimd64Val.f64[0];
-        simd16Val.f64[1]                = vecCon->gtSimd64Val.f64[1];
-        GenTreeVecCon* compressedVecCon = comp->gtNewVconNode(TYP_SIMD16);
-        memcpy(&compressedVecCon->gtSimdVal, &simd16Val, sizeof(simd16_t));
-        BlockRange().InsertBefore(node->Data(), compressedVecCon);
-        BlockRange().Remove(vecCon);
-        GenTreeHWIntrinsic* broadcast128 =
-            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, compressedVecCon, NI_AVX512F_BroadcastVector128ToVector512,
-                                           CORINFO_TYPE_UINT, 64);
-        BlockRange().InsertBefore(node, broadcast128);
-        node->Data() = broadcast128;
-        LowerNode(broadcast128);
-        return true;
+        {
+            simd16_t simd16Val              = {};
+            simd16Val.f64[0]                = vecCon->gtSimd64Val.f64[0];
+            simd16Val.f64[1]                = vecCon->gtSimd64Val.f64[1];
+            GenTreeVecCon* compressedVecCon = comp->gtNewVconNode(TYP_SIMD16);
+            memcpy(&compressedVecCon->gtSimdVal, &simd16Val, sizeof(simd16_t));
+            BlockRange().InsertBefore(node->Data(), compressedVecCon);
+            BlockRange().Remove(vecCon);
+            broadcast =
+                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, compressedVecCon, NI_AVX512F_BroadcastVector128ToVector512,
+                                            CORINFO_TYPE_UINT, 64);
+        }
+        else if(vecCon->gtSimd64Val.v256[0] == vecCon->gtSimd64Val.v256[1])
+        {
+            simd32_t simd32Val              = {};
+            simd32Val.v128[0]                = vecCon->gtSimd32Val.v128[0];
+            simd32Val.v128[1]                = vecCon->gtSimd32Val.v128[1];
+            GenTreeVecCon* compressedVecCon = comp->gtNewVconNode(TYP_SIMD32);
+            memcpy(&compressedVecCon->gtSimdVal, &simd32Val, sizeof(simd32_t));
+            BlockRange().InsertBefore(node->Data(), compressedVecCon);
+            BlockRange().Remove(vecCon);
+            broadcast =
+                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, compressedVecCon, NI_AVX512F_BroadcastVector256ToVector512,
+                                            CORINFO_TYPE_UINT, 64);
+        }
     }
-    return false;
+
+    if(broadcast == nullptr)
+    {
+        return;
+    }
+
+    BlockRange().InsertBefore(node, broadcast);
+    node->Data() = broadcast;
+    LowerNode(broadcast);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -8769,7 +8822,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                     }
 
+                    case NI_AVX2_BroadcastVector128ToVector256:
                     case NI_AVX512F_BroadcastVector128ToVector512:
+                    case NI_AVX512F_BroadcastVector256ToVector512:
                     {
                         if (node->OperIsMemoryLoad())
                         {
