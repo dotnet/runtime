@@ -10,7 +10,7 @@ import {
 import Magic from "./ipc-protocol/magic";
 import Parser from "./ipc-protocol/base-parser";
 import { assertNever } from "../../types/internal";
-import { mono_log_debug, mono_log_warn } from "../../logging";
+import { mono_log_debug, mono_log_warn } from "../../core/logging";
 
 export const dotnetDiagnosticsServerProtocolCommandEvent = "dotnet:diagnostics:protocolCommand" as const;
 

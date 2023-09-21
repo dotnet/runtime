@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
-import { Module, INTERNAL, loaderHelpers } from "../globals";
-import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
-import { _release_temp_frame } from "../memory";
-import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
-import { find_entry_point } from "../run";
-import { monoStringToString, stringToMonoStringRoot } from "../strings";
+import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../core/gc-handles";
+import { Module, INTERNAL, loaderHelpers } from "../core/globals";
+import { wrap_error_root, wrap_no_error_root } from "../interop/invoke-js";
+import { _release_temp_frame } from "../core/memory";
+import { mono_wasm_new_external_root, mono_wasm_new_root } from "../core/roots";
+import { find_entry_point } from "../core/run";
+import { monoStringToString, stringToMonoStringRoot } from "../core/strings";
 import { JSHandle, MonoStringRef, MonoObjectRef, MonoArray, MonoString, MonoObject, is_nullish, WasmRoot } from "../types/internal";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";

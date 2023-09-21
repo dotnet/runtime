@@ -387,7 +387,7 @@ mono_jiterp_conv (void *dest, void *src, int opcode) {
 	return 0;
 }
 
-// keep in sync with jiterpreter-opcodes.ts
+// keep in sync with jiterpreter/opcodes.ts
 enum {
 	JITERP_CNE_UN_R4 = (0xFFFF + 0),
 	JITERP_CGE_UN_R4,

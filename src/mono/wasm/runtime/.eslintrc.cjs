@@ -20,8 +20,8 @@ module.exports = {
         "node_modules/**/*.*",
         "bin/**/*.*",
         "es6/*.js",
-        "jiterpreter-opcodes.ts",
-        "jiterpreter-tables.ts",
+        "jiterpreter/opcodes.ts",
+        "jiterpreter/tables.ts",
     ],
     "rules": {
         "@typescript-eslint/no-explicit-any": "off",

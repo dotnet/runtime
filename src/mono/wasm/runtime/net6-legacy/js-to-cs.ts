@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { isThenable } from "../cancelable-promise";
-import { legacy_c_functions as cwraps } from "../cwraps";
-import { js_owned_gc_handle_symbol, assert_not_disposed, cs_owned_js_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, mono_wasm_release_cs_owned_object, teardown_managed_proxy, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
-import { Module } from "../globals";
-import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
-import { setI32_unchecked, setU32_unchecked, setF64, setB32, localHeapViewU8 } from "../memory";
-import { mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../roots";
-import { stringToMonoStringRoot, stringToInternedMonoStringRoot } from "../strings";
+import { isThenable } from "../core/cancelable-promise";
+import { legacy_c_functions as cwraps } from "../core/cwraps";
+import { js_owned_gc_handle_symbol, assert_not_disposed, cs_owned_js_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, mono_wasm_release_cs_owned_object, teardown_managed_proxy, mono_wasm_get_jsobj_from_js_handle } from "../core/gc-handles";
+import { Module } from "../core/globals";
+import { wrap_error_root, wrap_no_error_root } from "../interop/invoke-js";
+import { setI32_unchecked, setU32_unchecked, setF64, setB32, localHeapViewU8 } from "../core/memory";
+import { mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../core/roots";
+import { stringToMonoStringRoot, stringToInternedMonoStringRoot } from "../core/strings";
 import { MonoObject, is_nullish, MonoClass, MonoArray, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed, WasmRoot } from "../types/internal";
 import { TypedArray, Int32Ptr } from "../types/emscripten";
 import { has_backing_array_buffer } from "./buffers";

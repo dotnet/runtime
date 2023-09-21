@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert } from "../globals";
-import { mono_wasm_new_root } from "../roots";
-import { interned_string_table, monoStringToString, mono_wasm_empty_string, stringToInternedMonoStringRoot, stringToMonoStringRoot } from "../strings";
+import { mono_assert } from "../core/globals";
+import { mono_wasm_new_root } from "../core/roots";
+import { interned_string_table, monoStringToString, mono_wasm_empty_string, stringToInternedMonoStringRoot, stringToMonoStringRoot } from "../core/strings";
 import { MonoString, MonoStringNull, is_nullish } from "../types/internal";
 
 let mono_wasm_string_root: any;

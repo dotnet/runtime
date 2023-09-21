@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString, utf16ToString } from "../strings";
+import { mono_wasm_new_external_root } from "../core/roots";
+import { monoStringToString, utf16ToString } from "../core/strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
-import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
+import { wrap_error_root, wrap_no_error_root } from "../interop/invoke-js";
 
 const COMPARISON_ERROR = -2;
 const INDEXING_ERROR = -1;

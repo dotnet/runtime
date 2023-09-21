@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import * as memory from "../../memory";
+import * as memory from "../../core/memory";
 import { VoidPtr } from "../../types/emscripten";
-import { diagnostics_c_functions as cwraps } from "../../cwraps";
+import { diagnostics_c_functions as cwraps } from "../../core/cwraps";
 import type { EventPipeSessionIDImpl } from "./types";
 
 const sizeOfInt32 = 4;

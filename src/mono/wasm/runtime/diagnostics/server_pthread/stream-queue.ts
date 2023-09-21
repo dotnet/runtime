@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { VoidPtr } from "../../types/emscripten";
-import * as Memory from "../../memory";
+import * as Memory from "../../core/memory";
 
 
 /// One-reader, one-writer, size 1 queue for messages from an EventPipe streaming thread to

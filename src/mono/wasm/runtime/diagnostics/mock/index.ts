@@ -6,7 +6,7 @@ import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 import { createMockEnvironment } from "./environment";
 import type { MockEnvironment, MockScriptConnection } from "./export-types";
 import { assertNever } from "../../types/internal";
-import { mono_log_debug, mono_log_warn } from "../../logging";
+import { mono_log_debug, mono_log_warn } from "../../core/logging";
 
 export interface MockRemoteSocket extends EventTarget {
     addEventListener<T extends keyof WebSocketEventMap>(type: T, listener: (this: MockRemoteSocket, ev: WebSocketEventMap[T]) => any, options?: boolean | AddEventListenerOptions): void;

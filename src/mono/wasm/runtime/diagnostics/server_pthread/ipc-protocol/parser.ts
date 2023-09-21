@@ -19,7 +19,7 @@ import {
     EventPipeCommandId,
     ProcessCommandId,
 } from "./types";
-import { mono_log_warn } from "../../../logging";
+import { mono_log_warn } from "../../../core/logging";
 
 interface ParseClientCommandResultOk<C = ProtocolClientCommandBase> extends ParseResultOk {
     readonly result: C;

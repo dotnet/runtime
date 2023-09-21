@@ -169,7 +169,7 @@ const loaderConfig = {
 };
 const runtimeConfig = {
     treeshake: !isDebug,
-    input: "exports.ts",
+    input: "core/exports.ts",
     output: [
         {
             format: "es",
@@ -186,7 +186,7 @@ const runtimeConfig = {
 };
 const wasmImportsConfig = {
     treeshake: true,
-    input: "exports-linker.ts",
+    input: "core/exports-linker.ts",
     output: [
         {
             format: "iife",

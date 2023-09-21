@@ -3,19 +3,19 @@
 
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { MarshalType, MonoType, MarshalError, MonoTypeNull, MonoArray, MonoArrayNull, MonoObject, MonoObjectNull, GCHandle, MonoStringRef, MonoObjectRef, MonoString, JSHandleDisposed, is_nullish, WasmRoot } from "../types/internal";
-import { _are_promises_supported } from "../cancelable-promise";
-import { legacy_c_functions as cwraps } from "../cwraps";
-import { mono_wasm_get_jsobj_from_js_handle, _lookup_js_owned_object, setup_managed_proxy, mono_wasm_get_js_handle, teardown_managed_proxy, assert_not_disposed } from "../gc-handles";
-import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
-import { ManagedObject } from "../marshal";
-import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../memory";
-import { mono_wasm_new_root, mono_wasm_new_external_root } from "../roots";
-import { monoStringToString } from "../strings";
+import { _are_promises_supported } from "../core/cancelable-promise";
+import { legacy_c_functions as cwraps } from "../core/cwraps";
+import { mono_wasm_get_jsobj_from_js_handle, _lookup_js_owned_object, setup_managed_proxy, mono_wasm_get_js_handle, teardown_managed_proxy, assert_not_disposed } from "../core/gc-handles";
+import { wrap_error_root, wrap_no_error_root } from "../interop/invoke-js";
+import { ManagedObject } from "../core/marshal";
+import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../core/memory";
+import { mono_wasm_new_root, mono_wasm_new_external_root } from "../core/roots";
+import { monoStringToString } from "../core/strings";
 import { legacyManagedExports } from "./corebindings";
 import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root } from "./js-to-cs";
 import { assert_legacy_interop, mono_bind_method, mono_method_get_call_signature_ref } from "./method-binding";
-import { createPromiseController } from "../globals";
+import { createPromiseController } from "../core/globals";
 import { monoStringToStringUnsafe } from "./strings";
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");

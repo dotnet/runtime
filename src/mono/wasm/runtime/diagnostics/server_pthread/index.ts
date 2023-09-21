@@ -7,8 +7,8 @@ import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 
 import { PromiseAndController, assertNever } from "../../types/internal";
 import { pthread_self } from "../../pthreads/worker";
-import { createPromiseController, mono_assert } from "../../globals";
-import { diagnostics_c_functions as cwraps } from "../../cwraps";
+import { createPromiseController, mono_assert } from "../../core/globals";
+import { diagnostics_c_functions as cwraps } from "../../core/cwraps";
 import { EventPipeSessionIDImpl } from "../shared/types";
 import { CharPtr } from "../../types/emscripten";
 import {
@@ -47,8 +47,8 @@ import {
     createAdvertise,
     createBinaryCommandOKReply,
 } from "./ipc-protocol/serializer";
-import { mono_log_error, mono_log_info, mono_log_debug, mono_log_warn } from "../../logging";
-import { utf8ToString } from "../../strings";
+import { mono_log_error, mono_log_info, mono_log_debug, mono_log_warn } from "../../core/logging";
+import { utf8ToString } from "../../core/strings";
 
 function addOneShotProtocolCommandEventListener(src: EventTarget): Promise<ProtocolCommandEvent> {
     return new Promise((resolve) => {

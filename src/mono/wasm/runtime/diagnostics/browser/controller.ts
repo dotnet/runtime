@@ -3,10 +3,10 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 
-import { diagnostics_c_functions as cwraps } from "../../cwraps";
-import { INTERNAL, mono_assert } from "../../globals";
-import { mono_log_info, mono_log_debug, mono_log_warn } from "../../logging";
-import { withStackAlloc, getI32 } from "../../memory";
+import { diagnostics_c_functions as cwraps } from "../../core/cwraps";
+import { INTERNAL, mono_assert } from "../../core/globals";
+import { mono_log_info, mono_log_debug, mono_log_warn } from "../../core/logging";
+import { withStackAlloc, getI32 } from "../../core/memory";
 import { Thread, waitForThread } from "../../pthreads/browser";
 import { isDiagnosticMessage, makeDiagnosticServerControlCommand } from "../shared/controller-commands";
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";

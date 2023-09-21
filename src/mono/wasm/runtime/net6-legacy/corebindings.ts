@@ -3,11 +3,11 @@
 
 import { JSHandle, GCHandle, MonoObjectRef, MonoMethod, MonoObject, WasmRoot, PromiseController } from "../types/internal";
 import { mono_bind_method, _create_primitive_converters } from "./method-binding";
-import { mono_wasm_new_root } from "../roots";
-import { Module, runtimeHelpers } from "../globals";
-import cwraps from "../cwraps";
+import { mono_wasm_new_root } from "../core/roots";
+import { Module, runtimeHelpers } from "../core/globals";
+import cwraps from "../core/cwraps";
 import { legacyHelpers, wasm_type_symbol } from "./globals";
-import { find_corlib_class } from "../class-loader";
+import { find_corlib_class } from "../core/class-loader";
 type SigLine = [lazy: boolean, jsname: string, csname: string, signature: string/*ArgsMarshalString*/];
 const fn_signatures: SigLine[] = [
     [true, "_get_cs_owned_object_by_js_handle_ref", "GetCSOwnedObjectByJSHandleRef", "iim"],

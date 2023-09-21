@@ -4,8 +4,8 @@
 import { assertNever } from "../../types/internal";
 import { VoidPtr } from "../../types/emscripten";
 import type { CommonSocket } from "./common-socket";
-import { mono_log_debug, mono_log_warn } from "../../logging";
-import { localHeapViewU8 } from "../../memory";
+import { mono_log_debug, mono_log_warn } from "../../core/logging";
+import { localHeapViewU8 } from "../../core/memory";
 enum ListenerState {
     Sending,
     Closed,

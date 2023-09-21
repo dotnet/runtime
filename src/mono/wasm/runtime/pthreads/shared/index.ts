@@ -4,12 +4,12 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { Module, mono_assert, runtimeHelpers } from "../../globals";
+import { Module, mono_assert, runtimeHelpers } from "../../core/globals";
 import { MonoConfig } from "../../types";
 import { pthreadPtr } from "./types";
-import { mono_log_debug } from "../../logging";
-import { bindings_init } from "../../startup";
-import { forceDisposeProxies } from "../../gc-handles";
+import { mono_log_debug } from "../../core/logging";
+import { bindings_init } from "../../core/startup";
+import { forceDisposeProxies } from "../../core/gc-handles";
 import { pthread_self } from "../worker";
 
 export interface PThreadInfo {

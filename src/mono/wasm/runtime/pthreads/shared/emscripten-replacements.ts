@@ -5,9 +5,9 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import { afterLoadWasmModuleToWorker } from "../browser";
 import { afterThreadInitTLS } from "../worker";
 import Internals from "./emscripten-internals";
-import { loaderHelpers, mono_assert } from "../../globals";
+import { loaderHelpers, mono_assert } from "../../core/globals";
 import { PThreadReplacements } from "../../types/internal";
-import { mono_log_debug } from "../../logging";
+import { mono_log_debug } from "../../core/logging";
 
 /** @module emscripten-replacements Replacements for individual functions in the emscripten PThreads library.
  * These have a hard dependency on the version of Emscripten that we are using and may need to be kept in sync with

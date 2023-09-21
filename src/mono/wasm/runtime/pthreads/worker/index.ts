@@ -5,7 +5,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 
-import { Module, ENVIRONMENT_IS_PTHREAD, mono_assert } from "../../globals";
+import { Module, ENVIRONMENT_IS_PTHREAD, mono_assert } from "../../core/globals";
 import { makeChannelCreatedMonoMessage, set_thread_info } from "../shared";
 import type { pthreadPtr } from "../shared/types";
 import { is_nullish } from "../../types/internal";
@@ -17,10 +17,10 @@ import {
     dotnetPthreadAttached,
     WorkerThreadEventTarget
 } from "./events";
-import { postRunWorker, preRunWorker } from "../../startup";
-import { mono_log_debug } from "../../logging";
-import { mono_set_thread_id } from "../../logging";
-import { jiterpreter_allocate_tables } from "../../jiterpreter-support";
+import { postRunWorker, preRunWorker } from "../../core/startup";
+import { mono_log_debug } from "../../core/logging";
+import { mono_set_thread_id } from "../../core/logging";
+import { jiterpreter_allocate_tables } from "../../jiterpreter/support";
 
 // re-export some of the events types
 export {
