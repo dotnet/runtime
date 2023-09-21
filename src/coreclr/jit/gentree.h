@@ -8624,7 +8624,7 @@ public:
             NONE, NONE, SGE,  SGT,  SLT,  SLE,  NS, S,
             NE,   EQ,   UGE,  UGT,  ULT,  ULE,  NC, C,
             FNEU, FEQU, FGEU, FGTU, FLTU, FLEU, NO, O,
-            FNE,  FEQ,  FGE,  FGT,  FLT,  FGT,  NP, P
+            FNE,  FEQ,  FGE,  FGT,  FLT,  FLE,  NP, P
         };
         // clang-format on
 

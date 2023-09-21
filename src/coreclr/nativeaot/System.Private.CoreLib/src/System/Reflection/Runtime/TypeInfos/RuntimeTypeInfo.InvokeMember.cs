@@ -363,7 +363,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 #region Invoke
                 if (finalists == null &&
                     argCnt == 0 &&
-                    finalist.GetParametersNoCopy().Length == 0 &&
+                    finalist.GetParametersAsSpan().Length == 0 &&
                     (bindingFlags & BindingFlags.OptionalParamBinding) == 0)
                 {
                     //if (useCache && argCnt == props[0].GetParameters().Length)

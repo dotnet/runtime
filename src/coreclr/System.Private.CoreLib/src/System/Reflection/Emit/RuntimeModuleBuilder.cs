@@ -458,7 +458,7 @@ namespace System.Reflection.Emit
             }
 
             Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
 
             Type[] parameterTypes = new Type[parameters.Length];
             Type[][] requiredCustomModifiers = new Type[parameterTypes.Length][];

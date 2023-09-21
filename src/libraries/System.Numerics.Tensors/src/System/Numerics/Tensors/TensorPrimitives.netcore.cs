@@ -1,9 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics.Tensors
 {
@@ -80,9 +83,9 @@ namespace System.Numerics.Tensors
                     Vector512<float> xVec = Vector512.LoadUnsafe(ref xRef, (uint)i);
                     Vector512<float> yVec = Vector512.LoadUnsafe(ref yRef, (uint)i);
 
-                    dotProductVector += xVec * yVec;
-                    xSumOfSquaresVector += xVec * xVec;
-                    ySumOfSquaresVector += yVec * yVec;
+                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
 
                     i += Vector512<float>.Count;
                 }
@@ -111,9 +114,9 @@ namespace System.Numerics.Tensors
                     Vector256<float> xVec = Vector256.LoadUnsafe(ref xRef, (uint)i);
                     Vector256<float> yVec = Vector256.LoadUnsafe(ref yRef, (uint)i);
 
-                    dotProductVector += xVec * yVec;
-                    xSumOfSquaresVector += xVec * xVec;
-                    ySumOfSquaresVector += yVec * yVec;
+                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
 
                     i += Vector256<float>.Count;
                 }
@@ -140,9 +143,9 @@ namespace System.Numerics.Tensors
                     Vector128<float> xVec = Vector128.LoadUnsafe(ref xRef, (uint)i);
                     Vector128<float> yVec = Vector128.LoadUnsafe(ref yRef, (uint)i);
 
-                    dotProductVector += xVec * yVec;
-                    xSumOfSquaresVector += xVec * xVec;
-                    ySumOfSquaresVector += yVec * yVec;
+                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
 
                     i += Vector128<float>.Count;
                 }
@@ -157,9 +160,9 @@ namespace System.Numerics.Tensors
             // Process any remaining elements past the last vector.
             for (; (uint)i < (uint)x.Length; i++)
             {
-                dotProduct += x[i] * y[i];
-                xSumOfSquares += x[i] * x[i];
-                ySumOfSquares += y[i] * y[i];
+                dotProduct = MathF.FusedMultiplyAdd(x[i], y[i], dotProduct);
+                xSumOfSquares = MathF.FusedMultiplyAdd(x[i], x[i], xSumOfSquares);
+                ySumOfSquares = MathF.FusedMultiplyAdd(y[i], y[i], ySumOfSquares);
             }
 
             // Sum(X * Y) / (|X| * |Y|)
@@ -1026,6 +1029,46 @@ namespace System.Numerics.Tensors
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<float> FusedMultiplyAdd(Vector128<float> x, Vector128<float> y, Vector128<float> addend)
+        {
+            if (Fma.IsSupported)
+            {
+                return Fma.MultiplyAdd(x, y, addend);
+            }
+
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.FusedMultiplyAdd(addend, x, y);
+            }
+
+            return (x * y) + addend;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<float> FusedMultiplyAdd(Vector256<float> x, Vector256<float> y, Vector256<float> addend)
+        {
+            if (Fma.IsSupported)
+            {
+                return Fma.MultiplyAdd(x, y, addend);
+            }
+
+            return (x * y) + addend;
+        }
+
+#if NET8_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<float> FusedMultiplyAdd(Vector512<float> x, Vector512<float> y, Vector512<float> addend)
+        {
+            if (Avx512F.IsSupported)
+            {
+                return Avx512F.FusedMultiplyAdd(x, y, addend);
+            }
+
+            return (x * y) + addend;
+        }
+#endif
+
         private readonly struct AddOperator : IBinaryOperator
         {
             public static float Invoke(float x, float y) => x + y;
@@ -1176,11 +1219,11 @@ namespace System.Numerics.Tensors
 
         private readonly struct MultiplyAddOperator : ITernaryOperator
         {
-            public static float Invoke(float x, float y, float z) => (x * y) + z;
-            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y, Vector128<float> z) => (x * y) + z;
-            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y, Vector256<float> z) => (x * y) + z;
+            public static float Invoke(float x, float y, float z) => MathF.FusedMultiplyAdd(x, y, z);
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y, Vector128<float> z) => FusedMultiplyAdd(x, y, z);
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y, Vector256<float> z) => FusedMultiplyAdd(x, y, z);
 #if NET8_0_OR_GREATER
-            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y, Vector512<float> z) => (x * y) + z;
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y, Vector512<float> z) => FusedMultiplyAdd(x, y, z);
 #endif
         }
 
