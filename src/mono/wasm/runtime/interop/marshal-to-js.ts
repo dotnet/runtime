@@ -1,25 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
+import MonoWasmThreads from "consts:monoWasmThreads";
 
-import cwraps from "../core/cwraps";
-import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "../core/gc-handles";
-import { Module, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../core/globals";
-import {
-    ManagedObject, ManagedError,
-    get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
-    get_arg_b8, get_arg_date, get_arg_length, set_js_handle, get_arg, set_arg_type,
-    get_signature_arg2_type, get_signature_arg1_type, cs_to_js_marshalers,
-    get_signature_res_type, get_arg_u16, array_element_size, get_string_root,
-    ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize, proxy_debug_symbol
-} from "../core/marshal";
-import { monoStringToString } from "../core/strings";
-import { JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "../types/internal";
 import { TypedArray } from "../types/emscripten";
+import { BoundMarshalerToJs, GCHandleNull, JSHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, MarshalerType } from "../types/internal";
+import { Module, _lookup_js_owned_object, createPromiseController, cwraps, loaderHelpers, localHeapViewF64, localHeapViewI32, localHeapViewU8, monoStringToString, mono_assert, mono_wasm_get_js_handle, mono_wasm_get_jsobj_from_js_handle, runtimeHelpers, setup_managed_proxy, teardown_managed_proxy } from "./from-core";
+import {
+    ArraySegment, JavaScriptMarshalerArgSize, ManagedError, ManagedObject, MemoryViewType, Span, array_element_size,
+    cs_to_js_marshalers, get_arg, get_arg_b8, get_arg_date, get_arg_element_type, get_arg_f32, get_arg_f64, get_arg_gc_handle,
+    get_arg_i16, get_arg_i32, get_arg_i52, get_arg_i64_big, get_arg_intptr, get_arg_js_handle, get_arg_length,
+    get_arg_type, get_arg_u16, get_arg_u8, get_signature_arg1_type,
+    get_signature_arg2_type, get_signature_arg3_type, get_signature_res_type, get_string_root,
+    proxy_debug_symbol, set_arg_type, set_js_handle
+} from "./marshal";
 import { get_marshaler_to_cs_by_type, jsinteropDoc } from "./marshal-to-cs";
-import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "../core/memory";
 
 export function initialize_marshalers_to_js(): void {
     if (cs_to_js_marshalers.size == 0) {

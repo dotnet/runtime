@@ -7,7 +7,7 @@ import BuildConfiguration from "consts:configuration";
 import { loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { fn_wrapper_by_fn_handle } from "../interop/invoke-js";
 import { mono_log_info, mono_log_warn } from "./logging";
-import { bound_cs_function_symbol, imported_js_function_symbol, proxy_debug_symbol } from "./marshal";
+import { bound_cs_function_symbol, imported_js_function_symbol, proxy_debug_symbol } from "../interop/marshal";
 import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull } from "../types/internal";
 import { _use_weak_ref, create_weak_ref } from "./weak-ref";
 import { exportsByAssembly } from "../interop/invoke-cs";

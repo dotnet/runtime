@@ -11,7 +11,7 @@ import { VoidPtr } from "../types/emscripten";
 import { PromiseController } from "../types/internal";
 import { mono_log_warn } from "./logging";
 import { viewOrCopy, utf8ToStringRelaxed, stringToUTF8 } from "./strings";
-import { IDisposable } from "./marshal";
+import { IDisposable } from "../interop/marshal";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");

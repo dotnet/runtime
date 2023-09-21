@@ -1,28 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
+import MonoWasmThreads from "consts:monoWasmThreads";
 
-import { isThenable } from "../core/cancelable-promise";
-import cwraps from "../core/cwraps";
-import { assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "../core/gc-handles";
-import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "../core/globals";
-import {
-    ManagedError,
-    set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
-    set_arg_length, get_arg, get_signature_arg1_type, get_signature_arg2_type, js_to_cs_marshalers,
-    get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
-    get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr, IDisposable,
-    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol
-} from "../core/marshal";
-import { get_marshaler_to_js_by_type } from "./marshal-to-js";
-import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "../core/memory";
-import { stringToMonoStringRoot } from "../core/strings";
-import { GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "../types/internal";
-import { TypedArray } from "../types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "../pthreads/shared/eventloop";
-import { mono_log_warn } from "../core/logging";
+import { TypedArray } from "../types/emscripten";
+import { BoundMarshalerToCs, GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, MarshalerType } from "../types/internal";
+import { Module, _zero_region, assert_not_disposed, cs_owned_js_handle_symbol, cwraps, isThenable, js_owned_gc_handle_symbol, loaderHelpers, localHeapViewF64, localHeapViewI32, localHeapViewU8, mono_assert, mono_log_warn, mono_wasm_get_js_handle, runtimeHelpers, setup_managed_proxy, stringToMonoStringRoot, teardown_managed_proxy } from "./from-core";
+import {
+    ArraySegment, IDisposable, JavaScriptMarshalerArgSize, ManagedError, ManagedObject, MemoryViewType,
+    Span, array_element_size, bound_js_function_symbol, get_arg, get_signature_arg1_type, get_signature_arg2_type, get_signature_arg3_type, get_signature_res_type,
+    get_string_root, js_to_cs_marshalers, proxy_debug_symbol, set_arg_b8, set_arg_date, set_arg_element_type, set_arg_f32,
+    set_arg_f64, set_arg_i16, set_arg_i32, set_arg_i52, set_arg_i64_big, set_arg_intptr, set_arg_length,
+    set_arg_type, set_arg_u16, set_arg_u8, set_gc_handle, set_js_handle
+} from "./marshal";
+import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 

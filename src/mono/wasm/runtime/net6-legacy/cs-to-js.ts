@@ -7,7 +7,7 @@ import { _are_promises_supported } from "../core/cancelable-promise";
 import { legacy_c_functions as cwraps } from "../core/cwraps";
 import { mono_wasm_get_jsobj_from_js_handle, _lookup_js_owned_object, setup_managed_proxy, mono_wasm_get_js_handle, teardown_managed_proxy, assert_not_disposed } from "../core/gc-handles";
 import { wrap_error_root, wrap_no_error_root } from "../interop/invoke-js";
-import { ManagedObject } from "../core/marshal";
+import { ManagedObject } from "../interop/marshal";
 import { getU32, getI32, getF32, getF64, setI32_unchecked } from "../core/memory";
 import { mono_wasm_new_root, mono_wasm_new_external_root } from "../core/roots";
 import { monoStringToString } from "../core/strings";

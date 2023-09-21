@@ -3,7 +3,7 @@
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
 import { ENVIRONMENT_IS_NODE, Module, createPromiseController, loaderHelpers, mono_assert } from "./globals";
-import { ManagedObject, MemoryViewType, Span } from "./marshal";
+import { ManagedObject, MemoryViewType, Span } from "../interop/marshal";
 import type { VoidPtr } from "../types/emscripten";
 import { ControllablePromise, PromiseController } from "../types/internal";
 

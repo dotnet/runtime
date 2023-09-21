@@ -6,7 +6,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import { GCHandle, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "../types/internal";
 import cwraps from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
-import { alloc_stack_frame, get_arg, get_arg_gc_handle, set_arg_type, set_gc_handle } from "./marshal";
+import { alloc_stack_frame, get_arg, get_arg_gc_handle, set_arg_type, set_gc_handle } from "../interop/marshal";
 import { invoke_method_and_handle_exception } from "../interop/invoke-cs";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "../interop/marshal-to-cs";
 import { marshal_int32_to_js, marshal_string_to_js, marshal_task_to_js } from "../interop/marshal-to-js";

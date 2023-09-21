@@ -4,23 +4,21 @@
 import BuildConfiguration from "consts:configuration";
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "../core/globals";
-import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { marshal_exception_to_js, bind_arg_marshal_to_js } from "./marshal-to-js";
-import {
-    get_arg, get_sig, get_signature_argument_count, is_args_exception,
-    bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
-} from "../core/marshal";
-import { mono_wasm_new_external_root, mono_wasm_new_root } from "../core/roots";
-import { monoStringToString } from "../core/strings";
-import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull, MarshalerType } from "../types/internal";
-import { Int32Ptr } from "../types/emscripten";
-import cwraps from "../core/cwraps";
-import { assembly_load } from "../core/class-loader";
-import { assert_bindings, wrap_error_root, wrap_no_error_root } from "./invoke-js";
-import { startMeasure, MeasuredBlock, endMeasure } from "../core/profiler";
-import { mono_log_debug } from "../core/logging";
 import { assert_synchronization_context } from "../pthreads/shared";
+import { Int32Ptr } from "../types/emscripten";
+import { BoundMarshalerToCs, BoundMarshalerToJs, JSFunctionSignature, JSMarshalerArguments, MarshalerType, MonoMethod, MonoObject, MonoObjectNull, MonoObjectRef, MonoObjectRefNull, MonoString, MonoStringRef, VoidPtrNull } from "../types/internal";
+import { MeasuredBlock, Module, assembly_load, cwraps, endMeasure, loaderHelpers, monoStringToString, mono_assert, mono_log_debug, mono_wasm_new_external_root, mono_wasm_new_root, runtimeHelpers, startMeasure } from "./from-core";
+import { assert_bindings, wrap_error_root, wrap_no_error_root } from "./invoke-js";
+import {
+    alloc_stack_frame,
+    bound_cs_function_symbol,
+    get_arg, get_sig, get_signature_argument_count,
+    get_signature_type,
+    get_signature_version,
+    is_args_exception,
+} from "./marshal";
+import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
+import { bind_arg_marshal_to_js, marshal_exception_to_js } from "./marshal-to-js";
 
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     assert_bindings();

@@ -1,23 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
+import MonoWasmThreads from "consts:monoWasmThreads";
 
-import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol } from "../core/marshal";
-import { setI32, setI32_unchecked, receiveWorkerHeapViews } from "../core/memory";
-import { monoStringToString, stringToMonoStringRoot } from "../core/strings";
-import { MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "../types/internal";
-import { Int32Ptr } from "../types/emscripten";
-import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "../core/globals";
-import { bind_arg_marshal_to_js } from "./marshal-to-js";
-import { mono_wasm_new_external_root } from "../core/roots";
-import { mono_log_debug, mono_wasm_symbolicate_string } from "../core/logging";
-import { mono_wasm_get_jsobj_from_js_handle } from "../core/gc-handles";
-import { endMeasure, MeasuredBlock, startMeasure } from "../core/profiler";
-import { wrap_as_cancelable_promise } from "../core/cancelable-promise";
 import { assert_synchronization_context } from "../pthreads/shared";
+import { Int32Ptr } from "../types/emscripten";
+import { BoundMarshalerToCs, BoundMarshalerToJs, JSFnHandle, JSFunctionSignature, JSHandle, JSMarshalerArguments, MarshalerType, MonoObject, MonoObjectRef, MonoString, MonoStringRef, WasmRoot } from "../types/internal";
+import { INTERNAL, MeasuredBlock, Module, endMeasure, loaderHelpers, monoStringToString, mono_assert, mono_log_debug, mono_wasm_get_jsobj_from_js_handle, mono_wasm_new_external_root, mono_wasm_symbolicate_string, receiveWorkerHeapViews, runtimeHelpers, setI32, setI32_unchecked, startMeasure, stringToMonoStringRoot, wrap_as_cancelable_promise } from "./from-core";
+import { bound_js_function_symbol, get_sig, get_signature_argument_count, get_signature_type, get_signature_version, imported_js_function_symbol } from "./marshal";
+import { bind_arg_marshal_to_cs, marshal_exception_to_cs } from "./marshal-to-cs";
+import { bind_arg_marshal_to_js } from "./marshal-to-js";
 
 export const fn_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
