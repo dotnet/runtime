@@ -54,14 +54,6 @@ namespace ILLink.RoslynAnalyzer
 					CheckMatchingAttributesInInterfaces (symbolAnalysisContext, typeSymbol);
 				}, SymbolKind.NamedType);
 
-
-				context.RegisterSymbolAction (symbolAnalysisContext => {
-					var propertySymbol = (IPropertySymbol) symbolAnalysisContext.Symbol;
-					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Property)) {
-						CheckMatchingAttributesInOverrides (symbolAnalysisContext, propertySymbol);
-					}
-				}, SymbolKind.Property);
-
 				context.RegisterSymbolAction (symbolAnalysisContext => {
 					var eventSymbol = (IEventSymbol) symbolAnalysisContext.Symbol;
 					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event)) {

@@ -194,7 +194,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[RequiresAssemblyFiles ("Message")]
-			[ExpectedWarning ("IL3003", "DerivedClassWithRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithoutRequires.VirtualPropertyAnnotationInProperty", ProducedBy = Tool.Analyzer)]
 			public override string VirtualPropertyAnnotationInProperty {
 				[ExpectedWarning ("IL3003", "DerivedClassWithRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithoutRequires.VirtualPropertyAnnotationInProperty", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				get;
@@ -254,7 +253,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				set { name = value; }
 			}
 
-			[ExpectedWarning ("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty", ProducedBy = Tool.Analyzer)]
 			public override string VirtualPropertyAnnotationInProperty {
 				[ExpectedWarning ("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInProperty", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				get;
@@ -262,7 +260,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				set;
 			}
 
-			[ExpectedWarning ("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor", ProducedBy = Tool.Analyzer)]
 			public override string VirtualPropertyAnnotationInPropertyAndAccessor {
 				[ExpectedWarning ("IL2046", "VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
 				[ExpectedWarning ("IL3003", "DerivedClassWithoutRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
@@ -284,7 +281,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			private string name;
 
 			[RequiresAssemblyFiles ("Message")]
-			[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor", ProducedBy = Tool.Analyzer)]
 			public override string VirtualPropertyAnnotationInAccesor {
 				[ExpectedWarning ("IL2046", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
 				[ExpectedWarning ("IL3051", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInAccesor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
@@ -296,7 +292,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				set { name = value; }
 			}
 
-			[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInProperty", "BaseClassWithRequires.VirtualPropertyAnnotationInProperty", ProducedBy = Tool.Analyzer)]
 			public override string VirtualPropertyAnnotationInProperty {
 				[RequiresAssemblyFiles ("Message")]
 				[RequiresUnreferencedCode ("Message")]
@@ -308,7 +303,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				set;
 			}
 
-			[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInPropertyAndAccessor", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor", ProducedBy = Tool.Analyzer)]
 			public override string VirtualPropertyAnnotationInPropertyAndAccessor {
 				[ExpectedWarning ("IL2046", "VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get")]
 				[ExpectedWarning ("IL3003", "DerivedClassWithAllWarnings.VirtualPropertyAnnotationInPropertyAndAccessor.get", "BaseClassWithRequires.VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
