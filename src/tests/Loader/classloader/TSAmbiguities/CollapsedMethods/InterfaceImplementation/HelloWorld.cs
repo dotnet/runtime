@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 #pragma warning disable 1956 //this is exactly what this is testing.
 
-public class HelloWorld
+class HelloWorld
 {
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         I i = (I)new A2_IntInt();
         string res1 = i.Print(1);

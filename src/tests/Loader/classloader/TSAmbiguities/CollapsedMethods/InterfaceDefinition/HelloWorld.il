@@ -28,7 +28,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public auto ansi beforefieldinit HelloWorld
+.class private auto ansi beforefieldinit HelloWorld
        extends [mscorlib]System.Object
 {
   .method private hidebysig static bool  Check(string actual,
@@ -52,7 +52,7 @@
     IL_0013:  ret
   } // end of method HelloWorld::Check
 
-  .method public hidebysig static int32 
+  .method private hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
