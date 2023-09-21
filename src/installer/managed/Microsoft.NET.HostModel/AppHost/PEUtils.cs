@@ -5,6 +5,7 @@ using System;
 using System.Buffers.Binary;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Reflection.PortableExecutable;
 
 namespace Microsoft.NET.HostModel.AppHost
 {
@@ -17,31 +18,13 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <returns>true if the accessor represents a PE image, false otherwise.</returns>
         internal static unsafe bool IsPEImage(MemoryMappedViewAccessor accessor)
         {
-            byte* pointer = null;
+            if (accessor.Capacity < PEOffsets.DosStub.PESignatureOffset + sizeof(uint))
+                return false;
 
-            try
-            {
-                accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
-                byte* bytes = pointer + accessor.PointerOffset;
-
-                // https://en.wikipedia.org/wiki/Portable_Executable
-                // Validate that we're looking at Windows PE file
-                ReadOnlySpan<byte> signatureBytes = new(bytes, sizeof(ushort));
-                ushort signature = BinaryPrimitives.ReadUInt16LittleEndian(signatureBytes);
-                if (signature != PEOffsets.DosImageSignature
-                    || accessor.Capacity < PEOffsets.DosStub.PESignatureOffset + sizeof(uint))
-                {
-                    return false;
-                }
-                return true;
-            }
-            finally
-            {
-                if (pointer != null)
-                {
-                    accessor.SafeMemoryMappedViewHandle.ReleasePointer();
-                }
-            }
+            // https://en.wikipedia.org/wiki/Portable_Executable
+            // Validate that we're looking at Windows PE file
+            ushort signature = AsLittleEndian(accessor.ReadUInt16(0));
+            return signature == PEOffsets.DosImageSignature;
         }
 
         public static bool IsPEImage(string filePath)
@@ -64,42 +47,15 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <param name="accessor">The memory accessor which has the apphost file opened.</param>
         internal static unsafe void SetWindowsGraphicalUserInterfaceBit(MemoryMappedViewAccessor accessor)
         {
-            byte* pointer = null;
+            // https://learn.microsoft.com/windows/win32/debug/pe-format#windows-subsystem
+            // The subsystem of the prebuilt apphost should be set to CUI
+            uint peHeaderOffset;
+            ushort subsystem = GetWindowsSubsystem(accessor, out peHeaderOffset);
+            if (subsystem != (ushort)Subsystem.WindowsCui)
+                throw new AppHostNotCUIException(subsystem);
 
-            try
-            {
-                accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
-                byte* bytes = pointer + accessor.PointerOffset;
-
-                // https://en.wikipedia.org/wiki/Portable_Executable
-                ReadOnlySpan<byte> peHeaderOffsetBytes = new(bytes + PEOffsets.DosStub.PESignatureOffset, sizeof(uint));
-                uint peHeaderOffset = BinaryPrimitives.ReadUInt32LittleEndian(peHeaderOffsetBytes);
-
-                if (accessor.Capacity < peHeaderOffset + PEOffsets.PEHeader.Subsystem + sizeof(ushort))
-                {
-                    throw new AppHostNotPEFileException("Subsystem offset out of file range.");
-                }
-
-                Span<byte> subsystemBytes = new(bytes + peHeaderOffset + PEOffsets.PEHeader.Subsystem, sizeof(ushort));
-                ushort subsystem = BinaryPrimitives.ReadUInt16LittleEndian(subsystemBytes);
-
-                // https://docs.microsoft.com/en-us/windows/desktop/Debug/pe-format#windows-subsystem
-                // The subsystem of the prebuilt apphost should be set to CUI
-                if (subsystem != (ushort)PEOffsets.Subsystem.WindowsCui)
-                {
-                    throw new AppHostNotCUIException(subsystem);
-                }
-
-                // Set the subsystem to GUI
-                BinaryPrimitives.WriteUInt16LittleEndian(subsystemBytes, (ushort)PEOffsets.Subsystem.WindowsGui);
-            }
-            finally
-            {
-                if (pointer != null)
-                {
-                    accessor.SafeMemoryMappedViewHandle.ReleasePointer();
-                }
-            }
+            // Set the subsystem to GUI
+            accessor.Write(peHeaderOffset + PEOffsets.PEHeader.Subsystem, AsLittleEndian((ushort)Subsystem.WindowsGui));
         }
 
         public static unsafe void SetWindowsGraphicalUserInterfaceBit(string filePath)
@@ -119,32 +75,7 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <param name="accessor">The memory accessor which has the apphost file opened.</param>
         internal static unsafe ushort GetWindowsGraphicalUserInterfaceBit(MemoryMappedViewAccessor accessor)
         {
-            byte* pointer = null;
-
-            try
-            {
-                accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
-                byte* bytes = pointer + accessor.PointerOffset;
-
-                // https://en.wikipedia.org/wiki/Portable_Executable
-                ReadOnlySpan<byte> peHeaderOffsetBytes = new(bytes + PEOffsets.DosStub.PESignatureOffset, sizeof(uint));
-                uint peHeaderOffset = BinaryPrimitives.ReadUInt32LittleEndian(peHeaderOffsetBytes);
-
-                if (accessor.Capacity < peHeaderOffset + PEOffsets.PEHeader.Subsystem + sizeof(ushort))
-                {
-                    throw new AppHostNotPEFileException("Subsystem offset out of file range.");
-                }
-
-                ReadOnlySpan<byte> subsystemBytes = new(bytes + peHeaderOffset + PEOffsets.PEHeader.Subsystem, sizeof(ushort));
-                return BinaryPrimitives.ReadUInt16LittleEndian(subsystemBytes);
-            }
-            finally
-            {
-                if (pointer != null)
-                {
-                    accessor.SafeMemoryMappedViewHandle.ReleasePointer();
-                }
-            }
+            return GetWindowsSubsystem(accessor, out _);
         }
 
         public static unsafe ushort GetWindowsGraphicalUserInterfaceBit(string filePath)
@@ -157,5 +88,25 @@ namespace Microsoft.NET.HostModel.AppHost
                 }
             }
         }
+
+        private static ushort GetWindowsSubsystem(MemoryMappedViewAccessor accessor, out uint peHeaderOffset)
+        {
+            // https://en.wikipedia.org/wiki/Portable_Executable
+            if (accessor.Capacity < PEOffsets.DosStub.PESignatureOffset + sizeof(uint))
+                throw new AppHostNotPEFileException("PESignature offset out of file range.");
+
+            peHeaderOffset = AsLittleEndian(accessor.ReadUInt32(PEOffsets.DosStub.PESignatureOffset));
+            if (accessor.Capacity < peHeaderOffset + PEOffsets.PEHeader.Subsystem + sizeof(ushort))
+                throw new AppHostNotPEFileException("Subsystem offset out of file range.");
+
+            // https://learn.microsoft.com/windows/win32/debug/pe-format#windows-subsystem
+            return AsLittleEndian(accessor.ReadUInt16(peHeaderOffset + PEOffsets.PEHeader.Subsystem));
+        }
+
+        private static ushort AsLittleEndian(ushort value)
+            => BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
+
+        private static uint AsLittleEndian(uint value)
+            => BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
     }
 }
