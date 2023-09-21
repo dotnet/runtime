@@ -938,7 +938,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Reflection.MethodBase.GetParametersNoCopy</Target>
+    <Target>M:System.Reflection.MethodBase.GetParametersAsSpan</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>

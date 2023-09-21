@@ -506,6 +506,8 @@ namespace DebuggerTests
 
     public class EvaluateLocalsWithIndexingTests
     {
+        public record Indexer(int index);
+
         public class TestEvaluate
         {
             public List<int> numList;
@@ -529,6 +531,7 @@ namespace DebuggerTests
             public int this[double key] => (int)key;
             public int this[float key] => (int)key;
             public int this[decimal key] => (int)key;
+            public int this[Indexer indexer] => indexer.index;
 
             public void run()
             {
@@ -561,6 +564,7 @@ namespace DebuggerTests
             float aFloat = 1.23f;
             double aDouble = 2.34;
             decimal aDecimal = 3.34m;
+            Indexer objIdx = new(index: 123);
         }
     }
 
@@ -2039,6 +2043,20 @@ namespace DebuggerTests
         {
             var instance = new InstanceProperties();
             var localString = "aB.c[";
+        }
+    }
+
+    public static class EvaluateMethodsOnEnum
+    {
+        public static SampleEnum s_valueTypeEnum = SampleEnum.no;
+        public class MemberClass
+        {
+            public SampleEnum valueTypeEnum = SampleEnum.yes;
+        }
+        public static void run()
+        {
+            MemberClass mc = new();
+            Console.WriteLine("Break here");
         }
     }
 }

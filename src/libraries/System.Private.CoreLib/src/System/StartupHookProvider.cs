@@ -209,7 +209,7 @@ namespace System
             Debug.Assert(initializeMethod != null &&
                          initializeMethod.IsStatic &&
                          initializeMethod.ReturnType == typeof(void) &&
-                         initializeMethod.GetParameters().Length == 0);
+                         initializeMethod.GetParametersAsSpan().Length == 0);
 
             initializeMethod.Invoke(null, null);
         }
