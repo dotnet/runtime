@@ -109,7 +109,12 @@ namespace System.Reflection.Runtime.General
         public static string EscapeTypeNameIdentifier(this string identifier)
         {
             // Some characters in a type name need to be escaped
+
+            // We're avoiding calling into MemoryExtensions here as it has paths that lead to reflection,
+            // and that would lead to an infinite loop given that this is the implementation of reflection.
+#pragma warning disable CA1870 // Use a cached 'SearchValues' instance
             if (identifier != null && identifier.IndexOfAny(s_charsToEscape) != -1)
+#pragma warning restore CA1870
             {
                 StringBuilder sbEscapedName = new StringBuilder(identifier.Length);
                 foreach (char c in identifier)

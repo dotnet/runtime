@@ -1022,11 +1022,6 @@
         <target state="translated">Aby se povolilo zařazování tohoto typu, musí se v tomto projektu zakázat zařazování modulu runtime použitím atributu System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute u sestavení.</target>
         <note />
       </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">Abstraktní typ odvozený ze SafeHandle nelze zařadit pomocí odkazu. Poskytnutý typ musí být konkrétní.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
         <target state="translated">Při volání metody musí být definována velikost parametru{0}, která je zařazena do volané metody, ale parametr count {1} je parametr out.</target>

@@ -1022,11 +1022,6 @@
         <target state="translated">Bu türü sıralamayı etkinleştirmek için derlemeye 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' uygulanarak bu projede çalışma zamanı sıralaması devre dışı bırakılmalıdır.</target>
         <note />
       </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">'SafeHandle' özelliğinden türetilen soyut türler, başvuruya göre sıralanamaz. Sağlanan tür somut olmalıdır.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
         <target state="translated">Aramanın alıcısına hazırlanan '{0}' parametresinin boyutu yöntem çağrıldığında tanımlanmalıdır ancak '{1}' sayı parametresi bir ‘çıkış’ parametresidir.</target>
