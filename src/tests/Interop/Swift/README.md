@@ -76,12 +76,13 @@ Here's the flow for invoking a Swift function from .NET if a developer uses a di
 
 ## Goals
 
-The goal of this experiment is to explore the possibilities and limitations of direct P/Invoke interop with Swift. It should implement runtime mechanisms for handling Swift ABI differences.
-The goals below are **outdated** and should be updated. Here is list of goals we want to focus on:
+The goal of this experiment is to explore the possibilities and limitations of direct P/Invoke interop with Swift. It should implement runtime mechanisms for handling Swift ABI differences. Here is list of goals we want to focus on:
  - Type marshalling
  - Swift metadata marshalling
  - Thunks for `self` context
  - Thunks for `error` handling
+
+## The goals below are outdated and should be updated
 
 ### Update Binding Tools for Swift to work with latest version of Mono runtime
 
