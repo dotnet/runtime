@@ -525,7 +525,7 @@ async function mono_wasm_before_memory_snapshot() {
     if (runtimeHelpers.config.virtualWorkingDirectory) {
         const FS = Module.FS;
         const cwd = runtimeHelpers.config.virtualWorkingDirectory;
-        const wds = FS.stat();
+        const wds = FS.stat(cwd);
         // TODO should we create the directory if it doesn't exist?
         mono_assert(wds && FS.isDir(wds.mode), () => `Could not find working directory ${cwd}`);
         FS.chdir(cwd);

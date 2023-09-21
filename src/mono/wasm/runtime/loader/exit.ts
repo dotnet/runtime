@@ -86,9 +86,6 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     if (is_runtime_running() && runtimeHelpers.mono_wasm_exit) {
         runtimeHelpers.mono_wasm_exit(exit_code);
     }
-    if (loaderHelpers.config?.forwardConsoleLogsToWS) {
-        consoleWebSocket?.close(exit_code, reason);
-    }
     // just in case mono_wasm_exit didn't exit or throw
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
         if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
@@ -177,6 +174,8 @@ function logOnExit(exit_code: number, reason: any) {
                     // tell xharness WasmTestMessagesProcessor we are done.
                     // note this sends last few bytes into the same WS
                     mono_log_info_no_prefix("WASM EXIT " + exit_code);
+                    consoleWebSocket.onclose = null;
+                    consoleWebSocket.close(1000, "exit_code:" + exit_code + ": " + reason);
                 }
                 else {
                     globalThis.setTimeout(stop_when_ws_buffer_empty, 100);
