@@ -211,7 +211,9 @@ namespace System.Formats.Cbor
             {
                 int newCapacity = currentCapacity == 0 ? 1024 : currentCapacity * 2;
                 if ((uint)newCapacity > (uint)Array.MaxLength || newCapacity < requiredCapacity)
+                {
                     newCapacity = requiredCapacity;
+                }
 
                 byte[] newBuffer = new byte[newCapacity];
                 new ReadOnlySpan<byte>(_buffer, 0, _offset).CopyTo(newBuffer);
