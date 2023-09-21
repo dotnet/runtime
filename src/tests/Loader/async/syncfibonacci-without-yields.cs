@@ -29,20 +29,10 @@ static uint B(uint n)
     uint result = n;
 
     result = result * 1_999_999_981;
-    if (result < Threshold)
-        MyYield();
 
     result = result * 1_999_999_981;
-    if (result < Threshold)
-        MyYield();
 
     result = result * 1_999_999_981;
-    if (result < Threshold)
-        MyYield();
 
     return result;
 }
-
-// Workaround for inlining of Thread.Yield inflating the caller's frame.
-[MethodImpl(MethodImplOptions.NoInlining)]
-static void MyYield() => Thread.Yield();
