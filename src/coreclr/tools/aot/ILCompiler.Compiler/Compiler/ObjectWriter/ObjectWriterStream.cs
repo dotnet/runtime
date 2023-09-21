@@ -47,7 +47,7 @@ namespace ILCompiler.ObjectWriter
                 _bufferPosition = 0;
                 while (_position < value && _bufferIndex < _buffers.Count)
                 {
-                    if (_buffers[_bufferIndex].Length > value - _position)
+                    if (_buffers[_bufferIndex].Length < value - _position)
                     {
                         _bufferIndex++;
                         _position += _buffers[_bufferIndex].Length;
