@@ -364,7 +364,7 @@ UINT32 CLRToCOMEventCallWorker(ComPlusMethodFrame* pFrame, ComPlusCallMethodDesc
     return 0;
 }
 
-CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
+static CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
 {
     CONTRACTL
     {
@@ -442,10 +442,15 @@ CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
         SigTypeContext::InitTypeContext(pMD, actualType, &typeContext);
     }
 
+    // If the signature is marked preserve sig, then the return
+    // is required to be an HRESULT.
+    if (IsMiPreserveSig(pMD->GetImplAttrs()))
+        callsiteFlags |= CallsiteDetails::HResultReturn;
+
     _ASSERTE(!signature.IsEmpty() && pModule != nullptr);
 
     // Create details
-    return CallsiteDetails{ { signature, pModule, &typeContext }, pFrame, pMD, fIsDelegate };
+    return CallsiteDetails{ { signature, pModule, &typeContext }, pFrame, pMD, fIsDelegate, callsiteFlags };
 }
 
 UINT32 CLRToCOMLateBoundWorker(
