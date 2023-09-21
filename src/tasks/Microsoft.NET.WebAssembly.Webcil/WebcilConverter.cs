@@ -177,6 +177,16 @@ public class WebcilConverter
 
     private static void WriteHeader(Stream s, WebcilHeader header)
     {
+        if (!BitConverter.IsLittleEndian)
+        {
+            webcilHeader.version_major = BinaryPrimitives.ReverseEndianness(webcilHeader.version_major);
+            webcilHeader.version_minor = BinaryPrimitives.ReverseEndianness(webcilHeader.version_minor);
+            webcilHeader.coff_sections = BinaryPrimitives.ReverseEndianness(webcilHeader.coff_sections);
+            webcilHeader.pe_cli_header_rva = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_cli_header_rva);
+            webcilHeader.pe_cli_header_size = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_cli_header_size);
+            webcilHeader.pe_debug_rva = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_debug_rva);
+            webcilHeader.pe_debug_size = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_debug_size);
+        }
         WriteStructure(s, header);
     }
 
@@ -201,21 +211,6 @@ public class WebcilConverter
             );
         }
         WriteStructure(s, sectionHeader);
-    }
-
-    private static void WriteStructure(Stream s, WebcilHeader webcilHeader)
-    {
-        if (!BitConverter.IsLittleEndian)
-        {
-            webcilHeader.version_major = BinaryPrimitives.ReverseEndianness(webcilHeader.version_major);
-            webcilHeader.version_minor = BinaryPrimitives.ReverseEndianness(webcilHeader.version_minor);
-            webcilHeader.coff_sections = BinaryPrimitives.ReverseEndianness(webcilHeader.coff_sections);
-            webcilHeader.pe_cli_header_rva = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_cli_header_rva);
-            webcilHeader.pe_cli_header_size = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_cli_header_size);
-            webcilHeader.pe_debug_rva = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_debug_rva);
-            webcilHeader.pe_debug_size = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_debug_size);
-        }
-        WriteStructure(s, webcilHeader);
     }
 
 #if NETCOREAPP2_1_OR_GREATER
