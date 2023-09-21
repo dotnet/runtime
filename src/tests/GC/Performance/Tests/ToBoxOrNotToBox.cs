@@ -69,7 +69,7 @@ namespace ToBoxOrNotToBox
         }
     }
 
-    class Program
+    public class Program
     {
         static void PerfTest2(int count, int length)
         {            
@@ -107,7 +107,7 @@ namespace ToBoxOrNotToBox
 
         }
         
-        static void Main()
+        public static void Main()
         {
 
             const int baseCount = 2000000;

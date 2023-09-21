@@ -16,12 +16,11 @@ namespace DefaultNamespace {
 
     public class SimpObject
     {
-        public static int Main ()
+        public static void Main()
         {
             Console.WriteLine("Test should return with ExitCode 100 ...");
             SimpObject sv = new SimpObject( );
             sv.RunTest( );
-            return 100;
         }
 
         public void RunTest()

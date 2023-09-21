@@ -14,7 +14,7 @@ using System;
 
     class MulDimJagAry
     {
-        public static int Main()
+        public static void Main()
         {
             int iDim1 = 100;
             int iDim2 = 100;
@@ -127,10 +127,6 @@ using System;
                 //    Console.WriteLine( "HeapSize after GC: "+ GC.GetTotalMemory(false) );
                 //}
             }
-
-
-            return 100;
-
         }
 
         public void SetThreeDimJagAry( Object [][][] oJag, int iDim1, int iDim2 )

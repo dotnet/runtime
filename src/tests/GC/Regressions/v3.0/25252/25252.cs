@@ -3,16 +3,15 @@
 
 using System;
 
-class Program
+public class Program
 {
-    static int Main()
+    public static void Main()
     {
         var matrix = new double[128 * 128];
         
         GC.Collect(GC.MaxGeneration);
 
         GC.KeepAlive(matrix);
-        return 100;
     }
 }
 

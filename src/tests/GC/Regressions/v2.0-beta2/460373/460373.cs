@@ -48,7 +48,7 @@ namespace b424916
     public class Test
     {
 
-        public static int Main()
+        public static void Main()
         {
 
             Node head = new Node();
@@ -61,8 +61,6 @@ namespace b424916
                 GC.KeepAlive(head);
 
             }
-
-            return 100;
         }
     }
 }

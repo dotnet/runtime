@@ -2,6 +2,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <GCStressIncompatible>true</GCStressIncompatible>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="gcvariant2.cs" />

@@ -497,7 +497,8 @@ class Application {
     }
 
 
-    public static int Main() {
+    public static void Main()
+    {
     // Environment.ExitCode = 1;
         Display("To fully understand this sample, you should step through the");
         Display("code in the debugger while monitoring the output generated.\n");
@@ -522,8 +523,6 @@ class Application {
 
         // This is the last line of code executed before the application terminates.
         Display(-1, "Demo stop: Finalize on shutdown (application is now terminating)", 0);
-
-    return 100;
     }
 }
 

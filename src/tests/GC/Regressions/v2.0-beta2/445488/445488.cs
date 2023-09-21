@@ -27,7 +27,7 @@ public class Test_445488
     //public static PerformanceCounter PC;
 
 
-    public static int Main()
+    public static void Main()
     {
         List<byte[]> list = new List<byte[]>();
         List<GCHandle> glist = new List<GCHandle>();
@@ -51,8 +51,6 @@ public class Test_445488
 
         GC.KeepAlive(list);
         GC.KeepAlive(glist);
-        return 100;
-
     }
 
 }

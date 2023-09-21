@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <CLRTestExecutionArguments>1000 40 191919</CLRTestExecutionArguments>
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>

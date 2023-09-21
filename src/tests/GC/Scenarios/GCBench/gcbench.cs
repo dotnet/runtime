@@ -131,7 +131,7 @@ namespace DefaultNamespace {
 
         }
 
-        public static int Main()
+        public static void Main()
         {
             Node    longLivedTree;
             Node    tempTree;
@@ -163,7 +163,6 @@ namespace DefaultNamespace {
             }
 
             Console.WriteLine("Test Passed");
-            return 100;
         }
     }
 

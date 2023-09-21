@@ -134,9 +134,9 @@ namespace HelloFrozenSegment
         public int number;
     }
 
-    internal static class Program
+    public static class Program
     {
-        private static unsafe int Main()
+        public static unsafe void Main()
         {
             // Regression testing for dotnet/runtime #83027
             Node[] firstArray = new Node[30000000]; 
@@ -180,7 +180,6 @@ namespace HelloFrozenSegment
             GC.Collect();
             Console.WriteLine(root.next.next != null);
             frozenSegment.Release();
-            return 100;
         }
     }
 }

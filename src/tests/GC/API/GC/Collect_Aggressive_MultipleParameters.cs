@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 public class AggressiveCollect_MultipleParameters
 {
-    public static int Main()
+    public static void Main()
     {
         long before = CreateGarbage();
         GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
@@ -55,7 +55,6 @@ public class AggressiveCollect_MultipleParameters
         }
 
         // If we got this far, we have successfully executed all the tests. 
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

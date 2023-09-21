@@ -80,9 +80,9 @@ namespace Three {
         }
     }
 
-    class Test
+    public class Test
     {
-        static int Main()
+        public static int Main()
         {
             CreateObj temp = new CreateObj();
 

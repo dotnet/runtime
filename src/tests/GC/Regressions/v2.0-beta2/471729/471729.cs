@@ -3,7 +3,7 @@
 
 using System;
 
-internal static class Repro
+public static class Repro
 {
     private struct S
     {
@@ -39,7 +39,7 @@ internal static class Repro
         }
     }
 
-    private static int Main()
+    public static int Main()
     {
         try
         {

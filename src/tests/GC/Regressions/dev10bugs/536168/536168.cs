@@ -36,7 +36,7 @@ public class Program
 
     }
 
-    public static int Main()
+    public static void Main()
     {
 
         Program p = new Program();
@@ -56,9 +56,5 @@ public class Program
 
             if (g_completed >= g_interations) break; 
         }
-
-        return 100;
-
     }
-
 }

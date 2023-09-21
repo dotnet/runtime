@@ -14,7 +14,8 @@ public enum EnumType {
 
 public class Test_GetGeneration_box {
 
-    public static int Main() {
+    public static void Main()
+    {
         // literals
         int gen = GC.GetGeneration(-1);
         Console.WriteLine(gen);
@@ -73,6 +74,5 @@ public class Test_GetGeneration_box {
         Console.WriteLine(gen);
 
         Console.WriteLine("Test passed");
-        return 100;
     }
 }
