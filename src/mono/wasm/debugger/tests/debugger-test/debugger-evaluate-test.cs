@@ -506,6 +506,8 @@ namespace DebuggerTests
 
     public class EvaluateLocalsWithIndexingTests
     {
+        public record Indexer(int index);
+
         public class TestEvaluate
         {
             public List<int> numList;
@@ -529,6 +531,7 @@ namespace DebuggerTests
             public int this[double key] => (int)key;
             public int this[float key] => (int)key;
             public int this[decimal key] => (int)key;
+            public int this[Indexer indexer] => indexer.index;
             public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
 
             public void run()
@@ -562,6 +565,7 @@ namespace DebuggerTests
             float aFloat = 1.23f;
             double aDouble = 2.34;
             decimal aDecimal = 3.34m;
+            Indexer objIdx = new(index: 123);
             char[] arr = new char[] { 't', 'e', 's', 't' };
         }
     }
