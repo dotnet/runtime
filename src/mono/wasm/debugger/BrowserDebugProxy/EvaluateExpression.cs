@@ -288,8 +288,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 }
                                 catch (InvalidCastException)
                                 {
-                                    // value["value"] is JObject with another "value" field
-                                    valueRet = $"({typeRet}) {value["value"]["value"].Value<double>()}";
+                                    try
+                                    {
+                                        // value["value"] is JObject with another "value" field
+                                        valueRet = $"({typeRet}) {value["value"]["value"].Value<double>()}";
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        throw new Exception($"Internal Error: failed converting variable = {variable}.");
+                                    }
                                 }
                                 break;
                             case "object":
