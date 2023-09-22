@@ -3534,7 +3534,7 @@ _End_arg:
 
 #if defined(TARGET_RISCV64)
 
-bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
+bool MethodTable::IsRiscV64OnlyOneField(MethodTable * pMT)
 {
     TypeHandle th(pMT);
 
@@ -3568,7 +3568,7 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
                     pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
-                        ret = IsRiscv64OnlyOneField(pMethodTable);
+                        ret = IsRiscV64OnlyOneField(pMethodTable);
                     }
                 }
             }
@@ -3621,7 +3621,7 @@ bool MethodTable::IsRiscv64OnlyOneField(MethodTable * pMT)
                     if (nfc == NativeFieldCategory::NESTED)
                     {
                         pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
-                        ret = IsRiscv64OnlyOneField(pMethodTable);
+                        ret = IsRiscV64OnlyOneField(pMethodTable);
                     }
                     else if (nfc != NativeFieldCategory::ILLEGAL)
                     {
@@ -3640,7 +3640,7 @@ _End_arg:
     return ret;
 }
 
-int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+int MethodTable::GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
     TypeHandle th(cls);
 
@@ -3679,7 +3679,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldStart->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                    size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                 }
             }
             else if (numIntroducedFields == 2)
@@ -3722,9 +3722,9 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldFirst->GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    if (IsRiscv64OnlyOneField(pMethodTable))
+                    if (IsRiscV64OnlyOneField(pMethodTable))
                     {
-                        size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             size = pFieldFirst[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
@@ -3778,9 +3778,9 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     pMethodTable  = pFieldSecond[0].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                    if (IsRiscv64OnlyOneField(pMethodTable))
+                    if (IsRiscV64OnlyOneField(pMethodTable))
                     {
-                        int size2 = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        int size2 = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if ((size2 & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             if (pFieldSecond[0].GetSize() == 8)
@@ -3901,7 +3901,7 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
                     if (nfc == NativeFieldCategory::NESTED)
                     {
                         pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
-                        size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         return size;
                     }
                     else if (nfc == NativeFieldCategory::FLOAT)
@@ -3985,13 +3985,13 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                         MethodTable* pMethodTable2 = pNativeFieldDescs->GetNestedNativeMethodTable();
 
-                        if (!IsRiscv64OnlyOneField(pMethodTable2))
+                        if (!IsRiscV64OnlyOneField(pMethodTable2))
                         {
                             size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
                         }
 
-                        size = GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
+                        size = GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
                         if ((size & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             if (pFieldStart->GetSize() == 8)
@@ -4081,13 +4081,13 @@ int MethodTable::GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 
                         MethodTable* pMethodTable2 = pNativeFieldDescs[1].GetNestedNativeMethodTable();
 
-                        if (!IsRiscv64OnlyOneField(pMethodTable2))
+                        if (!IsRiscV64OnlyOneField(pMethodTable2))
                         {
                             size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
                         }
 
-                        if ((GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2) & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+                        if ((GetRiscV64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2) & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
                         {
                             if (pFieldStart[1].GetSize() == 4)
                             {
