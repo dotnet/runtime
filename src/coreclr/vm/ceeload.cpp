@@ -2265,6 +2265,11 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         {
             RETURN (NULL);
         }
+
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+        RETURN (NULL);
+#endif //defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+
         symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
         hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
         if (FAILED(hr))
