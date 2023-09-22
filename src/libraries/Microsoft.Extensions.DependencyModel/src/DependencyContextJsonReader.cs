@@ -741,9 +741,18 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 return Enumerable.Empty<Library>();
             }
-            return libraries
-                .Select(property => CreateLibrary(property, runtime, libraryStubs))
-                .Where(library => library != null)!;
+
+            return CreateLibrariesNotNull(libraries, runtime, libraryStubs);
+        }
+
+        private IEnumerable<Library> CreateLibrariesNotNull(IEnumerable<TargetLibrary> libraries, bool runtime, Dictionary<string, LibraryStub>? libraryStubs)
+        {
+            foreach (var library in libraries)
+            {
+                Library? property = CreateLibrary(property, runtime, libraryStubs);
+                if (property is not null)
+                    yield return property;
+            }
         }
 
         private Library? CreateLibrary(TargetLibrary targetLibrary, bool runtime, Dictionary<string, LibraryStub>? libraryStubs)
