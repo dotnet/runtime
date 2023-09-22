@@ -22,7 +22,6 @@
       $(_BeforeWasmBuildAppDependsOn);
       _SetupEmscripten;
       _SetWasmBuildNativeDefaults;
-      _SetDebugSymbolsPropertiesDefaults;
       _ReadEmccProps
     </_BeforeWasmBuildAppDependsOn>
 
@@ -169,16 +168,15 @@
     <PropertyGroup>
       <!--<WasmBuildNative Condition="'$(WasmBuildNative)' == '' and ('$(WasmNativeStrip)' == 'true' or '$(WasmNativeDebugSymbols)' == 'true')">true</WasmBuildNative>-->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
-
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'">false</WasmBuildNative>
     </PropertyGroup>
 
     <!-- If we want to default to true, and sdk is missing, then just warn, and set it to false -->
     <Warning Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
              Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
-  </Target>
 
-  <Target Name="_SetDebugSymbolsPropertiesDefaults">
+    <PropertyGroup>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'">false</WasmBuildNative>
+    </PropertyGroup>
   </Target>
 
   <Target Name="_WasmBuildNativeCore" DependsOnTargets="$(_WasmBuildNativeCoreDependsOn)"  Condition="'$(WasmBuildNative)' == 'true'" />
@@ -212,7 +210,7 @@
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-Oz</_EmccOptimizationFlagDefault>
 
       <EmccCompileOptimizationFlag Condition="'$(EmccCompileOptimizationFlag)' == ''">$(_EmccOptimizationFlagDefault)</EmccCompileOptimizationFlag>
-      <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''">-O2</EmccLinkOptimizationFlag>
+      <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</EmccLinkOptimizationFlag>
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(EmccCompileOptimizationFlag)</EmccLinkOptimizationFlag>
 
       <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
