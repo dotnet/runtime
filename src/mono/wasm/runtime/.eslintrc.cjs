@@ -19,7 +19,7 @@ module.exports = {
     "ignorePatterns": [
         "node_modules/**/*.*",
         "bin/**/*.*",
-        "es6/*.js",
+        "native*.js",
         "jiterpreter/opcodes.ts",
         "jiterpreter/tables.ts",
     ],

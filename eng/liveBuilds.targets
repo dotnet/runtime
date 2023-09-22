@@ -224,8 +224,8 @@
         NativeSubDirectory="src"
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
-                             Include="$(LibrariesNativeArtifactsPath)src\es6\*.js"
-                             NativeSubDirectory="src\es6"
+                             Include="$(LibrariesNativeArtifactsPath)src/native/*.js"
+                             NativeSubDirectory="src"
                              IsNative="true" />
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"

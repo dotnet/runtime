@@ -378,7 +378,7 @@
 
       <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/').Replace('\','/'))&quot;</CMakeConfigurationEmsdkPath>
 
-      <CMakeBuildRuntimeConfigureCmd>emcmake cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
+      <CMakeBuildRuntimeConfigureCmd>emcmake cmake $(MSBuildThisFileDirectory)runtime/native</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_BUILD_TYPE=$(Configuration)</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_EMCC_FLAGS=&quot;$(CMakeConfigurationEmccFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_LINK_FLAGS=&quot;$(CMakeConfigurationLinkFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
@@ -421,28 +421,28 @@
           DestinationFolder="$(MonoObjDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/driver.c;
-                       runtime/pinvoke.c;
-                       runtime/corebindings.c;
+    <Copy SourceFiles="runtime/native/driver.c;
+                       runtime/native/pinvoke.c;
+                       runtime/native/corebindings.c;
                        $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="runtime/es6/dotnet.es6.pre.js;
-                       runtime/es6/dotnet.es6.lib.js;
-                       runtime/es6/dotnet.es6.extpost.js;"
-          DestinationFolder="$(NativeBinDir)src/es6"
+    <Copy SourceFiles="runtime/native/dotnet.es6.pre.js;
+                       runtime/native/dotnet.es6.lib.js;
+                       runtime/native/dotnet.es6.extpost.js;"
+          DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
     <ReadLinesFromFile File="$(WasmObjDir)/exports-linker.js">
       <Output TaskParameter="Lines" ItemName="_WasmImportedMethodNames" />
     </ReadLinesFromFile>
     <!-- append at the end of dotnet.es6.lib.js -->
-    <WriteLinesToFile File="$(NativeBinDir)src/es6/dotnet.es6.lib.js"
+    <WriteLinesToFile File="$(NativeBinDir)src/dotnet.es6.lib.js"
                       Lines="@(_WasmImportedMethodNames)"
                       Overwrite="false" />
 
-    <Copy SourceFiles="runtime\pinvoke.h;runtime\gc-common.h"
+    <Copy SourceFiles="runtime/native/pinvoke.h;runtime/native/gc-common.h"
           DestinationFolder="$(NativeBinDir)include\wasm"
           SkipUnchangedFiles="true" />
 
@@ -465,7 +465,7 @@
                              $(_EmccCompileRspPath);
                              $(_EmccLinkRspPath);
                              $(NativeBinDir)src\emcc-props.json" />
-      <WasmSrcFilesEs6 Include="$(NativeBinDir)src\es6\*.js;" />
+      <WasmSrcFilesEs6 Include="$(NativeBinDir)src/native/*.js;" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
 
@@ -499,7 +499,7 @@
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(WasmSrcFilesEs6)"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src\es6"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)src/native"
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(WasmHeaderFiles)"
@@ -570,9 +570,9 @@
   </Target>
 
   <Target Name="GenerateMintopsTS"
-          Inputs="$(MonoProjectRoot)wasm\runtime\genmintops.py;$(MonoProjectRoot)mono\mini\interp\mintops.def;$(MonoProjectRoot)mono\mini\interp\interp-simd-intrins.def"
+          Inputs="$(MonoProjectRoot)wasm/runtime/native/genmintops.py;$(MonoProjectRoot)mono\mini\interp\mintops.def;$(MonoProjectRoot)mono\mini\interp\interp-simd-intrins.def"
           Outputs="$(NativeGeneratedFilesDir)mintops.ts">
-      <Exec Command="$(PythonCmd) $(MonoProjectRoot)wasm/runtime/genmintops.py $(MonoProjectRoot)mono/mini/interp/mintops.def $(MonoProjectRoot)mono/mini/interp/interp-simd-intrins.def $(NativeGeneratedFilesDir)mintops.ts" />
+      <Exec Command="$(PythonCmd) $(MonoProjectRoot)wasm/runtime/native/genmintops.py $(MonoProjectRoot)mono/mini/interp/mintops.def $(MonoProjectRoot)mono/mini/interp/interp-simd-intrins.def $(NativeGeneratedFilesDir)mintops.ts" />
   </Target>
 
   <Target Name="BuildWithRollup"
