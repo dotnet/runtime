@@ -1920,6 +1920,17 @@ private:
         pendingDelayFree         = false;
     }
 
+    typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, GenTree*> DelayFreeCandidates;
+    DelayFreeCandidates*                                                      delayFreeCandidatesMap;
+    DelayFreeCandidates*                                                      getDelayFreeCandidatesMap()
+    {
+        if (delayFreeCandidatesMap == nullptr)
+        {
+            delayFreeCandidatesMap = new (getAllocator(compiler)) DelayFreeCandidates(getAllocator(compiler));
+        }
+        return delayFreeCandidatesMap;
+    }
+
     bool isCandidateMultiRegLclVar(GenTreeLclVar* lclNode);
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
@@ -1943,6 +1954,7 @@ private:
     int BuildSimple(GenTree* tree);
     int BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
     void AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
+    void AdjustDelayFreeUses();
     int BuildDelayFreeUses(GenTree*      node,
                            GenTree*      rmwNode        = nullptr,
                            regMaskTP     candidates     = RBM_NONE,

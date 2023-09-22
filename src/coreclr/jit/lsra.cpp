@@ -1371,6 +1371,7 @@ PhaseStatus LinearScan::doLinearScan()
 #ifdef TARGET_ARM64
     nextConsecutiveRefPositionMap = nullptr;
 #endif
+    delayFreeCandidatesMap = nullptr;
 
     if (enregisterLocalVars)
     {

@@ -2793,6 +2793,8 @@ void           LinearScan::buildIntervals()
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
     }
 
+    AdjustDelayFreeUses();
+
     needNonIntegerRegisters |= compiler->compFloatingPointUsed;
     if (!needNonIntegerRegisters)
     {
@@ -3426,6 +3428,46 @@ void LinearScan::setDelayFree(RefPosition* use)
     pendingDelayFree  = true;
 }
 
+void LinearScan::AdjustDelayFreeUses()
+{
+    DelayFreeCandidates* delayFreeCandidatesMap = getDelayFreeCandidatesMap();
+
+    if (delayFreeCandidatesMap == nullptr)
+    {
+        return;
+    }
+
+    for (DelayFreeCandidates::Node* const iter : DelayFreeCandidates::KeyValueIteration(delayFreeCandidatesMap))
+    {
+        RefPosition* useRefPosition = iter->GetKey();
+        GenTree*     rmwNode        = iter->GetValue();
+
+        Interval* rmwInterval  = nullptr;
+        bool      rmwIsLastUse = false;
+        GenTree*  addr         = nullptr;
+        if ((rmwNode != nullptr) && isCandidateLocalRef(rmwNode))
+        {
+            rmwInterval = getIntervalForLocalVarNode(rmwNode->AsLclVar());
+            // Note: we don't handle multi-reg vars here. It's not clear that there are any cases
+            // where we'd encounter a multi-reg var in an RMW context.
+            assert(!rmwNode->AsLclVar()->IsMultiReg());
+            rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
+        }
+        // If node != rmwNode, then definitely node should be marked as "delayFree".
+        // However, if node == rmwNode, then we can mark node as "delayFree" only if
+        // none of the node/rmwNode are the last uses. If either of them are last use,
+        // we can safely reuse the rmwNode as destination.
+        if ((useRefPosition->getInterval() != rmwInterval) || (!rmwIsLastUse && !useRefPosition->lastUse))
+        {
+            useRefPosition->delayRegFree = true;
+        }
+        //else
+        //{
+        //    useRefPosition->delayRegFree = false;
+        //}
+    }
+}
+
 //------------------------------------------------------------------------
 // AddDelayFreeUses: Mark useRefPosition as delay-free, if applicable, for the
 //                   rmw node.
@@ -3438,25 +3480,64 @@ void LinearScan::AddDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
 {
     assert(useRefPosition != nullptr);
 
-    Interval* rmwInterval  = nullptr;
-    bool      rmwIsLastUse = false;
-    GenTree*  addr         = nullptr;
-    if ((rmwNode != nullptr) && isCandidateLocalRef(rmwNode))
-    {
-        rmwInterval = getIntervalForLocalVarNode(rmwNode->AsLclVar());
-        // Note: we don't handle multi-reg vars here. It's not clear that there are any cases
-        // where we'd encounter a multi-reg var in an RMW context.
-        assert(!rmwNode->AsLclVar()->IsMultiReg());
-        rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
-    }
-    // If node != rmwNode, then definitely node should be marked as "delayFree".
-    // However, if node == rmwNode, then we can mark node as "delayFree" only if
-    // none of the node/rmwNode are the last uses. If either of them are last use,
-    // we can safely reuse the rmwNode as destination.
-    if ((useRefPosition->getInterval() != rmwInterval) || (!rmwIsLastUse && !useRefPosition->lastUse))
-    {
-        setDelayFree(useRefPosition);
-    }
+    DelayFreeCandidates* delayFreeCandidatesMap = getDelayFreeCandidatesMap();
+
+    delayFreeCandidatesMap->Set(useRefPosition, rmwNode);
+    pendingDelayFree = true;
+
+
+    //bool oldImpl = true;
+
+    //if (oldImpl)
+    //{
+    //     Interval* rmwInterval  = nullptr;
+    //     bool      rmwIsLastUse = false;
+    //     GenTree*  addr         = nullptr;
+    //     if ((rmwNode != nullptr) && isCandidateLocalRef(rmwNode))
+    //    {
+    //         rmwInterval = getIntervalForLocalVarNode(rmwNode->AsLclVar());
+    //         // Note: we don't handle multi-reg vars here. It's not clear that there are any cases
+    //         // where we'd encounter a multi-reg var in an RMW context.
+    //         assert(!rmwNode->AsLclVar()->IsMultiReg());
+    //         rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
+    //     }
+    //    // If node != rmwNode, then definitely node should be marked as "delayFree".
+    //    // However, if node == rmwNode, then we can mark node as "delayFree" only if
+    //    // none of the node/rmwNode are the last uses. If either of them are last use,
+    //    // we can safely reuse the rmwNode as destination.
+    //     if ((useRefPosition->getInterval() != rmwInterval) || (!rmwIsLastUse && !useRefPosition->lastUse))
+    //     {
+    //         useRefPosition->delayRegFree = true;
+    //         //setDelayFree(useRefPosition);
+    //         //pendingDelayFree = true;
+    //     }
+    //}
+    //else
+    //{
+    //     setDelayFree(useRefPosition);
+    //}
+
+
+
+
+    //if (useRefPosition->getInterval() == rmwInterval)
+    //{
+    ////    if (!useRefPosition->lastUse)
+    ////    {
+    ////        assert(useRefPosition->rpNum != static_cast<unsigned>(refPositions.size() - 1));
+    ////    }
+    //    assert(useRefPosition->rpNum == static_cast<unsigned>(refPositions.size() - 1));
+    //    assert(false);
+
+    //    if (!rmwIsLastUse && !useRefPosition->lastUse)
+    //    {
+    //        setDelayFree(useRefPosition);
+    //    }
+    //}
+    //else
+    //{
+    //    setDelayFree(useRefPosition);
+    //}
 }
 
 //------------------------------------------------------------------------
