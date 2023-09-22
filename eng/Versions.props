@@ -10,7 +10,8 @@
     <PackageVersionNet7>7.0.11</PackageVersionNet7>
     <PackageVersionNet6>6.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet7)').Build),11))</PackageVersionNet6>
     <PreReleaseVersionLabel>rtm</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration></PreReleaseVersionIteration>
+    <PreReleaseVersionIteration>
+    </PreReleaseVersionIteration>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
