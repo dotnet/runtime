@@ -244,6 +244,92 @@ inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsi
     return start <= value && value <= end;
 }
 
+#define HISTOGRAM_MAX_SIZE_COUNT 64
+
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+
+class Dumpable
+{
+public:
+    virtual void dump(FILE* output) = 0;
+};
+
+// Helper class to record and display a histogram of different values.
+// Usage like:
+// static unsigned s_buckets[] = { 1, 2, 5, 10, 0 }; // Must have terminating 0
+// static Histogram s_histogram(s_buckets);
+// ...
+// s_histogram.record(someValue);
+//
+// The histogram can later be dumped with the dump function, or automatically
+// be dumped on shutdown of the JIT library using the DumpOnShutdown helper
+// class (see below). It will display how many recorded values fell into each
+// of the buckets (<= 1, <= 2, <= 5, <= 10, > 10).
+class Histogram : public Dumpable
+{
+public:
+    Histogram(const unsigned* const sizeTable);
+
+    void dump(FILE* output);
+    void record(unsigned size);
+
+private:
+    unsigned              m_sizeCount;
+    const unsigned* const m_sizeTable;
+    LONG                  m_counts[HISTOGRAM_MAX_SIZE_COUNT];
+};
+
+// Helper class to record and display counts of node types. Use like:
+// static NodeCounts s_nodeCounts;
+// ...
+// s_nodeCounts.record(someNode->gtOper);
+//
+// The node counts can later be dumped with the dump function, or automatically
+// be dumped on shutdown of the JIT library using the DumpOnShutdown helper
+// class (see below). It will display output such as:
+// LCL_VAR              :   62221
+// CNS_INT              :   42139
+// COMMA                :     623
+// CAST                 :     460
+// ADD                  :     397
+// RSH                  :      72
+// NEG                  :       5
+// UDIV                 :       1
+//
+class NodeCounts : public Dumpable
+{
+public:
+    NodeCounts() : m_counts()
+    {
+    }
+
+    void dump(FILE* output);
+    void record(genTreeOps oper);
+
+private:
+    LONG m_counts[GT_COUNT];
+};
+
+// Helper class to register a Histogram or NodeCounts instance to automatically
+// be output to jitstdout when the JIT library is shutdown. Example usage:
+//
+// static NodeCounts s_nodeCounts;
+// static DumpOnShutdown d("Bounds check index node types", &s_nodeCounts);
+// ...
+// s_nodeCounts.record(...);
+//
+// Useful for quick ad-hoc investigations without having to manually go add
+// code into Compiler::compShutdown and expose the Histogram/NodeCount to that
+// function.
+class DumpOnShutdown
+{
+public:
+    DumpOnShutdown(const char* name, Dumpable* histogram);
+    static void DumpAll();
+};
+
+#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+
 /******************************************************************************************
  * Return the EH descriptor for the given region index.
  */
