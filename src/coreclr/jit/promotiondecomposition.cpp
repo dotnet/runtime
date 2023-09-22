@@ -310,14 +310,15 @@ private:
         // See if we can "plug the hole" with a single primitive.
         if (remainder.CoveringSegment(&segment))
         {
-            var_types primitiveType = TYP_UNDEF;
-            unsigned  size          = segment.End - segment.Start;
+            var_types    primitiveType = TYP_UNDEF;
+            unsigned     size          = segment.End - segment.Start;
+            ClassLayout* dstLayout     = m_store->GetLayout(m_compiler);
+
             if ((size == TARGET_POINTER_SIZE) && ((segment.Start % TARGET_POINTER_SIZE) == 0))
             {
-                ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
-                primitiveType          = dstLayout->GetGCPtrType(segment.Start / TARGET_POINTER_SIZE);
+                primitiveType = dstLayout->GetGCPtrType(segment.Start / TARGET_POINTER_SIZE);
             }
-            else
+            else if (!dstLayout->IntersectsGCPtr(segment.Start, size))
             {
                 switch (size)
                 {
@@ -336,7 +337,29 @@ private:
                         break;
 #endif
 
-                        // TODO-CQ: SIMD sizes
+#ifdef FEATURE_SIMD
+                    case 16:
+                        if (m_compiler->getPreferredVectorByteLength() >= 16)
+                        {
+                            primitiveType = TYP_SIMD16;
+                        }
+                        break;
+#ifdef TARGET_XARCH
+                    case 32:
+                        if (m_compiler->getPreferredVectorByteLength() >= 32)
+                        {
+                            primitiveType = TYP_SIMD32;
+                        }
+                        break;
+
+                    case 64:
+                        if (m_compiler->getPreferredVectorByteLength() >= 64)
+                        {
+                            primitiveType = TYP_SIMD64;
+                        }
+                        break;
+#endif
+#endif
                 }
             }
 
