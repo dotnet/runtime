@@ -6698,7 +6698,7 @@ MONO_RESTORE_WARNING
 		case OP_X86_LDIVREM: {
 			const LLVMTypeRef part_type = ins->opcode==OP_X86_IDIVREM ? LLVMInt32Type () : LLVMInt64Type ();
 			const LLVMTypeRef full_type = ins->opcode==OP_X86_IDIVREM ? LLVMInt64Type () : LLVMInt128Type ();
-			const LLVMValueRef shift_amount =  ins->opcode==OP_X86_IDIVREM ? const_int32 (32) : const_int32 (64);
+			const LLVMValueRef shift_amount =  LLVMBuildZExt (builder, ins->opcode==OP_X86_IDIVREM ? const_int32 (32) : const_int32 (64), full_type, "");
 
 			LLVMValueRef dividend_low = LLVMBuildZExt (builder, convert (ctx, lhs, part_type), full_type, "");
 			LLVMValueRef dividend_high = LLVMBuildSExt (builder, convert (ctx, rhs, part_type), full_type, "");
@@ -6714,7 +6714,7 @@ MONO_RESTORE_WARNING
 		case OP_X86_LDIVREMU: {
 			const LLVMTypeRef part_type = ins->opcode==OP_X86_IDIVREMU ? LLVMInt32Type () : LLVMInt64Type ();
 			const LLVMTypeRef full_type = ins->opcode==OP_X86_IDIVREMU ? LLVMInt64Type () : LLVMInt128Type ();
-			const LLVMValueRef shift_amount =  ins->opcode==OP_X86_IDIVREMU ? const_int32 (32) : const_int32 (64);
+			const LLVMValueRef shift_amount =  LLVMBuildZExt (builder, ins->opcode==OP_X86_IDIVREMU ? const_int32 (32) : const_int32 (64), full_type, "");
 
 			LLVMValueRef dividend_low = LLVMBuildZExt (builder, convert (ctx, lhs, part_type), full_type, "");
 			LLVMValueRef dividend_high = LLVMBuildZExt (builder, convert (ctx, rhs, part_type), full_type, "");
