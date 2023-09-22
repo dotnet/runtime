@@ -288,6 +288,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				{ }
 			}
 
+			static void LdftnOnLambdaTriggersLamdaAnalysis ()
+			{
+				var _ = new Action<Type> (
+					[ExpectedWarning ("IL2067", nameof (type), nameof (DataFlowTypeExtensions.RequiresAll))]
+					(Type type) => { type.RequiresAll (); });
+			}
+
+			static void LdftnOnLocalMethodTriggersLocalMethodAnalysis ()
+			{
+				var _ = new Action<Type> (LocalMethod);
+
+				[ExpectedWarning ("IL2067", nameof (type), nameof (DataFlowTypeExtensions.RequiresAll))]
+				void LocalMethod (Type type)
+				{
+					type.RequiresAll ();
+				}
+			}
+
 			interface IWithAnnotatedMethod
 			{
 				public void AnnotatedMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] Type type);
@@ -343,6 +361,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				Ldftn ();
 				LdftnOnLambda ();
 				LdftnOnLocalMethod ();
+				LdftnOnLambdaTriggersLamdaAnalysis ();
+				LdftnOnLocalMethodTriggersLocalMethodAnalysis ();
 				Ldvirtftn ();
 				DynamicallyAccessedMembersAll1 ();
 				DynamicallyAccessedMembersAll2 ();

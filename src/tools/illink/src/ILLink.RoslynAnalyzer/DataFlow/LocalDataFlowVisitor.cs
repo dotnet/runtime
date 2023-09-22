@@ -443,6 +443,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			Debug.Assert (method != null);
 			if (method == null)
 				return TopValue;
+
+			// Track references to local functions
+			if (method.OriginalDefinition.ContainingSymbol is IMethodSymbol) {
+				var localFunction = method.OriginalDefinition;
+				Debug.Assert (localFunction.MethodKind == MethodKind.LocalFunction);;
+				var localFunctionCFG = ControlFlowGraph.GetLocalFunctionControlFlowGraphInScope (localFunction);
+				InterproceduralState.TrackMethod (new MethodBodyValue (localFunction, localFunctionCFG));
+			}
+
 			return HandleDelegateCreation (method, instanceValue, operation);
 		}
 
