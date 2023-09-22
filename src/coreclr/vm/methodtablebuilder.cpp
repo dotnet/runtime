@@ -2708,7 +2708,7 @@ void GetNameOfTypeDefOrRef(Module* pModule, mdToken tk, LPCSTR* pName, LPCSTR* p
     }
     else if (TypeFromToken(tk) == mdtTypeRef)
     {
-        IfFailThrow(pModule->GetMDImport()->GetNameOfTypeRef(tk, pName, pNamespace));
+        IfFailThrow(pModule->GetMDImport()->GetNameOfTypeRef(tk, pNamespace, pName));
     }
 }
 
@@ -2776,16 +2776,21 @@ AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offs
     // Then this is a async2 function
     CorElementType elemType;
     *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig);
-    IfFailThrow(sig.GetElemType(&elemType));
+    BYTE elemTypeByte;
+    IfFailThrow(sig.GetByte(&elemTypeByte)); // Don't use GetElemType as it skips custom modifiers
+    elemType = (CorElementType)elemTypeByte;
+
     LPCSTR name, _namespace;
     mdToken tk;
     while ((elemType == ELEMENT_TYPE_CMOD_OPT) || (elemType == ELEMENT_TYPE_CMOD_REQD))
     {
+        CorElementType elemTypeCmod = elemType;
+
         IfFailThrow(sig.GetToken(&tk));
         GetNameOfTypeDefOrRef(pModule, tk, &name, &_namespace);
-        *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig);
-        IfFailThrow(sig.GetElemType(&elemType));
-        if (strcmp(name, "Task`1") == 0 && strcmp(_namespace, "System.Threading.Tasks") == 0 && IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+        IfFailThrow(sig.GetByte(&elemTypeByte)); // Don't use GetElemType as it skips custom modifiers
+        elemType = (CorElementType)elemTypeByte;
+        if (strcmp(name, "Task`1") == 0 && strcmp(_namespace, "System.Threading.Tasks") == 0 && IsTypeDefOrRefImplementedInSystemModule(pModule, tk) && (elemTypeCmod == ELEMENT_TYPE_CMOD_OPT))
         {
             // This must have been the last CMOD before the element type, and the element type MUST be one which can be expressed structurally as a generic parameter
             switch (elemType)
@@ -2837,6 +2842,8 @@ AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offs
                     ThrowHR(COR_E_BADIMAGEFORMAT);
             }
         }
+
+        *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig) - 1;
     }
 
     if (elemType == ELEMENT_TYPE_GENERICINST)
