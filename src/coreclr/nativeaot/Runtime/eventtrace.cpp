@@ -94,10 +94,6 @@ enum CallbackProviderIndex
     DotNETRuntimePrivate = 3
 };
 
-// // @TODO
-// int const EVENT_CONTROL_CODE_ENABLE_PROVIDER=1;
-// int const EVENT_CONTROL_CODE_DISABLE_PROVIDER=0;
-
 void EtwCallbackCommon(
     CallbackProviderIndex ProviderIndex,
     ULONG ControlCode,
@@ -180,7 +176,7 @@ void EtwCallbackCommon(
 #ifdef FEATURE_ETW
 
 void EtwCallback(
-    GUID * /*SourceId*/,
+    const GUID * /*SourceId*/,
     uint32_t IsEnabled,
     uint8_t Level,
     uint64_t MatchAnyKeyword,

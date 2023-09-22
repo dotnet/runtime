@@ -128,8 +128,7 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
         }
     }
 
-    // FireEtwBulkType(m_nBulkTypeValueCount, GetClrInstanceId(), iSize, m_pBulkTypeEventBuffer);
-    // Win32EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &BulkType, iDesc, EventData);
+    EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &BulkType, iDesc, EventData);
 
     // Reset state
     m_nBulkTypeValueCount = 0;

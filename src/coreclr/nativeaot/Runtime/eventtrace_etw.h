@@ -10,6 +10,38 @@
 
 #ifdef FEATURE_ETW
 
+#ifndef  HOST_UNIX
+// Callback and stack support
+#if !defined(DONOT_DEFINE_ETW_CALLBACK) && !defined(DACCESS_COMPILE)
+
+#include <evntprov.h>
+extern "C" {
+    /* ETW control callback
+         * Desc:        This function handles the ETW control
+         *              callback.
+         * Ret:         success or failure
+     ***********************************************/
+    VOID EtwCallback(
+        _In_ const GUID * SourceId,
+        _In_ uint32_t ControlCode,
+        _In_ uint8_t Level,
+        _In_ uint64_t MatchAnyKeyword,
+        _In_ uint64_t MatchAllKeyword,
+        _In_opt_ EVENT_FILTER_DESCRIPTOR * FilterData,
+        _Inout_opt_ void * CallbackContext);
+}
+
+//
+// User defined callback2
+//
+#define MCGEN_PRIVATE_ENABLE_CALLBACK_V2(SourceId, ControlCode, Level, MatchAnyKeyword, MatchAllKeyword, FilterData, CallbackContext) \
+        EtwCallback(SourceId, ControlCode, Level, MatchAnyKeyword, MatchAllKeyword, FilterData, CallbackContext)
+
+#endif //!DONOT_DEFINE_ETW_CALLBACK && !DACCESS_COMPILE
+
+#endif //!HOST_UNIX
+
+
 #include "ClrEtwAll.h"
 
 #undef ETW_TRACING_INITIALIZED
