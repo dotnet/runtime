@@ -1069,19 +1069,19 @@ DumpOnShutdown::DumpOnShutdown(const char* name, Dumpable* dumpable)
     assert(!"No space left in table");
 }
 
-void DumpOnShutdown::DumpAll(FILE* fout)
+void DumpOnShutdown::DumpAll()
 {
     for (const DumpOnShutdownEntry& entry : s_dumpOnShutdown)
     {
         if (entry.Name != nullptr)
         {
-            fprintf(fout, "%s\n", entry.Name);
+            jitprintf("%s\n", entry.Name);
         }
 
         if (entry.Dumpable != nullptr)
         {
-            entry.Dumpable->dump(fout);
-            fprintf(fout, "\n");
+            entry.Dumpable->dump(jitstdout());
+            jitprintf("\n");
         }
     }
 }

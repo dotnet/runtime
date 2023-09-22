@@ -325,7 +325,7 @@ class DumpOnShutdown
 {
 public:
     DumpOnShutdown(const char* name, Dumpable* histogram);
-    static void DumpAll(FILE* output);
+    static void DumpAll();
 };
 
 #endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
