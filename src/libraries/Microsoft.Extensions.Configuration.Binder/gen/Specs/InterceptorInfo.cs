@@ -170,41 +170,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         public InvocationLocationInfo(MethodsToGen interceptor, IInvocationOperation invocation)
         {
-            FileLinePositionSpan linePosSpan = GetLocationSpanInfo(invocation).LinePostionSpan;
+            MemberAccessExpressionSyntax memberAccessExprSyntax = ((MemberAccessExpressionSyntax)((InvocationExpressionSyntax)invocation.Syntax).Expression);
+            SyntaxTree operationSyntaxTree = invocation.Syntax.SyntaxTree;
+            TextSpan memberNameSpan = memberAccessExprSyntax.Name.Span;
+            FileLinePositionSpan linePosSpan = operationSyntaxTree.GetLineSpan(memberNameSpan);
+
             Interceptor = interceptor;
             LineNumber = linePosSpan.StartLinePosition.Line + 1;
             CharacterNumber = linePosSpan.StartLinePosition.Character + 1;
-            FilePath = GetFilePath(invocation);
+            FilePath = GetInterceptorFilePath();
+
+            // Use the same logic used by the interceptors API for resolving the source mapped value of a path.
+            // https://github.com/dotnet/roslyn/blob/f290437fcc75dad50a38c09e0977cce13a64f5ba/src/Compilers/CSharp/Portable/Compilation/CSharpCompilation.cs#L1063-L1064
+            string GetInterceptorFilePath()
+            {
+                SourceReferenceResolver? sourceReferenceResolver = invocation.SemanticModel?.Compilation.Options.SourceReferenceResolver;
+                return sourceReferenceResolver?.NormalizePath(operationSyntaxTree.FilePath, baseFilePath: null) ?? operationSyntaxTree.FilePath;
+            }
         }
 
         public MethodsToGen Interceptor { get; }
         public string FilePath { get; }
         public int LineNumber { get; }
         public int CharacterNumber { get; }
-
-        public static Location GetTrimmedLocation(IInvocationOperation invocation)
-        {
-            string filePath = GetFilePath(invocation);
-            (TextSpan memberNameSpan, FileLinePositionSpan linePosSpan) = GetLocationSpanInfo(invocation);
-            return Location.Create(filePath, memberNameSpan, linePosSpan.Span);
-        }
-
-        // Use the same logic used by the interceptors API for resolving the source mapped value of a path.
-        // https://github.com/dotnet/roslyn/blob/f290437fcc75dad50a38c09e0977cce13a64f5ba/src/Compilers/CSharp/Portable/Compilation/CSharpCompilation.cs#L1063-L1064
-        private static string GetFilePath(IInvocationOperation invocation)
-        {
-            SyntaxTree operationSyntaxTree = invocation.Syntax.SyntaxTree;
-            SourceReferenceResolver? sourceReferenceResolver = invocation.SemanticModel?.Compilation.Options.SourceReferenceResolver;
-            return sourceReferenceResolver?.NormalizePath(operationSyntaxTree.FilePath, baseFilePath: null) ?? operationSyntaxTree.FilePath;
-        }
-
-        private static (TextSpan MemberNameSpan, FileLinePositionSpan LinePostionSpan) GetLocationSpanInfo(IInvocationOperation invocation)
-        {
-            MemberAccessExpressionSyntax memberAccessExprSyntax = ((MemberAccessExpressionSyntax)((InvocationExpressionSyntax)invocation.Syntax).Expression);
-            TextSpan memberNameSpan = memberAccessExprSyntax.Name.Span;
-            SyntaxTree operationSyntaxTree = invocation.Syntax.SyntaxTree;
-            FileLinePositionSpan linePosSpan = operationSyntaxTree.GetLineSpan(memberNameSpan);
-            return (memberNameSpan, linePosSpan);
-        }
     }
 }

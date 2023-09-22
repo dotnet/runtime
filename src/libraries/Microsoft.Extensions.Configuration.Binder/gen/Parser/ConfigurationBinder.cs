@@ -88,13 +88,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (!IsValidRootConfigType(type))
                 {
-                    RecordDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation);
+                    RecordDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
                     return;
                 }
 
                 if (type.IsValueType)
                 {
-                    RecordDiagnostic(DiagnosticDescriptors.ValueTypesInvalidForBind, invocation, messageArgs: new object[] { type });
+                    RecordDiagnostic(DiagnosticDescriptors.ValueTypesInvalidForBind, invocation.Location, messageArgs: new object[] { type });
                     return;
                 }
 
@@ -239,7 +239,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (!IsValidRootConfigType(type))
                 {
-                    RecordDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation);
+                    RecordDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
                     return;
                 }
 

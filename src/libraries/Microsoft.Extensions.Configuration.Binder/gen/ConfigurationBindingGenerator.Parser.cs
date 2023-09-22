@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (!_langVersionIsSupported)
                 {
-                    RecordDiagnostic(DiagnosticDescriptors.LanguageVersionNotSupported, trimmedLocation: Location.None.GetTrimmedLocation());
+                    RecordDiagnostic(DiagnosticDescriptors.LanguageVersionNotSupported, trimmedLocation: Location.None);
                     return null;
                 }
 
@@ -125,7 +125,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (!IsValidRootConfigType(typeSymbol))
                 {
-                    RecordDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, binderInvocation);
+                    RecordDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, binderInvocation.Location);
                 }
                 else
                 {
@@ -804,9 +804,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void RecordDiagnostic(TypeParseInfo typeParseInfo, DiagnosticDescriptor descriptor)
             {
                 string typeName = typeParseInfo.TypeSymbol.GetName();
-                BinderInvocation binderInvocation = typeParseInfo.BinderInvocation;
+                Location invocationLocation = typeParseInfo.BinderInvocation.Location;
 
-                RecordDiagnostic(descriptor, binderInvocation, new object?[] { typeName });
+                RecordDiagnostic(descriptor, invocationLocation, new object?[] { typeName });
 
                 if (typeParseInfo.ContainingTypeDiagnosticInfo is ContainingTypeDiagnosticInfo containingTypeDiagInfo)
                 {
@@ -814,24 +814,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new[] { memberName, typeName }
                         : new[] { typeName };
 
-                    RecordDiagnostic(containingTypeDiagInfo.Descriptor, binderInvocation, messageArgs);
+                    RecordDiagnostic(containingTypeDiagInfo.Descriptor, invocationLocation, messageArgs);
                 }
-            }
-
-            private void RecordDiagnostic(DiagnosticDescriptor descriptor, BinderInvocation binderInvocation, params object?[]? messageArgs)
-            {
-                Location trimmedLocation = InvocationLocationInfo.GetTrimmedLocation(binderInvocation.Operation);
-                RecordDiagnostic(descriptor, trimmedLocation, messageArgs);
             }
 
             private void RecordDiagnostic(DiagnosticDescriptor descriptor, Location trimmedLocation, params object?[]? messageArgs)
             {
-                (Diagnostics ??= new()).Add(new DiagnosticInfo
-                {
-                    Descriptor = descriptor,
-                    Location = trimmedLocation,
-                    MessageArgs = messageArgs ?? Array.Empty<object?>(),
-                });
+                Diagnostics ??= new List<DiagnosticInfo>();
+                Diagnostics.Add(DiagnosticInfo.Create(descriptor, trimmedLocation, messageArgs));
             }
         }
     }
