@@ -47,7 +47,7 @@ void ArrIndex::PrintBoundsCheckNodes(unsigned dim /* = -1 */)
 #endif // DEBUG
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert an arrLen operation into a gentree node.
+// ToGenTree - Convert an arrLen operation into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
@@ -111,7 +111,7 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
 }
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert an "identifier" into a gentree node.
+// ToGenTree - Convert an "identifier" into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
@@ -170,7 +170,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
 }
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert an "expression" into a gentree node.
+// ToGenTree - Convert an "expression" into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
@@ -195,7 +195,7 @@ GenTree* LC_Expr::ToGenTree(Compiler* comp, BasicBlock* bb)
 }
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert a "condition" into a gentree node.
+// ToGenTree - Convert a "condition" into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees

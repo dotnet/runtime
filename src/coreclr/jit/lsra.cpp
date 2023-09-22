@@ -10501,7 +10501,7 @@ void LinearScan::dumpRegRecordHeader()
 
     maxNodeLocation = (maxNodeLocation == 0)
                           ? 1
-                          : maxNodeLocation; // corner case of a method with an infinite loop without any gentree nodes
+                          : maxNodeLocation; // corner case of a method with an infinite loop without any GenTree nodes
     assert(maxNodeLocation >= 1);
     assert(refPositions.size() >= 1);
     int treeIdWidth               = 9; /* '[XXXXX] '*/

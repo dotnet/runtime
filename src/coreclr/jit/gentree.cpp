@@ -11270,7 +11270,7 @@ unsigned Compiler::gtDispMultiRegCount(GenTree* tree)
 // gtDispRegVal: Print the register(s) defined by the given node
 //
 // Arguments:
-//    tree  -  Gentree node whose registers we want to print
+//    tree  -  GenTree node whose registers we want to print
 //
 void Compiler::gtDispRegVal(GenTree* tree)
 {
@@ -15876,8 +15876,8 @@ INTEGRAL_OVF:
     //       was successful - instead use one of the operands, e.g. op1.
 
     // Don't fold overflow operations if not global morph phase.
-    // The reason for this is that this optimization is replacing a gentree node
-    // with another new gentree node. Say a GT_CALL(arglist) has one 'arg'
+    // The reason for this is that this optimization is replacing a GenTree node
+    // with another new GenTree node. Say a GT_CALL(arglist) has one 'arg'
     // involving overflow arithmetic.  During assertion prop, it is possible
     // that the 'arg' could be constant folded and the result could lead to an
     // overflow.  In such a case 'arg' will get replaced with GT_COMMA node

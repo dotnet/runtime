@@ -2583,7 +2583,7 @@ public:
         return genRegNumFromMask(registerAssignment);
     }
 
-    // Returns true if it is a reference on a gentree node.
+    // Returns true if it is a reference on a GenTree node.
     bool IsActualRef()
     {
         switch (refType)

@@ -1343,7 +1343,7 @@ bool LinearScan::checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode)
 // defineNewInternalTemp: Defines a ref position for an internal temp.
 //
 // Arguments:
-//     tree                  -   Gentree node requiring an internal register
+//     tree                  -   GenTree node requiring an internal register
 //     regType               -   Register type
 //     currentLoc            -   Location of the temp Def position
 //     regMask               -   register mask of candidates for temp
@@ -1362,7 +1362,7 @@ RefPosition* LinearScan::defineNewInternalTemp(GenTree* tree, RegisterType regTy
 // buildInternalRegisterDefForNode - Create an Interval for an internal int register, and a def RefPosition
 //
 // Arguments:
-//   tree                  - Gentree node that needs internal registers
+//   tree                  - GenTree node that needs internal registers
 //   internalCands         - The mask of valid registers
 //
 // Returns:
@@ -1381,7 +1381,7 @@ RefPosition* LinearScan::buildInternalIntRegisterDefForNode(GenTree* tree, regMa
 // buildInternalFloatRegisterDefForNode - Create an Interval for an internal fp register, and a def RefPosition
 //
 // Arguments:
-//   tree                  - Gentree node that needs internal registers
+//   tree                  - GenTree node that needs internal registers
 //   internalCands         - The mask of valid registers
 //
 // Returns:

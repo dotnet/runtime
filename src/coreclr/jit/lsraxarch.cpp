@@ -2762,7 +2762,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 // BuildIndir: Specify register requirements for address expression of an indirection operation.
 //
 // Arguments:
-//    indirTree    -   GT_IND or GT_STOREIND gentree node
+//    indirTree    -   GT_IND or GT_STOREIND GenTree node
 //
 // Return Value:
 //    The number of sources consumed by this node.
