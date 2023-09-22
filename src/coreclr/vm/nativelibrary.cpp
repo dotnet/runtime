@@ -331,6 +331,8 @@ namespace
         }
 #endif // !TARGET_UNIX
 
+        GCX_COOP();
+
         NATIVE_LIBRARY_HANDLE hmod = NULL;
         PEAssembly *pManifestFile = pAssembly->GetPEAssembly();
         ASSEMBLYBINDERREF pBinder = pManifestFile->GetAssemblyBinder();
@@ -347,8 +349,6 @@ namespace
         //Step 1: If the assembly was not bound using TPA,
         //        Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll to give
         //        The custom assembly context a chance to load the unmanaged dll.
-
-        GCX_COOP();
 
         STRINGREF pUnmanagedDllName;
         pUnmanagedDllName = StringObject::NewString(wszLibName);

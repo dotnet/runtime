@@ -410,7 +410,7 @@ ASSEMBLYBINDERREF AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
         //
         // For (3), fetch the fallback load context binder reference.
 
-        pParentAssemblyBinder = ObjectFromHandle(GetFallbackBinderForRequestingAssembly());
+        pParentAssemblyBinder = (ASSEMBLYBINDERREF)ObjectFromHandle(GetFallbackBinderForRequestingAssembly());
     }
 
     if (!pParentAssemblyBinder)
@@ -420,7 +420,7 @@ ASSEMBLYBINDERREF AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
         //
         // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be
         // used as the parent assembly binder.
-        pParentAssemblyBinder = ObjectFromHandle(pDomain->GetDefaultBinder());
+        pParentAssemblyBinder = (ASSEMBLYBINDERREF)ObjectFromHandle(pDomain->GetDefaultBinder());
     }
 
     return pParentAssemblyBinder;
