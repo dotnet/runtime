@@ -321,6 +321,7 @@ async function dry_run(runArgs) {
             diagnosticTracing: false,
             appendElementOnExit: false,
             logExitCode: false,
+            virtualWorkingDirectory: undefined,
             pthreadPoolSize: 0,
             // this just means to not continue startup after the snapshot is taken. 
             // If there was previously a matching snapshot, it will be used.
