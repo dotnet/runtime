@@ -211,6 +211,9 @@ namespace System.Formats.Cbor
             {
                 int newCapacity = currentCapacity == 0 ? 1024 : currentCapacity * 2;
                 const uint MaxArrayLength = 0x7FFFFFC7; // Array.MaxLength
+#if NETCOREAPP
+                Debug.Assert(MaxArrayLength == Array.MaxLength);
+#endif
                 if ((uint)newCapacity > MaxArrayLength || newCapacity < requiredCapacity)
                 {
                     newCapacity = requiredCapacity;
