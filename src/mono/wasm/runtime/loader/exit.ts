@@ -174,6 +174,8 @@ function logOnExit(exit_code: number, reason: any) {
                     // tell xharness WasmTestMessagesProcessor we are done.
                     // note this sends last few bytes into the same WS
                     mono_log_info_no_prefix("WASM EXIT " + exit_code);
+                    consoleWebSocket.onclose = null;
+                    consoleWebSocket.close(1000, "exit_code:" + exit_code + ": " + reason);
                 }
                 else {
                     globalThis.setTimeout(stop_when_ws_buffer_empty, 100);

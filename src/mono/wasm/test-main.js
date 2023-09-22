@@ -16,14 +16,20 @@ import { dotnet, exit } from './_framework/dotnet.js';
 
 
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
-const is_browser = typeof window != "undefined";
-const is_node = !is_browser && typeof process === 'object' && typeof process.versions === 'object' && typeof process.versions.node === 'string';
 
-if (is_node && process.versions.node.split(".")[0] < 14) {
+// keep in sync with src\mono\wasm\runtime\loader\globals.ts and src\mono\wasm\runtime\globals.ts
+export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
+export const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
+export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
+export const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
+export const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
+export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
+
+if (ENVIRONMENT_IS_NODE && process.versions.node.split(".")[0] < 14) {
     throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
 }
 
-if (is_node) {
+if (ENVIRONMENT_IS_NODE) {
     // the emscripten 3.1.34 stopped handling these when MODULARIZE is enabled
     process.on('uncaughtException', function (ex) {
         // ignore UnhandledPromiseRejection exceptions with exit status
@@ -33,7 +39,7 @@ if (is_node) {
     });
 }
 
-if (!is_node && !is_browser && typeof globalThis.crypto === 'undefined') {
+if (!ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WEB && typeof globalThis.crypto === 'undefined') {
     // **NOTE** this is a simple insecure polyfill for testing purposes only
     // /dev/random doesn't work on js shells, so define our own
     // See library_fs.js:createDefaultDevices ()
@@ -45,6 +51,10 @@ if (!is_node && !is_browser && typeof globalThis.crypto === 'undefined') {
     }
 }
 
+if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER) {
+    console.log("Running at: " + globalThis.location.href);
+}
+
 let v8args;
 if (typeof arguments !== "undefined") {
     // this must be captured in top level scope in V8
@@ -53,11 +63,11 @@ if (typeof arguments !== "undefined") {
 
 async function getArgs() {
     let queryArguments = [];
-    if (is_node) {
+    if (ENVIRONMENT_IS_NODE) {
         queryArguments = process.argv.slice(2);
-    } else if (is_browser) {
+    } else if (ENVIRONMENT_IS_WEB) {
         // We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-        const url = new URL(decodeURI(window.location));
+        const url = new URL(decodeURI(globalThis.location));
         let urlArguments = []
         for (let param of url.searchParams) {
             if (param[0] == "arg") {
@@ -76,7 +86,7 @@ async function getArgs() {
     let runArgsJson;
     // ToDo: runArgs should be read for all kinds of hosts, but
     // fetch is added to node>=18 and current Windows's emcc node<18
-    if (is_browser) {
+    if (ENVIRONMENT_IS_WEB) {
         const response = await globalThis.fetch('./runArgs.json');
         if (response.ok) {
             runArgsJson = initRunArgs(await response.json());
@@ -138,7 +148,7 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.memorySnapshot = false;
         } else if (currentArg.startsWith("--fetch-random-delay=")) {
             const arg = currentArg.substring("--fetch-random-delay=".length);
-            if (is_browser) {
+            if (ENVIRONMENT_IS_WEB) {
                 const delayms = Number.parseInt(arg) || 100;
                 const originalFetch = globalThis.fetch;
                 globalThis.fetch = async (url, options) => {
@@ -165,8 +175,8 @@ function processArguments(incomingArguments, runArgs) {
 
     runArgs.applicationArguments = incomingArguments;
     // cheap way to let the testing infrastructure know we're running in a browser context (or not)
-    runArgs.environmentVariables["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
-    runArgs.environmentVariables["IsNodeJS"] = is_node.toString().toLowerCase();
+    runArgs.environmentVariables["IsBrowserDomSupported"] = ENVIRONMENT_IS_WEB.toString().toLowerCase();
+    runArgs.environmentVariables["IsNodeJS"] = ENVIRONMENT_IS_NODE.toString().toLowerCase();
 
     return runArgs;
 }
@@ -201,7 +211,7 @@ function loadNodeModules(config, require, modulesToLoad) {
 }
 
 let mono_exit = (code, reason) => {
-    console.log(`test-main failed early ${code} ${reason}`);
+    console.log(`test-main failed early ${code} ${reason} ${new Error().stack}`);
 };
 
 const App = {
@@ -265,7 +275,7 @@ function configureRuntime(dotnet, runArgs) {
             loadAllSatelliteResources: true
         });
 
-    if (is_node) {
+    if (ENVIRONMENT_IS_NODE) {
         dotnet
             .withEnvironmentVariable("NodeJSPlatform", process.platform)
             .withAsyncFlushOnExit();
@@ -279,7 +289,7 @@ function configureRuntime(dotnet, runArgs) {
             })
         }
     }
-    if (is_browser) {
+    if (ENVIRONMENT_IS_WEB) {
         if (runArgs.memorySnapshot) {
             dotnet.withStartupMemoryCache(true);
         }
@@ -309,6 +319,7 @@ async function dry_run(runArgs) {
             diagnosticTracing: false,
             appendElementOnExit: false,
             logExitCode: false,
+            virtualWorkingDirectory: undefined,
             pthreadPoolSize: 0,
             // this just means to not continue startup after the snapshot is taken. 
             // If there was previously a matching snapshot, it will be used.
@@ -330,7 +341,7 @@ async function run() {
         const runArgs = await getArgs();
         console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
 
-        if (is_browser && runArgs.memorySnapshot) {
+        if (ENVIRONMENT_IS_WEB && runArgs.memorySnapshot) {
             const dryOk = await dry_run(runArgs);
             if (!dryOk) {
                 mono_exit(1, "Failed during dry run");
