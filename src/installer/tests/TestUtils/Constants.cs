@@ -49,6 +49,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const string RuntimeConfigPropertyName = "additionalProbingPaths";
         }
 
+        public static class BundleExtractBase
+        {
+            public const string EnvironmentVariable = "DOTNET_BUNDLE_EXTRACT_BASE_DIR";
+        }
+
         public static class DepsFile
         {
             public const string CommandLineArgument = "--depsfile";
