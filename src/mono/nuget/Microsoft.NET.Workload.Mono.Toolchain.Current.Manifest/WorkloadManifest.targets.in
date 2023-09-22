@@ -167,6 +167,15 @@
     <SdkSupportedTargetPlatformVersion Include="1.0" />
   </ItemGroup>
 
+    <!-- Support for "wasi" target platform identifier -->
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
+    <TargetPlatformSupported>true</TargetPlatformSupported>
+    <TargetPlatformVersion Condition="'$(TargetPlatformVersion)' == ''">1.0</TargetPlatformVersion>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
+    <SdkSupportedTargetPlatformVersion Include="1.0" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetsCurrent)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
     <KnownRuntimePack Update="@(KnownRuntimePack)">
       <!-- FIXMEWASI: workaround for now -->
@@ -216,6 +225,6 @@
         Importance="High" />
   </Target>
 
-  <Import Condition="'$(TargetsCurrent)' == 'true' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')" 
+  <Import Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0')) and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')"
           Project="$(MSBuildThisFileDirectory)WorkloadTelemetry.targets" />
 </Project>
