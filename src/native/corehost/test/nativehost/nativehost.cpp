@@ -556,8 +556,16 @@ int main(const int argc, const pal::char_t *argv[])
             std::cout << "Failed to find entry point: " << entry_point_name.data() << std::endl;
             return EXIT_FAILURE;
         }
-
-        entry_point();
+        try
+        {
+            entry_point();
+        }
+        catch (...)
+        {
+            // entry_point will throw in some tests, this is expected.
+            // We must catch this exception to ensure that the CRT does not pop a modal dialog
+            return EXIT_FAILURE;
+        }
         return EXIT_SUCCESS;
     }
 #endif
