@@ -25,7 +25,7 @@ namespace System.Reflection
             this.marshalAs = marshalAs;
         }
 
-        internal static void FormatParameters(StringBuilder sb, ParameterInfo[] p, CallingConventions callingConvention)
+        internal static void FormatParameters(StringBuilder sb, ReadOnlySpan<ParameterInfo> p, CallingConventions callingConvention)
         {
             for (int i = 0; i < p.Length; ++i)
             {

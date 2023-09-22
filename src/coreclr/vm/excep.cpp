@@ -11121,7 +11121,7 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     {
         resStr.LoadResource(CCompRC::Error, BFA_BAD_IL); // "Bad IL format."
     }
-    msgStr += resStr;
+    msgStr.Append(resStr);
 
     if ((imageName != NULL) && (imageName[0] != 0))
     {
@@ -11130,8 +11130,8 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
         {
             SString suffixMsgStr;
             suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, SString{ SString::Literal, imageName });
-            msgStr.AppendASCII(" ");
-            msgStr += suffixMsgStr;
+            msgStr.Append(W(" "));
+            msgStr.Append(suffixMsgStr);
         }
     }
 

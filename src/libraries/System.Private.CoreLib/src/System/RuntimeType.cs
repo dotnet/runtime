@@ -658,7 +658,7 @@ namespace System
                 // Invoke
                 if (finalists == null &&
                     argCnt == 0 &&
-                    finalist.GetParametersNoCopy().Length == 0 &&
+                    finalist.GetParametersAsSpan().Length == 0 &&
                     (bindingFlags & BindingFlags.OptionalParamBinding) == 0)
                 {
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);

@@ -144,8 +144,8 @@ namespace
             SString::Iterator i = m_message.Begin();
             if (!m_message.Find(i, new_message))
             {
-                m_message += new_message;
-                m_message += SString(SString::Utf8, "\n");
+                m_message.Append(new_message);
+                m_message.AppendUTF8("\n");
             }
 #else
             m_message = SString(SString::Utf8, message);
