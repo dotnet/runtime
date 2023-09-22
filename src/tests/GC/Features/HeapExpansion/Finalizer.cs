@@ -32,7 +32,7 @@ public class Test_Finalizer
         var t = new Test_Finalizer();
     }
 
-    public static int Main()
+    public static void Main()
     {
         CreateAndReleaseFinalizable();
         TestFramework.LogInformation("First Alloc");
@@ -44,6 +44,5 @@ public class Test_Finalizer
         GCUtil.FreePins();
 
         TestFramework.LogInformation("Test passed");
-        return 100;
     }
 }

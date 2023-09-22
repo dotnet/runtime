@@ -11,10 +11,7 @@ using System.Runtime.InteropServices;
 
 public class Test_expandheap
 {
-
-
-
-    public static int Main()
+    public static void Main()
     {
         Console.WriteLine("First Alloc");
         GCUtil.Alloc(1024*1024*4, 30);
@@ -28,10 +25,5 @@ public class Test_expandheap
         GCUtil.FreePins();
 
         Console.WriteLine("Test passed");
-        return 100;
-
     }
-
-   
-
 }

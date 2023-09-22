@@ -16,7 +16,7 @@ public class Test_Handles
     public static List<GCHandle> pinnedList = new List<GCHandle>();
     public static int index = -1;
 
-    public static int Main()
+    public static void Main()
     {
         TestFramework.LogInformation("First Alloc");
         GCUtil.Alloc(1024 * 1024, 50);
@@ -31,6 +31,5 @@ public class Test_Handles
         GCUtil.FreePins();
 
         TestFramework.LogInformation("Test passed");
-        return 100;
     }
 }

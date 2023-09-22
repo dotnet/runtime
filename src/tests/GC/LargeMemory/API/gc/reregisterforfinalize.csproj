@@ -2,7 +2,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <GCStressIncompatible>true</GCStressIncompatible>
+
+    <!-- Test needs explicit Main as it uses command-line parameters -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CLRTestExecutionArguments>2048</CLRTestExecutionArguments>
+
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
