@@ -144,6 +144,25 @@ namespace System.IO
         }
 
         [Fact]
+        public void SetAccessControl_FileInfo_FileSecurity_Success_NameLongerThanMaxShortPath()
+        {
+            using var directory = new TempAclDirectory();
+
+            const int MaxShortPath = 260;
+            int fileNameLength = Math.Max(MaxShortPath - directory.Path.Length, 1);
+
+            string path = Path.Combine(directory.Path, new string('1', fileNameLength) + ".txt");
+            using var file = new TempFile(path, 1);
+            var fileInfo = new FileInfo(file.Path);
+            FileSecurity fileSecurity = fileInfo.GetAccessControl(AccessControlSections.Access);
+
+            var newAccessRule = new FileSystemAccessRule(Helpers.s_NetworkServiceNTAccount, FileSystemRights.Write, AccessControlType.Allow);
+            fileSecurity.SetAccessRule(newAccessRule);
+
+            fileInfo.SetAccessControl(fileSecurity);
+        }
+
+        [Fact]
         public void SetAccessControl_FileStream_FileSecurity_InvalidArguments()
         {
             Assert.Throws<ArgumentNullException>("fileStream", () => FileSystemAclExtensions.SetAccessControl((FileStream)null, fileSecurity: null));
