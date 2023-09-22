@@ -2793,7 +2793,7 @@ void           LinearScan::buildIntervals()
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
     }
 
-    AdjustDelayFreeUses();
+    AddDelayFreeUses();
 
     needNonIntegerRegisters |= compiler->compFloatingPointUsed;
     if (!needNonIntegerRegisters)
@@ -3428,7 +3428,11 @@ void LinearScan::setDelayFree(RefPosition* use)
     pendingDelayFree  = true;
 }
 
-void LinearScan::AdjustDelayFreeUses()
+//------------------------------------------------------------------------
+// AddDelayFreeUses: Based on the updated lastUse information, set the delay-free
+//                   flag on RefPositions.
+//
+void LinearScan::AddDelayFreeUses()
 {
     DelayFreeCandidates* delayFreeCandidatesMap = getDelayFreeCandidatesMap();
 
@@ -3444,7 +3448,6 @@ void LinearScan::AdjustDelayFreeUses()
 
         Interval* rmwInterval  = nullptr;
         bool      rmwIsLastUse = false;
-        GenTree*  addr         = nullptr;
         if ((rmwNode != nullptr) && isCandidateLocalRef(rmwNode))
         {
             rmwInterval = getIntervalForLocalVarNode(rmwNode->AsLclVar());
@@ -3453,30 +3456,27 @@ void LinearScan::AdjustDelayFreeUses()
             assert(!rmwNode->AsLclVar()->IsMultiReg());
             rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
         }
-        // If node != rmwNode, then definitely node should be marked as "delayFree".
-        // However, if node == rmwNode, then we can mark node as "delayFree" only if
-        // none of the node/rmwNode are the last uses. If either of them are last use,
-        // we can safely reuse the rmwNode as destination.
+        // If useRefPosition's interval is not same as `rmwInterval`, then definitely node should be marked
+        // as "delayFree".
+        // However, if useRefPosition is part of `rmwInterval`, then we can mark the `useRefPosition` as
+        // "delayFree" only if none of the `useRefPosition`/rmwNode are the last uses. If either of them are
+        // last use, we can safely reuse the rmwNode as destination.
         if ((useRefPosition->getInterval() != rmwInterval) || (!rmwIsLastUse && !useRefPosition->lastUse))
         {
             useRefPosition->delayRegFree = true;
         }
-        //else
-        //{
-        //    useRefPosition->delayRegFree = false;
-        //}
     }
 }
 
 //------------------------------------------------------------------------
-// AddDelayFreeUses: Mark useRefPosition as delay-free, if applicable, for the
-//                   rmw node.
+// RecordDelayFreeUses: Record the useRefPosition as a potential candidate for
+//                      delay-free, for the rmw node.
 //
 // Arguments:
-//    useRefPosition -    The use refposition that need to be delay-freed.
+//    useRefPosition - The use refposition that could be marked as delay-freed.
 //    rmwNode        - The node that has RMW semantics (if applicable)
 //
-void LinearScan::AddDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
+void LinearScan::RecordDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
 {
     assert(useRefPosition != nullptr);
 
@@ -3484,60 +3484,6 @@ void LinearScan::AddDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
 
     delayFreeCandidatesMap->Set(useRefPosition, rmwNode);
     pendingDelayFree = true;
-
-
-    //bool oldImpl = true;
-
-    //if (oldImpl)
-    //{
-    //     Interval* rmwInterval  = nullptr;
-    //     bool      rmwIsLastUse = false;
-    //     GenTree*  addr         = nullptr;
-    //     if ((rmwNode != nullptr) && isCandidateLocalRef(rmwNode))
-    //    {
-    //         rmwInterval = getIntervalForLocalVarNode(rmwNode->AsLclVar());
-    //         // Note: we don't handle multi-reg vars here. It's not clear that there are any cases
-    //         // where we'd encounter a multi-reg var in an RMW context.
-    //         assert(!rmwNode->AsLclVar()->IsMultiReg());
-    //         rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
-    //     }
-    //    // If node != rmwNode, then definitely node should be marked as "delayFree".
-    //    // However, if node == rmwNode, then we can mark node as "delayFree" only if
-    //    // none of the node/rmwNode are the last uses. If either of them are last use,
-    //    // we can safely reuse the rmwNode as destination.
-    //     if ((useRefPosition->getInterval() != rmwInterval) || (!rmwIsLastUse && !useRefPosition->lastUse))
-    //     {
-    //         useRefPosition->delayRegFree = true;
-    //         //setDelayFree(useRefPosition);
-    //         //pendingDelayFree = true;
-    //     }
-    //}
-    //else
-    //{
-    //     setDelayFree(useRefPosition);
-    //}
-
-
-
-
-    //if (useRefPosition->getInterval() == rmwInterval)
-    //{
-    ////    if (!useRefPosition->lastUse)
-    ////    {
-    ////        assert(useRefPosition->rpNum != static_cast<unsigned>(refPositions.size() - 1));
-    ////    }
-    //    assert(useRefPosition->rpNum == static_cast<unsigned>(refPositions.size() - 1));
-    //    assert(false);
-
-    //    if (!rmwIsLastUse && !useRefPosition->lastUse)
-    //    {
-    //        setDelayFree(useRefPosition);
-    //    }
-    //}
-    //else
-    //{
-    //    setDelayFree(useRefPosition);
-    //}
 }
 
 //------------------------------------------------------------------------
@@ -3603,7 +3549,7 @@ int LinearScan::BuildDelayFreeUses(GenTree*      node,
     }
     if (use != nullptr)
     {
-        AddDelayFreeUses(use, rmwNode);
+        RecordDelayFreeUses(use, rmwNode);
         return 1;
     }
 
@@ -3615,14 +3561,14 @@ int LinearScan::BuildDelayFreeUses(GenTree*      node,
     if ((addrMode->Base() != nullptr) && !addrMode->Base()->isContained())
     {
         use = BuildUse(addrMode->Base(), candidates);
-        AddDelayFreeUses(use, rmwNode);
+        RecordDelayFreeUses(use, rmwNode);
 
         srcCount++;
     }
     if ((addrMode->Index() != nullptr) && !addrMode->Index()->isContained())
     {
         use = BuildUse(addrMode->Index(), candidates);
-        AddDelayFreeUses(use, rmwNode);
+        RecordDelayFreeUses(use, rmwNode);
 
         srcCount++;
     }

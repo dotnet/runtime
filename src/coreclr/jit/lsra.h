@@ -1921,8 +1921,8 @@ private:
     }
 
     typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, GenTree*> DelayFreeCandidates;
-    DelayFreeCandidates*                                                      delayFreeCandidatesMap;
-    DelayFreeCandidates*                                                      getDelayFreeCandidatesMap()
+    DelayFreeCandidates* delayFreeCandidatesMap;
+    DelayFreeCandidates* getDelayFreeCandidatesMap()
     {
         if (delayFreeCandidatesMap == nullptr)
         {
@@ -1953,8 +1953,8 @@ private:
 
     int BuildSimple(GenTree* tree);
     int BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
-    void AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
-    void AdjustDelayFreeUses();
+    void RecordDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
+    void AddDelayFreeUses();
     int BuildDelayFreeUses(GenTree*      node,
                            GenTree*      rmwNode        = nullptr,
                            regMaskTP     candidates     = RBM_NONE,
