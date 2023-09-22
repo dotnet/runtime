@@ -11,7 +11,7 @@ using Xunit;
 public static class Runtime_92349
 {
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    public unsafe static void Test(byte* pValue)
+    unsafe static void Test(byte* pValue)
     {
         *pValue = (byte)Sse2.ConvertToInt32(Vector128.Create(-10, 0, 0, 0));
     }
