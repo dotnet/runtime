@@ -3340,7 +3340,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     emitAttr dstSize = EA_ATTR(genTypeSize(dstType));
     noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
 
-    bool        IsUnsigned = treeNode->gtFlags & GTF_UNSIGNED;
+    bool        IsUnsigned = varTypeIsUnsigned(dstType);
     instruction ins        = INS_invalid;
 
     if (IsUnsigned)
