@@ -53,6 +53,11 @@
 
   <Target Name="CategorizeRuntimeSupplementalArtifacts"
           BeforeTargets="GetCategorizedIntermediateNupkgContents">
+    <PropertyGroup>
+      <!-- Symbols archive is too big for main intermediate package, add it to a different one. -->
+      <SymbolsIntermediateNupkgCategory>runtime</SymbolsIntermediateNupkgCategory>
+    </PropertyGroup>
+
     <ItemGroup>
       <!--
         Runtime artifacts are too large to fit into a single package (Azure DevOps feeds 500 mb constraint).

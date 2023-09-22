@@ -32,6 +32,7 @@ parameters:
         src/tasks/WasmBuildTasks/*
         src/tasks/WorkloadBuildTasks/*
         src/tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/*
+        src/tasks/Microsoft.NET.WebAssembly.Webcil/*
         src/tests/Common/wasm-test-runner/*
     ]
     _wasm_pipelines: [

@@ -86,7 +86,6 @@ namespace System.Reflection.Tests
         [InlineData("", typeof(ArgumentException))]
         [InlineData("\0", typeof(ArgumentException))]
         [InlineData("\0a", typeof(ArgumentException))]
-        [InlineData("/a", typeof(FileLoadException))]
         [InlineData("           ", typeof(FileLoadException))]
         [InlineData("  \t \r \n ", typeof(FileLoadException))]
         [InlineData("aa, culture=en-en, culture=en-en", typeof(FileLoadException))]
@@ -103,6 +102,8 @@ namespace System.Reflection.Tests
         [InlineData("aaaa, custom=10", "aaaa")]
         [InlineData("aaaa, custom=10, custom=20", "aaaa")]
         [InlineData("aaaa, custom=lalala", "aaaa")]
+        [InlineData("/a", "/a")]
+        [InlineData("aa/name ", "aa/name")]
         public void Ctor_String_Valid_Legacy(string name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName(name);
@@ -111,7 +112,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [InlineData("name\\u50; ", typeof(FileLoadException))]
-        [InlineData("aa/name ", typeof(FileLoadException))]
         [InlineData("aa\\/tname", typeof(FileLoadException))]
         [InlineData("aaaa, publickey=neutral", typeof(FileLoadException))]
         [InlineData("aaaa, publickeytoken=neutral", typeof(FileLoadException))]

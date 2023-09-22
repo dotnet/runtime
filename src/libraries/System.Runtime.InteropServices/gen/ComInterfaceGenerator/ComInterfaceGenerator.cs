@@ -267,6 +267,7 @@ namespace Microsoft.Interop
                     generatedComInterfaceAttributeData,
                     generatedComAttribute),
                 environment,
+                new CodeEmitOptions(SkipInit: true),
                 typeof(VtableIndexStubGenerator).Assembly);
 
             if (!symbol.MethodImplementationFlags.HasFlag(MethodImplAttributes.PreserveSig))

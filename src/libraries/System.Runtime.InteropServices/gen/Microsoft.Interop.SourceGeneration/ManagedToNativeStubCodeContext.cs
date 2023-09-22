@@ -11,28 +11,18 @@ namespace Microsoft.Interop
 
         public override bool AdditionalTemporaryStateLivesAcrossStages => true;
 
-        private readonly TargetFramework _framework;
-        private readonly Version _frameworkVersion;
-
         private const string InvokeReturnIdentifier = "__invokeRetVal";
         private const string InvokeReturnIdentifierNative = "__invokeRetValUnmanaged";
         private readonly string _returnIdentifier;
         private readonly string _nativeReturnIdentifier;
 
         public ManagedToNativeStubCodeContext(
-            TargetFramework targetFramework,
-            Version targetFrameworkVersion,
             string returnIdentifier,
             string nativeReturnIdentifier)
         {
-            _framework = targetFramework;
-            _frameworkVersion = targetFrameworkVersion;
             _returnIdentifier = returnIdentifier;
             _nativeReturnIdentifier = nativeReturnIdentifier;
         }
-
-        public override (TargetFramework framework, Version version) GetTargetFramework()
-            =>  (_framework, _frameworkVersion);
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
