@@ -102,5 +102,8 @@ PALEXPORT int32_t GlobalizationNative_GetCalendarsNative(const char* localeName,
                                                          int32_t calendarsCapacity);
 
 PALEXPORT int32_t GlobalizationNative_GetLatestJapaneseEraNative(void);
-PALEXPORT const char* GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era);
+PALEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era,
+                                                                    int32_t* startYear,
+                                                                    int32_t* startMonth,
+                                                                    int32_t* startDay);
 #endif

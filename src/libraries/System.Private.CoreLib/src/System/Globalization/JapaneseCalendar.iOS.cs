@@ -81,15 +81,18 @@ namespace System.Globalization
 
         private static bool GetJapaneseEraStartDateNative(int era, out DateTime dateTime)
         {
-            Debug.Assert(!GlobalizationMode.Invariant);
+            dateTime = default;
 
-            string eraStartDate = Interop.Globalization.GetJapaneseEraStartDateNative(era);
-            var values = eraStartDate.Split('-');
-            int startYear = int.Parse(values[0]);
-            int startMonth = int.Parse(values[1]);
-            int startDay = int.Parse(values[2]);
-            dateTime = new DateTime(startYear, startMonth, startDay);
-            return true;
+            int startYear;
+            int startMonth;
+            int startDay;
+            bool result = Interop.Globalization.GetJapaneseEraStartDateNative(era, out startYear, out startMonth, out startDay);
+            if (result)
+            {
+                dateTime = new DateTime(startYear, startMonth, startDay);
+            }
+
+            return result;
         }
     }
 }

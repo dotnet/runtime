@@ -182,11 +182,11 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
 
 /*
 Function:
-GetLatestJapaneseEra
+GetLatestJapaneseEraNative
 
 Gets the latest era in the Japanese calendar.
 */
-int32_t GlobalizationNative_GetLatestJapaneseEraNative()
+int32_t GlobalizationNative_GetLatestJapaneseEraNative(void)
 {
     @autoreleasepool
     {
@@ -202,11 +202,11 @@ int32_t GlobalizationNative_GetLatestJapaneseEraNative()
 
 /*
 Function:
-GetJapaneseEraInfo
+GetJapaneseEraStartDateNative
 
 Gets the starting Gregorian date of the specified Japanese Era.
 */
-const char* GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era)
+int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era, int32_t* startYear, int32_t* startMonth, int32_t* startDay)
 {
     @autoreleasepool
     {
@@ -218,9 +218,8 @@ const char* GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era)
         startDateComponents.day = 1;
         startDateComponents.year = 1;
         NSDate *date = [japaneseCalendar dateFromComponents:startDateComponents];
-        NSDate *startDay = date;
+        NSDate *startDate = date;
         int32_t currentEra;
-        bool foundStartDate = false;
 
         for (int month = 0; month <= 12; month++)
         {
@@ -239,14 +238,16 @@ const char* GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era)
                     {
                         // add back 1 day to get back into the specified Era
                         startDateComponents.day = startDateComponents.day + 1;
-                        startDay = [japaneseCalendar dateFromComponents:startDateComponents];
-                        foundStartDate = true;
-                        break;
+                        startDate = [japaneseCalendar dateFromComponents:startDateComponents];
+                        NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
+                        NSDateComponents *components = [gregorianCalendar components:NSCalendarUnitDay | NSCalendarUnitMonth | NSCalendarUnitYear fromDate:startDate];
+                        *startYear = [components year];
+                        *startMonth = [components month];
+                        *startDay = [components day];
+                        return 1;
                     }
                 }
             }
-            if (foundStartDate)
-                break;
             // add 1 month at a time until we get into the specified Era
             startDateComponents.month = startDateComponents.month + 1;
             date = [japaneseCalendar dateFromComponents:startDateComponents];
@@ -254,13 +255,7 @@ const char* GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era)
             currentEra = [eraComponents era];
         }
 
-        // Create an NSDateFormatter to format the Gregorian date
-        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-        dateFormatter.dateFormat = @"yyyy-MM-dd";
-
-        // Format and print the Gregorian start date
-        NSString *formattedStartDate = [dateFormatter stringFromDate:startDay];
-        return formattedStartDate ? strdup([formattedStartDate UTF8String]) : NULL;
+        return 0;
     }
 }
 

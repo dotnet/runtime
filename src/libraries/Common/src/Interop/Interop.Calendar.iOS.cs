@@ -19,7 +19,8 @@ internal static partial class Interop
         internal static partial int GetLatestJapaneseEraNative();
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetJapaneseEraStartDateNative", StringMarshalling = StringMarshalling.Utf8)]
-        internal static partial string GetJapaneseEraStartDateNative(int era);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetJapaneseEraStartDateNative(int era, out int startYear, out int startMonth, out int startDay);
 
     }
 }
