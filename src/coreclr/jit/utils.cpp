@@ -2821,7 +2821,7 @@ float FloatingPointUtils::maximumNumber(float x, float y)
 //
 // It propagates NaN inputs back to the caller and
 // otherwise returns the lesser of the inputs. It
-// treats +0 as lesser than -0 as per the specification.
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2850,7 +2850,7 @@ double FloatingPointUtils::minimum(double val1, double val2)
 //
 // It propagates NaN inputs back to the caller and
 // otherwise returns the input with a lesser magnitude.
-// It treats +0 as lesser than -0 as per the specification.
+// It treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    x - left operand
@@ -2943,7 +2943,7 @@ double FloatingPointUtils::minimumNumber(double x, double y)
 //
 // It propagates NaN inputs back to the caller and
 // otherwise returns the lesser of the inputs. It
-// treats +0 as lesser than -0 as per the specification.
+// treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    val1 - left operand
@@ -2972,7 +2972,7 @@ float FloatingPointUtils::minimum(float val1, float val2)
 //
 // It propagates NaN inputs back to the caller and
 // otherwise returns the input with a lesser magnitude.
-// It treats +0 as lesser than -0 as per the specification.
+// It treats +0 as greater than -0 as per the specification.
 //
 // Arguments:
 //    x - left operand

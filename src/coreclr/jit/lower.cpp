@@ -498,9 +498,16 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_NEG:
 #ifdef TARGET_ARM64
+        {
+            GenTree* next = TryLowerNegToMulLongOp(node->AsOp());
+            if (next != nullptr)
+            {
+                return next;
+            }
             ContainCheckNeg(node->AsOp());
+        }
 #endif
-            break;
+        break;
         case GT_SELECT:
             return LowerSelect(node->AsConditional());
 
@@ -1558,7 +1565,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
             // the assert below.
 
             assert((jitIntrinsic->GetSimdSize() == 12) || (jitIntrinsic->GetSimdSize() == 16) ||
-                   (jitIntrinsic->GetSimdSize() == 32));
+                   (jitIntrinsic->GetSimdSize() == 32) || (jitIntrinsic->GetSimdSize() == 64));
 
             if (jitIntrinsic->GetSimdSize() == 12)
             {
@@ -3858,13 +3865,13 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     }
 
 #ifdef TARGET_ARM64
-    if (trueVal->OperIs(GT_NOT, GT_NEG) || falseVal->OperIs(GT_NOT, GT_NEG))
+    if (trueVal->OperIs(GT_NOT, GT_NEG, GT_ADD) || falseVal->OperIs(GT_NOT, GT_NEG, GT_ADD))
     {
-        TryLowerCselToCinvOrCneg(select, cond);
+        TryLowerCselToCSOp(select, cond);
     }
     else if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI())
     {
-        TryLowerCselToCinc(select, cond);
+        TryLowerCnsIntCselToCinc(select, cond);
     }
 #endif
 
@@ -6312,6 +6319,12 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
     if (node->OperIs(GT_ADD))
     {
         GenTree* next = LowerAddForPossibleContainment(node);
+        if (next != nullptr)
+        {
+            return next;
+        }
+
+        next = TryLowerAddSubToMulLongOp(node);
         if (next != nullptr)
         {
             return next;

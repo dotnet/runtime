@@ -15,6 +15,7 @@
   <Import Project="$(RepositoryEngineeringDir)generatorProjects.targets" Condition="'$(IsGeneratorProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'" />
+  <Import Project="$(RepositoryEngineeringDir)slngen.targets" Condition="'$(IsSlnGen)' == 'true'" />
 
   <!--
   When .NET gets built from source, make the SDK aware there are bootstrap packages
@@ -216,4 +217,5 @@
       <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
     </PropertyGroup>
   </Target>
+
 </Project>

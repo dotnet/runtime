@@ -129,5 +129,14 @@
     </ItemGroup>
   </Target>
 
+  <!-- Properties used by runsettings.targets -->
+  <PropertyGroup>
+    <RunSettingsDotNetHostPath>$(DotNetTool)</RunSettingsDotNetHostPath>
+    <RunSettingsTestCaseFilter>$(TestCaseFilter)</RunSettingsTestCaseFilter>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets"
+          Condition="'$(IsTestProject)' == 'true'" />
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>

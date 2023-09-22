@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
-        public static void CancelPromise<T1, T2>(Task promise, Action<T1, T2> callback, T1 state1, T2 state2)
+        public static void CancelPromise<T>(Task promise, Action<T> callback, T state)
         {
             // this check makes sure that promiseGCHandle is still valid handle
             if (promise.IsCompleted)
@@ -48,7 +48,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
 #endif
                 _CancelPromise(holder.GCHandle);
-                callback.Invoke(state1, state2);
+                callback.Invoke(state);
 #if FEATURE_WASM_THREADS
             }, holder);
 #endif

@@ -99,7 +99,7 @@ namespace System
             binder ??= Type.DefaultBinder;
 
             MethodBase invokeMethod = binder.BindToMethod(bindingAttr, matches.ToArray(), ref args, null, culture, null, out object? state);
-            if (invokeMethod.GetParametersNoCopy().Length == 0)
+            if (invokeMethod.GetParametersAsSpan().Length == 0)
             {
                 if (args.Length != 0)
                 {

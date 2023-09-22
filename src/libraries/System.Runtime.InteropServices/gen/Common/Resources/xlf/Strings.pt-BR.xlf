@@ -1022,11 +1022,6 @@
         <target state="translated">O marshalling de tempo de execução deve ser desabilitado neste projeto aplicando o 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' ao assembly para habilitar o marshalling desse tipo.</target>
         <note />
       </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">Um tipo abstrato derivado de 'SafeHandle' não pode ser marshalled por referência. O tipo fornecido deve ser concreto.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
         <target state="translated">O tamanho do parâmetro '{0}' que é empacotado para o receptor deve ser definido quando o método é chamado, mas o parâmetro de contagem '{1}' é um parâmetro 'out'.</target>

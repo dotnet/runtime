@@ -481,9 +481,11 @@ void GenTree::ReportOperBashing(FILE* f)
 
 #if MEASURE_NODE_SIZE
 
-void GenTree::DumpNodeSizes(FILE* fp)
+void GenTree::DumpNodeSizes()
 {
     // Dump the sizes of the various GenTree flavors
+
+    FILE* fp = jitstdout();
 
     fprintf(fp, "Small tree node size = %zu bytes\n", TREE_NODE_SZ_SMALL);
     fprintf(fp, "Large tree node size = %zu bytes\n", TREE_NODE_SZ_LARGE);
@@ -19634,8 +19636,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
     }
     else
     {
-        assert(op2->TypeIs(type, simdBaseType, genActualType(simdBaseType)) ||
-               (op2->TypeIs(TYP_SIMD12) && type == TYP_SIMD16));
+        assert((genActualType(op2) == genActualType(type)) || (genActualType(op2) == genActualType(simdBaseType)) ||
+               (op2->TypeIs(TYP_SIMD12) && (type == TYP_SIMD16)));
     }
 
     NamedIntrinsic intrinsic = NI_Illegal;

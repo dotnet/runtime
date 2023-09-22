@@ -365,7 +365,7 @@ namespace System.Reflection
                 // Convert a Type.Missing to the default value.
                 if (ReferenceEquals(arg, Type.Missing))
                 {
-                    arg = HandleTypeMissing(_method.GetParametersNoCopy()[i], sigType);
+                    arg = HandleTypeMissing(_method.GetParametersAsSpan()[i], sigType);
                     shouldCopyBack[i] = true;
                 }
 

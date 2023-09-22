@@ -370,7 +370,7 @@ int logf(const char* fmt, ...)
     {
         // if the EE refuses to log it, we try to send it to stdout
         va_start(args, fmt);
-        written = vflogf(jitstdout, fmt, args);
+        written = vflogf(jitstdout(), fmt, args);
         va_end(args);
     }
 #if 0  // Enable this only when you need it
@@ -431,7 +431,7 @@ void gcDump_logf(const char* fmt, ...)
     {
         // if the EE refuses to log it, we try to send it to stdout
         va_start(args, fmt);
-        vflogf(jitstdout, fmt, args);
+        vflogf(jitstdout(), fmt, args);
         va_end(args);
     }
 #if 0  // Enable this only when you need it
