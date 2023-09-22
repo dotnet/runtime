@@ -149,12 +149,7 @@ namespace System.IO
             using var directory = new TempAclDirectory();
 
             const int MaxShortPath = 260;
-            int fileNameLength = MaxShortPath - directory.Path.Length;
-
-            if (fileNameLength < 1)
-            {
-                fileNameLength = 1;
-            }
+            int fileNameLength = Math.Max(MaxShortPath - directory.Path.Length, 1);
 
             string path = Path.Combine(directory.Path, new string('1', fileNameLength) + ".txt");
             using var file = new TempFile(path, 1);
