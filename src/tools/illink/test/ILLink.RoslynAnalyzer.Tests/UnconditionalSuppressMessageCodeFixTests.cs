@@ -226,7 +226,7 @@ public class C
 				fixtest,
 				baselineExpected: new[] {
 				// /0/Test0.cs(7,27): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
-				VerifyCSUSMwithRAF.Diagnostic(DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (7, 27, 7, 44).WithArguments ("System.Reflection.Assembly.Location", "", ""),
+				VerifyCSUSMwithRAF.Diagnostic(DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (7, 27, 7, 44).WithArguments ("System.Reflection.Assembly.Location.get", "", ""),
 				// /0/Test0.cs(9,13): warning IL3001: 'System.Reflection.Assembly.GetFiles()' will throw for assemblies embedded in a single-file app
 				VerifyCSUSMwithRAF.Diagnostic(DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (9, 13, 9, 32).WithArguments("System.Reflection.Assembly.GetFiles()", "", ""),
 				},
