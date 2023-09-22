@@ -107,7 +107,7 @@ extends:
               # Now that we've entitled and signed createdump, we can build the rest.
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
-                  buildArgs: -s clr.aot+libs+host+packs -c $(_BuildConfig)
+                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
               
               # Upload the results.
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
