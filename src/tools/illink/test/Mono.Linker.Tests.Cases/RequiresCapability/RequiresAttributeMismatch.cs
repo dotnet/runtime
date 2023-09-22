@@ -17,15 +17,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	class RequiresAttributeMismatch
 	{
 		// General comment about IL3003
-		// Analyzer looks at properties, events and methods separately. So mismatch on property level will be reported
-		// only on the property and not on the accessors. And vice versa.
 		// NativeAOT doesn't really see properties and events, only methods. So it is much easier to handle everything
 		// on the method level. While it's a discrepancy in behavior, it's small and should have no adverse effects
 		// as suppressing the warning on the property level will suppress it for the accessors as well.
 		// So NativeAOT will report all mismatches on the accessors. If the mismatch is on the property
 		// then both accessors will report IL3003 (the attribute on the property is treated as if it was specified
 		// on all accessors, always).
-		// This discrepancy is tracked by https://github.com/dotnet/runtime/issues/83235.
+		// The analyzer matches this behavior, treating the get/set methods as annotated if the property is annotated,
+		// and warning only on the get/set methods.
 		[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get")]
 		[ExpectedWarning ("IL3002", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL3050", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = Tool.NativeAot)]
