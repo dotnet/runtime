@@ -142,7 +142,7 @@ namespace System.Tests
         public static unsafe void ToHexStringLower(byte[] input, string expected)
         {
             string actual = Convert.ToHexStringLower(input);
-            Assert.Equal(expected, actual.ToLower());
+            Assert.Equal(expected.ToLower(), actual);
         }
     }
 }
