@@ -3077,7 +3077,6 @@ namespace System
             return HexConverter.ToString(bytes, HexConverter.Casing.Upper);
         }
 
-
         /// <summary>
         /// Converts a span of 8-bit unsigned integers to its equivalent span representation that is encoded with uppercase hex characters.
         /// </summary>
@@ -3101,6 +3100,58 @@ namespace System
             HexConverter.EncodeToUtf16(source, destination);
             charsWritten = source.Length  * 2;
             return true;
+        }
+
+        /// <summary>
+        /// Converts an array of 8-bit unsigned integers to its equivalent string representation that is encoded with lowercase hex characters.
+        /// </summary>
+        /// <param name="inArray">An array of 8-bit unsigned integers.</param>
+        /// <returns>The string representation in hex of the elements in <paramref name="inArray"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="inArray"/> is <code>null</code>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inArray"/> is too large to be encoded.</exception>
+        public static string ToHexStringLower(byte[] inArray)
+        {
+            ArgumentNullException.ThrowIfNull(inArray);
+
+            return ToHexStringLower(new ReadOnlySpan<byte>(inArray));
+        }
+
+        /// <summary>
+        /// Converts a subset of an array of 8-bit unsigned integers to its equivalent string representation that is encoded with lowercase hex characters.
+        /// Parameters specify the subset as an offset in the input array and the number of elements in the array to convert.
+        /// </summary>
+        /// <param name="inArray">An array of 8-bit unsigned integers.</param>
+        /// <param name="offset">An offset in <paramref name="inArray"/>.</param>
+        /// <param name="length">The number of elements of <paramref name="inArray"/> to convert.</param>
+        /// <returns>The string representation in hex of <paramref name="length"/> elements of <paramref name="inArray"/>, starting at position <paramref name="offset"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="inArray"/> is <code>null</code>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> or <paramref name="length"/> is negative.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> plus <paramref name="length"/> is greater than the length of <paramref name="inArray"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="inArray"/> is too large to be encoded.</exception>
+        public static string ToHexStringLower(byte[] inArray, int offset, int length)
+        {
+            ArgumentNullException.ThrowIfNull(inArray);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
+
+            return ToHexStringLower(new ReadOnlySpan<byte>(inArray, offset, length));
+        }
+
+        /// <summary>
+        /// Converts a span of 8-bit unsigned integers to its equivalent string representation that is encoded with lowercase hex characters.
+        /// </summary>
+        /// <param name="bytes">A span of 8-bit unsigned integers.</param>
+        /// <returns>The string representation in hex of the elements in <paramref name="bytes"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="bytes"/> is too large to be encoded.</exception>
+        public static string ToHexStringLower(ReadOnlySpan<byte> bytes)
+        {
+            if (bytes.Length == 0)
+                return string.Empty;
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, int.MaxValue / 2, nameof(bytes));
+
+            return HexConverter.ToString(bytes, HexConverter.Casing.Lower);
         }
     }  // class Convert
 }  // namespace

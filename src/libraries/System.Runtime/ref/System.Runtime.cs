@@ -1285,6 +1285,9 @@ namespace System
         public static string ToHexString(byte[] inArray, int offset, int length) { throw null; }
         public static string ToHexString(System.ReadOnlySpan<byte> bytes) { throw null; }
         public static bool TryToHexString(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static string ToHexStringLower(byte[] inArray) { throw null; }
+        public static string ToHexStringLower(byte[] inArray, int offset, int length) { throw null; }
+        public static string ToHexStringLower(System.ReadOnlySpan<byte> bytes) { throw null; }
         public static short ToInt16(bool value) { throw null; }
         public static short ToInt16(byte value) { throw null; }
         public static short ToInt16(char value) { throw null; }
