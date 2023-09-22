@@ -2336,6 +2336,35 @@ namespace System.Linq
                     source.Expression, Expression.Constant(seed), Expression.Quote(func), Expression.Quote(selector)));
         }
 
+        [DynamicDependency("AggregateBy`3", typeof(Enumerable))]
+        public static IQueryable<KeyValuePair<TKey, TAccumulate>> AggregateBy<TSource, TKey, TAccumulate>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, TAccumulate seed, Expression<Func<TAccumulate, TSource, TAccumulate>> func, IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(func);
+
+            return source.Provider.CreateQuery<KeyValuePair<TKey, TAccumulate>>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, TAccumulate, Expression<Func<TAccumulate, TSource, TAccumulate>>, IEqualityComparer<TKey>, IQueryable<KeyValuePair<TKey, TAccumulate>>>(AggregateBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(seed), Expression.Quote(func), Expression.Constant(keyComparer, typeof(IEqualityComparer<TKey>))));
+        }
+
+        [DynamicDependency("AggregateBy`3", typeof(Enumerable))]
+        public static IQueryable<KeyValuePair<TKey, TAccumulate>> AggregateBy<TSource, TKey, TAccumulate>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TKey, TAccumulate>> seedSelector, Expression<Func<TAccumulate, TSource, TAccumulate>> func, IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(seedSelector);
+            ArgumentNullException.ThrowIfNull(func);
+
+            return source.Provider.CreateQuery<KeyValuePair<TKey, TAccumulate>>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, Expression<Func<TKey, TAccumulate>>, Expression<Func<TAccumulate, TSource, TAccumulate>>, IEqualityComparer<TKey>, IQueryable<KeyValuePair<TKey, TAccumulate>>>(AggregateBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(seedSelector), Expression.Quote(func), Expression.Constant(keyComparer, typeof(IEqualityComparer<TKey>))));
+        }
+
         [DynamicDependency("SkipLast`1", typeof(Enumerable))]
         public static IQueryable<TSource> SkipLast<TSource>(this IQueryable<TSource> source, int count)
         {

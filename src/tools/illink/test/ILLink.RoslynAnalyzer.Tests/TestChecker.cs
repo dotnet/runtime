@@ -106,6 +106,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 			CheckMember (node);
 		}
 
+		public override void VisitEventDeclaration (EventDeclarationSyntax node)
+		{
+			base.VisitEventDeclaration (node);
+			CheckMember (node);
+		}
+
+		public override void VisitEventFieldDeclaration (EventFieldDeclarationSyntax node)
+		{
+			base.VisitEventFieldDeclaration (node);
+			CheckMember (node);
+		}
+
 		public override void VisitFieldDeclaration (FieldDeclarationSyntax node)
 		{
 			base.VisitFieldDeclaration (node);

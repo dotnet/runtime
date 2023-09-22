@@ -489,6 +489,9 @@ dotnet_diagnostic.CA1868.severity = warning
 # CA1869: Cache and reuse 'JsonSerializerOptions' instances
 dotnet_diagnostic.CA1869.severity = warning
 
+# CA1870: Use a cached 'SearchValues' instance
+dotnet_diagnostic.CA1870.severity = warning
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 

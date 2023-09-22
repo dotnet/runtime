@@ -85,6 +85,14 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ServiceCollection,
         }
 
+        private static async Task VerifyThatSourceIsGenerated(string testSourceCode)
+        {
+            var (d, r) = await RunGenerator(testSourceCode);
+            Assert.Equal(1, r.Length);
+            Assert.Empty(d);
+            Assert.True(r[0].SourceText.Lines.Count > 10);
+        }
+
         private static async Task VerifyAgainstBaselineUsingFile(
             string filename,
             string testSourceCode,
@@ -132,7 +140,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             IEnumerable<Assembly>? references = null)
         {
             using var workspace = RoslynTestUtils.CreateTestWorkspace();
-            CSharpParseOptions parseOptions = new CSharpParseOptions(langVersion).WithFeatures(new[] { new KeyValuePair<string, string>("InterceptorsPreview", "") });
+            CSharpParseOptions parseOptions = new CSharpParseOptions(langVersion).WithFeatures(new[] {
+                new KeyValuePair<string, string>("InterceptorsPreview", ""),
+                new KeyValuePair<string, string>("InterceptorsPreviewNamespaces", "Microsoft.Extensions.Configuration.Binder.SourceGeneration")
+            });
 
             Project proj = RoslynTestUtils.CreateTestProject(workspace, references ?? s_compilationAssemblyRefs, langVersion: langVersion)
                 .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Annotations))
