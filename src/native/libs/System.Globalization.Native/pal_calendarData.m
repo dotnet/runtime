@@ -20,6 +20,7 @@
 #define ISLAMIC_NAME "islamic"
 #define ISLAMIC_UMALQURA_NAME "islamic-umalqura"
 #define ROC_NAME "roc"
+
 /*
 Function:
 GetCalendarIdentifier
@@ -116,7 +117,7 @@ const char* GlobalizationNative_GetCalendarInfoNative(const char* localeName, Ca
         NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:calendarIdentifier];
 
         if (dataType == CalendarData_NativeName)
-            return strdup([[currentLocale localizedStringForCalendarIdentifier:calendarIdentifier] UTF8String]);//calendar ? strdup([[calendar calendarIdentifier] UTF8String]) : NULL;
+            return strdup([[currentLocale localizedStringForCalendarIdentifier:calendarIdentifier] UTF8String]);
 
         NSDateFormatter *dateFormat = [[NSDateFormatter alloc] init];
         dateFormat.locale = currentLocale;
@@ -187,13 +188,16 @@ Gets the latest era in the Japanese calendar.
 */
 int32_t GlobalizationNative_GetLatestJapaneseEraNative()
 {
-    // Create an NSCalendar with the Japanese calendar identifier
-    NSCalendar *japaneseCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierJapanese];
-    // Get the latest era
-    NSDateComponents *latestEraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:[NSDate date]];
-    // Extract the era component
-    NSInteger latestEra = [latestEraComponents era];
-    return (int32_t)latestEra;
+    @autoreleasepool
+    {
+        // Create an NSCalendar with the Japanese calendar identifier
+        NSCalendar *japaneseCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierJapanese];
+        // Get the latest era
+        NSDateComponents *latestEraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:[NSDate date]];
+        // Extract the era component
+        NSInteger latestEra = [latestEraComponents era];
+        return (int32_t)latestEra;
+    }
 }
 
 /*
@@ -204,98 +208,99 @@ Gets the starting Gregorian date of the specified Japanese Era.
 */
 const char* GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era)
 {
-    NSCalendar *japaneseCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierJapanese];
-    NSDateComponents *startDateComponents = [[NSDateComponents alloc] init];
-    startDateComponents.era = era;
-    startDateComponents.month = 1;
-    startDateComponents.day = 1;
-    startDateComponents.year = 1;
-    NSDate *date = [japaneseCalendar dateFromComponents:startDateComponents];
-    NSDate *startDay = date;
-    int32_t currentEra;
-
-    for (int month = 0; month <= 12; month++)
+    @autoreleasepool
     {
-        NSDateComponents *eraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:date];
-        // Extract the era component
-        currentEra = [eraComponents era];
-        if (currentEra == era)
-        {
-            for (int day = 0; day < 31; day++)
-            {
-                // subtract 1 day at a time until we get out of the specified Era
-                startDateComponents.day = startDateComponents.day - 1;
-                date = [japaneseCalendar dateFromComponents:startDateComponents];
-                eraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:date];
-                currentEra = [eraComponents era];
-                if (currentEra != era)
-                {
-                    // add back 1 day to get back into the specified Era
-                    startDateComponents.day = startDateComponents.day + 1;
-                    
-                    startDay = [japaneseCalendar dateFromComponents:startDateComponents];
-                    //eraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:date];
+        NSCalendar *japaneseCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierJapanese];
+        NSDateComponents *startDateComponents = [[NSDateComponents alloc] init];
+        startDateComponents.era = era;
+        // set the date to Jan 1, 1
+        startDateComponents.month = 1;
+        startDateComponents.day = 1;
+        startDateComponents.year = 1;
+        NSDate *date = [japaneseCalendar dateFromComponents:startDateComponents];
+        NSDate *startDay = date;
+        int32_t currentEra;
+        bool foundStartDate = false;
 
-                    break;
+        for (int month = 0; month <= 12; month++)
+        {
+            NSDateComponents *eraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:date];
+            currentEra = [eraComponents era];
+            if (currentEra == era)
+            {
+                for (int day = 0; day < 31; day++)
+                {
+                    // subtract 1 day at a time until we get out of the specified Era
+                    startDateComponents.day = startDateComponents.day - 1;
+                    date = [japaneseCalendar dateFromComponents:startDateComponents];
+                    eraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:date];
+                    currentEra = [eraComponents era];
+                    if (currentEra != era)
+                    {
+                        // add back 1 day to get back into the specified Era
+                        startDateComponents.day = startDateComponents.day + 1;
+                        startDay = [japaneseCalendar dateFromComponents:startDateComponents];
+                        foundStartDate = true;
+                        break;
+                    }
                 }
             }
+            if (foundStartDate)
+                break;
+            // add 1 month at a time until we get into the specified Era
+            startDateComponents.month = startDateComponents.month + 1;
+            date = [japaneseCalendar dateFromComponents:startDateComponents];
+            eraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:date];
+            currentEra = [eraComponents era];
         }
-        // add 1 month at a time until we get into the specified Era
-        startDateComponents.month = startDateComponents.month + 1;
-        date = [japaneseCalendar dateFromComponents:startDateComponents];
-        eraComponents = [japaneseCalendar components:NSCalendarUnitEra fromDate:date];
-        currentEra = [eraComponents era];
+
+        // Create an NSDateFormatter to format the Gregorian date
+        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+        dateFormatter.dateFormat = @"yyyy-MM-dd";
+
+        // Format and print the Gregorian start date
+        NSString *formattedStartDate = [dateFormatter stringFromDate:startDay];
+        return formattedStartDate ? strdup([formattedStartDate UTF8String]) : NULL;
     }
-
-    // Create an NSDateFormatter to format the Gregorian date
-    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-    dateFormatter.dateFormat = @"yyyy-MM-dd";
-
-    // Format and print the Gregorian start date
-    NSString *formattedStartDate = [dateFormatter stringFromDate:startDay];
-    return formattedStartDate ? strdup([formattedStartDate UTF8String]) : NULL;
 }
 
 /*
 Function:
-GetCalendars
+GetCalendarsNative
 
 Returns the list of CalendarIds that are available for the specified locale.
 */
-int32_t GlobalizationNative_GetCalendarsNative(
-    const char* localeName, CalendarId* calendars, int32_t calendarsCapacity)
+int32_t GlobalizationNative_GetCalendarsNative(const char* localeName, CalendarId* calendars, int32_t calendarsCapacity)
 {
-
     @autoreleasepool
     {
         NSString *locName = [NSString stringWithFormat:@"%s", localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
         NSArray *calendarIdentifiers = @[
-                NSCalendarIdentifierGregorian,
-                NSCalendarIdentifierBuddhist,
-                NSCalendarIdentifierChinese,
-                NSCalendarIdentifierCoptic,
-                NSCalendarIdentifierEthiopicAmeteMihret,
-                NSCalendarIdentifierEthiopicAmeteAlem,
-                NSCalendarIdentifierHebrew,
-                NSCalendarIdentifierISO8601,
-                NSCalendarIdentifierIndian,
-                NSCalendarIdentifierIslamicCivil,
-                NSCalendarIdentifierIslamicTabular,
-                NSCalendarIdentifierIslamicUmmAlQura,
-                NSCalendarIdentifierIslamic,
-                NSCalendarIdentifierJapanese,
-                NSCalendarIdentifierPersian,
-                NSCalendarIdentifierRepublicOfChina,
-            ];
-        int32_t calendarsReturned = 0;
-        for (int i = 0; i < calendarIdentifiers.count && calendarsReturned < calendarsCapacity; i++)
+            NSCalendarIdentifierGregorian,
+            NSCalendarIdentifierBuddhist,
+            NSCalendarIdentifierChinese,
+            NSCalendarIdentifierCoptic,
+            NSCalendarIdentifierEthiopicAmeteMihret,
+            NSCalendarIdentifierEthiopicAmeteAlem,
+            NSCalendarIdentifierHebrew,
+            NSCalendarIdentifierISO8601,
+            NSCalendarIdentifierIndian,
+            NSCalendarIdentifierIslamicCivil,
+            NSCalendarIdentifierIslamicTabular,
+            NSCalendarIdentifierIslamicUmmAlQura,
+            NSCalendarIdentifierIslamic,
+            NSCalendarIdentifierJapanese,
+            NSCalendarIdentifierPersian,
+            NSCalendarIdentifierRepublicOfChina,
+        ];
+        int32_t calendarCount = MIN(calendarIdentifiers.count, calendarsCapacity);
+        for (int i = 0; i < calendarCount; i++)
         {
             NSString *calendarIdentifier = calendarIdentifiers[i];
-            calendars[calendarsReturned] = GetCalendarId([calendarIdentifier UTF8String]);
-            calendarsReturned++;
+            calendars[i] = GetCalendarId([calendarIdentifier UTF8String]);
         }
-        return calendarsReturned;
+        return calendarCount;
     }
 }
 #endif
