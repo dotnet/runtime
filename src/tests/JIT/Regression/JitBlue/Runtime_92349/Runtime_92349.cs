@@ -19,8 +19,11 @@ public static class Runtime_92349
     [Fact]
     public unsafe static void EntryPoint()
     {
-        ulong value = 0;
-        Test((byte*)Unsafe.AsPointer(ref value));
-        Assert.True(value == 246);
+        if (Sse2.IsSupported)
+        {
+            ulong value = 0;
+            Test((byte*)Unsafe.AsPointer(ref value));
+            Assert.True(value == 246);
+        }
     }
 }
