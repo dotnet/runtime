@@ -1162,7 +1162,26 @@ void SystemDomain::Init()
         // Finish loading CoreLib now.
         m_pSystemAssembly->GetDomainAssembly()->EnsureActive();
 
-        GetAppDomain()->CreateDefaultBinder();
+        ASSEMBLYBINDERREF defaultBinder = (ASSEMBLYBINDERREF)ObjectFromHandle(GetAppDomain()->CreateDefaultBinder());
+
+        {
+            // AdHoc setup for corelib PEAssembly
+            GCPROTECT_BEGIN(defaultBinder);
+
+            // Set binder assembly for CoreLib
+            MethodDescCallSite createCoreLib(METHOD__BINDER_DEFAULTASSEMBLYBINDER__CREATECORELIB);
+            ARG_SLOT args[2] =
+            {
+                ObjToArgSlot(defaultBinder),
+                PtrToArgSlot(m_pSystemPEAssembly->GetPEImage())
+            };
+            OBJECTREF coreLibHostAssembly = createCoreLib.Call_RetOBJECTREF(args);
+            m_pSystemPEAssembly->SetHostAssemblyAdHoc(CreateHandle(coreLibHostAssembly));
+
+            m_pSystemAssembly->GetDomainAssembly()->RegisterWithHostAssembly();
+
+            GCPROTECT_END();
+        }
     }
 
 #ifdef _DEBUG

@@ -321,6 +321,7 @@ public:
     friend class Assembly;
     friend class Module;
     friend class FileLoadLock;
+    friend class SystemDomain;
 
     DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
 

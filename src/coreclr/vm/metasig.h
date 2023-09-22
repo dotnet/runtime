@@ -622,6 +622,7 @@ DEFINE_METASIG_T(IM(PtrVoid_RefBinderAssembly_RetInt, P(v) r(C(BINDER_ASSEMBLY))
 DEFINE_METASIG(SM(PtrChar_PtrChar_PtrChar_RefObj_RetInt, P(u) P(u) P(u) r(j), i))
 DEFINE_METASIG_T(IM(PtrByte_RefGuid_Bool_PtrByte_RetVoid, P(b) r(g(GUID)) F P(b), v))
 DEFINE_METASIG_T(IM(RetLoaderAllocator, ,C(LOADERALLOCATOR)))
+DEFINE_METASIG_T(IM(IntPtr_RetBinderAssembly, I, C(BINDER_ASSEMBLY)))
 
 // Undefine macros in case we include the file again in the compilation unit
 

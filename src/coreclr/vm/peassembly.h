@@ -307,6 +307,13 @@ public:
         return m_pHostAssembly;
     }
 
+    // Set host assembly after PEAssembly was created.
+    // Adhoc for CoreLib
+    void SetHostAssemblyAdHoc(OBJECTHANDLE pHostAssembly)
+    {
+        m_pHostAssembly = pHostAssembly;
+    }
+
     // Returns the AssemblyBinder* instance associated with the PEAssembly
     // which owns the context into which the current PEAssembly was loaded.
     // For Dynamic assemblies this is the fallback binder.

@@ -15,6 +15,8 @@ namespace Internal.Runtime.Binder
         // Not supported by this binder
         public override System.Reflection.LoaderAllocator? GetLoaderAllocator() => null;
 
+        public Assembly CreateCoreLib(IntPtr pCoreLibPEImage) => new Assembly(pCoreLibPEImage, true) { Binder = this };
+
         // Helper functions
         private int BindAssemblyByNameWorker(AssemblyName assemblyName, out Assembly? coreCLRFoundAssembly, bool excludeAppPaths)
         {

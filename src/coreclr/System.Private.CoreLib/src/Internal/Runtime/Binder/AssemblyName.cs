@@ -117,13 +117,13 @@ namespace Internal.Runtime.Binder
             }
 
             // See if the assembly[def] is retargetable (ie, for a generic assembly).
-            if ((dwRefOrDefFlags | CorAssemblyFlags.afRetargetable) != 0)
+            if ((dwRefOrDefFlags & CorAssemblyFlags.afRetargetable) != 0)
             {
                 IdentityFlags |= AssemblyIdentityFlags.IDENTITY_FLAG_RETARGETABLE;
             }
 
             // Set ContentType
-            if ((dwRefOrDefFlags | CorAssemblyFlags.afContentType_Mask) == CorAssemblyFlags.afContentType_Default)
+            if ((dwRefOrDefFlags & CorAssemblyFlags.afContentType_Mask) == CorAssemblyFlags.afContentType_Default)
             {
                 ContentType = System.Reflection.AssemblyContentType.Default;
             }

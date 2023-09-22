@@ -12,9 +12,9 @@ namespace Internal.Runtime.Binder
     {
         // fields used by VM
 #pragma warning disable CA1823, 414, 169
+        private AssemblyBinder? m_binder;
         public IntPtr PEImage;
         private IntPtr m_pDomainAssembly;
-        private AssemblyBinder? m_binder;
         private bool m_isCoreLib;
 #pragma warning restore CA1823, 414, 169
 
