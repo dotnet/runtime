@@ -102,9 +102,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 bool isFirstType = true;
                 foreach (TypeSpec type in targetTypes)
                 {
-                    TypeSpec effectiveType = _typeIndex.GetEffectiveTypeSpec(type);
-                    Debug.Assert(_typeIndex.CanBindTo(effectiveType.TypeRef));
+                    Debug.Assert(_typeIndex.CanBindTo(type.TypeRef));
 
+                    TypeSpec effectiveType = _typeIndex.GetEffectiveTypeSpec(type);
                     string conditionKindExpr = GetConditionKindExpr(ref isFirstType);
 
                     EmitStartBlock($"{conditionKindExpr} ({Identifier.type} == typeof({type.DisplayString}))");
@@ -141,6 +141,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 {
                                     _writer.WriteLine($@"throw new {Identifier.InvalidOperationException}(""{exMsg}"");");
                                 }
+#if DEBUG
+                                else
+                                {
+                                    Debug.Fail($"Complex should not be included for GetCore gen: {complexType.DisplayString}");
+                                }
+#endif
                             }
                             break;
                     }
@@ -343,7 +349,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (PropertySpec property in initOnlyProps)
                 {
-                    if (property.ShouldBindTo && property.MatchingCtorParam is null)
+                    if (_typeIndex.ShouldBindTo(property) && property.MatchingCtorParam is null)
                     {
                         EmitBindImplForMember(property);
                     }
@@ -835,9 +841,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (PropertySpec property in type.Properties!)
                 {
-                    //bool noSetter_And_IsReadonly = !property.CanSet && property.TypeRef is CollectionSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor };
-                    //if (property.ShouldBindTo && !noSetter_And_IsReadonly)
-                    if (property.ShouldBindTo)
+                    if (_typeIndex.ShouldBindTo(property))
                     {
                         string containingTypeRef = property.IsStatic ? type.DisplayString : Identifier.instance;
                         EmitBindImplForMember(
@@ -1111,6 +1115,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 CollectionSpec? collectionType = type as CollectionSpec;
                 ObjectSpec? objectType = type as ObjectSpec;
+
+                string? castExpr = null;
                 string initExpr;
 
                 string effectiveDisplayString = type.DisplayString;
@@ -1124,10 +1130,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         CollectionWithCtorInitSpec collectionWithCtorInitType = (CollectionWithCtorInitSpec)collectionType;
 
-                        // Prepend with a cast to make sure we call the right BindCore method.
-                        string castExpr = collectionWithCtorInitType.InstantiationConcreteType is CollectionInstantiationConcreteType.Self
-                            ? string.Empty
-                            : $"({collectionWithCtorInitType.DisplayString})";
+                        if (collectionWithCtorInitType.InstantiationConcreteType is not CollectionInstantiationConcreteType.Self)
+                        {
+                            castExpr = $"({collectionWithCtorInitType.DisplayString})";
+                        }
 
                         effectiveDisplayString = _typeIndex.GetInstantiationTypeDisplayString(collectionWithCtorInitType);
                         initExpr = $"{castExpr}new {effectiveDisplayString}()";
@@ -1164,11 +1170,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             if (collectionType is CollectionWithCtorInitSpec
                                 {
                                     InstantiationStrategy: CollectionInstantiationStrategy.CopyConstructor or CollectionInstantiationStrategy.LinqToDictionary
-                                } collectionWithCtorInit)
+                                } collectionWithCtorInitType)
                             {
-                                string assignmentValueIfMemberNull = collectionWithCtorInit.InstantiationStrategy is CollectionInstantiationStrategy.CopyConstructor
+                                string assignmentValueIfMemberNull = collectionWithCtorInitType.InstantiationStrategy is CollectionInstantiationStrategy.CopyConstructor
                                     ? $"new {effectiveDisplayString}({memberAccessExpr})"
                                     : $"{memberAccessExpr}.ToDictionary(pair => pair.Key, pair => pair.Value)";
+
+                                Debug.Assert(castExpr is not null || collectionWithCtorInitType.InstantiationConcreteType is CollectionInstantiationConcreteType.Self);
+                                assignmentValueIfMemberNull = $"{castExpr}{assignmentValueIfMemberNull}";
 
                                 _writer.WriteLine($"{memberAccessExpr} = {memberAccessExpr} is null ? {initExpr} : {assignmentValueIfMemberNull};");
                             }

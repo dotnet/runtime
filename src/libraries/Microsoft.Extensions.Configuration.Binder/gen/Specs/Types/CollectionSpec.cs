@@ -48,16 +48,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         ParameterlessConstructor = 1,
         CopyConstructor = 2,
         LinqToDictionary = 3,
-        AssignableConcreteTypeWithParameterlessCtor = 4,
     }
 
     internal enum CollectionInstantiationConcreteType
     {
-        None = 0,
-        Self = 1,
-        Dictionary = 2,
-        List = 3,
-        HashSet = 4,
+        Self = 0,
+        Dictionary = 1,
+        List = 2,
+        HashSet = 3,
     }
 
     internal enum CollectionPopulationCastType

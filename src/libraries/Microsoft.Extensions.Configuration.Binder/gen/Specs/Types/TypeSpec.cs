@@ -13,11 +13,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public TypeSpec(ITypeSymbol type)
         {
             TypeRef = new TypeRef(type);
+            EffectiveTypeRef = TypeRef; // Overriden by NullableSpec.
             (Namespace, DisplayString, Name) = type.GetTypeName();
             IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring();
             IsValueType = type.IsValueType;
-
-            EffectiveTypeRef = TypeRef; // Overriden by NullableSpec.
         }
 
         public TypeRef TypeRef { get; }

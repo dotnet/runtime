@@ -61,13 +61,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return null;
             }
 
-            if (type == typeof(byte[]))
+            if (type == typeof(bool?))
+            {
+                return ParseBoolean(value, () => section.Path);
+            }
+            else if (type == typeof(byte[]))
             {
                 return ParseByteArray(value, () => section.Path);
-            }
-            else if (type == typeof(bool?))
-            {
-                return ParseBool(value, () => section.Path);
             }
             else if (type == typeof(CultureInfo))
             {
@@ -75,10 +75,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (type == typeof(int))
             {
-                return ParseInt(value, () => section.Path);
+                return ParseInt32(value, () => section.Path);
             }
 
             return null;
+        }
+
+        public static bool ParseBoolean(string value, Func<string?> getPath)
+        {
+            try
+            {
+                return bool.Parse(value);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(bool)}'.", exception);
+            }
         }
 
         public static byte[] ParseByteArray(string value, Func<string?> getPath)
@@ -90,18 +102,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             catch (Exception exception)
             {
                 throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(byte[])}'.", exception);
-            }
-        }
-
-        public static bool ParseBool(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return bool.Parse(value);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(bool)}'.", exception);
             }
         }
 
@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
+        public static int ParseInt32(string value, Func<string?> getPath)
         {
             try
             {

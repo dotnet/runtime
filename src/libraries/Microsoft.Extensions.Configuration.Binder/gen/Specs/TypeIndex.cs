@@ -33,11 +33,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public bool HasBindableMembers(ComplexTypeSpec typeSpec) =>
             typeSpec switch
             {
-                ObjectSpec objectSpec => objectSpec.Properties?.Any(p => p.ShouldBindTo) is true,
+                ObjectSpec objectSpec => objectSpec.Properties?.Any(ShouldBindTo) is true,
                 DictionarySpec dictSpec => GetTypeSpec(dictSpec.KeyTypeRef) is ParsableFromStringSpec && CanBindTo(dictSpec.ElementTypeRef),
                 CollectionSpec collectionSpec => CanBindTo(collectionSpec.ElementTypeRef),
                 _ => throw new InvalidOperationException(),
             };
+
+        public bool ShouldBindTo(PropertySpec property)
+        {
+            bool isAccessible = property.CanGet || property.CanSet;
+
+            bool isCollectionAndCannotOverride = !property.CanSet &&
+                GetEffectiveTypeSpec(property.TypeRef) is CollectionWithCtorInitSpec
+                {
+                    InstantiationStrategy: CollectionInstantiationStrategy.CopyConstructor or CollectionInstantiationStrategy.LinqToDictionary
+                };
+
+            return isAccessible && !isCollectionAndCannotOverride;
+        }
 
         public TypeSpec GetEffectiveTypeSpec(TypeRef typeRef)
         {
@@ -57,8 +70,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public string GetInstantiationTypeDisplayString(CollectionWithCtorInitSpec type)
         {
             CollectionInstantiationConcreteType concreteType = type.InstantiationConcreteType;
-            Debug.Assert(concreteType is not CollectionInstantiationConcreteType.None);
-
             return concreteType is CollectionInstantiationConcreteType.Self
                 ? type.DisplayString
                 : GetGenericTypeDisplayString(type, concreteType);

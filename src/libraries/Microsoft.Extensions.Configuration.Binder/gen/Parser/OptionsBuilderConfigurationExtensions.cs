@@ -95,20 +95,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if ((MethodsToGen.OptionsBuilderExt_Bind & overload) is not 0)
                 {
-                    RegisterTypeForOverloadGen_ServiceCollectionExt(MethodsToGen.ServiceCollectionExt_Configure_T_name_BinderOptions, complexTypeSpec);
+                    if (!TryRegisterTypeForOverloadGen_ServiceCollectionExt(MethodsToGen.ServiceCollectionExt_Configure_T_name_BinderOptions, complexTypeSpec))
+                    {
+                        return;
+                    }
                 }
-                else
+                else if (!_helperInfoBuilder!.TryRegisterTypeForBindCoreMainGen(complexTypeSpec))
                 {
-                    _helperInfoBuilder!.TryRegisterTypeForBindCoreMainGen(complexTypeSpec);
+                    return;
                 }
 
                 _interceptorInfoBuilder.RegisterInterceptor(typeParseInfo.BindingOverload, typeParseInfo.BinderInvocation.Operation);
 
                 // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource.
-                _helperInfoBuilder!.Namespaces.Add("Microsoft.Extensions.Options");
+                _helperInfoBuilder!.RegisterNamespace("Microsoft.Extensions.Options");
 
                 // Emitting refs to OptionsBuilder<T>.
-                _helperInfoBuilder!.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
+                _helperInfoBuilder!.RegisterNamespace("Microsoft.Extensions.DependencyInjection");
             }
         }
     }
