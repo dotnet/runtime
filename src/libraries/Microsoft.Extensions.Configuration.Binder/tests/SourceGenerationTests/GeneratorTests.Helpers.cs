@@ -110,8 +110,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
                                              .Split(Environment.NewLine);
 
-            ConfigBindingGenDriver genDriver = new();
-            ConfigBindingGenResult result = await RunGeneratorAndUpdateCompilation(testSourceCode);
+            ConfigBindingGenTestDriver genDriver = new();
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(testSourceCode);
             GeneratedSourceResult generatedSource = Assert.Single(result.GeneratedSources);
 
             SourceText resultSourceText = generatedSource.SourceText;
@@ -140,14 +140,14 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.True(resultEqualsBaseline, errorMessage);
         }
 
-        private static async Task<ConfigBindingGenResult> RunGeneratorAndUpdateCompilation(
+        private static async Task<ConfigBindingGenRunResult> RunGeneratorAndUpdateCompilation(
             string source,
             LanguageVersion langVersion = LanguageVersion.CSharp12,
             IEnumerable<Assembly>? assemblyReferences = null,
             bool validateCompilationDiagnostics = false)
         {
-            ConfigBindingGenDriver driver = new ConfigBindingGenDriver(langVersion, assemblyReferences);
-            ConfigBindingGenResult result = await driver.RunGeneratorAndUpdateCompilation(source);
+            ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver(langVersion, assemblyReferences);
+            ConfigBindingGenRunResult result = await driver.RunGeneratorAndUpdateCompilation(source);
 
             if (validateCompilationDiagnostics)
             {

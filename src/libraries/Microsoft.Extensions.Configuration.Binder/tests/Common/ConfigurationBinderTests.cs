@@ -1851,19 +1851,12 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var obj = configuration.Get<ClassWithDirectSelfReference>();
             Assert.Equal("Hello", obj.MyString);
 
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            // Record type specs don't work well with recursive type graphs. This includes indirect
-            // transitive props. Current behavior is to drop all such members from binding. Make TODO to doc
-            // this as unsupported feature for v1, or to fix it in a follow-up to initial incremental PR.
-            Assert.Null(obj.MyClass);
-#else
             var nested = obj.MyClass;
             Assert.Equal("World", nested.MyString);
 
             var deeplyNested = nested.MyClass;
             Assert.Equal("World", deeplyNested.MyString);
             Assert.Null(deeplyNested.MyClass);
-#endif
         }
 
         [Fact]
@@ -1887,19 +1880,12 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var obj = configuration.Get<ClassWithIndirectSelfReference>();
             Assert.Equal("Hello", obj.MyString);
 
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            // Record type specs don't work well with recursive type graphs. This includes indirect
-            // transitive props. Current behavior is to drop all such members from binding. Make TODO to doc
-            // this as unsupported feature for v1, or to fix it in a follow-up to initial incremental PR.
-            Assert.Null(obj.MyList);
-#else
             var nested = obj.MyList[0];
             Assert.Equal("World", nested.MyString);
 
             var deeplyNested = nested.MyList[0];
             Assert.Equal("World", deeplyNested.MyString);
             Assert.Null(deeplyNested.MyList);
-#endif
         }
 
         [Fact]

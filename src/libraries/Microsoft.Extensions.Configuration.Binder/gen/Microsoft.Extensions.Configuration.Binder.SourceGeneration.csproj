@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <TargetFramework Condition="'$(EnableNullable)' == 'true'">$(NetCoreAppToolCurrent)</TargetFramework>
     <CLSCompliant>false</CLSCompliant>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
@@ -28,6 +27,7 @@
     <Compile Include="$(CommonPath)\SourceGenerators\ImmutableEquatableArray.cs" Link="Common\SourceGenerators\ImmutableEquatableArray.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\SourceWriter.cs" Link="Common\SourceGenerators\SourceWriter.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\TypeModelHelper.cs" Link="Common\SourceGenerators\TypeModelHelper.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\TypeRef.cs" Link="Common\SourceGenerators\TypeRef.cs" />
     <Compile Include="ConfigurationBindingGenerator.cs" />
     <Compile Include="ConfigurationBindingGenerator.Emitter.cs" />
     <Compile Include="ConfigurationBindingGenerator.Parser.cs" />
@@ -42,6 +42,7 @@
     <Compile Include="Parser\ConfigurationBinder.cs" />
     <Compile Include="Parser\Extensions.cs" />
     <Compile Include="Parser\DiagnosticDescriptors.cs" />
+    <Compile Include="Parser\Helpers.cs" />
     <Compile Include="Parser\KnownTypeSymbols.cs" />
     <Compile Include="Parser\OptionsBuilderConfigurationExtensions.cs" />
     <Compile Include="Parser\OptionsConfigurationServiceCollectionExtensions.cs" />
@@ -51,9 +52,9 @@
     <Compile Include="Specs\Members\MemberSpec.cs" />
     <Compile Include="Specs\Members\ParameterSpec.cs" />
     <Compile Include="Specs\Members\PropertySpec.cs" />
+    <Compile Include="Specs\SourceGenerationSpec.cs" />
+    <Compile Include="Specs\TypeIndex.cs" />
     <Compile Include="Specs\Types\CollectionSpec.cs" />
-    <Compile Include="Specs\Types\ComplexTypeSpec.cs" />
-    <Compile Include="Specs\Types\NullableSpec.cs" />
     <Compile Include="Specs\Types\ObjectSpec.cs" />
     <Compile Include="Specs\Types\SimpleTypeSpec.cs" />
     <Compile Include="Specs\Types\TypeSpec.cs" />

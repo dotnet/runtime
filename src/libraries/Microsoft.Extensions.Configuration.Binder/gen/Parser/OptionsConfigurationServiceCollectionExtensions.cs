@@ -73,26 +73,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 // This would violate generic type constraint; any such invocation could not have been included in the initial parser.
                 Debug.Assert(typeSymbol?.IsValueType is not true);
 
-                if (GetTargetTypeForRootInvocation(typeSymbol, invocation.Location) is ComplexTypeSpec typeSpec &&
-                    TryRegisterTypeForMethodGen(overload, typeSpec))
+                EnqueueTargetTypeForRootInvocation(typeSymbol, overload, invocation);
+            }
+
+            private void RegisterInterceptor_ServiceCollectionExt(TypeParseInfo typeParseInfo, TypeSpec typeSpec)
+            {
+                MethodsToGen overload = typeParseInfo.BindingOverload;
+
+                if (typeSpec is ComplexTypeSpec complexTypeSpec)
                 {
-                    _interceptorInfoBuilder.RegisterInterceptor(overload, operation);
+                    RegisterTypeForOverloadGen_ServiceCollectionExt(overload, complexTypeSpec);
+                    _interceptorInfoBuilder.RegisterInterceptor(overload, typeParseInfo.BinderInvocation.Operation);
                 }
             }
 
-            private bool TryRegisterTypeForMethodGen(MethodsToGen overload, ComplexTypeSpec typeSpec)
+            private void RegisterTypeForOverloadGen_ServiceCollectionExt(MethodsToGen overload, ComplexTypeSpec typeSpec)
             {
                 Debug.Assert((MethodsToGen.ServiceCollectionExt_Any & overload) is not 0);
-                if (_helperInfoBuilder.TryRegisterTypeForBindCoreMainGen(typeSpec))
-                {
-                    _interceptorInfoBuilder.MethodsToGen |= overload;
-                    _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
-                    // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource, IConfigureOptions<>, ConfigureNamedOptions<>.
-                    _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.Options");
-                    return true;
-                }
+                _helperInfoBuilder.TryRegisterTypeForBindCoreMainGen(typeSpec);
 
-                return false;
+                _interceptorInfoBuilder.MethodsToGen |= overload;
+                _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
+                // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource, IConfigureOptions<>, ConfigureNamedOptions<>.
+                _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.Options");
             }
         }
     }

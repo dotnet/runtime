@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         EmitInterceptsLocationAnnotations(locations);
                         EmitStartBlock($"public static void {Identifier.Bind}_{type.IdentifierCompatibleSubstring}(this {Identifier.IConfiguration} {Identifier.configuration}, {additionalParams})");
 
-                        if (type.HasBindableMembers)
+                        if (_typeIndex.HasBindableMembers(type))
                         {
                             Debug.Assert(!type.IsValueType);
                             string binderOptionsArg = configureOptions ? $"{Identifier.GetBinderOptions}({Identifier.configureOptions})" : $"{Identifier.binderOptions}: null";
@@ -147,7 +147,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
                             EmitCheckForNullArgument_WithBlankLine(Identifier.instance, voidReturn: true);
                             _writer.WriteLine($$"""
-                                var {{Identifier.typedObj}} = ({{type.EffectiveType.DisplayString}}){{Identifier.instance}};
+                                var {{Identifier.typedObj}} = ({{type.DisplayString}}){{Identifier.instance}};
                                 {{nameof(MethodsToGen_CoreBindingHelper.BindCore)}}({{configExpression}}, ref {{Identifier.typedObj}}, defaultValueIfNotFound: false, {{binderOptionsArg}});
                                 """);
                         }

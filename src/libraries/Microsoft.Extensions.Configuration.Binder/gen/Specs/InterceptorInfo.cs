@@ -12,7 +12,7 @@ using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record InterceptorInfo
+    public sealed record InterceptorInfo
     {
         public required MethodsToGen MethodsToGen { get; init; }
 
@@ -49,9 +49,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         internal sealed class Builder
         {
-            private TypeInterceptorInfoBuildler? _configBinder_InfoBuilder_Bind_instance;
-            private TypeInterceptorInfoBuildler? _configBinder_InfoBuilder_Bind_instance_BinderOptions;
-            private TypeInterceptorInfoBuildler? _configBinder_InfoBuilder_Bind_key_instance;
+            private TypedInterceptorInfoBuildler? _configBinder_InfoBuilder_Bind_instance;
+            private TypedInterceptorInfoBuildler? _configBinder_InfoBuilder_Bind_instance_BinderOptions;
+            private TypedInterceptorInfoBuildler? _configBinder_InfoBuilder_Bind_key_instance;
 
             private List<InvocationLocationInfo>? _interceptors_configBinder;
             private List<InvocationLocationInfo>? _interceptors_OptionsBuilderExt;
@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 MethodsToGen |= overload;
 
-                void RegisterInterceptor(ref TypeInterceptorInfoBuildler? infoBuilder) =>
+                void RegisterInterceptor(ref TypedInterceptorInfoBuildler? infoBuilder) =>
                     (infoBuilder ??= new()).RegisterInterceptor(overload, type, invocation);
             }
 
@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         }
     }
 
-    internal sealed class TypeInterceptorInfoBuildler
+    internal sealed class TypedInterceptorInfoBuildler
     {
         private readonly Dictionary<ComplexTypeSpec, TypedInterceptorInvocationInfo.Builder> _invocationInfoBuilderCache = new();
 
@@ -139,11 +139,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public ImmutableEquatableArray<TypedInterceptorInvocationInfo>? ToIncrementalValue() =>
             _invocationInfoBuilderCache.Values
             .Select(b => b.ToIncrementalValue())
-            .OrderBy(i => i.TargetType.AssemblyQualifiedName)
+            .OrderBy(i => i.TargetType.TypeRef.FullyQualifiedName)
             .ToImmutableEquatableArray();
     }
 
-    internal sealed record TypedInterceptorInvocationInfo
+    public sealed record TypedInterceptorInvocationInfo
     {
         public required ComplexTypeSpec TargetType { get; init; }
         public required ImmutableEquatableArray<InvocationLocationInfo> Locations { get; init; }
@@ -166,32 +166,45 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         }
     }
 
-    internal sealed record InvocationLocationInfo
+    public sealed record InvocationLocationInfo
     {
         public InvocationLocationInfo(MethodsToGen interceptor, IInvocationOperation invocation)
         {
-            MemberAccessExpressionSyntax memberAccessExprSyntax = ((MemberAccessExpressionSyntax)((InvocationExpressionSyntax)invocation.Syntax).Expression);
-            SyntaxTree operationSyntaxTree = invocation.Syntax.SyntaxTree;
-            TextSpan memberNameSpan = memberAccessExprSyntax.Name.Span;
-            FileLinePositionSpan linePosSpan = operationSyntaxTree.GetLineSpan(memberNameSpan);
-
+            FileLinePositionSpan linePosSpan = GetLocationSpanInfo(invocation).LinePostionSpan;
             Interceptor = interceptor;
             LineNumber = linePosSpan.StartLinePosition.Line + 1;
             CharacterNumber = linePosSpan.StartLinePosition.Character + 1;
-            FilePath = GetInterceptorFilePath();
-
-            // Use the same logic used by the interceptors API for resolving the source mapped value of a path.
-            // https://github.com/dotnet/roslyn/blob/f290437fcc75dad50a38c09e0977cce13a64f5ba/src/Compilers/CSharp/Portable/Compilation/CSharpCompilation.cs#L1063-L1064
-            string GetInterceptorFilePath()
-            {
-                SourceReferenceResolver? sourceReferenceResolver = invocation.SemanticModel?.Compilation.Options.SourceReferenceResolver;
-                return sourceReferenceResolver?.NormalizePath(operationSyntaxTree.FilePath, baseFilePath: null) ?? operationSyntaxTree.FilePath;
-            }
+            FilePath = GetFilePath(invocation);
         }
 
         public MethodsToGen Interceptor { get; }
         public string FilePath { get; }
         public int LineNumber { get; }
         public int CharacterNumber { get; }
+
+        public static Location GetTrimmedLocation(IInvocationOperation invocation)
+        {
+            string filePath = GetFilePath(invocation);
+            (TextSpan memberNameSpan, FileLinePositionSpan linePosSpan) = GetLocationSpanInfo(invocation);
+            return Location.Create(filePath, memberNameSpan, linePosSpan.Span);
+        }
+
+        // Use the same logic used by the interceptors API for resolving the source mapped value of a path.
+        // https://github.com/dotnet/roslyn/blob/f290437fcc75dad50a38c09e0977cce13a64f5ba/src/Compilers/CSharp/Portable/Compilation/CSharpCompilation.cs#L1063-L1064
+        private static string GetFilePath(IInvocationOperation invocation)
+        {
+            SyntaxTree operationSyntaxTree = invocation.Syntax.SyntaxTree;
+            SourceReferenceResolver? sourceReferenceResolver = invocation.SemanticModel?.Compilation.Options.SourceReferenceResolver;
+            return sourceReferenceResolver?.NormalizePath(operationSyntaxTree.FilePath, baseFilePath: null) ?? operationSyntaxTree.FilePath;
+        }
+
+        private static (TextSpan MemberNameSpan, FileLinePositionSpan LinePostionSpan) GetLocationSpanInfo(IInvocationOperation invocation)
+        {
+            MemberAccessExpressionSyntax memberAccessExprSyntax = ((MemberAccessExpressionSyntax)((InvocationExpressionSyntax)invocation.Syntax).Expression);
+            TextSpan memberNameSpan = memberAccessExprSyntax.Name.Span;
+            SyntaxTree operationSyntaxTree = invocation.Syntax.SyntaxTree;
+            FileLinePositionSpan linePosSpan = operationSyntaxTree.GetLineSpan(memberNameSpan);
+            return (memberNameSpan, linePosSpan);
+        }
     }
 }

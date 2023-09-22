@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //#define LAUNCH_DEBUGGER
+using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using SourceGenerators;
@@ -15,6 +16,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     public sealed partial class ConfigurationBindingGenerator : IIncrementalGenerator
     {
         private static readonly string ProjectName = Emitter.s_assemblyName.Name!;
+
+        public const string GenSpecTrackingName = nameof(SourceGenerationSpec);
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -44,17 +47,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return (null, null);
                     }
 
-                    Parser parser = new(compilationData);
-                    SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(tuple.Left);
-                    ImmutableEquatableArray<DiagnosticInfo>? diagnostics = parser.Diagnostics?.ToImmutableEquatableArray();
-                    return (spec, diagnostics);
+                    try
+                    {
+                        Parser parser = new(compilationData);
+                        SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(tuple.Left, cancellationToken);
+                        ImmutableEquatableArray<DiagnosticInfo>? diagnostics = parser.Diagnostics?.ToImmutableEquatableArray();
+                        return (spec, diagnostics);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
                 })
-                .WithTrackingName(nameof(SourceGenerationSpec));
+                .WithTrackingName(GenSpecTrackingName);
 
             context.RegisterSourceOutput(genSpec, ReportDiagnosticsAndEmitSource);
         }
 
-        private static void ReportDiagnosticsAndEmitSource(SourceProductionContext sourceProductionContext, (SourceGenerationSpec? SourceGenerationSpec, ImmutableEquatableArray<DiagnosticInfo>? Diagnostics) input)
+        /// <summary>
+        /// Instrumentation helper for unit tests.
+        /// </summary>
+        public Action<SourceGenerationSpec>? OnSourceEmitting { get; init; }
+
+        private void ReportDiagnosticsAndEmitSource(SourceProductionContext sourceProductionContext, (SourceGenerationSpec? SourceGenerationSpec, ImmutableEquatableArray<DiagnosticInfo>? Diagnostics) input)
         {
             if (input.Diagnostics is ImmutableEquatableArray<DiagnosticInfo> diagnostics)
             {
@@ -66,6 +81,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (input.SourceGenerationSpec is SourceGenerationSpec spec)
             {
+                OnSourceEmitting?.Invoke(spec);
                 Emitter emitter = new(spec);
                 emitter.Emit(sourceProductionContext);
             }
@@ -88,12 +104,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     TypeSymbols = new KnownTypeSymbols(compilation);
                 }
             }
-        }
-
-        internal sealed record SourceGenerationSpec
-        {
-            public required InterceptorInfo InterceptorInfo { get; init; }
-            public required BindingHelperInfo BindingHelperInfo { get; init; }
         }
     }
 }

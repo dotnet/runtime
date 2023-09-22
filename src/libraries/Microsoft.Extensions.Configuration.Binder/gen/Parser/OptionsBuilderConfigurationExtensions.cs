@@ -29,22 +29,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 // This would violate generic type constraint; any such invocation could not have been included in the initial parser.
                 Debug.Assert(typeSymbol?.IsValueType is not true);
 
-                if (GetTargetTypeForRootInvocation(typeSymbol, invocation.Location) is not ComplexTypeSpec typeSpec)
-                {
-                    return;
-                }
-
                 if (targetMethod.Name is "Bind")
                 {
-                    ParseBindInvocation_OptionsBuilderExt(invocation, typeSpec);
+                    ParseBindInvocation_OptionsBuilderExt(invocation, typeSymbol);
                 }
                 else if (targetMethod.Name is "BindConfiguration")
                 {
-                    ParseBindConfigurationInvocation(invocation, typeSpec);
+                    ParseBindConfigurationInvocation(invocation, typeSymbol);
                 }
             }
 
-            private void ParseBindInvocation_OptionsBuilderExt(BinderInvocation invocation, ComplexTypeSpec typeSpec)
+            private void ParseBindInvocation_OptionsBuilderExt(BinderInvocation invocation, ITypeSymbol? type)
             {
                 IInvocationOperation operation = invocation.Operation!;
                 IMethodSymbol targetMethod = operation.TargetMethod;
@@ -66,14 +61,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _ => MethodsToGen.None
                 };
 
-                if (overload is not MethodsToGen.None &&
-                    TryRegisterTypeForMethodGen(MethodsToGen.ServiceCollectionExt_Configure_T_name_BinderOptions, typeSpec))
+                if (overload is not MethodsToGen.None)
                 {
-                    RegisterInvocation(overload, operation);
+                    EnqueueTargetTypeForRootInvocation(type, overload, invocation);
                 }
             }
 
-            private void ParseBindConfigurationInvocation(BinderInvocation invocation, ComplexTypeSpec typeSpec)
+            private void ParseBindConfigurationInvocation(BinderInvocation invocation, ITypeSymbol? type)
             {
                 IMethodSymbol targetMethod = invocation.Operation.TargetMethod;
                 ImmutableArray<IParameterSymbol> @params = targetMethod.Parameters;
@@ -83,16 +77,32 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (paramCount is 3 &&
                     @params[1].Type.SpecialType is SpecialType.System_String &&
-                    SymbolEqualityComparer.Default.Equals(_typeSymbols.ActionOfBinderOptions, @params[2].Type) &&
-                    _helperInfoBuilder.TryRegisterTypeForBindCoreMainGen(typeSpec))
+                    SymbolEqualityComparer.Default.Equals(_typeSymbols.ActionOfBinderOptions, @params[2].Type))
                 {
-                    RegisterInvocation(MethodsToGen.OptionsBuilderExt_BindConfiguration_T_path_BinderOptions, invocation.Operation);
+                    EnqueueTargetTypeForRootInvocation(type, MethodsToGen.OptionsBuilderExt_BindConfiguration_T_path_BinderOptions, invocation);
                 }
             }
 
-            private void RegisterInvocation(MethodsToGen overload, IInvocationOperation operation)
+            private void RegisterInterceptor_OptionsBuilderExt(TypeParseInfo typeParseInfo, TypeSpec typeSpec)
             {
-                _interceptorInfoBuilder.RegisterInterceptor(overload, operation);
+                MethodsToGen overload = typeParseInfo.BindingOverload;
+                Debug.Assert((MethodsToGen.OptionsBuilderExt_Any & overload) is not 0);
+
+                if (typeSpec is not ComplexTypeSpec complexTypeSpec)
+                {
+                    return;
+                }
+
+                if ((MethodsToGen.OptionsBuilderExt_Bind & overload) is not 0)
+                {
+                    RegisterTypeForOverloadGen_ServiceCollectionExt(MethodsToGen.ServiceCollectionExt_Configure_T_name_BinderOptions, complexTypeSpec);
+                }
+                else
+                {
+                    _helperInfoBuilder.TryRegisterTypeForBindCoreMainGen(complexTypeSpec);
+                }
+
+                _interceptorInfoBuilder.RegisterInterceptor(typeParseInfo.BindingOverload, typeParseInfo.BinderInvocation.Operation);
 
                 // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource.
                 _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.Options");

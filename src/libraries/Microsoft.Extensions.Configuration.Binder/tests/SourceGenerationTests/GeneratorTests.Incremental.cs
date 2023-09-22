@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
+using SourceGenerators.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
@@ -9,116 +12,129 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
-        [ActiveIssue("")]
-        [Fact]
-        public async Task RunWithNoDiags_Then_NoEdit()
+        public sealed class IncrementalTests
         {
-            ConfigBindingGenDriver driver = new ConfigBindingGenDriver();
+            [Fact]
+            public async Task CompilingTheSameSourceResultsInEqualModels()
+            {
+                SourceGenerationSpec spec1 = (await new ConfigBindingGenTestDriver().RunGeneratorAndUpdateCompilation(BindCallSampleCode)).GenerationSpec;
+                SourceGenerationSpec spec2 = (await new ConfigBindingGenTestDriver().RunGeneratorAndUpdateCompilation(BindCallSampleCode)).GenerationSpec;
 
-            ConfigBindingGenResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCode);
-            result.AssertHasSourceAndNoDiagnostics();
+                Assert.NotSame(spec1, spec2);
+                GeneratorTestHelpers.AssertStructurallyEqual(spec1, spec2);
 
-            result = await driver.RunGeneratorAndUpdateCompilation();
-            result.AssertEmpty();
+                Assert.Equal(spec1, spec2);
+                Assert.Equal(spec1.GetHashCode(), spec2.GetHashCode());
+            }
+
+            [Fact]
+            public async Task RunWithNoDiags_Then_NoEdit()
+            {
+                ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver();
+
+                ConfigBindingGenRunResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCode);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.New, IncrementalStepRunReason.New);
+
+                result = await driver.RunGeneratorAndUpdateCompilation();
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Unchanged);
+            }
+
+            [Fact]
+            public async Task RunWithNoDiags_Then_ChangeInputOrder()
+            {
+                ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver();
+
+                ConfigBindingGenRunResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCode);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.New, IncrementalStepRunReason.New);
+
+                // We expect different spec because diag locations are different.
+                result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_ReorderedInvocations);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Modified);
+
+                // No diff from previous step because type model is the same.
+                result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_ReorderedConfigTypeMembers);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Unchanged);
+            }
+
+            [Fact]
+            public async Task RunWithNoDiags_Then_EditWithNoDiags()
+            {
+                ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver();
+
+                ConfigBindingGenRunResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCode);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.New, IncrementalStepRunReason.New);
+
+                result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithDifferentConfigTypeName);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Modified);
+            }
+
+            [Fact]
+            public async Task RunWithNoDiags_Then_EditWithDiags()
+            {
+                ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver();
+
+                ConfigBindingGenRunResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCode);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.New, IncrementalStepRunReason.New);
+
+                result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Modified);
+            }
+
+            [Fact]
+            public async Task RunWithDiags_Then_NoEdit()
+            {
+                ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver();
+
+                ConfigBindingGenRunResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.New, IncrementalStepRunReason.New);
+
+                result = await driver.RunGeneratorAndUpdateCompilation();
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Unchanged);
+            }
+
+            [Fact]
+            public async Task RunWithDiags_Then_NoOpEdit()
+            {
+                ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver();
+
+                ConfigBindingGenRunResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.New, IncrementalStepRunReason.New);
+
+                // We expect different spec because diag locations are different.
+                result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember_ReorderedInvocations);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Modified);
+
+                // No diff from previous step because type model is the same.
+                result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember_ReorderedConfigTypeMembers);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Unchanged);
+            }
+
+            [Fact]
+            public async Task RunWithDiags_Then_EditWithNoDiags()
+            {
+                ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver();
+
+                ConfigBindingGenRunResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.New, IncrementalStepRunReason.New);
+
+                result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCode);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Modified);
+            }
+
+            [Fact]
+            public async Task RunWithDiags_Then_EditWithDiags()
+            {
+                ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver();
+
+                ConfigBindingGenRunResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.New, IncrementalStepRunReason.New);
+
+                result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember_WithDiffMemberName);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Modified);
+            }
         }
 
-        [ActiveIssue("")]
-        [Fact]
-        public async Task RunWithNoDiags_Then_NoOpEdit()
-        {
-            ConfigBindingGenDriver driver = new ConfigBindingGenDriver();
-
-            ConfigBindingGenResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCode);
-            result.AssertHasSourceAndNoDiagnostics();
-
-            result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_ReorderedInvocations);
-            result.AssertEmpty();
-
-            result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_ReorderedConfigTypeMembers);
-            result.AssertEmpty();
-        }
-
-        [ActiveIssue("")]
-        [Fact]
-        public async Task RunWithNoDiags_Then_EditWithNoDiags()
-        {
-            ConfigBindingGenDriver driver = new ConfigBindingGenDriver();
-
-            ConfigBindingGenResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCode);
-            result.AssertHasSourceAndNoDiagnostics();
-
-            result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithDifferentConfigTypeName);
-            result.AssertEmpty();
-        }
-
-        [ActiveIssue("")]
-        [Fact]
-        public async Task RunWithNoDiags_Then_EditWithDiags()
-        {
-            ConfigBindingGenDriver driver = new ConfigBindingGenDriver();
-
-            ConfigBindingGenResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCode);
-            result.AssertHasSourceAndNoDiagnostics();
-
-            result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember);
-            result.AssertEmpty();
-        }
-
-        [ActiveIssue("")]
-        [Fact]
-        public async Task RunWithDiags_Then_NoEdit()
-        {
-            ConfigBindingGenDriver driver = new ConfigBindingGenDriver();
-
-            ConfigBindingGenResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember);
-            result.AssertHasSourceAndDiagnostics();
-
-            result = await driver.RunGeneratorAndUpdateCompilation();
-            result.AssertEmpty();
-        }
-
-        [ActiveIssue("")]
-        [Fact]
-        public async Task RunWithDiags_Then_NoOpEdit()
-        {
-            ConfigBindingGenDriver driver = new ConfigBindingGenDriver();
-
-            ConfigBindingGenResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember);
-            result.AssertHasSourceAndDiagnostics();
-
-            result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember_ReorderedInvocations);
-            result.AssertEmpty();
-
-            result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember_ReorderedConfigTypeMembers);
-            result.AssertEmpty();
-        }
-
-        [ActiveIssue("")]
-        [Fact]
-        public async Task RunWithDiags_Then_EditWithNoDiags()
-        {
-            ConfigBindingGenDriver driver = new ConfigBindingGenDriver();
-
-            ConfigBindingGenResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember);
-            result.AssertHasSourceAndDiagnostics();
-
-            result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCode);
-            result.AssertEmpty();
-        }
-
-        [ActiveIssue("")]
-        [Fact]
-        public async Task RunWithDiags_Then_EditWithDiags()
-        {
-            ConfigBindingGenDriver driver = new ConfigBindingGenDriver();
-
-            ConfigBindingGenResult result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember);
-            result.AssertHasSourceAndDiagnostics();
-
-            result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember_WithDiffMemberName);
-            result.AssertHasSourceAndDiagnostics();
-        }
-
+        #region Incremental test sources.
         /// <summary>
         /// Keep in sync with <see cref="BindCallSampleCode"/>.
         /// </summary>
@@ -292,9 +308,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         		    IConfigurationRoot config = configurationBuilder.Build();
 
         		    MyClass configObj = new();
-        		    config.Bind(configObj);
-                    config.Bind(configObj, options => { });
                     config.Bind("key", configObj);
+                    config.Bind(configObj);
+                    config.Bind(configObj, options => { });
         	    }
 
         	    public class MyClass
@@ -341,5 +357,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 public class MyClass2 { }
             }
         """;
+        #endregion Incremental test sources.
     }
 }

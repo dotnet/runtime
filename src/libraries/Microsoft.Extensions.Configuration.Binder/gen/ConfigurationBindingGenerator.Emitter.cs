@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using SourceGenerators;
 
@@ -14,11 +12,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             private readonly InterceptorInfo _interceptorInfo;
             private readonly BindingHelperInfo _bindingHelperInfo;
+            private readonly TypeIndex _typeIndex;
 
             private readonly SourceWriter _writer = new();
 
-            public Emitter(SourceGenerationSpec sourceGenSpec) =>
-                (_interceptorInfo, _bindingHelperInfo) = (sourceGenSpec.InterceptorInfo, sourceGenSpec.BindingHelperInfo);
+            public Emitter(SourceGenerationSpec sourceGenSpec)
+            {
+                _interceptorInfo = sourceGenSpec.InterceptorInfo;
+                _bindingHelperInfo = sourceGenSpec.BindingHelperInfo;
+                _typeIndex = new TypeIndex(sourceGenSpec.ConfigTypes);
+            }
 
             public void Emit(SourceProductionContext context)
             {

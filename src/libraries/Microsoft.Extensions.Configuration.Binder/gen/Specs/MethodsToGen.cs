@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     [Flags]
-    internal enum MethodsToGen_CoreBindingHelper
+    public enum MethodsToGen_CoreBindingHelper
     {
         None = 0x0,
         BindCore = 0x1,
@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     /// Methods on Microsoft.Extensions.Configuration.ConfigurationBinder
     /// </summary>
     [Flags]
-    internal enum MethodsToGen
+    public enum MethodsToGen
     {
         None = 0x0,
         Any = ConfigBinder_Any | OptionsBuilderExt_Any | ServiceCollectionExt_Any,

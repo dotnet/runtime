@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         [InlineData(LanguageVersion.CSharp10)]
         public async Task LangVersionMustBeCharp12OrHigher(LanguageVersion langVersion)
         {
-            ConfigBindingGenResult result = await RunGeneratorAndUpdateCompilation(BindCallSampleCode, langVersion: langVersion);
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(BindCallSampleCode, langVersion: langVersion);
             Assert.Empty(result.GeneratedSources);
 
             Diagnostic diagnostic = Assert.Single(result.Diagnostics);
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
                 """;
 
-            ConfigBindingGenResult result = await RunGeneratorAndUpdateCompilation(source);
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
             Assert.Empty(result.GeneratedSources);
             Assert.Equal(7, result.Diagnostics.Count());
 
@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
                 """;
 
-            ConfigBindingGenResult result = await RunGeneratorAndUpdateCompilation(source);
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
             Assert.Empty(result.GeneratedSources);
             Assert.Equal(2, result.Diagnostics.Count());
 
@@ -163,7 +163,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
                 """;
 
-            ConfigBindingGenResult result = await RunGeneratorAndUpdateCompilation(source);
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
             Assert.Empty(result.GeneratedSources);
             Assert.Equal(6, result.Diagnostics.Count());
 
@@ -218,7 +218,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             async Task Test(bool expectOutput)
             {
-                ConfigBindingGenResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetFilteredAssemblyRefs(exclusions));
+                ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetFilteredAssemblyRefs(exclusions));
                 Assert.Empty(result.Diagnostics);
                 Assert.Equal(expectOutput ? 1 : 0, result.GeneratedSources.Length);
             }
@@ -274,7 +274,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
                 """;
 
-            ConfigBindingGenResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ImmutableArray<>), typeof(Encoding), typeof(JsonSerializer)));
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ImmutableArray<>), typeof(Encoding), typeof(JsonSerializer)));
             Assert.Single(result.GeneratedSources);
             Assert.True(result.Diagnostics.Any(diag => diag.Id == Diagnostics.TypeNotSupported.Id));
             Assert.True(result.Diagnostics.Any(diag => diag.Id == Diagnostics.PropertyNotSupported.Id));

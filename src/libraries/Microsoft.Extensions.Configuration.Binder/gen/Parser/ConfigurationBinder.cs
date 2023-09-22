@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -87,20 +88,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (!IsValidRootConfigType(type))
                 {
-                    ReportDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
+                    RecordDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation);
                     return;
                 }
 
                 if (type.IsValueType)
                 {
-                    ReportDiagnostic(DiagnosticDescriptors.ValueTypesInvalidForBind, invocation.Location, type);
+                    RecordDiagnostic(DiagnosticDescriptors.ValueTypesInvalidForBind, invocation, messageArgs: new object[] { type });
                     return;
                 }
 
-                if (GetTargetTypeForRootInvocationCore(type, invocation.Location) is ComplexTypeSpec typeSpec)
-                {
-                    _interceptorInfoBuilder.RegisterInterceptor_ConfigBinder_Bind(overload, typeSpec, invocation.Operation);
-                }
+                EnqueueTargetTypeForRootInvocation(type, overload, invocation);
 
                 static ITypeSymbol? ResolveType(IOperation conversionOperation) =>
                     conversionOperation switch
@@ -184,12 +182,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                if (GetTargetTypeForRootInvocation(type, invocation.Location) is TypeSpec typeSpec)
-                {
-                    _interceptorInfoBuilder.RegisterInterceptor(overload, operation);
-                    _helperInfoBuilder.RegisterTypeForGetCoreGen(typeSpec);
-                }
-
+                EnqueueTargetTypeForRootInvocation(type, overload, invocation);
             }
 
             private void ParseGetValueInvocation(BinderInvocation invocation)
@@ -246,17 +239,47 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (!IsValidRootConfigType(type))
                 {
-                    ReportDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
+                    RecordDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation);
                     return;
                 }
 
                 ITypeSymbol effectiveType = IsNullable(type, out ITypeSymbol? underlyingType) ? underlyingType : type;
 
-                if (IsParsableFromString(effectiveType, out _) &&
-                    GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
+                if (IsParsableFromString(effectiveType, out _))
                 {
-                    _interceptorInfoBuilder.RegisterInterceptor(overload, operation);
-                    _helperInfoBuilder.RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetValueCore, typeSpec);
+                    EnqueueTargetTypeForRootInvocation(type, overload, invocation);
+                }
+            }
+
+            private void RegisterInterceptor_ConfigurationBinder(TypeParseInfo typeParseInfo, TypeSpec typeSpec)
+            {
+                MethodsToGen overload = typeParseInfo.BindingOverload;
+                IInvocationOperation invocationOperation = typeParseInfo.BinderInvocation!.Operation;
+                Debug.Assert((MethodsToGen.ConfigBinder_Any & overload) is not 0);
+
+                if ((MethodsToGen.ConfigBinder_Bind & overload) is not 0)
+                {
+                    if (typeSpec is ComplexTypeSpec complexTypeSpec)
+                    {
+                        _interceptorInfoBuilder.RegisterInterceptor_ConfigBinder_Bind(overload, complexTypeSpec, invocationOperation);
+                        _helperInfoBuilder.RegisterComplexTypeForMethodGen(complexTypeSpec);
+                    }
+                }
+                else
+                {
+                    Debug.Assert((MethodsToGen.ConfigBinder_Get & overload) is not 0 ||
+                        (MethodsToGen.ConfigBinder_GetValue & overload) is not 0);
+
+                    _interceptorInfoBuilder.RegisterInterceptor(overload, invocationOperation);
+
+                    if ((MethodsToGen.ConfigBinder_Get & overload) is not 0)
+                    {
+                        _helperInfoBuilder.RegisterTypeForGetCoreGen(typeSpec);
+                    }
+                    else
+                    {
+                        _helperInfoBuilder.RegisterTypeForGetValueCoreGen(typeSpec);
+                    }
                 }
             }
         }

@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record ParameterSpec : MemberSpec
+    public sealed record ParameterSpec : MemberSpec
     {
         public ParameterSpec(IParameterSymbol parameter) : base(parameter)
         {

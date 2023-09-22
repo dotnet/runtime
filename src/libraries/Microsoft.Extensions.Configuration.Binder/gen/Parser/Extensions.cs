@@ -68,9 +68,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public static (string? Namespace, string DisplayString, string Name) GetTypeName(this ITypeSymbol type)
         {
             string? @namespace = type.ContainingNamespace?.ToDisplayString();
+            @namespace = @namespace is not "<global namespace>" ? @namespace : null;
             string displayString = type.ToDisplayString(s_minimalDisplayFormat);
             string name = (@namespace is null ? string.Empty : @namespace + ".") + displayString.Replace(".", "+");
             return (@namespace, displayString, name);
         }
+
+        public static string GetName(this ITypeSymbol type) => GetTypeName(type).Name;
     }
 }

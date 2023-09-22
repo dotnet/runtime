@@ -654,7 +654,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }"
             ;
 
-            ConfigBindingGenResult result = await RunGeneratorAndUpdateCompilation(source);
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
             Assert.Empty(result.GeneratedSources);
             Assert.Empty(result.Diagnostics);
         }

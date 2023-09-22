@@ -62,6 +62,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     category: ProjectName,
                     defaultSeverity: DiagnosticSeverity.Warning,
                     isEnabledByDefault: true);
+
+                public static DiagnosticDescriptor GetNotSupportedDescriptor(NotSupportedReason reason) =>
+                    reason switch
+                    {
+                        NotSupportedReason.UnknownType => TypeNotSupported,
+                        NotSupportedReason.MissingPublicInstanceConstructor => MissingPublicInstanceConstructor,
+                        NotSupportedReason.CollectionNotSupported => CollectionNotSupported,
+                        NotSupportedReason.DictionaryKeyNotSupported => DictionaryKeyNotSupported,
+                        NotSupportedReason.ElementTypeNotSupported => ElementTypeNotSupported,
+                        NotSupportedReason.MultipleParameterizedConstructors => MultipleParameterizedConstructors,
+                        NotSupportedReason.MultiDimArraysNotSupported => MultiDimArraysNotSupported,
+                        NotSupportedReason.NullableUnderlyingTypeNotSupported => NullableUnderlyingTypeNotSupported,
+                        _ => throw new InvalidOperationException()
+                    };
             }
         }
     }

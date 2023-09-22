@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record PropertySpec : MemberSpec
+    public sealed record PropertySpec : MemberSpec
     {
         public PropertySpec(IPropertySymbol property) : base(property)
         {
