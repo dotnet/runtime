@@ -54,6 +54,12 @@ namespace System.Numerics.Tensors
 
         private static bool IsNegative(float f) => float.IsNegative(f);
 
+        private static float MaxMagnitude(float x, float y) => MathF.MaxMagnitude(x, y);
+
+        private static float MinMagnitude(float x, float y) => MathF.MinMagnitude(x, y);
+
+        private static float Log2(float x) => MathF.Log2(x);
+
         private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
             // Compute the same as:
@@ -1227,7 +1233,7 @@ namespace System.Numerics.Tensors
 #endif
         }
 
-        private readonly struct LoadIdentity : IUnaryOperator
+        private readonly struct IdentityOperator : IUnaryOperator
         {
             public static float Invoke(float x) => x;
             public static Vector128<float> Invoke(Vector128<float> x) => x;
@@ -1237,7 +1243,7 @@ namespace System.Numerics.Tensors
 #endif
         }
 
-        private readonly struct LoadSquared : IUnaryOperator
+        private readonly struct SquaredOperator : IUnaryOperator
         {
             public static float Invoke(float x) => x * x;
             public static Vector128<float> Invoke(Vector128<float> x) => x * x;
@@ -1247,7 +1253,7 @@ namespace System.Numerics.Tensors
 #endif
         }
 
-        private readonly struct LoadAbsolute : IUnaryOperator
+        private readonly struct AbsoluteOperator : IUnaryOperator
         {
             public static float Invoke(float x) => MathF.Abs(x);
 
