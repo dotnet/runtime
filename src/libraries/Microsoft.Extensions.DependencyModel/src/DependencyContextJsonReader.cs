@@ -749,7 +749,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             foreach (var library in libraries)
             {
-                Library? property = CreateLibrary(property, runtime, libraryStubs);
+                Library? property = CreateLibrary(library, runtime, libraryStubs);
                 if (property is not null)
                     yield return property;
             }

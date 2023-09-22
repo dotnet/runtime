@@ -10,13 +10,19 @@ namespace Microsoft.Extensions.DependencyModel
     internal static class EnumerableHelpers
     {
         public static IEnumerable<TResult> SelectMany<TSource, TResult, TParam1>(IEnumerable<TSource> src,
-            Func<TSource, TParam1, IEnumerable<TResult>> func, TParam1 param1 = default)
+            Func<TSource, TParam1, IEnumerable<TResult>> func, TParam1 param1)
         {
             if (src is TSource[] srcArray)
             {
                 return SelectManyArray(srcArray, func, param1);
             }
 
+            return SelectManyNonArray(src, func, param1);
+        }
+
+        private static IEnumerable<TResult> SelectManyArray<TSource, TResult, TParam1>(TSource[] src,
+            Func<TSource, TParam1, IEnumerable<TResult>> func, TParam1 param1)
+        {
             foreach (var elem in src)
             {
                 foreach (var subElem in func(elem, param1))
@@ -25,9 +31,8 @@ namespace Microsoft.Extensions.DependencyModel
                 }
             }
         }
-
-        private static IEnumerable<TResult> SelectManyArray<TSource, TResult, TParam1>(TSource[] src,
-            Func<TSource, TParam1, IEnumerable<TResult>> func, TParam1 param1 = default)
+        private static IEnumerable<TResult> SelectManyNonArray<TSource, TResult, TParam1>(IEnumerable<TSource> src,
+            Func<TSource, TParam1, IEnumerable<TResult>> func, TParam1 param1)
         {
             foreach (var elem in src)
             {
@@ -38,13 +43,19 @@ namespace Microsoft.Extensions.DependencyModel
             }
         }
         public static IEnumerable<TResult> SelectMany<TSource, TResult, TParam1, TParam2>(IEnumerable<TSource> src,
-            Func<TSource, TParam1, TParam2, IEnumerable<TResult>> func, TParam1 param1 = default, TParam2 param2 = default)
+            Func<TSource, TParam1, TParam2, IEnumerable<TResult>> func, TParam1 param1, TParam2 param2)
         {
             if (src is TSource[] srcArray)
             {
                 return SelectManyArray(srcArray, func, param1, param2);
             }
 
+            return SelectManyNonArray(src, func, param1, param2);
+        }
+
+        private static IEnumerable<TResult> SelectManyNonArray<TSource, TResult, TParam1, TParam2>(IEnumerable<TSource> src,
+            Func<TSource, TParam1, TParam2, IEnumerable<TResult>> func, TParam1 param1, TParam2 param2)
+        {
             foreach (var elem in src)
             {
                 foreach (var subElem in func(elem, param1, param2))
@@ -53,9 +64,8 @@ namespace Microsoft.Extensions.DependencyModel
                 }
             }
         }
-
         private static IEnumerable<TResult> SelectManyArray<TSource, TResult, TParam1, TParam2>(TSource[] src,
-            Func<TSource, TParam1, TParam2, IEnumerable<TResult>> func, TParam1 param1 = default, TParam2 param2 = default)
+            Func<TSource, TParam1, TParam2, IEnumerable<TResult>> func, TParam1 param1, TParam2 param2)
         {
             foreach (var elem in src)
             {
