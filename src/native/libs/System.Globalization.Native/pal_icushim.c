@@ -44,7 +44,7 @@ ucol_safeClone_func ucol_safeClone_ptr = NULL;
 
 #define PER_FUNCTION_BLOCK(fn, lib, required) \
     c_static_assert_msg((sizeof(#fn) + MaxICUVersionStringWithSuffixLength + 1) <= sizeof(symbolName), "The symbolName is too small for symbol " #fn); \
-    sprintf(symbolName, #fn "%s", symbolVersion); \
+    snprintf(symbolName, SYMBOL_NAME_SIZE, #fn "%s", symbolVersion); \
     fn##_ptr = (TYPEOF(fn)*)dlsym(lib, symbolName); \
     if (fn##_ptr == NULL && required) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
 
@@ -55,24 +55,24 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
     if (dlsym(libicuuc, "u_strlen") == NULL)
     {
         // Now try just the _majorVer added
-        sprintf(symbolVersion, "_%d%s", majorVer, suffix);
-        sprintf(symbolName, "u_strlen%s", symbolVersion);
+        snprintf(symbolVersion, MaxICUVersionStringWithSuffixLength, "_%d%s", majorVer, suffix);
+        snprintf(symbolName, SYMBOL_NAME_SIZE, "u_strlen%s", symbolVersion);
         if (dlsym(libicuuc, symbolName) == NULL)
         {
             if (minorVer == -1)
                 return false;
 
             // Now try the _majorVer_minorVer added
-            sprintf(symbolVersion, "_%d_%d%s", majorVer, minorVer, suffix);
-            sprintf(symbolName, "u_strlen%s", symbolVersion);
+            snprintf(symbolVersion, MaxICUVersionStringWithSuffixLength, "_%d_%d%s", majorVer, minorVer, suffix);
+            snprintf(symbolName, SYMBOL_NAME_SIZE, "u_strlen%s", symbolVersion);
             if (dlsym(libicuuc, symbolName) == NULL)
             {
                 if (subVer == -1)
                     return false;
 
                 // Finally, try the _majorVer_minorVer_subVer added
-                sprintf(symbolVersion, "_%d_%d_%d%s", majorVer, minorVer, subVer, suffix);
-                sprintf(symbolName, "u_strlen%s", symbolVersion);
+                snprintf(symbolVersion, MaxICUVersionStringWithSuffixLength, "_%d_%d_%d%s", majorVer, minorVer, subVer, suffix);
+                snprintf(symbolName, SYMBOL_NAME_SIZE, "u_strlen%s", symbolVersion);
                 if (dlsym(libicuuc, symbolName) == NULL)
                 {
                     return false;
