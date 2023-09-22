@@ -2267,6 +2267,8 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         }
 
 #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+        // Because NATIVE_SYMBOL_READER_DLL is a window-only library, an attempt to load it is guaranteed to fail. 
+        // Let's not do this
         RETURN (NULL);
 #endif //defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 
