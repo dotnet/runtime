@@ -611,7 +611,8 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return mcFCall == GetClassification()
-            || mcArray == GetClassification() && !IsAsyncThunkMethod();
+            || mcArray == GetClassification()
+            || IsAsyncThunkMethod();
     }
 
     inline DWORD IsArray() const
