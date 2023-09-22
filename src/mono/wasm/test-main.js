@@ -20,8 +20,8 @@ import { dotnet, exit } from './_framework/dotnet.js';
 // keep in sync with src\mono\wasm\runtime\loader\globals.ts and src\mono\wasm\runtime\globals.ts
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
-export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSideCar !== "undefined"; // side-car is emscripten main running in a web worker
-export const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that side-car works
+export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
+export const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
 export const ENVIRONMENT_IS_WEB = typeof window == "object" || ENVIRONMENT_IS_SIDECAR || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
 export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
 
@@ -52,9 +52,7 @@ if (!ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WEB && typeof globalThis.crypto === 
 }
 
 if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER) {
-    console.log(" ---------------- ");
     console.log("Running at: " + globalThis.location.href);
-    console.log(" ---------------- ");
 }
 
 let v8args;
@@ -87,7 +85,7 @@ async function getArgs() {
 
     let runArgsJson;
     // ToDo: runArgs should be read for all kinds of hosts, but
-    // fetch is added to node>=18 and current globalThiss's emcc node<18
+    // fetch is added to node>=18 and current Windows's emcc node<18
     if (ENVIRONMENT_IS_WEB) {
         const response = await globalThis.fetch('./runArgs.json');
         if (response.ok) {

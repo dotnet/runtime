@@ -465,7 +465,7 @@ async function instantiate_wasm_module(
 
         replace_linker_placeholders(imports);
         const assetToLoad = await loaderHelpers.wasmDownloadPromise.promise;
-        
+
         await wasmFeaturePromise;
         await instantiate_wasm_asset(assetToLoad, imports, successCallback);
         assetToLoad.pendingDownloadInternal = null as any; // GC
@@ -547,8 +547,10 @@ async function mono_wasm_before_memory_snapshot() {
         const FS = Module.FS;
         const cwd = runtimeHelpers.config.virtualWorkingDirectory;
         const wds = FS.stat(cwd);
-        // TODO should we create the directory if it doesn't exist?
-        mono_assert(wds && FS.isDir(wds.mode), () => `Could not find working directory ${cwd}`);
+        if (!wds) {
+            Module.FS_createPath("/", cwd, true, true);
+        }
+        mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
         FS.chdir(cwd);
     }
 
