@@ -271,6 +271,7 @@ namespace Server.Contract
     {
         void Reserved1();
         void Reserved2();
+        void Reserved3();
 
         [PreserveSig]
         int TriggerException(IDispatchTesting_Exception excep, int errorCode);
@@ -283,6 +284,7 @@ namespace Server.Contract
     {
         void Reserved1();
         void Reserved2();
+        void Reserved3();
 
         [PreserveSig]
         HRESULT TriggerException(IDispatchTesting_Exception excep, int errorCode);
