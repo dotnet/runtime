@@ -350,6 +350,14 @@ DEFINE_METHOD(TYPE_INIT_EXCEPTION,  STR_EX_CTOR,            .ctor,              
 DEFINE_CLASS(THREAD_START_EXCEPTION,Threading,              ThreadStartException)
 DEFINE_METHOD(THREAD_START_EXCEPTION,EX_CTOR,               .ctor,                      IM_Exception_RetVoid)
 
+DEFINE_CLASS(TASK_1, Tasks, Task`1)
+
+DEFINE_CLASS(RUNTIME_TASK_STATE_1, Tasks, RuntimeTaskState`1)
+DEFINE_METHOD(RUNTIME_TASK_STATE_1, PUSH, Push, IM_RetVoid)
+DEFINE_METHOD(RUNTIME_TASK_STATE_1, POP, Pop, IM_RetVoid)
+DEFINE_METHOD(RUNTIME_TASK_STATE_1, FROM_EXCEPTION, FromException, IM_Exception_RetTaskOfT)
+DEFINE_METHOD(RUNTIME_TASK_STATE_1, FROM_RESULT, FromResult, IM_T_RetTaskOfT)
+
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
 DEFINE_METHOD(RT_TYPE_HANDLE,       PVOID_CTOR,             .ctor,                      IM_RuntimeType_RetVoid)

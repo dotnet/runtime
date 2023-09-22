@@ -3066,7 +3066,11 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         !IsWrapperStub() &&
 
         // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
-        !IsJitOptimizationLevelRequested())
+        !IsJitOptimizationLevelRequested() &&
+
+        // Tiering the async thunk methods doesn't make sense
+        !IsAsyncThunkMethod()
+        )
     {
         m_wFlags3AndTokenRemainder |= enum_flag3_IsEligibleForTieredCompilation;
         _ASSERTE(IsVersionable());

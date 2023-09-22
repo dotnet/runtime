@@ -2690,14 +2690,6 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif // _PREFAST_
 
-enum class AsyncTaskMethod
-{
-    TaskReturningMethod,
-    Async2Method,
-    Async2MethodThatCannotBeImplementedByTask,
-    NormalMethod
-};
-
 void GetNameOfTypeDefOrRef(Module* pModule, mdToken tk, LPCSTR* pName, LPCSTR* pNamespace)
 {
     *pName = "";
@@ -7527,7 +7519,6 @@ BOOL
 MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
 {
     LIMITED_METHOD_CONTRACT;
-
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Keep in-sync with MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()

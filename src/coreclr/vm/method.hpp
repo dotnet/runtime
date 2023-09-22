@@ -1541,6 +1541,7 @@ public:
 
     MethodDesc* GetAsyncOtherVariant()
     {
+        // TODO This should be FindOrCreateAssociatedMethodDesc with some set of params
         return GetMethodTable()->GetParallelMethodDesc(this, AsyncVariantLookup::AsyncOtherVariant);
     }
 
@@ -1866,8 +1867,10 @@ private:
     PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
     PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
 
-public:
+    bool TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
+public:
+    bool TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
 #endif // DACCESS_COMPILE
 
 #ifdef HAVE_GCCOVER
@@ -3640,6 +3643,15 @@ struct ReadyToRunStandaloneMethodMetadata
 ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(MethodDesc *pMD);
 void InitReadyToRunStandaloneMethodMetadata();
 #endif // FEATURE_READYTORUN
+
+enum class AsyncTaskMethod
+{
+    TaskReturningMethod,
+    Async2Method,
+    Async2MethodThatCannotBeImplementedByTask,
+    NormalMethod
+};
+AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails);
 
 #include "method.inl"
 

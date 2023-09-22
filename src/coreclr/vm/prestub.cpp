@@ -1428,6 +1428,185 @@ namespace
     }
 }
 
+bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
+{
+    if (TryGenerateAsyncThunk(resolver, methodILDecoder))
+    {
+        return true;
+    }
+
+    if (TryGenerateUnsafeAccessor(resolver, methodILDecoder))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(resolver != NULL);
+    _ASSERTE(methodILDecoder != NULL);
+    _ASSERTE(*resolver == NULL && *methodILDecoder == NULL);
+    _ASSERTE(IsIL());
+    _ASSERTE(GetRVA() == 0);
+
+    if (!IsAsyncThunkMethod())
+    {
+        return false;
+    }
+
+    // Create a MetaSig for the given method's sig. (Easier than
+    // picking the sig apart ourselves.)
+    PCCOR_SIGNATURE pCallSig;
+    DWORD cbCallSigSize;
+
+    GetSig(&pCallSig, &cbCallSigSize);
+
+    if (pCallSig == NULL)
+    {
+        _ASSERTE(FALSE);
+        return false;
+    }
+
+    ULONG offsetOfAsyncDetailsUnused;
+    AsyncTaskMethod asyncType = ClassifyAsyncMethod(GetSigPointer(), GetModule(), &offsetOfAsyncDetailsUnused);
+    if (asyncType != AsyncTaskMethod::TaskReturningMethod)
+    {
+        // Async to task helpers not yet implemented
+        _ASSERTE(FALSE);
+        return false;
+    }
+
+    MethodDesc *pAsyncOtherVariant = this->GetAsyncOtherVariant();
+
+    MetaSig msig(pCallSig, cbCallSigSize, this->GetModule(), NULL, MetaSig::sigMember);
+
+    TypeHandle thTaskRet = msig.GetRetTypeHandleThrowing();
+    TypeHandle thLogicalRetType = thTaskRet.GetMethodTable()->GetInstantiation()[0];
+    MethodTable* pMTRuntimeTaskStateOpen = CoreLibBinder::GetClass(CLASS__RUNTIME_TASK_STATE_1);
+
+    MethodTable* pMTRuntimeTaskState = ClassLoader::LoadGenericInstantiationThrowing(pMTRuntimeTaskStateOpen->GetModule(), pMTRuntimeTaskStateOpen->GetCl(), Instantiation(&thLogicalRetType, 1)).GetMethodTable();
+    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+
+        // Initialize the resolver target details.
+    ilResolver->SetStubMethodDesc(this);
+    ilResolver->SetStubTargetMethodDesc(pAsyncOtherVariant);
+
+    // [TODO] Handle generics
+    SigTypeContext emptyContext;
+    ILStubLinker sl(
+        GetModule(),
+        GetSignature(),
+        &emptyContext,
+        pAsyncOtherVariant,
+        (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE);
+
+    ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+    LocalDesc rtsLocalDesc(pMTRuntimeTaskState);
+    DWORD rtsLocal = pCode->NewLocal(rtsLocalDesc);
+
+    LocalDesc resultLocalDesc(thLogicalRetType);
+    DWORD resultLocal = pCode->NewLocal(resultLocalDesc);
+
+    LocalDesc exceptionLocalDesc(CoreLibBinder::GetClass(CLASS__EXCEPTION));
+    DWORD exceptionLocal = pCode->NewLocal(exceptionLocalDesc);
+
+    LocalDesc returnLocalDesc(thTaskRet);
+    DWORD returnLocal = pCode->NewLocal(returnLocalDesc);
+
+    auto pNoExceptionLabel = pCode->NewCodeLabel();
+    auto pReturnResultLabel = pCode->NewCodeLabel();
+
+    pCode->EmitLDLOCA(rtsLocal);
+    pCode->EmitINITOBJ(pCode->GetToken(pMTRuntimeTaskState));
+    pCode->EmitLDLOCA(resultLocal);
+    pCode->EmitINITOBJ(pCode->GetToken(thLogicalRetType));
+    pCode->EmitLDLOCA(exceptionLocal);
+    pCode->EmitINITOBJ(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
+    pCode->EmitLDLOCA(returnLocal);
+    pCode->EmitINITOBJ(pCode->GetToken(thTaskRet));
+    pCode->EmitLDLOCA(rtsLocal);
+    pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__PUSH))), 1, 0);
+    {
+        pCode->BeginTryBlock();
+        pCode->EmitNOP("Separate try blocks");
+        {
+            pCode->BeginTryBlock();
+
+            DWORD localArg = 0;
+            if (msig.HasThis())
+            {
+                // Struct async thunks not yet implemented
+                _ASSERTE(!this->GetMethodTable()->IsValueType());
+                pCode->EmitLDARG(localArg++);
+            }
+            for (UINT iArg = 0; iArg < msig.NumFixedArgs(); iArg++)
+            {
+                pCode->EmitLDARG(localArg++);
+            }
+            pCode->EmitCALL(pCode->GetToken(pAsyncOtherVariant), localArg, 1);
+            pCode->EmitSTLOC(resultLocal);
+            pCode->EmitLEAVE(pNoExceptionLabel);
+            pCode->EndTryBlock();
+        }
+        // Catch
+        {
+            pCode->BeginCatchBlock(pCode->GetToken(CoreLibBinder::GetClass(CLASS__EXCEPTION)));
+            pCode->EmitSTLOC(exceptionLocal);
+            pCode->EmitLDLOCA(rtsLocal);
+            pCode->EmitLDLOC(exceptionLocal);
+            pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__FROM_EXCEPTION))), 2, 1);
+            pCode->EmitSTLOC(returnLocal);
+            pCode->EmitLEAVE(pReturnResultLabel);
+            pCode->EndCatchBlock();
+        }
+        pCode->EmitLabel(pNoExceptionLabel);
+        pCode->EmitLDLOCA(rtsLocal);
+        pCode->EmitLDLOC(resultLocal);
+        pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__FROM_RESULT))), 2, 1);
+        pCode->EmitSTLOC(returnLocal);
+        pCode->EmitLEAVE(pReturnResultLabel);
+        pCode->EndTryBlock();
+    }
+    // Finally
+    {
+        pCode->BeginFinallyBlock();
+        pCode->EmitLDLOCA(rtsLocal);
+        pCode->EmitCALL(pCode->GetToken(pMTRuntimeTaskState->GetParallelMethodDesc(CoreLibBinder::GetMethod(METHOD__RUNTIME_TASK_STATE_1__POP))), 1, 0);
+        pCode->EmitENDFINALLY();
+        pCode->EndFinallyBlock();
+    }
+    pCode->EmitLabel(pReturnResultLabel);
+    pCode->EmitLDLOC(returnLocal);
+    pCode->EmitRET();
+
+    // Generate all IL associated data for JIT
+    {
+        UINT maxStack;
+        size_t cbCode = sl.Link(&maxStack);
+        DWORD cbSig = sl.GetLocalSigSize();
+
+        COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
+        BYTE* pbBuffer = (BYTE*)pILHeader->Code;
+        BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
+        _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
+        sl.GenerateCode(pbBuffer, cbCode);
+        sl.GetLocalSig(pbLocalSig, cbSig);
+
+        // Store the token lookup map
+        ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
+        ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
+
+        *resolver = (DynamicResolver*)ilResolver;
+        *methodILDecoder = pILHeader;
+    }
+
+    ilResolver.SuppressRelease();
+    return true;
+}
+
 bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
 {
     STANDARD_VM_CONTRACT;

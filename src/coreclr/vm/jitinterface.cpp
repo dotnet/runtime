@@ -7665,7 +7665,7 @@ static void getMethodInfoHelper(
     }
     else
     {
-        if (!ftn->TryGenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header))
+        if (!ftn->TryGenerateTransientILImplementation(&cxt.TransientResolver, &cxt.Header))
             ThrowHR(COR_E_BADIMAGEFORMAT);
 
         scopeHnd = cxt.CreateScopeHandle();

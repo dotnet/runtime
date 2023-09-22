@@ -574,6 +574,9 @@ DEFINE_METASIG_T(IM(Dec_RetVoid, g(DECIMAL), v))
 DEFINE_METASIG_T(IM(Currency_RetVoid, g(CURRENCY), v))
 DEFINE_METASIG_T(SM(RefDec_RetVoid, r(g(DECIMAL)), v))
 
+DEFINE_METASIG_T(IM(Exception_RetTaskOfT, C(EXCEPTION), GI(C(TASK_1), 1, G(0))))
+DEFINE_METASIG_T(IM(T_RetTaskOfT, G(0), GI(C(TASK_1), 1, G(0))))
+
 DEFINE_METASIG(GM(RefT_T_T_RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(M(0)) M(0) M(0), M(0)))
 DEFINE_METASIG(SM(RefObject_Object_Object_RetObject, r(j) j j, j))
 
