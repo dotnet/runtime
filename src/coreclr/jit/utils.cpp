@@ -980,9 +980,9 @@ void Histogram::dump(FILE* output)
             fprintf(output, "%7u", m_sizeTable[i]);
         }
 
-        c += m_counts[i];
+        c += static_cast<unsigned>(m_counts[i]);
 
-        fprintf(output, " ===> %7u count (%3u%% of total)\n", m_counts[i], (int)(100.0 * c / t));
+        fprintf(output, " ===> %7u count (%3u%% of total)\n", static_cast<unsigned>(m_counts[i]), (int)(100.0 * c / t));
     }
 }
 
@@ -997,7 +997,7 @@ void Histogram::record(unsigned size)
         }
     }
 
-    m_counts[i]++;
+    InterlockedAdd(&m_counts[i], 1);
 }
 
 void NodeCounts::dump(FILE* output)
@@ -1012,7 +1012,7 @@ void NodeCounts::dump(FILE* output)
     for (int i = 0; i < GT_COUNT; i++)
     {
         sorted[i].oper  = static_cast<genTreeOps>(i);
-        sorted[i].count = m_counts[i];
+        sorted[i].count = static_cast<unsigned>(m_counts[i]);
     }
 
     jitstd::sort(sorted, sorted + ArrLen(sorted), [](const Entry& lhs, const Entry& rhs) {
@@ -1043,7 +1043,7 @@ void NodeCounts::dump(FILE* output)
 void NodeCounts::record(genTreeOps oper)
 {
     assert(oper < GT_COUNT);
-    m_counts[oper]++;
+    InterlockedAdd(&m_counts[oper], 1);
 }
 
 struct DumpOnShutdownEntry
@@ -1062,9 +1062,11 @@ DumpOnShutdown::DumpOnShutdown(const char* name, Dumpable* dumpable)
         {
             entry.Name     = name;
             entry.Dumpable = dumpable;
-            break;
+            return;
         }
     }
+
+    assert(!"No space left in table");
 }
 
 void DumpOnShutdown::DumpAll(FILE* fout)

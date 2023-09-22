@@ -254,6 +254,17 @@ public:
     virtual void dump(FILE* output) = 0;
 };
 
+// Helper class to record and display a histogram of different values.
+// Usage like:
+// static unsigned s_buckets[] = { 1, 2, 5, 10, 0 }; // Must have terminating 0
+// static Histogram s_histogram(s_buckets);
+// ...
+// s_histogram.record(someValue);
+//
+// The histogram can later be dumped with the dump function, or automatically
+// be dumped on shutdown of the JIT library using the DumpOnShutdown helper
+// class (see below). It will display how many recorded values fell into each
+// of the buckets (<= 1, <= 2, <= 5, <= 10, > 10).
 class Histogram : public Dumpable
 {
 public:
@@ -265,9 +276,26 @@ public:
 private:
     unsigned              m_sizeCount;
     const unsigned* const m_sizeTable;
-    unsigned              m_counts[HISTOGRAM_MAX_SIZE_COUNT];
+    LONG                  m_counts[HISTOGRAM_MAX_SIZE_COUNT];
 };
 
+// Helper class to record and display counts of node types. Use like:
+// static NodeCounts s_nodeCounts;
+// ...
+// s_nodeCounts.record(someNode->gtOper);
+//
+// The node counts can later be dumped with the dump function, or automatically
+// be dumped on shutdown of the JIT library using the DumpOnShutdown helper
+// class (see below). It will display output such as:
+// LCL_VAR              :   62221
+// CNS_INT              :   42139
+// COMMA                :     623
+// CAST                 :     460
+// ADD                  :     397
+// RSH                  :      72
+// NEG                  :       5
+// UDIV                 :       1
+//
 class NodeCounts : public Dumpable
 {
 public:
@@ -279,9 +307,20 @@ public:
     void record(genTreeOps oper);
 
 private:
-    unsigned m_counts[GT_COUNT];
+    LONG m_counts[GT_COUNT];
 };
 
+// Helper class to register a Histogram or NodeCounts instance to automatically
+// be output to jitstdout when the JIT library is shutdown. Example usage:
+//
+// static NodeCounts s_nodeCounts;
+// static DumpOnShutdown d("Bounds check index node types", &s_nodeCounts);
+// ...
+// s_nodeCounts.record(...);
+//
+// Useful for quick ad-hoc investigations without having to manually go add
+// code into Compiler::compShutdown and expose the Histogram/NodeCount to that
+// function.
 class DumpOnShutdown
 {
 public:
