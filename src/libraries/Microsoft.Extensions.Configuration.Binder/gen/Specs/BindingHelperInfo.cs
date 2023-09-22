@@ -84,16 +84,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public void RegisterTypeForGetCoreGen(TypeSpec type)
             {
-                ComplexTypeSpec? complexType = type as ComplexTypeSpec;
-
-                if (complexType is null || typeIndex.CanInstantiate(complexType))
+                if (typeIndex.CanBindTo(type.TypeRef))
                 {
                     RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetCore, type);
-                }
 
-                if (complexType is not null)
-                {
-                    RegisterComplexTypeForMethodGen(complexType);
+                    if (type is ComplexTypeSpec complexType)
+                    {
+                        RegisterComplexTypeForMethodGen(complexType);
+                    }
                 }
             }
 

@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
     }
 
-    internal static class ConfigBindingGenDriverExtensions
+    internal static class ConfigBindingGenTestDriverExtensions
     {
         public static void ValidateIncrementalResult(
             this ConfigurationBindingGeneratorTests.ConfigBindingGenRunResult result,

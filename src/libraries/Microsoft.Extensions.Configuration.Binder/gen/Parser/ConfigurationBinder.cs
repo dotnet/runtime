@@ -262,7 +262,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     if (typeSpec is ComplexTypeSpec complexTypeSpec)
                     {
                         _interceptorInfoBuilder.RegisterInterceptor_ConfigBinder_Bind(overload, complexTypeSpec, invocationOperation);
-                        _helperInfoBuilder.RegisterComplexTypeForMethodGen(complexTypeSpec);
+                        _helperInfoBuilder!.RegisterComplexTypeForMethodGen(complexTypeSpec);
                     }
                 }
                 else
@@ -274,11 +274,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if ((MethodsToGen.ConfigBinder_Get & overload) is not 0)
                     {
-                        _helperInfoBuilder.RegisterTypeForGetCoreGen(typeSpec);
+                        _helperInfoBuilder!.RegisterTypeForGetCoreGen(typeSpec);
                     }
                     else
                     {
-                        _helperInfoBuilder.RegisterTypeForGetValueCoreGen(typeSpec);
+                        _helperInfoBuilder!.RegisterTypeForGetValueCoreGen(typeSpec);
                     }
                 }
             }

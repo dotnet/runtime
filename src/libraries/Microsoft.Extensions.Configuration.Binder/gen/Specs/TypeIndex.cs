@@ -9,40 +9,33 @@ using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed class TypeIndex
+    internal sealed class TypeIndex(IEnumerable<TypeSpec> typeSpecs)
     {
-        private readonly Dictionary<TypeRef, TypeSpec> _index;
+        private readonly Dictionary<TypeRef, TypeSpec> _index = typeSpecs.ToDictionary(spec => spec.TypeRef);
 
-        public TypeIndex(IEnumerable<TypeSpec> typeSpecs) => _index = typeSpecs.ToDictionary(spec => spec.TypeRef);
-
-        public bool CanBindTo(TypeRef typeRef) => CanBindTo(GetEffectiveTypeSpec(typeRef));
-
-        public bool CanBindTo(TypeSpec typeSpec) => typeSpec switch
+        public bool CanBindTo(TypeRef typeRef) => GetEffectiveTypeSpec(typeRef) switch
         {
             SimpleTypeSpec => true,
             ComplexTypeSpec complexTypeSpec => CanInstantiate(complexTypeSpec) || HasBindableMembers(complexTypeSpec),
             _ => throw new InvalidOperationException(),
         };
 
-        public bool CanInstantiate(ComplexTypeSpec typeSpec)
+        public bool CanInstantiate(ComplexTypeSpec typeSpec) => typeSpec switch
         {
-            return CanInstantiate(typeSpec.TypeRef);
-
-            bool CanInstantiate(TypeRef typeRef) => GetEffectiveTypeSpec(typeRef) switch
-            {
-                ObjectSpec objectType => objectType is { InstantiationStrategy: not ObjectInstantiationStrategy.None, InitExceptionMessage: null },
-                DictionarySpec dictionaryType => GetTypeSpec(dictionaryType.TypeRef) is ParsableFromStringSpec,
-                CollectionSpec => true,
-                _ => throw new InvalidOperationException(),
-            };
-        }
+            ObjectSpec objectType => objectType is { InstantiationStrategy: not ObjectInstantiationStrategy.None, InitExceptionMessage: null },
+            DictionarySpec dictionaryType =>
+                // Nullable not allowed; that would cause us to emit code that violates dictionary key notnull generic parameter constraint.
+                GetTypeSpec(dictionaryType.KeyTypeRef) is ParsableFromStringSpec,
+            CollectionSpec => true,
+            _ => throw new InvalidOperationException(),
+        };
 
         public bool HasBindableMembers(ComplexTypeSpec typeSpec) =>
             typeSpec switch
             {
                 ObjectSpec objectSpec => objectSpec.Properties?.Any(p => p.ShouldBindTo) is true,
-                ArraySpec or EnumerableSpec => CanBindTo(((CollectionSpec)typeSpec).ElementTypeRef),
                 DictionarySpec dictSpec => GetTypeSpec(dictSpec.KeyTypeRef) is ParsableFromStringSpec && CanBindTo(dictSpec.ElementTypeRef),
+                CollectionSpec collectionSpec => CanBindTo(collectionSpec.ElementTypeRef),
                 _ => throw new InvalidOperationException(),
             };
 
@@ -66,12 +59,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             CollectionInstantiationConcreteType concreteType = type.InstantiationConcreteType;
             Debug.Assert(concreteType is not CollectionInstantiationConcreteType.None);
 
-            if (concreteType is CollectionInstantiationConcreteType.Self)
-            {
-                return type.DisplayString;
-            }
-
-            return GetGenericTypeDisplayString(type, concreteType);
+            return concreteType is CollectionInstantiationConcreteType.Self
+                ? type.DisplayString
+                : GetGenericTypeDisplayString(type, concreteType);
         }
 
         public string GetPopulationCastTypeDisplayString(CollectionWithCtorInitSpec type)

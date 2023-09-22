@@ -103,6 +103,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 foreach (TypeSpec type in targetTypes)
                 {
                     TypeSpec effectiveType = _typeIndex.GetEffectiveTypeSpec(type);
+                    Debug.Assert(_typeIndex.CanBindTo(effectiveType.TypeRef));
+
                     string conditionKindExpr = GetConditionKindExpr(ref isFirstType);
 
                     EmitStartBlock($"{conditionKindExpr} ({Identifier.type} == typeof({type.DisplayString}))");
@@ -771,7 +773,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             break;
                         case ComplexTypeSpec complexElementType:
                             {
-                                Debug.Assert(_typeIndex.CanBindTo(complexElementType));
+                                Debug.Assert(_typeIndex.CanBindTo(complexElementType.TypeRef));
 
                                 if (keyType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue)
                                 {

@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return new SourceGenerationSpec
                 {
                     InterceptorInfo = _interceptorInfoBuilder.ToIncrementalValue(),
-                    BindingHelperInfo = _helperInfoBuilder.ToIncrementalValue(),
+                    BindingHelperInfo = _helperInfoBuilder!.ToIncrementalValue(),
                     ConfigTypes = _createdTypeSpecs.Values.OrderBy(s => s.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
                 };
             }

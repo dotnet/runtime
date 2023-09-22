@@ -90,10 +90,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
         private static async Task VerifyThatSourceIsGenerated(string testSourceCode)
         {
-            var (d, r) = await RunGenerator(testSourceCode);
-            Assert.Equal(1, r.Length);
-            Assert.Empty(d);
-            Assert.True(r[0].SourceText.Lines.Count > 10);
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(testSourceCode);
+            Assert.Equal(1, result.GeneratedSources.Length);
+            Assert.Empty(result.Diagnostics);
+            Assert.True(result.GeneratedSources[0].SourceText.Lines.Count > 10);
         }
 
         private static async Task VerifyAgainstBaselineUsingFile(

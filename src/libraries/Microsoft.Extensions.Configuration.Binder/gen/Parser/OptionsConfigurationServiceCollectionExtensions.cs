@@ -90,12 +90,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void RegisterTypeForOverloadGen_ServiceCollectionExt(MethodsToGen overload, ComplexTypeSpec typeSpec)
             {
                 Debug.Assert((MethodsToGen.ServiceCollectionExt_Any & overload) is not 0);
-                _helperInfoBuilder.TryRegisterTypeForBindCoreMainGen(typeSpec);
+                _helperInfoBuilder!.TryRegisterTypeForBindCoreMainGen(typeSpec);
 
                 _interceptorInfoBuilder.MethodsToGen |= overload;
-                _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
+                _helperInfoBuilder!.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
                 // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource, IConfigureOptions<>, ConfigureNamedOptions<>.
-                _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.Options");
+                _helperInfoBuilder!.Namespaces.Add("Microsoft.Extensions.Options");
             }
         }
     }

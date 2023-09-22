@@ -99,16 +99,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    _helperInfoBuilder.TryRegisterTypeForBindCoreMainGen(complexTypeSpec);
+                    _helperInfoBuilder!.TryRegisterTypeForBindCoreMainGen(complexTypeSpec);
                 }
 
                 _interceptorInfoBuilder.RegisterInterceptor(typeParseInfo.BindingOverload, typeParseInfo.BinderInvocation.Operation);
 
                 // Emitting refs to IOptionsChangeTokenSource, ConfigurationChangeTokenSource.
-                _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.Options");
+                _helperInfoBuilder!.Namespaces.Add("Microsoft.Extensions.Options");
 
                 // Emitting refs to OptionsBuilder<T>.
-                _helperInfoBuilder.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
+                _helperInfoBuilder!.Namespaces.Add("Microsoft.Extensions.DependencyInjection");
             }
         }
     }

@@ -52,40 +52,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #region Core binding extensions.
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyComplexDictionary", "MyDictionary", "MyInt", "MyList", "MyString" });
 
-        public static void BindCore(IConfiguration configuration, ref Dictionary<string, Program.MyClass2> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            foreach (IConfigurationSection section in configuration.GetChildren())
-            {
-                if (!(instance.TryGetValue(section.Key, out Program.MyClass2? element) && element is not null))
-                {
-                    element = new Program.MyClass2();
-                }
-                instance[section.Key] = element;
-            }
-        }
-
-        public static void BindCore(IConfiguration configuration, ref Dictionary<string, string> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            foreach (IConfigurationSection section in configuration.GetChildren())
-            {
-                if (section.Value is string value)
-                {
-                    instance[section.Key] = value;
-                }
-            }
-        }
-
-        public static void BindCore(IConfiguration configuration, ref List<int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            foreach (IConfigurationSection section in configuration.GetChildren())
-            {
-                if (section.Value is string value)
-                {
-                    instance.Add(ParseInt(value, () => section.Path));
-                }
-            }
-        }
-
         public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
@@ -108,7 +74,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["MyInt"] is string value6)
             {
-                instance.MyInt = ParseInt(value6, () => configuration.GetSection("MyInt").Path);
+                instance.MyInt = ParseInt32(value6, () => configuration.GetSection("MyInt").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -126,6 +92,39 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (configuration["MyString"] is string value10)
             {
                 instance.MyString = value10;
+            }
+        }
+
+        public static void BindCore(IConfiguration configuration, ref Dictionary<string, Program.MyClass2> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
+        {
+            foreach (IConfigurationSection section in configuration.GetChildren())
+            {
+                if (!(instance.TryGetValue(section.Key, out Program.MyClass2? element) && element is not null))
+                {
+                    element = new Program.MyClass2();
+                }
+            }
+        }
+
+        public static void BindCore(IConfiguration configuration, ref Dictionary<string, string> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
+        {
+            foreach (IConfigurationSection section in configuration.GetChildren())
+            {
+                if (section.Value is string value)
+                {
+                    instance[section.Key] = value;
+                }
+            }
+        }
+
+        public static void BindCore(IConfiguration configuration, ref List<int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
+        {
+            foreach (IConfigurationSection section in configuration.GetChildren())
+            {
+                if (section.Value is string value)
+                {
+                    instance.Add(ParseInt32(value, () => section.Path));
+                }
             }
         }
 
@@ -179,7 +178,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return binderOptions;
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
+        public static int ParseInt32(string value, Func<string?> getPath)
         {
             try
             {
