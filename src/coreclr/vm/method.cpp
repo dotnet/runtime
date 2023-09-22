@@ -1090,6 +1090,9 @@ COR_ILMETHOD* MethodDesc::GetILHeader(BOOL fAllowOverrides /*=FALSE*/)
     }
     CONTRACTL_END
 
+    if (IsRuntimeSupplied())
+        return NULL;
+
     Module *pModule = GetModule();
 
     // Always pickup 'permanent' overrides like reflection emit, EnC, etc.

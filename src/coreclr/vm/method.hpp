@@ -611,7 +611,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return mcFCall == GetClassification()
-            || mcArray == GetClassification();
+            || mcArray == GetClassification() && !IsAsyncThunkMethod();
     }
 
     inline DWORD IsArray() const
@@ -804,7 +804,7 @@ public:
             MODE_ANY;
         }
         CONTRACTL_END;
-        return IsIL() && !IsUnboxingStub() && GetRVA();
+        return IsIL() && !IsUnboxingStub() && GetRVA() && !IsRuntimeSupplied();
     }
 
     COR_ILMETHOD* GetILHeader(BOOL fAllowOverrides = FALSE);
