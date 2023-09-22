@@ -156,7 +156,7 @@ export function mono_wasm_uninstall_js_worker_interop(uninstall_js_synchronizati
     mono_assert(!uninstall_js_synchronization_context || runtimeHelpers.jsSynchronizationContextInstalled, "JSSynchronizationContext is not installed on this worker.");
 
     if (uninstall_js_synchronization_context) {
-        forceDisposeProxies(true, runtimeHelpers.diagnosticTracing);
+        forceDisposeProxies(true, runtimeHelpers.diagnosticTracing, true);
         Module.runtimeKeepalivePop();
     }
 

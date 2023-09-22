@@ -146,7 +146,7 @@ export function assertNoProxies(): void {
 
 // when we arrive here, the C# side is already done with the object. 
 // We don't have to call back to release them.
-export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): void {
+export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean, callDispose: boolean): void {
     let keepSomeCsAlive = false;
     let keepSomeJsAlive = false;
 
@@ -178,7 +178,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 if (promise_control) {
                     promise_control.reject(new Error("WebWorker which is origin of the Task is being terminated."));
                 }
-                if (typeof obj.dispose === "function") {
+                if (typeof obj.dispose === "function" && callDispose) {
                     obj.dispose();
                 }
                 if (obj[js_owned_gc_handle_symbol] === gc_handle) {
@@ -219,7 +219,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 if (promise_control) {
                     promise_control.reject(new Error("WebWorker which is origin of the Task is being terminated."));
                 }
-                if (typeof obj.dispose === "function") {
+                if (typeof obj.dispose === "function" && callDispose) {
                     obj.dispose();
                 }
                 if (obj[cs_owned_js_handle_symbol] === js_handle) {

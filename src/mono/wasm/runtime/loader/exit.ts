@@ -53,7 +53,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
             appendElementOnExit(exit_code);
             if (runtimeHelpers.jiterpreter_dump_stats) runtimeHelpers.jiterpreter_dump_stats(false);
             if (exit_code === 0 && loaderHelpers.config?.interopCleanupOnExit) {
-                runtimeHelpers.forceDisposeProxies(true, true);
+                runtimeHelpers.forceDisposeProxies(true, true, true);
             }
         }
         catch (err) {

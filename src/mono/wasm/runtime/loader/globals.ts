@@ -41,7 +41,7 @@ export const monoConfig: MonoConfigInternal = {} as any;
 export const emscriptenModule: DotnetModuleInternal = {
     config: monoConfig
 } as any;
-export const globalObjectsRoot: GlobalObjects = {
+export let globalObjectsRoot: GlobalObjects = {
     mono: {},
     binding: {},
     internal: INTERNAL,
@@ -120,12 +120,23 @@ export function setLoaderGlobals(
         hasDebuggingEnabled,
         retrieve_asset_download,
         invokeLibraryInitializers,
+        disposeRuntimeGlobals,
 
         // from wasm-feature-detect npm package
         exceptions,
         simd,
 
     } as Partial<LoaderHelpers>);
+}
+
+export function disposeRuntimeGlobals() {
+    loaderHelpers.uninstallFatalHandlers?.();
+    runtimeHelpers = undefined as any;
+    loaderHelpers = undefined as any;
+    exportedRuntimeAPI = undefined as any;
+    INTERNAL = undefined as any;
+    _loaderModuleLoaded = undefined as any;
+    globalObjectsRoot = undefined as any;
 }
 
 // this will abort the program if the condition is false

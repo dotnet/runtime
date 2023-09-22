@@ -384,6 +384,7 @@ type APIType = {
     setModuleImports(moduleName: string, moduleImports: any): void;
     getConfig: () => MonoConfig;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>;
+    disposeRuntime: (graceful?: boolean) => void;
     setHeapB32: (offset: NativePointer, value: number | boolean) => void;
     setHeapU8: (offset: NativePointer, value: number) => void;
     setHeapU16: (offset: NativePointer, value: number) => void;

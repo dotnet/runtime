@@ -48,6 +48,7 @@ export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;
     runtimeHelpers.moduleGitHash = internals.gitHash;
+    runtimeHelpers.disposeWasm = internals.disposeWasm;
 }
 
 // NOTE: this is called AFTER the config is loaded
@@ -89,6 +90,16 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
         INTERNAL: globalObjects.internal,
     });
 }
+
+export function disposeRuntimeGlobals() {
+    loaderHelpers._loaded_files;
+    Module = undefined as any;
+    INTERNAL = undefined as any;
+    runtimeHelpers = undefined as any;
+    loaderHelpers = undefined as any;
+    exportedRuntimeAPI = undefined as any;
+}
+
 
 export function createPromiseController<T>(afterResolve?: () => void, afterReject?: () => void): PromiseAndController<T> {
     return loaderHelpers.createPromiseController<T>(afterResolve, afterReject);

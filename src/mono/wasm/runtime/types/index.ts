@@ -335,6 +335,7 @@ export type APIType = {
     setModuleImports(moduleName: string, moduleImports: any): void,
     getConfig: () => MonoConfig,
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
+    disposeRuntime: (graceful?: boolean) => void;
 
     // memory management
     setHeapB32: (offset: NativePointer, value: number | boolean) => void,

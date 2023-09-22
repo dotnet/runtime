@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { dotnet, exit } from './dotnet.js'
+const { dotnet, exit } = await import('./dotnet.js');
 
 function add(a, b) {
     return a + b;
@@ -25,7 +25,7 @@ try {
         }
         return originalFetch(url, fetchArgs);
     };
-    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet
+    const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module, disposeRuntime } = await dotnet
         .withElementOnExit()
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured
@@ -92,6 +92,7 @@ try {
 
     let exit_code = await runMain(config.mainAssemblyName, []);
     exit(exit_code);
+    disposeRuntime(true);
 }
 catch (err) {
     exit(2, err);

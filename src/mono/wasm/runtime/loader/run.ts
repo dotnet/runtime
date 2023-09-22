@@ -61,19 +61,11 @@ export class HostBuilder implements DotnetHostBuilder {
 
     // internal
     withExitOnUnhandledError(): DotnetHostBuilder {
-        const handler = function fatal_handler(event: Event, error: any) {
-            event.preventDefault();
-            try {
-                if (!error || !error.silent) mono_exit(1, error);
-            } catch (err) {
-                // no not re-throw from the fatal handler
-            }
-        };
         try {
             // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
             if (ENVIRONMENT_IS_WEB) {
-                globalThis.addEventListener("unhandledrejection", (event) => handler(event, event.reason));
-                globalThis.addEventListener("error", (event) => handler(event, event.error));
+                globalThis.addEventListener("unhandledrejection", fatalHandler);
+                globalThis.addEventListener("error", fatalHandler);
             }
             return this;
         } catch (err) {
@@ -517,4 +509,19 @@ async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
     await initializeModules(es6Modules as any);
 
     return emscriptenModule;
+}
+
+export function fatalHandler(event: Event) {
+    const error = (event as any).reason;
+    event.preventDefault();
+    try {
+        if (!error || !error.silent) mono_exit(1, error);
+    } catch (err) {
+        // no not re-throw from the fatal handler
+    }
+}
+
+export function uninstallFatalHandlers() {
+    globalThis.removeEventListener("unhandledrejection", fatalHandler);
+    globalThis.removeEventListener("error", fatalHandler);
 }

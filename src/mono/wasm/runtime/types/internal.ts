@@ -150,6 +150,8 @@ export type LoaderHelpers = {
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     logDownloadStatsToConsole: () => void;
     purgeUnusedCacheEntriesAsync: () => Promise<void>;
+    disposeRuntimeGlobals: () => void;
+    uninstallFatalHandlers?: () => void;
 
     loadBootResource?: LoadBootResourceCallback;
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
@@ -182,6 +184,7 @@ export type RuntimeHelpers = {
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
     quit: Function,
+    disposeWasm: Function
     mono_wasm_exit?: (code: number) => void,
     abort: (reason: any) => void,
     javaScriptExports: JavaScriptExports,
@@ -208,7 +211,7 @@ export type RuntimeHelpers = {
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (x: boolean) => string,
-    forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
+    forceDisposeProxies: (disposeMethods: boolean, verbose: boolean, skipManagedDispose: boolean) => void,
 }
 
 export type AOTProfilerOptions = {
@@ -284,6 +287,7 @@ export type EmscriptenInternals = {
     quit_: Function,
     ExitStatus: ExitStatusError,
     gitHash: string,
+    disposeWasm: Function,
 };
 export type GlobalObjects = {
     mono: any,

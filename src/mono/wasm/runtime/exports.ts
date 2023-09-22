@@ -10,7 +10,6 @@ import { Module, linkerDisableLegacyJsInterop, exportedRuntimeAPI, passEmscripte
 import { GlobalObjects, is_nullish } from "./types/internal";
 import { configureEmscriptenStartup, configureRuntimeStartup, configureWorkerStartup } from "./startup";
 
-import { create_weak_ref } from "./weak-ref";
 import { export_internal } from "./exports-internal";
 import { export_api } from "./export-api";
 import { initializeReplacements } from "./polyfills";
@@ -23,6 +22,7 @@ import { mono_log_warn, mono_wasm_stringify_as_error_with_stack } from "./loggin
 import { instantiate_asset, instantiate_symbols_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { forceDisposeProxies } from "./gc-handles";
+import { RuntimeList } from "./run";
 
 function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     const module = Module;
@@ -126,20 +126,6 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     return exportedRuntimeAPI;
 }
 
-class RuntimeList {
-    private list: { [runtimeId: number]: WeakRef<RuntimeAPI> } = {};
-
-    public registerRuntime(api: RuntimeAPI): number {
-        api.runtimeId = Object.keys(this.list).length;
-        this.list[api.runtimeId] = create_weak_ref(api);
-        return api.runtimeId;
-    }
-
-    public getRuntime(runtimeId: number): RuntimeAPI | undefined {
-        const wr = this.list[runtimeId];
-        return wr ? wr.deref() : undefined;
-    }
-}
 
 // export external API
 export {
