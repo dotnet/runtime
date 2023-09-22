@@ -145,7 +145,7 @@
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
   </ImportGroup>
 
-  <ImportGroup Condition="'$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0')) and '$(RuntimeIdentifier)' == 'wasi-wasm' and '$(UsingWasiRuntimeWorkload)' == 'true'">
+  <ImportGroup Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0')) and '$(RuntimeIdentifier)' == 'wasi-wasm' and '$(UsingWasiRuntimeWorkload)' == 'true'">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk" />
