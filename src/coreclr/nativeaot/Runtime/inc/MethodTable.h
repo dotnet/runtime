@@ -176,14 +176,10 @@ public:
         GenericTypeDefEEType    = 0x00030000,
     };
 
-    uint32_t get_BaseSize()
+    uint32_t GetBaseSize()
         { return m_uBaseSize; }
 
-    PTR_Code get_Slot(uint16_t slotNumber);
-
-    PTR_PTR_Code get_SlotPtr(uint16_t slotNumber);
-
-    Kinds get_Kind();
+    Kinds GetKind();
 
     bool IsArray()
     {
@@ -195,25 +191,25 @@ public:
         { return GetElementType() == ElementType_SzArray; }
 
     bool IsParameterizedType()
-        { return (get_Kind() == ParameterizedEEType); }
+        { return (GetKind() == ParameterizedEEType); }
 
     bool IsGenericTypeDefinition()
-        { return (get_Kind() == GenericTypeDefEEType); }
+        { return (GetKind() == GenericTypeDefEEType); }
 
     bool IsCanonical()
-        { return get_Kind() == CanonicalEEType; }
+        { return GetKind() == CanonicalEEType; }
 
     bool IsInterface()
         { return GetElementType() == ElementType_Interface; }
 
-    MethodTable * get_RelatedParameterType();
+    MethodTable * GetRelatedParameterType();
 
     // A parameterized type shape less than SZARRAY_BASE_SIZE indicates that this is not
     // an array but some other parameterized type (see: ParameterizedTypeShapeConstants)
     // For arrays, this number uniquely captures both Sz/Md array flavor and rank.
-    uint32_t get_ParameterizedTypeShape() { return m_uBaseSize; }
+    uint32_t GetParameterizedTypeShape() { return m_uBaseSize; }
 
-    bool get_IsValueType()
+    bool IsValueType()
         { return GetElementType() < ElementType_Class; }
 
     bool HasFinalizer()
@@ -273,8 +269,8 @@ public:
 
         if (pThisEEType->IsParameterizedType() && pOtherEEType->IsParameterizedType())
         {
-            return pThisEEType->get_RelatedParameterType()->IsEquivalentTo(pOtherEEType->get_RelatedParameterType()) &&
-                pThisEEType->get_ParameterizedTypeShape() == pOtherEEType->get_ParameterizedTypeShape();
+            return pThisEEType->GetRelatedParameterType()->IsEquivalentTo(pOtherEEType->GetRelatedParameterType()) &&
+                pThisEEType->GetParameterizedTypeShape() == pOtherEEType->GetParameterizedTypeShape();
         }
 
         return false;
@@ -346,10 +342,8 @@ public:
 
 public:
     // Methods expected by the GC
-    uint32_t GetBaseSize() { return get_BaseSize(); }
     uint32_t ContainsPointers() { return HasReferenceFields(); }
     uint32_t ContainsPointersOrCollectible() { return HasReferenceFields(); }
-    bool IsValueType() { return get_IsValueType(); }
     UInt32_BOOL SanityCheck() { return Validate(); }
 };
 

@@ -178,7 +178,7 @@ bool HeapWalkHelper(Object * pBO, void * pvContext)
         ETW::GCLog::ObjectReference(
             pProfilerWalkHeapContext,
             pBO,
-            ULONGLONG(pBO->get_SafeEEType()),
+            ULONGLONG(pBO->GetGCSafeMethodTable()),
             cNumRefs,
             (Object **) arrObjRef);
     }

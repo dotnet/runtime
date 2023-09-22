@@ -834,7 +834,7 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsValueType);
-                // get_BaseSize returns the GC size including space for the sync block index field, the MethodTable* and
+                // BaseSize returns the GC size including space for the sync block index field, the MethodTable* and
                 // padding for GC heap alignment. Must subtract all of these to get the size used for locals, array
                 // elements or fields of another type.
                 return BaseSize - ((uint)sizeof(ObjHeader) + (uint)sizeof(MethodTable*) + ValueTypeFieldPadding);

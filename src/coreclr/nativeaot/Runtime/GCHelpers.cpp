@@ -80,14 +80,14 @@ EXTERN_C NATIVEAOT_API int32_t __cdecl RhpEndNoGCRegion()
 
 COOP_PINVOKE_HELPER(void, RhSuppressFinalize, (OBJECTREF refObj))
 {
-    if (!refObj->get_EEType()->HasFinalizer())
+    if (!refObj->GetMethodTable()->HasFinalizer())
         return;
     GCHeapUtilities::GetGCHeap()->SetFinalizationRun(refObj);
 }
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhReRegisterForFinalize, (OBJECTREF refObj))
 {
-    if (!refObj->get_EEType()->HasFinalizer())
+    if (!refObj->GetMethodTable()->HasFinalizer())
         FC_RETURN_BOOL(true);
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, refObj));
 }
