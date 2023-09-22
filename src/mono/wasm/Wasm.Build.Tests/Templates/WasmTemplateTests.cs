@@ -185,7 +185,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release", false)]
         [InlineData("Release", true)]
         public void ConsoleBuildAndRunDefault(string config, bool relinking)
-            => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework, addFrameworkArg: false);
+            => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework, addFrameworkArg: true);
 
         [Theory]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
