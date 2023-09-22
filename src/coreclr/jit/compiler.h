@@ -9355,7 +9355,7 @@ public:
     // State information - which phases have completed?
     // These are kept together for easy discoverability
 
-    bool    bRangeAllowStress;
+    bool    compAllowStress;
     bool    compCodeGenDone;
     int64_t compNumStatementLinksTraversed; // # of links traversed while doing debug checks
     bool    fgNormalizeEHDone;              // Has the flowgraph EH normalization phase been done?
