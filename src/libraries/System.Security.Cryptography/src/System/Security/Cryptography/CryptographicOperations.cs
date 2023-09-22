@@ -225,10 +225,10 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(HashAlgorithmName hashAlgorithm, Stream source)
         {
-            int hashSize = CheckHashAndGetLength(hashAlgorithm);
+            int hashSizeInBytes = CheckHashAndGetLength(hashAlgorithm);
             CheckStream(source);
             Debug.Assert(hashAlgorithm.Name is not null);
-            return LiteHashProvider.HashStream(hashAlgorithm.Name, hashSize, source);
+            return LiteHashProvider.HashStream(hashAlgorithm.Name, hashSizeInBytes, source);
         }
 
         /// <summary>
@@ -261,17 +261,13 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HashData(HashAlgorithmName hashAlgorithm, Stream source, Span<byte> destination)
         {
-            int hashSize = CheckHashAndGetLength(hashAlgorithm);
+            int hashSizeInBytes = CheckHashAndGetLength(hashAlgorithm);
             CheckStream(source);
             Debug.Assert(hashAlgorithm.Name is not null);
-
-            if (destination.Length < hashSize)
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
+            CheckDestinationSize(hashSizeInBytes, destination.Length);
 
             int written = LiteHashProvider.HashStream(hashAlgorithm.Name, source, destination);
-            Debug.Assert(written == hashSize);
+            Debug.Assert(written == hashSizeInBytes);
             return written;
         }
 
@@ -315,14 +311,10 @@ namespace System.Security.Cryptography
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            int hashSize = CheckHashAndGetLength(hashAlgorithm);
+            int hashSizeInBytes = CheckHashAndGetLength(hashAlgorithm);
             CheckStream(source);
             Debug.Assert(hashAlgorithm.Name is not null);
-
-            if (destination.Length < hashSize)
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
+            CheckDestinationSize(hashSizeInBytes, destination.Length);
 
             return LiteHashProvider.HashStreamAsync(
                 hashAlgorithm.Name,
@@ -581,11 +573,11 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HmacData(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> key, Stream source)
         {
-            int hashLength = CheckHashAndGetLength(hashAlgorithm);
+            int hashSizeInBytes = CheckHashAndGetLength(hashAlgorithm);
             CheckStream(source);
             Debug.Assert(hashAlgorithm.Name is not null);
 
-            return LiteHashProvider.HmacStream(hashAlgorithm.Name, hashLength, key, source);
+            return LiteHashProvider.HmacStream(hashAlgorithm.Name, hashSizeInBytes, key, source);
         }
 
         /// <summary>
@@ -619,14 +611,10 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HmacData(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> key, Stream source, Span<byte> destination)
         {
-            int hashLength = CheckHashAndGetLength(hashAlgorithm);
+            int hashSizeInBytes = CheckHashAndGetLength(hashAlgorithm);
             CheckStream(source);
             Debug.Assert(hashAlgorithm.Name is not null);
-
-            if (destination.Length < hashLength)
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
+            CheckDestinationSize(hashSizeInBytes, destination.Length);
 
             return LiteHashProvider.HmacStream(hashAlgorithm.Name, key, source, destination);
         }
@@ -715,14 +703,10 @@ namespace System.Security.Cryptography
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            int hashLength = CheckHashAndGetLength(hashAlgorithm);
+            int hashSizeInBytes = CheckHashAndGetLength(hashAlgorithm);
             CheckStream(source);
             Debug.Assert(hashAlgorithm.Name is not null);
-
-            if (destination.Length < hashLength)
-            {
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-            }
+            CheckDestinationSize(hashSizeInBytes, destination.Length);
 
             return LiteHashProvider.HmacStreamAsync(hashAlgorithm.Name, key.Span, source, destination, cancellationToken);
         }
@@ -823,6 +807,14 @@ namespace System.Security.Cryptography
                     return MD5.HashSizeInBytes;
                 default:
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            }
+        }
+
+        private static void CheckDestinationSize(int requiredSize, int destinationSize)
+        {
+            if (destinationSize < requiredSize)
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, "destination");
             }
         }
     }
