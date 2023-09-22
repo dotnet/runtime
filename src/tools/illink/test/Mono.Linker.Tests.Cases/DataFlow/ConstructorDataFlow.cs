@@ -35,6 +35,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
 			int Propertty { get; } = RequireAll (GetUnknown ());
 
+			// The analyzer dataflow visitor asserts that we only see a return value
+			// inside of an IMethodSymbol. This testcase checks that we don't hit asserts
+			// in case the return statement is in a lambda owned by a field.
+			// When the lambda is analyzed, the OwningSymbol is still an IMethodSymbol
+			// (the symbol representing the lambda, not the field).
+			int fieldWithReturnStatementInInitializer = Execute(
+				[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
+				() => {
+					return RequireAll (GetUnknown ());
+				});
+
+			static int Execute(Func<int> f) => f();
+
 			public static void Test ()
 			{
 				new DataFlowInConstructor ();

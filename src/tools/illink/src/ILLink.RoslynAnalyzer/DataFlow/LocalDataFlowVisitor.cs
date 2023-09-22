@@ -76,6 +76,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// If not, the BranchValue represents a return or throw value associated with the FallThroughSuccessor of this block.
 			// (ConditionalSuccessor == null iff ConditionKind == None).
 			// If we get here, we should be analyzing a method body, not an attribute instance since attributes can't have throws or return statements
+			// Field/property initializers also can't have throws or return statements.
 			Debug.Assert (OwningSymbol is IMethodSymbol);
 
 			// The BranchValue for a thrown value is not involved in dataflow tracking.
@@ -504,7 +505,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitFlowAnonymousFunction (IFlowAnonymousFunctionOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			Debug.Assert (operation.Symbol.ContainingSymbol is IMethodSymbol);
+			Debug.Assert (operation.Symbol.ContainingSymbol is IMethodSymbol or IFieldSymbol);
 			var lambda = operation.Symbol;
 			Debug.Assert (lambda.MethodKind == MethodKind.LambdaMethod);
 			var lambdaCFG = ControlFlowGraph.GetAnonymousFunctionControlFlowGraphInScope (operation);
