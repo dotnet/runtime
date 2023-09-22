@@ -3549,6 +3549,10 @@ int LinearScan::BuildDelayFreeUses(GenTree*      node,
     }
     if (use != nullptr)
     {
+        if (useRefPositionRef != nullptr)
+        {
+            *useRefPositionRef = use;
+        }
         RecordDelayFreeUses(use, rmwNode);
         return 1;
     }

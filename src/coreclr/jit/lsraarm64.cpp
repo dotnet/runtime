@@ -1664,17 +1664,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 //
 int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode)
 {
-    int       srcCount     = 0;
-    Interval* rmwInterval  = nullptr;
-    bool      rmwIsLastUse = false;
-    if ((rmwNode != nullptr))
-    {
-        if (isCandidateLocalRef(rmwNode))
-        {
-            rmwInterval  = getIntervalForLocalVarNode(rmwNode->AsLclVar());
-            rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
-        }
-    }
+    int srcCount = 0;
+
     if (treeNode->OperIsFieldList())
     {
         assert(compiler->info.compNeedsConsecutiveRegisters);
@@ -1727,10 +1718,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
                 if (rmwNode != nullptr)
                 {
                     // If we have rmwNode, determine if the restoreRefPos should be set to delay-free.
-                    if ((restoreRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !restoreRefPos->lastUse))
-                    {
-                        setDelayFree(restoreRefPos);
-                    }
+                    RecordDelayFreeUses(restoreRefPos, rmwNode);
                 }
             }
             else
@@ -1750,10 +1738,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
             if (rmwNode != nullptr)
             {
                 // If we have rmwNode, determine if the currRefPos should be set to delay-free.
-                if ((currRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !currRefPos->lastUse))
-                {
-                    setDelayFree(currRefPos);
-                }
+                RecordDelayFreeUses(currRefPos, rmwNode);
             }
         }
 
@@ -1787,10 +1772,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
                 RefPosition* refPositionAdded = &(*iter);
 
                 // If we have rmwNode, determine if the refPositionAdded should be set to delay-free.
-                if ((refPositionAdded->getInterval() != rmwInterval) || (!rmwIsLastUse && !refPositionAdded->lastUse))
-                {
-                    setDelayFree(refPositionAdded);
-                }
+                RecordDelayFreeUses(refPositionAdded, rmwNode);
             }
         }
 
