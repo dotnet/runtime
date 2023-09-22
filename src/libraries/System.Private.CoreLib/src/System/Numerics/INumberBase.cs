@@ -310,6 +310,12 @@ namespace System.Numerics
 
             if (utf8TextStatus != OperationStatus.Done)
             {
+                if (utf16TextArray != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(utf16TextArray);
+                }
+
                 ThrowHelper.ThrowFormatInvalidString();
             }
             utf16Text = utf16Text.Slice(0, utf16TextLength);
@@ -438,6 +444,12 @@ namespace System.Numerics
 
             if (utf8TextStatus != OperationStatus.Done)
             {
+                if (utf16TextArray != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(utf16TextArray);
+                }
+
                 result = default;
                 return false;
             }
@@ -536,6 +548,12 @@ namespace System.Numerics
 
             if (utf8TextStatus != OperationStatus.Done)
             {
+                if (utf16TextArray != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(utf16TextArray);
+                }
+
                 ThrowHelper.ThrowFormatInvalidString();
             }
             utf16Text = utf16Text.Slice(0, utf16TextLength);
@@ -577,6 +595,12 @@ namespace System.Numerics
 
             if (utf8TextStatus != OperationStatus.Done)
             {
+                if (utf16TextArray != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(utf16TextArray);
+                }
+
                 result = default;
                 return false;
             }

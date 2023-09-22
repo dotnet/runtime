@@ -97,6 +97,12 @@ namespace System.Globalization
 
             if (sourceStatus != OperationStatus.Done)
             {
+                if (sourceUtf16Array != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(sourceUtf16Array);
+                }
+
                 return false;
             }
             sourceUtf16 = sourceUtf16.Slice(0, sourceUtf16Length);
@@ -122,6 +128,18 @@ namespace System.Globalization
 
             if (prefixStatus != OperationStatus.Done)
             {
+                // Return rented buffers if necessary
+
+                if (prefixUtf16Array != null)
+                {
+                    ArrayPool<char>.Shared.Return(prefixUtf16Array);
+                }
+
+                if (sourceUtf16Array != null)
+                {
+                    ArrayPool<char>.Shared.Return(sourceUtf16Array);
+                }
+
                 return false;
             }
             prefixUtf16 = prefixUtf16.Slice(0, prefixUtf16Length);
