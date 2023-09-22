@@ -11,7 +11,7 @@
 After investigating all the details, it was decided that we won't support the following scenarios in unloadable `AssemblyLoadContext` unless we get strong feedback on a need to support those.
 * Loading IJW assemblies
 * Using R2R generated code from assemblies. R2R assemblies will be loaded as plain IL ones.
-* Implementation of the FixedAddressValueTypeAttribute
+* ~~Implementation of the FixedAddressValueTypeAttribute~~ Support added in .NET 9
 ## General scenarios
 Based on various discussions and feedback on github, the following general scenarios were often mentioned as use cases for unloadability.
 * Plugin scenarios when dynamic plugin loading and unloading is required.
@@ -84,11 +84,9 @@ We can reuse the `ComCallableWrapperCache` with only a very minor modifications 
 
 The After the `AssemblyLoadContext` unload is initiated and the managed `LoaderAllocator` is collected, the `ComCallableWrapperCache` is destroyed in the `LoaderAllocator::Destroy` method.
 #### FixedAddressValueTypeAttribute for fields in collectible types
-After investigating all the details, it was decided that we won't add support for the FixedAddressValueTypeAttribute unless we get strong feedback on a need to support it.
+The fields with `FixedAddressValueTypeAttribute` are always pinned, so their address in memory never changes. Historically for non-collectible types, these fields are held pinned by a pinned `GCHandle`. But we could not use that for collectible types, since the `MethodTable` whose pointer is stored in the respective boxed instance of the value type would prevent the managed `LoaderAllocator` from being collected.
 
-If we decided to add support for it, we could do it as follows. The fields with `FixedAddressValueTypeAttribute` are always pinned, so their address in memory never changes. For non-collectible types, these fields are held pinned by a pinned `GCHandle`. But we cannot use that for collectible types, since the `MethodTable` whose pointer is stored in the respective boxed instance of the value type would prevent the managed `LoaderAllocator` from being collected.
-
-For collectible types, a new handle table can be added to `LoaderAllocator`. This handle table would be scanned during GC in a special way and all the objects the handles point to will be reported as pinned. The special scanning would be done in `Module::EnumRegularStaticGCRefs`. To pin the objects, the `promote_func` needs to be passed `GC_CALL_PINNED` in the third argument.
+Since .NET 9, we always allocate these fields in the Pinned Object Heap. That way, they are pinned without being held by a handle, and are able to be collected.
 ## AssemblyLoadContext unloading process
 For better understanding of the unloading process, it is important to understand relations between several components that play role in the lifetime management. The picture below shows these components and the ways they reference each other.
 The green marked relations and blocks are the new ones that were added to enable unloadable `AssemblyLoadContext`. The black ones were already present before.

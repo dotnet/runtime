@@ -68,6 +68,12 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
         beforeOnRuntimeInitialized: createPromiseController<void>(),
         afterOnRuntimeInitialized: createPromiseController<void>(),
         afterPostRun: createPromiseController<void>(),
+        mono_wasm_exit: () => {
+            throw new Error("Mono shutdown");
+        },
+        abort: (reason: any) => {
+            throw reason;
+        }
     });
 
     Object.assign(globalObjects.module.config!, {}) as any;

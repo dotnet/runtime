@@ -192,15 +192,9 @@ private:
 
     ThreadStaticHandleTable * m_pThreadStaticHandleTable;
 
-    // Need to keep a list of the pinning handles we've created
-    // so they can be cleaned up when the thread dies
-    ObjectHandleList          m_PinningHandleList;
-
 public:
 
 #ifndef DACCESS_COMPILE
-    void AddPinningHandleToList(OBJECTHANDLE oh);
-    void FreePinningHandles();
     void AllocateThreadStaticHandles(Module * pModule, ThreadLocalModule * pThreadLocalModule);
     OBJECTHANDLE AllocateStaticFieldObjRefPtrs(int nRequested, OBJECTHANDLE* ppLazyAllocate = NULL);
     void InitThreadStaticHandleTable();

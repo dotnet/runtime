@@ -28,8 +28,6 @@ namespace Microsoft.Interop
     /// </remarks>
     internal sealed class PInvokeStubCodeGenerator
     {
-        public bool SupportsTargetFramework { get; }
-
         public bool StubIsBasicForwarder { get; }
 
         /// <summary>
@@ -57,18 +55,6 @@ namespace Microsoft.Interop
         {
             _setLastError = setLastError;
 
-            // Support for SetLastError logic requires .NET 6+. Initialize the
-            // supports target framework value with this value.
-            if (_setLastError)
-            {
-                SupportsTargetFramework = targetFramework == TargetFramework.Net
-                    && targetFrameworkVersion.Major >= 6;
-            }
-            else
-            {
-                SupportsTargetFramework = true;
-            }
-
             _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingDiagnostics);
 
@@ -84,17 +70,13 @@ namespace Microsoft.Interop
 
             foreach (BoundGenerator generator in _marshallers.SignatureMarshallers)
             {
-                // Check if marshalling info and generator support the current target framework.
-                SupportsTargetFramework &= generator.TypeInfo.MarshallingAttributeInfo is not MissingSupportMarshallingInfo
-                    && generator.Generator.IsSupported(targetFramework, targetFrameworkVersion);
-
                 // Check if generator is either blittable or just a forwarder.
                 noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo.IsByRef: false }
                         or { Generator: Forwarder };
             }
 
             StubIsBasicForwarder = !setLastError
-                && _marshallers.ManagedNativeSameReturn // If the managed return has native return position, then it's the return for both.
+                && _marshallers.ManagedNativeSameReturn
                 && noMarshallingNeeded;
         }
 

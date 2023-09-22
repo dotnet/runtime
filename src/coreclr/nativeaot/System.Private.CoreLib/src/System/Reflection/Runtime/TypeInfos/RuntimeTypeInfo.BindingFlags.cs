@@ -33,8 +33,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if (types.Length == 0 && candidates.Count == 1)
             {
                 ConstructorInfo firstCandidate = candidates[0];
-                ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
-                if (parameters.Length == 0)
+                if (firstCandidate.GetParametersAsSpan().Length == 0)
                     return firstCandidate;
             }
 
