@@ -118,7 +118,7 @@
       <_BoolPropertiesThatTriggerRelinking Include="WasmEnableExceptionHandling" DefaultValueInRuntimePack="true" />
       <_BoolPropertiesThatTriggerRelinking Include="InvariantTimezone" DefaultValueInRuntimePack="false" />
       <_BoolPropertiesThatTriggerRelinking Include="InvariantGlobalization" DefaultValueInRuntimePack="false" />
-      <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="false" />
+      <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="true" />
       <!--<_BoolPropertiesThatTriggerRelinking Include="WasmNativeDebugSymbols" DefaultValueInRuntimePack="true" />-->
     </ItemGroup>
 
@@ -152,20 +152,22 @@
     <Message Text="_SetDebugSymbolsPropertiesDefault WasmNativeStrip: $(WasmNativeStrip), WasmNativeDebugSymbols: $(WasmNativeDebugSymbols)" />
 
     <!-- Default with nothing set: Build+relink+config=debug -->
-    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
-      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
-      <WasmNativeStrip>false</WasmNativeStrip>
-    </PropertyGroup>
-    <PropertyGroup>
-      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
+    <!--<PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">-->
+      <!--<WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>-->
+      <!-- this will add common=-g, and not strip -->
+      <!--<WasmNativeStrip>false</WasmNativeStrip>-->
+    <!--</PropertyGroup>-->
+    <!--<PropertyGroup>-->
+      <!--<WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>-->
 
       <!-- default -->
       <!--<WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(WasmNativeDebugSymbols)' == 'true'">false</WasmNativeStrip>-->
-      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
-    </PropertyGroup>
+      <!-- this will strip but not add any -g -->
+      <!--<WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>-->
+    <!--</PropertyGroup>-->
 
     <PropertyGroup>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and ('$(WasmNativeStrip)' == 'true' or '$(WasmNativeDebugSymbols)' == 'true')">true</WasmBuildNative>
+      <!--<WasmBuildNative Condition="'$(WasmBuildNative)' == '' and ('$(WasmNativeStrip)' == 'true' or '$(WasmNativeDebugSymbols)' == 'true')">true</WasmBuildNative>-->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'">false</WasmBuildNative>
@@ -231,7 +233,7 @@
 
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
-      <_EmccCommonFlags Include="-g"                                       Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
+      <_EmccCommonFlags Include="-g"                                       Condition="'$(WasmNativeStrip)' == 'false'" />
       <_EmccCommonFlags Include="-v"                                       Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"          Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-fwasm-exceptions"                        Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
@@ -259,7 +261,7 @@
       <_EmccCFlags Include="-emit-llvm" />
 
       <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
-      <!--<_EmccCFlags Include="-g"                                Condition="'$(WasmNativeDebugSymbols)' == 'true'" />-->
+      <_EmccCFlags Include="-g"                                Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
