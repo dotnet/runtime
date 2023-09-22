@@ -1004,7 +1004,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_XADD:
         case GT_XCHG:
         {
-            assert(dstCount == (tree->TypeGet() == TYP_VOID) ? 0 : 1);
+            assert(dstCount == (tree->TypeIs(TYP_VOID) ? 0 : 1));
             srcCount = tree->gtGetOp2()->isContained() ? 1 : 2;
 
             if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))

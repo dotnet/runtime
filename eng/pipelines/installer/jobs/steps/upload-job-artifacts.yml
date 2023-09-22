@@ -3,7 +3,6 @@ parameters:
   runtimeFlavor: 'coreclr'
   runtimeVariant: ''
   isOfficialBuild: false
-  pgoType: ''
 
 steps:
 # Upload build artifacts (packages) to pipeline only if official, to save storage space.
@@ -51,7 +50,7 @@ steps:
     displayName: Publish binaries
     inputs:
       pathtoPublish: '$(Build.StagingDirectory)/corehost-bin-${{ parameters.name }}-$(_BuildConfig)$(archiveExtension)'
-      artifactName: Installer-Binaries-${{parameters.pgoType }}${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
+      artifactName: Installer-Binaries-${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
     continueOnError: true
     condition: failed()
 
@@ -71,6 +70,6 @@ steps:
   displayName: Publish BuildLogs
   inputs:
     targetPath: '$(Build.StagingDirectory)/BuildLogs'
-    artifactName: Installer-Logs_Attempt$(System.JobAttempt)-${{parameters.pgoType }}${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
+    artifactName: Installer-Logs_Attempt$(System.JobAttempt)-${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: always()
