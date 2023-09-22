@@ -33,6 +33,14 @@ FOR_ALL_ICU_FUNCTIONS
 
 #define MaxICUVersionStringLength 33
 
+#else
+
+#define VERSION_PREFIX_NONE ""
+#define VERSION_PREFIX_SUSE "suse"
+
+// .[suse]x.x.x, considering the max number of decimal digits for each component
+#define MaxICUVersionStringLength (sizeof(VERSION_PREFIX_SUSE) + 33)
+
 #endif
 
 static void* libicuuc = NULL;
@@ -213,12 +221,6 @@ static int FindICULibs(char* symbolName, char* symbolVersion)
 }
 
 #else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID
-
-#define VERSION_PREFIX_NONE ""
-#define VERSION_PREFIX_SUSE "suse"
-
-// .[suse]x.x.x, considering the max number of decimal digits for each component
-#define MaxICUVersionStringLength (sizeof(VERSION_PREFIX_SUSE) + 33)
 
 // Version ranges to search for each of the three version components
 // The rationale for major version range is that we support versions higher or
