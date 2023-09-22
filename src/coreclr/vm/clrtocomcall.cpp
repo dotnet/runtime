@@ -443,7 +443,12 @@ static CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
     }
 
     // If the signature is marked preserve sig, then the return
-    // is required to be an HRESULT.
+    // is required to be an HRESULT, per COM rules. We set a flag to
+    // indicate this state to avoid issues when a C# developers define
+    // an HRESULT in C# as a ValueClass with a single int field. This
+    // is convenient but does violate the COM ABI. Setting the flag
+    // lets us permit this convention and allow either a 4 byte primitive
+    // or the commonly used C# type "struct HResult { int Value; }".
     if (IsMiPreserveSig(pMD->GetImplAttrs()))
         callsiteFlags |= CallsiteDetails::HResultReturn;
 
