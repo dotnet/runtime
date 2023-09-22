@@ -1022,11 +1022,6 @@
         <target state="translated">La serialización en tiempo de ejecución debe deshabilitarse en este proyecto aplicando \"System.Runtime.CompilerServices.DisableRuntimeMars contosoingAttribute\" al ensamblado para habilitar la serialización de este tipo.</target>
         <note />
       </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">Un tipo abstracto derivado de “SafeHandle” no se puede serializar por referencia. El tipo proporcionado debe ser concreto.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
         <target state="translated">El tamaño del parámetro "{0}" que se serializa al destinatario debe definirse cuando se llama al método, pero el parámetro de recuento "{1}" es un parámetro "out".</target>

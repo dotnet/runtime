@@ -1027,6 +1027,7 @@ void AllocateComClassObject(ComClassFactory* pComClsFac, OBJECTREF* ppRefClass)
 // AllocateObject will throw OutOfMemoryException so don't need to check
 // for NULL return value from it.
 OBJECTREF AllocateObject(MethodTable *pMT
+                         , GC_ALLOC_FLAGS flags
 #ifdef FEATURE_COMINTEROP
                          , bool fHandleCom
 #endif
@@ -1071,7 +1072,6 @@ OBJECTREF AllocateObject(MethodTable *pMT
 #endif // FEATURE_COMINTEROP
     else
     {
-        GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
         if (pMT->ContainsPointers())
             flags |= GC_ALLOC_CONTAINS_REF;
 

@@ -4573,6 +4573,9 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 	if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
 		*nelems = 4;
 		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector2")) {
+		*nelems = 2;
+		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
 		int size = mono_class_value_size (klass, NULL);

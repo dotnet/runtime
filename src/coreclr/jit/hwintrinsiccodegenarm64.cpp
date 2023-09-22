@@ -486,6 +486,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_ArmBase_Arm64_MultiplyLongAdd:
+                ins = varTypeIsUnsigned(intrin.baseType) ? INS_umaddl : INS_smaddl;
+                break;
+
+            case NI_ArmBase_Arm64_MultiplyLongSub:
+                ins = varTypeIsUnsigned(intrin.baseType) ? INS_umsubl : INS_smsubl;
+                break;
+
             default:
                 ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
                 break;
@@ -1112,6 +1120,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
                 break;
             }
+
+            case NI_ArmBase_Arm64_MultiplyLongAdd:
+            case NI_ArmBase_Arm64_MultiplyLongSub:
+                assert(opt == INS_OPTS_NONE);
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg);
+                break;
+
             default:
                 unreached();
         }

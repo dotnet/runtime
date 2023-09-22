@@ -5,8 +5,8 @@
     -->
     <ChromeChannel>stable</ChromeChannel>
 
-    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('windows'))">win</ChromeOSIdentifier>
-    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('linux'))">linux</ChromeOSIdentifier>
+    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('windows'))">Windows</ChromeOSIdentifier>
+    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('linux'))">Linux</ChromeOSIdentifier>
     <ChromeOSIdentifier Condition="'$(ChromeOSIdentifier)' == ''">unsupported-platform</ChromeOSIdentifier>
 
     <!-- disable by default on unsupported platforms -->
@@ -25,7 +25,7 @@
     <FirefoxBinaryName>firefox</FirefoxBinaryName>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'linux'">
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('linux'))">
     <ChromeDirName>chrome-linux</ChromeDirName>
     <ChromeDriverDirName>chromedriver_linux64</ChromeDriverDirName>
     <ChromeBinaryName>chrome</ChromeBinaryName>
@@ -40,7 +40,7 @@
     <ChromeDriverUrl>$(linux_ChromeBaseSnapshotUrl)/chromedriver_linux64.zip</ChromeDriverUrl>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'win'">
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
     <ChromeDirName>chrome-win</ChromeDirName>
     <ChromeDriverDirName>chromedriver_win32</ChromeDriverDirName>
     <ChromeBinaryName>chrome.exe</ChromeBinaryName>

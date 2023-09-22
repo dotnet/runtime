@@ -93,6 +93,14 @@ namespace System.Numerics.Tensors
         public static void Negate(ReadOnlySpan<float> x, Span<float> destination) =>
             InvokeSpanIntoSpan<NegateOperator>(x, destination);
 
+        /// <summary>Computes the element-wise result of: <c>MathF.Abs(<paramref name="x" />)</c>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = MathF.Abs(<paramref name="x" />[i])</c>.</remarks>
+        public static void Abs(ReadOnlySpan<float> x, Span<float> destination) =>
+            InvokeSpanIntoSpan<AbsoluteOperator>(x, destination);
+
         /// <summary>Computes the element-wise result of: <c>(<paramref name="x" /> + <paramref name="y" />) * <paramref name="multiplier" /></c>.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
@@ -197,6 +205,24 @@ namespace System.Numerics.Tensors
             for (int i = 0; i < x.Length; i++)
             {
                 destination[i] = MathF.Log(x[i]);
+            }
+        }
+
+        /// <summary>Computes the element-wise result of: <c>log2(<paramref name="x" />)</c>.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = <see cref="MathF" />.Log2(<paramref name="x" />[i])</c>.</remarks>
+        public static void Log2(ReadOnlySpan<float> x, Span<float> destination)
+        {
+            if (x.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                destination[i] = Log2(x[i]);
             }
         }
 
@@ -318,9 +344,9 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <returns>The L2 norm.</returns>
-        public static float L2Normalize(ReadOnlySpan<float> x) // BLAS1: nrm2
+        public static float Norm(ReadOnlySpan<float> x) // BLAS1: nrm2
         {
-            return MathF.Sqrt(Aggregate<LoadSquared, AddOperator>(0f, x));
+            return MathF.Sqrt(Aggregate<SquaredOperator, AddOperator>(0f, x));
         }
 
         /// <summary>
@@ -345,7 +371,7 @@ namespace System.Numerics.Tensors
 
             for (int i = 0; i < x.Length; i++)
             {
-                expSum += MathF.Pow((float)Math.E, x[i]);
+                expSum += MathF.Exp(x[i]);
             }
 
             for (int i = 0; i < x.Length; i++)
@@ -421,6 +447,31 @@ namespace System.Numerics.Tensors
             return result;
         }
 
+        /// <summary>Computes the element-wise result of: <c>MathF.Max(<paramref name="x" />, <paramref name="y" />)</c>.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = MathF.Max(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
+        public static void Max(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
+        {
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
+            if (x.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                destination[i] = MathF.Max(x[i], y[i]);
+            }
+        }
+
         /// <summary>Computes the minimum element in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <returns>The minimum element in <paramref name="x"/>.</returns>
@@ -462,6 +513,31 @@ namespace System.Numerics.Tensors
             }
 
             return result;
+        }
+
+        /// <summary>Computes the element-wise result of: <c>MathF.Min(<paramref name="x" />, <paramref name="y" />)</c>.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = MathF.Min(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
+        public static void Min(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
+        {
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
+            if (x.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                destination[i] = MathF.Min(x[i], y[i]);
+            }
         }
 
         /// <summary>Computes the maximum magnitude of any element in <paramref name="x"/>.</summary>
@@ -508,7 +584,32 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            return resultMag;
+            return result;
+        }
+
+        /// <summary>Computes the element-wise result of: <c>MathF.MaxMagnitude(<paramref name="x" />, <paramref name="y" />)</c>.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = MathF.MaxMagnitude(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
+        public static void MaxMagnitude(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
+        {
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
+            if (x.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                destination[i] = MaxMagnitude(x[i], y[i]);
+            }
         }
 
         /// <summary>Computes the minimum magnitude of any element in <paramref name="x"/>.</summary>
@@ -522,6 +623,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
+            float result = float.PositiveInfinity;
             float resultMag = float.PositiveInfinity;
 
             for (int i = 0; i < x.Length; i++)
@@ -543,16 +645,43 @@ namespace System.Numerics.Tensors
 
                     if (currentMag < resultMag)
                     {
+                        result = current;
                         resultMag = currentMag;
                     }
                 }
                 else if (IsNegative(current))
                 {
+                    result = current;
                     resultMag = currentMag;
                 }
             }
 
-            return resultMag;
+            return result;
+        }
+
+        /// <summary>Computes the element-wise result of: <c>MathF.MinMagnitude(<paramref name="x" />, <paramref name="y" />)</c>.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>This method effectively does <c><paramref name="destination" />[i] = MathF.MinMagnitude(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
+        public static void MinMagnitude(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
+        {
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
+
+            if (x.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                destination[i] = MinMagnitude(x[i], y[i]);
+            }
         }
 
         /// <summary>Computes the index of the maximum element in <paramref name="x"/>.</summary>
@@ -744,14 +873,14 @@ namespace System.Numerics.Tensors
         /// <param name="x">The tensor, represented as a span.</param>
         /// <returns>The result of adding all elements in <paramref name="x"/>, or zero if <paramref name="x"/> is empty.</returns>
         public static float Sum(ReadOnlySpan<float> x) =>
-            Aggregate<LoadIdentity, AddOperator>(0f, x);
+            Aggregate<IdentityOperator, AddOperator>(0f, x);
 
         /// <summary>Computes the sum of the squares of every element in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <returns>The result of adding every element in <paramref name="x"/> multiplied by itself, or zero if <paramref name="x"/> is empty.</returns>
         /// <remarks>This method effectively does <c><see cref="TensorPrimitives" />.Sum(<see cref="TensorPrimitives" />.Multiply(<paramref name="x" />, <paramref name="x" />))</c>.</remarks>
         public static float SumOfSquares(ReadOnlySpan<float> x) =>
-            Aggregate<LoadSquared, AddOperator>(0f, x);
+            Aggregate<SquaredOperator, AddOperator>(0f, x);
 
         /// <summary>Computes the sum of the absolute values of every element in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -761,7 +890,7 @@ namespace System.Numerics.Tensors
         ///     <para>This method corresponds to the <c>asum</c> method defined by <c>BLAS1</c>.</para>
         /// </remarks>
         public static float SumOfMagnitudes(ReadOnlySpan<float> x) =>
-            Aggregate<LoadAbsolute, AddOperator>(0f, x);
+            Aggregate<AbsoluteOperator, AddOperator>(0f, x);
 
         /// <summary>Computes the product of all elements in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -774,7 +903,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            return Aggregate<LoadIdentity, MultiplyOperator>(1.0f, x);
+            return Aggregate<IdentityOperator, MultiplyOperator>(1.0f, x);
         }
 
         /// <summary>Computes the product of the element-wise result of: <c><paramref name="x" /> + <paramref name="y" /></c>.</summary>
