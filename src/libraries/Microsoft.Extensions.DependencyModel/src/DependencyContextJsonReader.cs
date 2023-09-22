@@ -747,11 +747,11 @@ namespace Microsoft.Extensions.DependencyModel
 
         private IEnumerable<Library> CreateLibrariesNotNull(IEnumerable<TargetLibrary> libraries, bool runtime, Dictionary<string, LibraryStub>? libraryStubs)
         {
-            foreach (var library in libraries)
+            foreach (TargetLibrary library in libraries)
             {
-                Library? property = CreateLibrary(library, runtime, libraryStubs);
-                if (property is not null)
-                    yield return property;
+                Library? createdLibrary = CreateLibrary(library, runtime, libraryStubs);
+                if (createdLibrary is not null)
+                    yield return createdLibrary;
             }
         }
 
