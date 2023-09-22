@@ -1,11 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSLIB0005: The GAC is obsolete, but there are unit tests still referencing it.
          SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
     <NoWarn>$(NoWarn);SYSLIB0005;SYSLIB0037</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
@@ -70,10 +72,12 @@
     <Compile Include="src\TestUtils\TestUtils.JittedRuntimes.cs" />
     <Compile Include="src\TestUtils\TypeWrapper.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(CommonPath)..\tests\System\TestILAssembly\TestILAssembly.ilproj" />
     <Compile Include="src\TestUtils\FunctionPointerTestsExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\FunctionPointerTests.cs" Link="Common\System\FunctionPointerTests.cs" />
@@ -81,6 +85,7 @@
     <Compile Include="$(CommonTestPath)System\FunctionPointerEqualityTests.cs" Link="Common\System\FunctionPointerEqualityTests.cs" />
     <Compile Include="$(CommonTestPath)System\ModifiedTypeTests.cs" Link="Common\System\ModifiedTypeTests.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="System.Private.CoreLib.dll" />
     <WasmFilesToIncludeFromPublishDir Include="System.Reflection.MetadataLoadContext.Tests.dll" />
@@ -88,4 +93,5 @@
 
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
+
 </Project>

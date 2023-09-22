@@ -72,11 +72,11 @@ namespace System.Net.Http.Functional.Tests
 
         protected static void VerifyRequestDuration(Measurement<double> measurement,
             Uri uri,
-            Version? protocolVersion,
-            int? statusCode,
+            Version? protocolVersion = null,
+            int? statusCode = null,
             string method = "GET",
-            string[] acceptedErrorReasons = null) =>
-            VerifyRequestDuration(InstrumentNames.RequestDuration, measurement.Value, measurement.Tags.ToArray(), uri, protocolVersion, statusCode, method, acceptedErrorReasons);
+            string[] acceptedErrorTypes = null) =>
+            VerifyRequestDuration(InstrumentNames.RequestDuration, measurement.Value, measurement.Tags.ToArray(), uri, protocolVersion, statusCode, method, acceptedErrorTypes);
 
         protected static void VerifyRequestDuration(string instrumentName,
             double measurement,
@@ -85,7 +85,7 @@ namespace System.Net.Http.Functional.Tests
             Version? protocolVersion,
             int? statusCode,
             string method = "GET",
-            string[] acceptedErrorReasons = null)
+            string[] acceptedErrorTypes = null)
         {
             Assert.Equal(InstrumentNames.RequestDuration, instrumentName);
             Assert.InRange(measurement, double.Epsilon, 60);
@@ -93,14 +93,14 @@ namespace System.Net.Http.Functional.Tests
             VerifyTag(tags, "http.request.method", method);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifyTag(tags, "http.response.status_code", statusCode);
-            if (acceptedErrorReasons == null)
+            if (acceptedErrorTypes == null)
             {
-                Assert.DoesNotContain(tags, t => t.Key == "http.error.reason");
+                Assert.DoesNotContain(tags, t => t.Key == "error.type");
             }
             else
             {
-                string errorReason = (string)tags.Single(t => t.Key == "http.error.reason").Value;
-                Assert.Contains(errorReason, acceptedErrorReasons);
+                string errorReason = (string)tags.Single(t => t.Key == "error.type").Value;
+                Assert.Contains(errorReason, acceptedErrorTypes);
             }
         }
 
@@ -292,17 +292,8 @@ namespace System.Net.Http.Functional.Tests
                 GetUnderlyingSocketsHttpHandler(Handler).ConnectCallback = async (ctx, cancellationToken) =>
                 {
                     connectionStarted.SetResult();
-                    Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-                    try
-                    {
-                        await socket.ConnectAsync(ctx.DnsEndPoint, cancellationToken);
-                        return new NetworkStream(socket, ownsSocket: true);
-                    }
-                    catch
-                    {
-                        socket.Dispose();
-                        throw;
-                    }
+
+                    return await DefaultConnectCallback(ctx.DnsEndPoint, cancellationToken);
                 };
 
                 // Enable recording request-duration to test the path with metrics enabled.
@@ -334,7 +325,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using HttpResponseMessage response = await SendAsync(client, request);
 
-                Measurement<double> m = recorder.GetMeasurements().Single();
+                Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                 VerifyRequestDuration(m, uri, UseVersion, (int)statusCode, method);
 
             }, async server =>
@@ -359,7 +350,7 @@ namespace System.Net.Http.Functional.Tests
                 
                 using HttpResponseMessage response = await SendAsync(client, request);
 
-                Measurement<double> m = recorder.GetMeasurements().Single();
+                Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                 VerifyRequestDuration(m, uri, UseVersion, 200);
                 Assert.Equal("/test", m.Tags.ToArray().Single(t => t.Key == "route").Value);
 
@@ -412,7 +403,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using HttpResponseMessage response = await SendAsync(client, request);
 
-                Measurement<double> m = recorder.GetMeasurements().Single();
+                Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                 VerifyRequestDuration(m, uri, UseVersion, 200);
                 Assert.Equal("/test", m.Tags.ToArray().Single(t => t.Key == "route").Value);
                 Assert.Equal("observed!", m.Tags.ToArray().Single(t => t.Key == "observed?").Value);
@@ -465,7 +456,7 @@ namespace System.Net.Http.Functional.Tests
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
                 using HttpResponseMessage response = await client.SendAsync(TestAsync, request, completionOption);
 
-                Measurement<double> m = recorder.GetMeasurements().Single();
+                Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                 VerifyRequestDuration(m, uri, UseVersion, 200); ;
                 Assert.Equal("before!", m.Tags.ToArray().Single(t => t.Key == "before").Value);
             }, async server =>
@@ -642,6 +633,79 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [Fact]
+        public async Task RequestDuration_RequestCancelled_ErrorReasonIsExceptionType()
+        {
+            TaskCompletionSource clientCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource requestReceived = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                using CancellationTokenSource requestCts = new();
+
+                Task clientTask = SendAsync(client, request, requestCts.Token);
+
+                await requestReceived.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                requestCts.Cancel();
+
+                Exception clientException = await Assert.ThrowsAnyAsync<Exception>(() => clientTask);
+                _output.WriteLine($"Client exception: {clientException}");
+
+                string[] expectedExceptionTypes = TestAsync
+                    ? [nameof(TaskCanceledException)]
+                    : [nameof(TaskCanceledException), nameof(OperationCanceledException)];
+
+                Measurement<double> m = Assert.Single(recorder.GetMeasurements());
+                VerifyRequestDuration(m, uri, acceptedErrorTypes: expectedExceptionTypes);
+
+                clientCompleted.SetResult();
+            },
+            async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestDataAsync();
+                        requestReceived.SetResult();
+                        await clientCompleted.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"Ignored exception: {ex}");
+                }
+            });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task RequestDuration_ConnectionError_LogsExpectedErrorReason()
+        {
+            if (UseVersion.Major == 3)
+            {
+                // HTTP/3 doesn't use the ConnectCallback that this test is relying on.
+                return;
+            }
+
+            Uri uri = new("https://dummy:8080");
+
+            using HttpMessageInvoker client = CreateHttpMessageInvoker();
+            using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+            using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+            using CancellationTokenSource requestCts = new();
+
+            GetUnderlyingSocketsHttpHandler(Handler).ConnectCallback = (_, _) => throw new Exception();
+
+            Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => SendAsync(client, request));
+            _output.WriteLine($"Client exception: {ex}");
+
+            Measurement<double> m = Assert.Single(recorder.GetMeasurements());
+            VerifyRequestDuration(m, uri, acceptedErrorTypes: ["connection_error"]);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -720,13 +784,36 @@ namespace System.Net.Http.Functional.Tests
                     });
                 }
                 
-                Measurement<double> m = recorder.GetMeasurements().Single();
+                Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                 VerifyRequestDuration(m, uri, UseVersion, 200);
                 Assert.Equal("before!", m.Tags.ToArray().Single(t => t.Key == "before").Value);
 
             }, server => server.HandleRequestAsync(headers: new[] {
                 new HttpHeaderData("Content-Length", "1000")
             }, content: "x"));
+        }
+
+        [Theory]
+        [InlineData(400)]
+        [InlineData(404)]
+        [InlineData(599)]
+        public Task RequestDuration_ErrorStatus_ErrorTypeRecorded(int statusCode)
+        {
+            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+
+                using HttpResponseMessage response = await SendAsync(client, request);
+
+                Measurement<double> m = Assert.Single(recorder.GetMeasurements());
+                VerifyRequestDuration(m, uri, UseVersion, statusCode, "GET", acceptedErrorTypes: new[] { $"{statusCode}" });
+
+            }, async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: (HttpStatusCode)statusCode);
+            });
         }
 
         [Fact]
@@ -749,16 +836,19 @@ namespace System.Net.Http.Functional.Tests
                 cancelServerCts.Cancel();
                 Assert.True(ex is HttpRequestException or TaskCanceledException);
 
-                Measurement<double> m = recorder.GetMeasurements().Single();
-                VerifyRequestDuration(m, uri, null, null, acceptedErrorReasons: new[] { "_OTHER", "cancellation", "response_ended" });
+                Measurement<double> m = Assert.Single(recorder.GetMeasurements());
+                VerifyRequestDuration(m, uri, acceptedErrorTypes: [nameof(TaskCanceledException), "response_ended"]);
             }, async server =>
             {
                 try
                 {
                     var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(cancelServerCts.Token);
-                    connection.Socket.Close();
+                    connection.Socket.Shutdown(SocketShutdown.Send);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"Ignored exception: {ex}");
+                }
             });
         }
     }
@@ -801,14 +891,14 @@ namespace System.Net.Http.Functional.Tests
                 if (malformedResponse)
                 {
                     await Assert.ThrowsAsync<HttpRequestException>(() => clientTask);
-                    Measurement<double> m = recorder.GetMeasurements().Single();
-                    VerifyRequestDuration(m, server.Address, null, null, acceptedErrorReasons: new[] { "response_ended" });
+                    Measurement<double> m = Assert.Single(recorder.GetMeasurements());
+                    VerifyRequestDuration(m, server.Address, acceptedErrorTypes: ["response_ended"]);
                 }
                 else
                 {
                     using HttpResponseMessage response = await clientTask;
 
-                    Measurement<double> m = recorder.GetMeasurements().Single();
+                    Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                     VerifyRequestDuration(m, server.Address, HttpVersion.Version11, 200);
                 }
 
@@ -899,8 +989,8 @@ namespace System.Net.Http.Functional.Tests
                 using HttpResponseMessage response = await sendTask;
             });
 
-            Measurement<double> m = recorder.GetMeasurements().Single();
-            VerifyRequestDuration(m, server.Address, null, null, acceptedErrorReasons: new[] { "http_protocol_error" });
+            Measurement<double> m = Assert.Single(recorder.GetMeasurements());
+            VerifyRequestDuration(m, server.Address, acceptedErrorTypes: ["http_protocol_error"]);
         }
     }
 
@@ -1029,7 +1119,7 @@ namespace System.Net.Http.Functional.Tests
                     using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = test.UseVersion };
 
                     using HttpResponseMessage response = await client.SendAsync(request);
-                    Measurement<double> m = recorder.GetMeasurements().Single();
+                    Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                     VerifyRequestDuration(m, uri, HttpVersion.Version11, (int)HttpStatusCode.OK, "GET");
                 }, async server =>
                 {

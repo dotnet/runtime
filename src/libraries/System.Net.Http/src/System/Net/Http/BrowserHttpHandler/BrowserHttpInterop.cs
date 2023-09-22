@@ -11,6 +11,9 @@ namespace System.Net.Http
 {
     internal static partial class BrowserHttpInterop
     {
+        [JSImport("INTERNAL.http_wasm_supports_streaming_request")]
+        public static partial bool SupportsStreamingRequest();
+
         [JSImport("INTERNAL.http_wasm_supports_streaming_response")]
         public static partial bool SupportsStreamingResponse();
 
@@ -24,6 +27,23 @@ namespace System.Net.Http
         [JSImport("INTERNAL.http_wasm_abort_response")]
         public static partial void AbortResponse(
             JSObject fetchResponse);
+
+        [JSImport("INTERNAL.http_wasm_create_transform_stream")]
+        public static partial JSObject CreateTransformStream();
+
+        [JSImport("INTERNAL.http_wasm_transform_stream_write")]
+        public static partial Task TransformStreamWrite(
+            JSObject transformStream,
+            IntPtr bufferPtr,
+            int bufferLength);
+
+        [JSImport("INTERNAL.http_wasm_transform_stream_close")]
+        public static partial Task TransformStreamClose(
+            JSObject transformStream);
+
+        [JSImport("INTERNAL.http_wasm_transform_stream_abort")]
+        public static partial void TransformStreamAbort(
+            JSObject transformStream);
 
         [JSImport("INTERNAL.http_wasm_get_response_header_names")]
         private static partial string[] _GetResponseHeaderNames(
@@ -55,8 +75,17 @@ namespace System.Net.Http
             string[] headerValues,
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
+            JSObject abortControler);
+
+        [JSImport("INTERNAL.http_wasm_fetch_stream")]
+        public static partial Task<JSObject> Fetch(
+            string uri,
+            string[] headerNames,
+            string[] headerValues,
+            string[] optionNames,
+            [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
             JSObject abortControler,
-            string? body = null);
+            JSObject transformStream);
 
         [JSImport("INTERNAL.http_wasm_fetch_bytes")]
         private static partial Task<JSObject> FetchBytes(
@@ -67,8 +96,7 @@ namespace System.Net.Http
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
             JSObject abortControler,
             IntPtr bodyPtr,
-            int bodyLength
-            );
+            int bodyLength);
 
         public static unsafe Task<JSObject> Fetch(string uri, string[] headerNames, string[] headerValues, string[] optionNames, object?[] optionValues, JSObject abortControler, byte[] body)
         {
@@ -94,30 +122,27 @@ namespace System.Net.Http
             [JSMarshalAs<JSType.MemoryView>] Span<byte> buffer);
 
 
-        public static async ValueTask<T> CancelationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject? abortController, JSObject? fetchResponse)
+        public static async ValueTask CancelationHelper(Task promise, CancellationToken cancellationToken, JSObject? fetchResponse = null)
         {
             if (promise.IsCompletedSuccessfully)
             {
-                return promise.Result;
+                return;
             }
             try
             {
-                using (var operationRegistration = cancellationToken.Register(() =>
+                using (var operationRegistration = cancellationToken.Register(static s =>
                 {
-                    CancelablePromise.CancelPromise(promise, static (JSObject? _fetchResponse, JSObject? _abortController) =>
+                    (Task _promise, JSObject? _fetchResponse) = ((Task, JSObject?))s!;
+                    CancelablePromise.CancelPromise(_promise, static (JSObject? __fetchResponse) =>
                     {
-                        if (_abortController != null)
+                        if (__fetchResponse != null)
                         {
-                            AbortRequest(_abortController);
+                            AbortResponse(__fetchResponse);
                         }
-                        if (_fetchResponse != null)
-                        {
-                            AbortResponse(_fetchResponse);
-                        }
-                    }, fetchResponse, abortController);
-                }))
+                    }, _fetchResponse);
+                }, (promise, fetchResponse)))
                 {
-                    return await promise.ConfigureAwait(true);
+                    await promise.ConfigureAwait(true);
                 }
             }
             catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
@@ -136,6 +161,16 @@ namespace System.Net.Http
                 }
                 throw new HttpRequestException(jse.Message, jse);
             }
+        }
+
+        public static async ValueTask<T> CancelationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject? fetchResponse = null)
+        {
+            if (promise.IsCompletedSuccessfully)
+            {
+                return promise.Result;
+            }
+            await CancelationHelper((Task)promise, cancellationToken, fetchResponse).ConfigureAwait(true);
+            return await promise.ConfigureAwait(true);
         }
     }
 

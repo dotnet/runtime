@@ -27,6 +27,15 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public bool WasmIncludeFullIcuData { get; set; }
     public string? WasmIcuDataFileName { get; set; }
     public string? RuntimeAssetsLocation { get; set; }
+    public bool CacheBootResources { get; set; }
+
+    private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        WriteIndented = true
+    };
+
 
     // <summary>
     // Extra json elements to add to _framework/blazor.boot.json
@@ -101,6 +110,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             mainAssemblyName = MainAssemblyName,
             globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant()
         };
+
+        if (CacheBootResources)
+            bootConfig.cacheBootResources = CacheBootResources;
 
         // Create app
         var runtimeAssetsPath = !string.IsNullOrEmpty(RuntimeAssetsLocation)
@@ -364,13 +376,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             helper.ComputeResourcesHash(bootConfig);
 
-            var jsonOptions = new JsonSerializerOptions
-            {
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-                WriteIndented = true
-            };
-            var json = JsonSerializer.Serialize(bootConfig, jsonOptions);
+            var json = JsonSerializer.Serialize(bootConfig, s_jsonOptions);
             sw.Write(json);
         }
 

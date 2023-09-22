@@ -5,8 +5,9 @@ using Xunit;
 public class Program
 {
     public static ulong[,] s_1;
+
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         // This should not assert.
         try
@@ -15,7 +16,5 @@ public class Program
             bool vr11 = 0 < ((s_1[0, 0] * (uint)(0 / vr10)) % 1);
         }
         catch {}
-
-        return 100;
     }
 }

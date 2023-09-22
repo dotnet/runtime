@@ -27,8 +27,7 @@ public class _74773 {
     }
 
     [Fact]
-    public static int TestEntryPoint() {
+    public static void TestEntryPoint() {
         new _74773().Method3();
-        return 100;
     }
 }

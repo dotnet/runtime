@@ -1421,7 +1421,7 @@ PhaseStatus LinearScan::doLinearScan()
 #endif
         )
     {
-        dumpLsraStats(jitstdout);
+        dumpLsraStats(jitstdout());
     }
 #endif // TRACK_LSRA_STATS
 
@@ -2400,8 +2400,9 @@ void LinearScan::checkLastUses(BasicBlock* block)
     // We may have exception vars in the liveIn set of exception blocks that are not computed live.
     if (block->HasPotentialEHSuccs(compiler))
     {
-        VARSET_TP ehHandlerLiveVars(VarSetOps::MakeEmpty(compiler));
-        compiler->fgAddHandlerLiveVars(block, ehHandlerLiveVars);
+        VARSET_TP     ehHandlerLiveVars(VarSetOps::MakeEmpty(compiler));
+        MemoryKindSet memoryLiveness = emptyMemoryKindSet;
+        compiler->fgAddHandlerLiveVars(block, ehHandlerLiveVars, memoryLiveness);
         VarSetOps::DiffD(compiler, liveInNotComputedLive, ehHandlerLiveVars);
     }
     VarSetOps::Iter liveInNotComputedLiveIter(compiler, liveInNotComputedLive);
@@ -4871,6 +4872,7 @@ void LinearScan::allocateRegisters()
 
         if (spillAlways() && lastAllocatedRefPosition != nullptr && !lastAllocatedRefPosition->IsPhysRegRef() &&
             !lastAllocatedRefPosition->getInterval()->isInternal &&
+            (!lastAllocatedRefPosition->RegOptional() || (lastAllocatedRefPosition->registerAssignment != RBM_NONE)) &&
             (RefTypeIsDef(lastAllocatedRefPosition->refType) || lastAllocatedRefPosition->getInterval()->isLocalVar))
         {
             assert(lastAllocatedRefPosition->registerAssignment != RBM_NONE);
@@ -5015,7 +5017,7 @@ void LinearScan::allocateRegisters()
                     {
                         // Available registers should not hold constants
                         assert(isRegAvailable(reg, physRegRecord->registerType));
-                        assert(!isRegConstant(reg, physRegRecord->registerType));
+                        assert(!isRegConstant(reg, physRegRecord->registerType) || spillAlways());
                         assert(nextIntervalRef[reg] == MaxLocation);
                         assert(spillCost[reg] == 0);
                     }
@@ -7301,6 +7303,7 @@ void           LinearScan::resolveRegisters()
                     assert(!currentRefPosition->getInterval()->isLocalVar);
                     assert(currentRefPosition->getInterval()->firstRefPosition->spillAfter);
                 }
+
                 continue;
             }
             else if (currentRefPosition->refType == RefTypeUpperVectorRestore)
@@ -7321,6 +7324,8 @@ void           LinearScan::resolveRegisters()
                     }
                 }
                 localVarInterval->isPartiallySpilled = false;
+
+                continue;
             }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 

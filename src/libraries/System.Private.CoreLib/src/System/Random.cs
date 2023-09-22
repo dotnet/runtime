@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -194,6 +197,38 @@ namespace System
                 throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
             }
 
+            // The most expensive part of this operation is the call to get random data. We can
+            // do so potentially many fewer times if:
+            // - the number of choices is <= 256. This let's us get a single byte per choice.
+            // - the number of choices is a power of two. This let's us use a byte and simply mask off
+            //   unnecessary bits cheaply rather than needing to use rejection sampling.
+            // In such a case, we can grab a bunch of random bytes in one call.
+            if (BitOperations.IsPow2(choices.Length) && choices.Length <= 256)
+            {
+                Span<byte> randomBytes = stackalloc byte[512]; // arbitrary size, a balance between stack consumed and number of random calls required
+                while (!destination.IsEmpty)
+                {
+                    if (destination.Length < randomBytes.Length)
+                    {
+                        randomBytes = randomBytes.Slice(0, destination.Length);
+                    }
+
+                    NextBytes(randomBytes);
+
+                    int mask = choices.Length - 1;
+                    for (int i = 0; i < randomBytes.Length; i++)
+                    {
+                        destination[i] = choices[randomBytes[i] & mask];
+                    }
+
+                    destination = destination.Slice(randomBytes.Length);
+                }
+
+                return;
+            }
+
+            // Simple fallback: get each item individually, generating a new random Int32 for each
+            // item. This is slower than the above, but it works for all types and sizes of choices.
             for (int i = 0; i < destination.Length; i++)
             {
                 destination[i] = choices[Next(choices.Length)];

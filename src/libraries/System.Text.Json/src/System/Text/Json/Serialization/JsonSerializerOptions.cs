@@ -662,6 +662,7 @@ namespace System.Text.Json
         /// <summary>
         /// Returns true if options uses compatible built-in resolvers or a combination of compatible built-in resolvers.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal bool CanUseFastPathSerializationLogic
         {
             get
@@ -955,6 +956,7 @@ namespace System.Text.Json
             return Interlocked.CompareExchange(ref s_defaultOptions, options, null) ?? options;
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"TypeInfoResolver = {(TypeInfoResolver?.ToString() ?? "<null>")}, IsReadOnly = {IsReadOnly}";
     }
 }

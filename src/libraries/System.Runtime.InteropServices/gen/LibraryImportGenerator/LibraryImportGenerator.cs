@@ -113,11 +113,11 @@ namespace Microsoft.Interop
 
             if (suppressGCTransitionAttribute is not null)
             {
-                attributes.Add(Attribute(ParseName(TypeNames.SuppressGCTransitionAttribute)));
+                attributes.Add(Attribute(NameSyntaxes.SuppressGCTransitionAttribute));
             }
             if (unmanagedCallConvAttribute is not null)
             {
-                AttributeSyntax unmanagedCallConvSyntax = Attribute(ParseName(TypeNames.UnmanagedCallConvAttribute));
+                AttributeSyntax unmanagedCallConvSyntax = Attribute(NameSyntaxes.UnmanagedCallConvAttribute);
                 foreach (KeyValuePair<string, TypedConstant> arg in unmanagedCallConvAttribute.NamedArguments)
                 {
                     if (arg.Key == CallConvsField)
@@ -129,7 +129,7 @@ namespace Microsoft.Interop
                                 TypeOfExpression(((ITypeSymbol)callConv.Value!).AsTypeSyntax()));
                         }
 
-                        ArrayTypeSyntax arrayOfSystemType = ArrayType(ParseTypeName(TypeNames.System_Type), SingletonList(ArrayRankSpecifier()));
+                        ArrayTypeSyntax arrayOfSystemType = ArrayType(TypeSyntaxes.System_Type, SingletonList(ArrayRankSpecifier()));
 
                         unmanagedCallConvSyntax = unmanagedCallConvSyntax.AddArgumentListArguments(
                             AttributeArgument(
@@ -143,9 +143,9 @@ namespace Microsoft.Interop
             if (defaultDllImportSearchPathsAttribute is not null)
             {
                 attributes.Add(
-                    Attribute(ParseName(TypeNames.DefaultDllImportSearchPathsAttribute)).AddArgumentListArguments(
+                    Attribute(NameSyntaxes.DefaultDllImportSearchPathsAttribute).AddArgumentListArguments(
                         AttributeArgument(
-                            CastExpression(ParseTypeName(TypeNames.DllImportSearchPath),
+                            CastExpression(TypeSyntaxes.DllImportSearchPath,
                                 LiteralExpression(SyntaxKind.NumericLiteralExpression,
                                     Literal((int)defaultDllImportSearchPathsAttribute.ConstructorArguments[0].Value!))))));
             }
@@ -313,6 +313,20 @@ namespace Microsoft.Interop
                 return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, explicitForwarding: true, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
             }
 
+            bool supportsTargetFramework = !pinvokeStub.LibraryImportData.SetLastError
+                || options.GenerateForwarders
+                || (pinvokeStub.GeneratorFactoryKey.Key.TargetFramework == TargetFramework.Net
+                    && pinvokeStub.GeneratorFactoryKey.Key.Version.Major >= 6);
+
+            foreach (TypePositionInfo typeInfo in pinvokeStub.SignatureContext.ElementTypeInformation)
+            {
+                if (typeInfo.MarshallingAttributeInfo is MissingSupportMarshallingInfo)
+                {
+                    supportsTargetFramework = false;
+                    break;
+                }
+            }
+
             // Generate stub code
             var stubGenerator = new PInvokeStubCodeGenerator(
                 pinvokeStub.GeneratorFactoryKey.Key.TargetFramework,
@@ -325,9 +339,9 @@ namespace Microsoft.Interop
             // Check if the generator should produce a forwarder stub - regular DllImport.
             // This is done if the signature is blittable or the target framework is not supported.
             if (stubGenerator.StubIsBasicForwarder
-                || !stubGenerator.SupportsTargetFramework)
+                || !supportsTargetFramework)
             {
-                return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, !stubGenerator.SupportsTargetFramework, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+                return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, !supportsTargetFramework, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
             }
 
             ImmutableArray<AttributeSyntax> forwardedAttributes = pinvokeStub.ForwardedAttributes.Array;
@@ -424,26 +438,26 @@ namespace Microsoft.Interop
                     SingletonList(AttributeList(
                         SingletonSeparatedList(
                                 Attribute(
-                                ParseName(typeof(DllImportAttribute).FullName),
-                                AttributeArgumentList(
-                                    SeparatedList(
-                                        new[]
-                                        {
-                                            AttributeArgument(LiteralExpression(
-                                                    SyntaxKind.StringLiteralExpression,
-                                                    Literal(libraryImportData.ModuleName))),
-                                            AttributeArgument(
-                                                NameEquals(nameof(DllImportAttribute.EntryPoint)),
-                                                null,
-                                                LiteralExpression(
-                                                    SyntaxKind.StringLiteralExpression,
-                                                    Literal(libraryImportData.EntryPoint ?? stubMethodName))),
-                                            AttributeArgument(
-                                                NameEquals(nameof(DllImportAttribute.ExactSpelling)),
-                                                null,
-                                                LiteralExpression(SyntaxKind.TrueLiteralExpression))
-                                        }
-                                        )))))))
+                                    NameSyntaxes.DllImportAttribute,
+                                    AttributeArgumentList(
+                                        SeparatedList(
+                                            new[]
+                                            {
+                                                AttributeArgument(LiteralExpression(
+                                                        SyntaxKind.StringLiteralExpression,
+                                                        Literal(libraryImportData.ModuleName))),
+                                                AttributeArgument(
+                                                    NameEquals(nameof(DllImportAttribute.EntryPoint)),
+                                                    null,
+                                                    LiteralExpression(
+                                                        SyntaxKind.StringLiteralExpression,
+                                                        Literal(libraryImportData.EntryPoint ?? stubMethodName))),
+                                                AttributeArgument(
+                                                    NameEquals(nameof(DllImportAttribute.ExactSpelling)),
+                                                    null,
+                                                    LiteralExpression(SyntaxKind.TrueLiteralExpression))
+                                            }
+                                            )))))))
                 .WithParameterList(parameterList);
             if (returnTypeAttributes is not null)
             {
@@ -486,7 +500,7 @@ namespace Microsoft.Interop
 
             // Create new attribute
             return Attribute(
-                ParseName(typeof(DllImportAttribute).FullName),
+                NameSyntaxes.DllImportAttribute,
                 AttributeArgumentList(SeparatedList(newAttributeArgs)));
 
             static ExpressionSyntax CreateBoolExpressionSyntax(bool trueOrFalse)

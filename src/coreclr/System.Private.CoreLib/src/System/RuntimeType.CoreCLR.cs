@@ -2290,7 +2290,7 @@ namespace System
             // Check if argumentTypes supplied
             if (argumentTypes != null)
             {
-                ParameterInfo[] parameterInfos = methodBase.GetParametersNoCopy();
+                ReadOnlySpan<ParameterInfo> parameterInfos = methodBase.GetParametersAsSpan();
 
                 if (argumentTypes.Length != parameterInfos.Length)
                 {
@@ -2848,8 +2848,7 @@ namespace System
             {
                 ConstructorInfo firstCandidate = candidates[0];
 
-                ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
-                if (parameters == null || parameters.Length == 0)
+                if (firstCandidate.GetParametersAsSpan().IsEmpty)
                 {
                     return firstCandidate;
                 }
@@ -3817,7 +3816,7 @@ namespace System
                     throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
                 }
 
-                if (invokeMethod.GetParametersNoCopy().Length == 0)
+                if (invokeMethod.GetParametersAsSpan().Length == 0)
                 {
                     if (args.Length != 0)
                     {

@@ -21,9 +21,6 @@ namespace Microsoft.Interop
             _getPinnableReferenceType = getPinnableReferenceType;
         }
 
-        public bool IsSupported(TargetFramework target, Version version)
-            => _innerMarshallingGenerator.IsSupported(target, version);
-
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
             if (IsPinningPathSupported(info, context))
@@ -105,7 +102,7 @@ namespace Microsoft.Interop
 
         public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
         {
-            return ByValueMarshalKindSupportDescriptor.PinnedParameter.GetSupport(marshalKind, info, context, out diagnostic);
+            return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, info, context, out diagnostic);
         }
     }
 }

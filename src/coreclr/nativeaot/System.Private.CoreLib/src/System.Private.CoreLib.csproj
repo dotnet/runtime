@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
+    <NoWarn>$(NoWarn);AD0001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -109,7 +111,6 @@
     <Compile Include="Internal\Runtime\MethodTable.Runtime.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\FixupRuntimeTypeHandle.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\GenericMethodDescriptor.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeFieldHandleInfo.cs" />
@@ -199,6 +200,7 @@
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
+    <Compile Include="System\Runtime\ThunkPool.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
@@ -210,6 +212,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\TrackerObjectManager.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />    
     <Compile Include="System\Runtime\InteropServices\ObjectiveCMarshal.NativeAot.cs" Condition="'$(FeatureObjCMarshal)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\Intrinsics\X86\X86Base.NativeAot.cs" Condition="'$(SupportsX86Intrinsics)' == 'true'" />
@@ -273,6 +276,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetApartmentType.cs">
       <Link>Interop\Windows\Ole32\Interop.CoGetApartmentType.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetContextToken.cs">
+      <Link>Interop\Windows\Ole32\Interop.CoGetContextToken.cs</Link>
+    </Compile>    
     <Compile Include="$(CommonPath)\Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
@@ -340,6 +346,9 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\CanonTypeKind.cs">
       <Link>Internal\Runtime\CanonTypeKind.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\System\Runtime\RhFailFastReason.cs">
+      <Link>System\Runtime\RhFailFastReason.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\Internal\Runtime\MethodTable.cs">
       <Link>Internal\Runtime\MethodTable.cs</Link>
@@ -531,9 +540,6 @@
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\StackFrameIterator.cs">
       <Link>Runtime.Base\src\System\Runtime\StackFrameIterator.cs</Link>
-    </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\ThunkPool.cs">
-      <Link>Runtime.Base\src\System\Runtime\ThunkPool.cs</Link>
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\TypeCast.cs">
       <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>

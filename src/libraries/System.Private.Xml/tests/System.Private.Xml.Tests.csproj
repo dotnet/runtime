@@ -2,9 +2,6 @@
   <PropertyGroup>
     <RootNamespace>System.Xml.Tests</RootNamespace>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    
-    <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
-    <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
 
   <ItemGroup>

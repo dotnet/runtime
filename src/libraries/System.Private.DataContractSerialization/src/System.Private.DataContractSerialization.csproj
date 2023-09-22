@@ -145,6 +145,7 @@
     <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReference.cs" />
     <Compile Include="$(CommonPath)System\CodeDom\CodeTypeReferenceCollection.cs" />
     <Compile Include="$(CommonPath)System\CodeDom\CodeObject.cs" />
+    <Compile Include="System\Runtime\Serialization\ContextAware.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -163,6 +164,7 @@
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Intrinsics" />
+    <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Runtime.Serialization.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />

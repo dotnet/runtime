@@ -42,7 +42,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitexpandarray.h"
 #include "tinyarray.h"
 #include "valuenum.h"
-#include "jittelemetry.h"
 #include "namedintrinsiclist.h"
 #ifdef LATE_DISASM
 #include "disasm.h"
@@ -558,7 +557,6 @@ public:
     unsigned char lvIsSplit : 1;   // Set if the argument is splited.
 #endif                             // defined(TARGET_RISCV64)
 
-    unsigned char lvIsBoolean : 1; // set if variable is boolean
     unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
                                    // updates
 
@@ -4908,7 +4906,7 @@ public:
     void fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic);
 #endif // FEATURE_HW_INTRINSICS
 
-    void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars);
+    void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
 
     void fgLiveVarAnalysis(bool updateInternalOnly = false);
 
@@ -5489,6 +5487,8 @@ public:
 
     bool fgCreateLoopPreHeader(unsigned lnum);
 
+    void fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top);
+
     void fgUnreachableBlock(BasicBlock* block);
 
     void fgRemoveConditionalJump(BasicBlock* block);
@@ -5519,7 +5519,11 @@ public:
 
     void fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk);
 
-    PhaseStatus fgTailMerge();
+    PhaseStatus fgHeadTailMerge(bool early);
+    bool fgHeadMerge(BasicBlock* block, bool early);
+    bool fgTryOneHeadMerge(BasicBlock* block, bool early);
+    bool gtTreeContainsTailCall(GenTree* tree);
+    bool fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt, BasicBlock* pred);
 
     enum FG_RELOCATE_TYPE
     {
@@ -6128,6 +6132,11 @@ private:
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
+    bool IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo);
+    bool ContextComplexityExceeds(CORINFO_CONTEXT_HANDLE handle, int max);
+    bool MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE handle, int& cur, int max);
+    bool TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, int& cur, int max);
+
     void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
     void fgInsertInlineeBlocks(InlineInfo* pInlineInfo);
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
@@ -6316,8 +6325,10 @@ private:
 
 public:
     PhaseStatus optOptimizeBools();
+    PhaseStatus optSwitchRecognition();
+    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, GenTree* nodeToTest);
+    bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
 
-public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
@@ -10340,7 +10351,7 @@ public:
                   InlineInfo*           inlineInfo);
     void compDone();
 
-    static void compDisplayStaticSizes(FILE* fout);
+    static void compDisplayStaticSizes();
 
     //------------ Some utility functions --------------
 
@@ -10792,22 +10803,8 @@ public:
     void RecordNowayAssert(const char* filename, unsigned line, const char* condStr);
 #endif // MEASURE_NOWAY
 
-#ifndef FEATURE_TRACELOGGING
     // Should we actually fire the noway assert body and the exception handler?
     bool compShouldThrowOnNoway();
-#else  // FEATURE_TRACELOGGING
-    // Should we actually fire the noway assert body and the exception handler?
-    bool compShouldThrowOnNoway(const char* filename, unsigned line);
-
-    // Telemetry instance to use per method compilation.
-    JitTelemetry compJitTelemetry;
-
-    // Get common parameters that have to be logged with most telemetry data.
-    void compGetTelemetryDefaults(const char** assemblyName,
-                                  const char** scopeName,
-                                  const char** methodName,
-                                  unsigned*    methodHash);
-#endif // !FEATURE_TRACELOGGING
 
 #ifdef DEBUG
 private:

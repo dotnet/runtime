@@ -190,7 +190,7 @@ namespace System.Reflection
                 sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this));
 
             sbName.Append('(');
-            RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
+            RuntimeParameterInfo.FormatParameters(sbName, GetParametersAsSpan(), CallingConvention);
             sbName.Append(')');
 
             return sbName.ToString();
@@ -808,7 +808,7 @@ namespace System.Reflection
          * to match the types of the method signature.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object InternalInvoke(object? obj, IntPtr *args, out Exception exc);
+        internal extern object InternalInvoke(object? obj, IntPtr *args, out Exception? exc);
 
         public override RuntimeMethodHandle MethodHandle
         {

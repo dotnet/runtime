@@ -335,29 +335,35 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(hasImmediateOperand);
 
+            auto emitShift = [&](GenTree* op, regNumber reg) {
+                HWIntrinsicImmOpHelper helper(this, op, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int shiftAmount = helper.ImmValue();
+
+                    if (shiftAmount == 0)
+                    {
+                        // TODO: Use emitIns_Mov instead.
+                        //       We do not use it currently because it will still elide the 'mov'
+                        //       even if 'canSkip' is false. We cannot elide the 'mov' here.
+                        GetEmitter()->emitIns_R_R_R(INS_mov, emitTypeSize(node), targetReg, reg, reg);
+                    }
+                    else
+                    {
+                        GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, reg, shiftAmount, opt);
+                    }
+                }
+            };
+
             if (isRMW)
             {
                 GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
-
-                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
-
-                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                {
-                    const int shiftAmount = helper.ImmValue();
-
-                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op2Reg, shiftAmount, opt);
-                }
+                emitShift(intrin.op3, op2Reg);
             }
             else
             {
-                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
-
-                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                {
-                    const int shiftAmount = helper.ImmValue();
-
-                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, shiftAmount, opt);
-                }
+                emitShift(intrin.op2, op1Reg);
             }
         }
         else
@@ -479,6 +485,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 ins = INS_yield;
                 break;
             }
+
+            case NI_ArmBase_Arm64_MultiplyLongAdd:
+                ins = varTypeIsUnsigned(intrin.baseType) ? INS_umaddl : INS_smaddl;
+                break;
+
+            case NI_ArmBase_Arm64_MultiplyLongSub:
+                ins = varTypeIsUnsigned(intrin.baseType) ? INS_umsubl : INS_smsubl;
+                break;
 
             default:
                 ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
@@ -1106,6 +1120,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
                 break;
             }
+
+            case NI_ArmBase_Arm64_MultiplyLongAdd:
+            case NI_ArmBase_Arm64_MultiplyLongSub:
+                assert(opt == INS_OPTS_NONE);
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg);
+                break;
+
             default:
                 unreached();
         }

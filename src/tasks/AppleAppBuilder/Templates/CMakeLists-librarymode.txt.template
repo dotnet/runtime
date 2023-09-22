@@ -27,10 +27,6 @@ if(NOT %UseNativeAOTRuntime%)
     include_directories("%MonoInclude%")
 endif()
 
-#set_target_properties(%ProjectName% %AotTargetsList% PROPERTIES
-#    XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
-#)
-
 set_target_properties(%ProjectName% PROPERTIES
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
@@ -39,6 +35,7 @@ set_target_properties(%ProjectName% PROPERTIES
     XCODE_EMIT_EFFECTIVE_PLATFORM_NAME "YES"
     XCODE_EMBED_FRAMEWORKS "%DYLIB_PATH%"
     XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@executable_path/Frameworks"
+    XCODE_ATTRIBUTE_SUPPORTS_MACCATALYST "YES"
     RESOURCE "${APP_RESOURCES}"
 )
 

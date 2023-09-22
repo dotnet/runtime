@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
@@ -28,11 +29,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		}
 
 		protected override TrimAnalysisVisitor GetVisitor (
-			IMethodSymbol method,
+			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
 			InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState)
-		 => new (Lattice, method, methodCFG, lValueFlowCaptures, TrimAnalysisPatterns, interproceduralState);
+		 => new (Lattice, owningSymbol, methodCFG, lValueFlowCaptures, TrimAnalysisPatterns, interproceduralState);
 
 #if DEBUG
 #pragma warning disable CA1805 // Do not initialize unnecessarily
@@ -125,12 +126,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		static void WriteIndented (string? s, int level)
 		{
-			string[]? lines = s?.Trim ().Split (new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-			if (lines == null)
-				return;
-			foreach (var line in lines) {
-				TraceWrite (new string ('\t', level));
-				TraceWriteLine (line);
+			if (s is not null) {
+				var reader = new StringReader (s);
+				string? line;
+				while ((line = reader.ReadLine ()) != null) {
+					if (line.Length != 0) {
+						TraceWrite (new string ('\t', level));
+						TraceWriteLine (line);
+					}
+				}
 			}
 		}
 

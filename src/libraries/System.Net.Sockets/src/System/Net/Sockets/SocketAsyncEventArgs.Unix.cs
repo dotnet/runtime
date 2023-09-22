@@ -368,10 +368,7 @@ namespace System.Net.Sockets
 
         private void UpdateReceivedSocketAddress(SocketAddress socketAddress)
         {
-            if (_socketAddressSize > 0)
-            {
-                socketAddress.Size = _socketAddressSize;
-            }
+            socketAddress.Size = _socketAddressSize;
         }
 
         partial void FinishOperationReceiveMessageFrom();

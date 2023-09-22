@@ -20,6 +20,11 @@ namespace System.Linq.Expressions
         internal const string ExpressionRequiresUnreferencedCode = "Creating Expressions requires unreferenced code because the members being referenced by the Expression may be trimmed.";
         internal const string PropertyFromAccessorRequiresUnreferencedCode = "The Property metadata or other accessor may be trimmed.";
         internal const string GenericMethodRequiresUnreferencedCode = "Calling a generic method cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method. This can be suppressed if the method is not generic.";
+        internal const string GenericMethodRequiresDynamicCode = "Calling a generic method requires dynamic code generation. This can be suppressed if the method is not generic.";
+        internal const string CallSiteRequiresDynamicCode = "Creating a call site may require dynamic code generation.";
+        internal const string LambdaCompilerRequiresDynamicCode = "Compiling a lambda expression requires dynamic code generation.";
+        internal const string StrongBoxRequiresDynamicCode = "Creating a StrongBox requires dynamic code generation.";
+        internal const string NewArrayRequiresDynamicCode = "Creating arrays at runtime requires dynamic code generation.";
 
         private static readonly CacheDict<Type, MethodInfo> s_lambdaDelegateCache = new CacheDict<Type, MethodInfo>(40);
         private static volatile CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? s_lambdaFactories;

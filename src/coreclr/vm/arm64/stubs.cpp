@@ -472,18 +472,18 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureX19_X29[10]);
         pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
 
-        pRD->pCurrentContextPointers->X19 = pUnwoundState->ptrX19_X29[0];
-        pRD->pCurrentContextPointers->X20 = pUnwoundState->ptrX19_X29[1];
-        pRD->pCurrentContextPointers->X21 = pUnwoundState->ptrX19_X29[2];
-        pRD->pCurrentContextPointers->X22 = pUnwoundState->ptrX19_X29[3];
-        pRD->pCurrentContextPointers->X23 = pUnwoundState->ptrX19_X29[4];
-        pRD->pCurrentContextPointers->X24 = pUnwoundState->ptrX19_X29[5];
-        pRD->pCurrentContextPointers->X25 = pUnwoundState->ptrX19_X29[6];
-        pRD->pCurrentContextPointers->X26 = pUnwoundState->ptrX19_X29[7];
-        pRD->pCurrentContextPointers->X27 = pUnwoundState->ptrX19_X29[8];
-        pRD->pCurrentContextPointers->X28 = pUnwoundState->ptrX19_X29[9];
-        pRD->pCurrentContextPointers->Fp = pUnwoundState->ptrX19_X29[10];
-        pRD->pCurrentContextPointers->Lr = NULL;
+        pRD->pCurrentContextPointers->X19 = &pRD->pCurrentContext->X19;
+        pRD->pCurrentContextPointers->X20 = &pRD->pCurrentContext->X20;
+        pRD->pCurrentContextPointers->X21 = &pRD->pCurrentContext->X21;
+        pRD->pCurrentContextPointers->X22 = &pRD->pCurrentContext->X22;
+        pRD->pCurrentContextPointers->X23 = &pRD->pCurrentContext->X23;
+        pRD->pCurrentContextPointers->X24 = &pRD->pCurrentContext->X24;
+        pRD->pCurrentContextPointers->X25 = &pRD->pCurrentContext->X25;
+        pRD->pCurrentContextPointers->X26 = &pRD->pCurrentContext->X26;
+        pRD->pCurrentContextPointers->X27 = &pRD->pCurrentContext->X27;
+        pRD->pCurrentContextPointers->X28 = &pRD->pCurrentContext->X28;
+        pRD->pCurrentContextPointers->Fp = &pRD->pCurrentContext->Fp;
+        pRD->pCurrentContextPointers->Lr = &pRD->pCurrentContext->Lr;
 
         return;
     }
@@ -699,7 +699,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->X28 = NULL;
 
     pRD->ControlPC = m_pCallerReturnAddress;
-    pRD->SP = (DWORD) dac_cast<TADDR>(m_pCallSiteSP);
+    pRD->SP = (DWORD64) dac_cast<TADDR>(m_pCallSiteSP);
 
     // reset pContext; it's only valid for active (top-most) frame
     pRD->pContext = NULL;

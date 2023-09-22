@@ -1,13 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks Condition="'$(DotNetBuildFromSource)' != 'true'">$(TargetFrameworks);net7.0;net6.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="System.Numerics.Tensors.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="System.Numerics.Tensors.netcore.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
+
 </Project>

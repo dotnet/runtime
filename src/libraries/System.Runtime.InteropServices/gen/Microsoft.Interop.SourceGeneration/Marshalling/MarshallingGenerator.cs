@@ -83,6 +83,10 @@ namespace Microsoft.Interop
         /// The provided <see cref="ByValueContentsMarshalKind" /> is supported but does not change behavior from the default in this scenario.
         /// </summary>
         Unnecessary,
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is supported but does not follow best practices.
+        /// </summary>
+        NotRecommended,
     }
 
     /// <summary>
@@ -90,14 +94,6 @@ namespace Microsoft.Interop
     /// </summary>
     public interface IMarshallingGenerator
     {
-        /// <summary>
-        /// Determine if the generator is supported for the supplied version of the framework.
-        /// </summary>
-        /// <param name="target">The framework to target.</param>
-        /// <param name="version">The version of the framework.</param>
-        /// <returns>True if the marshaller is supported, otherwise false.</returns>
-        bool IsSupported(TargetFramework target, Version version);
-
         /// <summary>
         /// Get the native type syntax for <paramref name="info"/>
         /// </summary>

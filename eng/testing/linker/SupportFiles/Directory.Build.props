@@ -1,13 +1,4 @@
 <Project>
-
-  <!-- Use live illink bits. It is necessary to both import the package props and override
-       the tasks assembly, because the live package props in the build output do not use
-       the same layout as the NuGet package. -->
-  <Import Project="$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/build/Microsoft.NET.ILLink.Tasks.props" />
-  <PropertyGroup>
-    <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>
-  </PropertyGroup>
-
   <PropertyGroup>
     <SkipConfigureTrimming>true</SkipConfigureTrimming>
     <PublishTrimmed>true</PublishTrimmed>

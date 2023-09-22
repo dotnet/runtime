@@ -32,12 +32,11 @@ public unsafe class testout1
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         CL_0_2 cl_0_2 = new CL_0_2();
         double* a3_0_2 = stackalloc double[1];
         *a3_0_2 = 8;
         Func_0_2(cl_0_2, a3_0_2);
-        return 100;
     }
 }
