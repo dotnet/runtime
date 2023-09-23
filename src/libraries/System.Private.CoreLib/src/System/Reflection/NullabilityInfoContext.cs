@@ -89,9 +89,7 @@ namespace System.Reflection
             ParameterInfo? metaParameter;
             MemberInfo metaMember;
 
-            MemberInfo member = parameter.Member;
-
-            switch (member)
+            switch (parameter.Member)
             {
                 case ConstructorInfo ctor:
                     var metaCtor = (ConstructorInfo)GetMemberMetadataDefinition(ctor);
@@ -102,14 +100,7 @@ namespace System.Reflection
                 case MethodInfo method:
                     MethodInfo metaMethod = GetMethodMetadataDefinition(method);
                     metaMember = metaMethod;
-                    if (string.IsNullOrEmpty(parameter.Name))
-                    {
-                        metaParameter = metaMethod.ReturnParameter;
-                    }
-                    else
-                    {
-                        metaParameter = GetMetaParameter(metaMethod, parameter);
-                    }
+                    metaParameter = string.IsNullOrEmpty(parameter.Name) ? metaMethod.ReturnParameter : GetMetaParameter(metaMethod, parameter);
                     break;
 
                 default:
