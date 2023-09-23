@@ -653,7 +653,7 @@ namespace System
                         bool* overrides = stackalloc bool[numVirtuals];
                         new Span<bool>(overrides, numVirtuals).Clear();
 
-                        bool isValueType = declaringType.IsValueType;
+                        bool isValueType = declaringType.IsActualValueType;
 
                         do
                         {
