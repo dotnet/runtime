@@ -20,7 +20,7 @@ namespace DefaultNamespace
 
     internal class MulDimJagAry
     {
-        public static int Main()
+        public static void Main()
         {
             int iDim1 = 100;
             int iDim2 = 100;
@@ -131,9 +131,6 @@ namespace DefaultNamespace
                 //    Console.WriteLine( "HeapSize after GC: "+ GC.GetTotalMemory(false) );
                 //}
             }
-
-
-            return 100;
         }
 
         public void SetThreeDimJagAry(Object[][][] oJag, int iDim1, int iDim2)

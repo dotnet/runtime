@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-internal class Program
+public class Program
 {
     static void Run()
     {
@@ -22,7 +22,7 @@ internal class Program
         }
     }
 
-    static void Main()
+    public static void Main()
     {
         int startTick = System.Environment.TickCount;
         const int threadCount = 4;

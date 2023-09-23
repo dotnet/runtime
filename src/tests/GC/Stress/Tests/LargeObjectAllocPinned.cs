@@ -7,7 +7,7 @@ using System;
 internal class LargePinned
 {
     [System.Security.SecuritySafeCritical]
-    unsafe public static int Main()
+    unsafe public static void Main()
     {
         for (int i = 0; i < 25; i++)
         {
@@ -24,6 +24,5 @@ internal class LargePinned
             TestLibrary.Logging.WriteLine("End of Loop: {0} \n", i);
         }
         TestLibrary.Logging.WriteLine("Test Passed\n");
-        return 100;
     }
 }

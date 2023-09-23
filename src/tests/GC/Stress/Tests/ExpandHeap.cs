@@ -105,7 +105,7 @@ public class GCUtil
 
 public class Test
 {
-    public static int Main()
+    public static void Main()
     {
         Console.WriteLine("First Alloc");
         GCUtil.Alloc(1024 * 1024 * 4, 30);
@@ -119,6 +119,5 @@ public class Test
         GCUtil.FreePins();
 
         Console.WriteLine("Test passed");
-        return 100;
     }
 }

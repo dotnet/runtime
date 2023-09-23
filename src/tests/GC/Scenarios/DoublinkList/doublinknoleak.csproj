@@ -13,6 +13,6 @@
     <Compile Include="doublinknoleak.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="DoubLink.csproj" />
+    <ProjectReference Include="DoubLinkList.csproj" />
   </ItemGroup>
 </Project>
