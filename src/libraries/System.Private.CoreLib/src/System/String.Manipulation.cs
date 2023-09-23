@@ -1244,7 +1244,6 @@ namespace System
 
                 if (Vector512.IsHardwareAccelerated && this.Length >= (uint)Vector512<ushort>.Count*2)
                 {
-                    // Internal.Console.WriteLine("Vector512");
                     ref char source = ref MemoryMarshal.GetReference(this.AsSpan());
                     Vector512<ushort> v1 = Vector512.Create((ushort)c);
                     do
@@ -1260,8 +1259,6 @@ namespace System
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
                                 replacementIndices.Append((int)(offset + bitPos));
-                                // Internal.Console.Write("" + ((int)(offset + bitPos)));
-                                // Internal.Console.Write(", ");
                                 mask = BitOperations.ResetLowestSetBit(mask);
                             } while (mask != 0);
                         }
@@ -1271,7 +1268,6 @@ namespace System
                 }
                 else if (Vector256.IsHardwareAccelerated && this.Length >= (uint)Vector256<ushort>.Count*2)
                 {
-                    // Internal.Console.WriteLine("Vector256");
                     ref char source = ref MemoryMarshal.GetReference(this.AsSpan());
                     Vector256<ushort> v1 = Vector256.Create((ushort)c);
                     do
@@ -1287,8 +1283,6 @@ namespace System
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
                                 replacementIndices.Append((int)(offset + bitPos));
-                                // Internal.Console.Write("" + ((int)(offset + bitPos)));
-                                // Internal.Console.Write(", ");
                                 mask = BitOperations.ResetLowestSetBit(mask);
                             } while (mask != 0);
                         }
@@ -1298,7 +1292,6 @@ namespace System
                 }
                 else if (Vector128.IsHardwareAccelerated && this.Length >= (uint)Vector128<ushort>.Count*2)
                 {
-                    // Internal.Console.WriteLine("Vector128");
                     ref char source = ref MemoryMarshal.GetReference(this.AsSpan());
                     Vector128<ushort> v1 = Vector128.Create((ushort)c);
                     do
@@ -1314,8 +1307,6 @@ namespace System
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
                                 replacementIndices.Append((int)(offset + bitPos));
-                                // Internal.Console.Write("" + ((int)(offset + bitPos)));
-                                // Internal.Console.Write(", ");
                                 mask = BitOperations.ResetLowestSetBit(mask);
                             } while (mask != 0);
                         }
@@ -1326,7 +1317,6 @@ namespace System
                 int i = (int)offset;
                 if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
                 {
-                    // Internal.Console.WriteLine("PackedSpanHelpers");
                     while (true)
                     {
                         int pos = PackedSpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
@@ -1335,14 +1325,11 @@ namespace System
                             break;
                         }
                         replacementIndices.Append(i + pos);
-                        // Internal.Console.Write("" + ((int)(i + pos)));
-                        // Internal.Console.Write(", ");
                         i += pos + 1;
                     }
                 }
                 else
                 {
-                    // Internal.Console.WriteLine("Else");
                     while (true)
                     {
                         int pos = SpanHelpers.NonPackedIndexOfChar(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
@@ -1351,8 +1338,6 @@ namespace System
                             break;
                         }
                         replacementIndices.Append(i + pos);
-                        // Internal.Console.Write("" + ((int)(i + pos)));
-                        // Internal.Console.Write(", ");
                         i += pos + 1;
                     }
                 }
