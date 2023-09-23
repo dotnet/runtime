@@ -20,6 +20,7 @@ namespace System.ComponentModel.Tests
             get => Interlocked.Read(ref _error) == 1;
             set => Interlocked.Exchange(ref _error, value ? 1 : 0);
         }
+
         private void ConcurrentTest(SomeType instance)
         {
             var properties = TypeDescriptor.GetProperties(instance);
@@ -65,7 +66,8 @@ namespace System.ComponentModel.Tests
                 Assert.False(Error, "Fallback type descriptor is used.");
             }
         }
-        internal class SomeTypeProvider : TypeDescriptionProvider
+
+        private class SomeTypeProvider : TypeDescriptionProvider
         {
             public static ThreadLocal<bool> Constructed = new ThreadLocal<bool>();
             public static ThreadLocal<bool> GetPropertiesCalled = new ThreadLocal<bool>();
@@ -102,7 +104,7 @@ namespace System.ComponentModel.Tests
         }
 
         [TypeDescriptionProvider(typeof(SomeTypeProvider))]
-        internal sealed class SomeType
+        private sealed class SomeType
         {
             public int SomeProperty { get; set; }
         }
