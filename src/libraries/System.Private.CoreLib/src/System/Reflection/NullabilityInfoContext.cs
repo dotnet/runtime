@@ -100,7 +100,7 @@ namespace System.Reflection
                     break;
 
                 case MethodInfo method:
-                    var metaMethod = GetMethodMetadataDefinition(method);
+                    MethodInfo metaMethod = GetMethodMetadataDefinition(method);
                     metaMember = metaMethod;
                     if (string.IsNullOrEmpty(parameter.Name))
                     {
