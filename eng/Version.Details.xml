@@ -97,7 +97,7 @@
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.23468.3">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>b88b567fbf54c5404d039b80cfb86f09a681f604</Sha>
+      <Sha>fc01829cbf76b7bbf48a39161562468715a0a3b4</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="8.0.0-alpha.1.23468.1">
@@ -322,17 +322,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>ebe6f541ca2adea41f4b1dfc97774af371654bab</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="8.0.0-prerelease.23456.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="8.0.0-prerelease.23471.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>a3a749a7056623c665bba226fe843152f413f044</Sha>
+      <Sha>06fd591dc00862e415eddbec734ae9ea77d35486</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="8.0.0-prerelease.23456.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="8.0.0-prerelease.23471.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>a3a749a7056623c665bba226fe843152f413f044</Sha>
+      <Sha>06fd591dc00862e415eddbec734ae9ea77d35486</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="8.0.0-prerelease.23456.2">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="8.0.0-prerelease.23471.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>a3a749a7056623c665bba226fe843152f413f044</Sha>
+      <Sha>06fd591dc00862e415eddbec734ae9ea77d35486</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="8.0.0-beta.23463.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -383,9 +383,9 @@
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>837c22a23433f441fa56d96eb45d13c65408f7c3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23468.31">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23472.4">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>4bc3b410401010fb7844fee0479f9b12f52500b3</Sha>
+      <Sha>c542391d37df23e742a8f6f40afb2cb4b651c042</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23471.3">
