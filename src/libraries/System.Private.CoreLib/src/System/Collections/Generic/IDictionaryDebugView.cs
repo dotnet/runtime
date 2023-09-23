@@ -17,12 +17,17 @@ namespace System.Collections.Generic
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public KeyValuePair<K, V>[] Items
+        public DebugViewDictionaryItem<K, V>[] Items
         {
             get
             {
-                KeyValuePair<K, V>[] items = new KeyValuePair<K, V>[_dict.Count];
-                _dict.CopyTo(items, 0);
+                var keyValuePairs = new KeyValuePair<K, V>[_dict.Count];
+                _dict.CopyTo(keyValuePairs, 0);
+                var items = new DebugViewDictionaryItem<K, V>[keyValuePairs.Length];
+                for (int i = 0; i < items.Length; i++)
+                {
+                    items[i] = new DebugViewDictionaryItem<K, V>(keyValuePairs[i]);
+                }
                 return items;
             }
         }
