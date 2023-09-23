@@ -93,6 +93,13 @@ try {
     let exit_code = await runMain(config.mainAssemblyName, []);
     exit(exit_code);
     disposeRuntime(true);
+
+    setTimeout(async () => {
+        if (globalThis.performance.measureUserAgentSpecificMemory) {
+            const memorySample = await globalThis.performance.measureUserAgentSpecificMemory();
+            console.log(`memorySample:`, memorySample);
+        }
+    }, 1000);
 }
 catch (err) {
     exit(2, err);

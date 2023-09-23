@@ -287,7 +287,9 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         }
 
         setTimeout(() => {
-            loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+            if (loaderHelpers.purgeUnusedCacheEntriesAsync) {
+                loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+            }
         }, loaderHelpers.config.cachedResourcesPurgeDelay);
 
         // call user code
