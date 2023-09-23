@@ -3,11 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
-namespace Microsoft.Extensions.DependencyModel
+namespace System.Linq
 {
-    internal static class EnumerableHelpers
+    internal static class SelectManyWithParameterHelpers
     {
         public static IEnumerable<TResult> SelectMany<TSource, TResult, TParam1>(IEnumerable<TSource> src,
             Func<TSource, TParam1, IEnumerable<TResult>> func, TParam1 param1)
