@@ -15,7 +15,6 @@ namespace System
     {
         public override Assembly Assembly => RuntimeTypeHandle.GetAssembly(this);
         public override Type? BaseType => GetBaseType();
-        public override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
         public override bool IsGenericParameter => RuntimeTypeHandle.IsGenericVariable(this);
         public override bool IsTypeDefinition => RuntimeTypeHandle.IsTypeDefinition(this);
         public override bool IsSecurityCritical => true;
@@ -905,7 +904,7 @@ namespace System
 
                 if (sigElementType.IsInstanceOfType(value))
                 {
-                    if (RuntimeTypeHandle.IsValueType(sigElementType))
+                    if (sigElementType.IsActualValueType)
                     {
                         if (sigElementType.IsNullableOfT)
                         {
@@ -924,7 +923,7 @@ namespace System
 
                 if (value == null)
                 {
-                    if (!RuntimeTypeHandle.IsValueType(sigElementType))
+                    if (!sigElementType.IsActualValueType)
                     {
                         return CheckValueStatus.Success;
                     }
@@ -951,7 +950,7 @@ namespace System
                     return CheckValueStatus.Success;
                 }
 
-                if (!RuntimeTypeHandle.IsValueType(this))
+                if (!IsActualValueType)
                 {
                     return CheckValueStatus.Success;
                 }

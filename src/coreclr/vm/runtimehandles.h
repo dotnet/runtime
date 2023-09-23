@@ -130,9 +130,6 @@ public:
     static FCDECL1(ReflectMethodObject*, GetDeclaringMethod, ReflectClassBaseObject *pType);
 
     static FCDECL1(ReflectClassBaseObject*, GetDeclaringType, ReflectClassBaseObject* pType);
-    static FCDECL1(FC_BOOL_RET, IsValueType, ReflectClassBaseObject* pType);
-    static FCDECL1(FC_BOOL_RET, IsInterface, ReflectClassBaseObject* pType);
-    static FCDECL1(FC_BOOL_RET, IsByRefLike, ReflectClassBaseObject* pType);
 
     static FCDECL1(Object *, GetArgumentTypesFromFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
