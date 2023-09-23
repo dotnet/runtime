@@ -1317,6 +1317,26 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedGenericArgumentNullability, info.GenericTypeArguments[2].GenericTypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[2].GenericTypeArguments[1].ReadState);
         }
+        public static IEnumerable<object[]> TestCtorWithNullableParametersArgumentsData() => new[]
+        {
+            new object[] { typeof(GenericTypeWithNullableCtor<>), NullabilityState.Nullable },
+            new object[] { typeof(GenericTypeWithNullableCtor<int>), NullabilityState.NotNull },
+            new object[] { typeof(GenericTypeWithNullableCtor<int?>), NullabilityState.Nullable },
+            new object[] { typeof(GenericTypeWithNullableCtor<object>), NullabilityState.Nullable },
+        };
+
+        [Theory]
+        [MemberData(nameof(TestCtorWithNullableParametersArgumentsData))]
+        public void TestCtorWithNullableParameters(Type type, NullabilityState expectedNullability)
+        {
+            var ctx = new NullabilityInfoContext();
+
+            ParameterInfo param = type.GetConstructors()[0].GetParameters()[0];
+            NullabilityInfo info = ctx.Create(param);
+
+            Assert.Equal(expectedNullability, info.ReadState);
+            Assert.Equal(expectedNullability, info.WriteState);
+        }
     }
 
 #pragma warning disable CS0649, CS0067, CS0414
@@ -1598,5 +1618,10 @@ namespace System.Reflection.Tests
         public Tuple<int?, Tuple<T>>? Deep3 { get; set; }
         public Tuple<int, int?, Tuple<T?>>? Deep4 { get; set; }
         public Tuple<int, int, Tuple<T, int>?>? Deep5 { get; set; }
+    }
+
+    public class GenericTypeWithNullableCtor<T>
+    {
+        public GenericTypeWithNullableCtor(T value) { }
     }
 }
