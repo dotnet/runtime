@@ -26,12 +26,27 @@ steps:
       &"$vsdir\Common7\IDE\VsRegEdit.exe" set local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword 0
       &"$vsdir\Common7\IDE\VsRegEdit.exe" read local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword
 
-      $processes = Get-Process -Name VSIXAutoUpdate -ErrorAction SilentlyContinue
+      $processes = Get-Process -Name VSIXAutoUpdate -ErrorAction SilentlyContinue | %{ $_.Id }
 
       if ($processes -ne $null -and $processes.Count -gt 0)
       {
+        Write-Output "VSIXAutoUpdate has already spawned. Waiting for process(es) $processes for up to 5 min."
+        if (-not (Wait-Process -Id $processes -Timeout 300))
+        {
           Write-Error "VSIXAutoUpdate has already spawned. Failfast to allow retry"
           exit 1
+        }
+      }
+
+      $status = &"$vswhere" -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json | ConvertFrom-Json
+      if ($status.isLaunchable -and -not $status.isRebootRequired)
+      {
+        Write-Output "VS in usable state"
+      }
+      else
+      {
+        Write-Error "VS in not in a usable state. Updates or image generation left the machine in a poor state."
+        exit 1
       }
 
     displayName: Disable VSIX updates or fail-fast
