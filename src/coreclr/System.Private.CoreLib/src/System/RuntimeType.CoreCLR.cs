@@ -3382,7 +3382,7 @@ namespace System
             return isValueType;
         }
 
-        // This returns true for actual value types only.
+        // This returns true for actual value types only, ignoring generic parameter constraints.
         internal unsafe bool IsActualValueType
         {
             get
@@ -3411,7 +3411,7 @@ namespace System
             }
         }
 
-        // This returns true for actual enum types only.
+        // This returns true for actual enum types only, ignoring generic parameter constraints.
         internal unsafe bool IsActualEnum
         {
             [Intrinsic]
