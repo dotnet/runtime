@@ -21,7 +21,7 @@ namespace System.ComponentModel.Tests
             set => Interlocked.Exchange(ref _error, value ? 1 : 0);
         }
 
-        private void ConcurrentTest(SomeType instance)
+        private void ConcurrentTest(TypeWithProperty instance)
         {
             var properties = TypeDescriptor.GetProperties(instance);
             Thread.Sleep(10);
@@ -39,10 +39,10 @@ namespace System.ComponentModel.Tests
 
             using var finished = new CountdownEvent(concurrentCount);
 
-            var instances = new SomeType[concurrentCount];
+            var instances = new TypeWithProperty[concurrentCount];
             for (int i = 0; i < concurrentCount; i++)
             {
-                instances[i] = new SomeType();
+                instances[i] = new TypeWithProperty();
             }
 
             for (int i = 0; i < concurrentCount; i++)
@@ -63,50 +63,48 @@ namespace System.ComponentModel.Tests
             }
             else
             {
-                Assert.False(Error, "Fallback type descriptor is used.");
+                Assert.False(Error, "Fallback type descriptor is used. Possible race condition.");
             }
         }
 
-        private class SomeTypeProvider : TypeDescriptionProvider
+        public sealed class EmptyPropertiesTypeProvider : TypeDescriptionProvider
         {
-            public static ThreadLocal<bool> Constructed = new ThreadLocal<bool>();
-            public static ThreadLocal<bool> GetPropertiesCalled = new ThreadLocal<bool>();
-            private class CTD : ICustomTypeDescriptor
+            private sealed class EmptyPropertyListDescriptor : ICustomTypeDescriptor
             {
                 public AttributeCollection GetAttributes() => AttributeCollection.Empty;
+
                 public string? GetClassName() => null;
+
                 public string? GetComponentName() => null;
-                public TypeConverter GetConverter() => new TypeConverter();
+
+                public TypeConverter? GetConverter() => new TypeConverter();
+
                 public EventDescriptor? GetDefaultEvent() => null;
+
                 public PropertyDescriptor? GetDefaultProperty() => null;
+
                 public object? GetEditor(Type editorBaseType) => null;
+
                 public EventDescriptorCollection GetEvents() => EventDescriptorCollection.Empty;
-                public EventDescriptorCollection GetEvents(Attribute[]? attributes) => EventDescriptorCollection.Empty;
 
-                public PropertyDescriptorCollection GetProperties()
-                {
-                    GetPropertiesCalled.Value = true;
-                    return PropertyDescriptorCollection.Empty;
-                }
+                public EventDescriptorCollection GetEvents(Attribute[]? attributes) => GetEvents();
 
-                public PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
-                {
-                    throw new NotImplementedException();
-                }
+                public PropertyDescriptorCollection GetProperties() => PropertyDescriptorCollection.Empty;
+
+                public PropertyDescriptorCollection GetProperties(Attribute[]? attributes) => GetProperties();
 
                 public object? GetPropertyOwner(PropertyDescriptor? pd) => null;
             }
             public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object? instance)
             {
-                Constructed.Value = true;
-                return new CTD();
+                return new EmptyPropertyListDescriptor();
             }
         }
 
-        [TypeDescriptionProvider(typeof(SomeTypeProvider))]
-        private sealed class SomeType
+        [TypeDescriptionProvider(typeof(EmptyPropertiesTypeProvider))]
+        public sealed class TypeWithProperty
         {
-            public int SomeProperty { get; set; }
+            public int OneProperty { get; set; }
         }
     }
 }
