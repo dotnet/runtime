@@ -10,7 +10,7 @@ namespace System.Diagnostics
     public partial class Process
     {
         private const int NanosecondsTo100NanosecondsFactor = 100;
-        private static readonly Interop.libSystem.mach_timebase_info_data_t timeBase = GetTimeBase();
+        private static volatile uint s_timeBase_numer, s_timeBase_denom;
 
         private const int MicrosecondsToSecondsFactor = 1_000_000;
 
@@ -24,7 +24,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                return new TimeSpan(Convert.ToInt64(info.ri_system_time * timeBase.numer / timeBase.denom / NanosecondsTo100NanosecondsFactor));
+                return MapTime(info.ri_system_time);
             }
         }
 
@@ -66,7 +66,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                return new TimeSpan(Convert.ToInt64((info.ri_system_time + info.ri_user_time) * timeBase.numer / timeBase.denom / NanosecondsTo100NanosecondsFactor));
+                return MapTime(info.ri_system_time + info.ri_user_time);
             }
         }
 
@@ -83,7 +83,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                return new TimeSpan(Convert.ToInt64(info.ri_user_time * timeBase.numer / timeBase.denom / NanosecondsTo100NanosecondsFactor));
+                return MapTime(info.ri_user_time);
             }
         }
 
@@ -109,6 +109,20 @@ namespace System.Diagnostics
         private static Interop.libproc.rusage_info_v3 GetCurrentProcessRUsage()
         {
             return Interop.libproc.proc_pid_rusage(Environment.ProcessId);
+        }
+
+        private static TimeSpan MapTime(ulong sysTime)
+        {
+            uint denom = s_timeBase_denom;
+            if (denom == default)
+            {
+                Interop.libSystem.mach_timebase_info_data_t timeBase = GetTimeBase();
+                s_timeBase_denom = denom = timeBase.denom;
+                s_timeBase_numer = timeBase.numer;
+            }
+            uint numer = s_timeBase_numer;
+
+            return new TimeSpan(Convert.ToInt64(sysTime * numer / denom / NanosecondsTo100NanosecondsFactor));
         }
 
         private static unsafe Interop.libSystem.mach_timebase_info_data_t GetTimeBase()
