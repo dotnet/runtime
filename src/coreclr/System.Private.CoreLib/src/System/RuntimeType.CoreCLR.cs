@@ -3389,7 +3389,7 @@ namespace System
             {
                 TypeHandle th = GetNativeTypeHandle();
 
-                bool isValueType = th.AsMethodTable()->IsValueType;
+                bool isValueType = !th.IsTypeDesc && th.AsMethodTable()->IsValueType;
                 GC.KeepAlive(this);
                 return isValueType;
             }
