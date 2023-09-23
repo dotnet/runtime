@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 public class AllocBug
 {
     public int ret = 0;
@@ -9,7 +10,8 @@ public class AllocBug
     {
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         AllocBug ab = new AllocBug();
 

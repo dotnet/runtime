@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Xunit;
 
 public class Program
 {
@@ -22,7 +23,8 @@ public class Program
         }
     }
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         int startTick = System.Environment.TickCount;
         const int threadCount = 4;

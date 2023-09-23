@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime;
+using Xunit;
 
 namespace LOHPin
 {
@@ -22,7 +23,8 @@ namespace LOHPin
          *   - compact LOH then check the address of the objects
          * */
  
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             List<GCHandle> GCHandleList = new List<GCHandle>();
             int ListSize = 300;

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace HelloFrozenSegment
 {
     using System;
@@ -136,7 +137,8 @@ namespace HelloFrozenSegment
 
     public static class Program
     {
-        public static unsafe void Main()
+        [Fact]
+        public static unsafe void TestEntryPoint()
         {
             // Regression testing for dotnet/runtime #83027
             Node[] firstArray = new Node[30000000]; 

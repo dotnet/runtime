@@ -9,6 +9,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class WR : WeakReference
 {
@@ -35,7 +36,8 @@ public class Test_NullHandle
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void DestroyWR() { wr = null; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int numTests = 0;
         int numPassed = 0;

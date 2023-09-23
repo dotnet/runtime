@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 // Basic Object Test that uses tests the following types:
 //  int
 //  long
@@ -16,7 +17,8 @@ namespace DefaultNamespace {
 
     public class SimpObject
     {
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             Console.WriteLine("Test should return with ExitCode 100 ...");
             SimpObject sv = new SimpObject( );

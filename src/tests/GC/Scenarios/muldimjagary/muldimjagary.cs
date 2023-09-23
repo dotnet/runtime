@@ -3,6 +3,7 @@
 
 namespace DefaultNamespace {
 using System;
+using Xunit;
 
 /*************************************************************/
 /* test: MulDimJagAry.cs
@@ -12,9 +13,10 @@ using System;
 /*************************************************************/
 
 
-    class MulDimJagAry
+    public class MulDimJagAry
     {
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             int iDim1 = 100;
             int iDim2 = 100;

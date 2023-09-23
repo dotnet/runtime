@@ -3,9 +3,11 @@
 // Tests GC.Collect()
 
 using System;
+using Xunit;
 
 public class Test_Collect {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         Object obj1 = new Object();

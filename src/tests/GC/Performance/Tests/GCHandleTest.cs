@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class GCHandleTest
 {         
@@ -12,7 +13,8 @@ public class GCHandleTest
     private const int m_numGCHs = 50;
     private long m_numIters;
     
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         long iterations    = 200;
     

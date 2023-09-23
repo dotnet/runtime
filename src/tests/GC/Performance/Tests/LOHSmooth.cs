@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Diagnostics;
+using Xunit;
 
 public class VSTSTest
 {
@@ -52,7 +53,8 @@ public class VSTSTest
         }
     }
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {		    
         Allocate();    
         while (!_done)

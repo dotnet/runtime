@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for Environment.Exit -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
 
     <!-- Test needs explicit Main as it uses command-line parameters -->
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>

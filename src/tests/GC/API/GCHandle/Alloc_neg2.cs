@@ -7,10 +7,12 @@ This test verifies GCHandle.Alloc's ability to validate bad GCHandleTypes, since
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Test_Alloc_neg2
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // The third element needs to be updated if Pinned is no longer the last value in the GCHandleType enum
         long[] invalidValues = { Int32.MinValue, -1, (long)(GCHandleType.Pinned + 1), Int32.MaxValue, UInt32.MaxValue, Int64.MaxValue };

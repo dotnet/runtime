@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace ToBoxOrNotToBox
 {
@@ -107,7 +108,8 @@ namespace ToBoxOrNotToBox
 
         }
         
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
 
             const int baseCount = 2000000;

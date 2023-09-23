@@ -3,14 +3,16 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal class List
+public class List
 {
     const int LOOP = 847;
     internal SmallGC dat;
     public List next;
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         long iterations = 200;
 

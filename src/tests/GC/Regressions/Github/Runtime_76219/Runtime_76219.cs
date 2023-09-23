@@ -3,11 +3,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_76219
 {
     [MethodImpl(MethodImplOptions.Synchronized)]
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {

@@ -4,6 +4,7 @@
 using System;
 
 using System.Threading;
+using Xunit;
 
 public class Program
 {
@@ -36,7 +37,8 @@ public class Program
 
     }
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
 
         Program p = new Program();

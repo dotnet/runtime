@@ -8,13 +8,15 @@ This test fragments the heap with ~50 byte holes, then allocates ~50 byte object
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using Xunit;
 
 public class Test_pluggaps
 {
     public static List<GCHandle> gchList = new List<GCHandle>();
     public static List<byte[]> bList = new List<byte[]>();
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Console.WriteLine("Beginning phase 1");
         GCUtil.AllocWithGaps();

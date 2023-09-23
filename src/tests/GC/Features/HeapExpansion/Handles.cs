@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using TestLibrary;
+using Xunit;
 
 public class Test_Handles
 {
@@ -16,7 +17,8 @@ public class Test_Handles
     public static List<GCHandle> pinnedList = new List<GCHandle>();
     public static int index = -1;
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         TestFramework.LogInformation("First Alloc");
         GCUtil.Alloc(1024 * 1024, 50);

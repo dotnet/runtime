@@ -5,6 +5,7 @@
 // should box parameter into an Object
 
 using System;
+using Xunit;
 
 public struct StructType {
 }
@@ -14,7 +15,8 @@ public enum EnumType {
 
 public class Test_GetGeneration_box {
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         // literals
         int gen = GC.GetGeneration(-1);

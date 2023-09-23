@@ -3,6 +3,7 @@
 
 
 using System;
+using Xunit;
 
 
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
@@ -18,9 +19,10 @@ namespace DefaultNamespace
     /*************************************************************/
 
 
-    internal class MulDimJagAry
+    public class MulDimJagAry
     {
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
             int iDim1 = 100;
             int iDim2 = 100;

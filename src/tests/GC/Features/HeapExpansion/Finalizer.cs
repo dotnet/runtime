@@ -9,6 +9,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using TestLibrary;
+using Xunit;
 
 public class Test_Finalizer
 {
@@ -32,7 +33,8 @@ public class Test_Finalizer
         var t = new Test_Finalizer();
     }
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         CreateAndReleaseFinalizable();
         TestFramework.LogInformation("First Alloc");

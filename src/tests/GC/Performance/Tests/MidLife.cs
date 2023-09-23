@@ -3,6 +3,7 @@
 
 using System;
 using System.Text;
+using Xunit;
 
 public class AppendTest
 {
@@ -47,7 +48,8 @@ public class AppendTest
     }
     
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {    
         CreateTable();
         

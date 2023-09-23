@@ -5,10 +5,12 @@
 
 using System;
 using System.Runtime;
+using Xunit;
 
-class TestClass
+public class TestClass
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         ByteArrayList list = new ByteArrayList();
 

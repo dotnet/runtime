@@ -4,6 +4,7 @@
 using System;
 
 using System.Collections.Generic;
+using Xunit;
 
 //Repro from http://www.simple-talk.com/dotnet/.net-framework/the-dangers-of-the-large-object-heap/
 
@@ -114,7 +115,8 @@ namespace LOH_test
 
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
 
             // Display results for cases both with and without the larger blocks

@@ -7,9 +7,11 @@
 
 
 using System;
+using Xunit;
 public class Test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int loop = 0;
         byte[] junk;

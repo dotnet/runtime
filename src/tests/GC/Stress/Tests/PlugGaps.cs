@@ -8,6 +8,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using Xunit;
 
 public class GCUtil
 {
@@ -109,7 +110,8 @@ public class Test
     public static List<GCHandle> gchList = new List<GCHandle>();
     public static List<byte[]> bList = new List<byte[]>();
 
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Console.WriteLine("Beginning phase 1");
         GCUtil.AllocWithGaps();

@@ -9,6 +9,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace LargeObjectTest
 {
@@ -74,7 +75,8 @@ namespace LargeObjectTest
             return true;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int loop = 0;
 

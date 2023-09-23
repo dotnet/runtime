@@ -4,6 +4,7 @@
 // Tests KeepAlive() with different types of inputs
 
 using System;
+using Xunit;
 
 public class Test {
 
@@ -31,7 +32,8 @@ public class Test {
         Red, Blue, Green
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         int returnValue = 0;

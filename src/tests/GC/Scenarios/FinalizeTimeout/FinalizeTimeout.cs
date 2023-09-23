@@ -4,10 +4,12 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 public class FinalizeTimeout
 {
-    public static void Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Console.WriteLine("Main start");
 

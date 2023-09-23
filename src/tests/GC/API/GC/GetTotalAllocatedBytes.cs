@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 public class Test_GetTotalAllocatedBytes 
 {
@@ -171,7 +172,8 @@ public class Test_GetTotalAllocatedBytes
             thr.Join();
     }
 
-    public static void Main() 
+    [Fact]
+    public static void TestEntryPoint() 
     {
         TestSingleThreaded();
         TestSingleThreadedLOH();
