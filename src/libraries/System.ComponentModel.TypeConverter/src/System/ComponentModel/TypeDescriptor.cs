@@ -262,10 +262,7 @@ namespace System.ComponentModel
         /// </summary>
         private static void CheckDefaultProvider(Type type)
         {
-            if (s_defaultProviders.ContainsKey(type))
-            {
-                return;
-            }
+            bool providerAdded = false;
 
             lock (s_internalSyncObject)
             {
@@ -278,25 +275,24 @@ namespace System.ComponentModel
                 // and it starts messing around with type information,
                 // this could infinitely recurse.
                 s_defaultProviders[type] = null;
-            }
 
-            // Always use core reflection when checking for
-            // the default provider attribute. If there is a
-            // provider, we probably don't want to build up our
-            // own cache state against the type. There shouldn't be
-            // more than one of these, but walk anyway. Walk in
-            // reverse order so that the most derived takes precidence.
-            object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
-            bool providerAdded = false;
-            for (int idx = attrs.Length - 1; idx >= 0; idx--)
-            {
-                TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
-                Type? providerType = Type.GetType(pa.TypeName);
-                if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
+                // Always use core reflection when checking for
+                // the default provider attribute. If there is a
+                // provider, we probably don't want to build up our
+                // own cache state against the type. There shouldn't be
+                // more than one of these, but walk anyway. Walk in
+                // reverse order so that the most derived takes precedence.
+                object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
+                for (int idx = attrs.Length - 1; idx >= 0; idx--)
                 {
-                    TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
-                    AddProvider(prov, type);
-                    providerAdded = true;
+                    TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
+                    Type? providerType = Type.GetType(pa.TypeName);
+                    if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
+                    {
+                        TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
+                        AddProvider(prov, type);
+                        providerAdded = true;
+                    }
                 }
             }
 
@@ -1446,62 +1442,58 @@ namespace System.ComponentModel
         private static TypeDescriptionNode NodeFor(Type type, bool createDelegator)
         {
             Debug.Assert(type != null, "Caller should validate");
+            CheckDefaultProvider(type);
 
-            lock (s_providerTable)
+            // First, check our provider type table to see if we have a matching
+            // provider for this type. The provider type table is a cache that
+            // matches types to providers. When a new provider is added or
+            // an existing one removed, the provider type table is torn
+            // down and automatically rebuilt on demand.
+            //
+            TypeDescriptionNode? node = null;
+            Type searchType = type;
+
+            while (node == null)
             {
-                CheckDefaultProvider(type);
+                node = (TypeDescriptionNode?)s_providerTypeTable[searchType] ??
+                    (TypeDescriptionNode?)s_providerTable[searchType];
 
-                // First, check our provider type table to see if we have a matching
-                // provider for this type. The provider type table is a cache that
-                // matches types to providers. When a new provider is added or
-                // an existing one removed, the provider type table is torn
-                // down and automatically rebuilt on demand.
-                //
-                TypeDescriptionNode? node = null;
-                Type searchType = type;
-
-                while (node == null)
+                if (node == null)
                 {
-                    node = (TypeDescriptionNode?)s_providerTypeTable[searchType] ??
-                        (TypeDescriptionNode?)s_providerTable[searchType];
+                    Type? baseType = GetNodeForBaseType(searchType);
 
-                    if (node == null)
+                    if (searchType == typeof(object) || baseType == null)
                     {
-                        Type? baseType = GetNodeForBaseType(searchType);
+                        lock (s_providerTable)
+                        {
+                            node = (TypeDescriptionNode?)s_providerTable[searchType];
 
-                        if (searchType == typeof(object) || baseType == null)
-                        {
-                            lock (s_providerTable)
+                            if (node == null)
                             {
-                                node = (TypeDescriptionNode?)s_providerTable[searchType];
-
-                                if (node == null)
-                                {
-                                    // The reflect type description provider is a default provider that
-                                    // can provide type information for all objects.
-                                    node = new TypeDescriptionNode(new ReflectTypeDescriptionProvider());
-                                    s_providerTable[searchType] = node;
-                                }
+                                // The reflect type description provider is a default provider that
+                                // can provide type information for all objects.
+                                node = new TypeDescriptionNode(new ReflectTypeDescriptionProvider());
+                                s_providerTable[searchType] = node;
                             }
-                        }
-                        else if (createDelegator)
-                        {
-                            node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(baseType));
-                            lock (s_providerTable)
-                            {
-                                s_providerTypeTable[searchType] = node;
-                            }
-                        }
-                        else
-                        {
-                            // Continue our search
-                            searchType = baseType;
                         }
                     }
+                    else if (createDelegator)
+                    {
+                        node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(baseType));
+                        lock (s_providerTable)
+                        {
+                            s_providerTypeTable[searchType] = node;
+                        }
+                    }
+                    else
+                    {
+                        // Continue our search
+                        searchType = baseType;
+                    }
                 }
-
-                return node;
             }
+
+            return node;
         }
 
         /// <summary>
