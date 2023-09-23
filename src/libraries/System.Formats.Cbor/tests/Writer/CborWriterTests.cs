@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using Test.Cryptography;
 using Xunit;
@@ -332,7 +333,36 @@ namespace System.Formats.Cbor.Tests
         [InlineData((CborConformanceMode)(-1))]
         public static void InvalidConformanceMode_ShouldThrowArgumentOutOfRangeException(CborConformanceMode mode)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new CborWriter(conformanceMode: mode));
+            Assert.Throws<ArgumentOutOfRangeException>("conformanceMode", () => new CborWriter(conformanceMode: mode));
+        }
+
+        [Theory]
+        [InlineData(-2)]
+        [InlineData(int.MinValue)]
+        public static void InvalidInitialCapacity_ShouldThrowArgumentOutOfRangeException(int capacity)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("initialCapacity", () => new CborWriter(initialCapacity: capacity));
+        }
+
+        [Theory]
+        [InlineData(-1, null)]
+        [InlineData(0, null)]
+        [InlineData(1, 1)]
+        [InlineData(1023, 1023)]
+        public static void InitialCapacity_ShouldSetInitialBuffer(int capacity, int? expectedBufferLength)
+        {
+            CborWriter writer = new CborWriter(initialCapacity: capacity);
+            byte[]? buffer = (byte[]?)typeof(CborWriter).GetField("_buffer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(writer);
+
+            if (expectedBufferLength is null)
+            {
+                Assert.Null(buffer);
+            }
+            else
+            {
+                Assert.NotNull(buffer);
+                Assert.Equal(expectedBufferLength.Value, buffer.Length);
+            }
         }
 
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new [] { x });
