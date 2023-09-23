@@ -210,8 +210,6 @@
     <!-- Properties for OutputType Exe -->
     <EnableAggressiveTrimming Condition="'$(OutputType)' == 'Exe'">true</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(OutputType)' == 'Exe'">true</PublishTrimmed>
-    <TrimMode Condition="'$(OutputType)' == 'Exe'">Link</TrimMode>
-    <ShouldILStrip Condition="'$(OutputType)' == 'Exe'">true</ShouldILStrip>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
