@@ -1103,10 +1103,10 @@ TADDR PEAssembly::GetMDInternalRWAddress()
 // Returns the AssemblyBinder* instance associated with the PEAssembly
 ASSEMBLYBINDERREF PEAssembly::GetAssemblyBinder()
 {
-    LIMITED_METHOD_CONTRACT;
-    
     CONTRACTL
     {
+        GC_NOTRIGGER;
+        NOTHROW;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END

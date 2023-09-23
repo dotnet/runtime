@@ -33,7 +33,9 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly
     CONTRACTL
     {
         INSTANCE_CHECK;
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(ppAssembly));
         PRECONDITION(CheckPointer(pAppDomain));
         PRECONDITION(IsCoreLib() == FALSE); // This should never be called for CoreLib (explicit loading)
@@ -42,11 +44,21 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly
 
     HRESULT hr=S_OK;
 
-    // Have a default binding context setup
-    ASSEMBLYBINDERREF pBinder = GetBinderFromParentAssembly(pAppDomain);
+    GCX_COOP();
 
-    BINDERASSEMBLYREF pPrivAsm;
-    _ASSERTE(pBinder != NULL);
+    struct
+    {
+        ASSEMBLYBINDERREF pBinder;
+        BINDERASSEMBLYREF pPrivAsm;
+    } gc;
+
+    // Have a default binding context setup
+    gc.pBinder = GetBinderFromParentAssembly(pAppDomain);
+    gc.pPrivAsm = NULL;
+
+    _ASSERTE(gc.pBinder != NULL);
+
+    GCPROTECT_BEGIN(gc);
 
     if (IsCoreLibSatellite())
     {
@@ -64,7 +76,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly
             PtrToArgSlot(sSystemDirectory.GetUnicode()),
             PtrToArgSlot(sSimpleName.GetUnicode()),
             PtrToArgSlot(sCultureName.GetUnicode()),
-            PtrToArgSlot(&pPrivAsm)
+            PtrToArgSlot(&gc.pPrivAsm)
         };
 
         hr = methSatellite.Call_RetHR(args);
@@ -77,9 +89,9 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly
         MethodDescCallSite methBindAssemblyByName(METHOD__BINDER_ASSEMBLYBINDER__BINDASSEMBLYBYNAME);
         ARG_SLOT args[3] =
         {
-            ObjToArgSlot(pBinder),
+            ObjToArgSlot(gc.pBinder),
             PtrToArgSlot(&assemblyNameData),
-            PtrToArgSlot(&pPrivAsm)
+            PtrToArgSlot(&gc.pPrivAsm)
         };
 
         hr = methBindAssemblyByName.Call_RetHR(args);
@@ -87,9 +99,11 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDERASSEMBLYREF* ppAssembly
 
     if (SUCCEEDED(hr))
     {
-        _ASSERTE(pPrivAsm != NULL);
-        *ppAssembly = pPrivAsm;
+        _ASSERTE(gc.pPrivAsm != NULL);
+        *ppAssembly = gc.pPrivAsm;
     }
+
+    GCPROTECT_END();
 
     return hr;
 }

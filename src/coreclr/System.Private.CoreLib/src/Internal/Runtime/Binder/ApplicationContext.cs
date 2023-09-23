@@ -67,13 +67,19 @@ namespace Internal.Runtime.Binder
             int iEnd = startPos; // Where current path ends
             int iNext;           // Where next path starts
 
+            static int IndexOfInRange(ReadOnlySpan<char> str, int start, char ch)
+            {
+                int index = str[start..].IndexOf(ch);
+                return index >= 0 ? index + start : index;
+            }
+
             if (wrappedWithQuotes)
             {
-                iEnd = paths.AsSpan(iEnd).IndexOf('\"');
+                iEnd = IndexOfInRange(paths, iEnd, '\"');
                 if (iEnd != -1)
                 {
                     // Find where the next path starts - there should be a path separator right after the closing quotation mark
-                    iNext = paths.AsSpan(iEnd).IndexOf(PATH_SEPARATOR_CHAR);
+                    iNext = IndexOfInRange(paths, iEnd, PATH_SEPARATOR_CHAR);
                     if (iNext != -1)
                     {
                         iNext++;
@@ -89,7 +95,7 @@ namespace Internal.Runtime.Binder
                     throw new ArgumentException(nameof(paths));
                 }
             }
-            else if ((iEnd = paths.AsSpan(iEnd).IndexOf(PATH_SEPARATOR_CHAR)) != -1)
+            else if ((iEnd = IndexOfInRange(paths, iEnd, PATH_SEPARATOR_CHAR)) != -1)
             {
                 iNext = iEnd + 1;
             }

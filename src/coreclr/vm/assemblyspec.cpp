@@ -373,7 +373,7 @@ ASSEMBLYBINDERREF AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_COOPERATIVE;
         PRECONDITION(pDomain != NULL);
     }
     CONTRACTL_END;

@@ -3565,7 +3565,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
     PRECONDITION(pSpec->GetAppDomain() == this);
     PRECONDITION(this==::GetAppDomain());
 
-    GCX_PREEMP();
+    GCX_COOP();
 
     BOOL fForceReThrow = FALSE;
 
@@ -3582,7 +3582,9 @@ PEAssembly * AppDomain::BindAssemblySpec(
         {
 
             {
-                BINDERASSEMBLYREF boundAssembly;
+                BINDERASSEMBLYREF boundAssembly = NULL;
+                GCPROTECT_BEGIN(boundAssembly);
+
                 hrBindResult = pSpec->Bind(this, &boundAssembly);
 
                 if (boundAssembly != NULL)
@@ -3631,6 +3633,8 @@ PEAssembly * AppDomain::BindAssemblySpec(
                         }
                     }
                 }
+
+                GCPROTECT_END();
             }
         }
     }
