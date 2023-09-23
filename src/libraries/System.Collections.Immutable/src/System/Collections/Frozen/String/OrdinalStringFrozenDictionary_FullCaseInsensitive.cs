@@ -12,8 +12,9 @@ namespace System.Collections.Frozen
             TValue[] values,
             IEqualityComparer<string> comparer,
             int minimumLength,
-            int maximumLengthDiff)
-            : base(keys, values, comparer, minimumLength, maximumLengthDiff)
+            int maximumLengthDiff,
+            ulong lengthFilter)
+            : base(keys, values, comparer, minimumLength, maximumLengthDiff, lengthFilter)
         {
         }
 

@@ -184,14 +184,14 @@ namespace System.Collections.Frozen
                         if (analysis.IgnoreCase)
                         {
                             frozenDictionary = analysis.AllAsciiIfIgnoreCase
-                                ? new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveAsciiSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
-                                : new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveAsciiSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount)
+                                : new OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
                             frozenDictionary = analysis.HashCount == 1
-                                ? new OrdinalStringFrozenDictionary_RightJustifiedSingleChar<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
-                                : new OrdinalStringFrozenDictionary_RightJustifiedSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenDictionary_RightJustifiedSingleChar<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex)
+                                : new OrdinalStringFrozenDictionary_RightJustifiedSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                     else
@@ -199,14 +199,14 @@ namespace System.Collections.Frozen
                         if (analysis.IgnoreCase)
                         {
                             frozenDictionary = analysis.AllAsciiIfIgnoreCase
-                                ? new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveAsciiSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
-                                : new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveAsciiSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount)
+                                : new OrdinalStringFrozenDictionary_LeftJustifiedCaseInsensitiveSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
                             frozenDictionary = analysis.HashCount == 1
-                                ? new OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
-                                : new OrdinalStringFrozenDictionary_LeftJustifiedSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenDictionary_LeftJustifiedSingleChar<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex)
+                                : new OrdinalStringFrozenDictionary_LeftJustifiedSubstring<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                 }
@@ -215,12 +215,12 @@ namespace System.Collections.Frozen
                     if (analysis.IgnoreCase)
                     {
                         frozenDictionary = analysis.AllAsciiIfIgnoreCase
-                            ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
-                            : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                            ? new OrdinalStringFrozenDictionary_FullCaseInsensitiveAscii<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter)
+                            : new OrdinalStringFrozenDictionary_FullCaseInsensitive<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter);
                     }
                     else
                     {
-                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                        frozenDictionary = new OrdinalStringFrozenDictionary_Full<TValue>(keys, values, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter);
                     }
                 }
 

@@ -11,8 +11,9 @@ namespace System.Collections.Frozen
             string[] entries,
             IEqualityComparer<string> comparer,
             int minimumLength,
-            int maximumLengthDiff)
-            : base(entries, comparer, minimumLength, maximumLengthDiff)
+            int maximumLengthDiff,
+            ulong lengthFilter)
+            : base(entries, comparer, minimumLength, maximumLengthDiff, lengthFilter)
         {
         }
 

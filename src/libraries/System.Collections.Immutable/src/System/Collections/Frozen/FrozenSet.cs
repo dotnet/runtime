@@ -132,14 +132,14 @@ namespace System.Collections.Frozen
                         if (analysis.IgnoreCase)
                         {
                             frozenSet = analysis.AllAsciiIfIgnoreCase
-                                ? new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
-                                : new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount)
+                                : new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
                             frozenSet = analysis.HashCount == 1
-                                ? new OrdinalStringFrozenSet_RightJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
-                                : new OrdinalStringFrozenSet_RightJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenSet_RightJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex)
+                                : new OrdinalStringFrozenSet_RightJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                     else
@@ -147,14 +147,14 @@ namespace System.Collections.Frozen
                         if (analysis.IgnoreCase)
                         {
                             frozenSet = analysis.AllAsciiIfIgnoreCase
-                                ? new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount)
-                                : new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount)
+                                : new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
                             frozenSet = analysis.HashCount == 1
-                                ? new OrdinalStringFrozenSet_LeftJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex)
-                                : new OrdinalStringFrozenSet_LeftJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenSet_LeftJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex)
+                                : new OrdinalStringFrozenSet_LeftJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                 }
@@ -163,12 +163,12 @@ namespace System.Collections.Frozen
                     if (analysis.IgnoreCase)
                     {
                         frozenSet = analysis.AllAsciiIfIgnoreCase
-                            ? new OrdinalStringFrozenSet_FullCaseInsensitiveAscii(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff)
-                            : new OrdinalStringFrozenSet_FullCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                            ? new OrdinalStringFrozenSet_FullCaseInsensitiveAscii(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter)
+                            : new OrdinalStringFrozenSet_FullCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter);
                     }
                     else
                     {
-                        frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff);
+                        frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter);
                     }
                 }
 

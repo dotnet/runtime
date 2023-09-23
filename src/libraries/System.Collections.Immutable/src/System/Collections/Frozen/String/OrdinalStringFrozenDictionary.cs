@@ -16,6 +16,7 @@ namespace System.Collections.Frozen
         private readonly TValue[] _values;
         private readonly int _minimumLength;
         private readonly int _maximumLengthDiff;
+        private readonly ulong _lengthFilter;
 
         internal OrdinalStringFrozenDictionary(
             string[] keys,
@@ -23,6 +24,7 @@ namespace System.Collections.Frozen
             IEqualityComparer<string> comparer,
             int minimumLength,
             int maximumLengthDiff,
+            ulong lengthFilter,
             int hashIndex = -1,
             int hashCount = -1) :
             base(comparer)
@@ -36,6 +38,7 @@ namespace System.Collections.Frozen
 
             _minimumLength = minimumLength;
             _maximumLengthDiff = maximumLengthDiff;
+            _lengthFilter = lengthFilter;
 
             HashIndex = hashIndex;
             HashCount = hashCount;
@@ -74,20 +77,23 @@ namespace System.Collections.Frozen
         {
             if ((uint)(key.Length - _minimumLength) <= (uint)_maximumLengthDiff)
             {
-                int hashCode = GetHashCode(key);
-                _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);
-
-                while (index <= endIndex)
+                if ((_lengthFilter & (1UL << (key.Length % 64))) > 0)
                 {
-                    if (hashCode == _hashTable.HashCodes[index])
-                    {
-                        if (Equals(key, _keys[index]))
-                        {
-                            return ref _values[index];
-                        }
-                    }
+                    int hashCode = GetHashCode(key);
+                    _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);
 
-                    index++;
+                    while (index <= endIndex)
+                    {
+                        if (hashCode == _hashTable.HashCodes[index])
+                        {
+                            if (Equals(key, _keys[index]))
+                            {
+                                return ref _values[index];
+                            }
+                        }
+
+                        index++;
+                    }
                 }
             }
 
