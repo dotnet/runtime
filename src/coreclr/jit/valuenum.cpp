@@ -10557,8 +10557,7 @@ void Compiler::fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree)
     }
 
     // For now we're interested only in SimpleStaticKnownAddress
-    vnStore->AddToFieldAddressToFieldSeqMap(tree->gtVNPair.GetLiberal(),
-        tree->gtFieldSeq);
+    vnStore->AddToFieldAddressToFieldSeqMap(tree->gtVNPair.GetLiberal(), tree->gtFieldSeq);
 }
 
 //------------------------------------------------------------------------
