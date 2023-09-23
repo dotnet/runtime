@@ -133,16 +133,8 @@ namespace System
             // Get all of the values as the underlying type and copy them to a new array of the enum type.
             Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
             Array ret = Array.CreateInstance(this, values.Length);
-#if MONO
-            // TODO https://github.com/dotnet/runtime/issues/79224:
-            // Array.Copy can be used instead when bool[] is no longer supported, or if mono's Array.Copy is updated to support copying a bool[] to an EnumBackedByBool[].
-            for (int i = 0; i < values.Length; i++)
-            {
-                ret.SetValue(Enum.ToObject(this, values.GetValue(i)!), i);
-            }
-#else
             Array.Copy(values, ret, values.Length);
-#endif
+
             return ret;
         }
 
