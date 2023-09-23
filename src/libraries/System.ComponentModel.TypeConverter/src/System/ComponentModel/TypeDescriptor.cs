@@ -1456,7 +1456,7 @@ namespace System.ComponentModel
             while (node == null)
             {
                 node = (TypeDescriptionNode?)s_providerTypeTable[searchType] ??
-                    (TypeDescriptionNode?)s_providerTable[searchType];
+                       (TypeDescriptionNode?)s_providerTable[searchType];
 
                 if (node == null)
                 {
