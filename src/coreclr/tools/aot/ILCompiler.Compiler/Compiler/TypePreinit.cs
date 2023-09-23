@@ -452,7 +452,7 @@ namespace ILCompiler
                             }
 
                             Value retVal;
-                            if ((!method.IsIntrinsic && !method.OwningType.IsIntrinsic) || !TryHandleIntrinsicCall(method, methodParams, out retVal))
+                            if (!method.IsIntrinsic || !TryHandleIntrinsicCall(method, methodParams, out retVal))
                             {
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
@@ -1699,13 +1699,6 @@ namespace ILCompiler
                         && (parameters[0] is RuntimeTypeValue || parameters[1] is RuntimeTypeValue):
                     {
                         retVal = ValueTypeValue.FromSByte(parameters[0] == parameters[1] ? (sbyte)1 : (sbyte)0);
-                        return true;
-                    }
-                case "get_IsSupported" when method.OwningType is MetadataType sse2Type
-                        && sse2Type.Name == "Sse2":
-                    {
-                        // TODO: hacky
-                        retVal = ValueTypeValue.FromSByte(sse2Type.Context.Target.Architecture == TargetArchitecture.X64 ? (sbyte)1 : (sbyte)0);
                         return true;
                     }
             }
