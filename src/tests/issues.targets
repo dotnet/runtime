@@ -3728,6 +3728,12 @@
         </ExcludeList>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' and '$(TargetOS)' == 'linux'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/**">
+            <Issue>out of memory issue</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <Target Name="GetFilteredExcludeList" Returns="@(FilteredExcludeList)">
         <ItemGroup>
             <FilteredExcludeList
