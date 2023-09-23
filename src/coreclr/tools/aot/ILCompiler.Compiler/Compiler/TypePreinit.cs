@@ -779,7 +779,7 @@ namespace ILCompiler
                             }
                             else if (popped.ValueKind == StackValueKind.ByRef
                                 && (opcode == ILOpcode.conv_i || opcode == ILOpcode.conv_u)
-                                && reader.PeekILOpcode() is >= ILOpcode.ldind_i1 and <= ILOpcode.ldind_i)
+                                && (reader.PeekILOpcode() is >= ILOpcode.ldind_i1 and <= ILOpcode.ldind_ref) || reader.PeekILOpcode() == ILOpcode.ldobj)
                             {
                                 // In the interpreter memory model, there's no conversion from a byref to an integer.
                                 // Roslyn however sometimes emits a sequence of conv_u followed by ldind and we can

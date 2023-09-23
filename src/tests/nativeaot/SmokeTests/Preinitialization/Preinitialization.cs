@@ -53,6 +53,7 @@ internal class Program
         TestStaticInterfaceMethod.Run();
         TestConstrainedCall.Run();
         TestTypeHandles.Run();
+        TestIndirectLoads.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -1059,13 +1060,19 @@ class TestReadOnlySpan
 
     class MoreOperations
     {
-        public readonly static int Length;
+        public readonly static int IntsLength;
+        public readonly static int StringLength;
+        public readonly static char FirstChar;
 
         private static ReadOnlySpan<int> Ints => new int[] { 5, 6, 7, 8 };
 
+        private static ReadOnlySpan<char> GetString() => "Hello World!";
+
         static MoreOperations()
         {
-            Length = Ints.Length;
+            IntsLength = Ints.Length;
+            StringLength = GetString().Length;
+            FirstChar = GetString()[0];
         }
     }
 
@@ -1083,7 +1090,9 @@ class TestReadOnlySpan
             DefaultInstanceAccess.Sum.ToString(); // make sure cctor is looked at
 
         Assert.IsPreinitialized(typeof(MoreOperations));
-        Assert.AreEqual(4, MoreOperations.Length);
+        Assert.AreEqual(4, MoreOperations.IntsLength);
+        Assert.AreEqual(12, MoreOperations.StringLength);
+        Assert.AreEqual('H', MoreOperations.FirstChar);
     }
 }
 
@@ -1192,6 +1201,28 @@ class TestTypeHandles
     }
 }
 
+class TestIndirectLoads
+{
+    static unsafe U Read<T, U>(T val) where T : unmanaged where U : unmanaged
+        => *(U*)&val;
+
+    class LdindTester
+    {
+        public static sbyte SByte = Read<byte, sbyte>(byte.MaxValue);
+        public static short Short = Read<ushort, short>(ushort.MaxValue);
+        public static int Int = Read<uint, int>(uint.MaxValue);
+        public static long Long = Read<ulong, long>(ulong.MaxValue);
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(LdindTester));
+        Assert.AreEqual(-1, LdindTester.SByte);
+        Assert.AreEqual(-1, LdindTester.Short);
+        Assert.AreEqual(-1, LdindTester.Int);
+        Assert.AreEqual(-1, LdindTester.Long);
+    }
+}
 
 static class Assert
 {
