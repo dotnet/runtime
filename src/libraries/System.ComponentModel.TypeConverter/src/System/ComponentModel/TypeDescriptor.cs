@@ -1447,7 +1447,7 @@ namespace System.ComponentModel
         {
             Debug.Assert(type != null, "Caller should validate");
 
-            lock (s_internalSyncObject)
+            lock (s_providerTable)
             {
                 CheckDefaultProvider(type);
 
@@ -1564,8 +1564,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    //lock (s_internalSyncObject)
-                        node = NodeFor(type);
+                    node = NodeFor(type);
                 }
             }
 
