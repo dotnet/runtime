@@ -224,9 +224,11 @@ LEAF_END RhpByRefAssignRefArm64, _TEXT
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x12
         ccmp    x14, x12, #0x2, hs
-        blo     C_FUNC(RhpAssignRefArm64)
+        bhs     LOCAL_LABEL(NotInHeap)
 
-NotInHeap:
+        b       C_FUNC(RhpAssignRefArm64)
+
+LOCAL_LABEL(NotInHeap):
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
         str     x15, [x14], 8
         ret
@@ -300,30 +302,30 @@ LEAF_END RhpAssignRef, _TEXT
     ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
         casal  x10, x1, [x0]                  // exchange
         cmp    x2, x10
-        bne    CmpXchgNoUpdate
+        bne    LOCAL_LABEL(CmpXchgNoUpdate)
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        b      DoCardsCmpXchg
-CmpXchgRetry:
+        b      LOCAL_LABEL(DoCardsCmpXchg)
+LOCAL_LABEL(CmpXchgRetry):
         // Check location value is what we expect.
     ALTERNATE_ENTRY  RhpCheckedLockCmpXchgAVLocation2
         ldaxr   x10, [x0]
         cmp     x10, x2
-        bne     CmpXchgNoUpdate
+        bne     LOCAL_LABEL(CmpXchgNoUpdate)
 
         // Current value matches comparand, attempt to update with the new value.
         stlxr   w12, x1, [x0]
         cbnz    w12, CmpXchgRetry
 #endif
 
-DoCardsCmpXchg:
+LOCAL_LABEL(DoCardsCmpXchg):
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         // already correctly set up.
 
         INSERT_CHECKED_WRITE_BARRIER_CORE x0, x1
 
-CmpXchgNoUpdate:
+LOCAL_LABEL(CmpXchgNoUpdate):
         // x10 still contains the original value.
         mov     x0, x10
 
@@ -364,18 +366,18 @@ NoBarrierCmpXchg:
         swpal  x1, x10, [x0]                   // exchange
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        b      DoCardsXchg
-ExchangeRetry:
+        b      LOCAL_LABEL(DoCardsXchg)
+LOCAL_LABEL(ExchangeRetry):
         // Read the existing memory location.
     ALTERNATE_ENTRY  RhpCheckedXchgAVLocation2
         ldaxr   x10,  [x0]
 
         // Attempt to update with the new value.
         stlxr   w12, x1, [x0]
-        cbnz    w12, ExchangeRetry
+        cbnz    w12, LOCAL_LABEL(ExchangeRetry)
 #endif
 
-DoCardsXchg:
+LOCAL_LABEL(DoCardsXchg):
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         // already correctly set up.
