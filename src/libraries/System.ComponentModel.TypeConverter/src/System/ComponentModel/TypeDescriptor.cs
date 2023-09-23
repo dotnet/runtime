@@ -1446,58 +1446,62 @@ namespace System.ComponentModel
         private static TypeDescriptionNode NodeFor(Type type, bool createDelegator)
         {
             Debug.Assert(type != null, "Caller should validate");
-            CheckDefaultProvider(type);
 
-            // First, check our provider type table to see if we have a matching
-            // provider for this type. The provider type table is a cache that
-            // matches types to providers. When a new provider is added or
-            // an existing one removed, the provider type table is torn
-            // down and automatically rebuilt on demand.
-            //
-            TypeDescriptionNode? node = null;
-            Type searchType = type;
-
-            while (node == null)
+            lock (s_internalSyncObject)
             {
-                node = (TypeDescriptionNode?)s_providerTypeTable[searchType] ??
-                       (TypeDescriptionNode?)s_providerTable[searchType];
+                CheckDefaultProvider(type);
 
-                if (node == null)
+                // First, check our provider type table to see if we have a matching
+                // provider for this type. The provider type table is a cache that
+                // matches types to providers. When a new provider is added or
+                // an existing one removed, the provider type table is torn
+                // down and automatically rebuilt on demand.
+                //
+                TypeDescriptionNode? node = null;
+                Type searchType = type;
+
+                while (node == null)
                 {
-                    Type? baseType = GetNodeForBaseType(searchType);
+                    node = (TypeDescriptionNode?)s_providerTypeTable[searchType] ??
+                        (TypeDescriptionNode?)s_providerTable[searchType];
 
-                    if (searchType == typeof(object) || baseType == null)
+                    if (node == null)
                     {
-                        lock (s_providerTable)
-                        {
-                            node = (TypeDescriptionNode?)s_providerTable[searchType];
+                        Type? baseType = GetNodeForBaseType(searchType);
 
-                            if (node == null)
+                        if (searchType == typeof(object) || baseType == null)
+                        {
+                            lock (s_providerTable)
                             {
-                                // The reflect type description provider is a default provider that
-                                // can provide type information for all objects.
-                                node = new TypeDescriptionNode(new ReflectTypeDescriptionProvider());
-                                s_providerTable[searchType] = node;
+                                node = (TypeDescriptionNode?)s_providerTable[searchType];
+
+                                if (node == null)
+                                {
+                                    // The reflect type description provider is a default provider that
+                                    // can provide type information for all objects.
+                                    node = new TypeDescriptionNode(new ReflectTypeDescriptionProvider());
+                                    s_providerTable[searchType] = node;
+                                }
                             }
                         }
-                    }
-                    else if (createDelegator)
-                    {
-                        node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(baseType));
-                        lock (s_providerTable)
+                        else if (createDelegator)
                         {
-                            s_providerTypeTable[searchType] = node;
+                            node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(baseType));
+                            lock (s_providerTable)
+                            {
+                                s_providerTypeTable[searchType] = node;
+                            }
+                        }
+                        else
+                        {
+                            // Continue our search
+                            searchType = baseType;
                         }
                     }
-                    else
-                    {
-                        // Continue our search
-                        searchType = baseType;
-                    }
                 }
-            }
 
-            return node;
+                return node;
+            }
         }
 
         /// <summary>
@@ -1560,7 +1564,8 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    node = NodeFor(type);
+                    //lock (s_internalSyncObject)
+                        node = NodeFor(type);
                 }
             }
 
