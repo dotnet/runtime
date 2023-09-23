@@ -72,9 +72,9 @@ namespace System.Formats.Cbor
                 string dateString = ReadTextString();
 
                 // TODO determine if conformance modes should allow inexact date sting parsing
-                if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, null, DateTimeStyles.RoundtripKind, out DateTimeOffset result))
+                if (!DateTimeOffset.TryParseExact(dateString, CborWriter.Rfc3339FormatString, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTimeOffset result))
                 {
-                    throw new CborContentException(SR.Cbor_Reader_InvalidDateTimeEncoding);
+                    throw new CborContentException(SR.Cbor_Reader_InvalidDateTimeEncoding + " " + dateString);
                 }
 
                 return result;
