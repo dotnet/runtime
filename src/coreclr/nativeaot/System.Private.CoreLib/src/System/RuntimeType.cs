@@ -5,12 +5,15 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using Internal.Runtime;
 
 namespace System
 {
     // Runtime implemented Type
-    public sealed class RuntimeType : TypeInfo, ICloneable
+    public sealed unsafe class RuntimeType : TypeInfo, ICloneable
     {
+        private MethodTable* _pUnderlyingEEType;
+
         public override string? GetEnumName(object value)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -119,9 +122,6 @@ namespace System
             return Enum.GetValuesAsUnderlyingType(this);
         }
 
-        internal bool IsActualEnum
-            => TryGetEEType(out EETypePtr eeType) && eeType.IsEnum;
-
         object ICloneable.Clone()
             => this;
 
@@ -129,10 +129,33 @@ namespace System
         public override bool IsSecuritySafeCritical => false;
         public override bool IsSecurityTransparent => false;
 
-        protected override bool IsArrayImpl() => throw new NotImplementedException();
-        protected override bool IsByRefImpl() => throw new NotImplementedException();
-        protected override bool IsPointerImpl() => throw new NotImplementedException();
-        protected override bool HasElementTypeImpl() => throw new NotImplementedException();
+        internal new unsafe bool IsInterface
+            => _pUnderlyingEEType->IsInterface;
+
+        protected override bool IsValueTypeImpl()
+            => _pUnderlyingEEType->IsValueType;
+
+        internal bool IsActualValueType
+            => _pUnderlyingEEType->IsValueType;
+
+        public override unsafe bool IsEnum
+            => new EETypePtr(_pUnderlyingEEType).IsEnum;
+
+        internal unsafe bool IsActualEnum
+            => new EETypePtr(_pUnderlyingEEType).IsEnum;
+
+        protected override unsafe bool IsArrayImpl()
+            => _pUnderlyingEEType->IsArray;
+
+        protected override unsafe bool IsByRefImpl()
+            => _pUnderlyingEEType->IsByRef;
+
+        protected override unsafe bool IsPointerImpl()
+            => _pUnderlyingEEType->IsPointer;
+
+        protected override unsafe bool HasElementTypeImpl()
+            => _pUnderlyingEEType->IsParameterizedType;
+
         public override Type? GetElementType() => throw new NotImplementedException();
         protected override TypeAttributes GetAttributeFlagsImpl() => throw new NotImplementedException();
         protected override bool IsCOMObjectImpl() => false;
