@@ -29,7 +29,7 @@ namespace Wasm.Build.Tests
                 ("InvariantTimezone", false),
                 ("InvariantGlobalization", false),
                 ("WasmNativeStrip", true),
-                ("WasmNativeDebugSymbols", true),
+                //("WasmNativeDebugSymbols", true),
                 // ("WasmNativeStrip", true) -- tested separately because it has special handling in targets
             };
 
