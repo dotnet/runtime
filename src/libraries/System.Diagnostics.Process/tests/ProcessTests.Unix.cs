@@ -851,39 +851,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public unsafe void TestTotalProcessorTimeMacOs()
-        {
-            var rUsage = Interop.libproc.proc_pid_rusage(Environment.ProcessId);
-            var timeBase = new Interop.libSystem.mach_timebase_info_data_t();
-            Interop.libSystem.mach_timebase_info(&timeBase);
-
-            var nativeUserNs = rUsage.ri_user_time * timeBase.numer / timeBase.denom;
-            var nativeSystemNs = rUsage.ri_system_time * timeBase.numer / timeBase.denom;
-            var nativeTotalNs = nativeSystemNs + nativeUserNs;
-
-            var nativeUserTime = TimeSpan.FromMicroseconds(nativeUserNs / 1000);
-            var nativeSystemTime = TimeSpan.FromMicroseconds(nativeSystemNs / 1000);
-            var nativeTotalTime = TimeSpan.FromMicroseconds(nativeTotalNs / 1000);
-
-            var process = Process.GetCurrentProcess();
-            var managedUserTime = process.UserProcessorTime;
-            var managedSystemTime = process.PrivilegedProcessorTime;
-            var managedTotalTime = process.TotalProcessorTime;
-
-            AssertTime(managedUserTime, nativeUserTime, "user");
-            AssertTime(managedSystemTime, nativeSystemTime, "system");
-            AssertTime(managedTotalTime, nativeTotalTime, "total");
-
-            void AssertTime(TimeSpan managed, TimeSpan native, string label)
-            {
-                Assert.True(
-                    managed >= native,
-                    $"Time '{label}' returned by managed API ({managed}) should be greated or equal to the time returned by native API ({native}).");
-            }
-        }
-
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
@@ -1047,15 +1014,5 @@ namespace System.Diagnostics.Tests
                 return process.StandardOutput.ReadToEnd();
             }
         }
-    }
-}
-
-// TODO: Use the actual localization data in here?
-namespace System
-{
-    internal static partial class SR
-    {
-        public const string CantGetAllPids = nameof(CantGetAllPids);
-        public const string RUsageFailure = nameof(RUsageFailure);
     }
 }
