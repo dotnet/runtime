@@ -2033,6 +2033,7 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void SplitName(string? fullname, out string? name, out ReadOnlySpan<char> ns)
         {
             name = null;
@@ -2045,18 +2046,22 @@ namespace System
             int nsDelimiter = fullname.LastIndexOf('.');
             if (nsDelimiter >= 0)
             {
-                ns = fullname.AsSpan(0, nsDelimiter);
-                int nameLength = fullname.Length - ns.Length - 1;
-                if (nameLength != 0)
-                    name = fullname.Substring(nsDelimiter + 1, nameLength);
-                else
-                    name = "";
-                Debug.Assert(fullname.Equals(ns.ToString() + "." + name));
+                SplitFullName(fullname, nsDelimiter, out name, out ns);
             }
             else
             {
                 name = fullname;
             }
+        }
+        private static void SplitFullName(string fullname, int nsDelimiter, out string name, out ReadOnlySpan<char> ns)
+        {
+            ns = fullname.AsSpan(0, nsDelimiter);
+            int nameLength = fullname.Length - ns.Length - 1;
+            if (nameLength != 0)
+                name = fullname.Substring(nsDelimiter + 1, nameLength);
+            else
+                name = "";
+            Debug.Assert(fullname.Equals(ns.ToString() + "." + name));
         }
         #endregion
 
