@@ -1635,7 +1635,7 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
         return false;
     }
 
-    if (IsVNObjHandle(vn))
+    if (IsVNHandle(vn))
     {
         assert(CoercedConstantValue<size_t>(vn) != 0);
         return true;
