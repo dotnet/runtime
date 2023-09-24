@@ -13,8 +13,10 @@ namespace Internal.Runtime.Binder
         // fields used by VM
 #pragma warning disable CA1823, 414, 169
         private AssemblyBinder? m_binder;
-        public IntPtr PEImage;
+        private AssemblyName m_assemblyName;
+        private IntPtr m_peImage;
         private IntPtr m_pDomainAssembly;
+        private bool m_isInTPA;
         private bool m_isCoreLib;
 #pragma warning restore CA1823, 414, 169
 
@@ -24,14 +26,16 @@ namespace Internal.Runtime.Binder
             set => m_binder = value;
         }
 
-        public AssemblyName AssemblyName { get; }
+        public AssemblyName AssemblyName => m_assemblyName;
 
-        public bool IsInTPA { get; }
+        public IntPtr PEImage => m_peImage;
+
+        public bool IsInTPA => m_isInTPA;
 
         public Assembly(nint pPEImage, bool isInTPA)
         {
             // Get assembly name def from meta data import and store it for later refs access
-            AssemblyName = new AssemblyName(pPEImage)
+            m_assemblyName = new AssemblyName(pPEImage)
             {
                 IsDefinition = true
             };
@@ -45,8 +49,8 @@ namespace Internal.Runtime.Binder
                 throw new BadImageFormatException();
             }
 
-            IsInTPA = isInTPA;
-            PEImage = pPEImage;
+            m_isInTPA = isInTPA;
+            m_peImage = pPEImage;
         }
     }
 }

@@ -683,7 +683,7 @@ PEAssembly::PEAssembly(
     m_pHostAssembly = nullptr;
     m_pFallbackBinder = nullptr;
 
-    pPEImage = (pBindResultInfo != NULL) ? pBindResultInfo->m_PEImage : pPEImage;
+    pPEImage = (pBindResultInfo != NULL) ? pBindResultInfo->m_peImage : pPEImage;
     if (pPEImage)
     {
         _ASSERTE(pPEImage->CheckUniqueInstance());

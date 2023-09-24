@@ -146,6 +146,7 @@ class OBJECTREF {
         class ExecutionContextObject* m_asExecutionContext;
         class AssemblyLoadContextBaseObject* m_asAssemblyLoadContextBase;
         class AssemblyBinderObject* m_asAssemblyBinder;
+        class BinderAssemblyObject* m_asBinderAssembly;
     };
 
     public:

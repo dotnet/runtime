@@ -1208,6 +1208,13 @@ DEFINE_METHOD(BINDER_DEFAULTASSEMBLYBINDER, SETUP_BINDING_PATHS, SetupBindingPat
 DEFINE_METHOD(BINDER_DEFAULTASSEMBLYBINDER, CREATECORELIB, CreateCoreLib, IM_IntPtr_RetBinderAssembly)
 
 DEFINE_CLASS(BINDER_ASSEMBLY, InternalBinder, Assembly)
+DEFINE_CLASS_U(InternalBinder, Assembly, BinderAssemblyObject)
+DEFINE_FIELD_U(m_binder, BinderAssemblyObject, m_binder)
+DEFINE_FIELD_U(m_assemblyName, BinderAssemblyObject, m_assemblyName)
+DEFINE_FIELD_U(m_peImage, BinderAssemblyObject, m_peImage)
+DEFINE_FIELD_U(m_pDomainAssembly, BinderAssemblyObject, m_pDomainAssembly)
+DEFINE_FIELD_U(m_isInTPA, BinderAssemblyObject, m_isInTPA)
+DEFINE_FIELD_U(m_isCoreLib, BinderAssemblyObject, m_isCoreLib)
 
 DEFINE_CLASS(BINDER_ASSEMBLYBINDERCOMMON, InternalBinder, AssemblyBinderCommon)
 DEFINE_METHOD(BINDER_ASSEMBLYBINDERCOMMON, BINDTOSYSTEMSATELLITE, BindToSystemSatellite, SM_PtrChar_PtrChar_PtrChar_RefBinderAssembly_RetInt)

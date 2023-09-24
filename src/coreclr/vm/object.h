@@ -1461,8 +1461,10 @@ class BinderAssemblyObject : public Object
 {
 public:
     OBJECTREF m_binder;
-    PEImage* m_PEImage;
+    OBJECTREF m_assemblyName;
+    PEImage* m_peImage;
     DomainAssembly* m_pDomainAssembly;
+    CLR_BOOL m_isInTPA;
     CLR_BOOL m_isCoreLib;
 };
 

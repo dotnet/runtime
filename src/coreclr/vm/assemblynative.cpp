@@ -185,7 +185,7 @@ Assembly* AssemblyNative::LoadFromPEImage(ASSEMBLYBINDERREF pBinder, PEImage *pI
         }
     }
 
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->m_PEImage, pAssembly));
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pAssembly->m_peImage, pAssembly));
     bindOperation.SetResult(pPEAssembly.GetValue());
 
     DomainAssembly *pDomainAssembly = pCurDomain->LoadDomainAssembly(&spec, pPEAssembly, FILE_LOADED);
