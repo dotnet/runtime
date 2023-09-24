@@ -94,9 +94,9 @@ namespace System.Formats.Cbor
 
             _buffer = initialCapacity switch
             {
-                DefaultCapacitySentinel or 0 => null!,
+                DefaultCapacitySentinel or 0 => Array.Empty<byte>(),
                 < -1 => throw new ArgumentOutOfRangeException(nameof(initialCapacity)),
-                _ => new byte[initialCapacity]
+                _ => new byte[initialCapacity],
             };
         }
 
@@ -235,7 +235,7 @@ namespace System.Formats.Cbor
                 throw new OverflowException();
             }
 
-            if (_buffer is null || _buffer.Length - _offset < pendingCount)
+            if (_buffer.Length - _offset < pendingCount)
             {
                 const int BlockSize = 1024;
                 int blocks = checked(_offset + pendingCount + (BlockSize - 1)) / BlockSize;

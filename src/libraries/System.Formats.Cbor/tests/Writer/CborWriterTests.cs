@@ -345,24 +345,31 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Theory]
-        [InlineData(-1, null)]
-        [InlineData(0, null)]
+        [InlineData(-1, 0)]
+        [InlineData(0, 0)]
         [InlineData(1, 1)]
         [InlineData(1023, 1023)]
-        public static void InitialCapacity_ShouldSetInitialBuffer(int capacity, int? expectedBufferLength)
+        public static void InitialCapacity_ShouldSetInitialBuffer(int capacity, int expectedBufferLength)
         {
             CborWriter writer = new CborWriter(initialCapacity: capacity);
             byte[]? buffer = (byte[]?)typeof(CborWriter).GetField("_buffer", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(writer);
 
-            if (expectedBufferLength is null)
-            {
-                Assert.Null(buffer);
-            }
-            else
-            {
-                Assert.NotNull(buffer);
-                Assert.Equal(expectedBufferLength.Value, buffer.Length);
-            }
+            Assert.NotNull(buffer);
+            Assert.Equal(expectedBufferLength, buffer.Length);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(1)]
+        public static void Encode_InitialCapacity_Grows(int capacity)
+        {
+            CborWriter writer = new CborWriter(initialCapacity: capacity);
+            writer.WriteByteString((ReadOnlySpan<byte>)new byte[] { 1, 2, 3, 4, 5, 6 });
+            byte[] encoded = writer.Encode();
+
+            ReadOnlySpan<byte> expected = new byte[] { (2 << 5) | 6, 1, 2, 3, 4, 5, 6 };
+            AssertExtensions.SequenceEqual(expected, encoded);
         }
 
         public static IEnumerable<object[]> EncodedValueInputs => CborReaderTests.SampleCborValues.Select(x => new [] { x });
