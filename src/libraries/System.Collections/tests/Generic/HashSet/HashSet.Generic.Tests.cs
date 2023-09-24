@@ -215,9 +215,9 @@ namespace System.Collections.Tests
         [Fact]
         public void TrimExcess_Generic_LargeInitialCapacity_TrimReducesSize()
         {
-            var dictionary = new HashSet<T>(20);
-            dictionary.TrimExcess(7);
-            Assert.Equal(7, dictionary.EnsureCapacity(0));
+            var set = new HashSet<T>(20);
+            set.TrimExcess(7);
+            Assert.Equal(7, set.Capacity);
         }
 
         [Theory]

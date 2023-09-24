@@ -225,8 +225,7 @@ namespace System.Collections.Tests
         [Fact]
         public void Queue_TrimAccessCurrentCount_DoesNothing()
         {
-            var queue = new Queue<T>();
-            queue.Enqueue(CreateT(85877));
+            var queue = GenericQueueFactory(100);
             queue.TrimExcess(queue.Count);
             int capacity = queue.Capacity;
             queue.TrimExcess(queue.Count);
