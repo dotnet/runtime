@@ -190,6 +190,30 @@ namespace System.ComponentModel
         }
 
         /// <summary>
+        /// Specialized version for calls from <see cref="CheckDefaultProvider(Type)"/>.
+        /// Code is adjusted to minimize lock in the aforementioned method.
+        /// </summary>
+        /// <param name="provider"></param>
+        /// <param name="type"></param>
+        private static void AddProvider_FewerLock(TypeDescriptionProvider provider, Type type)
+        {
+            Debug.Assert(provider != null);
+            Debug.Assert(type != null);
+
+            lock (s_providerTable)
+            {
+                // Get the root node, hook it up, and stuff it back into
+                // the provider cache.
+                TypeDescriptionNode node = NodeFor_LockFreeWithCreateDelegator(type);
+                var head = new TypeDescriptionNode(provider) { Next = node };
+                s_providerTable[type] = head;
+                s_providerTypeTable.Clear();
+            }
+
+            Refresh(type);
+        }
+
+        /// <summary>
         /// Adds a type description provider that will be called on to provide
         /// type information for a single object instance. A provider added
         /// using this method will never have its CreateInstance method called
@@ -264,36 +288,33 @@ namespace System.ComponentModel
         {
             bool providerAdded = false;
 
+            if (s_defaultProviders.ContainsKey(type))
+            {
+                return;
+            }
+
+            // Always use core reflection when checking for
+            // the default provider attribute. If there is a
+            // provider, we probably don't want to build up our
+            // own cache state against the type. There shouldn't be
+            // more than one of these, but walk anyway. Walk in
+            // reverse order so that the most derived takes precedence.
+            object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
+            for (int idx = attrs.Length - 1; idx >= 0; idx--)
+            {
+                TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
+                Type? providerType = Type.GetType(pa.TypeName);
+                if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
+                {
+                    TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
+                    AddProvider_FewerLock(prov, type);
+                    providerAdded = true;
+                }
+            }
+
             lock (s_internalSyncObject)
             {
-                if (s_defaultProviders.ContainsKey(type))
-                {
-                    return;
-                }
-
-                // Immediately clear this. If we find a default provider
-                // and it starts messing around with type information,
-                // this could infinitely recurse.
                 s_defaultProviders[type] = null;
-
-                // Always use core reflection when checking for
-                // the default provider attribute. If there is a
-                // provider, we probably don't want to build up our
-                // own cache state against the type. There shouldn't be
-                // more than one of these, but walk anyway. Walk in
-                // reverse order so that the most derived takes precedence.
-                object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
-                for (int idx = attrs.Length - 1; idx >= 0; idx--)
-                {
-                    TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
-                    Type? providerType = Type.GetType(pa.TypeName);
-                    if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
-                    {
-                        TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
-                        AddProvider(prov, type);
-                        providerAdded = true;
-                    }
-                }
             }
 
             // If we did not add a provider, check the base class.
@@ -1491,6 +1512,45 @@ namespace System.ComponentModel
                         searchType = baseType;
                     }
                 }
+            }
+
+            return node;
+        }
+
+        /// <summary>
+        /// Specialized version for calls from <see cref="CheckDefaultProvider(Type)"/> and <see cref="AddProvider_FewerLock(TypeDescriptionProvider, Type)"/>.
+        /// Code is adjusted to minimize lock.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        private static TypeDescriptionNode NodeFor_LockFreeWithCreateDelegator(Type type)
+        {
+            // lock is in the outer method.
+
+            var node = (TypeDescriptionNode?)(s_providerTypeTable[type] ?? s_providerTable[type]);
+            if (node != null)
+            {
+                return node;
+            }
+
+            Type? baseType = GetNodeForBaseType(type);
+
+            if (type == typeof(object) || baseType == null)
+            {
+                node = (TypeDescriptionNode?)s_providerTable[type];
+
+                if (node == null)
+                {
+                    // The reflect type description provider is a default provider that
+                    // can provide type information for all objects.
+                    node = new TypeDescriptionNode(new ReflectTypeDescriptionProvider());
+                    s_providerTable[type] = node;
+                }
+            }
+            else
+            {
+                node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(baseType));
+                s_providerTypeTable[type] = node;
             }
 
             return node;
