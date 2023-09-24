@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Options
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public TOptions Create(string name)
         {
-            TOptions options = CreateInstance(name);
+            TOptions options = CreateInstance();
             foreach (IConfigureOptions<TOptions> setup in _setups)
             {
                 if (setup is IConfigureNamedOptions<TOptions> namedSetup)
@@ -94,10 +94,9 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Creates a new instance of options type.
         /// </summary>
-        /// <param name="name">The name of the <typeparamref name="TOptions"/> instance to create.</param>
         /// <returns>The created <typeparamref name="TOptions"/> instance.</returns>
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
-        protected virtual TOptions CreateInstance(string name)
+        protected virtual TOptions CreateInstance()
         {
             return Activator.CreateInstance<TOptions>();
         }
