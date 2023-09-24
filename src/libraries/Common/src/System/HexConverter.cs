@@ -227,19 +227,7 @@ namespace System
             return (char)value;
         }
 
-        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes)
-        {
-#if SYSTEM_PRIVATE_CORELIB
-            if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
-                chars.Length >= Vector128<ushort>.Count * 2)
-            {
-                return TryDecodeFromUtf16_Vector128(chars, bytes, out _);
-            }
-#endif
-            return TryDecodeFromUtf16(chars, bytes, out _);
-        }
-
-        internal static bool TryDecodeFromUtf16Vectorized(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
+        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
         {
 #if SYSTEM_PRIVATE_CORELIB
             if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&

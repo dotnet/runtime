@@ -2949,7 +2949,7 @@ namespace System
 
             byte[] result = GC.AllocateUninitializedArray<byte>(chars.Length >> 1);
 
-            if (!HexConverter.TryDecodeFromUtf16(chars, result))
+            if (!HexConverter.TryDecodeFromUtf16(chars, result, out _))
                 throw new FormatException(SR.Format_BadHexChar);
 
             return result;
@@ -3027,7 +3027,7 @@ namespace System
                 successResult = OperationStatus.NeedMoreData;
             }
 
-            if (!HexConverter.TryDecodeFromUtf16Vectorized(source, destination, out charsConsumed))
+            if (!HexConverter.TryDecodeFromUtf16(source, destination, out charsConsumed))
             {
                 bytesWritten = charsConsumed / 2;
                 return OperationStatus.InvalidData;
