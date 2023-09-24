@@ -3023,6 +3023,7 @@ namespace System
             else if (remainder == 1)
             {
                 source = source.Slice(0, source.Length - 1);
+                destination = destination.Slice(0, destination.Length - 1);
                 successResult = OperationStatus.NeedMoreData;
             }
 

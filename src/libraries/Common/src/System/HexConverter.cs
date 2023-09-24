@@ -348,7 +348,7 @@ namespace System
             int j = 0;
             int byteLo = 0;
             int byteHi = 0;
-            while (j < chars.Length / 2)
+            while (j < bytes.Length)
             {
                 byteLo = FromChar(chars[i + 1]);
                 byteHi = FromChar(chars[i]);
