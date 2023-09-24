@@ -1066,6 +1066,11 @@ public:
         return m_typeHandle;
     }
 
+    static int OffsetOfTypeHandle()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return offsetof(ReflectClassBaseObject, m_typeHandle);
+    }
 };
 
 // This is the Method version of the Reflection object.

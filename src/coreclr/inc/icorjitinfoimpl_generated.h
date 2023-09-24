@@ -594,7 +594,8 @@ bool getObjectContent(
           CORINFO_OBJECT_HANDLE obj,
           uint8_t* buffer,
           int bufferSize,
-          int valueOffset) override;
+          int valueOffset,
+          ObjectContentType* type) override;
 
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,

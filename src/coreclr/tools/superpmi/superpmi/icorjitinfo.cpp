@@ -1389,10 +1389,10 @@ bool MyICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, 
     return jitInstance->mc->repGetStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
 }
 
-bool MyICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+bool MyICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, ObjectContentType* pType)
 {
     jitInstance->mc->cr->AddCall("getObjectContent");
-    return jitInstance->mc->repGetObjectContent(obj, buffer, bufferSize, valueOffset);
+    return jitInstance->mc->repGetObjectContent(obj, buffer, bufferSize, valueOffset, pType);
 }
 
 // return the class handle for the current value of a static field

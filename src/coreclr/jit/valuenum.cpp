@@ -10906,12 +10906,11 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         assert(obj != nullptr);
         if ((size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
-            uint8_t buffer[maxElementSize] = {0};
-            if (info.compCompHnd->getObjectContent(obj, buffer, size, (int)byteOffset))
+            ObjectContentType objContentType;
+            uint8_t           buffer[maxElementSize] = {0};
+            if (info.compCompHnd->getObjectContent(obj, buffer, size, (int)byteOffset, &objContentType))
             {
-                // If we have IND<size_t>(frozenObj) then it means we're reading object type
-                // so make sure we report the constant as class handle
-                if ((size == TARGET_POINTER_SIZE) && (byteOffset == 0))
+                if (objContentType == ObjectContentType::ClsHandle)
                 {
                     // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
                     // value holding 32bit handle with upper half zeroed (hence, "= NULL").

@@ -2276,7 +2276,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        private bool getObjectContent(CORINFO_OBJECT_STRUCT_* objPtr, byte* buffer, int bufferSize, int valueOffset)
+        private bool getObjectContent(CORINFO_OBJECT_STRUCT_* objPtr, byte* buffer, int bufferSize, int valueOffset, ObjectContentType* pType)
         {
             Debug.Assert(objPtr != null);
             Debug.Assert(buffer != null);

@@ -1008,9 +1008,10 @@ bool interceptor_ICJI::getObjectContent(
           CORINFO_OBJECT_HANDLE obj,
           uint8_t* buffer,
           int bufferSize,
-          int valueOffset)
+          int valueOffset,
+          ObjectContentType* type)
 {
-    return original_ICorJitInfo->getObjectContent(obj, buffer, bufferSize, valueOffset);
+    return original_ICorJitInfo->getObjectContent(obj, buffer, bufferSize, valueOffset, type);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(

@@ -11742,7 +11742,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
     return result;
 }
 
-bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, int bufferSize, int valueOffset)
+bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, int bufferSize, int valueOffset, ObjectContentType* pType)
 {
     CONTRACTL {
         THROWS;
@@ -11763,6 +11763,8 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     OBJECTREF objRef = getObjectFromJitHandle(handle);
     _ASSERTE(objRef != NULL);
 
+    *pType = ObjectContentType::None;
+
     // TODO: support types containing GC pointers
     if (bufferSize + valueOffset <= (int)objRef->GetSize())
     {
@@ -11776,6 +11778,12 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
             {
                 memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
                 result = true;
+
+                if (valueOffset == ReflectClassBaseObject::OffsetOfTypeHandle() && bufferSize == TARGET_POINTER_SIZE)
+                {
+                    // Report RuntimeType::m_handle as a class handle
+                    *pType = ObjectContentType::ClsHandle;
+                }
             }
         }
         else
@@ -11783,6 +11791,12 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
             memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
             result = true;
         }
+    }
+
+    if (result && valueOffset == 0 && bufferSize == TARGET_POINTER_SIZE)
+    {
+        // We're reading object's type
+        *pType = ObjectContentType::ClsHandle;
     }
 
     EE_TO_JIT_TRANSITION();

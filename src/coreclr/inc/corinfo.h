@@ -1977,6 +1977,12 @@ enum class GetTypeLayoutResult
     Failure,
 };
 
+enum class ObjectContentType
+{
+    None,
+    ClsHandle,
+};
+
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
@@ -3251,7 +3257,8 @@ public:
             CORINFO_OBJECT_HANDLE   obj,
             uint8_t*                buffer,
             int                     bufferSize,
-            int                     valueOffset
+            int                     valueOffset,
+            ObjectContentType*      pType
             ) = 0;
 
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed

@@ -1619,11 +1619,11 @@ bool interceptor_ICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t
     return result;
 }
 
-bool interceptor_ICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+bool interceptor_ICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, ObjectContentType* pType)
 {
     mc->cr->AddCall("getObjectContent");
-    bool result = original_ICorJitInfo->getObjectContent(obj, buffer, bufferSize, valueOffset);
-    mc->recGetObjectContent(obj, buffer, bufferSize, valueOffset, result);
+    bool result = original_ICorJitInfo->getObjectContent(obj, buffer, bufferSize, valueOffset, pType);
+    mc->recGetObjectContent(obj, buffer, bufferSize, valueOffset, pType, result);
     return result;
 }
 

@@ -3718,10 +3718,10 @@ bool MethodContext::repGetStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t
     return (bool)value.A;
 }
 
-void MethodContext::recGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, bool result)
+void MethodContext::recGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, ObjectContentType* pType, bool result)
 {
     if (GetObjectContent == nullptr)
-        GetObjectContent = new LightWeightMap<DLDD, DD>();
+        GetObjectContent = new LightWeightMap<DLDD, DDD>();
 
     DLDD key;
     ZeroMemory(&key, sizeof(key));
@@ -3733,19 +3733,20 @@ void MethodContext::recGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buff
     if (buffer != nullptr && result)
         tmpBuf = (DWORD)GetObjectContent->AddBuffer((uint8_t*)buffer, (uint32_t)bufferSize);
 
-    DD value;
+    DDD value;
     value.A = (DWORD)result;
     value.B = (DWORD)tmpBuf;
+    value.C = (DWORD)*pType;
 
     GetObjectContent->Add(key, value);
     DEBUG_REC(dmpGetObjectContent(key, value));
 }
-void MethodContext::dmpGetObjectContent(DLDD key, DD value)
+void MethodContext::dmpGetObjectContent(DLDD key, DDD value)
 {
-    printf("GetObjectContent key fld-%016" PRIX64 " bufSize-%u, valOffset-%u result-%u", key.A, key.B, key.C, value.A);
+    printf("GetObjectContent key fld-%016" PRIX64 " bufSize-%u, valOffset-%u result-%u, flags-%u", key.A, key.B, key.C, value.A, value.C);
     GetObjectContent->Unlock();
 }
-bool MethodContext::repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+bool MethodContext::repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, ObjectContentType* pType)
 {
     DLDD key;
     ZeroMemory(&key, sizeof(key));
@@ -3753,7 +3754,7 @@ bool MethodContext::repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buff
     key.B = (DWORD)bufferSize;
     key.C = (DWORD)valueOffset;
 
-    DD value = LookupByKeyOrMiss(GetObjectContent, key, ": key %016" PRIX64 "", key.A);
+    DDD value = LookupByKeyOrMiss(GetObjectContent, key, ": key %016" PRIX64 "", key.A);
 
     DEBUG_REP(dmpGetObjectContent(key, value));
     if (buffer != nullptr && (bool)value.A)
@@ -3762,6 +3763,7 @@ bool MethodContext::repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buff
         Assert(srcBuffer != nullptr);
         memcpy(buffer, srcBuffer, bufferSize);
     }
+    *pType = (ObjectContentType)value.C;
     return (bool)value.A;
 }
 

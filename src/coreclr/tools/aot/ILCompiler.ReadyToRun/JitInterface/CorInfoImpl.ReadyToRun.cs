@@ -3292,7 +3292,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        private bool getObjectContent(CORINFO_OBJECT_STRUCT_* obj, byte* buffer, int bufferSize, int valueOffset)
+        private bool getObjectContent(CORINFO_OBJECT_STRUCT_* obj, byte* buffer, int bufferSize, int valueOffset, ObjectContentType* pType)
         {
             throw new NotSupportedException();
         }

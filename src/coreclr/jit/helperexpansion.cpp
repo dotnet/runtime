@@ -1315,16 +1315,19 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     uint16_t bufferU16[MaxU16BufferSizeInChars];
 
+    ObjectContentType objContentType;
     // getObjectContent is expected to validate the offset and length
     // NOTE: (int) casts should not overflow:
     //  * srcLenCns is <= MaxUTF16BufferSizeInChars
     //  * strObjOffset is already checked to be <= INT_MAX
     if (!info.compCompHnd->getObjectContent(strObj, (uint8_t*)bufferU16, (int)(srcLenCnsU16 * sizeof(uint16_t)),
-                                            (int)strObjOffset))
+                                            (int)strObjOffset, &objContentType))
     {
         JITDUMP("ReadUtf8: getObjectContent returned false.\n")
         return false;
     }
+
+    assert(objContentType == ObjectContentType::None);
 
     const int MaxU8BufferSizeInBytes = 256;
     uint8_t   bufferU8[MaxU8BufferSizeInBytes];

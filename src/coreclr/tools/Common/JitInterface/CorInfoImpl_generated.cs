@@ -2095,12 +2095,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte _getObjectContent(IntPtr thisHandle, IntPtr* ppException, CORINFO_OBJECT_STRUCT_* obj, byte* buffer, int bufferSize, int valueOffset)
+        private static byte _getObjectContent(IntPtr thisHandle, IntPtr* ppException, CORINFO_OBJECT_STRUCT_* obj, byte* buffer, int bufferSize, int valueOffset, ObjectContentType* type)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getObjectContent(obj, buffer, bufferSize, valueOffset) ? (byte)1 : (byte)0;
+                return _this.getObjectContent(obj, buffer, bufferSize, valueOffset, type) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2665,7 +2665,7 @@ namespace Internal.JitInterface
             callbacks[138] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, CORINFO_CALLINFO_FLAGS, CORINFO_CALL_INFO*, void>)&_getCallInfo;
             callbacks[139] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void**, uint>)&_getClassDomainID;
             callbacks[140] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, int, int, byte, byte>)&_getStaticFieldContent;
-            callbacks[141] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte*, int, int, byte>)&_getObjectContent;
+            callbacks[141] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte*, int, int, ObjectContentType*, byte>)&_getObjectContent;
             callbacks[142] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, CORINFO_CLASS_STRUCT_*>)&_getStaticFieldCurrentClass;
             callbacks[143] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, void**, IntPtr>)&_getVarArgsHandle;
             callbacks[144] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, byte>)&_canGetVarArgsHandle;

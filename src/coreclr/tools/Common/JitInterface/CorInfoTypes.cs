@@ -1468,6 +1468,12 @@ namespace Internal.JitInterface
         Failure = 2,
     }
 
+    public enum ObjectContentType
+    {
+        None,
+        ClsHandle,
+    }
+
     // See comments in interface declaration. There are important restrictions
     // on the fields of this structure and how the JIT uses them and is allowed
     // to use them.

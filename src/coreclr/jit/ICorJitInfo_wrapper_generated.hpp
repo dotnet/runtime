@@ -1398,10 +1398,11 @@ bool WrapICorJitInfo::getObjectContent(
           CORINFO_OBJECT_HANDLE obj,
           uint8_t* buffer,
           int bufferSize,
-          int valueOffset)
+          int valueOffset,
+          ObjectContentType* type)
 {
     API_ENTER(getObjectContent);
-    bool temp = wrapHnd->getObjectContent(obj, buffer, bufferSize, valueOffset);
+    bool temp = wrapHnd->getObjectContent(obj, buffer, bufferSize, valueOffset, type);
     API_LEAVE(getObjectContent);
     return temp;
 }
