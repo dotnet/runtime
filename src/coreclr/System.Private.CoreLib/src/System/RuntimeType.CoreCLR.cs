@@ -2033,10 +2033,10 @@ namespace System
             }
         }
 
-        private static void SplitName(string? fullname, out string? name, out string? ns)
+        private static void SplitName(string? fullname, out string? name, out ReadOnlySpan<char> ns)
         {
             name = null;
-            ns = null;
+            ns = default;
 
             if (fullname == null)
                 return;
@@ -2045,13 +2045,13 @@ namespace System
             int nsDelimiter = fullname.LastIndexOf('.');
             if (nsDelimiter >= 0)
             {
-                ns = fullname.Substring(0, nsDelimiter);
+                ns = fullname.AsSpan().Slice(0, nsDelimiter);
                 int nameLength = fullname.Length - ns.Length - 1;
                 if (nameLength != 0)
                     name = fullname.Substring(nsDelimiter + 1, nameLength);
                 else
                     name = "";
-                Debug.Assert(fullname.Equals(ns + "." + name));
+                Debug.Assert(fullname.Equals(ns.ToString() + "." + name));
             }
             else
             {
@@ -2232,7 +2232,7 @@ namespace System
 
         // Used by GetInterface and GetNestedType(s) which don't need parameter type filtering.
         private static bool FilterApplyType(
-            Type type, BindingFlags bindingFlags, string name, bool prefixLookup, string? ns)
+            Type type, BindingFlags bindingFlags, string name, bool prefixLookup, ReadOnlySpan<char> ns)
         {
             Debug.Assert(type is not null);
             Debug.Assert(type is RuntimeType);
@@ -2242,7 +2242,7 @@ namespace System
             if (!FilterApplyBase(type, bindingFlags, isPublic, type.IsNestedAssembly, isStatic: false, name, prefixLookup))
                 return false;
 
-            if (ns != null && ns != type.Namespace)
+            if (ns != default && !ns.SequenceEqual(type.Namespace))
                 return false;
 
             return true;
@@ -2625,7 +2625,7 @@ namespace System
         private ListBuilder<Type> GetNestedTypeCandidates(string? fullname, BindingFlags bindingAttr, bool allowPrefixLookup)
         {
             bindingAttr &= ~BindingFlags.Static;
-            SplitName(fullname, out string? name, out string? ns);
+            SplitName(fullname, out string? name, out ReadOnlySpan<char> ns);
             FilterHelper(bindingAttr, ref name, allowPrefixLookup, out bool prefixLookup, out _, out MemberListType listType);
 
             RuntimeType[] cache = Cache.GetNestedTypeList(listType, name);
@@ -2981,8 +2981,9 @@ namespace System
             if (ignoreCase)
                 bindingAttr |= BindingFlags.IgnoreCase;
 
-            string name, ns;
-            SplitName(fullname, out name!, out ns!);
+            string name;
+            ReadOnlySpan<char> ns;
+            SplitName(fullname, out name!, out ns);
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeType[] cache = Cache.GetInterfaceList(listType, name);
@@ -3010,8 +3011,9 @@ namespace System
             ArgumentNullException.ThrowIfNull(fullname);
 
             bindingAttr &= ~BindingFlags.Static;
-            string name, ns;
-            SplitName(fullname, out name!, out ns!);
+            string name;
+            ReadOnlySpan<char> ns;
+            SplitName(fullname, out name!, out ns);
             FilterHelper(bindingAttr, ref name, out _, out MemberListType listType);
 
             RuntimeType[] cache = Cache.GetNestedTypeList(listType, name);
