@@ -4239,7 +4239,6 @@ private:
     void impImportBlockCode(BasicBlock* block);
 
     void impReimportMarkBlock(BasicBlock* block);
-    void impReimportMarkSuccessors(BasicBlock* block);
 
     void impVerifyEHBlock(BasicBlock* block, bool isTryStart);
 
