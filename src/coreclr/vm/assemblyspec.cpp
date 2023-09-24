@@ -513,7 +513,10 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
     if (!pILImage->CheckILFormat())
         THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
 
-    RETURN AssemblyNative::LoadFromPEImage((ASSEMBLYBINDERREF)ObjectFromHandle(AppDomain::GetCurrentDomain()->GetDefaultBinder()), pILImage, true /* excludeAppPaths */);
+    {
+        GCX_COOP();
+        RETURN AssemblyNative::LoadFromPEImage((ASSEMBLYBINDERREF)ObjectFromHandle(AppDomain::GetCurrentDomain()->GetDefaultBinder()), pILImage, true /* excludeAppPaths */);
+    }
 }
 
 HRESULT AssemblySpec::CheckFriendAssemblyName()

@@ -84,12 +84,13 @@ namespace Internal.Runtime.Binder
 
         public static string GetNameForDiagnosticsFromManagedALC(GCHandle managedALC)
         {
-            if (managedALC.Target == GCHandle.FromIntPtr(AssemblyLoadContext.GetDefaultAssemblyBinder()).Target)
+            AssemblyLoadContext? alc = managedALC.IsAllocated ? (AssemblyLoadContext?)managedALC.Target : null;
+
+            if (alc == null || alc == GCHandle.FromIntPtr(AssemblyLoadContext.GetDefaultAssemblyBinder()).Target)
             {
                 return "Default";
             }
 
-            var alc = managedALC.Target as AssemblyLoadContext;
             Debug.Assert(alc != null);
             return alc.ToString();
         }

@@ -691,7 +691,7 @@ namespace Internal.Runtime.Binder
 
         public static int Register(ApplicationContext applicationContext, ref BindResult bindResult)
         {
-            Debug.Assert(bindResult.IsContextBound);
+            Debug.Assert(!bindResult.IsContextBound);
             Debug.Assert(bindResult.Assembly != null);
 
             applicationContext.IncrementVersion();

@@ -126,7 +126,9 @@ Assembly* AssemblyNative::LoadFromPEImage(ASSEMBLYBINDERREF pBinder, PEImage *pI
 {
     CONTRACT(Assembly*)
     {
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
         PRECONDITION(pBinder != NULL);
         PRECONDITION(pImage != NULL);
         POSTCONDITION(CheckPointer(RETVAL));
@@ -149,7 +151,9 @@ Assembly* AssemblyNative::LoadFromPEImage(ASSEMBLYBINDERREF pBinder, PEImage *pI
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
 
-    MethodDescCallSite methBind(METHOD__BINDER_ASSEMBLYBINDER__BINDUSINGPEIMAGE);
+    GCPROTECT_BEGIN(pBinder);
+
+    MethodDescCallSite methBind(METHOD__BINDER_ASSEMBLYBINDER__BINDUSINGPEIMAGE, &pBinder);
     ARG_SLOT args[4] =
     {
         ObjToArgSlot(pBinder),
@@ -158,6 +162,8 @@ Assembly* AssemblyNative::LoadFromPEImage(ASSEMBLYBINDERREF pBinder, PEImage *pI
         PtrToArgSlot(&pAssembly)
     };
     hr = methBind.Call_RetHR(args);
+
+    GCPROTECT_END();
 
     if (hr != S_OK)
     {

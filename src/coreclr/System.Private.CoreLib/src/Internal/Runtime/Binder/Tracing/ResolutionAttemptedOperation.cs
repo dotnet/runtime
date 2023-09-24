@@ -85,8 +85,9 @@ namespace Internal.Runtime.Binder.Tracing
             if (_assemblyNameObject != null)
                 _assemblyName = _assemblyNameObject.GetDisplayName(AssemblyNameIncludeFlags.INCLUDE_VERSION | AssemblyNameIncludeFlags.INCLUDE_PUBLIC_KEY_TOKEN);
 
-            if (pManagedALC.Target is AssemblyLoadContext managedALC)
+            if (pManagedALC.IsAllocated)
             {
+                Debug.Assert(pManagedALC.Target is AssemblyLoadContext);
                 // AssemblyBinder::GetNameForDiagnosticsFromManagedALC(managedALC, m_assemblyLoadContextName);
                 _assemblyLoadContextName = AssemblyBinder.GetNameForDiagnosticsFromManagedALC(pManagedALC);
             }
