@@ -2045,7 +2045,7 @@ namespace System
             int nsDelimiter = fullname.LastIndexOf('.');
             if (nsDelimiter >= 0)
             {
-                ns = fullname.AsSpan().Slice(0, nsDelimiter);
+                ns = fullname.AsSpan(0, nsDelimiter);
                 int nameLength = fullname.Length - ns.Length - 1;
                 if (nameLength != 0)
                     name = fullname.Substring(nsDelimiter + 1, nameLength);
@@ -2242,7 +2242,7 @@ namespace System
             if (!FilterApplyBase(type, bindingFlags, isPublic, type.IsNestedAssembly, isStatic: false, name, prefixLookup))
                 return false;
 
-            if (ns != default && !ns.SequenceEqual(type.Namespace))
+            if (!ns.IsEmpty && !ns.SequenceEqual(type.Namespace))
                 return false;
 
             return true;
