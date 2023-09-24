@@ -341,7 +341,8 @@ namespace
         ASSEMBLYBINDERREF pCurrentBinder = pBinder;
 
         // For assemblies bound via default binder, we should use the standard mechanism to make the pinvoke call.
-        if (pCurrentBinder->m_isDefault)
+        // Binder can be null during CoreLib bootstrap.
+        if (pCurrentBinder == NULL || pCurrentBinder->m_isDefault)
         {
             return NULL;
         }

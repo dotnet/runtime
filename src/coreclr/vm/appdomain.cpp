@@ -2764,7 +2764,8 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
                 // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
                 // marked as collectible
 
-                MethodDescCallSite methGetLoaderAllocator(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR);
+                GCPROTECT_BEGIN(pAssemblyBinder);
+                MethodDescCallSite methGetLoaderAllocator(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR, &pAssemblyBinder);
                 ARG_SLOT args[1] =
                 {
                     ObjToArgSlot(pAssemblyBinder)
@@ -2775,6 +2776,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
                 {
                     pLoaderAllocator = pManagedLA->GetNativeLoaderAllocator();
                 }
+                GCPROTECT_END();
             }
 
             if (pLoaderAllocator == NULL)

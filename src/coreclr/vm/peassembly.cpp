@@ -666,7 +666,9 @@ PEAssembly::PEAssembly(
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(pEmit, NULL_OK));
         // PRECONDITION(pBindResultInfo == NULL || pPEImage == NULL); // disabled for corelib
-        STANDARD_VM_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -744,7 +746,13 @@ PEAssembly *PEAssembly::Open(
     PEImage *          pPEImageIL,
     BINDERASSEMBLYREF pManagedHostAssembly)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     PEAssembly * pPEAssembly = new PEAssembly(
         NULL,        // BindResult
@@ -843,8 +851,12 @@ PEAssembly *PEAssembly::DoOpenSystem()
     ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
     IfFailThrow(((DefaultAssemblyBinder*)NULL)->BindToSystem(&pBoundAssembly));
 
-    // TODO: Is HostAssembly ever used for CoreLib?
-    RETURN new PEAssembly(NULL, NULL, TRUE, pBoundAssembly->GetPEImage());
+    {
+        GCX_COOP();
+
+        // HostAssembly is set afterwards for CoreLib
+        RETURN new PEAssembly(NULL, NULL, TRUE, pBoundAssembly->GetPEImage());
+    }
 }
 
 PEAssembly* PEAssembly::Open(BINDERASSEMBLYREF pManagedBindResult)
