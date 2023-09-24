@@ -2283,6 +2283,8 @@ namespace Internal.JitInterface
             Debug.Assert(bufferSize >= 0);
             Debug.Assert(valueOffset >= 0);
 
+            *pType = ObjectContentType.None;
+
             object obj = HandleToObject(objPtr);
             if (obj is FrozenStringNode frozenStr)
             {
