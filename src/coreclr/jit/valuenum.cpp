@@ -1634,6 +1634,13 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
     {
         return false;
     }
+
+    if (IsVNHandle(vn))
+    {
+        assert(CoercedConstantValue<size_t>(vn) != 0);
+        return true;
+    }
+
     VNFuncApp funcAttr;
     return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0;
 }
