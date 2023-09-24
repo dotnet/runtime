@@ -2305,6 +2305,13 @@ namespace Internal.JitInterface
             return false;
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        private bool getTypeContent(CORINFO_CLASS_STRUCT_* cls, byte* buffer, int bufferSize, int valueOffset)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            return false;
+        }
+
         private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             object obj = HandleToObject(objPtr);

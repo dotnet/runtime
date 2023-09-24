@@ -1627,6 +1627,14 @@ bool interceptor_ICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buff
     return result;
 }
 
+bool interceptor_ICJI::getTypeContent(CORINFO_CLASS_HANDLE cls, uint8_t* buffer, int bufferSize, int valueOffset)
+{
+    mc->cr->AddCall("getTypeContent");
+    bool result = original_ICorJitInfo->getTypeContent(cls, buffer, bufferSize, valueOffset);
+    mc->recGetTypeContent(cls, buffer, bufferSize, valueOffset, result);
+    return result;
+}
+
 // return the class handle for the current value of a static field
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {

@@ -490,6 +490,10 @@ public:
     void dmpGetObjectContent(DLDD key, DDD value);
     bool repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, ObjectContentType* pType);
 
+    void recGetTypeContent(CORINFO_CLASS_HANDLE cls, uint8_t* buffer, int bufferSize, int valueOffset, bool result);
+    void dmpGetTypeContent(DLDD key, DD value);
+    bool repGetTypeContent(CORINFO_CLASS_HANDLE cls, uint8_t* buffer, int bufferSize, int valueOffset);
+
     void recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative, CORINFO_CLASS_HANDLE result);
     void dmpGetStaticFieldCurrentClass(DLD key, const Agnostic_GetStaticFieldCurrentClass& value);
     CORINFO_CLASS_HANDLE repGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
@@ -1138,6 +1142,7 @@ enum mcPackets
     Packet_GetObjectContent = 210,
     Packet_GetTypeLayout = 211,
     Packet_HaveSameMethodDefinition = 212,
+    Packet_GetTypeContent = 213,
 };
 
 void SetDebugDumpVariables();

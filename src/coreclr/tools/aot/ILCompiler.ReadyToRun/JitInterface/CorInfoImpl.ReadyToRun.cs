@@ -3297,6 +3297,11 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
+        private bool getTypeContent(CORINFO_CLASS_STRUCT_* cls, byte* buffer, int bufferSize, int valueOffset)
+        {
+            throw new NotSupportedException();
+        }
+
         private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             throw new NotSupportedException();

@@ -3767,6 +3767,53 @@ bool MethodContext::repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buff
     return (bool)value.A;
 }
 
+void MethodContext::recGetTypeContent(CORINFO_CLASS_HANDLE cls, uint8_t* buffer, int bufferSize, int valueOffset, bool result)
+{
+    if (GetTypeContent == nullptr)
+        GetTypeContent = new LightWeightMap<DLDD, DD>();
+
+    DLDD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = (DWORD)bufferSize;
+    key.C = (DWORD)valueOffset;
+
+    DWORD tmpBuf = (DWORD)-1;
+    if (buffer != nullptr && result)
+        tmpBuf = (DWORD)GetTypeContent->AddBuffer((uint8_t*)buffer, (uint32_t)bufferSize);
+
+    DD value;
+    value.A = (DWORD)result;
+    value.B = (DWORD)tmpBuf;
+
+    GetTypeContent->Add(key, value);
+    DEBUG_REC(dmpGetTypeContent(key, value));
+}
+void MethodContext::dmpGetTypeContent(DLDD key, DD value)
+{
+    printf("GetTypeContent key cls-%016" PRIX64 " bufSize-%u, valOffset-%u result-%u", key.A, key.B, key.C, value.A);
+    GetTypeContent->Unlock();
+}
+bool MethodContext::repGetTypeContent(CORINFO_CLASS_HANDLE cls, uint8_t* buffer, int bufferSize, int valueOffset)
+{
+    DLDD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = (DWORD)bufferSize;
+    key.C = (DWORD)valueOffset;
+
+    DD value = LookupByKeyOrMiss(GetTypeContent, key, ": key %016" PRIX64 "", key.A);
+
+    DEBUG_REP(dmpGetTypeContent(key, value));
+    if (buffer != nullptr && (bool)value.A)
+    {
+        uint8_t* srcBuffer = (uint8_t*)GetTypeContent->GetBuffer(value.B);
+        Assert(srcBuffer != nullptr);
+        memcpy(buffer, srcBuffer, bufferSize);
+    }
+    return (bool)value.A;
+}
+
 void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
                                                   bool*                pIsSpeculative,
                                                   CORINFO_CLASS_HANDLE result)

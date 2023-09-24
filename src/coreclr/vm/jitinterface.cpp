@@ -11804,6 +11804,39 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     return result;
 }
 
+bool CEEInfo::getTypeContent(CORINFO_CLASS_HANDLE handle, uint8_t* buffer, int bufferSize, int valueOffset)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(handle != NULL);
+    _ASSERT(buffer != NULL);
+    _ASSERT(bufferSize > 0);
+    _ASSERT(valueOffset >= 0);
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle th(handle);
+
+    _ASSERT(!th.IsTypeDesc());
+
+    MethodTable* type = th.AsMethodTable();
+
+    // Only support dwFlags for now
+    _ASSERT(bufferSize == 4 && valueOffset == 0);
+    memcpy(buffer, (uint8_t*)type + valueOffset, bufferSize);
+    result = true;
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 /*********************************************************************/
 CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
                                                             bool* pIsSpeculative)

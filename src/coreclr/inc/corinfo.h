@@ -3261,6 +3261,13 @@ public:
             ObjectContentType*      pType
             ) = 0;
 
+    virtual bool getTypeContent(
+            CORINFO_CLASS_HANDLE   cls,
+            uint8_t*                buffer,
+            int                     bufferSize,
+            int                     valueOffset
+            ) = 0;
+
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed
     // static readonly fields, if there is a unique location for the static and the class
     // is already initialized.

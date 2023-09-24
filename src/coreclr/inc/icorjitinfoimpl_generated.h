@@ -597,6 +597,12 @@ bool getObjectContent(
           int valueOffset,
           ObjectContentType* type) override;
 
+bool getTypeContent(
+          CORINFO_CLASS_HANDLE cls,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset) override;
+
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
           bool* pIsSpeculative) override;

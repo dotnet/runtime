@@ -10868,6 +10868,8 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         return false;
     }
 
+    GenTree* addr = tree->gtGetOp1();
+
     // First, let's check if we can detect RVA[const_index] pattern to fold, e.g.:
     //
     //   static ReadOnlySpan<sbyte> RVA => new sbyte[] { -100, 100 }
@@ -10880,8 +10882,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     int                   size           = (int)genTypeSize(tree->TypeGet());
     const int             maxElementSize = sizeof(simd_t);
 
-    if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
-        GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
+    if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) && GetStaticFieldSeqAndAddress(vnStore, addr, &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
@@ -10899,8 +10900,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             }
         }
     }
-    else if (!tree->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT) &&
-             GetObjectHandleAndOffset(tree->gtGetOp1(), &byteOffset, &obj))
+    else if (!tree->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT) && GetObjectHandleAndOffset(addr, &byteOffset, &obj))
     {
         // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
         assert(obj != nullptr);
@@ -10938,13 +10938,30 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         }
     }
 
+    if (tree->TypeIs(TYP_INT) && addr->gtVNPair.BothEqual())
+    {
+        ValueNum addrVN = addr->gtVNPair.GetLiberal();
+        if (vnStore->IsVNHandle(addrVN) && (vnStore->GetHandleFlags(addrVN) == GTF_ICON_CLASS_HDL))
+        {
+            auto    cls = reinterpret_cast<CORINFO_CLASS_HANDLE>(vnStore->CoercedConstantValue<size_t>(addrVN));
+            uint8_t buffer[maxElementSize] = {0};
+            if (info.compCompHnd->getTypeContent(cls, buffer, genTypeSize(tree), (int)byteOffset))
+            {
+                ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
+                assert(!vnStore->IsVNObjHandle(vn));
+                tree->gtVNPair.SetBoth(vn);
+                return true;
+            }
+        }
+    }
+
     // Throughput check, the logic below is only for USHORT (char)
     if (!tree->OperIs(GT_IND) || !tree->TypeIs(TYP_USHORT))
     {
         return false;
     }
 
-    ValueNum  addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
+    ValueNum  addrVN = addr->gtVNPair.GetLiberal();
     VNFuncApp funcApp;
     if (!vnStore->GetVNFunc(addrVN, &funcApp))
     {
@@ -10965,7 +10982,6 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     size_t                index     = -1;
 
     // First, let see if we have PtrToArrElem
-    ValueNum addr = funcApp.m_args[0];
     if (funcApp.m_func == VNF_PtrToArrElem)
     {
         ValueNum arrVN  = funcApp.m_args[1];

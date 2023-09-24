@@ -1407,6 +1407,18 @@ bool WrapICorJitInfo::getObjectContent(
     return temp;
 }
 
+bool WrapICorJitInfo::getTypeContent(
+          CORINFO_CLASS_HANDLE cls,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    API_ENTER(getTypeContent);
+    bool temp = wrapHnd->getTypeContent(cls, buffer, bufferSize, valueOffset);
+    API_LEAVE(getTypeContent);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
           bool* pIsSpeculative)
