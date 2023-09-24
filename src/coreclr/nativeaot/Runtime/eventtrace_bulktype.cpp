@@ -15,8 +15,6 @@
 
 #if defined(FEATURE_EVENT_TRACE)
 
-#define Win32EventWrite PalEventWrite
-
 //---------------------------------------------------------------------------------------
 // BulkTypeValue / BulkTypeEventLogger: These take care of batching up types so they can
 // be logged via ETW in bulk

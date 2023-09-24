@@ -273,10 +273,10 @@ inline uint8_t BitScanForward64(DWORD *bitIndex, uint64_t mask)
     uint32_t lo = mask & 0xFFFFFFFF;
     uint32_t fakeBitIndex = 0;
 
-    uint8_t result = BitScanForward(bitIndex, lo);
+    uint8_t result = BitScanForward((DWORD*)bitIndex, lo);
     if (result == 0)
     {
-        result = BitScanForward(&fakeBitIndex, hi);
+        result = BitScanForward((DWORD*)&fakeBitIndex, hi);
         if (result != 0)
         {
             *bitIndex = fakeBitIndex + 32;
@@ -295,7 +295,7 @@ inline uint8_t BitScanForward64(DWORD *bitIndex, uint64_t mask)
 }
 
 // Cross-platform wrapper for the _BitScanReverse compiler intrinsic.
-inline uint8_t BitScanReverse(uint32_t *bitIndex, uint32_t mask)
+inline uint8_t BitScanReverse(DWORD *bitIndex, uint32_t mask)
 {
 #ifdef _MSC_VER
     return _BitScanReverse((unsigned long*)bitIndex, mask);
