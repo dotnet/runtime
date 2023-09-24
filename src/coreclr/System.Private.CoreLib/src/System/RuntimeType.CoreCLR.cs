@@ -3385,6 +3385,7 @@ namespace System
         // This returns true for actual value types only, ignoring generic parameter constraints.
         internal unsafe bool IsActualValueType
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 TypeHandle th = GetNativeTypeHandle();
@@ -3427,6 +3428,7 @@ namespace System
 
         internal new unsafe bool IsInterface
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 TypeHandle th = GetNativeTypeHandle();
@@ -3472,6 +3474,7 @@ namespace System
 
         public override unsafe bool IsGenericType
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 TypeHandle th = GetNativeTypeHandle();
