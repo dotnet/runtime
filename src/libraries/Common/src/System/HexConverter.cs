@@ -236,7 +236,7 @@ namespace System
                 return TryDecodeFromUtf16_Vector128(chars, bytes, out charsProcessed);
             }
 #endif
-            return TryDecodeFromUtf16(chars, bytes, out charsProcessed);
+            return TryDecodeFromUtf16_Scalar(chars, bytes, out charsProcessed);
         }
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -321,13 +321,13 @@ namespace System
             while (true);
 
             // Fall back to the scalar routine in case of invalid input.
-            bool fallbackResult = TryDecodeFromUtf16(chars.Slice((int)offset), bytes.Slice((int)(offset / 2)), out int fallbackProcessed);
+            bool fallbackResult = TryDecodeFromUtf16_Scalar(chars.Slice((int)offset), bytes.Slice((int)(offset / 2)), out int fallbackProcessed);
             charsProcessed = (int)offset + fallbackProcessed;
             return fallbackResult;
         }
 #endif
 
-        public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
+        private static bool TryDecodeFromUtf16_Scalar(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
         {
             Debug.Assert(chars.Length % 2 == 0, "Un-even number of characters provided");
             Debug.Assert(chars.Length / 2 == bytes.Length, "Target buffer not right-sized for provided characters");
