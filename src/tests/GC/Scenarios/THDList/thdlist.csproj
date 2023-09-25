@@ -5,7 +5,6 @@
 
     <!-- Test needs explicit Main as it uses command-line parameters -->
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
-    <CLRTestExecutionArguments>-unittest</CLRTestExecutionArguments>
 
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This test leaves threads running at exit -->
