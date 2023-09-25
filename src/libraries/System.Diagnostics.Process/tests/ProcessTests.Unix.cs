@@ -859,13 +859,13 @@ namespace System.Diagnostics.Tests
             var timeBase = new Interop.libSystem.mach_timebase_info_data_t();
             Interop.libSystem.mach_timebase_info(&timeBase);
 
-            var nativeUserNs = rUsage.ri_user_time * timeBase.numer / timeBase.denom;
-            var nativeSystemNs = rUsage.ri_system_time * timeBase.numer / timeBase.denom;
-            var nativeTotalNs = nativeSystemNs + nativeUserNs;
+            var nativeUserUs = rUsage.ri_user_time / 1000 * timeBase.numer / timeBase.denom;
+            var nativeSystemUs = rUsage.ri_system_time / 1000 * timeBase.numer / timeBase.denom;
+            var nativeTotalUs = nativeSystemUs + nativeUserUs;
 
-            var nativeUserTime = TimeSpan.FromMicroseconds(nativeUserNs / 1000);
-            var nativeSystemTime = TimeSpan.FromMicroseconds(nativeSystemNs / 1000);
-            var nativeTotalTime = TimeSpan.FromMicroseconds(nativeTotalNs / 1000);
+            var nativeUserTime = TimeSpan.FromMicroseconds(nativeUserUs);
+            var nativeSystemTime = TimeSpan.FromMicroseconds(nativeSystemUs);
+            var nativeTotalTime = TimeSpan.FromMicroseconds(nativeTotalUs);
 
             var process = Process.GetCurrentProcess();
             var managedUserTime = process.UserProcessorTime;

@@ -122,7 +122,9 @@ namespace System.Diagnostics
             }
             uint numer = s_timeBase_numer;
 
-            return new TimeSpan(Convert.ToInt64(sysTime * numer / denom / NanosecondsTo100NanosecondsFactor));
+            // By dividing by NanosecondsTo100NanosecondsFactor first, we lose some precision, but increase the range
+            // where no overflow will happen.
+            return new TimeSpan(Convert.ToInt64(sysTime / NanosecondsTo100NanosecondsFactor * numer / denom));
         }
 
         private static unsafe Interop.libSystem.mach_timebase_info_data_t GetTimeBase()
