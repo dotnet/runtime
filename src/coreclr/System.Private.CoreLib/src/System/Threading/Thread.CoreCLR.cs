@@ -145,18 +145,16 @@ namespace System.Threading
             // void YieldProcessorNormalized(const YieldProcessorNormalizationInfo &normalizationInfo, unsigned int count)
 
             // Prevent overflow on the multiply below on 32bit
-            if (IntPtr.Size == 4)
+#if TARGET_32BIT
+            // Copied from YieldProcessorNormalization (yieldprocessornormalized.h)
+            const int targetNsPerNormalizedYield = 37;
+            const int maxYieldsPerNormalizedYield = targetNsPerNormalizedYield * 10;
+            const int maxCount = int.MaxValue / maxYieldsPerNormalizedYield;
+            if (iterations > maxCount)
             {
-                // Copied from YieldProcessorNormalization (yieldprocessornormalized.h)
-                const int targetNsPerNormalizedYield = 37;
-                const int maxYieldsPerNormalizedYield = targetNsPerNormalizedYield * 10;
-
-                const int maxCount = int.MaxValue / maxYieldsPerNormalizedYield;
-                if (iterations > maxCount)
-                {
-                    iterations = maxCount;
-                }
+                iterations = maxCount;
             }
+#endif
 
             nint n = (nint)iterations * GetYieldsPerNormalizedYield;
             Debug.Assert(n != 0);
