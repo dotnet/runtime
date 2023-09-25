@@ -19,6 +19,11 @@ trigger:
     - LICENSE.TXT
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
+    - eng/pipelines/coreclr/perf*yml
+    - eng/pipelines/coreclr/templates/build-perf*
+    - eng/pipelines/coreclr/templates/perf-job.yml
+    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/testing/performance/*
 
 schedules:
   - cron: "0 8,20 * * *" # run at 8:00 and 20:00 (UTC) which is 00:00 and 12:00 (PST).
