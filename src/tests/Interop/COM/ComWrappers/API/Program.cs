@@ -188,6 +188,11 @@ namespace ComWrappersTests
             var testObjUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
             Assert.Same(testObj, testObjUnwrapped);
 
+            // UniqueInstance and Unwrap should always be a new ComObject, never unwrapped
+            var testObjUniqueUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap | CreateObjectFlags.UniqueInstance);
+            Assert.True(testObjUniqueUnwrapped is ComObject)
+            Assert.NotSame(testObj, testObjUniqueUnwrapped);
+
             // Release the wrapper
             int count = Marshal.Release(comWrapper);
             Assert.Equal(0, count);
