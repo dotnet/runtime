@@ -2051,7 +2051,7 @@ namespace System
                     name = fullname.Substring(nsDelimiter + 1, nameLength);
                 else
                     name = "";
-                Debug.Assert(fullname.Equals(ns.ToString() + "." + name));
+                Debug.Assert(fullname == $"{ns}.{name}");
             }
             else
             {
@@ -2242,7 +2242,7 @@ namespace System
             if (!FilterApplyBase(type, bindingFlags, isPublic, type.IsNestedAssembly, isStatic: false, name, prefixLookup))
                 return false;
 
-            if (!ns.IsEmpty && !ns.SequenceEqual(type.Namespace))
+            if (!Unsafe.IsNullRef(ref ns._reference) && !ns.SequenceEqual(type.Namespace))
                 return false;
 
             return true;
