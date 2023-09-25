@@ -853,7 +853,7 @@ public:
     #ifdef HOST_64BIT
         BitScanReverse64(&highest_set_bit_index, size);
     #else
-        BitScanReverse((unsigned long*)&highest_set_bit_index, size);
+        BitScanReverse((DWORD*)&highest_set_bit_index, size);
     #endif
 
         return min ((unsigned int)highest_set_bit_index, (num_buckets - 1));
