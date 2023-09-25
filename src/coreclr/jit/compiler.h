@@ -5101,6 +5101,9 @@ public:
     // Assign the proper value number to the tree
     void fgValueNumberTreeConst(GenTree* tree);
 
+    // If the constant has a field sequence associated with it, then register 
+    void fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree);
+
     // If the VN store has been initialized, reassign the
     // proper value number to the constant tree.
     void fgUpdateConstTreeValueNumber(GenTree* tree);

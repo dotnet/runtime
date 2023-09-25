@@ -10432,13 +10432,11 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 tree->gtVNPair.SetBoth(vnStore->VNForIntCon(int(tree->AsIntConCommon()->IconValue())));
             }
 
-            if (tree->IsCnsIntOrI() && (tree->AsIntCon()->gtFieldSeq != nullptr) &&
-                (tree->AsIntCon()->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+            if (tree->IsCnsIntOrI())
             {
-                // For now we're interested only in SimpleStaticKnownAddress
-                vnStore->AddToFieldAddressToFieldSeqMap(tree->AsIntCon()->gtVNPair.GetLiberal(),
-                                                        tree->AsIntCon()->gtFieldSeq);
+                fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
             }
+
             break;
 
 #ifdef FEATURE_SIMD
@@ -10513,6 +10511,8 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 assert(doesMethodHaveFrozenObjects());
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+
+                fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
             }
             break;
 
@@ -10529,6 +10529,8 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 {
                     tree->gtVNPair.SetBoth(
                         vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+
+                    fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
                 }
                 else
                 {
@@ -10540,6 +10542,29 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// fgValueNumberRegisterConstFieldSeq: If a VN'd integer constant has a
+// field sequence we want to keep track of, then register it in the side table.
+//
+// Arguments:
+//   tree - the integer constant
+//
+void Compiler::fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree)
+{
+    if (tree->gtFieldSeq == nullptr)
+    {
+        return;
+    }
+
+    if (tree->gtFieldSeq->GetKind() != FieldSeq::FieldKind::SimpleStaticKnownAddress)
+    {
+        return;
+    }
+
+    // For now we're interested only in SimpleStaticKnownAddress
+    vnStore->AddToFieldAddressToFieldSeqMap(tree->gtVNPair.GetLiberal(), tree->gtFieldSeq);
 }
 
 //------------------------------------------------------------------------
