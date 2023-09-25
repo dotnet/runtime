@@ -144,14 +144,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             .ToImmutableEquatableArray();
     }
 
-    public sealed record TypedInterceptorInvocationInfo
+    public sealed record TypedInterceptorInvocationInfo(ComplexTypeSpec TargetType, ImmutableEquatableArray<InvocationLocationInfo> Locations)
     {
-        public required ComplexTypeSpec TargetType { get; init; }
-        public required ImmutableEquatableArray<InvocationLocationInfo> Locations { get; init; }
-
-        public void Deconstruct(out ComplexTypeSpec targetType, out ImmutableEquatableArray<InvocationLocationInfo> locations) =>
-            (targetType, locations) = (TargetType, Locations);
-
         public sealed class Builder(MethodsToGen Overload, ComplexTypeSpec TargetType)
         {
             private readonly List<InvocationLocationInfo> _infoList = new();
@@ -159,11 +153,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public void RegisterInvocation(IInvocationOperation invocation) =>
                 _infoList.Add(new InvocationLocationInfo(Overload, invocation));
 
-            public TypedInterceptorInvocationInfo ToIncrementalValue() => new()
-            {
-                TargetType = TargetType,
-                Locations = _infoList.OrderBy(i => i.FilePath).ToImmutableEquatableArray()
-            };
+            public TypedInterceptorInvocationInfo ToIncrementalValue() => new(
+                TargetType,
+                Locations: _infoList.OrderBy(i => i.FilePath).ToImmutableEquatableArray());
         }
     }
 

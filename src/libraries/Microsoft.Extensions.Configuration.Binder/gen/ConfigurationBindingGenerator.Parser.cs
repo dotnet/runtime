@@ -54,6 +54,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 };
             }
 
+            private bool IsValidRootConfigType([NotNullWhen(true)] ITypeSymbol? type)
+            {
+                if (type is null ||
+                    type.SpecialType is SpecialType.System_Object or SpecialType.System_Void ||
+                    !_typeSymbols.Compilation.IsSymbolAccessibleWithin(type, _typeSymbols.Compilation.Assembly) ||
+                    type.TypeKind is TypeKind.TypeParameter or TypeKind.Pointer or TypeKind.Error ||
+                    type.IsRefLikeType ||
+                    ContainsGenericParameters(type))
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
             private void ParseInvocations(ImmutableArray<BinderInvocation?> invocations)
             {
                 foreach (BinderInvocation? invocation in invocations)
@@ -120,21 +135,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private void EnqueueTargetTypeForRootInvocation(ITypeSymbol? typeSymbol, MethodsToGen bindingOverload, BinderInvocation binderInvocation)
+            private void EnqueueTargetTypeForRootInvocation(ITypeSymbol? typeSymbol, MethodsToGen overload, BinderInvocation invocation)
             {
                 if (!IsValidRootConfigType(typeSymbol))
                 {
-                    RecordDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, binderInvocation.Location);
+                    RecordDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
                 }
                 else
                 {
-                    TypeParseInfo typeParseInfo = new TypeParseInfo(typeSymbol, _typeSymbols.Compilation)
-                    {
-                        BindingOverload = bindingOverload,
-                        BinderInvocation = binderInvocation,
-                        ContainingTypeDiagnosticInfo = null,
-                    };
-
+                    TypeParseInfo typeParseInfo = TypeParseInfo.Create(typeSymbol, overload, invocation, containingTypeDiagInfo: null);
                     _typesToParse.Enqueue(typeParseInfo);
                     _invocationTypeParseInfo.Add(typeParseInfo);
                 }
@@ -142,7 +151,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private TypeRef EnqueueTransitiveType(TypeParseInfo containingTypeParseInfo, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor diagDescriptor, string? memberName = null)
             {
-                TypeParseInfo memberTypeParseInfo = containingTypeParseInfo.ToTransitiveTypeParseInfo(memberTypeSymbol, _typeSymbols.Compilation, diagDescriptor, memberName);
+                TypeParseInfo memberTypeParseInfo = containingTypeParseInfo.ToTransitiveTypeParseInfo(memberTypeSymbol, diagDescriptor, memberName);
 
                 if (_createdTypeSpecs.TryGetValue(memberTypeSymbol, out TypeSpec? memberTypeSpec))
                 {

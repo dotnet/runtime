@@ -57,13 +57,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                 _generatorDriver = _generatorDriver.RunGeneratorsAndUpdateCompilation(_compilation, out Compilation outputCompilation, out _, CancellationToken.None);
                 GeneratorDriverRunResult runResult = _generatorDriver.GetRunResult();
-                //_compilation = outputCompilation;
 
                 return new ConfigBindingGenRunResult
                 {
                     OutputCompilation = outputCompilation,
                     Diagnostics = runResult.Diagnostics,
-                    GeneratedSources = runResult.Results[0].GeneratedSources,
+                    GeneratedSource = runResult.Results[0].GeneratedSources is { Length: not 0 } sources ? sources[0] : null,
                     TrackedSteps = runResult.Results[0].TrackedSteps[ConfigurationBindingGenerator.GenSpecTrackingName],
                     GenerationSpec = _genSpec
                 };
@@ -96,7 +95,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             public required Compilation OutputCompilation { get; init; }
 
-            public required ImmutableArray<GeneratedSourceResult> GeneratedSources { get; init; }
+            public required GeneratedSourceResult? GeneratedSource { get; init; }
 
             /// <summary>
             /// Diagnostics produced by the generator alone. Doesn't include any from other build participants.

@@ -8,6 +8,52 @@ using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
+    public sealed partial class ConfigurationBindingGenerator
+    {
+        internal sealed partial class Parser
+        {
+            private readonly struct TypeParseInfo
+            {
+                public ITypeSymbol TypeSymbol { get; private init; }
+                public string TypeName { get; private init; }
+                public MethodsToGen BindingOverload { get; private init; }
+                public BinderInvocation BinderInvocation { get; private init; }
+                public ContainingTypeDiagnosticInfo? ContainingTypeDiagnosticInfo { get; private init; }
+
+                public static TypeParseInfo Create(ITypeSymbol typeSymbol, MethodsToGen overload, BinderInvocation invocation, ContainingTypeDiagnosticInfo? containingTypeDiagInfo = null) =>
+                    new TypeParseInfo
+                    {
+                        TypeSymbol = typeSymbol,
+                        TypeName = typeSymbol.GetName(),
+                        BindingOverload = overload,
+                        BinderInvocation = invocation,
+                        ContainingTypeDiagnosticInfo = containingTypeDiagInfo,
+                    };
+
+                public TypeParseInfo ToTransitiveTypeParseInfo(ITypeSymbol memberType, DiagnosticDescriptor? diagDescriptor = null, string? memberName = null)
+                {
+                    ContainingTypeDiagnosticInfo? diagnosticInfo = diagDescriptor is null
+                        ? null
+                        : new()
+                        {
+                            TypeName = TypeName,
+                            Descriptor = diagDescriptor,
+                            MemberName = memberName,
+                        };
+
+                    return Create(memberType, BindingOverload, BinderInvocation, diagnosticInfo);
+                }
+            }
+
+            private readonly struct ContainingTypeDiagnosticInfo
+            {
+                public required string TypeName { get; init; }
+                public required string? MemberName { get; init; }
+                public required DiagnosticDescriptor Descriptor { get; init; }
+            }
+        }
+    }
+
     internal static class ParserExtensions
     {
         private static readonly SymbolDisplayFormat s_identifierCompatibleFormat = new SymbolDisplayFormat(
@@ -67,8 +113,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static (string? Namespace, string DisplayString, string Name) GetTypeName(this ITypeSymbol type)
         {
-            string? @namespace = type.ContainingNamespace?.ToDisplayString();
-            @namespace = @namespace is not "<global namespace>" ? @namespace : null;
+            string? @namespace = type.ContainingNamespace is { IsGlobalNamespace: false } containingNamespace ? containingNamespace.ToDisplayString() : null;
             string displayString = type.ToDisplayString(s_minimalDisplayFormat);
             string name = (@namespace is null ? string.Empty : @namespace + ".") + displayString.Replace(".", "+");
             return (@namespace, displayString, name);

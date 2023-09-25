@@ -91,9 +91,11 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         private static async Task VerifyThatSourceIsGenerated(string testSourceCode)
         {
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(testSourceCode);
-            Assert.Equal(1, result.GeneratedSources.Length);
+
+            GeneratedSourceResult? source = result.GeneratedSource;
+            Assert.NotNull(source);
             Assert.Empty(result.Diagnostics);
-            Assert.True(result.GeneratedSources[0].SourceText.Lines.Count > 10);
+            Assert.True(source.Value.SourceText.Lines.Count > 10);
         }
 
         private static async Task VerifyAgainstBaselineUsingFile(
@@ -112,7 +114,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             ConfigBindingGenTestDriver genDriver = new();
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(testSourceCode);
-            GeneratedSourceResult generatedSource = Assert.Single(result.GeneratedSources);
+            Assert.NotNull(result.GeneratedSource);
+            GeneratedSourceResult generatedSource = result.GeneratedSource.Value;
 
             SourceText resultSourceText = generatedSource.SourceText;
             bool resultEqualsBaseline = RoslynTestUtils.CompareLines(expectedLines, resultSourceText, out string errorMessage);

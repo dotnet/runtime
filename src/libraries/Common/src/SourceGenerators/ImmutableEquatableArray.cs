@@ -75,9 +75,6 @@ namespace SourceGenerators
 
     internal static class ImmutableEquatableArray
     {
-        public static ImmutableEquatableArray<T> Empty<T>() where T : IEquatable<T>
-            => ImmutableEquatableArray<T>.Empty;
-
         public static ImmutableEquatableArray<T> ToImmutableEquatableArray<T>(this IEnumerable<T> values) where T : IEquatable<T>
             => new(values);
     }

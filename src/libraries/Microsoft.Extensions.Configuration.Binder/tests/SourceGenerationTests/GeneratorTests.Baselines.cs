@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                             public class MyClass
                             {
-                                public string MyString { get; set; }
+                                public string? MyString { get; set; }
                                 public int MyInt { get; set; }
                                 public List<int> MyList { get; set; }
                                 public Dictionary<string, string> MyDictionary { get; set; }
@@ -655,7 +655,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ;
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
-            Assert.Empty(result.GeneratedSources);
+            Assert.False(result.GeneratedSource.HasValue);
             Assert.Empty(result.Diagnostics);
         }
 
