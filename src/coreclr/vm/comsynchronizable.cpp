@@ -1035,6 +1035,15 @@ FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 }
 FCIMPLEND
 
+FCIMPL0(INT32, ThreadNative::GetYieldsPerNormalizedYield)
+{
+    FCALL_CONTRACT;
+
+    // Schedule measurements if needed
+    return (INT32)YieldProcessorNormalization::GetYieldsPerNormalizedYield();
+}
+FCIMPLEND
+
 FCIMPL1(void, ThreadNative::SpinWait, int iterations)
 {
     FCALL_CONTRACT;

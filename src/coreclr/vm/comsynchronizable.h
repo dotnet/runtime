@@ -70,6 +70,7 @@ public:
 
 
     static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
+    static FCDECL0(INT32,   GetYieldsPerNormalizedYield);
     static FCDECL1(void,    SpinWait,                       int iterations);
     static FCDECL0(Object*, GetCurrentThread);
     static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);

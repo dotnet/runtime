@@ -386,6 +386,7 @@ FCFuncStart(gThreadFuncs)
 #endif // FEATURE_COMINTEROP
     FCFuncElement("Interrupt", ThreadNative::Interrupt)
     FCFuncElement("Join", ThreadNative::Join)
+    FCFuncElement("get_GetYieldsPerNormalizedYield", ThreadNative::GetYieldsPerNormalizedYield)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 

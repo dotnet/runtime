@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
@@ -126,7 +128,55 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void SpinWaitInternal(int iterations);
 
-        public static void SpinWait(int iterations) => SpinWaitInternal(iterations);
+        public static void SpinWait(int iterations)
+        {
+            if (iterations <= 0)
+            {
+                return;
+            }
+
+            if (!ArmBase.IsSupported && !X86Base.IsSupported)
+            {
+                SpinWaitInternal(iterations);
+                return;
+            }
+
+            // The algorithm below is ported from native's
+            // void YieldProcessorNormalized(const YieldProcessorNormalizationInfo &normalizationInfo, unsigned int count)
+
+            // Prevent overflow on the multiply below on 32bit
+            if (IntPtr.Size == 4)
+            {
+                // Copied from YieldProcessorNormalization (yieldprocessornormalized.h)
+                const int targetNsPerNormalizedYield = 37;
+                const int maxYieldsPerNormalizedYield = targetNsPerNormalizedYield * 10;
+
+                const int maxCount = int.MaxValue / maxYieldsPerNormalizedYield;
+                if (iterations > maxCount)
+                {
+                    iterations = maxCount;
+                }
+            }
+
+            nint n = (nint)iterations * GetYieldsPerNormalizedYield;
+            Debug.Assert(n != 0);
+            do
+            {
+                if (ArmBase.IsSupported)
+                {
+                    // TODO: on some CPUs it's better to call ISB here
+                    ArmBase.Yield();
+                }
+                else if (X86Base.IsSupported)
+                {
+                    X86Base.Pause();
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
+            } while (--n != 0);
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_YieldThread")]
         private static partial Interop.BOOL YieldInternal();
@@ -323,6 +373,16 @@ namespace System.Threading
         /// appropriate for the processor.
         /// </summary>
         internal static int OptimalMaxSpinWaitsPerSpinIteration
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            get;
+        }
+
+        /// <summary>
+        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
+        /// appropriate for the processor.
+        /// </summary>
+        internal static int GetYieldsPerNormalizedYield
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;

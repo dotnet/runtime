@@ -53,6 +53,12 @@ public:
     {
         return s_optimalMaxNormalizedYieldsPerSpinIteration;
     }
+    static unsigned int GetYieldsPerNormalizedYield()
+    {
+        // Schedule measurement if necessary
+        YieldProcessorNormalization::ScheduleMeasurementIfNecessary();
+        return s_yieldsPerNormalizedYield;
+    }
 
     static void FireMeasurementEvents();
 
