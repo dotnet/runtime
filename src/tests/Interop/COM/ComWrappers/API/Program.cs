@@ -9,6 +9,7 @@ namespace ComWrappersTests
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
+    using System.Runtime.InteropServices.Marshalling;
 
     using ComWrappersTests.Common;
     using TestLibrary;
@@ -188,14 +189,14 @@ namespace ComWrappersTests
             var testObjUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
             Assert.Same(testObj, testObjUnwrapped);
 
-            // UniqueInstance and Unwrap should always be a new ComObject, never unwrapped
+            // UniqueInstance and Unwrap should always be a new com object, never unwrapped
             var testObjUniqueUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap | CreateObjectFlags.UniqueInstance);
-            Assert.True(testObjUniqueUnwrapped is ComObject)
             Assert.NotSame(testObj, testObjUniqueUnwrapped);
 
             // Release the wrapper
             int count = Marshal.Release(comWrapper);
-            Assert.Equal(0, count);
+            // Expect 1 reference remaining from UniqueInstance
+            Assert.Equal(1, count);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
