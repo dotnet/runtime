@@ -209,7 +209,6 @@ int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era, int32_t* 
         startDateComponents.day = 1;
         startDateComponents.year = 1;
         NSDate *date = [japaneseCalendar dateFromComponents:startDateComponents];
-       // NSDate *startDate = date;
         int32_t currentEra;
 
         for (int month = 0; month <= 12; month++)
