@@ -14,26 +14,25 @@ internal static partial class Interop
 
     internal static partial class Odbc
     {
-        private static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        internal static string GetNativeLibraryName()
         {
-            if (libraryName == Libraries.Odbc32)
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS())
             {
-                if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS())
-                {
-                    libraryName = "libodbc.2.dylib";
-                }
-                else
-                {
-                    libraryName = "libodbc.so.2";
-                }
-                return NativeLibrary.Load(libraryName, assembly, default);
+                return "libodbc.2.dylib";
             }
-            return default;
+            return "libodbc.so.2";
         }
 
         static Odbc()
         {
-            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), DllImportResolver);
+            NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), (libraryName, assembly, searchPath) =>
+            {
+                if (libraryName == Libraries.Odbc32)
+                {
+                    return NativeLibrary.Load(GetNativeLibraryName(), assembly, default);
+                }
+                return default;
+            });
         }
     }
 }
