@@ -13,7 +13,7 @@ using Xunit;
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
     [PlatformSpecific(TestPlatforms.Windows)] // IJW is only supported on Windows
-    public class Ijwhost : IClassFixture<Ijwhost.SharedTestState>
+    public class Ijwhost : IClassFixture<Ijwhost.SharedTestState>, IDisposable
     {
         private readonly SharedTestState sharedState;
 
@@ -28,6 +28,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             new RuntimeConfig(IjwLibraryRuntimeConfigPath)
                 .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, sharedState.RepoDirectories.MicrosoftNETCoreAppVersion))
                 .Save();
+        }
+
+        public void Dispose()
+        {
+            File.Delete(IjwLibraryRuntimeConfigPath);
         }
 
         [Theory]
