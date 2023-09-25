@@ -11,6 +11,7 @@ using System.Reflection;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
+using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.Configuration.Test;
 using Xunit;
 
@@ -1767,7 +1768,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(0, options.OtherCodeNullable);
             Assert.Equal("default", options.OtherCodeString);
             Assert.Null(options.OtherCodeNull);
-            Assert.Null(options.OtherCodeUri);            
+            Assert.Null(options.OtherCodeUri);
         }
 
         [Fact]
@@ -2238,7 +2239,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(GeolocationClass), key, new GeolocationClass()));
                 Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key));
                 Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key, defaultValue: null));
-                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key, default(Geolocation)));    
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key, default(Geolocation)));
             }
         }
 
@@ -2403,6 +2404,39 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             // Binding to a new section should not set the value to null.
             config.GetSection("A").Bind(instance);
             Assert.Equal("localhost", instance.ConnectionString);
+        }
+
+        [Fact]
+        public void CanBindToMockConfigurationSection()
+        {
+            const string expectedA = "hello";
+
+            var configSource = new MemoryConfigurationSource()
+            {
+                InitialData = new Dictionary<string, string?>()
+                {
+                    [$":{nameof(SimplePoco.A)}"] = expectedA,
+                }
+            };
+            var configRoot = new MockConfigurationRoot(new[] { configSource.Build(null) });
+            var configSection = new ConfigurationSection(configRoot, string.Empty);
+
+            SimplePoco result = new();
+            configSection.Bind(result);
+
+            Assert.Equal(expectedA, result.A);
+            Assert.Equal(default(string), result.B);
+        }
+
+        // a mock configuration root that will return null for undefined Sections,
+        // as is common when Configuration interfaces are mocked
+        class MockConfigurationRoot : ConfigurationRoot, IConfigurationRoot
+        {
+            public MockConfigurationRoot(IList<IConfigurationProvider> providers) : base(providers)
+            { }
+
+            IConfigurationSection IConfiguration.GetSection(string key) => 
+                this[key] is null ? null : new ConfigurationSection(this, key); 
         }
     }
 }

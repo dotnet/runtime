@@ -3932,14 +3932,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_XZERO:
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
+				arm_neon_eor_8b (code, dreg, dreg, dreg);
+			else
+				arm_neon_eor_16b (code, dreg, dreg, dreg);
 			break;
 		case OP_XONES:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
 			arm_neon_not_16b (code, dreg, dreg);
 			break;
 		case OP_XEXTRACT: 
-			code = emit_xextract (code, VREG_FULL, GTMREG_TO_INT (ins->inst_c0), dreg, sreg1);
+			code = emit_xextract (code, (ins->inst_c1 == 8) ? VREG_LOW : VREG_FULL, GTMREG_TO_INT (ins->inst_c0), dreg, sreg1);
 			break;
 		case OP_STOREX_MEMBASE:
 			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
@@ -3981,7 +3984,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_EXPAND_R4:
 		case OP_EXPAND_R8: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, 0);
+			if (ins->opcode == OP_EXPAND_R8)
+				arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, 0);
+			else
+				arm_neon_fdup_e (code, get_vector_size_macro (ins), t, dreg, sreg1, 0);
 			break;
 		}
 		case OP_EXTRACT_I1:
@@ -4004,6 +4010,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				// Technically, this broadcasts element #inst_c0 to all dest XREG elements; whereas it should
 				// set the FREG to the said element. Since FREG and XREG pool is the same on arm64 and the rest
 				// of the F/XREG is ignored in FREG mode, this operation remains valid.
+				// FIXME: pass VREG_LOW for 64-bit vectors
 				arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, GTMREG_TO_UINT32 (ins->inst_c0));
 			}
 			break;
@@ -4098,17 +4105,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_ARM64_XADDV: {
 			switch (ins->inst_c0) {
-			case INTRINS_AARCH64_ADV_SIMD_FADDV:
+			case INTRINS_AARCH64_ADV_SIMD_FADDV: {
+				const int width = get_vector_size_macro (ins);
 				if (ins->inst_c1 == MONO_TYPE_R8) {
 					arm_neon_faddp (code, VREG_FULL, TYPE_F64, dreg, sreg1, sreg1);
 				} else if (ins->inst_c1 == MONO_TYPE_R4) {
-					arm_neon_faddp (code, VREG_FULL, TYPE_F32, dreg, sreg1, sreg1);
-					arm_neon_faddp (code, VREG_FULL, TYPE_F32, dreg, dreg, dreg);
+					arm_neon_faddp (code, width, TYPE_F32, dreg, sreg1, sreg1);
+					if (width == VREG_FULL)
+						arm_neon_faddp (code, width, TYPE_F32, dreg, dreg, dreg);
 				} else {
 					g_assert_not_reached ();
 				} 
 				break;
-
+			}
 			case INTRINS_AARCH64_ADV_SIMD_UADDV:
 			case INTRINS_AARCH64_ADV_SIMD_SADDV: 
 				if (get_type_size_macro (ins->inst_c1) == TYPE_I64) 

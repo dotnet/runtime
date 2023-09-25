@@ -1022,11 +1022,6 @@
         <target state="translated">必須將 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' 套用到組件，以停用此專案中的執行階段封送處理，以啟用此類型的封送處理。</target>
         <note />
       </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">衍生自 'SafeHandle' 的抽象類型無法依參考排列。提供的類型必須是實體。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
         <target state="translated">呼叫方法時，必須定義封送處理給被呼叫者的參數 '{0}' 的大小，但 count 參數 '{1}' 是 'out' 參數。</target>

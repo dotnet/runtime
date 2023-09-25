@@ -96,7 +96,7 @@ namespace System.Reflection
                 }
                 else
                 {
-                    ParameterInfo[] parameters = metaMethod.GetParameters();
+                    ReadOnlySpan<ParameterInfo> parameters = metaMethod.GetParametersAsSpan();
                     for (int i = 0; i < parameters.Length; i++)
                     {
                         if (parameter.Position == i &&
@@ -200,7 +200,7 @@ namespace System.Reflection
 
             if (setter != null)
             {
-                CheckNullabilityAttributes(nullability, setter.GetParameters()[^1].GetCustomAttributesData());
+                CheckNullabilityAttributes(nullability, setter.GetParametersAsSpan()[^1].GetCustomAttributesData());
             }
             else
             {
@@ -444,7 +444,7 @@ namespace System.Reflection
                 return method.ReturnType;
             }
 
-            return property.GetSetMethod(true)!.GetParameters()[0].ParameterType;
+            return property.GetSetMethod(true)!.GetParametersAsSpan()[0].ParameterType;
         }
 
         private void CheckGenericParameters(NullabilityInfo nullability, MemberInfo metaMember, Type metaType, Type? reflectedType)

@@ -4239,7 +4239,6 @@ private:
     void impImportBlockCode(BasicBlock* block);
 
     void impReimportMarkBlock(BasicBlock* block);
-    void impReimportMarkSuccessors(BasicBlock* block);
 
     void impVerifyEHBlock(BasicBlock* block, bool isTryStart);
 
@@ -5101,6 +5100,9 @@ public:
     // The input 'tree' is a leaf node that is a constant
     // Assign the proper value number to the tree
     void fgValueNumberTreeConst(GenTree* tree);
+
+    // If the constant has a field sequence associated with it, then register 
+    void fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree);
 
     // If the VN store has been initialized, reassign the
     // proper value number to the constant tree.
@@ -8728,6 +8730,7 @@ private:
     // Get preferred alignment of SIMD type.
     int getSIMDTypeAlignment(var_types simdType);
 
+public:
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
     uint32_t getVectorTByteLength()
@@ -8928,7 +8931,6 @@ private:
         return emitTypeSize(TYP_SIMD8);
     }
 
-public:
     // Returns the codegen type for a given SIMD size.
     static var_types getSIMDTypeForSize(unsigned size)
     {
@@ -9355,7 +9357,7 @@ public:
     // State information - which phases have completed?
     // These are kept together for easy discoverability
 
-    bool    bRangeAllowStress;
+    bool    compAllowStress;
     bool    compCodeGenDone;
     int64_t compNumStatementLinksTraversed; // # of links traversed while doing debug checks
     bool    fgNormalizeEHDone;              // Has the flowgraph EH normalization phase been done?
@@ -10351,7 +10353,7 @@ public:
                   InlineInfo*           inlineInfo);
     void compDone();
 
-    static void compDisplayStaticSizes(FILE* fout);
+    static void compDisplayStaticSizes();
 
     //------------ Some utility functions --------------
 

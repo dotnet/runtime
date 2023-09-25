@@ -1421,7 +1421,7 @@ PhaseStatus LinearScan::doLinearScan()
 #endif
         )
     {
-        dumpLsraStats(jitstdout);
+        dumpLsraStats(jitstdout());
     }
 #endif // TRACK_LSRA_STATS
 

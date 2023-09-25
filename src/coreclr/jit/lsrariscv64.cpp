@@ -368,17 +368,45 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_CMPXCHG:
         {
-            NYI_RISCV64("-----unimplemented on RISCV64 yet----");
+            GenTreeCmpXchg* cas = tree->AsCmpXchg();
+            assert(!cas->gtOpComparand->isContained());
+            srcCount = 3;
+            assert(dstCount == 1);
+
+            buildInternalIntRegisterDefForNode(tree); // temp reg for store conditional error
+            // Extend lifetimes of argument regs because they may be reused during retries
+            setDelayFree(BuildUse(cas->gtOpLocation));
+            setDelayFree(BuildUse(cas->gtOpValue));
+            setDelayFree(BuildUse(cas->gtOpComparand));
+
+            // Internals may not collide with target
+            setInternalRegsDelayFree = true;
+            buildInternalRegisterUses();
+            BuildDef(tree);
         }
         break;
 
         case GT_LOCKADD:
+            assert(!"-----unimplemented on RISCV64----");
+            break;
+
         case GT_XORR:
         case GT_XAND:
         case GT_XADD:
         case GT_XCHG:
         {
-            NYI_RISCV64("-----unimplemented on RISCV64 yet----");
+            assert(dstCount == (tree->TypeIs(TYP_VOID) ? 0 : 1));
+            GenTree* addr = tree->gtGetOp1();
+            GenTree* data = tree->gtGetOp2();
+            assert(!addr->isContained() && !data->isContained());
+            srcCount = 2;
+
+            BuildUse(addr);
+            BuildUse(data);
+            if (dstCount == 1)
+            {
+                BuildDef(tree);
+            }
         }
         break;
 

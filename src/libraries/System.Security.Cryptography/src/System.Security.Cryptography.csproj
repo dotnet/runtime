@@ -297,8 +297,6 @@
              Link="Common\System\Security\Cryptography\KdfWorkLimiter.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\KeyBlobHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\HashOneShotHelpers.cs"
-             Link="Common\System\Security\Cryptography\HashOneShotHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\IRuntimeAlgorithm.cs"
              Link="Common\System\Security\Cryptography\IRuntimeAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
