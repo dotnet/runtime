@@ -741,7 +741,10 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("f[j, aDouble]", TNumber("3.34"))
+                   ("f[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
+                   ("f[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
+                   ("f[aChar, \"&\", longString]", TString("9-&-longString")),
+                //    ("f[numArray[j], aDouble]", TNumber("4.34")) //nested
                 );
            });
     }

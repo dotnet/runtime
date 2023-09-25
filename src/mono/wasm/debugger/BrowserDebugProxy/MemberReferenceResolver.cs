@@ -366,27 +366,22 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, List<VariableDefinition> variableDefinitions, CancellationToken token)
+        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject nestedIndexObject, List<VariableDefinition> variableDefinitions, CancellationToken token)
         {
             try
             {
                 JObject rootObject = null;
-                // keeps JObjects and LiteralExpressionSyntaxes:
-                List<object> indexObjects = new List<object>();
                 string elementAccessStrExpression = elementAccess.Expression.ToString();
                 rootObject = await Resolve(elementAccessStrExpression, token);
 
                 if (rootObject == null)
                 {
                     // it might be a jagged array where indexObject should be treated as a new rootObject
-                    rootObject = indexObject;
-                    indexObject = null;
+                    rootObject = nestedIndexObject;
+                    nestedIndexObject = null;
                 }
 
-                if (indexObject != null)
-                    indexObjects.Add(indexObject);
-
-                ElementIndexInfo elementIdxInfo = await GetElementIndexInfo(indexObjects);
+                ElementIndexInfo elementIdxInfo = await GetElementIndexInfo(nestedIndexObject);
                 if (elementIdxInfo is null)
                     return null;
 
@@ -432,7 +427,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             var variableDef = await ExpressionEvaluator.GetVariableDefinitions(this, variableDefinitions, invokeToStringInObject: false, token);
                             return await ExpressionEvaluator.EvaluateSimpleExpression(this, eaFormatted, elementAccessStr, variableDef, logger, token);
                         }
-                        if (indexObjects.Count == 0 && elementIdxInfo.IndexingExpression is null)
+                        if (elementIdxInfo.Indexers is null || elementIdxInfo.Indexers.Count == 0)
                             throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
 
                         var typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
@@ -449,9 +444,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                             {
                                 try
                                 {
-                                    if (!CheckParametersCompatibility(paramInfo, indexObjects))
+                                    if (!CheckParametersCompatibility(paramInfo, elementIdxInfo.Indexers))
                                         continue;
-                                    ArraySegment<byte> buffer = await WriteIndexObjectAsIndices(objectId, indexObjects, paramInfo);
+                                    ArraySegment<byte> buffer = await WriteIndexObjectAsIndices(objectId, elementIdxInfo.Indexers, paramInfo);
                                     JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
                                     return (JObject)getItemRetObj["value"];
                                 }
@@ -472,25 +467,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                 throw new ReturnAsErrorException($"Unable to evaluate element access '{elementAccess}': {ex.Message}", ex.GetType().Name);
             }
 
-            async Task<ElementIndexInfo> GetElementIndexInfo(List<object> indexObjects)
+            async Task<ElementIndexInfo> GetElementIndexInfo(JObject nestedIndexObject)
             {
-                // ToDo: cleanup in the funtion and in ElementIndexInfo - there is redundant info
                 // e.g. x[a[0]], x[a[b[1]]] etc.
-                if (indexObjects.Count != 0)
-                {
-                    if (indexObjects[0] is JObject idxJObj)
-                        return new ElementIndexInfo(ElementIdxStr: idxJObj["value"].ToString());
-                    if (indexObjects[0] is LiteralExpressionSyntax expr)
-                        return new ElementIndexInfo(ElementIdxStr: expr.ToString());
-                    throw new Exception("Unknown type of index.");
-                }
+                if (nestedIndexObject is not null)
+                    return new ElementIndexInfo(
+                        ElementIdxStr: nestedIndexObject["value"].ToString(),
+                        Indexers: new List<object>() { nestedIndexObject }
+                    );
 
                 if (elementAccess.ArgumentList is null)
                     return null;
 
-                StringBuilder elementIdxStr = new StringBuilder();
                 int dimCnt = 1;
                 LiteralExpressionSyntax indexingExpression = null;
+                StringBuilder elementIdxStr = new StringBuilder();
+                List<object> indexers = new();
                 for (int i = 0; i < elementAccess.ArgumentList.Arguments.Count; i++)
                 {
                     JObject indexObject;
@@ -506,7 +498,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         indexingExpression = arg.Expression as LiteralExpressionSyntax;
                         string expression = indexingExpression.ToString();
                         elementIdxStr.Append(expression);
-                        indexObjects.Add(indexingExpression);
+                        indexers.Add(indexingExpression);
                     }
 
                     // e.g. x[a] or x[a.b]
@@ -520,7 +512,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         // x[a]
                         indexObject ??= await Resolve(argParm.Identifier.Text, token);
                         elementIdxStr.Append(indexObject["value"].ToString());
-                        indexObjects.Add(indexObject);
+                        indexers.Add(indexObject);
                     }
                     // indexing with expressions, e.g. x[a + 1]
                     else
@@ -532,13 +524,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (idxType != "number")
                             throw new InvalidOperationException($"Cannot index with an object of type '{idxType}'");
                         elementIdxStr.Append(indexObject["value"].ToString());
-                        indexObjects.Add(indexObject);
+                        indexers.Add(indexObject);
                     }
                 }
                 return new ElementIndexInfo(
-                    ElementIdxStr: elementIdxStr.ToString(),
                     DimensionsCount: dimCnt,
-                    IndexingExpression: indexingExpression);
+                    ElementIdxStr: elementIdxStr.ToString(),
+                    Indexers: indexers);
             }
 
             async Task<ArraySegment<byte>> WriteIndexObjectAsIndices(DotnetObjectId rootObjId, List<object> indexObjects, ParameterInfo[] paramInfo)
@@ -905,7 +897,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private sealed record ElementIndexInfo(
             string ElementIdxStr,
-            int DimensionsCount = 1,
-            LiteralExpressionSyntax IndexingExpression = null);
+            // keeps JObjects and LiteralExpressionSyntaxes:
+            List<object> Indexers,
+            int DimensionsCount = 1);
     }
 }

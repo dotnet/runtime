@@ -531,6 +531,7 @@ namespace DebuggerTests
 
             // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
             public double this[int key1, double key2] => key1 + key2;
+            public string this[char key1, string key2, string key3] => $"{key1}-{key2}-{key3}";
 
             public void run()
             {
