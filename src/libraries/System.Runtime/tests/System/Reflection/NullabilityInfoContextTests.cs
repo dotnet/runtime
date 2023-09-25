@@ -1317,25 +1317,119 @@ namespace System.Reflection.Tests
             Assert.Equal(expectedGenericArgumentNullability, info.GenericTypeArguments[2].GenericTypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.NotNull, info.GenericTypeArguments[2].GenericTypeArguments[1].ReadState);
         }
-        public static IEnumerable<object[]> TestCtorWithNullableParametersArgumentsData() => new[]
+
+        public static IEnumerable<object[]> TestCtorParametersData() => new object[][]
         {
-            new object[] { typeof(GenericTypeWithNullableCtor<>), NullabilityState.Nullable },
-            new object[] { typeof(GenericTypeWithNullableCtor<int>), NullabilityState.NotNull },
-            new object[] { typeof(GenericTypeWithNullableCtor<int?>), NullabilityState.Nullable },
-            new object[] { typeof(GenericTypeWithNullableCtor<object>), NullabilityState.Nullable },
+            [typeof(GenericTypeWithCtor<>), NullabilityState.Nullable, NullabilityState.Nullable],
+            [typeof(GenericTypeWithCtor<int>), NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(GenericTypeWithCtor<int?>), NullabilityState.Nullable, NullabilityState.Nullable],
+            [typeof(GenericTypeWithCtor<object>), NullabilityState.Nullable, NullabilityState.Nullable],
+
+            [typeof(GenericTypeWithCtor_Disallow<>), NullabilityState.Nullable, NullabilityState.NotNull],
+            [typeof(GenericTypeWithCtor_Disallow<int>), NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(GenericTypeWithCtor_Disallow<int?>), NullabilityState.Nullable, NullabilityState.NotNull],
+            [typeof(GenericTypeWithCtor_Disallow<object>), NullabilityState.Nullable, NullabilityState.NotNull],
+
+            [typeof(GenericTypeWithCtor_Maybe<>), NullabilityState.Nullable, NullabilityState.Nullable],
+            [typeof(GenericTypeWithCtor_Maybe<int>), NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(GenericTypeWithCtor_Maybe<int?>), NullabilityState.Nullable, NullabilityState.Nullable],
+            [typeof(GenericTypeWithCtor_Maybe<object>), NullabilityState.Nullable, NullabilityState.Nullable],
+
+            [typeof(GenericTypeWithCtor_Allow<>), NullabilityState.Nullable, NullabilityState.Nullable],
+            [typeof(GenericTypeWithCtor_Allow<int>), NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(GenericTypeWithCtor_Allow<int?>), NullabilityState.Nullable, NullabilityState.Nullable],
+            [typeof(GenericTypeWithCtor_Allow<object>), NullabilityState.Nullable, NullabilityState.Nullable],
+
+            [typeof(GenericNonNullableTypeWithCtor<>), NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(GenericNonNullableTypeWithCtor<int>), NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(GenericNonNullableTypeWithCtor<object>), NullabilityState.NotNull, NullabilityState.NotNull],
+
+            [typeof(GenericNonNullableTypeWithCtor_Disallow<>), NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(GenericNonNullableTypeWithCtor_Disallow<int>), NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(GenericNonNullableTypeWithCtor_Disallow<object>), NullabilityState.NotNull, NullabilityState.NotNull],
+
+            [typeof(GenericNonNullableTypeWithCtor_Maybe<>), NullabilityState.Nullable, NullabilityState.NotNull],
+            [typeof(GenericNonNullableTypeWithCtor_Maybe<int>), NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(GenericNonNullableTypeWithCtor_Maybe<object>), NullabilityState.Nullable, NullabilityState.NotNull],
+
+            [typeof(GenericNonNullableTypeWithCtor_Allow<>), NullabilityState.NotNull, NullabilityState.Nullable],
+            [typeof(GenericNonNullableTypeWithCtor_Allow<int>), NullabilityState.NotNull, NullabilityState.NotNull],
+            [typeof(GenericNonNullableTypeWithCtor_Allow<object>), NullabilityState.NotNull, NullabilityState.Nullable],
         };
 
         [Theory]
-        [MemberData(nameof(TestCtorWithNullableParametersArgumentsData))]
-        public void TestCtorWithNullableParameters(Type type, NullabilityState expectedNullability)
+        [MemberData(nameof(TestCtorParametersData))]
+        public void TestCtorParameters(Type type, NullabilityState expectedRead, NullabilityState expectedWrite)
         {
             var ctx = new NullabilityInfoContext();
 
             ParameterInfo param = type.GetConstructors()[0].GetParameters()[0];
             NullabilityInfo info = ctx.Create(param);
 
-            Assert.Equal(expectedNullability, info.ReadState);
-            Assert.Equal(expectedNullability, info.WriteState);
+            Assert.Equal(expectedRead, info.ReadState);
+            Assert.Equal(expectedWrite, info.WriteState);
+        }
+
+        public static IEnumerable<object[]> TestMethodsWithGenericParametersData()
+        {
+            const string MethodNullable = "GenericMethod";
+            const string MethodNonNullable = "GenericNotNullMethod";
+
+            return new object[][]
+            {
+                [typeof(ClassWithGenericMethods), MethodNullable, null, NullabilityState.Nullable, NullabilityState.Nullable],
+                [typeof(ClassWithGenericMethods), MethodNullable, typeof(int), NullabilityState.NotNull, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods), MethodNullable, typeof(int?), NullabilityState.Nullable, NullabilityState.Nullable],
+                [typeof(ClassWithGenericMethods), MethodNullable, typeof(object), NullabilityState.Nullable, NullabilityState.Nullable],
+
+                [typeof(ClassWithGenericMethods), MethodNonNullable, null, NullabilityState.NotNull, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods), MethodNonNullable, typeof(int), NullabilityState.NotNull, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods), MethodNonNullable, typeof(object), NullabilityState.NotNull, NullabilityState.NotNull],
+
+                [typeof(ClassWithGenericMethods_Disallow), MethodNullable, null, NullabilityState.Nullable, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods_Disallow), MethodNullable, typeof(int), NullabilityState.NotNull, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods_Disallow), MethodNullable, typeof(int?), NullabilityState.Nullable, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods_Disallow), MethodNullable, typeof(object), NullabilityState.Nullable, NullabilityState.NotNull],
+
+                [typeof(ClassWithGenericMethods_Disallow), MethodNonNullable, null, NullabilityState.NotNull, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods_Disallow), MethodNonNullable, typeof(int), NullabilityState.NotNull, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods_Disallow), MethodNonNullable, typeof(object), NullabilityState.NotNull, NullabilityState.NotNull],
+
+                [typeof(ClassWithGenericMethods_Maybe), MethodNullable, null, NullabilityState.Nullable, NullabilityState.Nullable],
+                [typeof(ClassWithGenericMethods_Maybe), MethodNullable, typeof(int), NullabilityState.NotNull, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods_Maybe), MethodNullable, typeof(int?), NullabilityState.Nullable, NullabilityState.Nullable],
+                [typeof(ClassWithGenericMethods_Maybe), MethodNullable, typeof(object), NullabilityState.Nullable, NullabilityState.Nullable],
+
+                [typeof(ClassWithGenericMethods_Maybe), MethodNonNullable, null, NullabilityState.Nullable, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods_Maybe), MethodNonNullable, typeof(int), NullabilityState.NotNull, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods_Maybe), MethodNonNullable, typeof(object), NullabilityState.Nullable, NullabilityState.NotNull],
+
+                [typeof(ClassWithGenericMethods_Allow), MethodNullable, null, NullabilityState.Nullable, NullabilityState.Nullable],
+                [typeof(ClassWithGenericMethods_Allow), MethodNullable, typeof(int), NullabilityState.NotNull, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods_Allow), MethodNullable, typeof(int?), NullabilityState.Nullable, NullabilityState.Nullable],
+                [typeof(ClassWithGenericMethods_Allow), MethodNullable, typeof(object), NullabilityState.Nullable, NullabilityState.Nullable],
+
+                [typeof(ClassWithGenericMethods_Allow), MethodNonNullable, null, NullabilityState.NotNull, NullabilityState.Nullable],
+                [typeof(ClassWithGenericMethods_Allow), MethodNonNullable, typeof(int), NullabilityState.NotNull, NullabilityState.NotNull],
+                [typeof(ClassWithGenericMethods_Allow), MethodNonNullable, typeof(object), NullabilityState.NotNull, NullabilityState.Nullable],
+            };
+        } 
+
+        [Theory]
+        [MemberData(nameof(TestMethodsWithGenericParametersData))]
+        public void TestMethodsWithGenericParameters(Type type, string methodName, Type? genericParameterType, NullabilityState expectedRead, NullabilityState expectedWrite)
+        {
+            var ctx = new NullabilityInfoContext();
+
+            MethodInfo method = type.GetMethod(methodName)!;
+            if (genericParameterType is not null)
+                method = method.MakeGenericMethod(genericParameterType);
+
+            ParameterInfo paramInfo = method.GetParameters()[0];
+            NullabilityInfo info = ctx.Create(paramInfo);
+
+            Assert.Equal(expectedRead, info.ReadState);
+            Assert.Equal(expectedWrite, info.WriteState);
         }
     }
 
@@ -1620,8 +1714,56 @@ namespace System.Reflection.Tests
         public Tuple<int, int, Tuple<T, int>?>? Deep5 { get; set; }
     }
 
-    public class GenericTypeWithNullableCtor<T>
+    public class GenericTypeWithCtor<T>
     {
-        public GenericTypeWithNullableCtor(T value) { }
+        public GenericTypeWithCtor(T value) { }
+    }
+    public class GenericTypeWithCtor_Disallow<T>
+    {
+        public GenericTypeWithCtor_Disallow([DisallowNull] T value) { }
+    }
+    public class GenericTypeWithCtor_Maybe<T>
+    {
+        public GenericTypeWithCtor_Maybe([MaybeNull] out T value) { value = default; }
+    }
+    public class GenericTypeWithCtor_Allow<T>
+    {
+        public GenericTypeWithCtor_Allow([AllowNull] T value) { }
+    }
+    public class GenericNonNullableTypeWithCtor<T> where T : notnull
+    {
+        public GenericNonNullableTypeWithCtor(T value) { }
+    }
+    public class GenericNonNullableTypeWithCtor_Disallow<T> where T : notnull
+    {
+        public GenericNonNullableTypeWithCtor_Disallow([DisallowNull] T value) { }
+    }
+    public class GenericNonNullableTypeWithCtor_Maybe<T> where T : notnull
+    {
+        public GenericNonNullableTypeWithCtor_Maybe([MaybeNull] out T value) { value = default; }
+    }
+    public class GenericNonNullableTypeWithCtor_Allow<T> where T : notnull
+    {
+        public GenericNonNullableTypeWithCtor_Allow([AllowNull] T value) { }
+    }
+    public class ClassWithGenericMethods
+    {
+        public void GenericMethod<T>(T value) => throw new Exception();
+        public void GenericNotNullMethod<T>(T value) where T : notnull => throw new Exception();
+    }
+    public class ClassWithGenericMethods_Disallow
+    {
+        public void GenericMethod<T>([DisallowNull] T value) => throw new Exception();
+        public void GenericNotNullMethod<T>([DisallowNull] T value) where T : notnull => throw new Exception();
+    }
+    public class ClassWithGenericMethods_Maybe
+    {
+        public void GenericMethod<T>([MaybeNull] out T value) => throw new Exception();
+        public void GenericNotNullMethod<T>([MaybeNull] out T value) where T : notnull => throw new Exception();
+    }
+    public class ClassWithGenericMethods_Allow
+    {
+        public void GenericMethod<T>([AllowNull] T value) => throw new Exception();
+        public void GenericNotNullMethod<T>([AllowNull] T value) where T : notnull => throw new Exception();
     }
 }
