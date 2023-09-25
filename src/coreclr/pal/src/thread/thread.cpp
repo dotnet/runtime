@@ -2780,7 +2780,7 @@ CPalThread::AppendSystemCallError(
     }
 
     length += result;
-    _ASSERTE(thread->m_systemCallErrors[length] == '\0');
+    _ASSERTE(buffer[length] == '\0');
     thread->m_systemCallErrorsLength = length;
 }
 
