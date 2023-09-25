@@ -142,12 +142,15 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
 
-            if (m_dispatchTask != null)
+            if (m_dispatchTaskCancellationSource?.IsCancellationRequested ?? true)
             {
-                Debug.Assert(m_dispatchTaskCancellationSource != null);
-                m_dispatchTaskCancellationSource?.Cancel();
-                EventPipeInternal.SignalSession(m_sessionID);
+                return;
             }
+
+            Debug.Assert(m_sessionID != 0);
+            m_dispatchTaskCancellationSource.Cancel();
+            EventPipeInternal.SignalSession(m_sessionID);
+            m_sessionID = 0;
         }
 
         private unsafe void DispatchEventsToEventListeners(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency, Task? previousDispatchTask, CancellationToken token)
@@ -187,8 +190,12 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            // Disable the old session. This can happen asynchronously since we aren't using the old session anymore
-            EventPipeInternal.Disable(sessionID);
+            lock (m_dispatchControlLock)
+            {
+                // Disable the old session. This can happen asynchronously since we aren't using the old session
+                // anymore. We take the lock to make sure we don't call SignalSession on an invalid session ID.
+                EventPipeInternal.Disable(sessionID);
+            }
         }
 
         /// <summary>

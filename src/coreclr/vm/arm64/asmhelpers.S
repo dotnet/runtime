@@ -336,7 +336,9 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     // branch below is not taken.
     ccmp x14, x12, #0x2, hs
 
-    blo  C_FUNC(JIT_WriteBarrier)
+    bhs  LOCAL_LABEL(NotInHeap)
+
+    b C_FUNC(JIT_WriteBarrier)
 
 LOCAL_LABEL(NotInHeap):
     str  x15, [x14], 8

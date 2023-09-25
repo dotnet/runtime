@@ -289,8 +289,11 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
         maxValue = newMaxValue;
     }
 
-    assert(testIdx <= testsCount);
-    if (testIdx < SWITCH_MIN_TESTS)
+    // testIdx is now representing the index of last good test value,
+    // Update testsCount as it's now potentially smaller than initially.
+    testsCount = testIdx;
+
+    if (testsCount < SWITCH_MIN_TESTS)
     {
         // Make sure we still have at least SWITCH_MIN_TESTS values after we filtered out some of them
         return false;
@@ -304,7 +307,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
 
     // Find the last block in the chain
     const BasicBlock* lastBlock = firstBlock;
-    for (int i = 0; i < testIdx - 1; i++)
+    for (int i = 0; i < testsCount - 1; i++)
     {
         lastBlock = lastBlock->bbNext;
     }

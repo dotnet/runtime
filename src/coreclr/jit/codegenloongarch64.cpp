@@ -6482,11 +6482,11 @@ void CodeGen::genCall(GenTreeCall* call)
 
             regNumber tmpReg = call->GetSingleTempReg();
             // Register where we save call address in should not be overridden by epilog.
-            assert((tmpReg & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == tmpReg);
+            assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(tmpReg));
 
             regNumber callAddrReg =
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
-            GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
+            GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg, 0);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
             call->gtRsvdRegs |= genRegMask(tmpReg);
         }
@@ -6710,13 +6710,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // For fast tailcalls we have already loaded the call target when processing the call node.
             if (!call->IsFastTailCall())
             {
-                GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
-                                          callThroughIndirReg);
+                GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
+                                            callThroughIndirReg, 0);
             }
             else
             {
                 // Register where we save call address in should not be overridden by epilog.
-                assert((targetAddrReg & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == targetAddrReg);
+                assert((genRegMask(targetAddrReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(targetAddrReg));
             }
 
             // We have now generated code loading the target address from the indirection cell into `targetAddrReg`.
@@ -7681,19 +7681,15 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             callType   = emitter::EC_INDIR_R;
             callTarget = REG_DEFAULT_HELPER_CALL_TARGET;
 
-            // ssize_t imm = (4 + 1 + 1) << 2;// 4=li, 1=load, 1=jirl.
-
-            // instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr);
-            // emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, callTarget, callTarget, 0);
             if (compiler->opts.compReloc)
             {
-                ssize_t imm = (2 + 1) << 2; // , 1=jirl.
+                ssize_t imm = (3 + 1) << 2; // to jirl's next instr.
                 emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
                 GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr);
             }
             else
             {
-                ssize_t imm = (3 + 1) << 2; // , 1=jirl.
+                ssize_t imm = (4 + 1) << 2; // to jirl's next instr.
                 emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
 
                 // GetEmitter()->emitIns_R_I(INS_pcaddu12i, EA_PTRSIZE, callTarget, (ssize_t)pAddr);

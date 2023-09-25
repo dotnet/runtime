@@ -2265,70 +2265,80 @@ namespace Mono.Linker.Steps
 		void MarkTypeWithDebuggerDisplayAttribute (TypeDefinition type, CustomAttribute attribute)
 		{
 			if (Context.KeepMembersForDebugger) {
-
 				// Members referenced by the DebuggerDisplayAttribute are kept even if the attribute may not be.
 				// Record a logical dependency on the attribute so that we can blame it for the kept members below.
 				Tracer.AddDirectDependency (attribute, new DependencyInfo (DependencyKind.CustomAttribute, type), marked: false);
 
-				string displayString = (string) attribute.ConstructorArguments[0].Value;
-				if (string.IsNullOrEmpty (displayString))
-					return;
-
-				foreach (Match match in DebuggerDisplayAttributeValueRegex ().Matches (displayString)) {
-					// Remove '{' and '}'
-					string realMatch = match.Value.Substring (1, match.Value.Length - 2);
-
-					// Remove ",nq" suffix if present
-					// (it asks the expression evaluator to remove the quotes when displaying the final value)
-					if (ContainsNqSuffixRegex ().IsMatch (realMatch)) {
-						realMatch = realMatch.Substring (0, realMatch.LastIndexOf (','));
-					}
-
-					if (realMatch.EndsWith ("()")) {
-						string methodName = realMatch.Substring (0, realMatch.Length - 2);
-
-						// It's a call to a method on some member.  Handling this scenario robustly would be complicated and a decent bit of work.
-						//
-						// We could implement support for this at some point, but for now it's important to make sure at least we don't crash trying to find some
-						// method on the current type when it exists on some other type
-						if (methodName.Contains ('.'))
-							continue;
-
-						MethodDefinition? method = GetMethodWithNoParameters (type, methodName);
-						if (method != null) {
-							MarkMethod (method, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
-							continue;
-						}
-					} else {
-						FieldDefinition? field = GetField (type, realMatch);
-						if (field != null) {
-							MarkField (field, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
-							continue;
-						}
-
-						PropertyDefinition? property = GetProperty (type, realMatch);
-						if (property != null) {
-							if (property.GetMethod != null) {
-								MarkMethod (property.GetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
-							}
-							if (property.SetMethod != null) {
-								MarkMethod (property.SetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
-							}
-							continue;
+				MarkTypeWithDebuggerDisplayAttributeValue(type, attribute, (string) attribute.ConstructorArguments[0].Value);
+				if (attribute.HasProperties) {
+					foreach (var  property in attribute.Properties) {
+						if (property.Name is "Name" or "Type") {
+							MarkTypeWithDebuggerDisplayAttributeValue (type, attribute, (string) property.Argument.Value);
 						}
 					}
-
-					while (true) {
-						// Currently if we don't understand the DebuggerDisplayAttribute we mark everything on the type
-						// This can be improved: dotnet/linker/issues/1873
-						MarkMethods (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute));
-						MarkFields (type, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
-						if (Context.TryResolve (type.BaseType) is not TypeDefinition baseType)
-							break;
-						type = baseType;
-					}
-					return;
 				}
+			}
+		}
+
+		void MarkTypeWithDebuggerDisplayAttributeValue (TypeDefinition type, CustomAttribute attribute, string? displayString)
+		{
+			if (string.IsNullOrEmpty (displayString))
+				return;
+
+			foreach (Match match in DebuggerDisplayAttributeValueRegex ().Matches (displayString)) {
+				// Remove '{' and '}'
+				string realMatch = match.Value.Substring (1, match.Value.Length - 2);
+
+				// Remove ",nq" suffix if present
+				// (it asks the expression evaluator to remove the quotes when displaying the final value)
+				if (ContainsNqSuffixRegex ().IsMatch (realMatch)) {
+					realMatch = realMatch.Substring (0, realMatch.LastIndexOf (','));
+				}
+
+				if (realMatch.EndsWith ("()")) {
+					string methodName = realMatch.Substring (0, realMatch.Length - 2);
+
+					// It's a call to a method on some member.  Handling this scenario robustly would be complicated and a decent bit of work.
+					//
+					// We could implement support for this at some point, but for now it's important to make sure at least we don't crash trying to find some
+					// method on the current type when it exists on some other type
+					if (methodName.Contains ('.'))
+						continue;
+
+					MethodDefinition? method = GetMethodWithNoParameters (type, methodName);
+					if (method != null) {
+						MarkMethod (method, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
+						continue;
+					}
+				} else {
+					FieldDefinition? field = GetField (type, realMatch);
+					if (field != null) {
+						MarkField (field, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
+						continue;
+					}
+
+					PropertyDefinition? property = GetProperty (type, realMatch);
+					if (property != null) {
+						if (property.GetMethod != null) {
+							MarkMethod (property.GetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
+						}
+						if (property.SetMethod != null) {
+							MarkMethod (property.SetMethod, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), ScopeStack.CurrentScope.Origin);
+						}
+						continue;
+					}
+				}
+
+				while (true) {
+					// Currently if we don't understand the DebuggerDisplayAttribute we mark everything on the type
+					// This can be improved: dotnet/linker/issues/1873
+					MarkMethods (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute));
+					MarkFields (type, includeStatic: true, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute));
+					if (Context.TryResolve (type.BaseType) is not TypeDefinition baseType)
+						break;
+					type = baseType;
+				}
+				return;
 			}
 		}
 

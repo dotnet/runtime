@@ -178,6 +178,30 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void TestObjectsWithIndexerProperties()
+        {
+            DataAnnotationValidateOptions<MyDictionaryOptions> dataAnnotationValidateOptions1 = new("MyDictionaryOptions");
+            MyDictionaryOptionsOptionsValidator sourceGenOptionsValidator1 = new();
+
+            var options1 = new MyDictionaryOptions();
+            ValidateOptionsResult result1 = sourceGenOptionsValidator1.Validate("MyDictionaryOptions", options1);
+            ValidateOptionsResult result2 = dataAnnotationValidateOptions1.Validate("MyDictionaryOptions", options1);
+
+            Assert.True(result1.Succeeded);
+            Assert.True(result2.Succeeded);
+
+            DataAnnotationValidateOptions<MyListOptions<string>> dataAnnotationValidateOptions2 = new("MyListOptions");
+            MyListOptionsOptionsValidator sourceGenOptionsValidator2 = new();
+
+            var options2 = new MyListOptions<string>() { Prop = "test" };
+            result1 = sourceGenOptionsValidator2.Validate("MyListOptions", options2);
+            result2 = dataAnnotationValidateOptions2.Validate("MyListOptions", options2);
+
+            Assert.True(result1.Succeeded);
+            Assert.True(result2.Succeeded);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void TestValidationWithCyclicReferences()
         {
             NestedOptions nestedOptions = new()
@@ -301,6 +325,12 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     public partial class MySourceGenOptionsValidator : IValidateOptions<MyOptions>
     {
     }
+
+    public class MyDictionaryOptions : Dictionary<string, string> { [Required] public string Prop { get; set; } = "test"; }
+    [OptionsValidator] public partial class MyDictionaryOptionsOptionsValidator : IValidateOptions<MyDictionaryOptions> { }
+
+    public class MyListOptions<T> : List<T> { [Required] public T Prop { get; set; } = default; }
+    [OptionsValidator] public partial class MyListOptionsOptionsValidator : IValidateOptions<MyListOptions<string>> { }
 
 #if NET8_0_OR_GREATER
     public class OptionsUsingNewAttributes

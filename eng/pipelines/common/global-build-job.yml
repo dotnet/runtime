@@ -14,7 +14,6 @@ parameters:
   dependsOn: []
   pool: ''
   platform: ''
-  pgoType: ''
   condition: true
   useContinueOnErrorDuringBuild: false
   shouldContinueOnError: false
@@ -134,7 +133,6 @@ jobs:
             targetRid: ${{ parameters.targetRid }}
             nameSuffix: ${{ parameters.nameSuffix }}
             platform: ${{ parameters.platform }}
-            pgoType: ${{ parameters.pgoType }}
             shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
             ${{ if ne(variableTemplate.forwardedParameters, '') }}:
               ${{ each parameter in variableTemplate.forwardedParameters }}:
@@ -275,7 +273,6 @@ jobs:
           targetRid: ${{ parameters.targetRid }}
           nameSuffix: ${{ parameters.nameSuffix }}
           platform: ${{ parameters.platform }}
-          pgoType: ${{ parameters.pgoType }}
           shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
