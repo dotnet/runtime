@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { ENVIRONMENT_IS_NODE, Module, createPromiseController, loaderHelpers, mono_assert } from "./globals";
-import { ManagedObject, MemoryViewType, Span } from "./marshal";
+import { ENVIRONMENT_IS_NODE, Module, loaderHelpers, mono_assert } from "./globals";
+import { MemoryViewType, Span } from "./marshal";
 import type { VoidPtr } from "./types/emscripten";
-import { ControllablePromise, PromiseController } from "./types/internal";
+import { ControllablePromise } from "./types/internal";
 
 
 function verifyEnvironment() {
@@ -25,7 +25,7 @@ export function http_wasm_supports_streaming_request(): boolean {
     // So, if that header is set, then we know the browser doesn't support streams in request objects, and we can exit early.
     // Safari does support streams in request objects, but doesn't allow them to be used with fetch, so the duplex option is tested, which Safari doesn't currently support.
     // See https://developer.chrome.com/articles/fetch-streaming-requests/
-    if (typeof Request !== "undefined" && "body" in Request.prototype && typeof ReadableStream === "function") {
+    if (typeof Request !== "undefined" && "body" in Request.prototype && typeof ReadableStream === "function" && typeof TransformStream === "function") {
         let duplexAccessed = false;
         const hasContentType = new Request("", {
             body: new ReadableStream(),
@@ -65,83 +65,45 @@ export function http_wasm_abort_response(res: ResponseExtension): void {
     }
 }
 
-export function http_wasm_readable_stream_controller_enqueue(pull_state: PullStateExtension, bufferPtr: VoidPtr, bufferLength: number): void {
-    const controller = pull_state.__controller;
-    const pull_promise_control = pull_state.__pull_promise_control;
-    mono_assert(controller, "expected controller");
-    mono_assert(pull_promise_control, "expected pull_promise_control");
-    try {
-        if (bufferLength === 0) {
-            controller.close();
-            pull_state.dispose();
-            pull_state.__pull_promise_control = null;
-            pull_state.__controller = null;
-        } else {
-            // the bufferPtr is pinned by the caller
-            const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
-            // because https://github.com/WebAssembly/design/issues/1162 we need to copy the buffer
-            // also it doesn't make much sense to use byob
-            const copy = view.slice() as Uint8Array;
-            controller.enqueue(copy);
-        }
-        pull_promise_control.resolve();
-    }
-    catch (err) {
-        pull_state.dispose();
-        pull_promise_control.reject(err);
-    }
-    finally {
-        pull_state.__pull_promise_control = null;
-    }
+export function http_wasm_create_transform_stream(): TransformStreamExtension {
+    const transform_stream = new TransformStream<Uint8Array, Uint8Array>() as TransformStreamExtension;
+    transform_stream.__writer = transform_stream.writable.getWriter();
+    return transform_stream;
 }
 
-export function http_wasm_readable_stream_controller_error(pull_state: PullStateExtension, error: Error): void {
-    const controller = pull_state.__controller;
-    mono_assert(controller, "expected controller");
-    pull_state.__pull_promise_control?.reject(error);
-    pull_state.__fetch_promise_control?.reject(error);
-    pull_state.dispose();
-    controller.error(error);
-    pull_state.__pull_promise_control = null;
-}
-
-export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController,
-    pull_delegate: (pull_state: PullStateExtension) => void,
-    pull_state: PullStateExtension): Promise<ResponseExtension> {
-    function pull(controller: ReadableByteStreamController): Promise<void> {
-        const { promise, promise_control } = createPromiseController<void>();
-        try {
-            mono_assert(!pull_state.__pull_promise_control, "expected pull_promise_control to be null");
-            pull_state.__controller = controller;
-            pull_state.__pull_promise_control = promise_control;
-            pull_delegate(pull_state);
-            return promise;
-        }
-        catch (error) {
-            pull_state.dispose();
-            pull_state.__controller = null;
-            pull_state.__pull_promise_control = null;
-            pull_state.__fetch_promise_control?.reject(error);
-            return Promise.reject(error);
-        }
-    }
-
-    function cancel(error: any) {
-        pull_state.__fetch_promise_control?.reject(error);
-    }
-
-    const body = new ReadableStream({
-        type: "bytes",
-        pull,
-        cancel
+export function http_wasm_transform_stream_write(ts: TransformStreamExtension, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<void> {
+    mono_assert(bufferLength > 0, "expected bufferLength > 0");
+    // the bufferPtr is pinned by the caller
+    const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
+    const copy = view.slice() as Uint8Array;
+    return wrap_as_cancelable_promise(async () => {
+        mono_assert(ts.__fetch_promise, "expected fetch promise");
+        // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
+        await Promise.race([ts.__writer.ready, ts.__fetch_promise]);
+        await Promise.race([ts.__writer.write(copy), ts.__fetch_promise]);
     });
-
-    const cancelable_promise = http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, body);
-    pull_state.__fetch_promise_control = loaderHelpers.getPromiseController(cancelable_promise);
-    return cancelable_promise;
 }
 
-export function http_wasm_fetch_bytes(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, bodyPtr: VoidPtr, bodyLength: number): Promise<ResponseExtension> {
+export function http_wasm_transform_stream_close(ts: TransformStreamExtension): ControllablePromise<void> {
+    return wrap_as_cancelable_promise(async () => {
+        mono_assert(ts.__fetch_promise, "expected fetch promise");
+        // race with fetch because fetch does not cancel the ReadableStream see https://bugs.chromium.org/p/chromium/issues/detail?id=1480250
+        await Promise.race([ts.__writer.ready, ts.__fetch_promise]);
+        await Promise.race([ts.__writer.close(), ts.__fetch_promise]);
+    });
+}
+
+export function http_wasm_transform_stream_abort(ts: TransformStreamExtension): void {
+    ts.__writer.abort();
+}
+
+export function http_wasm_fetch_stream(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: TransformStreamExtension): ControllablePromise<ResponseExtension> {
+    const fetch_promise = http_wasm_fetch(url, header_names, header_values, option_names, option_values, abort_controller, body.readable);
+    body.__fetch_promise = fetch_promise;
+    return fetch_promise;
+}
+
+export function http_wasm_fetch_bytes(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, bodyPtr: VoidPtr, bodyLength: number): ControllablePromise<ResponseExtension> {
     // the bodyPtr is pinned by the caller
     const view = new Span(bodyPtr, bodyLength, MemoryViewType.Byte);
     const copy = view.slice() as Uint8Array;
@@ -201,7 +163,7 @@ export function http_wasm_get_response_header_values(res: ResponseExtension): st
     return res.__headerValues;
 }
 
-export function http_wasm_get_response_length(res: ResponseExtension): Promise<number> {
+export function http_wasm_get_response_length(res: ResponseExtension): ControllablePromise<number> {
     return wrap_as_cancelable_promise(async () => {
         const buffer = await res.arrayBuffer();
         res.__buffer = buffer;
@@ -222,7 +184,7 @@ export function http_wasm_get_response_bytes(res: ResponseExtension, view: Span)
     return bytes_read;
 }
 
-export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bufferPtr: VoidPtr, bufferLength: number): Promise<number> {
+export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<number> {
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     return wrap_as_cancelable_promise(async () => {
@@ -252,10 +214,9 @@ export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bu
     });
 }
 
-interface PullStateExtension extends ManagedObject {
-    __pull_promise_control: PromiseController<void> | null
-    __fetch_promise_control: PromiseController<ResponseExtension> | null
-    __controller: ReadableByteStreamController | null
+interface TransformStreamExtension extends TransformStream<Uint8Array, Uint8Array> {
+    __writer: WritableStreamDefaultWriter<Uint8Array>
+    __fetch_promise?: Promise<ResponseExtension>
 }
 
 interface ResponseExtension extends Response {

@@ -197,7 +197,7 @@ namespace System.Reflection
             RuntimeType fieldType = (RuntimeType)FieldType;
             if (value is null)
             {
-                if (RuntimeTypeHandle.IsValueType(fieldType))
+                if (fieldType.IsActualValueType)
                 {
                     fieldType.CheckValue(ref value, binder, culture, invokeAttr);
                 }

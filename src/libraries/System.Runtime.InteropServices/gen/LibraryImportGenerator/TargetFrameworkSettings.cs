@@ -13,14 +13,26 @@ namespace Microsoft.Interop
     // which will be faster than the reflection-based ones.
     public readonly record struct TargetFrameworkSettings(TargetFramework TargetFramework, Version Version);
 
-    public static class AnalyzerConfigOptionsExtensions
+    /// <summary>
+    /// Target framework identifier
+    /// </summary>
+    public enum TargetFramework
+    {
+        Unknown,
+        Framework,
+        Core,
+        Standard,
+        Net
+    }
+
+    public static class TargetFrameworkSettingsExtensions
     {
         private static readonly Version FirstNonCoreVersion = new(5, 0);
 
         // Parse from the informational version as that is the only version that always matches the TFM version
         // even in debug builds.
         private static readonly Version ThisAssemblyVersion = Version.Parse(
-            typeof(AnalyzerConfigOptionsExtensions).Assembly
+            typeof(TargetFrameworkSettingsExtensions).Assembly
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion.Split('-', '+')[0]);
 
         public static TargetFrameworkSettings GetTargetFrameworkSettings(this AnalyzerConfigOptions options)
