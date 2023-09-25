@@ -3,7 +3,7 @@
 
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
+import { Module, mono_assert, runtimeHelpers, setWasmTable, wasmTable } from "./globals";
 import { getU16, getU32_unaligned, localHeapViewU8 } from "./memory";
 import { WasmValtype, WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
@@ -886,10 +886,11 @@ function generate_wasm(
         rejected = false;
         mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
-        let idx : number;
+        let idx: number;
         if (presetFunctionPointer) {
-            const fnTable = getWasmFunctionTable();
-            fnTable.set(presetFunctionPointer, fn);
+            if (!wasmTable)
+                setWasmTable(getWasmFunctionTable());
+            wasmTable.set(presetFunctionPointer, fn);
             idx = presetFunctionPointer;
         } else {
             idx = addWasmFunctionPointer(JiterpreterTable.Trace, <any>fn);

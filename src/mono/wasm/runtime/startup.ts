@@ -287,7 +287,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         }
 
         setTimeout(() => {
-            if (loaderHelpers.purgeUnusedCacheEntriesAsync) {
+            if (loaderHelpers && loaderHelpers.purgeUnusedCacheEntriesAsync) {
                 loaderHelpers.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
             }
         }, loaderHelpers.config.cachedResourcesPurgeDelay);
@@ -501,11 +501,13 @@ async function instantiate_wasm_module(
 }
 
 async function ensureUsedWasmFeatures() {
+    runtimeHelpers.canRunSIMD = await loaderHelpers.simd();
+    runtimeHelpers.canRunEH = await loaderHelpers.exceptions();
     if (linkerWasmEnableSIMD) {
-        mono_assert(await loaderHelpers.simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+        mono_assert(runtimeHelpers.canRunSIMD, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
     if (linkerWasmEnableEH) {
-        mono_assert(await loaderHelpers.exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+        mono_assert(runtimeHelpers.canRunEH, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
 }
 

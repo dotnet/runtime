@@ -471,8 +471,8 @@ interface IMemoryView extends IDisposable {
 
 declare function mono_exit(exit_code: number, reason?: any): void;
 
-declare const dotnet: DotnetHostBuilder;
-declare const exit: typeof mono_exit;
+declare let dotnet: DotnetHostBuilder;
+declare let exit: typeof mono_exit;
 
 declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;

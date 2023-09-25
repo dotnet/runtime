@@ -4,7 +4,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
+import { Module, fnCache, mono_assert, runtimeHelpers, setWasmTable, wasmTable } from "./globals";
 import {
     getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
 } from "./memory";
@@ -17,12 +17,10 @@ import {
     jiterpreter_allocate_tables
 } from "./jiterpreter-support";
 import { JiterpreterTable, JiterpCounter, JitQueue } from "./jiterpreter-enums";
-import {
-    compileDoJitCall
-} from "./jiterpreter-feature-detect";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
 import { utf8ToString } from "./strings";
+import { compileDoJitCall } from "./jiterpreter-feature-detect";
 
 // Controls miscellaneous diagnostic output.
 const trace = 0;
@@ -64,10 +62,7 @@ const maxJitQueueLength = 6,
 // sizeOfStackval = 8;
 
 let trampBuilder: WasmBuilder;
-let fnTable: WebAssembly.Table;
-let wasmEhSupported: boolean | undefined = undefined;
 let nextDisambiguateIndex = 0;
-const fnCache: Array<Function | undefined> = [];
 const targetCache: { [target: number]: TrampolineInfo } = {};
 const infosByMethod: { [method: number]: TrampolineInfo[] } = {};
 
@@ -176,9 +171,9 @@ function getWasmTableEntry(index: number) {
         if (index >= fnCache.length)
             fnCache.length = index + 1;
 
-        if (!fnTable)
-            fnTable = getWasmFunctionTable();
-        fnCache[index] = result = fnTable.get(index);
+        if (!wasmTable)
+            setWasmTable(getWasmFunctionTable());
+        fnCache[index] = result = wasmTable.get(index);
     }
     return result;
 }
@@ -256,23 +251,7 @@ export function mono_interp_jit_wasm_jit_call_trampoline(
         mono_interp_flush_jitcall_queue();
 }
 
-let doJitCallModule: WebAssembly.Module | undefined = undefined;
 
-function getIsWasmEhSupported(): boolean {
-    if (wasmEhSupported !== undefined)
-        return wasmEhSupported;
-
-    // Probe whether the current environment can handle wasm exceptions
-    try {
-        doJitCallModule = compileDoJitCall();
-        wasmEhSupported = true;
-    } catch (exc) {
-        mono_log_info("Disabling WASM EH support due to JIT failure", exc);
-        wasmEhSupported = false;
-    }
-
-    return wasmEhSupported;
-}
 
 // this is the generic entry point for do_jit_call that is registered by default at runtime startup.
 // its job is to do initialization for the optimized do_jit_call path, which will either use a jitted
@@ -281,8 +260,9 @@ export function mono_jiterp_do_jit_call_indirect(
     jit_call_cb: number, cb_data: VoidPtr, thrown: Int32Ptr
 ): void {
     mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
-    const table = getWasmFunctionTable();
-    const jitCallCb = table.get(jit_call_cb);
+    if (!wasmTable)
+        setWasmTable(getWasmFunctionTable());
+    const jitCallCb = wasmTable.get(jit_call_cb);
 
     // This should perform better than the regular mono_llvm_cpp_catch_exception because the call target
     //  is statically known, not being pulled out of a table.
@@ -294,13 +274,13 @@ export function mono_jiterp_do_jit_call_indirect(
             setU32_unchecked(_thrown, 1);
         }
     };
-
-    let failed = !getIsWasmEhSupported();
+    let failed = !runtimeHelpers.canRunEH;
     if (!failed) {
         // Wasm EH is supported which means doJitCallModule was loaded and compiled.
         // Now that we have jit_call_cb, we can instantiate it.
         try {
-            const instance = new WebAssembly.Instance(doJitCallModule!, {
+            const jitCallModule = compileDoJitCall();
+            const instance = new WebAssembly.Instance(jitCallModule, {
                 i: {
                     jit_call_cb: jitCallCb,
                 },
@@ -348,7 +328,7 @@ export function mono_jiterp_do_jit_call_indirect(
 }
 
 export function mono_interp_flush_jitcall_queue(): void {
-    const jitQueue : TrampolineInfo[] = [];
+    const jitQueue: TrampolineInfo[] = [];
     let methodPtr = <MonoMethod><any>0;
     while ((methodPtr = <any>cwraps.mono_jiterp_tlqueue_next(JitQueue.JitCall)) != 0) {
         const infos = infosByMethod[<any>methodPtr];
@@ -387,7 +367,7 @@ export function mono_interp_flush_jitcall_queue(): void {
     }
 
     if (builder.options.enableWasmEh) {
-        if (!getIsWasmEhSupported()) {
+        if (!runtimeHelpers.canRunEH) {
             // The user requested to enable wasm EH but it's not supported, so turn the option back off
             applyOptions(<any>{ enableWasmEh: false });
             builder.options.enableWasmEh = false;
@@ -402,8 +382,8 @@ export function mono_interp_flush_jitcall_queue(): void {
     ];
 
     try {
-        if (!fnTable)
-            fnTable = getWasmFunctionTable();
+        if (!wasmTable)
+            setWasmTable(getWasmFunctionTable());
 
         // Magic number and version
         builder.appendU32(0x6d736100);

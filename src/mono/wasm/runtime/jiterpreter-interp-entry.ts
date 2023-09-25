@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { MonoMethod, MonoType } from "./types/internal";
+import { ITrampolineInfo, MonoMethod, MonoType } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module, mono_assert } from "./globals";
+import { Module, infoTable, mono_assert, setWasmTable, trampImports, wasmTable } from "./globals";
 import {
     setI32, getU32_unaligned, _zero_region
 } from "./memory";
@@ -56,10 +56,7 @@ const maxJitQueueLength = 4,
     queueFlushDelayMs = 10;
 
 let trampBuilder: WasmBuilder;
-let trampImports: Array<[string, string, Function]> | undefined;
-let fnTable: WebAssembly.Table;
 let jitQueueTimeout = 0;
-const infoTable: { [ptr: number]: TrampolineInfo } = {};
 
 /*
 const enum WasmReftype {
@@ -69,20 +66,18 @@ const enum WasmReftype {
 */
 
 function getTrampImports() {
-    if (trampImports)
+    if (trampImports.length)
         return trampImports;
 
-    trampImports = [
-        importDef("interp_entry_prologue", getRawCwrap("mono_jiterp_interp_entry_prologue")),
-        importDef("interp_entry", getRawCwrap("mono_jiterp_interp_entry")),
-        importDef("unbox", getRawCwrap("mono_jiterp_object_unbox")),
-        importDef("stackval_from_data", getRawCwrap("mono_jiterp_stackval_from_data")),
-    ];
+    trampImports.push(importDef("interp_entry_prologue", getRawCwrap("mono_jiterp_interp_entry_prologue")));
+    trampImports.push(importDef("interp_entry", getRawCwrap("mono_jiterp_interp_entry")));
+    trampImports.push(importDef("unbox", getRawCwrap("mono_jiterp_object_unbox")));
+    trampImports.push(importDef("stackval_from_data", getRawCwrap("mono_jiterp_stackval_from_data")));
 
     return trampImports;
 }
 
-class TrampolineInfo {
+class TrampolineInfo implements ITrampolineInfo {
     imethod: number;
     method: MonoMethod;
     paramTypes: Array<NativePointer>;
@@ -182,15 +177,15 @@ export function mono_interp_jit_wasm_entry_trampoline(
         unbox, hasThisReference, hasReturnValue, utf8ToString(<any>name),
         defaultImplementation
     );
-    if (!fnTable)
-        fnTable = getWasmFunctionTable();
+    if (!wasmTable)
+        setWasmTable(getWasmFunctionTable());
 
     // We start by creating a function pointer for this interp_entry trampoline, but instead of
     //  compiling it right away, we make it point to the default implementation for that signature
     // This gives us time to wait before jitting it so we can jit multiple trampolines at once.
     // Some entry wrappers are also only called a few dozen times, so it's valuable to wait
     //  until a wrapper is called a lot before wasting time/memory jitting it.
-    const defaultImplementationFn = fnTable.get(defaultImplementation);
+    const defaultImplementationFn = wasmTable.get(defaultImplementation);
     const tableId = (hasThisReference
         ? (
             hasReturnValue
@@ -228,7 +223,7 @@ function ensure_jit_is_scheduled() {
 }
 
 function flush_wasm_entry_trampoline_jit_queue() {
-    const jitQueue : TrampolineInfo[] = [];
+    const jitQueue: TrampolineInfo[] = [];
     let methodPtr = <MonoMethod><any>0;
     while ((methodPtr = <any>cwraps.mono_jiterp_tlqueue_next(JitQueue.InterpEntry)) != 0) {
         const info = infoTable[<any>methodPtr];
@@ -394,7 +389,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
             // Get the exported trampoline
             const fn = traceInstance.exports[info.traceName];
             // Patch the function pointer for this function to use the trampoline now
-            fnTable.set(info.result, fn);
+            wasmTable.set(info.result, fn);
 
             rejected = false;
         }

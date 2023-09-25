@@ -362,3 +362,18 @@ export function init_c_exports(): void {
         }
     }
 }
+
+export function disposeCwraps() {
+    for (const key in wrapped_c_functions) {
+        (wrapped_c_functions as any)[key] = undefined as any;
+    }
+    for (const key in legacy_c_functions) {
+        (legacy_c_functions as any)[key] = undefined as any;
+    }
+    for (const key in diagnostics_c_functions) {
+        (diagnostics_c_functions as any)[key] = undefined as any;
+    }
+    for (const key in profiler_c_functions) {
+        (profiler_c_functions as any)[key] = undefined as any;
+    }
+}

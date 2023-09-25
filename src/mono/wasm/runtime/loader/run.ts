@@ -522,6 +522,14 @@ export function fatalHandler(event: Event) {
 }
 
 export function uninstallFatalHandlers() {
+    dotnet = undefined as any;
+    exit = undefined as any;
+    legacyEntrypoint = undefined as any;
+
     globalThis.removeEventListener("unhandledrejection", fatalHandler);
     globalThis.removeEventListener("error", fatalHandler);
 }
+
+export let dotnet: DotnetHostBuilder = new HostBuilder();
+export let exit = mono_exit;
+export let legacyEntrypoint = createEmscripten;

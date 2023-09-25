@@ -3,7 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers, linkerRunAOTCompilation } from "./globals";
+import { Module, mono_assert, runtimeHelpers, linkerRunAOTCompilation, wasmTable, setWasmTable } from "./globals";
 import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -1435,8 +1435,6 @@ class Cfg {
     }
 }
 
-let wasmTable: WebAssembly.Table | undefined;
-
 export const simdFallbackCounters: { [name: string]: number } = {
 };
 
@@ -1507,10 +1505,11 @@ export function copyIntoScratchBuffer(src: NativePointer, size: number): NativeP
 
 export function getWasmFunctionTable(module?: any) {
     const theModule = (<any>Module || module);
-    mono_assert (theModule, "Module not available yet");
-    mono_assert (theModule["asm"], "Module['asm'] not available yet");
+    mono_assert(theModule, "Module not available yet");
+    mono_assert(theModule["asm"], "Module['asm'] not available yet");
     if (!wasmTable)
-        wasmTable = theModule["asm"]["__indirect_function_table"];
+        setWasmTable(theModule["asm"]["__indirect_function_table"]);
+
     if (!wasmTable)
         throw new Error("Module did not export the indirect function table");
     return wasmTable;
@@ -1944,7 +1943,9 @@ function updateOptions() {
 }
 
 function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: number, fillValue: Function) {
-    const wasmTable = getWasmFunctionTable();
+    if (!wasmTable)
+        setWasmTable(getWasmFunctionTable());
+
     const firstIndex = base, lastIndex = firstIndex + size - 1;
     mono_assert(lastIndex < wasmTable.length, () => `Last index out of range: ${lastIndex} >= ${wasmTable.length}`);
     // HACK: Always populate the first slot

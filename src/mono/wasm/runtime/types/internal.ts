@@ -179,6 +179,9 @@ export type RuntimeHelpers = {
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 
+    canRunSIMD: boolean;
+    canRunEH: boolean;
+
     loadedMemorySnapshotSize?: number,
     enablePerfMeasure: boolean;
     waitForDebugger?: number;
@@ -513,4 +516,21 @@ export type RuntimeModuleExportsInternal = {
 
 export type NativeModuleExportsInternal = {
     default: (unificator: Function) => EmscriptenModuleInternal
+}
+
+export type ITrampolineInfo = {
+    imethod: number;
+    method: MonoMethod;
+    paramTypes: Array<NativePointer>;
+
+    argumentCount: number;
+    hasThisReference: boolean;
+    unbox: boolean;
+    hasReturnValue: boolean;
+    name: string;
+    traceName: string;
+
+    defaultImplementation: number;
+    result: number;
+    hitCount: number;
 }

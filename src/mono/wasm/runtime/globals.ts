@@ -9,7 +9,7 @@
 import gitHash from "consts:gitHash";
 
 import { RuntimeAPI } from "./types/index";
-import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
+import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController, ITrampolineInfo } from "./types/internal";
 
 // these are our public API (except internal)
 export let Module: DotnetModuleInternal;
@@ -36,6 +36,11 @@ export let linkerEnableAotProfiler = false;
 export let linkerEnableBrowserProfiler = false;
 export let linkerRunAOTCompilation = false;
 export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
+
+export let wasmTable: WebAssembly.Table = undefined as any;
+export let fnCache: Array<Function | undefined> = [];
+export let trampImports: Array<[string, string, Function]> = [];
+export let infoTable: { [ptr: number]: ITrampolineInfo } = {};
 
 export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
@@ -98,6 +103,14 @@ export function disposeRuntimeGlobals() {
     runtimeHelpers = undefined as any;
     loaderHelpers = undefined as any;
     exportedRuntimeAPI = undefined as any;
+    wasmTable = undefined as any;
+    fnCache = undefined as any;
+    trampImports = undefined as any;
+    infoTable = undefined as any;
+}
+
+export function setWasmTable(table: WebAssembly.Table) {
+    wasmTable = table;
 }
 
 

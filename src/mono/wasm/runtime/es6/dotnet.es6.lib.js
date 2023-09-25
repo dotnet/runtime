@@ -49,7 +49,10 @@ function setup(linkerSetup) {
     PThread.allocateUnusedWorker = pthreadReplacements.allocateUnusedWorker;
     #endif
     const disposeWasm = () => {
-        asm = wasmBinary = wasmMemory = wasmTable = wasmMemory = wasmImports = FS = HEAP = HEAP8 = HEAPU8 = HEAP16 = HEAPU16 = HEAP32 = HEAPU32 = HEAPF32 = HEAP64 = HEAPU64 = HEAPF64 = undefined
+        asm = wasmBinary = wasmMemory = wasmTable = wasmMemory = wasmImports = undefined;
+        FS = undefined;
+        stackRestore = stackSave = stackAlloc = undefined;
+        HEAP = HEAP8 = HEAPU8 = HEAP16 = HEAPU16 = HEAP32 = HEAPU32 = HEAPF32 = HEAP64 = HEAPU64 = HEAPF64 = undefined;
     };
     Module.__dotnet_runtime.passEmscriptenInternals({
         isPThread: ENVIRONMENT_IS_PTHREAD,

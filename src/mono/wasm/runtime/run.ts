@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_NODE, loaderHelpers, runtimeHelpers, disposeRuntimeGlobals, Module } from "./globals";
+import { ENVIRONMENT_IS_NODE, loaderHelpers, runtimeHelpers, disposeRuntimeGlobals, Module, wasmTable } from "./globals";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args } from "./startup";
-import cwraps from "./cwraps";
+import cwraps, { disposeCwraps } from "./cwraps";
 import { assembly_load } from "./class-loader";
 import { mono_log_info } from "./logging";
 import { assert_bindings } from "./invoke-js";
@@ -92,12 +92,19 @@ export function mono_dispose_runtime(graceful?: boolean): void {
         if (cnt === 0) {
             delete (globalThis as any).getDotnetRuntime;
         }
+        for (let i = 0; i < wasmTable.length; i++) {
+            wasmTable.set(i, null);
+        }
+        for (const key in loaderHelpers.config) {
+            (loaderHelpers.config as any)[key] = undefined as any;
+        }
         runtimeHelpers.disposeWasm();
         for (const key in Module) {
             (Module as any)[key] = undefined as any;
         }
         loaderHelpers.disposeRuntimeGlobals();
         disposeRuntimeGlobals();
+        disposeCwraps();
     } catch (e) {
         if (graceful) throw e;
     }
