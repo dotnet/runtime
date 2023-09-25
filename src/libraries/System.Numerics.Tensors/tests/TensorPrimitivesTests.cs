@@ -102,6 +102,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Add(x, y, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Add(y, x, destination));
         }
 
         [Theory]
@@ -163,26 +164,16 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        public static void AddMultiply_ThreeTensors_ThrowsForMismatchedLengths_x_y(int tensorLength)
-        {
-            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
-            using BoundedMemory<float> y = CreateAndFillTensor(tensorLength - 1);
-            using BoundedMemory<float> multiplier = CreateAndFillTensor(tensorLength);
-            using BoundedMemory<float> destination = CreateTensor(tensorLength);
-
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
-        }
-
-        [Theory]
-        [MemberData(nameof(TensorLengths))]
-        public static void AddMultiply_ThreeTensors_ThrowsForMismatchedLengths_x_multiplier(int tensorLength)
+        public static void AddMultiply_ThreeTensors_ThrowsForMismatchedLengths(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
-            using BoundedMemory<float> multiplier = CreateAndFillTensor(tensorLength - 1);
+            using BoundedMemory<float> z = CreateAndFillTensor(tensorLength - 1);
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, z, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, z, y, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(z, x, y, destination));
         }
 
         [Theory]
@@ -224,6 +215,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(y, x, multiplier, destination));
         }
 
         [Theory]
@@ -261,10 +253,11 @@ namespace System.Numerics.Tensors.Tests
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
             float y = NextSingle();
-            using BoundedMemory<float> multiplier = CreateAndFillTensor(tensorLength - 1);
+            using BoundedMemory<float> z = CreateAndFillTensor(tensorLength - 1);
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(x, y, z, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.AddMultiply(z, y, x, destination));
         }
 
         [Theory]
@@ -316,6 +309,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> y = CreateAndFillTensor(tensorLength - 1);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.CosineSimilarity(x, y));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.CosineSimilarity(y, x));
         }
 
         [Fact]
@@ -370,6 +364,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> y = CreateAndFillTensor(tensorLength - 1);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Distance(x, y));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Distance(y, x));
         }
 
         [Theory]
@@ -425,6 +420,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Divide(x, y, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Divide(y, x, destination));
         }
 
         [Theory]
@@ -475,6 +471,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> y = CreateAndFillTensor(tensorLength - 1);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Dot(x, y));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Dot(y, x));
         }
 
         [Theory]
@@ -835,6 +832,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Max(x, y, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Max(y, x, destination));
         }
 
         [Theory]
@@ -922,6 +920,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.MaxMagnitude(x, y, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.MaxMagnitude(y, x, destination));
         }
 
         [Theory]
@@ -1005,6 +1004,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Min(x, y, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Min(y, x, destination));
         }
 
         [Theory]
@@ -1090,6 +1090,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.MinMagnitude(x, y, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.MinMagnitude(y, x, destination));
         }
 
         [Theory]
@@ -1130,6 +1131,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Multiply(x, y, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Multiply(y, x, destination));
         }
 
         [Theory]
@@ -1194,23 +1196,13 @@ namespace System.Numerics.Tensors.Tests
         public static void MultiplyAdd_ThreeTensors_ThrowsForMismatchedLengths_x_y(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
-            using BoundedMemory<float> y = CreateAndFillTensor(tensorLength - 1);
-            using BoundedMemory<float> addend = CreateAndFillTensor(tensorLength);
-            using BoundedMemory<float> destination = CreateTensor(tensorLength);
-
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
-        }
-
-        [Theory]
-        [MemberData(nameof(TensorLengths))]
-        public static void MultiplyAdd_ThreeTensors_ThrowsForMismatchedLengths_x_multiplier(int tensorLength)
-        {
-            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
-            using BoundedMemory<float> addend = CreateAndFillTensor(tensorLength - 1);
+            using BoundedMemory<float> z = CreateAndFillTensor(tensorLength - 1);
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, y, z, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(x, z, y, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.MultiplyAdd(z, x, y, destination));
         }
 
         [Theory]
@@ -1608,6 +1600,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
             Assert.Throws<ArgumentException>(() => TensorPrimitives.Subtract(x, y, destination));
+            Assert.Throws<ArgumentException>(() => TensorPrimitives.Subtract(y, x, destination));
         }
 
         [Theory]

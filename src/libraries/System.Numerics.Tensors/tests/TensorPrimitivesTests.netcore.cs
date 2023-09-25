@@ -10,8 +10,7 @@ namespace System.Numerics.Tensors.Tests
     {
         #region ConvertToHalf
         [Theory]
-        [InlineData(0)]
-        [MemberData(nameof(TensorLengths))]
+        [MemberData(nameof(TensorLengthsIncluding0))]
         public static void ConvertToHalf(int tensorLength)
         {
             using BoundedMemory<float> source = CreateAndFillTensor(tensorLength);
@@ -49,8 +48,7 @@ namespace System.Numerics.Tensors.Tests
 
         #region ConvertToSingle
         [Theory]
-        [InlineData(0)]
-        [MemberData(nameof(TensorLengths))]
+        [MemberData(nameof(TensorLengthsIncluding0))]
         public static void ConvertToSingle(int tensorLength)
         {
             Half[] source = new Half[tensorLength];
