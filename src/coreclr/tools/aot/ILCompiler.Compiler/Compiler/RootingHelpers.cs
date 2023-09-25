@@ -40,15 +40,6 @@ namespace ILCompiler
                 rootProvider.AddReflectionRoot(type, reason);
             }
 
-            // Also root base types. This is so that we make methods on the base types callable.
-            // This helps in cases like "class Foo : Bar<int> { }" where we discover new
-            // generic instantiations.
-            TypeDesc baseType = type.BaseType;
-            if (baseType != null)
-            {
-                RootType(rootProvider, baseType.NormalizeInstantiation(), reason);
-            }
-
             if (type.IsDefType)
             {
                 foreach (var method in type.ConvertToCanonForm(CanonicalFormKind.Specific).GetMethods())
