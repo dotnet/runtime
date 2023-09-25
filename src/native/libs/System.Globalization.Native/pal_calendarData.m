@@ -11,15 +11,6 @@
 #endif
 
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
-#define GREGORIAN_NAME "gregorian"
-#define JAPANESE_NAME "japanese"
-#define BUDDHIST_NAME "buddhist"
-#define HEBREW_NAME "hebrew"
-#define DANGI_NAME "dangi"
-#define PERSIAN_NAME "persian"
-#define ISLAMIC_NAME "islamic"
-#define ISLAMIC_UMALQURA_NAME "islamic-umalqura"
-#define ROC_NAME "roc"
 
 /*
 Function:
@@ -218,7 +209,7 @@ int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era, int32_t* 
         startDateComponents.day = 1;
         startDateComponents.year = 1;
         NSDate *date = [japaneseCalendar dateFromComponents:startDateComponents];
-        NSDate *startDate = date;
+       // NSDate *startDate = date;
         int32_t currentEra;
 
         for (int month = 0; month <= 12; month++)
@@ -238,9 +229,9 @@ int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era, int32_t* 
                     {
                         // add back 1 day to get back into the specified Era
                         startDateComponents.day = startDateComponents.day + 1;
-                        startDate = [japaneseCalendar dateFromComponents:startDateComponents];
+                        date = [japaneseCalendar dateFromComponents:startDateComponents];
                         NSCalendar *gregorianCalendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
-                        NSDateComponents *components = [gregorianCalendar components:NSCalendarUnitDay | NSCalendarUnitMonth | NSCalendarUnitYear fromDate:startDate];
+                        NSDateComponents *components = [gregorianCalendar components:NSCalendarUnitDay | NSCalendarUnitMonth | NSCalendarUnitYear fromDate:date];
                         *startYear = [components year];
                         *startMonth = [components month];
                         *startDay = [components day];
@@ -265,12 +256,10 @@ GetCalendarsNative
 
 Returns the list of CalendarIds that are available for the specified locale.
 */
-int32_t GlobalizationNative_GetCalendarsNative(const char* localeName, CalendarId* calendars, int32_t calendarsCapacity)
+int32_t GlobalizationNative_GetCalendarsNative(CalendarId* calendars, int32_t calendarsCapacity)
 {
     @autoreleasepool
     {
-        NSString *locName = [NSString stringWithFormat:@"%s", localeName];
-        NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
         NSArray *calendarIdentifiers = @[
             NSCalendarIdentifierGregorian,
             NSCalendarIdentifierBuddhist,

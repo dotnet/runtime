@@ -66,6 +66,16 @@ typedef enum
     CalendarData_AbbrevEraNames = 14,
 } CalendarDataType;
 
+#define GREGORIAN_NAME "gregorian"
+#define JAPANESE_NAME "japanese"
+#define BUDDHIST_NAME "buddhist"
+#define HEBREW_NAME "hebrew"
+#define DANGI_NAME "dangi"
+#define PERSIAN_NAME "persian"
+#define ISLAMIC_NAME "islamic"
+#define ISLAMIC_UMALQURA_NAME "islamic-umalqura"
+#define ROC_NAME "roc"
+
 // the function pointer definition for the callback used in EnumCalendarInfo
 typedef void (PAL_CALLBACK_CALLTYPE *EnumCalendarInfoCallback)(const UChar*, const void*);
 
@@ -97,11 +107,11 @@ PALEXPORT const char* GlobalizationNative_GetCalendarInfoNative(const char* loca
                                                                 CalendarId calendarId,
                                                                 CalendarDataType dataType);
 
-PALEXPORT int32_t GlobalizationNative_GetCalendarsNative(const char* localeName,
-                                                         CalendarId* calendars,
+PALEXPORT int32_t GlobalizationNative_GetCalendarsNative(CalendarId* calendars,
                                                          int32_t calendarsCapacity);
 
 PALEXPORT int32_t GlobalizationNative_GetLatestJapaneseEraNative(void);
+
 PALEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDateNative(int32_t era,
                                                                     int32_t* startYear,
                                                                     int32_t* startMonth,
