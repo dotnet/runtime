@@ -141,7 +141,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
 
                 result.Should().Pass()
-                    .And.HaveStdOutContaining($"runtimeconfig.json [{missingRuntimeConfig}] does not exist");
+                    .And.HaveStdOutContaining($"The specified runtimeconfig.json [{missingRuntimeConfig}] does not exist");
             }
         }
 
