@@ -9,7 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -170,7 +171,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         public InvocationLocationInfo(MethodsToGen interceptor, IInvocationOperation invocation)
         {
-            MemberAccessExpressionSyntax memberAccessExprSyntax = ((MemberAccessExpressionSyntax)((InvocationExpressionSyntax)invocation.Syntax).Expression);
+            Debug.Assert(BinderInvocation.IsBindingOperation(invocation));
+
+            if (invocation.Syntax is not InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax memberAccessExprSyntax })
+            {
+                const string InvalidInvocationErrMsg = "The invocation should have been validated upstream when selecting invocations to emit interceptors for.";
+                throw new ArgumentException(InvalidInvocationErrMsg, nameof(invocation));
+            }
+
             SyntaxTree operationSyntaxTree = invocation.Syntax.SyntaxTree;
             TextSpan memberNameSpan = memberAccessExprSyntax.Name.Span;
             FileLinePositionSpan linePosSpan = operationSyntaxTree.GetLineSpan(memberNameSpan);
