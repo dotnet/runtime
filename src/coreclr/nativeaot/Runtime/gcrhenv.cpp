@@ -292,7 +292,7 @@ void MethodTable::InitializeAsGcFreeType()
 
 extern void GcEnumObject(PTR_OBJECTREF pObj, uint32_t flags, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
 extern void GcEnumObjectsConservatively(PTR_OBJECTREF pLowerBound, PTR_OBJECTREF pUpperBound, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
-extern void GcBulkEnumObjects(PTR_OBJECTREF pObjs, uint32_t cObjs, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
+extern void GcBulkEnumObjects(PTR_OBJECTREF pObjs, DWORD cObjs, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
 
 struct EnumGcRefContext : GCEnumContext
 {
@@ -1024,7 +1024,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
 
     // Helper used to wrap the start routine of background GC threads so we can do things like initialize the
     // Redhawk thread state which requires running in the new thread's context.
-    auto threadStub = [](void* argument) -> uint32_t
+    auto threadStub = [](void* argument) -> DWORD
     {
         ThreadStubArguments* pStartContext = (ThreadStubArguments*)argument;
 

@@ -52,13 +52,12 @@
 //
 
 typedef int BOOL;
-typedef uint64_t DWORD64;
-#ifdef TARGET_UNIX
 typedef uint32_t DWORD;
-typedef uint32_t ULONG;
-#else
-typedef unsigned long DWORD;
+typedef uint64_t DWORD64;
+#ifdef _MSC_VER
 typedef unsigned long ULONG;
+#else
+typedef uint32_t ULONG;
 #endif
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
@@ -243,7 +242,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 // but callers should only rely on it when the function returns TRUE;
 // otherwise, the stored value is undefined and varies by implementation
 // and hardware platform.
-inline uint8_t BitScanForward(DWORD *bitIndex, uint32_t mask)
+inline uint8_t BitScanForward(uint32_t *bitIndex, uint32_t mask)
 {
 #ifdef _MSC_VER
     return _BitScanForward((unsigned long*)bitIndex, mask);
@@ -261,7 +260,7 @@ inline uint8_t BitScanForward(DWORD *bitIndex, uint32_t mask)
 // but callers should only rely on it when the function returns TRUE;
 // otherwise, the stored value is undefined and varies by implementation
 // and hardware platform.
-inline uint8_t BitScanForward64(DWORD *bitIndex, uint64_t mask)
+inline uint8_t BitScanForward64(uint32_t *bitIndex, uint64_t mask)
 {
 #ifdef _MSC_VER
  #if _WIN64
@@ -273,10 +272,10 @@ inline uint8_t BitScanForward64(DWORD *bitIndex, uint64_t mask)
     uint32_t lo = mask & 0xFFFFFFFF;
     uint32_t fakeBitIndex = 0;
 
-    uint8_t result = BitScanForward((DWORD*)bitIndex, lo);
+    uint8_t result = BitScanForward(bitIndex, lo);
     if (result == 0)
     {
-        result = BitScanForward((DWORD*)&fakeBitIndex, hi);
+        result = BitScanForward(&fakeBitIndex, hi);
         if (result != 0)
         {
             *bitIndex = fakeBitIndex + 32;
@@ -295,7 +294,7 @@ inline uint8_t BitScanForward64(DWORD *bitIndex, uint64_t mask)
 }
 
 // Cross-platform wrapper for the _BitScanReverse compiler intrinsic.
-inline uint8_t BitScanReverse(DWORD *bitIndex, uint32_t mask)
+inline uint8_t BitScanReverse(uint32_t *bitIndex, uint32_t mask)
 {
 #ifdef _MSC_VER
     return _BitScanReverse((unsigned long*)bitIndex, mask);
@@ -312,7 +311,7 @@ inline uint8_t BitScanReverse(DWORD *bitIndex, uint32_t mask)
 }
 
 // Cross-platform wrapper for the _BitScanReverse64 compiler intrinsic.
-inline uint8_t BitScanReverse64(DWORD *bitIndex, uint64_t mask)
+inline uint8_t BitScanReverse64(uint32_t *bitIndex, uint64_t mask)
 {
 #ifdef _MSC_VER
  #if _WIN64

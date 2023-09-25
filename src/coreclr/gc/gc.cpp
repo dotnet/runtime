@@ -318,11 +318,11 @@ size_t round_up_power2 (size_t size)
     DWORD highest_set_bit_index;
     if (0 ==
 #ifdef HOST_64BIT
-        BitScanReverse64(&highest_set_bit_index,
+        BitScanReverse64(
 #else
-        BitScanReverse((DWORD*)&highest_set_bit_index,
+        BitScanReverse(
 #endif
-             size - 1)) { return 1; }
+            &highest_set_bit_index, size - 1)) { return 1; }
 
     // The size == 0 case (which would have overflowed to SIZE_MAX when decremented)
     // is handled below by relying on the fact that highest_set_bit_index is the maximum value
@@ -339,11 +339,11 @@ size_t round_down_power2 (size_t size)
     DWORD highest_set_bit_index;
     if (0 ==
 #ifdef HOST_64BIT
-        BitScanReverse64(&highest_set_bit_index,
+        BitScanReverse64(
 #else
-        BitScanReverse((DWORD*)&highest_set_bit_index,
+        BitScanReverse(
 #endif
-            size)) { return 0; }
+            &highest_set_bit_index, size)) { return 0; }
 
     // Left-shift 1 by highest_set_bit_index to get back a value containing only
     // the most-significant set bit of size, i.e. size rounded down
@@ -361,11 +361,11 @@ int index_of_highest_set_bit (size_t value)
     DWORD highest_set_bit_index;
     return (0 ==
 #ifdef HOST_64BIT
-        BitScanReverse64(&highest_set_bit_index,
+        BitScanReverse64(
 #else
-        BitScanReverse((DWORD*)&highest_set_bit_index,
+        BitScanReverse(
 #endif
-            value)) ? -1 : static_cast<int>(highest_set_bit_index);
+            &highest_set_bit_index, value)) ? -1 : static_cast<int>(highest_set_bit_index);
 }
 
 inline
@@ -40685,7 +40685,7 @@ BOOL gc_heap::find_card_dword (size_t& cardw, size_t cardw_end)
             {
                 uint32_t cbw = card_bundle_table[card_bundle_word(cardb)] >> card_bundle_bit (cardb);
                 DWORD bit_index;
-                if (BitScanForward ((DWORD*)&bit_index, cbw))
+                if (BitScanForward (&bit_index, cbw))
                 {
                     cardb += bit_index;
                     break;
@@ -40830,7 +40830,7 @@ BOOL gc_heap::find_card(uint32_t* card_table,
     if (card_word_value)
     {
         DWORD bit_index;
-        uint8_t res = BitScanForward ((DWORD*)&bit_index, card_word_value);
+        uint8_t res = BitScanForward (&bit_index, card_word_value);
         assert (res != 0);
         card_word_value >>= bit_index;
         bit_position += bit_index;
