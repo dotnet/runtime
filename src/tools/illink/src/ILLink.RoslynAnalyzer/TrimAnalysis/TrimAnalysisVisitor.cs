@@ -311,6 +311,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 		}
 
+		public override MultiValue HandleDelegateCreation (IMethodSymbol method, MultiValue instance, IOperation operation)
+		{
+			TrimAnalysisPatterns.Add (new TrimAnalysisReflectionAccessPattern (
+				method,
+				instance,
+				operation,
+				OwningSymbol
+			));
+
+			return TopValue;
+		}
+
 		static bool TryGetConstantValue (IOperation operation, out MultiValue constValue)
 		{
 			if (operation.ConstantValue.HasValue) {
