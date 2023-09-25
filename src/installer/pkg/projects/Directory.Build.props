@@ -64,11 +64,7 @@
     <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <RIDPropsFile Condition="'$(RIDPropsFile)' == ''">$(MSBuildThisFileDirectory)\netcoreappRIDs.props</RIDPropsFile>
-  </PropertyGroup>
-
-  <Import Project="$(RIDPropsFile)" />
+  <Import Project="$(RIDPropsFile)" Condition="'$(RIDPropsFile)' != ''" />
 
   <ItemGroup>
     <_buildingOnRID Include="$(PackageRID)" Condition="'$(BuildOnUnknownPlatforms)' != 'false'">

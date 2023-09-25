@@ -1,0 +1,12 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides the .NET application hosts and binaries for creating custom hosts</PackageDescription>
+    <!-- This is a meta package or native-only package and doesn't contain any libs/refs. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>$(SymbolsSuffix)</AllowedOutputExtensionsInSymbolsPackageBuildOutputFolder>
+  </PropertyGroup>
+</Project>

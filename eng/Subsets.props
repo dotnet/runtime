@@ -444,8 +444,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+host.pkg+')) and '$(PgoInstrument)' != 'true'">
-    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" SignPhase="MsiFiles" />
-    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
+    <ProjectToBuild Include="$(InstallerProjectRoot)pkg\nuget\host-packages.proj" Pack="true" Category="host" />
   </ItemGroup>
 
   <!-- Libraries sets -->

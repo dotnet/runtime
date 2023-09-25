@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <!-- Reference the outputs for the dependency nodes calculation. -->
+    <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Listing the runtime specific packages to populate the dependencies section.
+         Not building these references to avoid unintentional Build/Pack invocations.
+         They are included in host-packages.proj based on the OutputRID. -->
+    <ProjectReference Include="runtime.*.$(MSBuildProjectName).proj"
+                      BuildReference="false" />
+  </ItemGroup>
+
+</Project>
