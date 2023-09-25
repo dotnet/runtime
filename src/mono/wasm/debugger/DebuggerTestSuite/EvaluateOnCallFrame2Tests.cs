@@ -743,8 +743,9 @@ namespace DebuggerTests
                await EvaluateOnCallFrameAndCheck(id,
                    ("f[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
                    ("f[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
-                   ("f[aChar, \"&\", longString]", TString("9-&-longString"))
-                //    ("f[numArray[j], aDouble]", TNumber("4.34")) //nested
+                   ("f[aChar, \"&\", longString]", TString("9-&-longString")),
+                   ("f[f.numArray[j], aDouble]", TNumber("4.34")) //ElementAccessExpressionSyntax
+                //    ("f[f.numArray[j], f.numArray[0]]", TNumber("3")) //ToFix: multiple ElementAccessExpressionSyntaxes
                 );
            });
     }

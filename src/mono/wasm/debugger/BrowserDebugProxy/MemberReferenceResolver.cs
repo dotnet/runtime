@@ -366,7 +366,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject nestedIndexObject, List<VariableDefinition> variableDefinitions, CancellationToken token)
+        public async Task<JObject> Resolve(
+            ElementAccessExpressionSyntax elementAccess,
+            Dictionary<string, JObject> memberAccessValues,
+            JObject nestedIndexObject,
+            List<VariableDefinition> variableDefinitions,
+            CancellationToken token)
         {
             try
             {
@@ -469,28 +474,20 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             async Task<ElementIndexInfo> GetElementIndexInfo(JObject nestedIndexObject)
             {
-                // e.g. x[a[0]], x[a[b[1]]] etc.
-                if (nestedIndexObject is not null)
-                    return new ElementIndexInfo(
-                        ElementIdxStr: nestedIndexObject["value"].ToString(),
-                        Indexers: new List<object>() { nestedIndexObject }
-                    );
-
                 if (elementAccess.ArgumentList is null)
                     return null;
 
-                int dimCnt = 1;
+                int dimCnt = elementAccess.ArgumentList.Arguments.Count;
                 LiteralExpressionSyntax indexingExpression = null;
                 StringBuilder elementIdxStr = new StringBuilder();
                 List<object> indexers = new();
-                for (int i = 0; i < elementAccess.ArgumentList.Arguments.Count; i++)
+                for (int i = 0; i < dimCnt; i++)
                 {
                     JObject indexObject;
                     var arg = elementAccess.ArgumentList.Arguments[i];
                     if (i != 0)
                     {
                         elementIdxStr.Append(", ");
-                        dimCnt++;
                     }
                     // e.g. x[1]
                     if (arg.Expression is LiteralExpressionSyntax)
@@ -513,6 +510,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         indexObject ??= await Resolve(argParm.Identifier.Text, token);
                         elementIdxStr.Append(indexObject["value"].ToString());
                         indexers.Add(indexObject);
+                    }
+                    // nested indexing, e.g. x[a[0]], x[a[b[1]]], x[a[0], b[1]]
+                    else if (arg.Expression is ElementAccessExpressionSyntax)
+                    {
+                        // ToDo: what if we have multiple nested indexers in multi-dim indexing?
+                        elementIdxStr.Append(nestedIndexObject["value"].ToString());
+                        indexers.Add(nestedIndexObject);
                     }
                     // indexing with expressions, e.g. x[a + 1]
                     else
