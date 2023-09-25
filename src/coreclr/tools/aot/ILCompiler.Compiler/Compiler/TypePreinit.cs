@@ -779,11 +779,15 @@ namespace ILCompiler
                             }
                             else if (popped.ValueKind == StackValueKind.ByRef
                                 && (opcode == ILOpcode.conv_i || opcode == ILOpcode.conv_u)
-                                && (reader.PeekILOpcode() is >= ILOpcode.ldind_i1 and <= ILOpcode.ldind_ref) || reader.PeekILOpcode() == ILOpcode.ldobj)
+                                && (reader.PeekILOpcode() is (>= ILOpcode.ldind_i1 and <= ILOpcode.ldind_ref) or ILOpcode.ldobj))
                             {
                                 // In the interpreter memory model, there's no conversion from a byref to an integer.
                                 // Roslyn however sometimes emits a sequence of conv_u followed by ldind and we can
                                 // have a narrow path to handle that one.
+                                //
+                                // For example:
+                                //
+                                // static unsafe U Read<T, U>(T val) where T : unmanaged where U : unmanaged => *(U*)&val;
                                 stack.Push(popped);
                                 goto again;
                             }
@@ -1495,6 +1499,8 @@ namespace ILCompiler
                                     TypeFlags.Int32 => ILOpcode.ldind_i4,
                                     TypeFlags.UInt32 => ILOpcode.ldind_u4,
                                     TypeFlags.Int64 or TypeFlags.UInt64 => ILOpcode.ldind_i8,
+                                    TypeFlags.Single => ILOpcode.ldind_r4,
+                                    TypeFlags.Double => ILOpcode.ldind_r8,
                                     _ => ILOpcode.ldobj,
                                 };
 
@@ -1584,7 +1590,7 @@ namespace ILCompiler
                             int destOffset = ((ByRefValue)location.Value).PointedToOffset;
                             byte[] src = ((ValueTypeValue)val).InstanceBytes;
                             if (destOffset + src.Length > dest.Length)
-                                ThrowHelper.ThrowInvalidProgramException();
+                                return Status.Fail(methodIL.OwningMethod, "Out of bound access");
                             Array.Copy(src, 0, dest, destOffset, src.Length);
                         }
                         break;
