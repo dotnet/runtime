@@ -572,13 +572,7 @@ namespace System.Numerics.Tensors
         private readonly struct AbsoluteOperator : IUnaryOperator
         {
             public float Invoke(float x) => MathF.Abs(x);
-
-            public Vector<float> Invoke(Vector<float> x)
-            {
-                Vector<uint> raw = Vector.AsVectorUInt32(x);
-                Vector<uint> mask = new Vector<uint>(0x7FFFFFFF);
-                return Vector.AsVectorSingle(raw & mask);
-            }
+            public Vector<float> Invoke(Vector<float> x) => Vector.Abs(x);
         }
 
         private interface IUnaryOperator

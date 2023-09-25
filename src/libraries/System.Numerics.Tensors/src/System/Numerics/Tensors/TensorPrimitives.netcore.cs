@@ -1256,28 +1256,10 @@ namespace System.Numerics.Tensors
         private readonly struct AbsoluteOperator : IUnaryOperator
         {
             public static float Invoke(float x) => MathF.Abs(x);
-
-            public static Vector128<float> Invoke(Vector128<float> x)
-            {
-                Vector128<uint> raw = x.AsUInt32();
-                Vector128<uint> mask = Vector128.Create((uint)0x7FFFFFFF);
-                return (raw & mask).AsSingle();
-            }
-
-            public static Vector256<float> Invoke(Vector256<float> x)
-            {
-                Vector256<uint> raw = x.AsUInt32();
-                Vector256<uint> mask = Vector256.Create((uint)0x7FFFFFFF);
-                return (raw & mask).AsSingle();
-            }
-
+            public static Vector128<float> Invoke(Vector128<float> x) => Vector128.Abs(x);
+            public static Vector256<float> Invoke(Vector256<float> x) => Vector256.Abs(x);
 #if NET8_0_OR_GREATER
-            public static Vector512<float> Invoke(Vector512<float> x)
-            {
-                Vector512<uint> raw = x.AsUInt32();
-                Vector512<uint> mask = Vector512.Create((uint)0x7FFFFFFF);
-                return (raw & mask).AsSingle();
-            }
+            public static Vector512<float> Invoke(Vector512<float> x) => Vector512.Abs(x);
 #endif
         }
 
