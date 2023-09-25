@@ -12,7 +12,7 @@ namespace Internal.Runtime
     internal unsafe partial struct MethodTable
     {
 #if !INPLACE_RUNTIME
-        internal MethodTable* GetArrayEEType()
+        internal static MethodTable* GetArrayEEType()
         {
 
             return MethodTable.Of<Array>();

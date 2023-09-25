@@ -171,6 +171,52 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public async Task ReceiveSent_DualMode_Success(bool ipv4)
+        {
+            const int Offset = 10;
+            const int DatagramSize = 256;
+            const int DatagramsToSend = 16;
+
+            IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            using Socket receiver = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            using Socket sender = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            if (receiver.DualMode != true || sender.DualMode != true)
+            {
+                throw new SkipException("DualMode not available");
+            }
+
+            ConfigureNonBlocking(sender);
+            ConfigureNonBlocking(receiver);
+
+            receiver.BindToAnonymousPort(address);
+            sender.BindToAnonymousPort(address);
+
+            byte[] sendBuffer = new byte[DatagramSize];
+            var receiveInternalBuffer = new byte[DatagramSize + Offset];
+            var emptyBuffer = new byte[Offset];
+            ArraySegment<byte> receiveBuffer = new ArraySegment<byte>(receiveInternalBuffer, Offset, DatagramSize);
+
+            Random rnd = new Random(0);
+
+            for (int i = 0; i < DatagramsToSend; i++)
+            {
+                rnd.NextBytes(sendBuffer);
+                sender.SendTo(sendBuffer, receiver.LocalEndPoint);
+
+                IPEndPoint remoteEp = new IPEndPoint(ipv4 ? IPAddress.Any : IPAddress.IPv6Any, 0);
+
+                SocketReceiveFromResult result = await ReceiveFromAsync(receiver, receiveBuffer, remoteEp);
+
+                Assert.Equal(DatagramSize, result.ReceivedBytes);
+                AssertExtensions.SequenceEqual(emptyBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, 0, Offset));
+                AssertExtensions.SequenceEqual(sendBuffer, new ReadOnlySpan<byte>(receiveInternalBuffer, Offset, DatagramSize));
+                Assert.Equal(sender.LocalEndPoint, result.RemoteEndPoint);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public void ReceiveSent_SocketAddress_Success(bool ipv4)
         {
             const int DatagramSize = 256;

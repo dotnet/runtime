@@ -285,7 +285,7 @@ namespace System
             //
             // It propagates NaN inputs back to the caller and
             // otherwise returns the input with a lesser magnitude.
-            // It treats +0 as lesser than -0 as per the specification.
+            // It treats +0 as greater than -0 as per the specification.
 
             float ax = Abs(x);
             float ay = Abs(y);

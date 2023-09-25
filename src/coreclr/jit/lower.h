@@ -88,8 +88,10 @@ private:
     insCflags TruthifyingFlags(GenCondition cond);
     void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
-    void TryLowerCselToCinc(GenTreeOp* select, GenTree* cond);
-    void TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond);
+    void TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond);
+    void TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
+    GenTree* TryLowerAddSubToMulLongOp(GenTreeOp* op);
+    GenTree* TryLowerNegToMulLongOp(GenTreeOp* op);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);

@@ -26,6 +26,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
+        public bool ErrorOnFailedBinding { get; private set; }
+
         public RefKind RefKind { get; }
 
         public override bool CanGet => false;

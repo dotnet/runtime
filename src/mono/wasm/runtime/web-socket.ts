@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, mono_assert } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, loaderHelpers, mono_assert } from "./globals";
 import { setI32, localHeapViewU8 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
@@ -58,17 +58,20 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     ws.binaryType = "arraybuffer";
     const local_on_open = () => {
         if (ws[wasm_ws_is_aborted]) return;
+        if (loaderHelpers.is_exited()) return;
         open_promise_control.resolve(ws);
         prevent_timer_throttling();
     };
     const local_on_message = (ev: MessageEvent) => {
         if (ws[wasm_ws_is_aborted]) return;
+        if (loaderHelpers.is_exited()) return;
         _mono_wasm_web_socket_on_message(ws, ev);
         prevent_timer_throttling();
     };
     const local_on_close = (ev: CloseEvent) => {
         ws.removeEventListener("message", local_on_message);
         if (ws[wasm_ws_is_aborted]) return;
+        if (loaderHelpers.is_exited()) return;
 
         onClosed(ev.code, ev.reason);
 
@@ -93,6 +96,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     };
     const local_on_error = (ev: any) => {
         if (ws[wasm_ws_is_aborted]) return;
+        if (loaderHelpers.is_exited()) return;
         ws.removeEventListener("message", local_on_message);
         const error = new Error(ev.message || "WebSocket error");
         mono_log_warn("WebSocket error", error);

@@ -51,14 +51,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             var typedObj = (TypeWithNoMembers_Wrapper)instance;
-            BindCore(configuration, ref typedObj, binderOptions: null);
+            BindCore(configuration, ref typedObj, defaultValueIfNotFound: false, binderOptions: null);
         }
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
         private readonly static Lazy<HashSet<string>> s_configKeys_TypeWithNoMembers_Wrapper = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Member" });
 
-        public static void BindCore(IConfiguration configuration, ref TypeWithNoMembers_Wrapper instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref TypeWithNoMembers_Wrapper instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(TypeWithNoMembers_Wrapper), s_configKeys_TypeWithNoMembers_Wrapper, configuration, binderOptions);
 

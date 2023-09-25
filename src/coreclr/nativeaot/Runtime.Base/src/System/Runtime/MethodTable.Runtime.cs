@@ -18,7 +18,7 @@ namespace Internal.Runtime
             return MethodTable.Of<Array>();
 #else
             MethodTable* pThis = (MethodTable*)Unsafe.Pointer(ref this);
-            void* pGetArrayEEType = InternalCalls.RhpGetClasslibFunctionFromEEType(new IntPtr(pThis), ClassLibFunctionId.GetSystemArrayEEType);
+            void* pGetArrayEEType = InternalCalls.RhpGetClasslibFunctionFromEEType(pThis, ClassLibFunctionId.GetSystemArrayEEType);
             return ((delegate* <MethodTable*>)pGetArrayEEType)();
 #endif
         }
@@ -33,7 +33,7 @@ namespace Internal.Runtime
                 return RelatedParameterType->GetClasslibException(id);
             }
 
-            return EH.GetClasslibExceptionFromEEType(id, GetAssociatedModuleAddress());
+            return EH.GetClasslibExceptionFromEEType(id, (MethodTable*)Unsafe.AsPointer(ref this));
 #endif
         }
 #pragma warning restore CA1822

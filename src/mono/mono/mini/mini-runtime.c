@@ -4469,7 +4469,7 @@ init_class (MonoClass *klass)
 
 	const char *name = m_class_get_name (klass);
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_AMD64) || defined(TARGET_WASM)
 	/*
 	 * Some of the intrinsics used by the VectorX classes are only implemented on amd64.
 	 * The JIT can't handle SIMD types with != 16 size yet.
@@ -4477,6 +4477,14 @@ init_class (MonoClass *klass)
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
 		// FIXME: Support Vector2/Vector3
 		if (!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
+			mono_class_set_is_simd_type (klass, TRUE);
+	}
+#endif
+
+#ifdef TARGET_ARM64
+	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
+		// FIXME: Support Vector3 https://github.com/dotnet/runtime/issues/81501
+		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
 	}
 #endif

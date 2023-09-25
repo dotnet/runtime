@@ -50,6 +50,8 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <EventPipeName>libeventpipe-disabled</EventPipeName>
       <EventPipeName Condition="'$(EventSourceSupport)' == 'true'">libeventpipe-enabled</EventPipeName>
+
+      <LinkStandardCPlusPlusLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' == '' and '$(_IsiOSLikePlatform)' == 'true' and '$(InvariantGlobalization)' != 'true'">true</LinkStandardCPlusPlusLibrary>
     </PropertyGroup>
 
     <ItemGroup>

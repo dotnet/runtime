@@ -24,6 +24,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Declaration = 3,
             }
 
+            /// <summary>
+            /// The type of defaulting for a property if it does not have a config entry.
+            /// This should only be applied for "Get" cases, not "Bind" and is also conditioned
+            /// on the source generated for a particular property as to whether it uses this value.
+            /// Note this is different than "InitializationKind.Declaration" since it only applied to
+            /// complex types and not arrays\enumerables.
+            /// </summary>
+            private enum ValueDefaulting
+            {
+                None = 0,
+
+                /// <summary>
+                /// Call the setter with the default value for the property's Type.
+                /// </summary>
+                CallSetter = 1,
+            }
+
             private static class Expression
             {
                 public const string configurationGetSection = "configuration.GetSection";

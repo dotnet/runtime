@@ -5019,24 +5019,39 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 			MonoGenericContext ctx;
 			MonoMethod *inst, *gshared;
 
-			create_ref_shared_inst (acfg, method, &ctx);
-
-			inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
-			g_assert (is_ok (error)); /* FIXME don't swallow the error */
-
 			sig = mono_method_signature_internal (method);
 			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0])) && !m_type_is_byref (sig->params [0])) {
+				/* ref */
+				create_ref_shared_inst (acfg, method, &ctx);
+
+				inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
+				g_assert (is_ok (error)); /* FIXME don't swallow the error */
+
 				m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, NULL);
 
 				gshared = mini_get_shared_method_full (m, SHARE_MODE_NONE, error);
 				mono_error_assert_ok (error);
 
 				add_extra_method (acfg, gshared);
+
+				if (acfg->jit_opts & MONO_OPT_GSHAREDVT) {
+					/* gsharedvt */
+					create_gsharedvt_inst (acfg, method, &ctx);
+
+					inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
+					g_assert (is_ok (error)); /* FIXME don't swallow the error */
+
+					m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, NULL);
+
+					gshared = mini_get_shared_method_full (m, SHARE_MODE_GSHAREDVT, error);
+					mono_error_assert_ok (error);
+
+					add_extra_method (acfg, gshared);
+				}
 			}
 		}
 
 		if (!mono_class_is_gtd (klass)) {
-
 			m = mono_marshal_get_delegate_invoke (method, NULL);
 
 			add_method (acfg, m);
@@ -10708,6 +10723,18 @@ execute_system (const char * command)
 
 #ifdef ENABLE_LLVM
 
+#ifdef HOST_WIN32
+#define OPT_NAME "opt.exe"
+#else
+#define OPT_NAME "opt"
+#endif
+
+#ifdef HOST_WIN32
+#define LLC_NAME "llc.exe"
+#else
+#define LLC_NAME "llc"
+#endif
+
 /*
  * emit_llvm_file:
  *
@@ -10776,11 +10803,11 @@ emit_llvm_file (MonoAotCompile *acfg)
 	} else {
 #if LLVM_API_VERSION >= 1600
 		/* The safepoints pass requires new pass manager syntax*/
-		opts = g_strdup ("-disable-tail-calls -passes='");
+		opts = g_strdup ("-disable-tail-calls -passes=\"");
 		if (!acfg->aot_opts.llvm_only) {
 			opts = g_strdup_printf ("%sdefault<O2>,", opts);
 		}
-		opts = g_strdup_printf ("%splace-safepoints' -spp-all-backedges", opts);
+		opts = g_strdup_printf ("%splace-safepoints\" -spp-all-backedges", opts);
 #elif LLVM_API_VERSION >= 1300
 		/* The safepoints pass requires the old pass manager */
 		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges -enable-new-pm=0");
@@ -10810,7 +10837,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 		opts = g_strdup_printf ("%s -fp-contract=fast -enable-no-infs-fp-math -enable-no-nans-fp-math -enable-no-signed-zeros-fp-math -enable-no-trapping-fp-math -enable-unsafe-fp-math", opts);
 	}
 
-	command = g_strdup_printf ("\"%sopt\" -f %s -o \"%s\" \"%s\"", acfg->aot_opts.llvm_path, opts, optbc, tempbc);
+	command = g_strdup_printf ("\"%s" OPT_NAME "\" -f %s -o \"%s\" \"%s\"", acfg->aot_opts.llvm_path, opts, optbc, tempbc);
 	aot_printf (acfg, "Executing opt: %s\n", command);
 	if (execute_system (command) != 0)
 		return FALSE;
@@ -10885,7 +10912,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 		g_string_append_printf (acfg->llc_args, " -mattr=%s", acfg->aot_opts.llvm_cpu_attr);
 	}
 
-	command = g_strdup_printf ("\"%sllc\" %s -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
+	command = g_strdup_printf ("\"%s" LLC_NAME "\" %s -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.llvm_path, acfg->llc_args->str, output_fname, acfg->tmpbasename);
 	g_free (output_fname);
 
 	aot_printf (acfg, "Executing llc: %s\n", command);

@@ -29,11 +29,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		}
 
 		protected override TrimAnalysisVisitor GetVisitor (
-			IMethodSymbol method,
+			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
 			InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState)
-		 => new (Lattice, method, methodCFG, lValueFlowCaptures, TrimAnalysisPatterns, interproceduralState);
+		 => new (Lattice, owningSymbol, methodCFG, lValueFlowCaptures, TrimAnalysisPatterns, interproceduralState);
 
 #if DEBUG
 #pragma warning disable CA1805 // Do not initialize unnecessarily

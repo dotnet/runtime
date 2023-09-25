@@ -61,7 +61,7 @@ namespace System.Reflection
 
             // _isValueTypeInstanceMethod = method.DeclaringType?.IsValueType ?? false;
 
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
 
             _argumentCount = parameters.Length;
 
@@ -579,7 +579,7 @@ namespace System.Reflection
 
         private unsafe object? GetCoercedDefaultValue(int index, in ArgumentInfo argumentInfo)
         {
-            object? defaultValue = Method.GetParametersNoCopy()[index].DefaultValue;
+            object? defaultValue = Method.GetParametersAsSpan()[index].DefaultValue;
             if (defaultValue == DBNull.Value)
                 throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
 

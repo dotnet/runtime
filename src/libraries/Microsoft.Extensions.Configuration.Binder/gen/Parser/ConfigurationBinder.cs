@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _ => throw new InvalidOperationException()
                 };
 
-                IArgumentOperation instanceArg = operation.Arguments[instanceIndex];
+                IArgumentOperation instanceArg = GetArgumentForParameterAtIndex(operation.Arguments, instanceIndex);
                 if (instanceArg.Parameter.Type.SpecialType != SpecialType.System_Object)
                 {
                     return;
@@ -119,6 +119,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     };
             }
 
+            private static IArgumentOperation GetArgumentForParameterAtIndex(ImmutableArray<IArgumentOperation> arguments, int parameterIndex)
+            {
+                foreach (var argument in arguments)
+                {
+                    if (argument.Parameter?.Ordinal == parameterIndex)
+                    {
+                        return argument;
+                    }
+                }
+
+                throw new InvalidOperationException();
+            }
+
             private void ParseGetInvocation(BinderInvocation invocation)
             {
                 IInvocationOperation operation = invocation.Operation!;
@@ -158,7 +171,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    ITypeOfOperation? typeOfOperation = operation.Arguments[1].ChildOperations.FirstOrDefault() as ITypeOfOperation;
+                    ITypeOfOperation? typeOfOperation = GetArgumentForParameterAtIndex(operation.Arguments, 1).ChildOperations.FirstOrDefault() as ITypeOfOperation;
                     type = typeOfOperation?.TypeOperand;
 
                     if (paramCount is 2)
@@ -218,7 +231,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return;
                     }
 
-                    ITypeOfOperation? typeOfOperation = operation.Arguments[1].ChildOperations.FirstOrDefault() as ITypeOfOperation;
+                    ITypeOfOperation? typeOfOperation = GetArgumentForParameterAtIndex(operation.Arguments, 1).ChildOperations.FirstOrDefault() as ITypeOfOperation;
                     type = typeOfOperation?.TypeOperand;
 
                     if (paramCount is 3)

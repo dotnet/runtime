@@ -249,7 +249,7 @@ namespace System.Threading
         /// <remarks>
         /// <para>
         /// The associated <see cref="CancellationToken" /> will be notified of the cancellation and will transition to a state where
-        /// <see cref="CancellationToken.IsCancellationRequested"/> returns true. Any callbacks or cancelable operationsregistered
+        /// <see cref="CancellationToken.IsCancellationRequested"/> returns true. Any callbacks or cancelable operations registered
         /// with the <see cref="CancellationToken"/>  will be executed.
         /// </para>
         /// <para>
@@ -276,6 +276,10 @@ namespace System.Threading
         }
 
         /// <summary>Communicates a request for cancellation asynchronously.</summary>
+        /// <returns>
+        /// A task that will complete after cancelable operations and callbacks registered with the associated
+        /// <see cref="CancellationToken" /> have completed.
+        /// </returns>
         /// <remarks>
         /// <para>
         /// The associated <see cref="CancellationToken" /> will be notified of the cancellation
