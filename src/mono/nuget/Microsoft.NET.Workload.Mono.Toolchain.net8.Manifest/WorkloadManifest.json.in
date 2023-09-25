@@ -450,6 +450,10 @@
         "any": "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm"
       }
     },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.wasi-wasm" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}"
+    },
     "Microsoft.NETCore.App.Runtime.net8.win-x64" : {
       "kind": "framework",
       "version": "${PackageVersionNet8}",
