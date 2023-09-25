@@ -29,11 +29,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequireAll (GetUnknown ());
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
+			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll), CompilerGeneratedCode = true)]
 			int field = RequireAll (GetUnknown ());
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
-			int Propertty { get; } = RequireAll (GetUnknown ());
+			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll), CompilerGeneratedCode = true)]
+			int Property { get; } = RequireAll (GetUnknown ());
 
 			// The analyzer dataflow visitor asserts that we only see a return value
 			// inside of an IMethodSymbol. This testcase checks that we don't hit asserts
@@ -62,11 +62,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				RequireAll (GetUnknown ());
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
+			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll), CompilerGeneratedCode = true)]
 			static int field = RequireAll (GetUnknown ());
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
-			static int Propertty { get; } = RequireAll (GetUnknown ());
+			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll), CompilerGeneratedCode = true)]
+			static int Property { get; } = RequireAll (GetUnknown ());
 
 			public static void Test ()
 			{
