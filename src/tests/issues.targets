@@ -3699,6 +3699,12 @@
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/**">
             <Issue>System.Diagnostics.Process is not supported</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsMobile)' == 'true'">
