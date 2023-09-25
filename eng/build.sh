@@ -526,7 +526,7 @@ while [[ $# > 0 ]]; do
 
       -verbose)
       arguments="$arguments /p:CoreclrVerbose=true"
-      shift 2
+      shift 1
       ;;
 
       *)
