@@ -307,7 +307,7 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
         // Array
         pVal->fixedSizedData.Flags |= kEtwTypeFlagsArray;
         pVal->cTypeParameters = 1;
-        pVal->ullSingleTypeParameter = (ULONGLONG) pEEType->get_RelatedParameterType();
+        pVal->ullSingleTypeParameter = (ULONGLONG) pEEType->GetRelatedParameterType();
     }
     else
     {
