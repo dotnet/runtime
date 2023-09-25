@@ -4733,7 +4733,6 @@ mini_init (const char *filename)
 #endif
 
 #ifdef ENSURE_PRIMARY_STACK_SIZE 
-	// TODO: https://github.com/dotnet/runtime/issues/72920
 	ensure_stack_size (5 * 1024 * 1024);
 #endif // ENSURE_PRIMARY_STACK_SIZE
 
