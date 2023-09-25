@@ -320,7 +320,7 @@ size_t round_up_power2 (size_t size)
 #ifdef HOST_64BIT
         BitScanReverse64(&highest_set_bit_index,
 #else
-        BitScanReverse((unsigned long*)&highest_set_bit_index,
+        BitScanReverse((DWORD*)&highest_set_bit_index,
 #endif
              size - 1)) { return 1; }
 
@@ -341,7 +341,7 @@ size_t round_down_power2 (size_t size)
 #ifdef HOST_64BIT
         BitScanReverse64(&highest_set_bit_index,
 #else
-        BitScanReverse((unsigned long*)&highest_set_bit_index,
+        BitScanReverse((DWORD*)&highest_set_bit_index,
 #endif
             size)) { return 0; }
 
@@ -363,7 +363,7 @@ int index_of_highest_set_bit (size_t value)
 #ifdef HOST_64BIT
         BitScanReverse64(&highest_set_bit_index,
 #else
-        BitScanReverse((unsigned long*)&highest_set_bit_index,
+        BitScanReverse((DWORD*)&highest_set_bit_index,
 #endif
             value)) ? -1 : static_cast<int>(highest_set_bit_index);
 }
