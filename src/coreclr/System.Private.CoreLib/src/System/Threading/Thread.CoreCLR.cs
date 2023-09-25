@@ -377,8 +377,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
-        /// appropriate for the processor.
+        /// Number of yields required to span the duration of a normalized yield.
         /// </summary>
         internal static int GetYieldsPerNormalizedYield
         {
