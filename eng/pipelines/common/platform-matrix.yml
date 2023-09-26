@@ -26,6 +26,32 @@ jobs:
 
 # Linux arm
 
+# Linux x64
+
+- ${{ if or(containsValue(parameters.platforms, 'linux_x64'), containsValue(parameters.platforms, 'CoreClrTestBuildHost'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: x64
+      targetRid: linux-x64
+      platform: linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      ${{ if eq(parameters.container, '') }}:
+        container: linux_x64
+      ${{ if ne(parameters.container, '') }}:
+        container:
+          image: ${{ parameters.container }}
+          registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Browser WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'browser_wasm') }}:
