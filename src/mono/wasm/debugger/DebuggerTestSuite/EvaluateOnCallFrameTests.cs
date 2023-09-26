@@ -650,7 +650,7 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateObjectByNonIntLocals() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 13, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -662,7 +662,8 @@ namespace DebuggerTests
                     ("f[shortString]", TBool(false)),
                     ("f[aFloat]", TNumber(1)),
                     ("f[aDouble]", TNumber(2)),
-                    ("f[aDecimal]", TNumber(3)) // object
+                    ("f[aDecimal]", TNumber(3)),
+                    ("f[objIdx]", TNumber(123))
                 );
             });
 

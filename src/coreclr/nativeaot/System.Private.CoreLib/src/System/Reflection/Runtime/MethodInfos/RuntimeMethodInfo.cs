@@ -151,7 +151,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return result;
         }
 
-        public sealed override ParameterInfo[] GetParametersNoCopy()
+        public sealed override ReadOnlySpan<ParameterInfo> GetParametersAsSpan()
         {
             return RuntimeParameters;
         }
@@ -325,18 +325,16 @@ namespace System.Reflection.Runtime.MethodInfos
                 return null;
             }
 
-#pragma warning disable CA1859 // Use concrete types when possible for improved performance https://github.com/dotnet/roslyn-analyzers/issues/6751
-            IList<ParameterInfo> delegateParameters = invokeMethod.GetParametersNoCopy();
-            IList<ParameterInfo> targetParameters = this.GetParametersNoCopy();
-#pragma warning restore CA1859
-            IEnumerator<ParameterInfo> delegateParameterEnumerator = delegateParameters.GetEnumerator();
-            IEnumerator<ParameterInfo> targetParameterEnumerator = targetParameters.GetEnumerator();
+            ReadOnlySpan<ParameterInfo> delegateParameters = invokeMethod.GetParametersAsSpan();
+            ReadOnlySpan<ParameterInfo> targetParameters = this.GetParametersAsSpan();
+            ReadOnlySpan<ParameterInfo>.Enumerator delegateParameterEnumerator = delegateParameters.GetEnumerator();
+            ReadOnlySpan<ParameterInfo>.Enumerator targetParameterEnumerator = targetParameters.GetEnumerator();
 
             bool isStatic = this.IsStatic;
             bool isOpen;
             if (isStatic)
             {
-                if (delegateParameters.Count == targetParameters.Count)
+                if (delegateParameters.Length == targetParameters.Length)
                 {
                     // Open static: This is the "typical" case of calling a static method.
                     isOpen = true;
@@ -358,7 +356,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
             else
             {
-                if (delegateParameters.Count == targetParameters.Count)
+                if (delegateParameters.Length == targetParameters.Length)
                 {
                     // Closed instance: This is the "typical" case of invoking an instance method.
                     isOpen = false;

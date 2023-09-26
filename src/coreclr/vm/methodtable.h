@@ -775,8 +775,8 @@ public:
 #endif
 
 #if defined(TARGET_RISCV64)
-    static bool IsRiscv64OnlyOneField(MethodTable * pMT);
-    static int GetRiscv64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
+    static bool IsRiscV64OnlyOneField(MethodTable * pMT);
+    static int GetRiscV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE clh);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
@@ -859,7 +859,7 @@ public:
 
     void AllocateRegularStaticBoxes();
     void AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle);
-    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0, bool canBeFrozen = false);
+    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, bool canBeFrozen = false);
 
     void CheckRestore();
 

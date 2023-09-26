@@ -1183,8 +1183,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         addrSpillTemp = m_comp->lvaGrabTemp(true DEBUGARG("BlockOp address local"));
 
         LclVarDsc* addrSpillDsc = m_comp->lvaGetDesc(addrSpillTemp);
-        addrSpillDsc->lvType = addrSpill->TypeIs(TYP_REF) ? TYP_REF : TYP_BYREF; // TODO-ASG: zero-diff quirk, delete.
-        addrSpillStore       = m_comp->gtNewTempStore(addrSpillTemp, addrSpill);
+        addrSpillStore          = m_comp->gtNewTempStore(addrSpillTemp, addrSpill);
     }
 
     auto grabAddr = [=, &result](unsigned offs) {
@@ -1227,7 +1226,12 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             // handling.
             GenTreeIntCon* fldOffsetNode = m_comp->gtNewIconNode(fullOffs, TYP_I_IMPL);
             fldOffsetNode->gtFieldSeq    = addrBaseOffsFldSeq;
-            addrClone                    = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, addrClone, fldOffsetNode);
+            addrClone = m_comp->gtNewOperNode(GT_ADD, varTypeIsGC(addrClone) ? TYP_BYREF : TYP_I_IMPL, addrClone,
+                                              fldOffsetNode);
+            // Avoid constant prop propagating each field access with a large
+            // constant address. TODO-Cleanup: We should tune constant prop to
+            // have better heuristics around this.
+            addrClone->gtFlags |= GTF_DONT_CSE;
         }
 
         return addrClone;
