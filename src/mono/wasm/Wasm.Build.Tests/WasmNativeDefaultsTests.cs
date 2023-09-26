@@ -259,7 +259,7 @@ namespace Wasm.Build.Tests
             Assert.Equal($"** WasmBuildNative: '{wasmBuildNative.ToString().ToLower()}', " +
                             $"WasmNativeStrip: '{wasmNativeStrip.ToString().ToLower()}', " +
                             $"WasmNativeDebugSymbols: '{wasmNativeDebugSymbols.ToString().ToLower()}', " +
-                            $"WasmBuildingForNestedPublish: '{wasmBuildingForNestedPublish?.ToString()?.ToLower()}'",
+                            $"WasmBuildingForNestedPublish: '{(wasmBuildingForNestedPublish.HasValue && wasmBuildingForNestedPublish == true ? "true" : "")}'",
                         line);
         }
     }
