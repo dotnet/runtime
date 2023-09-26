@@ -172,6 +172,15 @@
     </ItemGroup>
   </Target>
 
+  <!-- Don't use the TargetingPack Analyzers unless explicitly enabled -->
+  <Target Name="RemoveTargetingPackAnalyzers"
+          Condition="'$(UseLocalTargetingRuntimePack)' != 'true' AND '$(UseTargetingPackAnalyzers)' != 'true'"
+          AfterTargets="ResolveTargetingPackAssets">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Analyzer.FrameworkReferenceName)' != ''" />
+    </ItemGroup>
+  </Target>
+
   <!-- Update the local targeting pack's version as it's written into the runtimeconfig.json file to select the right framework. -->
   <Target Name="UpdateRuntimeFrameworkVersion"
           Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
