@@ -56,13 +56,15 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj"
                       ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer"
-                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
-                      Condition="@(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator'))" />
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj"
                       ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer"
-                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
-                      Condition="@(EnabledGenerators->AnyHaveMetadataValue('Identity', 'ComInterfaceGenerator'))" />
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)" />
   </ItemGroup>
 
   <Target Name="ConfigureGenerators"
