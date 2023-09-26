@@ -508,22 +508,33 @@ namespace DebuggerTests
     {
         public record Indexer(int index);
 
-        public class TestEvaluate
+        public class CommonCollections
         {
-            public List<int> numList;
-            public List<string> textList;
-            public int[] numArray;
-            public string[] textArray;
+            public List<int> numList = new List<int> { 1, 2 };
+            public List<string> textList = new List<string> { "1", "2" };
+            public int[] numArray = new int[] { 1, 2 };
+            public string[] textArray = new string[] { "1", "2" };
             public int[][] numArrayOfArrays;
             public List<List<int>> numListOfLists;
             public string[][] textArrayOfArrays;
             public List<List<string>> textListOfLists;
-            public Dictionary<string, bool> indexedByStr;
-            public Dictionary<char, string> indexedByChar;
-            public Dictionary<bool, string> indexedByBool;
-            public int idx0;
-            public int idx1;
+            public Dictionary<string, bool> indexedByStr = new Dictionary<string, bool>() { { "1", true }, { "111", false }, { "true", true} };
+            public Dictionary<char, string> indexedByChar = new Dictionary<char, string>() { { 'i', "I" }, { '5', "5" } };
+            public Dictionary<bool, string> indexedByBool = new Dictionary<bool, string>() { { true, "TRUE" }, { false, "FALSE" } };
+            public int idx0 = 0;
+            public int idx1 = 1;
 
+            public CommonCollections()
+            {
+                numArrayOfArrays = new int[][] { numArray, numArray };
+                numListOfLists = new List<List<int>> { numList, numList };
+                textArrayOfArrays = new string[][] { textArray, textArray };
+                textListOfLists = new List<List<string>> { textList, textList };
+            }
+        }
+
+        public class ClassWithIndexers
+        {
             // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
             public string this[char key] => "res_" + key;
             public string this[bool key] => key.ToString();
@@ -533,31 +544,28 @@ namespace DebuggerTests
             public int this[decimal key] => (int)key;
             public int this[Indexer indexer] => indexer.index;
             public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
+        }
 
-            public void run()
-            {
-                numList = new List<int> { 1, 2 };
-                textList = new List<string> { "1", "2" };
-                numArray = new int[] { 1, 2 };
-                textArray = new string[] { "1", "2" };
-                numArrayOfArrays = new int[][] { numArray, numArray };
-                numListOfLists = new List<List<int>> { numList, numList };
-                textArrayOfArrays = new string[][] { textArray, textArray };
-                textListOfLists = new List<List<string>> { textList, textList };
-                indexedByStr = new Dictionary<string, bool>() { { "1", true }, { "111", false }, { "true", true} };
-                indexedByChar = new Dictionary<char, string>() { { 'i', "I" }, { '5', "5" } };
-                indexedByBool = new Dictionary<bool, string>() { { true, "TRUE" }, { false, "FALSE" } };
-                idx0 = 0;
-                idx1 = 1;
-            }
+        public struct StructWithIndexers
+        {
+            // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
+            public string this[char key] => "res_" + key;
+            public string this[bool key] => key.ToString();
+            public bool this[string key] => key.Length > 3;
+            public int this[double key] => (int)key;
+            public int this[float key] => (int)key;
+            public int this[decimal key] => (int)key;
+            public int this[Indexer indexer] => indexer.index;
+            public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
         }
 
         public static void EvaluateLocals()
         {
             int i = 0;
             int j = 1;
-            TestEvaluate f = new TestEvaluate();
-            f.run();
+            ClassWithIndexers c = new();
+            StructWithIndexers s = new();
+            CommonCollections cc = new();
             string longString = "longString";
             string shortString = "9";
             char aChar = '9';
