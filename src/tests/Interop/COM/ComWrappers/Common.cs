@@ -4,6 +4,7 @@
 namespace ComWrappersTests.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Threading;
     using System.Runtime.InteropServices;
 
