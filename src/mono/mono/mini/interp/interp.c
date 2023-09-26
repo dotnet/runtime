@@ -4081,7 +4081,7 @@ main_loop:
 			}
 			ip += 5;
 
-			goto call;
+			goto jit_call;
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			gboolean need_unbox;
@@ -4103,7 +4103,7 @@ main_loop:
 			}
 			ip += 4;
 
-			goto call;
+			goto jit_call;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
 			MintICallSig icall_sig = (MintICallSig)ip [4];
@@ -4133,7 +4133,7 @@ main_loop:
 			cmethod = mono_interp_get_native_func_wrapper (frame->imethod, csignature, code);
 
 			ip += 5;
-			goto call;
+			goto jit_call;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT) {
 			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
@@ -4173,30 +4173,7 @@ main_loop:
 				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
 			}
 
-			goto call;
-		}
-		MINT_IN_CASE(MINT_CALL_VARARG) {
-			// Same as MINT_CALL, except at ip [4] we have the index for the csignature,
-			// which is required by the called method to set up the arglist.
-			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
-			return_offset = ip [1];
-			call_args_offset = ip [2];
-			ip += 6;
-			goto call;
-		}
-
-		MINT_IN_CASE(MINT_CALL) {
-			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
-			return_offset = ip [1];
-			call_args_offset = ip [2];
-
-#ifdef ENABLE_EXPERIMENT_TIERED
-			ip += 5;
-#else
-			ip += 4;
-#endif
-
-call:		
+jit_call:		
 			{
 				InterpMethodCodeType code_type = cmethod->code_type;
 
@@ -4231,6 +4208,27 @@ call:
 				}
 				MINT_IN_BREAK;
 			}
+		}
+		MINT_IN_CASE(MINT_CALL_VARARG) {
+			// Same as MINT_CALL, except at ip [4] we have the index for the csignature,
+			// which is required by the called method to set up the arglist.
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
+			return_offset = ip [1];
+			call_args_offset = ip [2];
+			ip += 6;
+			goto jit_call;
+		}
+
+		MINT_IN_CASE(MINT_CALL) {
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
+			return_offset = ip [1];
+			call_args_offset = ip [2];
+
+#ifdef ENABLE_EXPERIMENT_TIERED
+			ip += 5;
+#else
+			ip += 4;
+#endif
 
 interp_call:
 			/*
@@ -5648,7 +5646,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			// by the call, even though the call has void return (?!).
 			LOCAL_VAR (call_args_offset, gpointer) = NULL;
 			ip += 4;
-			goto call;
+			goto jit_call;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_STRING_UNOPT) {
 			// Same as MINT_NEWOBJ_STRING but copy params into right place on stack
@@ -5663,7 +5661,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			call_args_offset = aligned_call_args_offset;
 			LOCAL_VAR (call_args_offset, gpointer) = NULL;
 			ip += 4;
-			goto call;
+			goto jit_call;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [4]];
@@ -5687,7 +5685,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 			cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
 
-			goto call;
+			goto jit_call;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_INLINED) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [2]];
@@ -5720,7 +5718,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 5;
 
 			cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
-			goto call;
+			goto jit_call;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_VT_INLINED) {
 			guint16 ret_size = ip [3];
@@ -5762,7 +5760,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			mono_interp_error_cleanup (error); // FIXME: do not swallow the error
 			EXCEPTION_CHECKPOINT;
 			ip += 4;
-			goto call;
+			goto jit_call;
 		}
 
 		MINT_IN_CASE(MINT_ROL_I4_IMM) {
