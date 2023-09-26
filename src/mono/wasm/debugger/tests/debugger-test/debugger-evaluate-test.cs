@@ -545,6 +545,7 @@ namespace DebuggerTests
             // public int this[Indexer indexer] => indexer.index; // ToFix: order matters
             public string this[EnumIndexer indexer] => $"Index is {indexer}";
             public bool this[StructIndexer indexer] => indexer.HasIndex;
+            public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
 
             public void run()
             {
@@ -577,6 +578,7 @@ namespace DebuggerTests
             float aFloat = 1.23f;
             double aDouble = 2.34;
             decimal aDecimal = 3.34m;
+            char[] arr = new char[] { 't', 'e', 's', 't' };
             Indexer objIdx = new(index: 123);
             EnumIndexer enumIdx = EnumIndexer.High;
             StructIndexer structIdx = new() { HasIndex = true };
