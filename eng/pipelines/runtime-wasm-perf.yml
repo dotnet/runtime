@@ -4,6 +4,12 @@
 
 trigger: none
 
+pr:
+  branches:
+    include:
+    - main
+    - release/*.*
+
 variables:
   - template: /eng/pipelines/common/variables.yml
 
