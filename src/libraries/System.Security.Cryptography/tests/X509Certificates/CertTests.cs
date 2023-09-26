@@ -601,7 +601,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalP256))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey()
         {
@@ -622,7 +622,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalRsa))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_RsaKey()
         {
