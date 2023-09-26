@@ -110,6 +110,7 @@ namespace ComWrappersTests.Common
 
         public int FinalRelease()
         {
+            Debug.Assert(!_released);
             int count = Marshal.Release(_ptr);
             _released = true;
             return count;
