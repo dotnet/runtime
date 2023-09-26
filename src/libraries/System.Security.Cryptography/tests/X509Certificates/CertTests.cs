@@ -605,7 +605,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey()
         {
-            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.ECDsaP384))
+            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.ECDsaP256))
             using (ECDsaCng ecdsa = new ECDsaCng(platformKey.Key))
             {
                 CertificateRequest req = new CertificateRequest("CN=potato", ecdsa, HashAlgorithmName.SHA256);
