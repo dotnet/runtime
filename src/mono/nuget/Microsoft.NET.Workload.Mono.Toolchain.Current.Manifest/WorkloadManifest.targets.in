@@ -17,7 +17,7 @@
     <WasmNativeWorkload7 Condition="'${PackageVersionNet7}' == '${PackageVersion}'">$(WasmNativeWorkload8)</WasmNativeWorkload7>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)WorkloadManifest.Wasi.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)WorkloadManifest.Wasi.targets" Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'" />
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <_BrowserWorkloadNotSupportedForTFM Condition="$([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '6.0'))">true</_BrowserWorkloadNotSupportedForTFM>
@@ -176,7 +176,7 @@
     <SdkSupportedTargetPlatformVersion Include="1.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsCurrent)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
+  <ItemGroup Condition="(('$(RuntimeIdentifier)' == 'wasi-wasm' and '$(TargetsNet8)' == 'true') or '$(TargetsCurrent)' == 'true') and '$(_MonoWorkloadTargetsMobile)' == 'true'">
     <KnownRuntimePack Update="@(KnownRuntimePack)">
       <!-- FIXMEWASI: workaround for now -->
       <RuntimePackRuntimeIdentifiers Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">%(RuntimePackRuntimeIdentifiers);wasi-wasm</RuntimePackRuntimeIdentifiers>
