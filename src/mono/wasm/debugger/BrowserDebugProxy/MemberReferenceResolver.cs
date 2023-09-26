@@ -382,7 +382,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (rootObject == null)
                 {
                     // it might be a jagged array where the previously added nestedIndexObject should be treated as a new rootObject
-                    // ToDo: fix for nested indexers
                     rootObject = nestedIndexObject.LastOrDefault();
                     if (rootObject != null)
                         nestedIndexObject.RemoveAt(nestedIndexObject.Count - 1);

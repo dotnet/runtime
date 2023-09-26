@@ -539,7 +539,7 @@ namespace DebuggerTests
             {
                 numList = new List<int> { 1, 2 };
                 textList = new List<string> { "1", "2" };
-                numArray = new int[] { 1, 2 };
+                numArray = new int[] { 1, 2, 0 };
                 textArray = new string[] { "1", "2" };
                 numArrayOfArrays = new int[][] { numArray, numArray };
                 numListOfLists = new List<List<int>> { numList, numList };

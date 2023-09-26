@@ -860,7 +860,9 @@ namespace DebuggerTests
                    ("f.textArrayOfArrays[f.idx1][f.idx1]", TString("2")),
                    ("f.textListOfLists[1][1]", TString("2")),
                    ("f.textListOfLists[j][j]", TString("2")),
-                   ("f.textListOfLists[f.idx1][f.idx1]", TString("2")));
+                   ("f.textListOfLists[f.idx1][f.idx1]", TString("2")),
+                   ("f.numArrayOfArrays[f.numArray[f.numList[1]]][f.numList[0]]", TNumber(2))
+                );
 
            });
 
