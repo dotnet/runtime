@@ -11519,6 +11519,14 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     candidates  = refPosition->registerAssignment;
     preferences = currentInterval->registerPreferences;
 
+    regMaskTP updatedPreferences = (preferences & ~currentInterval->registerAversion);
+    if (updatedPreferences != RBM_NONE)
+    {
+        // registerAversion is the best-effort opportunity. Do not update the preference
+        // if registerAversion contains all the registers present in preferences.
+        preferences = updatedPreferences;
+    }
+
     // This is not actually a preference, it's merely to track the lclVar that this
     // "specialPutArg" is using.
     relatedInterval    = currentInterval->isSpecialPutArg ? nullptr : currentInterval->relatedInterval;

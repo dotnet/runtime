@@ -2118,6 +2118,7 @@ class Interval : public Referenceable
 public:
     Interval(RegisterType registerType, regMaskTP registerPreferences)
         : registerPreferences(registerPreferences)
+        , registerAversion(RBM_NONE)
         , relatedInterval(nullptr)
         , assignedReg(nullptr)
         , varNum(0)
@@ -2160,6 +2161,9 @@ public:
 
     // Fixed registers for which this Interval has a preference
     regMaskTP registerPreferences;
+
+    // Registers that should be avoided for this interval
+    regMaskTP registerAversion;
 
     // The relatedInterval is:
     //  - for any other interval, it is the interval to which this interval
