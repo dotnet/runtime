@@ -10,17 +10,8 @@
 
 #ifdef FEATURE_ETW
 
-#ifndef  HOST_UNIX
-// Callback and stack support
-#if !defined(DONOT_DEFINE_ETW_CALLBACK) && !defined(DACCESS_COMPILE)
-
 #include <evntprov.h>
 extern "C" {
-    /* ETW control callback
-         * Desc:        This function handles the ETW control
-         *              callback.
-         * Ret:         success or failure
-     ***********************************************/
     VOID EtwCallback(
         _In_ const GUID * SourceId,
         _In_ uint32_t ControlCode,
@@ -32,15 +23,10 @@ extern "C" {
 }
 
 //
-// User defined callback2
-//
+// Python script generated code will call this function when MCGEN_PRIVATE_ENABLE_CALLBACK_V2 is defined
+// to enable runtime events
 #define MCGEN_PRIVATE_ENABLE_CALLBACK_V2(SourceId, ControlCode, Level, MatchAnyKeyword, MatchAllKeyword, FilterData, CallbackContext) \
         EtwCallback(SourceId, ControlCode, Level, MatchAnyKeyword, MatchAllKeyword, FilterData, CallbackContext)
-
-#endif //!DONOT_DEFINE_ETW_CALLBACK && !DACCESS_COMPILE
-
-#endif //!HOST_UNIX
-
 
 #include "ClrEtwAll.h"
 

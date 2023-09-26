@@ -15,7 +15,6 @@
 #include <windows.h>
 #include <stdio.h>
 #include <errno.h>
-#include <evntprov.h>
 
 #include "holder.h"
 

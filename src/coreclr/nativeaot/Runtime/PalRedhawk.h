@@ -536,9 +536,6 @@ typedef enum _EXCEPTION_DISPOSITION {
 #endif // !_INC_WINDOWS
 #endif // !DACCESS_COMPILE
 
-typedef uint64_t REGHANDLE;
-typedef uint64_t TRACEHANDLE;
-
 extern uint32_t g_RhNumberOfProcessors;
 
 #ifdef TARGET_UNIX

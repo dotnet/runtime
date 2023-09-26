@@ -437,8 +437,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
                 clrallEvents.append(" {return ")
                 clrallEvents.append("EventPipeEventEnabled" + eventName + "()")
 
-                # @TODO Need to add this to nativeaot after switching to using genEtwProvider.py where this fn will be implemented
-                if runtimeFlavor.coreclr or write_xplatheader:
+                if runtimeFlavor.coreclr or write_xplatheader or runtimeFlavor.nativeaot:
                     if os.name == 'posix':
                         clrallEvents.append(" || (XplatEventLogger" +
                         ("::" if target_cpp else "_") +
@@ -782,7 +781,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             Clrallevents.write('#include <PalRedhawk.h>\n')
             Clrallevents.write('#include "clretwallmain.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
-            Clrallevents.write('#ifdef WIN32\n')
+            Clrallevents.write('#ifdef FEATURE_ETW\n')
             Clrallevents.write('#include "ClrEtwAll.h"\n')
             Clrallevents.write('#endif\n')
             Clrallevents.write('\n')

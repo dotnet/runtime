@@ -61,7 +61,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     DEPENDS ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS} ${ETW_PROVIDER_SCRIPT}
   )
 
-  add_custom_target(aot_eventprovider DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventprovider.timestamp)
+  add_custom_target(aot_etw_headers DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/eventprovider.timestamp)
 
 endif()
 
@@ -184,9 +184,6 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 if (CLR_CMAKE_TARGET_WIN32)
     set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
-    set_source_files_properties(${GEN_EVENTPIPE_PROVIDER_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
-    set_source_files_properties(${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
-    # set_source_files_properties(${AOT_EVENTTRACE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")    
 endif()
 
 list(APPEND AOT_EVENTPIPE_SHIM_SOURCES
@@ -226,6 +223,8 @@ if (FEATURE_EVENT_TRACE)
   endif()
 
   if(CLR_CMAKE_TARGET_WIN32)
+    set_source_files_properties(${GEN_EVENTPIPE_PROVIDER_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
+    set_source_files_properties(${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
     set_source_files_properties(${AOT_EVENTTRACE_SOURCES} PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
   endif()
 endif()
@@ -256,7 +255,7 @@ list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
 add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
 add_dependencies(eventpipe-enabled aot_eventing_headers)
 if(CLR_CMAKE_TARGET_WIN32)
-  add_dependencies(eventpipe-enabled aot_eventprovider)
+  add_dependencies(eventpipe-enabled aot_etw_headers)
 endif()
 
 add_library(eventpipe-disabled STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
@@ -265,7 +264,7 @@ add_dependencies(eventpipe-disabled aot_eventing_headers)
 if (CLR_CMAKE_TARGET_WIN32)
   add_library(eventpipe-enabled.GuardCF STATIC ${EVENTPIPE_SOURCES})
   add_dependencies(eventpipe-enabled.GuardCF aot_eventing_headers)
-  add_dependencies(eventpipe-enabled.GuardCF aot_eventprovider)
+  add_dependencies(eventpipe-enabled.GuardCF aot_etw_headers)
   add_library(eventpipe-disabled.GuardCF STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
   add_dependencies(eventpipe-disabled.GuardCF aot_eventing_headers)
   set_target_properties(eventpipe-enabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
