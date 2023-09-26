@@ -100,9 +100,9 @@
       <Sha>3af65e74c8be435668f328c2bf134270b33d4e3a</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.23472.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.23475.2">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>778b0a5de9ec91af8fbbf99b907a56986a90ca6f</Sha>
+      <Sha>e45d334fa3fd29018b70c598eced1938c054884d</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
@@ -402,9 +402,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23472.11">
+    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23474.1">
       <Uri>https://github.com/dotnet/installer</Uri>
-      <Sha>2bcee778ef3e199c3f7517dafb9898f6ac1e6c97</Sha>
+      <Sha>59c97b5166cefc312d1220437a6ec3e4f7bf2ef0</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

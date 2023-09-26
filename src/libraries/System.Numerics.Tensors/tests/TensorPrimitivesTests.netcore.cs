@@ -8,9 +8,9 @@ namespace System.Numerics.Tensors.Tests
 {
     public static partial class TensorPrimitivesTests
     {
+        #region ConvertToHalf
         [Theory]
-        [InlineData(0)]
-        [MemberData(nameof(TensorLengths))]
+        [MemberData(nameof(TensorLengthsIncluding0))]
         public static void ConvertToHalf(int tensorLength)
         {
             using BoundedMemory<float> source = CreateAndFillTensor(tensorLength);
@@ -44,10 +44,11 @@ namespace System.Numerics.Tensors.Tests
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertToHalf(source, destination));
         }
+        #endregion
 
+        #region ConvertToSingle
         [Theory]
-        [InlineData(0)]
-        [MemberData(nameof(TensorLengths))]
+        [MemberData(nameof(TensorLengthsIncluding0))]
         public static void ConvertToSingle(int tensorLength)
         {
             Half[] source = new Half[tensorLength];
@@ -87,5 +88,6 @@ namespace System.Numerics.Tensors.Tests
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.ConvertToSingle(source, destination));
         }
+        #endregion
     }
 }

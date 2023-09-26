@@ -1099,12 +1099,6 @@ namespace System.Numerics.Tensors
 #if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) => x - y;
 #endif
-
-            public static float Invoke(Vector128<float> x) => throw new NotSupportedException();
-            public static float Invoke(Vector256<float> x) => throw new NotSupportedException();
-#if NET8_0_OR_GREATER
-            public static float Invoke(Vector512<float> x) => throw new NotSupportedException();
-#endif
         }
 
         private readonly struct SubtractSquaredOperator : IBinaryOperator
@@ -1133,12 +1127,6 @@ namespace System.Numerics.Tensors
                 Vector512<float> tmp = x - y;
                 return tmp * tmp;
             }
-#endif
-
-            public static float Invoke(Vector128<float> x) => throw new NotSupportedException();
-            public static float Invoke(Vector256<float> x) => throw new NotSupportedException();
-#if NET8_0_OR_GREATER
-            public static float Invoke(Vector512<float> x) => throw new NotSupportedException();
 #endif
         }
 
@@ -1195,12 +1183,6 @@ namespace System.Numerics.Tensors
 #if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) => x / y;
 #endif
-
-            public static float Invoke(Vector128<float> x) => throw new NotSupportedException();
-            public static float Invoke(Vector256<float> x) => throw new NotSupportedException();
-#if NET8_0_OR_GREATER
-            public static float Invoke(Vector512<float> x) => throw new NotSupportedException();
-#endif
         }
 
         private readonly struct NegateOperator : IUnaryOperator
@@ -1256,28 +1238,10 @@ namespace System.Numerics.Tensors
         private readonly struct AbsoluteOperator : IUnaryOperator
         {
             public static float Invoke(float x) => MathF.Abs(x);
-
-            public static Vector128<float> Invoke(Vector128<float> x)
-            {
-                Vector128<uint> raw = x.AsUInt32();
-                Vector128<uint> mask = Vector128.Create((uint)0x7FFFFFFF);
-                return (raw & mask).AsSingle();
-            }
-
-            public static Vector256<float> Invoke(Vector256<float> x)
-            {
-                Vector256<uint> raw = x.AsUInt32();
-                Vector256<uint> mask = Vector256.Create((uint)0x7FFFFFFF);
-                return (raw & mask).AsSingle();
-            }
-
+            public static Vector128<float> Invoke(Vector128<float> x) => Vector128.Abs(x);
+            public static Vector256<float> Invoke(Vector256<float> x) => Vector256.Abs(x);
 #if NET8_0_OR_GREATER
-            public static Vector512<float> Invoke(Vector512<float> x)
-            {
-                Vector512<uint> raw = x.AsUInt32();
-                Vector512<uint> mask = Vector512.Create((uint)0x7FFFFFFF);
-                return (raw & mask).AsSingle();
-            }
+            public static Vector512<float> Invoke(Vector512<float> x) => Vector512.Abs(x);
 #endif
         }
 
@@ -1294,14 +1258,18 @@ namespace System.Numerics.Tensors
         private interface IBinaryOperator
         {
             static abstract float Invoke(float x, float y);
-
             static abstract Vector128<float> Invoke(Vector128<float> x, Vector128<float> y);
-            static abstract float Invoke(Vector128<float> x);
             static abstract Vector256<float> Invoke(Vector256<float> x, Vector256<float> y);
-            static abstract float Invoke(Vector256<float> x);
 #if NET8_0_OR_GREATER
             static abstract Vector512<float> Invoke(Vector512<float> x, Vector512<float> y);
-            static abstract float Invoke(Vector512<float> x);
+#endif
+
+            // Operations for aggregating all lanes in a vector into a single value.
+            // These are not supported on most implementations.
+            static virtual float Invoke(Vector128<float> x) => throw new NotSupportedException();
+            static virtual float Invoke(Vector256<float> x) => throw new NotSupportedException();
+#if NET8_0_OR_GREATER
+            static virtual float Invoke(Vector512<float> x) => throw new NotSupportedException();
 #endif
         }
 

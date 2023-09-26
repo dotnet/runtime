@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.FlowAnalysis;
@@ -420,6 +421,41 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitInvocation (IInvocationOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 			=> ProcessMethodCall (operation, operation.TargetMethod, operation.Instance, operation.Arguments, state);
+
+		public override TValue VisitDelegateCreation (IDelegateCreationOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			if (operation.Target is IFlowAnonymousFunctionOperation lambda) {
+				VisitFlowAnonymousFunction (lambda, state);
+
+				// Instance of a lambda or local function should be the instance of the containing method.
+				// Don't need to track a dataflow value, since the delegate creation will warn if the
+				// lambda or local function has an annotated this parameter.
+				var instance = TopValue;
+				return HandleDelegateCreation (lambda.Symbol, instance, operation);
+			}
+
+			Debug.Assert (operation.Target is IMethodReferenceOperation);
+			if (operation.Target is not IMethodReferenceOperation methodReference)
+				return TopValue;
+
+			TValue instanceValue = Visit (methodReference.Instance, state);
+			IMethodSymbol? method = methodReference.Method;
+			Debug.Assert (method != null);
+			if (method == null)
+				return TopValue;
+
+			// Track references to local functions
+			if (method.OriginalDefinition.ContainingSymbol is IMethodSymbol) {
+				var localFunction = method.OriginalDefinition;
+				Debug.Assert (localFunction.MethodKind == MethodKind.LocalFunction);;
+				var localFunctionCFG = ControlFlowGraph.GetLocalFunctionControlFlowGraphInScope (localFunction);
+				InterproceduralState.TrackMethod (new MethodBodyValue (localFunction, localFunctionCFG));
+			}
+
+			return HandleDelegateCreation (method, instanceValue, operation);
+		}
+
+		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, TValue instance, IOperation operation);
 
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{

@@ -1489,7 +1489,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
                                                            call, putInIncomingArgArea);
 
 #if defined(DEBUG) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-            if (callArg->AbiInfo.IsStruct)
+            if (varTypeIsStruct(callArg->GetSignatureType()))
             {
                 // We use GT_BLK only for non-SIMD struct arguments.
                 if (arg->OperIs(GT_BLK))
