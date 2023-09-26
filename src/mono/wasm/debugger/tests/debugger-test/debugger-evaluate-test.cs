@@ -531,6 +531,7 @@ namespace DebuggerTests
             public int this[float key] => (int)key;
             public int this[decimal key] => (int)key;
             public int this[Indexer indexer] => indexer.index;
+            public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
 
             public double this[int key1, double key2] => key1 + key2;
             public string this[char key1, string key2, string key3] => $"{key1}-{key2}-{key3}";
@@ -567,6 +568,7 @@ namespace DebuggerTests
             double aDouble = 2.34;
             decimal aDecimal = 3.34m;
             Indexer objIdx = new(index: 123);
+            char[] arr = new char[] { 't', 'e', 's', 't' };
         }
     }
 
