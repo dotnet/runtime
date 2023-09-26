@@ -483,7 +483,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 LiteralExpressionSyntax indexingExpression = null;
                 StringBuilder elementIdxStr = new StringBuilder();
                 List<object> indexers = new();
-                int nestedIndexersCnt = 0;
+                // nesting should be resolved in reverse order
+                int nestedIndexersCnt = nestedIndexers.Count - 1;
                 for (int i = 0; i < dimCnt; i++)
                 {
                     JObject indexObject;
@@ -517,12 +518,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     // nested indexing, e.g. x[a[0]], x[a[b[1]]], x[a[0], b[1]]
                     else if (arg.Expression is ElementAccessExpressionSyntax)
                     {
-                        if (nestedIndexers == null || nestedIndexers.Count < nestedIndexersCnt + 1)
+                        if (nestedIndexers == null || nestedIndexersCnt < 0)
                             throw new InvalidOperationException($"Cannot resolve nested indexing");
                         JObject nestedIndexObject = nestedIndexers[nestedIndexersCnt];
                         elementIdxStr.Append(nestedIndexObject["value"].ToString());
                         indexers.Add(nestedIndexObject);
-                        nestedIndexersCnt++;
+                        nestedIndexersCnt--;
                     }
                     // indexing with expressions, e.g. x[a + 1]
                     else
