@@ -7656,7 +7656,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                    supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    supportsGeneralLoads = (childNode->OperIsConst() || childNode->OperIs(GT_IND)) &&
+                                           supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
                     break;
                 }
 
