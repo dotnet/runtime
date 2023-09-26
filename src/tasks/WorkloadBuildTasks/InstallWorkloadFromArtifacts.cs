@@ -45,13 +45,17 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
+        [Required, NotNull]
+        public string         IntermediateOutputsPath { get; set; } = string.Empty;
+
         public bool           SkipUpdateAppRefPack { get; set; }
         public bool           OnlyUpdateManifests{ get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
-        private string AllManifestsStampPath => Path.Combine(SdkPlainInstallPath, ".all-manifests.stamp");
+        private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
         private string _tempDir = string.Empty;
         private string _nugetCachePath = string.Empty;
+        private string _workloadCachePath = string.Empty;
         private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
         {
             AllowTrailingCommas = true,
@@ -63,14 +67,18 @@ namespace Microsoft.Workload.Build.Tasks
 
         public override bool Execute()
         {
-            _tempDir = Path.Combine(Path.GetTempPath(), $"workload-{Path.GetRandomFileName()}");
-            if (Directory.Exists(_tempDir))
-                Directory.Delete(_tempDir, recursive: true);
-            Directory.CreateDirectory(_tempDir);
-            _nugetCachePath = Path.Combine(_tempDir, "nuget-cache");
-
             try
             {
+                if (string.IsNullOrEmpty(IntermediateOutputsPath) || !Directory.Exists(IntermediateOutputsPath))
+                    throw new LogAsErrorException($"Cannot find {nameof(IntermediateOutputsPath)}={IntermediateOutputsPath}");
+
+                _tempDir = Path.Combine(IntermediateOutputsPath, $"workload-{Path.GetRandomFileName()}");
+                if (Directory.Exists(_tempDir))
+                    Directory.Delete(_tempDir, recursive: true);
+                Directory.CreateDirectory(_tempDir);
+                _nugetCachePath = Path.Combine(_tempDir, "nuget-cache");
+                _workloadCachePath = Path.Combine(IntermediateOutputsPath, "workload-cache");
+
                 if (!Directory.Exists(SdkPlainInstallPath))
                     throw new LogAsErrorException($"Cannot find {nameof(SdkPlainInstallPath)}={SdkPlainInstallPath}");
 
@@ -84,6 +92,14 @@ namespace Microsoft.Workload.Build.Tasks
                     Directory.Delete(SdkWithNoWorkloadInstalledPath, recursive: true);
                 Log.LogMessage(MessageImportance.High, $"Copying {SdkPlainInstallPath} to {SdkWithNoWorkloadInstalledPath}");
                 Utils.DirectoryCopy(SdkPlainInstallPath, SdkWithNoWorkloadInstalledPath);
+
+                // FIXME: TODO:
+                if (Directory.Exists(_workloadCachePath))
+                {
+                    // clean up any locally build packages
+                    foreach (string nupkgPath in Directory.EnumerateFiles(_workloadCachePath, "*-dev.nupkg"))
+                        File.Delete(nupkgPath);
+                }
 
                 if (!InstallAllManifests())
                     return false;
@@ -119,7 +135,7 @@ namespace Microsoft.Workload.Build.Tasks
                     if (Directory.Exists(req.TargetPath))
                     {
                         Log.LogMessage(MessageImportance.Low, $"Deleting directory {req.TargetPath}");
-                        Directory.Delete(req.TargetPath, recursive: true);
+                        //Directory.Delete(req.TargetPath, recursive: true);
                     }
                 }
 
@@ -230,11 +246,27 @@ namespace Microsoft.Workload.Build.Tasks
             string nugetConfigPath = Path.Combine(_tempDir, $"NuGet.{Path.GetRandomFileName()}.config");
             File.WriteAllText(nugetConfigPath, nugetConfigContents);
 
+            if (!RunWorkloadInstallCommand(req, nugetConfigPath, $"--download-to-cache {_workloadCachePath}"))
+                return false;
+
+            return RunWorkloadInstallCommand(req, nugetConfigPath, $"--from-cache {_workloadCachePath}");
+        }
+
+        private bool RunWorkloadInstallCommand(InstallWorkloadRequest req, string nugetConfigPath, string extraArgs)
+        {
             // Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** dotnet workload install {req.WorkloadId} **{Environment.NewLine}");
+            string installArgs = $"workload install" +
+                " --skip-manifest-update" +
+                $" --configfile \"{nugetConfigPath}\"" +
+                $" --temp-dir \"{_tempDir}/workload-install-temp\"" +
+                $" {extraArgs}" +
+                //$" --download-to-cache {_workloadCachePath}" +
+                //$" --from-cache {_workloadCachePath}" +
+                $" {req.WorkloadId}";
             (int exitCode, string output) = Utils.TryRunProcess(
                                                     Log,
                                                     Path.Combine(req.TargetPath, "dotnet"),
-                                                    $"workload install --skip-manifest-update --configfile \"{nugetConfigPath}\" --temp-dir \"{_tempDir}/workload-install-temp\" {req.WorkloadId}",
+                                                    installArgs,
                                                     workingDir: _tempDir,
                                                     envVars: new Dictionary<string, string> () {
                                                         ["NUGET_PACKAGES"] = _nugetCachePath
@@ -252,7 +284,7 @@ namespace Microsoft.Workload.Build.Tasks
                 }
                 else
                 {
-                    Log.LogError($"workload install failed with exit code {exitCode}: {output}");
+                    Log.LogError($"workload install failed with exit code {exitCode}.{Environment.NewLine}  Args: {installArgs}{Environment.NewLine} output: {output}");
                 }
 
                 Log.LogMessage(MessageImportance.Low, $"List of the relevant paths in {req.TargetPath}");

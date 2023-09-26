@@ -193,6 +193,7 @@
                      VersionBandForManifestPackages="$(SdkBandVersionForWorkload_FromRuntimeVersions)"
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
+                     IntermediateOutputsPath="$(ArtifactsObjDir)"
                      SdkPlainInstallPath="$(_SdkPlainInstallPath)"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
                      SkipUpdateAppRefPack="true"
