@@ -744,8 +744,9 @@ namespace DebuggerTests
                    ("f[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
                    ("f[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
                    ("f[aChar, \"&\", longString]", TString("9-&-longString")),
-                   ("f[f.numArray[j], aDouble]", TNumber("4.34")) //ElementAccessExpressionSyntax
-                //    ("f[f.numArray[j], f.numArray[0]]", TNumber("3")) //ToFix: multiple ElementAccessExpressionSyntaxes
+                   ("f[f.numArray[j], aDouble]", TNumber("4.34")), //ElementAccessExpressionSyntax
+                   ("f[f.numArray[j], f.numArray[0]]", TNumber("3")) //multiple ElementAccessExpressionSyntaxes
+                //    ("f[f.numArray[f.numList[0]], f.numArray[0]]", TNumber("3")) //ToFix: deeper nested multiple ElementAccessExpressionSyntaxes
                 );
            });
     }

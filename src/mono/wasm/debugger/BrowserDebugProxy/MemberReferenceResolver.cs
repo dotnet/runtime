@@ -369,7 +369,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<JObject> Resolve(
             ElementAccessExpressionSyntax elementAccess,
             Dictionary<string, JObject> memberAccessValues,
-            JObject nestedIndexObject,
+            List<JObject> nestedIndexObject,
             List<VariableDefinition> variableDefinitions,
             CancellationToken token)
         {
@@ -381,9 +381,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (rootObject == null)
                 {
-                    // it might be a jagged array where indexObject should be treated as a new rootObject
-                    rootObject = nestedIndexObject;
-                    nestedIndexObject = null;
+                    // it might be a jagged array where the previously added nestedIndexObject should be treated as a new rootObject
+                    // ToDo: fix for nested indexers
+                    rootObject = nestedIndexObject.LastOrDefault();
+                    if (rootObject != null)
+                        nestedIndexObject.RemoveAt(nestedIndexObject.Count - 1);
                 }
 
                 ElementIndexInfo elementIdxInfo = await GetElementIndexInfo(nestedIndexObject);
@@ -472,7 +474,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 throw new ReturnAsErrorException($"Unable to evaluate element access '{elementAccess}': {ex.Message}", ex.GetType().Name);
             }
 
-            async Task<ElementIndexInfo> GetElementIndexInfo(JObject nestedIndexObject)
+            async Task<ElementIndexInfo> GetElementIndexInfo(List<JObject> nestedIndexers)
             {
                 if (elementAccess.ArgumentList is null)
                     return null;
@@ -481,6 +483,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 LiteralExpressionSyntax indexingExpression = null;
                 StringBuilder elementIdxStr = new StringBuilder();
                 List<object> indexers = new();
+                int nestedIndexersCnt = 0;
                 for (int i = 0; i < dimCnt; i++)
                 {
                     JObject indexObject;
@@ -514,9 +517,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     // nested indexing, e.g. x[a[0]], x[a[b[1]]], x[a[0], b[1]]
                     else if (arg.Expression is ElementAccessExpressionSyntax)
                     {
-                        // ToDo: what if we have multiple nested indexers in multi-dim indexing?
+                        if (nestedIndexers == null || nestedIndexers.Count < nestedIndexersCnt + 1)
+                            throw new InvalidOperationException($"Cannot resolve nested indexing");
+                        JObject nestedIndexObject = nestedIndexers[nestedIndexersCnt];
                         elementIdxStr.Append(nestedIndexObject["value"].ToString());
                         indexers.Add(nestedIndexObject);
+                        nestedIndexersCnt++;
                     }
                     // indexing with expressions, e.g. x[a + 1]
                     else
