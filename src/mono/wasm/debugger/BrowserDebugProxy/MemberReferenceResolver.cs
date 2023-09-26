@@ -401,7 +401,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!context.SdbAgent.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass valueType))
                             throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of scheme '{objectId.Scheme}'");
                         var typeInfo = await context.SdbAgent.GetTypeInfo(valueType.TypeId, token);
-                        if (int.TryParse(elementIdxInfo.ElementIdxStr, out elementIdx) && elementIdx >= 0 && elementIdx < valueType.InlineArray.Count)
+                        if (int.TryParse(elementIdxInfo.ElementIdxStr, out elementIdx) && elementIdx >= 0 && elementIdx < valueType.InlineArray?.Count)
                             return (JObject)valueType.InlineArray[elementIdx]["value"];
                         JObject vtResult = await InvokeGetItemOnJObject(rootObject, valueType.TypeId, objectId, indexObject, elementIdxInfo, token);
                         if (vtResult == null) // ToDo: choose a logical order of operations for inline array, this is messy
@@ -439,7 +439,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (objResult == null)
                             throw new InvalidOperationException($"Cannot apply indexing with [] to an object of type '{rootObject?["className"]?.Value<string>()}'");
                         return objResult;
-                        
                     default:
                         throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of scheme '{objectId.Scheme}'");
                 }

@@ -655,7 +655,7 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateObjectByNonIntLocals() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 14, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 15, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -668,18 +668,17 @@ namespace DebuggerTests
                     ("c[aFloat]", TNumber(1)),
                     ("c[aDouble]", TNumber(2)),
                     ("c[aDecimal]", TNumber(3)),
-                    ("c[arr]", TChar('t')),
-                    ("c[objIdx]", TNumber(123))
-                    
-                    // ("s[longString]", TBool(true)),
-                    // ("s[aBool]", TString("True")),
-                    // ("s[aChar]", TString("res_9")),
-                    // ("s[shortString]", TBool(false)),
-                    // ("s[aFloat]", TNumber(1)),
-                    // ("s[aDouble]", TNumber(2)),
-                    // ("s[aDecimal]", TNumber(3)),
-                    // ("s[arr]", TChar('t')),
-                    // ("s[objIdx]", TNumber(123))
+                    // ("c[arr]", TChar('t')), // ToFix
+                    ("c[objIdx]", TNumber(123)),
+                    ("s[longString]", TBool(true)),
+                    ("s[aBool]", TString("True")),
+                    ("s[aChar]", TString("res_9")),
+                    ("s[shortString]", TBool(false)),
+                    ("s[aFloat]", TNumber(1)),
+                    ("s[aDouble]", TNumber(2)),
+                    ("s[aDecimal]", TNumber(3)),
+                    // ("s[arr]", TChar('t')), // ToFix
+                    ("s[objIdx]", TNumber(123))
                 );
             });
 
@@ -692,9 +691,9 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
                     ("c[cc.textArray[0]]", TBool(false)), // c["1"]
-                    ("c[cc.textArray[j]]", TBool(false)) // c["2"]
-                    // ("s[cc.textArray[0]]", TBool(false)), // s["1"]
-                    // ("s[cc.textArray[j]]", TBool(false)) // s["2"]
+                    ("c[cc.textArray[j]]", TBool(false)), // c["2"]
+                    ("s[cc.textArray[0]]", TBool(false)), // s["1"]
+                    ("s[cc.textArray[j]]", TBool(false)) // s["2"]
                 );
             });
 
