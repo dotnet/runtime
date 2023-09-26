@@ -668,7 +668,7 @@ namespace DebuggerTests
                     ("c[aFloat]", TNumber(1)),
                     ("c[aDouble]", TNumber(2)),
                     ("c[aDecimal]", TNumber(3)),
-                    // ("c[arr]", TChar('t')), // ToFix
+                    ("c[arr]", TChar('t')),
                     ("c[objIdx]", TNumber(123)),
                     ("s[longString]", TBool(true)),
                     ("s[aBool]", TString("True")),
@@ -677,7 +677,7 @@ namespace DebuggerTests
                     ("s[aFloat]", TNumber(1)),
                     ("s[aDouble]", TNumber(2)),
                     ("s[aDecimal]", TNumber(3)),
-                    // ("s[arr]", TChar('t')), // ToFix
+                    ("s[arr]", TChar('t')),
                     ("s[objIdx]", TNumber(123))
                 );
             });
