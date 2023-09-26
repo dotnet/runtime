@@ -26,7 +26,7 @@ using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter
 {
-    public class MachObjectWriter : UnixObjectWriter
+    public sealed class MachObjectWriter : UnixObjectWriter
     {
         private sealed record CompactUnwindCode(string PcStartSymbolName, uint PcLength, uint Code, string LsdaSymbolName = null, string PersonalitySymbolName = null);
 
