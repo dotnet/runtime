@@ -47,7 +47,7 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64
       env:
         ROOTFS_DIR: /crossrootfs/x64
-      options: '--memory=16g --memory-swap=64g'
+      options: '--memory=16g --memory-swap=64g --privileged'
 
     - container: linux_x86
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-x86
