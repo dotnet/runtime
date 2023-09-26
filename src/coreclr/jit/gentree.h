@@ -4347,7 +4347,6 @@ struct CallArgABIInformation
 #endif
         , ArgType(TYP_UNDEF)
         , IsBackFilled(false)
-        , IsStruct(false)
         , PassedByRef(false)
 #if FEATURE_ARG_SPLIT
         , m_isSplit(false)
@@ -4396,8 +4395,6 @@ public:
     // True when the argument fills a register slot skipped due to alignment
     // requirements of previous arguments.
     bool IsBackFilled : 1;
-    // True if this is a struct arg
-    bool IsStruct : 1;
     // True iff the argument is passed by reference.
     bool PassedByRef : 1;
 
