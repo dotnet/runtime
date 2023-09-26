@@ -50,4 +50,4 @@ extends:
           ${{ if ne(variables['System.TeamProject'], 'public') }}:
             runProfile: 'v8'
 
-      - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
+      #- template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
