@@ -64,13 +64,13 @@ namespace Wasm.Build.Tests
             // extract pack names from ./artifacts/bin/dotnet-latest/packs/Microsoft.NET.Runtime.Emscripten.3.1.34.Sdk.linux-x64/8.0.0-rtm.23470.1/data/UnixFilePermissions.xml
             var packNames = unixPermFiles.Select(f => Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(f))))).ToArray();
 
-            Assert.Contains(packNames, name => name!.StartsWith("Microsoft.NET.Runtime.Emscripten.3.1.34.Cache."));
-            Assert.Contains(packNames, name => name!.StartsWith("Microsoft.NET.Runtime.Emscripten.3.1.34.Node."));
-            Assert.Contains(packNames, name => name!.StartsWith("Microsoft.NET.Runtime.Emscripten.3.1.34.Sdk."));
+            Assert.Contains(packNames, name => Regex.IsMatch(name!, "Microsoft\\.NET\\.Runtime\\.Emscripten\\.[0-9\\.]+\\.Cache\\."));
+            Assert.Contains(packNames, name => Regex.IsMatch(name!, "Microsoft\\.NET\\.Runtime\\.Emscripten\\.[0-9\\.]+\\.Node\\."));
+            Assert.Contains(packNames, name => Regex.IsMatch(name!, "Microsoft\\.NET\\.Runtime\\.Emscripten\\.[0-9\\.]+\\.Sdk\\."));
 
             // linux doesn't have Emscripten.Python package, so only 2 there
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                Assert.Contains(packNames, name => name!.StartsWith("Microsoft.NET.Runtime.Emscripten.3.1.34.Python."));
+                Assert.Contains(packNames, name => Regex.IsMatch(name!, "Microsoft\\.NET\\.Runtime\\.Emscripten\\.[0-9\\.]+\\.Python\\."));
 
             Assert.Contains(packNames, name => Regex.IsMatch(name!, "Microsoft.NETCore.App.Runtime.AOT\\..*\\.Cross.browser-wasm"));
         }
