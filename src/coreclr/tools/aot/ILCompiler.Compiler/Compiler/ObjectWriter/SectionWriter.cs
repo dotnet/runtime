@@ -25,33 +25,23 @@ namespace ILCompiler.ObjectWriter
     public struct SectionWriter
     {
         private ObjectWriter _objectWriter;
-        private byte _paddingByte;
 
         public int SectionIndex { get; init; }
-        public Stream Stream { get; init; }
+        public ObjectWriterStream Stream { get; init; }
 
         internal SectionWriter(
             ObjectWriter objectWriter,
             int sectionIndex,
-            Stream stream,
-            byte paddingByte)
+            ObjectWriterStream stream)
         {
             _objectWriter = objectWriter;
-            _paddingByte = paddingByte;
             SectionIndex = sectionIndex;
             Stream = stream;
         }
 
         public void EmitData(ReadOnlyMemory<byte> data)
         {
-            if (Stream is ObjectWriterStream objectWriterStream)
-            {
-                objectWriterStream.AppendData(data);
-            }
-            else
-            {
-                Stream.Write(data.Span);
-            }
+            Stream.AppendData(data);
         }
 
         public void EmitAlignment(int alignment)
@@ -59,16 +49,7 @@ namespace ILCompiler.ObjectWriter
             _objectWriter.UpdateSectionAlignment(SectionIndex, alignment);
 
             int padding = (int)(((Stream.Position + alignment - 1) & ~(alignment - 1)) - Stream.Position);
-            if (Stream is ObjectWriterStream objectWriterStream)
-            {
-                objectWriterStream.AppendPadding(padding);
-            }
-            else
-            {
-                Span<byte> buffer = stackalloc byte[padding];
-                buffer.Fill(_paddingByte);
-                Stream.Write(buffer);
-            }
+            Stream.AppendPadding(padding);
         }
 
         public void EmitRelocation(

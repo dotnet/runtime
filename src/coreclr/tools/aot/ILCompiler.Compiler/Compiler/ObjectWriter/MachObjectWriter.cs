@@ -158,7 +158,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void CreateSection(ObjectNodeSection section, out Stream sectionStream)
+        protected override void CreateSection(ObjectNodeSection section, Stream sectionStream)
         {
             string segmentName = section.Name switch
             {
@@ -191,8 +191,6 @@ namespace ILCompiler.ObjectWriter
                 ".eh_frame" => MachSectionType.Coalesced,
                 _ => section.Type == SectionType.Uninitialized ? MachSectionType.ZeroFill : MachSectionType.Regular
             };
-
-            sectionStream = new ObjectWriterStream();
 
             MachSection machSection = new MachSection(_objectFile, segmentName, sectionName, sectionStream)
             {
