@@ -254,7 +254,7 @@ namespace ILCompiler.ObjectWriter
 
         protected ISet<string> GetUndefinedSymbols()
         {
-            HashSet<string> undefinedSymbolSet = new HashSet<string>();
+            SortedSet<string> undefinedSymbolSet = new SortedSet<string>(StringComparer.Ordinal);
             foreach (var relocationList in _sectionIndexToRelocations)
             foreach (var symbolicRelocation in relocationList)
             {
