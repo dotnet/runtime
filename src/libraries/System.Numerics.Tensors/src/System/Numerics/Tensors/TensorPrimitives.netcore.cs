@@ -52,10 +52,6 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static bool IsNegative(float f) => float.IsNegative(f);
-
-        private static float Log2(float x) => MathF.Log2(x);
-
         private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
             // Compute the same as:
@@ -1257,6 +1253,8 @@ namespace System.Numerics.Tensors
             HorizontalAggregate<TAggregate>(TAggregate.Invoke(x.GetLower(), x.GetUpper()));
 #endif
 
+        private static bool IsNegative(float f) => float.IsNegative(f);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<float> IsNegative(Vector128<float> vector) =>
             Vector128.LessThan(vector.AsInt32(), Vector128<int>.Zero).AsSingle();
@@ -1270,6 +1268,8 @@ namespace System.Numerics.Tensors
         private static Vector512<float> IsNegative(Vector512<float> vector) =>
             Vector512.LessThan(vector.AsInt32(), Vector512<int>.Zero).AsSingle();
 #endif
+
+        private static float Log2(float x) => MathF.Log2(x);
 
         private readonly struct AddOperator : IBinaryOperator
         {

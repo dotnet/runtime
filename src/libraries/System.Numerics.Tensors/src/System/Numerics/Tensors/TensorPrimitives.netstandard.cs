@@ -8,13 +8,6 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
-        private static unsafe bool IsNegative(float f) => *(int*)&f < 0;
-
-        private static unsafe Vector<float> IsNegative(Vector<float> f) =>
-            (Vector<float>)Vector.LessThan((Vector<int>)f, Vector<int>.Zero);
-
-        private static float Log2(float x) => MathF.Log(x, 2);
-
         private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
             // Compute the same as:
@@ -579,6 +572,13 @@ namespace System.Numerics.Tensors
         private static ref Vector<float> AsVector(ref float start, int offset) =>
             ref Unsafe.As<float, Vector<float>>(
                 ref Unsafe.Add(ref start, offset));
+
+        private static unsafe bool IsNegative(float f) => *(int*)&f < 0;
+
+        private static unsafe Vector<float> IsNegative(Vector<float> f) =>
+            (Vector<float>)Vector.LessThan((Vector<int>)f, Vector<int>.Zero);
+
+        private static float Log2(float x) => MathF.Log(x, 2);
 
         private readonly struct AddOperator : IBinaryOperator
         {
