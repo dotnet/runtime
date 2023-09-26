@@ -1242,38 +1242,19 @@ namespace System.Numerics.Tensors
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float HorizontalAggregate<TAggregate>(Vector128<float> x) where TAggregate : struct, IBinaryOperator
-        {
-            float f = x[0];
-            for (int i = 1; i < Vector128<float>.Count; i++)
-            {
-                f = TAggregate.Invoke(f, x[i]);
-            }
-            return f;
-        }
+        private static float HorizontalAggregate<TAggregate>(Vector128<float> x) where TAggregate : struct, IBinaryOperator =>
+            TAggregate.Invoke(
+                TAggregate.Invoke(x[0], x[1]),
+                TAggregate.Invoke(x[2], x[3]));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float HorizontalAggregate<TAggregate>(Vector256<float> x) where TAggregate : struct, IBinaryOperator
-        {
-            float f = x[0];
-            for (int i = 1; i < Vector256<float>.Count; i++)
-            {
-                f = TAggregate.Invoke(f, x[i]);
-            }
-            return f;
-        }
+        private static float HorizontalAggregate<TAggregate>(Vector256<float> x) where TAggregate : struct, IBinaryOperator =>
+            HorizontalAggregate<TAggregate>(TAggregate.Invoke(x.GetLower(), x.GetUpper()));
 
 #if NET8_0_OR_GREATER
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float HorizontalAggregate<TAggregate>(Vector512<float> x) where TAggregate : struct, IBinaryOperator
-        {
-            float f = x[0];
-            for (int i = 1; i < Vector512<float>.Count; i++)
-            {
-                f = TAggregate.Invoke(f, x[i]);
-            }
-            return f;
-        }
+        private static float HorizontalAggregate<TAggregate>(Vector512<float> x) where TAggregate : struct, IBinaryOperator =>
+            HorizontalAggregate<TAggregate>(TAggregate.Invoke(x.GetLower(), x.GetUpper()));
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
