@@ -1374,37 +1374,37 @@ namespace System.Numerics.Tensors
         private readonly struct MaxOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static float Invoke(float result, float current) =>
-                current == result ?
-                    (IsNegative(result) ? current : result) :
-                    (current > result ? current : result);
+            public static float Invoke(float x, float y) =>
+                x == y ?
+                    (IsNegative(x) ? y : x) :
+                    (y > x ? y : x);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<float> Invoke(Vector128<float> result, Vector128<float> current)
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
             {
                 if (AdvSimd.IsSupported)
                 {
-                    return AdvSimd.Max(result, current);
+                    return AdvSimd.Max(x, y);
                 }
 
                 return
-                    Vector128.ConditionalSelect(Vector128.Equals(result, current),
-                        Vector128.ConditionalSelect(IsNegative(result), current, result),
-                        Vector128.Max(result, current));
+                    Vector128.ConditionalSelect(Vector128.Equals(x, y),
+                        Vector128.ConditionalSelect(IsNegative(x), y, x),
+                        Vector128.Max(x, y));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<float> Invoke(Vector256<float> result, Vector256<float> current) =>
-                Vector256.ConditionalSelect(Vector256.Equals(result, current),
-                    Vector256.ConditionalSelect(IsNegative(result), current, result),
-                    Vector256.Max(result, current));
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) =>
+                Vector256.ConditionalSelect(Vector256.Equals(x, y),
+                    Vector256.ConditionalSelect(IsNegative(x), y, x),
+                    Vector256.Max(x, y));
 
 #if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<float> Invoke(Vector512<float> result, Vector512<float> current) =>
-                Vector512.ConditionalSelect(Vector512.Equals(result, current),
-                    Vector512.ConditionalSelect(IsNegative(result), current, result),
-                    Vector512.Max(result, current));
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) =>
+                Vector512.ConditionalSelect(Vector512.Equals(x, y),
+                    Vector512.ConditionalSelect(IsNegative(x), y, x),
+                    Vector512.Max(x, y));
 #endif
 
             public static float Invoke(Vector128<float> x) => HorizontalAggregate<MaxOperator>(x);
@@ -1463,44 +1463,44 @@ namespace System.Numerics.Tensors
         private readonly struct MaxMagnitudeOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static float Invoke(float result, float current)
+            public static float Invoke(float x, float y)
             {
-                float resultMag = MathF.Abs(result), currentMag = MathF.Abs(current);
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
                 return
-                    resultMag == currentMag ?
-                        (IsNegative(result) ? current : result) :
-                        (resultMag > currentMag ? result : current);
+                    xMag == yMag ?
+                        (IsNegative(x) ? y : x) :
+                        (xMag > yMag ? x : y);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<float> Invoke(Vector128<float> result, Vector128<float> current)
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
             {
-                Vector128<float> resultMag = Vector128.Abs(result), currentMag = Vector128.Abs(current);
+                Vector128<float> xMag = Vector128.Abs(x), yMag = Vector128.Abs(y);
                 return
-                    Vector128.ConditionalSelect(Vector128.Equals(resultMag, currentMag),
-                        Vector128.ConditionalSelect(IsNegative(result), current, result),
-                        Vector128.ConditionalSelect(Vector128.GreaterThan(resultMag, currentMag), result, current));
+                    Vector128.ConditionalSelect(Vector128.Equals(xMag, yMag),
+                        Vector128.ConditionalSelect(IsNegative(x), y, x),
+                        Vector128.ConditionalSelect(Vector128.GreaterThan(xMag, yMag), x, y));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<float> Invoke(Vector256<float> result, Vector256<float> current)
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y)
             {
-                Vector256<float> resultMag = Vector256.Abs(result), currentMag = Vector256.Abs(current);
+                Vector256<float> xMag = Vector256.Abs(x), yMag = Vector256.Abs(y);
                 return
-                    Vector256.ConditionalSelect(Vector256.Equals(resultMag, currentMag),
-                        Vector256.ConditionalSelect(IsNegative(result), current, result),
-                        Vector256.ConditionalSelect(Vector256.GreaterThan(resultMag, currentMag), result, current));
+                    Vector256.ConditionalSelect(Vector256.Equals(xMag, yMag),
+                        Vector256.ConditionalSelect(IsNegative(x), y, x),
+                        Vector256.ConditionalSelect(Vector256.GreaterThan(xMag, yMag), x, y));
             }
 
 #if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<float> Invoke(Vector512<float> result, Vector512<float> current)
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
             {
-                Vector512<float> resultMag = Vector512.Abs(result), currentMag = Vector512.Abs(current);
+                Vector512<float> xMag = Vector512.Abs(x), yMag = Vector512.Abs(y);
                 return
-                    Vector512.ConditionalSelect(Vector512.Equals(resultMag, currentMag),
-                        Vector512.ConditionalSelect(IsNegative(result), current, result),
-                        Vector512.ConditionalSelect(Vector512.GreaterThan(resultMag, currentMag), result, current));
+                    Vector512.ConditionalSelect(Vector512.Equals(xMag, yMag),
+                        Vector512.ConditionalSelect(IsNegative(x), y, x),
+                        Vector512.ConditionalSelect(Vector512.GreaterThan(xMag, yMag), x, y));
             }
 #endif
 
@@ -1564,37 +1564,37 @@ namespace System.Numerics.Tensors
         private readonly struct MinOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static float Invoke(float result, float current) =>
-                current == result ?
-                    (IsNegative(current) ? current : result) :
-                    (current < result ? current : result);
+            public static float Invoke(float x, float y) =>
+                x == y ?
+                    (IsNegative(y) ? y : x) :
+                    (y < x ? y : x);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<float> Invoke(Vector128<float> result, Vector128<float> current)
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
             {
                 if (AdvSimd.IsSupported)
                 {
-                    return AdvSimd.Min(result, current);
+                    return AdvSimd.Min(x, y);
                 }
 
                 return
-                    Vector128.ConditionalSelect(Vector128.Equals(result, current),
-                        Vector128.ConditionalSelect(IsNegative(current), current, result),
-                        Vector128.Min(result, current));
+                    Vector128.ConditionalSelect(Vector128.Equals(x, y),
+                        Vector128.ConditionalSelect(IsNegative(y), y, x),
+                        Vector128.Min(x, y));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<float> Invoke(Vector256<float> result, Vector256<float> current) =>
-                Vector256.ConditionalSelect(Vector256.Equals(result, current),
-                    Vector256.ConditionalSelect(IsNegative(current), current, result),
-                    Vector256.Min(result, current));
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) =>
+                Vector256.ConditionalSelect(Vector256.Equals(x, y),
+                    Vector256.ConditionalSelect(IsNegative(y), y, x),
+                    Vector256.Min(x, y));
 
 #if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<float> Invoke(Vector512<float> result, Vector512<float> current) =>
-                Vector512.ConditionalSelect(Vector512.Equals(result, current),
-                    Vector512.ConditionalSelect(IsNegative(current), current, result),
-                    Vector512.Min(result, current));
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) =>
+                Vector512.ConditionalSelect(Vector512.Equals(x, y),
+                    Vector512.ConditionalSelect(IsNegative(y), y, x),
+                    Vector512.Min(x, y));
 #endif
 
             public static float Invoke(Vector128<float> x) => HorizontalAggregate<MinOperator>(x);
@@ -1653,43 +1653,43 @@ namespace System.Numerics.Tensors
         private readonly struct MinMagnitudeOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static float Invoke(float result, float current)
+            public static float Invoke(float x, float y)
             {
-                float resultMag = MathF.Abs(result), currentMag = MathF.Abs(current);
-                return currentMag == resultMag ?
-                    (IsNegative(current) ? current : result) :
-                    (currentMag < resultMag ? current : result);
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
+                return xMag == yMag ?
+                    (IsNegative(y) ? y : x) :
+                    (yMag < xMag ? y : x);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<float> Invoke(Vector128<float> result, Vector128<float> current)
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
             {
-                Vector128<float> resultMag = Vector128.Abs(result), currentMag = Vector128.Abs(current);
+                Vector128<float> xMag = Vector128.Abs(x), yMag = Vector128.Abs(y);
                 return
-                    Vector128.ConditionalSelect(Vector128.Equals(currentMag, resultMag),
-                        Vector128.ConditionalSelect(IsNegative(current), current, result),
-                        Vector128.ConditionalSelect(Vector128.LessThan(currentMag, resultMag), current, result));
+                    Vector128.ConditionalSelect(Vector128.Equals(yMag, xMag),
+                        Vector128.ConditionalSelect(IsNegative(y), y, x),
+                        Vector128.ConditionalSelect(Vector128.LessThan(yMag, xMag), y, x));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector256<float> Invoke(Vector256<float> result, Vector256<float> current)
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y)
             {
-                Vector256<float> resultMag = Vector256.Abs(result), currentMag = Vector256.Abs(current);
+                Vector256<float> xMag = Vector256.Abs(x), yMag = Vector256.Abs(y);
                 return
-                    Vector256.ConditionalSelect(Vector256.Equals(currentMag, resultMag),
-                        Vector256.ConditionalSelect(IsNegative(current), current, result),
-                        Vector256.ConditionalSelect(Vector256.LessThan(currentMag, resultMag), current, result));
+                    Vector256.ConditionalSelect(Vector256.Equals(yMag, xMag),
+                        Vector256.ConditionalSelect(IsNegative(y), y, x),
+                        Vector256.ConditionalSelect(Vector256.LessThan(yMag, xMag), y, x));
             }
 
 #if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector512<float> Invoke(Vector512<float> result, Vector512<float> current)
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
             {
-                Vector512<float> resultMag = Vector512.Abs(result), currentMag = Vector512.Abs(current);
+                Vector512<float> xMag = Vector512.Abs(x), yMag = Vector512.Abs(y);
                 return
-                    Vector512.ConditionalSelect(Vector512.Equals(currentMag, resultMag),
-                        Vector512.ConditionalSelect(IsNegative(current), current, result),
-                        Vector512.ConditionalSelect(Vector512.LessThan(currentMag, resultMag), current, result));
+                    Vector512.ConditionalSelect(Vector512.Equals(yMag, xMag),
+                        Vector512.ConditionalSelect(IsNegative(y), y, x),
+                        Vector512.ConditionalSelect(Vector512.LessThan(yMag, xMag), y, x));
             }
 #endif
 

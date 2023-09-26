@@ -622,16 +622,16 @@ namespace System.Numerics.Tensors
         private readonly struct MaxOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public float Invoke(float result, float current) =>
-                current == result ?
-                    (IsNegative(result) ? current : result) :
-                    (current > result ? current : result);
+            public float Invoke(float x, float y) =>
+                x == y ?
+                    (IsNegative(x) ? y : x) :
+                    (y > x ? y : x);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector<float> Invoke(Vector<float> result, Vector<float> current) =>
-                Vector.ConditionalSelect(Vector.Equals(result, current),
-                    Vector.ConditionalSelect(IsNegative(result), current, result),
-                    Vector.Max(result, current));
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y) =>
+                Vector.ConditionalSelect(Vector.Equals(x, y),
+                    Vector.ConditionalSelect(IsNegative(x), y, x),
+                    Vector.Max(x, y));
         }
 
         private readonly struct MaxPropagateNaNOperator : IBinaryOperator
@@ -653,23 +653,23 @@ namespace System.Numerics.Tensors
         private readonly struct MaxMagnitudeOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public float Invoke(float result, float current)
+            public float Invoke(float x, float y)
             {
-                float resultMag = MathF.Abs(result), currentMag = MathF.Abs(current);
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
                 return
-                    currentMag == resultMag ?
-                        (IsNegative(result) ? current : result) :
-                        (resultMag > currentMag ? result : current);
+                    yMag == xMag ?
+                        (IsNegative(x) ? y : x) :
+                        (xMag > yMag ? x : y);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector<float> Invoke(Vector<float> result, Vector<float> current)
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y)
             {
-                Vector<float> resultMag = Vector.Abs(result), currentMag = Vector.Abs(current);
+                Vector<float> xMag = Vector.Abs(x), yMag = Vector.Abs(y);
                 return
-                    Vector.ConditionalSelect(Vector.Equals(resultMag, currentMag),
-                        Vector.ConditionalSelect(IsNegative(result), current, result),
-                        Vector.ConditionalSelect(Vector.GreaterThan(resultMag, currentMag), result, current));
+                    Vector.ConditionalSelect(Vector.Equals(xMag, yMag),
+                        Vector.ConditionalSelect(IsNegative(x), y, x),
+                        Vector.ConditionalSelect(Vector.GreaterThan(xMag, yMag), x, y));
             }
         }
 
@@ -678,12 +678,8 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Invoke(float x, float y)
             {
-                // Implementation of MathF.MaxMagnitude
-                float ax = MathF.Abs(x), ay = MathF.Abs(y);
-                return
-                    ax > ay || float.IsNaN(ax) ? x :
-                    ax == ay ? (IsNegative(x) ? y : x) :
-                    y;
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
+                return xMag > yMag || float.IsNaN(xMag) || (xMag == yMag && !IsNegative(x)) ? x : y;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -704,16 +700,16 @@ namespace System.Numerics.Tensors
         private readonly struct MinOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public float Invoke(float result, float current) =>
-                current == result ?
-                    (IsNegative(current) ? current : result) :
-                    (current < result ? current : result);
+            public float Invoke(float x, float y) =>
+                x == y ?
+                    (IsNegative(y) ? y : x) :
+                    (y < x ? y : x);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector<float> Invoke(Vector<float> result, Vector<float> current) =>
-                Vector.ConditionalSelect(Vector.Equals(result, current),
-                    Vector.ConditionalSelect(IsNegative(current), current, result),
-                    Vector.Min(result, current));
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y) =>
+                Vector.ConditionalSelect(Vector.Equals(x, y),
+                    Vector.ConditionalSelect(IsNegative(y), y, x),
+                    Vector.Min(x, y));
         }
 
         private readonly struct MinPropagateNaNOperator : IBinaryOperator
@@ -735,23 +731,23 @@ namespace System.Numerics.Tensors
         private readonly struct MinMagnitudeOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public float Invoke(float result, float current)
+            public float Invoke(float x, float y)
             {
-                float resultMag = MathF.Abs(result), currentMag = MathF.Abs(current);
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
                 return
-                    currentMag == resultMag ?
-                        (IsNegative(current) ? current : result) :
-                        (currentMag < resultMag ? current : result);
+                    yMag == xMag ?
+                        (IsNegative(y) ? y : x) :
+                        (yMag < xMag ? y : x);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public Vector<float> Invoke(Vector<float> result, Vector<float> current)
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y)
             {
-                Vector<float> resultMag = Vector.Abs(result), currentMag = Vector.Abs(current);
+                Vector<float> xMag = Vector.Abs(x), yMag = Vector.Abs(y);
                 return
-                    Vector.ConditionalSelect(Vector.Equals(currentMag, resultMag),
-                        Vector.ConditionalSelect(IsNegative(current), current, result),
-                        Vector.ConditionalSelect(Vector.LessThan(currentMag, resultMag), current, result));
+                    Vector.ConditionalSelect(Vector.Equals(yMag, xMag),
+                        Vector.ConditionalSelect(IsNegative(y), y, x),
+                        Vector.ConditionalSelect(Vector.LessThan(yMag, xMag), y, x));
             }
         }
 
@@ -760,12 +756,8 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float Invoke(float x, float y)
             {
-                // Implementation of MathF.MinMagnitude
-                float ax = MathF.Abs(x), ay = MathF.Abs(y);
-                return
-                    ax < ay || float.IsNaN(ax) ? x :
-                    ax == ay ? (IsNegative(x) ? x : y) :
-                    y;
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
+                return xMag < yMag || float.IsNaN(xMag) || (xMag == yMag && IsNegative(x)) ? x : y;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
