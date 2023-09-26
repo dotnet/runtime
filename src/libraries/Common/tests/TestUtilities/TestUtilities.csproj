@@ -8,7 +8,6 @@
       and instead use runtime checks.
     -->
     <TargetFrameworks>$(NetCoreAppMinimum);$(NetFrameworkMinimum)</TargetFrameworks>
-    <EnableLibraryImportGenerator Condition="'$(TargetFramework)' == '$(NetFrameworkMinimum)'">true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)ILLink.Substitutions.AggressiveTrimming.xml"

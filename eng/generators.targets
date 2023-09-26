@@ -17,7 +17,8 @@
                        Condition="'$(EnableLibraryImportGenerator)' == '' and
                                   (
                                     '$(IsSourceProject)' == 'true' or
-                                    '$(IsTestProject)' == 'true'
+                                    '$(IsTestProject)' == 'true' or
+                                    '$(IsTestSupportProject)' == 'true'
                                   ) and
                                   '$(MSBuildProjectExtension)' == '.csproj' and
                                   (
