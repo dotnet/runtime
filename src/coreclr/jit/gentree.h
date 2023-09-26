@@ -7155,7 +7155,6 @@ struct GenTreeIndir : public GenTreeOp
         return gtOp2;
     }
 
-    // these methods provide an interface to the indirection node which
     bool     HasBase();
     bool     HasIndex();
     GenTree* Base();
