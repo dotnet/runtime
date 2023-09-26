@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
@@ -60,7 +61,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			ReflectionAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, existingPattern);
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics ()
+		public IEnumerable<Diagnostic> CollectDiagnostics (RequiresAnalyzerContext context)
 		{
 			foreach (var assignmentPattern in AssignmentPatterns.Values) {
 				foreach (var diagnostic in assignmentPattern.CollectDiagnostics ())
@@ -68,12 +69,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 
 			foreach (var methodCallPattern in MethodCallPatterns.Values) {
-				foreach (var diagnostic in methodCallPattern.CollectDiagnostics ())
+				foreach (var diagnostic in methodCallPattern.CollectDiagnostics (context))
 					yield return diagnostic;
 			}
 
 			foreach (var reflectionAccessPattern in ReflectionAccessPatterns.Values) {
-				foreach (var diagnostic in reflectionAccessPattern.CollectDiagnostics ())
+				foreach (var diagnostic in reflectionAccessPattern.CollectDiagnostics (context))
 					yield return diagnostic;
 			}
 		}

@@ -880,7 +880,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											break;
 										}
 										if (memberDefinition.Name == ".ctor" &&
-											memberDefinition.DeclaringType.FullName == expectedMember.FullName) {
+											(expectedMember is FieldDefinition || expectedMember is PropertyDefinition || memberDefinition.DeclaringType.FullName == expectedMember.FullName)) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;

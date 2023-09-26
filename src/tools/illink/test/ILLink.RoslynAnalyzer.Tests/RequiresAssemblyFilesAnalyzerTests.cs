@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
-	ILLink.RoslynAnalyzer.RequiresAssemblyFilesAnalyzer,
+	ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
 	ILLink.CodeFix.RequiresAssemblyFilesCodeFixProvider>;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -82,7 +82,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (TestRequiresAssemblyFieldsOnEvent,
 				// (11,17): warning IL3002: Using member 'C.E' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 3, 11, 4).WithArguments ("C.E.add", "", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 3, 11, 26).WithArguments ("C.E.add", "", ""));
 		}
 
 		[Fact]
@@ -106,7 +106,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (TestRequiresAssemblyFilesOnProperty,
 				// (11,3): warning IL3002: Using member 'C.P' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 3, 11, 4).WithArguments ("C.P.set", "", ""),
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (11, 3, 11, 12).WithArguments ("C.P.set", "", ""),
 				// (12,35): warning IL3002: Using member 'C.P' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
 				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (12, 35, 12, 36).WithArguments ("C.P.get", "", ""));
 		}
@@ -143,7 +143,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (TestRequiresAssemblyFilesOnMethodInsideProperty,
 				// (23,3): warning IL3002: Using member 'C.P' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (23, 3, 23, 4).WithArguments ("C.P.set", "", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (23, 3, 23, 12).WithArguments ("C.P.set", "", ""));
 		}
 
 		[Fact]

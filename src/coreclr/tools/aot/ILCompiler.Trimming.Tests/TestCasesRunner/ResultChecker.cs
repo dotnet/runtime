@@ -311,7 +311,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											break;
 										}
 										if (methodDesc.IsConstructor &&
-											new AssemblyQualifiedToken (methodDesc.OwningType).Equals(new AssemblyQualifiedToken (expectedMember))) {
+											(expectedMember is FieldDefinition || expectedMember is PropertyDefinition || new AssemblyQualifiedToken (methodDesc.OwningType).Equals(new AssemblyQualifiedToken (expectedMember)))) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;

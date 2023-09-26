@@ -25,6 +25,12 @@ namespace ILLink.RoslynAnalyzer
 		internal const string DynamicallyAccessedMembersAttribute = nameof (DynamicallyAccessedMembersAttribute);
 		public const string attributeArgument = "attributeArgument";
 		public const string FullyQualifiedDynamicallyAccessedMembersAttribute = "System.Diagnostics.CodeAnalysis." + DynamicallyAccessedMembersAttribute;
+		public static Lazy<ImmutableArray<RequiresAnalyzerBase>> RequiresAnalyzers { get; } = new Lazy<ImmutableArray<RequiresAnalyzerBase>> (GetRequiresAnalyzers);
+		static ImmutableArray<RequiresAnalyzerBase> GetRequiresAnalyzers () =>
+			ImmutableArray.Create<RequiresAnalyzerBase> (
+				new RequiresAssemblyFilesAnalyzer (),
+				new RequiresUnreferencedCodeAnalyzer (),
+				new RequiresDynamicCodeAnalyzer ());
 
 		public static ImmutableArray<DiagnosticDescriptor> GetSupportedDiagnostics ()
 		{
@@ -49,6 +55,12 @@ namespace ILLink.RoslynAnalyzer
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnrecognizedTypeNameInTypeGetType));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.UnrecognizedParameterInMethodCreateInstance));
 			diagDescriptorsArrayBuilder.Add (DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed));
+
+			foreach (var requiresAnalyzer in RequiresAnalyzers.Value) {
+				foreach (var diagnosticDescriptor in requiresAnalyzer.SupportedDiagnostics)
+					diagDescriptorsArrayBuilder.Add (diagnosticDescriptor);
+			}
+
 			return diagDescriptorsArrayBuilder.ToImmutable ();
 
 			void AddRange (DiagnosticId first, DiagnosticId last)
@@ -72,17 +84,16 @@ namespace ILLink.RoslynAnalyzer
 				context.EnableConcurrentExecution ();
 			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.ReportDiagnostics);
 			context.RegisterCompilationStartAction (context => {
-				if (!context.Options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer, context.Compilation))
+				if (!context.Options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer) &&
+					!context.Options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer) &&
+					!context.Options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableAotAnalyzer))
 					return;
 
 				context.RegisterOperationBlockAction (context => {
-					if (context.OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
-						return;
-
 					foreach (var operationBlock in context.OperationBlocks) {
 						TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, operationBlock);
 						trimDataFlowAnalysis.InterproceduralAnalyze ();
-						foreach (var diagnostic in trimDataFlowAnalysis.TrimAnalysisPatterns.CollectDiagnostics ())
+						foreach (var diagnostic in trimDataFlowAnalysis.CollectDiagnostics ())
 							context.ReportDiagnostic (diagnostic);
 					}
 				});

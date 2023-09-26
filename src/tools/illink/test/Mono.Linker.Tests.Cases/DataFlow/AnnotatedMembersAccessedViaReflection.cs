@@ -270,6 +270,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var _ = new Action<Type> (AnnotatedMethodParameters.MethodWithSingleAnnotatedParameter);
 			}
 
+			[RequiresUnreferencedCode ("test")]
+			static void LdftnSuppressedByRequiresUnreferencedCode ()
+			{
+				var _ = new Action<Type> (AnnotatedMethodParameters.MethodWithSingleAnnotatedParameter);
+			}
+
 			[ExpectedWarning ("IL2111")]
 			static void 
 			LdftnOnLambda ()
@@ -321,6 +327,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", "ReflectionSuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicDependencySuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicallyAccessedMembersSuppressedByRUC", "test")]
+			[ExpectedWarning ("IL2026", "LdftnSuppressedByRequiresUnreferencedCode", "test")]
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
@@ -334,6 +341,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", "ReflectionSuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicDependencySuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2026", "DynamicallyAccessedMembersSuppressedByRUC", "test")]
+			[ExpectedWarning ("IL2026", "LdftnSuppressedByRequiresUnreferencedCode", "test")]
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
@@ -363,6 +371,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DynamicallyAccessedMembers ();
 				DynamicallyAccessedMembersSuppressedByRUC ();
 				Ldftn ();
+				LdftnSuppressedByRequiresUnreferencedCode ();
 				LdftnOnLambda ();
 				LdftnOnLocalMethod ();
 				LdftnOnLambdaTriggersLamdaAnalysis ();

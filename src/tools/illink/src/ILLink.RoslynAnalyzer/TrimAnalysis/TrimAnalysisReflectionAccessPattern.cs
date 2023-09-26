@@ -5,12 +5,13 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices.ComTypes;
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
-
+using Microsoft.CodeAnalysis.Diagnostics;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
@@ -38,6 +39,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			Debug.Assert (Operation == other.Operation);
 			Debug.Assert (SymbolEqualityComparer.Default.Equals (ReferencedMethod, other.ReferencedMethod));
+			Debug.Assert (SymbolEqualityComparer.Default.Equals (OwningSymbol, other.OwningSymbol));
 
 			return new TrimAnalysisReflectionAccessPattern (
 				ReferencedMethod,
@@ -46,11 +48,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				OwningSymbol);
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics ()
+		public IEnumerable<Diagnostic> CollectDiagnostics (RequiresAnalyzerContext context)
 		{
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-			foreach (var diagnostic in ReflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod (diagnosticContext, ReferencedMethod))
-				yield return diagnostic;
+			if (!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _)) {
+				foreach (var diagnostic in ReflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod (diagnosticContext, ReferencedMethod))
+					yield return diagnostic;
+			}
+
+			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers) {
+				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, ReferencedMethod, OwningSymbol, context, out Diagnostic? diag))
+					yield return diag;
+			}
 		}
 	}
 }

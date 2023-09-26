@@ -1,14 +1,17 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.InteropServices.ComTypes;
+using ILLink.Shared;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
-
+using Microsoft.CodeAnalysis.Diagnostics;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
@@ -47,6 +50,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			Debug.Assert (Operation == other.Operation);
 			Debug.Assert (SymbolEqualityComparer.Default.Equals (CalledMethod, other.CalledMethod));
+			Debug.Assert (SymbolEqualityComparer.Default.Equals (OwningSymbol, other.OwningSymbol));
 			Debug.Assert (Arguments.Length == other.Arguments.Length);
 
 			var argumentsBuilder = ImmutableArray.CreateBuilder<MultiValue> ();
@@ -62,18 +66,26 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				OwningSymbol);
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics ()
+		public IEnumerable<Diagnostic> CollectDiagnostics (RequiresAnalyzerContext context)
 		{
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-			HandleCallAction handleCallAction = new (diagnosticContext, OwningSymbol, Operation);
-			MethodProxy method = new (CalledMethod);
-			IntrinsicId intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
-			if (!handleCallAction.Invoke (method, Instance, Arguments, intrinsicId, out _)) {
-				// If this returns false it means the intrinsic needs special handling:
-				// case IntrinsicId.TypeDelegator_Ctor:
-				//    No diagnostics to report - this is an "identity" operation for data flow, can't produce diagnostics on its own
-				// case IntrinsicId.Array_Empty:
-				//    No diagnostics to report - constant value
+
+			if (!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _)) {
+				HandleCallAction handleCallAction = new (diagnosticContext, OwningSymbol, Operation);
+				MethodProxy method = new (CalledMethod);
+				IntrinsicId intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
+				if (!handleCallAction.Invoke (method, Instance, Arguments, intrinsicId, out _)) {
+					// If this returns false it means the intrinsic needs special handling:
+					// case IntrinsicId.TypeDelegator_Ctor:
+					//    No diagnostics to report - this is an "identity" operation for data flow, can't produce diagnostics on its own
+					// case IntrinsicId.Array_Empty:
+					//    No diagnostics to report - constant value
+				}
+			}
+
+			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers) {
+				if (requiresAnalyzer.CheckAndCreateRequiresDiagnostic (Operation, CalledMethod, OwningSymbol, context, out Diagnostic? diag))
+					diagnosticContext.AddDiagnostic (diag);
 			}
 
 			return diagnosticContext.Diagnostics;

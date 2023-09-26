@@ -227,6 +227,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				EventRequires += (object sender, EventArgs e) => throw new NotImplementedException ();
 				EventRequires -= (object sender, EventArgs e) => throw new NotImplementedException ();
+				EventRequires = (object sender, EventArgs e) => throw new NotImplementedException (); // no warning on field assignment
+				EventRequires (null, null); // no warning on invocation
 			}
 
 			[ExpectedWarning("IL3002", "--Requires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]

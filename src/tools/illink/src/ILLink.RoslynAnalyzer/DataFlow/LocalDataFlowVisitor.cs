@@ -77,6 +77,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// If not, the BranchValue represents a return or throw value associated with the FallThroughSuccessor of this block.
 			// (ConditionalSuccessor == null iff ConditionKind == None).
 			// If we get here, we should be analyzing a method body, not an attribute instance since attributes can't have throws or return statements
+			// Field/property initializers also can't have throws or return statements.
 			Debug.Assert (OwningSymbol is IMethodSymbol);
 
 			// The BranchValue for a thrown value is not involved in dataflow tracking.
@@ -201,6 +202,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					// even though a property setter has no return value.
 					return value;
 				}
+			case IEventReferenceOperation eventRef: {
+					// Handles assignment to an event like 'Event = Handler;', which is a write to the underlying field,
+					// not a call to an event accessor method. There is no Roslyn API to access the field,
+					// so just visit the instance and the value. https://github.com/dotnet/roslyn/issues/40103
+					Visit (eventRef.Instance, state);
+					return Visit (operation.Value, state);
+				}
 			case IImplicitIndexerReferenceOperation indexerRef: {
 					// An implicit reference to an indexer where the argument is a System.Index
 					TValue instanceValue = Visit (indexerRef.Instance, state);
@@ -292,10 +300,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// also produces warnings for ref params/locals/returns.
 			// https://github.com/dotnet/linker/issues/2632
 			// https://github.com/dotnet/linker/issues/2158
-			case IEventReferenceOperation:
-				// An event assignment is an assignment to the generated backing field for
-				// auto-implemented events. There is no Roslyn API to access the field, so
-				// skip this. https://github.com/dotnet/roslyn/issues/40103
 				Visit (targetOperation, state);
 				break;
 
@@ -359,6 +363,26 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 
 			return value;
+		}
+
+		public override TValue VisitEventAssignment (IEventAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			var eventReference = (IEventReferenceOperation) operation.EventReference;
+			TValue instanceValue = Visit (eventReference.Instance, state);
+			TValue value = Visit (operation.HandlerValue, state);
+			if (operation.Adds) {
+				IMethodSymbol? addMethod = eventReference.Event.AddMethod;
+				Debug.Assert (addMethod != null);
+				if (addMethod != null)
+					HandleMethodCall (addMethod, instanceValue, ImmutableArray.Create (value), operation);
+				return value;
+			} else {
+				IMethodSymbol? removeMethod = eventReference.Event.RemoveMethod;
+				Debug.Assert (removeMethod != null);
+				if (removeMethod != null)
+					HandleMethodCall (removeMethod, instanceValue, ImmutableArray.Create (value), operation);
+				return value;
+			}
 		}
 
 		TValue GetFlowCaptureValue (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
@@ -459,6 +483,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
+			// Writing to a property should not go through this path.
+			Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read));
 			if (!operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read))
 				return TopValue;
 
@@ -473,6 +499,19 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				arguments.Add (Visit (val, state));
 
 			return HandleMethodCall (getMethod!, instanceValue, arguments.ToImmutableArray (), operation);
+		}
+
+		public override TValue VisitEventReference (IEventReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			// Writing to an event should not go through this path.
+			Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read));
+			if (!operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read))
+				return TopValue;
+
+			Visit (operation.Instance, state);
+			// Accessing event for reading retrieves the event delegate from the event's backing field,
+			// so there is no method call to handle.
+			return TopValue;
 		}
 
 		public override TValue VisitImplicitIndexerReference (IImplicitIndexerReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
@@ -540,7 +579,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitFlowAnonymousFunction (IFlowAnonymousFunctionOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			Debug.Assert (operation.Symbol.ContainingSymbol is IMethodSymbol);
+			Debug.Assert (operation.Symbol.ContainingSymbol is IMethodSymbol or IFieldSymbol);
 			var lambda = operation.Symbol;
 			Debug.Assert (lambda.MethodKind == MethodKind.LambdaMethod);
 			var lambdaCFG = ControlFlowGraph.GetAnonymousFunctionControlFlowGraphInScope (operation);
