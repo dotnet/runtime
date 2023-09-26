@@ -172,9 +172,12 @@
     </ItemGroup>
   </Target>
 
-  <!-- Don't use the TargetingPack Analyzers unless explicitly enabled -->
+  <!-- Don't use the TargetingPack Analyzers for current .NET version unless explicitly enabled -->
   <Target Name="RemoveTargetingPackAnalyzers"
-          Condition="'$(UseLocalTargetingRuntimePack)' != 'true' AND '$(UseTargetingPackAnalyzers)' != 'true'"
+          Condition="'$(UseLocalTargetingRuntimePack)' != 'true' and
+                     '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                     '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)' and
+                     '$(UseTargetingPackAnalyzers)' != 'true'"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
       <Analyzer Remove="@(Analyzer)" Condition="'%(Analyzer.FrameworkReferenceName)' != ''" />
