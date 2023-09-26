@@ -2213,7 +2213,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, args);
 		return NULL;
 #elif defined(TARGET_AMD64)
-		// FIXME:
+		if (COMPILE_LLVM (cfg)) {
+			if (vector_size == 128 && (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1))
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, args);
+		}
+		// There is no variable shuffle until avx512
 		return NULL;
 #else
 		return NULL;
