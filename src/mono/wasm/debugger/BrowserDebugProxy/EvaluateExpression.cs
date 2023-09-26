@@ -394,11 +394,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 index = await resolver.Resolve(elementAccess, replacer.memberAccessValues, nestedIndexers, replacer.variableDefinitions, token);
                 if (index == null)
                     throw new ReturnAsErrorException($"Failed to resolve element access for {elementAccess}", "ReferenceError");
-                if (elementAccess.Expression is ElementAccessExpressionSyntax)
-                {
-                    // we can clean all the previously collected nested indexers, they were used already
-                    nestedIndexers = new();
-                }
                 nestedIndexers.Add(index);
             }
             values.Add(index);

@@ -521,6 +521,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (nestedIndexers == null || nestedIndexersCnt < 0)
                             throw new InvalidOperationException($"Cannot resolve nested indexing");
                         JObject nestedIndexObject = nestedIndexers[nestedIndexersCnt];
+                        nestedIndexers.RemoveAt(nestedIndexersCnt);
                         elementIdxStr.Append(nestedIndexObject["value"].ToString());
                         indexers.Add(nestedIndexObject);
                         nestedIndexersCnt--;

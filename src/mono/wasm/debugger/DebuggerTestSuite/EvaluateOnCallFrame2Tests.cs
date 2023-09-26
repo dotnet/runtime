@@ -746,8 +746,8 @@ namespace DebuggerTests
                    ("f[aChar, \"&\", longString]", TString("9-&-longString")),
                    ("f[f.numArray[j], aDouble]", TNumber("4.34")), //ElementAccessExpressionSyntax
                    ("f[f.numArray[j], f.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
-                   ("f[f.numArray[f.numList[0]], f.numArray[i]]", TNumber("3"))
-                   // ("f[f.numArray[f.numList[0]], f.numArray[f.numArray[i]]", TNumber("4")) // ToFix
+                   ("f[f.numArray[f.numList[0]], f.numArray[i]]", TNumber("3")),
+                   ("f[f.numArray[f.numList[0]], f.numArray[f.numArray[i]]]", TNumber("4"))
                 ); 
            });
     }
