@@ -151,7 +151,7 @@
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net8"
                             Variant="net8"
                             Version="$(PackageVersionForWorkloadManifests)" />
-      <WorkloadCombinationsToInstall Include="latest" Variants="latest,net8" />
+      <WorkloadCombinationsToInstall Include="latest" Variants="latest;net8" />
     </ItemGroup>
   </Target>
 </Project>
