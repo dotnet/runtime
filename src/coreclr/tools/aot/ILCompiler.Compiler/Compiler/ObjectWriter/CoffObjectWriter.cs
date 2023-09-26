@@ -298,7 +298,7 @@ namespace ILCompiler.ObjectWriter
                     // Write an overflow relocation with the real count of relocations
                     sectionHeader.NumberOfRelocations = ushort.MaxValue;
                     sectionHeader.SectionCharacteristics |= SectionCharacteristics.LinkerNRelocOvfl;
-                    coffRelocations.Add(new CoffRelocation { VirtualAddress = (uint)relocationList.Count });
+                    coffRelocations.Add(new CoffRelocation { VirtualAddress = (uint)(relocationList.Count + 1) });
                 }
 
                 if (_machine == Machine.Amd64)
