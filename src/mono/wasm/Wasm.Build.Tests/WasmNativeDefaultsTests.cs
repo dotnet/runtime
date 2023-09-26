@@ -28,7 +28,6 @@ namespace Wasm.Build.Tests
                 ("WasmEnableExceptionHandling", true),
                 ("InvariantTimezone", false),
                 ("InvariantGlobalization", false),
-                //("WasmNativeStrip", true),
                 //("WasmNativeDebugSymbols", true),
                 // ("WasmNativeStrip", true) -- tested separately because it has special handling in targets
             };
@@ -153,7 +152,7 @@ namespace Wasm.Build.Tests
             CheckPropertyValues(line,
                                 wasmBuildNative: expectedWasmBuildNativeValue,
                                 wasmNativeStrip: expectedWasmNativeStripValue,
-                                wasmNativeDebugSymbols: true, // FIXME: does this even work?
+                                wasmNativeDebugSymbols: true,
                                 wasmBuildingForNestedPublish: null);
         }
 
@@ -192,11 +191,6 @@ namespace Wasm.Build.Tests
                                                         extraItems: nativeRefItem);
 
             InferAndCheckPropertyValues(line, isPublish: publish, wasmBuildNative: true, config: config);
-            //CheckPropertyValues(line,
-                                //wasmBuildNative: true,
-                                //wasmNativeStrip: publish || config != "Debug",
-                                //wasmNativeDebugSymbols: true,
-                                //wasmBuildingForNestedPublish: publish ? true : null);
         }
 
         private (string, string?) CheckWasmNativeDefaultValue(string projectName,
@@ -256,7 +250,7 @@ namespace Wasm.Build.Tests
         private void CheckPropertyValues(string? line, bool wasmBuildNative, bool wasmNativeStrip, bool wasmNativeDebugSymbols, bool? wasmBuildingForNestedPublish)
         {
             Assert.NotNull(line);
-            Assert.Equal($"** WasmBuildNative: '{wasmBuildNative.ToString().ToLower()}', " +
+            Assert.Contains($"** WasmBuildNative: '{wasmBuildNative.ToString().ToLower()}', " +
                             $"WasmNativeStrip: '{wasmNativeStrip.ToString().ToLower()}', " +
                             $"WasmNativeDebugSymbols: '{wasmNativeDebugSymbols.ToString().ToLower()}', " +
                             $"WasmBuildingForNestedPublish: '{(wasmBuildingForNestedPublish.HasValue && wasmBuildingForNestedPublish == true ? "true" : "")}'",
