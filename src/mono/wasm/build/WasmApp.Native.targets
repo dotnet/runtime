@@ -148,22 +148,16 @@
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
     </PropertyGroup>
 
-    <Message Text="_SetDebugSymbolsPropertiesDefault WasmNativeStrip: $(WasmNativeStrip), WasmNativeDebugSymbols: $(WasmNativeDebugSymbols)" />
-
     <!-- Default with nothing set: Build+relink+config=debug -->
-    <!--<PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">-->
-      <!--<WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>-->
-      <!-- this will add common=-g, and not strip -->
-      <!--<WasmNativeStrip>false</WasmNativeStrip>-->
-    <!--</PropertyGroup>-->
-    <!--<PropertyGroup>-->
-      <!--<WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>-->
+    <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
+      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+      <WasmNativeStrip>false</WasmNativeStrip>
+    </PropertyGroup>
 
-      <!-- default -->
-      <!--<WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(WasmNativeDebugSymbols)' == 'true'">false</WasmNativeStrip>-->
-      <!-- this will strip but not add any -g -->
-      <!--<WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>-->
-    <!--</PropertyGroup>-->
+    <PropertyGroup>
+      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+    </PropertyGroup>
 
     <PropertyGroup>
       <!--<WasmBuildNative Condition="'$(WasmBuildNative)' == '' and ('$(WasmNativeStrip)' == 'true' or '$(WasmNativeDebugSymbols)' == 'true')">true</WasmBuildNative>-->
@@ -177,6 +171,8 @@
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'">false</WasmBuildNative>
     </PropertyGroup>
+
+    <Message Text="_SetDebugSymbolsPropertiesDefault WasmNativeStrip: $(WasmNativeStrip), WasmNativeDebugSymbols: $(WasmNativeDebugSymbols)" />
   </Target>
 
   <Target Name="_WasmBuildNativeCore" DependsOnTargets="$(_WasmBuildNativeCoreDependsOn)"  Condition="'$(WasmBuildNative)' == 'true'" />
@@ -189,9 +185,6 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
       <_EmccDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_EmccDefaultFlagsRsp>
       <_EmccDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-link.rsp'))</_EmccDefaultLinkFlagsRsp>
-      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">false</WasmNativeStrip>
-      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
-      <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
