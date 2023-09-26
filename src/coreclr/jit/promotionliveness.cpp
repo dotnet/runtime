@@ -243,8 +243,6 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitVec& useSet, Bit
 
             bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
             bool isUseOfRemainder = isUse && agg->Unpromoted.Intersects(StructSegments::Segment(offs, offs + size));
-            // TODO-CQ: We could also try to figure out if a use actually touches the remainder, e.g. in some cases
-            // a struct use may consist only of promoted fields and does not actually use the remainder.
             MarkIndex(baseIndex, isUseOfRemainder, isFullDefOfRemainder, useSet, defSet);
         }
     }
