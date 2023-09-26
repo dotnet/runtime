@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CrossHostArch Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">$(BuildArchitecture)</CrossHostArch>
+    <OutputPath>$(RuntimeBinDir)/$(BuildArchitecture)/crossgen2</OutputPath>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+  <Import Project="crossgen2.props" />
+</Project>
