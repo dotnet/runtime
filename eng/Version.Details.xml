@@ -90,19 +90,19 @@
       <Sha>89be445dd4936157533ad96bafb95f701430653a</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100.Transport" Version="8.0.0-rc.2.23473.3">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100.Transport" Version="8.0.0-rtm.23473.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>8e857c92bff556d919f5f904bd9c777aade4afba</Sha>
+      <Sha>41db2322780b16e4ddadcebca41dc86c7806ed9a</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="8.0.0-alpha.1.23469.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="8.0.0-alpha.1.23471.1">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>d825c6693d4e26f63aaa93c3c1d057faa098e347</Sha>
+      <Sha>7b55da982fc6e71c1776c4de89111aee0eecb45a</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="8.0.0-alpha.1.23468.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="8.0.0-alpha.1.23471.2">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>e9d6489787a5ea5400a31dfa34aa6ad6b590de9b</Sha>
+      <Sha>6dbf3aaa0fc9664df86462f5c70b99800934fccd</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
@@ -334,21 +334,21 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>1d451c32dda2314c721adbf8829e1c0cd4e681ff</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.23465.3">
+    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.23471.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>f67c4e806a744f7274aed9493e4c8d39a3c73445</Sha>
+      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.23465.3">
+    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.23471.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>f67c4e806a744f7274aed9493e4c8d39a3c73445</Sha>
+      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.23465.3">
+    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.23471.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>f67c4e806a744f7274aed9493e4c8d39a3c73445</Sha>
+      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.23465.3">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.23471.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>f67c4e806a744f7274aed9493e4c8d39a3c73445</Sha>
+      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="8.0.0-alpha.0.23461.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
@@ -358,18 +358,18 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>99168dcff56809205e7ef8530d1256f3a07fab1f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.8.0-3.23469.1">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.8.0-3.23472.2">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>9233e36abc5e2ca263dbd4d1616f35623440a935</Sha>
+      <Sha>aa7e4da5341196be494ca4bb0c719d7bef3e396a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.8.0-3.23469.1">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.8.0-3.23472.2">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>9233e36abc5e2ca263dbd4d1616f35623440a935</Sha>
+      <Sha>aa7e4da5341196be494ca4bb0c719d7bef3e396a</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.8.0-3.23469.1">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.8.0-3.23472.2">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>9233e36abc5e2ca263dbd4d1616f35623440a935</Sha>
+      <Sha>aa7e4da5341196be494ca4bb0c719d7bef3e396a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.23472.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
@@ -384,13 +384,13 @@
       <Sha>d10b02ae5cc670609d920a672985ed4456bdd6b6</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23465.3">
+    <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23471.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>f67c4e806a744f7274aed9493e4c8d39a3c73445</Sha>
+      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23465.3">
+    <Dependency Name="optimization.linux-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23471.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>f67c4e806a744f7274aed9493e4c8d39a3c73445</Sha>
+      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
     </Dependency>
     <!-- Necessary for source-build. This allows the package to be retrieved from previously-source-built artifacts
          and flow in as dependencies of the packages produced by runtime. -->
