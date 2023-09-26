@@ -1036,7 +1036,7 @@ namespace Internal.Reflection.Execution
             {
                 get
                 {
-                    ParameterInfo[] parameters = _methodBase.GetParametersNoCopy();
+                    ReadOnlySpan<ParameterInfo> parameters = _methodBase.GetParametersAsSpan();
                     LowLevelList<RuntimeTypeHandle> result = new LowLevelList<RuntimeTypeHandle>(parameters.Length);
 
                     for (int i = 0; i < parameters.Length; i++)
@@ -1081,7 +1081,7 @@ namespace Internal.Reflection.Execution
             {
                 get
                 {
-                    ParameterInfo[] parameters = _methodBase.GetParametersNoCopy();
+                    ReadOnlySpan<ParameterInfo> parameters = _methodBase.GetParametersAsSpan();
                     bool[] result = new bool[parameters.Length + 1];
 
                     MethodInfo reflectionMethodInfo = _methodBase as MethodInfo;
@@ -1101,8 +1101,8 @@ namespace Internal.Reflection.Execution
                 {
                     Debug.Assert(_metadataReader != null && !_methodHandle.Equals(default(MethodHandle)));
 
-                    _returnTypeAndParametersHandlesCache = new Handle[_methodBase.GetParametersNoCopy().Length + 1];
-                    _returnTypeAndParametersTypesCache = new Type[_methodBase.GetParametersNoCopy().Length + 1];
+                    _returnTypeAndParametersHandlesCache = new Handle[_methodBase.GetParametersAsSpan().Length + 1];
+                    _returnTypeAndParametersTypesCache = new Type[_methodBase.GetParametersAsSpan().Length + 1];
 
                     MethodSignature signature = _methodHandle.GetMethod(_metadataReader).Signature.GetMethodSignature(_metadataReader);
 
@@ -1116,7 +1116,7 @@ namespace Internal.Reflection.Execution
                     foreach (Handle paramSigHandle in signature.Parameters)
                     {
                         _returnTypeAndParametersHandlesCache[index] = paramSigHandle;
-                        _returnTypeAndParametersTypesCache[index] = _methodBase.GetParametersNoCopy()[index - 1].ParameterType;
+                        _returnTypeAndParametersTypesCache[index] = _methodBase.GetParametersAsSpan()[index - 1].ParameterType;
                         index++;
                     }
                 }

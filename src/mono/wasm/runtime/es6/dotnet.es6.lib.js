@@ -12,6 +12,7 @@ const WASM_ENABLE_SIMD = process.env.WASM_ENABLE_SIMD === "1";
 const WASM_ENABLE_EH = process.env.WASM_ENABLE_EH === "1";
 const ENABLE_BROWSER_PROFILER = process.env.ENABLE_BROWSER_PROFILER === "1";
 const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
+const RUN_AOT_COMPILATION = process.env.RUN_AOT_COMPILATION === "1";
 var methodIndexByName = undefined;
 var gitHash = undefined;
 
@@ -19,6 +20,7 @@ function setup(linkerSetup) {
     const pthreadReplacements = {};
     const dotnet_replacements = {
         fetch: globalThis.fetch,
+        ENVIRONMENT_IS_WORKER,
         require,
         updateMemoryViews,
         pthreadReplacements,
@@ -34,12 +36,23 @@ function setup(linkerSetup) {
     const ENVIRONMENT_IS_PTHREAD = false;
     #endif
 
+    ENVIRONMENT_IS_WORKER = dotnet_replacements.ENVIRONMENT_IS_WORKER;
+    Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
+    updateMemoryViews = dotnet_replacements.updateMemoryViews;
+    noExitRuntime = dotnet_replacements.noExitRuntime;
+    fetch = dotnet_replacements.fetch;
+    require = dotnet_replacements.require;
+    _scriptDir = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
+    #if USE_PTHREADS
+    PThread.loadWasmModuleToWorker = pthreadReplacements.loadWasmModuleToWorker;
+    PThread.threadInitTLS = pthreadReplacements.threadInitTLS;
+    PThread.allocateUnusedWorker = pthreadReplacements.allocateUnusedWorker;
+    #endif
     Module.__dotnet_runtime.passEmscriptenInternals({
         isPThread: ENVIRONMENT_IS_PTHREAD,
         quit_, ExitStatus,
         ...linkerSetup
     });
-    Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
 
     #if USE_PTHREADS
     if (ENVIRONMENT_IS_PTHREAD) {
@@ -50,17 +63,6 @@ function setup(linkerSetup) {
         Module.__dotnet_runtime.configureEmscriptenStartup(Module);
         #if USE_PTHREADS
     }
-    #endif
-
-    updateMemoryViews = dotnet_replacements.updateMemoryViews;
-    noExitRuntime = dotnet_replacements.noExitRuntime;
-    fetch = dotnet_replacements.fetch;
-    require = dotnet_replacements.require;
-    _scriptDir = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
-    #if USE_PTHREADS
-    PThread.loadWasmModuleToWorker = pthreadReplacements.loadWasmModuleToWorker;
-    PThread.threadInitTLS = pthreadReplacements.threadInitTLS;
-    PThread.allocateUnusedWorker = pthreadReplacements.allocateUnusedWorker;
     #endif
 }
 
@@ -98,6 +100,7 @@ function injectDependencies() {
         `linkerWasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
         `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
         `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
+        `linkerRunAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
         `gitHash: "${gitHash}", ` +
         `});`;
 

@@ -107,9 +107,6 @@ struct DotNetRuntimeDebugHeader
     GlobalValueEntry (* volatile GlobalEntries)[GlobalEntriesArraySize] = nullptr;
 };
 
-#ifdef TARGET_WINDOWS
-#pragma comment (linker, "/EXPORT:DotNetRuntimeDebugHeader,DATA")
-#endif
 extern "C" struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader;
 struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
 
@@ -132,7 +129,7 @@ struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
     {                                                                             \
         s_GlobalEntries[currentGlobalPos] = { #Name, Name };                      \
         ++currentGlobalPos;                                                       \
-        ASSERT(currentGlobalPos <= GlobalEntriesArraySize)                        \
+        ASSERT(currentGlobalPos <= GlobalEntriesArraySize);                       \
     } while(0)                                                                    \
 
 extern "C" void PopulateDebugHeaders()

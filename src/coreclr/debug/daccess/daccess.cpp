@@ -7978,10 +7978,15 @@ void DacStackReferenceWalker::GCEnumCallback(LPVOID hCallback, OBJECTREF *pObjec
     {
         CORDB_ADDRESS fixed_obj = 0;
         HRESULT hr = dsc->pWalker->mHeap.ListNearObjects((CORDB_ADDRESS)obj, NULL, &fixed_obj, NULL);
+        
+        // Interior pointers need not lie on the manage heap at all.  When this happens, ListNearObjects
+        // will return E_FAIL.  In this case, we need to be sure to not include this stack slot in our
+        // enumeration because ICorDebug expects every location enumerated by this API to point to a
+        // valid object.
+        if (FAILED(hr))
+            return;
 
-        // If we failed...oh well, SOS won't mind.  We'll just report the interior pointer as is.
-        if (SUCCEEDED(hr))
-            obj = TO_TADDR(fixed_obj);
+        obj = TO_TADDR(fixed_obj);
     }
 
     // Report the object and where it was found.

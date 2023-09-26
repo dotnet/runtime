@@ -113,9 +113,10 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
-        /// Returns enumerator that wraps calls to <see cref="JsonNode.GetValue{T}"/>.
+        /// Returns an enumerable that wraps calls to <see cref="JsonNode.GetValue{T}"/>.
         /// </summary>
         /// <typeparam name="T">The type of the value to obtain from the <see cref="JsonValue"/>.</typeparam>
+        /// <returns>An enumerable iterating over values of the array.</returns>
         public IEnumerable<T> GetValues<T>()
         {
             foreach (JsonNode? item in List)

@@ -1002,7 +1002,6 @@ bool FitsIn(var_types type, T value)
     {
         case TYP_BYTE:
             return FitsIn<int8_t>(value);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return FitsIn<uint8_t>(value);
         case TYP_SHORT:

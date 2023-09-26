@@ -214,8 +214,8 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-	gchar *nameNarrow = ep_rt_utf16le_to_utf8_string (name, -1);
-	gchar *valueNarrow = ep_rt_utf16le_to_utf8_string (value, -1);
+	gchar *nameNarrow = ep_rt_utf16le_to_utf8_string (name);
+	gchar *valueNarrow = ep_rt_utf16le_to_utf8_string (value);
 
 	gboolean success = g_setenv(nameNarrow, valueNarrow, true);
 

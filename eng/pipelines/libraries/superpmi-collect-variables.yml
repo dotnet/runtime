@@ -1,0 +1,46 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  archType: ''
+  runtimeFlavor: 'coreclr'
+
+variables:
+
+  - name: buildConfigUpper
+    ${{ if eq(parameters.buildConfig, 'debug') }}:
+      value: 'Debug'
+    ${{ if eq(parameters.buildConfig, 'release') }}:
+      value: 'Release'
+  - name: _runtimeX64DownloadPath
+    value: ''
+  # superpmi.py 'merge-mch' needs to be able to find the mcs tool. Point SuperPmiMcsPath at the downloaded CoreCLR binaries. For non-x64 targets, download an x64
+  # build and point at that. Pass this to superpmi.py as the '-core_root' argument. It's not actually a "Core_Root" directory, but all it needs is to find mcs.
+  - name: SuperPmiMcsPath
+    value: $(_runtimeDownloadPath)
+  - ${{ if ne(parameters.archType, 'x64') }}:
+    - name: _runtimeX64DownloadPath
+      value: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}.x64'
+    - name: SuperPmiMcsPath
+      value: $(_runtimeX64DownloadPath)
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
+    - name: PythonScript
+      value: 'py -3'
+    - name: PipScript
+      value: 'py -3 -m pip'
+    - name: MchFilesLocation
+      value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+    - name: MergedMchFileLocation
+      value: '$(Build.SourcesDirectory)\artifacts\spmi_collection\'
+    - name: SpmiLogsLocation
+      value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
+  - ${{ if ne(parameters.osGroup, 'windows') }}:
+    - name: PythonScript
+      value: 'python3'
+    - name: PipScript
+      value: 'pip3'
+    - name: MchFilesLocation
+      value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
+    - name: MergedMchFileLocation
+      value: '$(Build.SourcesDirectory)/artifacts/spmi_collection/'
+    - name: SpmiLogsLocation
+      value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'

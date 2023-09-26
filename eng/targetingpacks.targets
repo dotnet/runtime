@@ -72,6 +72,13 @@
                       Condition="'@(KnownAppHostPack)' == '' or !@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
   </ItemGroup>
 
+  <!-- Add known packs from the downlevel TFM until we are building with an SDK that supports the new TFM all-up. -->
+  <ItemGroup Condition="'$(NetCoreAppToolCurrent)' != '$(NetCoreAppCurrent)'">
+    <KnownILLinkPack Include="@(KnownILLinkPack->WithMetadataValue('Identity', 'Microsoft.NET.ILLink.Tasks')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))">
+      <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    </KnownILLinkPack>
+  </ItemGroup>
+
   <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to the output. -->
   <ItemGroup>
     <Reference Update="@(Reference)">
@@ -92,7 +99,7 @@
     </PropertyGroup>
   </Target>
 
-  <!-- 
+  <!--
     SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item.
     TODO: Remove this target when an 8.0.100 SDK is consumed that respects EnableRuntimePackDownload.
    -->
@@ -106,12 +113,13 @@
                         Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Runtime'))" />
       <PackageDownload Remove="@(PackageDownload)"
                        Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
+      <!-- Always remove the PackageReference items as some of the packages are only via PackageReference -->
       <PackageReference Remove="@(PackageReference)"
-                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
+                        Condition="$([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
     </ItemGroup>
   </Target>
 
-  <!-- 
+  <!--
     TODO: Remove this target when an 8.0.100 SDK is consumed that respects EnableAppHostPackDownload.
    -->
   <Target Name="RemoveAppHostPackFromDownloadItem"
@@ -131,7 +139,7 @@
           AfterTargets="ResolveFrameworkReferences">
     <Error Text="The shared framework must be built before the local targeting pack can be consumed."
            Condition="!Exists('$(MicrosoftNetCoreAppRefPackDir)data\FrameworkList.xml')" />
-    
+
     <ItemGroup>
       <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
                              NuGetPackageVersion="$(ProductVersion)"

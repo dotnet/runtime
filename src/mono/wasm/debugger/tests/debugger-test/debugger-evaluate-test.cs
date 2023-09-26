@@ -506,6 +506,8 @@ namespace DebuggerTests
 
     public class EvaluateLocalsWithIndexingTests
     {
+        public record Indexer(int index);
+
         public class TestEvaluate
         {
             public List<int> numList;
@@ -529,6 +531,8 @@ namespace DebuggerTests
             public int this[double key] => (int)key;
             public int this[float key] => (int)key;
             public int this[decimal key] => (int)key;
+            public int this[Indexer indexer] => indexer.index;
+            public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
 
             public void run()
             {
@@ -561,6 +565,8 @@ namespace DebuggerTests
             float aFloat = 1.23f;
             double aDouble = 2.34;
             decimal aDecimal = 3.34m;
+            Indexer objIdx = new(index: 123);
+            char[] arr = new char[] { 't', 'e', 's', 't' };
         }
     }
 
@@ -2041,6 +2047,20 @@ namespace DebuggerTests
             var localString = "aB.c[";
         }
     }
+
+    public static class EvaluateMethodsOnEnum
+    {
+        public static SampleEnum s_valueTypeEnum = SampleEnum.no;
+        public class MemberClass
+        {
+            public SampleEnum valueTypeEnum = SampleEnum.yes;
+        }
+        public static void run()
+        {
+            MemberClass mc = new();
+            Console.WriteLine("Break here");
+        }
+    }
 }
 
 namespace DebuggerTestsV2
@@ -2155,4 +2175,29 @@ public class TestEvaluateDontPauseOnBreakpoint
 public struct EvaluateStaticGetterInValueType
 {
     public static int A => 5;
+}
+
+namespace DebuggerTests
+{
+    public class SumObjectAndString
+    {
+        public class MyClass
+        {
+            public override string ToString()
+            {
+                return "OverridenToString";
+            }
+        }
+        public static void run()
+        {
+            DateTime dt = new DateTime();
+            List<int> myList = new();
+            List<int> listNull = null;
+            object o = new();
+            MyClass myClass = new();
+            myList.Add(1);
+            Console.WriteLine(myList);
+            Console.WriteLine(dt);
+        }
+    }
 }

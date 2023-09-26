@@ -494,8 +494,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// These should not be reported https://github.com/mono/linker/issues/2218
 			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = Tool.Trimmer)]
 			public static event EventHandler Event;
 		}
@@ -851,10 +849,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				// These should be reported only in TestDirectReflectionAccess
 				// https://github.com/mono/linker/issues/2218
 				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
-				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
 				[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = Tool.Trimmer)]
 				public static event EventHandler StaticEvent;
 			}

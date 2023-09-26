@@ -85,6 +85,7 @@
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
+#include <mono/utils/mono-poll.h>
 
 #include <mono/component/debugger-state-machine.h>
 #include "debugger-agent.h"
@@ -1144,16 +1145,10 @@ socket_transport_connect (const char *address)
 		PRINT_DEBUG_MSG (1, "Listening on %s:%d (timeout=%d ms)...\n", host, port, agent_config.timeout);
 
 		if (agent_config.timeout) {
-			fd_set readfds;
-			struct timeval tv;
-
-			tv.tv_sec = 0;
-			tv.tv_usec = agent_config.timeout * 1000;
-			FD_ZERO (&readfds);
-			FD_SET (sfd, &readfds);
-
-			res = select ((int)sfd + 1, &readfds, NULL, NULL, &tv);
-
+			mono_pollfd mp;
+			mp.fd = (int)sfd;
+			mp.events = MONO_POLLIN;
+			res = mono_poll (&mp, 1, agent_config.timeout);
 			if (res == 0) {
 				PRINT_ERROR_MSG ("debugger-agent: Timed out waiting to connect.\n");
 				exit (1);
@@ -5517,7 +5512,9 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_FNPTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE) &&
-		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT)) {
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_SZARRAY) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_ARRAY)) {
 		char *name = mono_type_full_name (t);
 		PRINT_DEBUG_MSG (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer) (gsize) mono_native_thread_id_get (), name, type);
 		g_free (name);
@@ -5585,7 +5582,7 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
-			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING || type == MONO_TYPE_ARRAY || type == MONO_TYPE_SZARRAY) {
 				ret += sizeof(MonoObject*);
 				decode_objid (buf, &buf, limit);
 			} else if (type == VALUE_TYPE_ID_NULL) {
@@ -5640,7 +5637,9 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_FNPTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE) &&
-		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT)) {
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_SZARRAY) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_ARRAY)) {
 		char *name = mono_type_full_name (t);
 		PRINT_DEBUG_MSG (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer) (gsize) mono_native_thread_id_get (), name, type);
 		g_free (name);
@@ -5733,7 +5732,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
-			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING || type == MONO_TYPE_ARRAY || type == MONO_TYPE_SZARRAY) {
 				int objid = decode_objid (buf, &buf, limit);
 				MonoObject *obj;
 
@@ -8714,11 +8713,6 @@ set_value:
 			goto invalid_object;
 		}
 		buffer_add_objid (buf, o);
-		if (CHECK_ICORDBG (TRUE))
-		{
-			MonoType *object_type =  m_class_get_byval_arg (m_class_get_element_class (klass));
-			buffer_add_value (buf, object_type, o, domain);
-		}
 		break;
 	}
 	case CMD_TYPE_GET_SOURCE_FILES:
@@ -8860,10 +8854,36 @@ set_value:
 	}
 	case CMD_TYPE_CREATE_INSTANCE: {
 		MonoObject *obj;
-
 		obj = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
 		buffer_add_objid (buf, obj);
+		if (CHECK_ICORDBG (TRUE))
+		{
+			buffer_add_byte(buf, GINT_TO_UINT8(m_class_is_valuetype (klass)));
+			if (m_class_is_valuetype (klass))
+			{
+				int nfields = 0;
+				gpointer iter = NULL;
+				while ((f = mono_class_get_fields_internal (klass, &iter))) {
+					if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
+						continue;
+					if (mono_field_is_deleted (f))
+						continue;
+					nfields ++;
+				}
+				buffer_add_int (buf, nfields);
+
+				iter = NULL;
+				while ((f = mono_class_get_fields_internal (klass, &iter))) {
+					if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
+						continue;
+					if (mono_field_is_deleted (f))
+						continue;
+					buffer_add_int (buf, mono_class_get_field_token (f));
+					buffer_add_byte (buf, f->type->type);
+				}
+			}
+		}
 		break;
 	}
 	case CMD_TYPE_GET_VALUE_SIZE: {
@@ -8934,7 +8954,7 @@ set_value:
 	case MDBGPROT_CMD_TYPE_ELEMENT_TYPE: 
 	{
 		buffer_add_int (buf, m_class_get_byval_arg (klass)->type);
-		buffer_add_byte (buf, MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (klass)));
+		buffer_add_byte (buf, GINT_TO_UINT8 (MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (klass))));
 		break;
 	}
 	case MDBGPROT_CMD_TYPE_RANK: 
@@ -10118,10 +10138,15 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	switch (command) {
 	case CMD_ARRAY_REF_GET_TYPE: {
-			buffer_add_byte(buf, m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type);
+			MonoTypeEnum type = m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type;
+			buffer_add_byte(buf, type);
 			buffer_add_int (buf, m_class_get_rank (arr->obj.vtable->klass));
-			if (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type == MONO_TYPE_CLASS)
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_GENERICINST || type == MONO_TYPE_OBJECT)
+			{
 				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
+				if (CHECK_ICORDBG (TRUE))
+					buffer_add_byte (buf, GINT_TO_UINT8 (MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)))));
+			}
 		}
 		break;
 	case CMD_ARRAY_REF_GET_LENGTH:

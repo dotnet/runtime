@@ -436,6 +436,7 @@ handle_enum:
 		/* nothing to do */
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		/* The result is an IntPtr */
 		mono_mb_emit_op (mb, CEE_BOX, mono_defaults.int_class);
 		break;
@@ -2093,13 +2094,13 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 		if (!closed_over_null) {
 			for (i = 1; i <= sig->param_count; ++i) {
 				mono_mb_emit_ldarg (mb, i);
-				if (i == 1 && (MONO_TYPE_ISSTRUCT (sig->params [0]) || MONO_TYPE_IS_PRIMITIVE (sig->params [0])))
-					mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type_internal (sig->params [0]));
+				if (i == 1) {
+					MonoType *t = sig->params [0];
+					if (!m_type_is_byref (t))
+						mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type_internal (t));
+				}
 			}
-			if (MONO_TYPE_ISSTRUCT (sig->params [0]) || MONO_TYPE_IS_PRIMITIVE (sig->params [0]))
-				mono_mb_emit_ldarg_addr (mb, 1);
-			else
-				mono_mb_emit_ldarg (mb, 1);
+			mono_mb_emit_ldarg_addr (mb, 1);
 			mono_mb_emit_ldarg (mb, 0);
 			mono_mb_emit_icall (mb, mono_get_addr_compiled_method);
 			mono_mb_emit_op (mb, CEE_CALLI, target_method_sig);

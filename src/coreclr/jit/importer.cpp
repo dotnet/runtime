@@ -685,9 +685,9 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
         return true;
     }
 
-    if (TypeIs(sigType, TYP_BOOL, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT))
+    if (TypeIs(sigType, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT))
     {
-        if (TypeIs(nodeType, TYP_BOOL, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT, TYP_I_IMPL))
+        if (TypeIs(nodeType, TYP_UBYTE, TYP_BYTE, TYP_USHORT, TYP_SHORT, TYP_UINT, TYP_INT, TYP_I_IMPL))
         {
             return true;
         }
@@ -1381,18 +1381,26 @@ GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
 //
 bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 {
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) || (JitConfig.JitProfileCasts() != 1))
+    if (!opts.IsInstrumented() || (JitConfig.JitProfileCasts() != 1))
     {
         return false;
     }
 
-    if (tree->IsCall() && tree->AsCall()->gtCallType == CT_HELPER)
+    if (tree->IsHelperCall())
     {
-        const CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
-        if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
-            (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
+        switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
         {
-            return true;
+            case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+            case CORINFO_HELP_ISINSTANCEOFARRAY:
+            case CORINFO_HELP_ISINSTANCEOFCLASS:
+            case CORINFO_HELP_ISINSTANCEOFANY:
+            case CORINFO_HELP_CHKCASTINTERFACE:
+            case CORINFO_HELP_CHKCASTARRAY:
+            case CORINFO_HELP_CHKCASTCLASS:
+            case CORINFO_HELP_CHKCASTANY:
+                return true;
+            default:
+                break;
         }
     }
     return false;
@@ -1410,22 +1418,25 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 //
 bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
 {
-    if (JitConfig.JitConsumeProfileForCasts() == 0)
+    if ((JitConfig.JitConsumeProfileForCasts() != 1) || !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         return false;
     }
 
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
+    switch (helper)
     {
-        return false;
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTCLASS:
+        case CORINFO_HELP_CHKCASTANY:
+            return true;
+        default:
+            return false;
     }
-
-    if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
-        (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTINTERFACE))
-    {
-        return true;
-    }
-    return false;
 }
 
 GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -2869,54 +2880,15 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     return 0;
                 }
 
-                GenTree* const treeToBox       = impStackTop().val;
-                bool           canOptimize     = true;
-                GenTree*       treeToNullcheck = nullptr;
-
-                // Can the thing being boxed cause a side effect?
-                if ((treeToBox->gtFlags & GTF_SIDE_EFFECT) != 0)
+                if ((opts == BoxPatterns::IsByRefLike) ||
+                    (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX))
                 {
-                    // Is this a side effect we can replicate cheaply?
-                    if (((treeToBox->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT) && treeToBox->OperIs(GT_BLK, GT_IND))
-                    {
-                        // If the only side effect comes from the dereference itself, yes.
-                        GenTree* const addr = treeToBox->AsOp()->gtGetOp1();
+                    JITDUMP("\n Importing BOX; BR_TRUE/FALSE as constant\n")
 
-                        if ((addr->gtFlags & GTF_SIDE_EFFECT) != 0)
-                        {
-                            canOptimize = false;
-                        }
-                        else if (fgAddrCouldBeNull(addr))
-                        {
-                            treeToNullcheck = addr;
-                        }
-                    }
-                    else
-                    {
-                        canOptimize = false;
-                    }
-                }
-
-                if (canOptimize)
-                {
-                    if ((opts == BoxPatterns::IsByRefLike) ||
-                        info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX)
-                    {
-                        JITDUMP("\n Importing BOX; BR_TRUE/FALSE as %sconstant\n",
-                                treeToNullcheck == nullptr ? "" : "nullcheck+");
-                        impPopStack();
-
-                        GenTree* result = gtNewIconNode(1);
-
-                        if (treeToNullcheck != nullptr)
-                        {
-                            GenTree* nullcheck = gtNewNullCheck(treeToNullcheck, compCurBB);
-                            result             = gtNewOperNode(GT_COMMA, TYP_INT, nullcheck, result);
-                        }
-
-                        impPushOnStack(result, typeInfo(TYP_INT));
-                        return 0;
-                    }
+                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
+                    impPopStack();
+                    impPushOnStack(gtNewTrue(), typeInfo(TYP_INT));
+                    return 0;
                 }
             }
             break;
@@ -2926,7 +2898,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             {
                 // First, let's see if we can fold BOX+ISINST to just null if ISINST is known to return null
                 // for the given argument. Don't make inline observations for this case.
-                if ((opts == BoxPatterns::None) && ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0) &&
+                if ((opts == BoxPatterns::None) &&
                     (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX))
                 {
                     CORINFO_RESOLVED_TOKEN isInstTok;
@@ -2935,6 +2907,8 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         TypeCompareState::MustNot)
                     {
                         JITDUMP("\n Importing BOX; ISINST; as null\n");
+
+                        impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
                         impPopStack();
                         impPushOnStack(gtNewNull(), typeInfo(TYP_REF));
                         return 1 + sizeof(mdToken);
@@ -2958,78 +2932,75 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 return 1 + sizeof(mdToken);
                             }
 
-                            if ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0)
+                            CorInfoHelpFunc foldAsHelper;
+                            if (opts == BoxPatterns::IsByRefLike)
                             {
-                                CorInfoHelpFunc foldAsHelper;
-                                if (opts == BoxPatterns::IsByRefLike)
+                                // Treat ByRefLike types as if they were regular boxing operations
+                                // so they can be elided.
+                                foldAsHelper = CORINFO_HELP_BOX;
+                            }
+                            else
+                            {
+                                foldAsHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
+                            }
+
+                            if (foldAsHelper == CORINFO_HELP_BOX)
+                            {
+                                CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+
+                                impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
+
+                                TypeCompareState castResult =
+                                    info.compCompHnd->compareTypesForCast(pResolvedToken->hClass,
+                                                                          isInstResolvedToken.hClass);
+
+                                if (castResult != TypeCompareState::May)
                                 {
-                                    // Treat ByRefLike types as if they were regular boxing operations
-                                    // so they can be elided.
-                                    foldAsHelper = CORINFO_HELP_BOX;
+                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant\n");
+
+                                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
+                                    impPopStack();
+                                    impPushOnStack(gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0),
+                                                   typeInfo(TYP_INT));
+                                    return 1 + sizeof(mdToken);
                                 }
-                                else
+                            }
+                            else if ((foldAsHelper == CORINFO_HELP_BOX_NULLABLE) &&
+                                     ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0))
+                            {
+                                // For nullable we're going to fold it to "ldfld hasValue + brtrue/brfalse" or
+                                // "ldc.i4.0 + brtrue/brfalse" in case if the underlying type is not castable to
+                                // the target type.
+                                CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+                                impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
+
+                                CORINFO_CLASS_HANDLE nullableCls   = pResolvedToken->hClass;
+                                CORINFO_CLASS_HANDLE underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
+
+                                TypeCompareState castResult =
+                                    info.compCompHnd->compareTypesForCast(underlyingCls, isInstResolvedToken.hClass);
+
+                                if (castResult == TypeCompareState::Must)
                                 {
-                                    foldAsHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
+                                    GenTree* objToBox = impPopStack().val;
+
+                                    // Spill struct to get its address (to access hasValue field)
+                                    // TODO-Bug?: verify if flags matter here
+                                    GenTreeFlags indirFlags = GTF_EMPTY;
+                                    objToBox                = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
+
+                                    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+                                    impPushOnStack(gtNewIndir(TYP_UBYTE, objToBox), typeInfo(TYP_INT));
+
+                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
+                                    return 1 + sizeof(mdToken);
                                 }
-
-                                if (foldAsHelper == CORINFO_HELP_BOX)
+                                else if (castResult == TypeCompareState::MustNot)
                                 {
-                                    CORINFO_RESOLVED_TOKEN isInstResolvedToken;
-
-                                    impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
-
-                                    TypeCompareState castResult =
-                                        info.compCompHnd->compareTypesForCast(pResolvedToken->hClass,
-                                                                              isInstResolvedToken.hClass);
-                                    if (castResult != TypeCompareState::May)
-                                    {
-                                        JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant\n");
-                                        impPopStack();
-
-                                        impPushOnStack(gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0),
-                                                       typeInfo(TYP_INT));
-
-                                        // Skip the next isinst instruction
-                                        return 1 + sizeof(mdToken);
-                                    }
-                                }
-                                else if (foldAsHelper == CORINFO_HELP_BOX_NULLABLE)
-                                {
-                                    // For nullable we're going to fold it to "ldfld hasValue + brtrue/brfalse" or
-                                    // "ldc.i4.0 + brtrue/brfalse" in case if the underlying type is not castable to
-                                    // the target type.
-                                    CORINFO_RESOLVED_TOKEN isInstResolvedToken;
-                                    impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
-
-                                    CORINFO_CLASS_HANDLE nullableCls   = pResolvedToken->hClass;
-                                    CORINFO_CLASS_HANDLE underlyingCls = info.compCompHnd->getTypeForBox(nullableCls);
-
-                                    TypeCompareState castResult =
-                                        info.compCompHnd->compareTypesForCast(underlyingCls,
-                                                                              isInstResolvedToken.hClass);
-
-                                    if (castResult == TypeCompareState::Must)
-                                    {
-                                        GenTree* objToBox = impPopStack().val;
-
-                                        // Spill struct to get its address (to access hasValue field)
-                                        // TODO-Bug?: verify if flags matter here
-                                        GenTreeFlags indirFlags = GTF_EMPTY;
-                                        objToBox = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
-
-                                        static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-                                        impPushOnStack(gtNewIndir(TYP_BOOL, objToBox), typeInfo(TYP_INT));
-
-                                        JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
-                                        return 1 + sizeof(mdToken);
-                                    }
-                                    else if (castResult == TypeCompareState::MustNot)
-                                    {
-                                        impPopStack();
-                                        impPushOnStack(gtNewIconNode(0), typeInfo(TYP_INT));
-                                        JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant (false)\n");
-                                        return 1 + sizeof(mdToken);
-                                    }
+                                    impPopStack();
+                                    impPushOnStack(gtNewIconNode(0), typeInfo(TYP_INT));
+                                    JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant (false)\n");
+                                    return 1 + sizeof(mdToken);
                                 }
                             }
                         }
@@ -5434,6 +5405,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     // Pessimistically assume the jit cannot expand this as an inline test
     bool                  canExpandInline = false;
     bool                  partialExpand   = false;
+    bool                  reversedMTCheck = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
     CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
@@ -5518,8 +5490,17 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 if ((likelyCls != NO_CLASS_HANDLE) &&
                     (likelyClass.likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
                 {
-                    if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) ==
-                         TypeCompareState::Must))
+                    TypeCompareState castResult =
+                        info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass);
+
+                    // If case of MustNot we still can optimize isinst (only), e.g.:
+                    //
+                    //   bool objIsDisposable = obj is IDisposable;
+                    //
+                    // when the profile tells us that obj is mostly Int32, hence, never implements that interface.
+                    // for castclass it makes little sense as it will always throw a cast exception anyway.
+                    if ((castResult == TypeCompareState::Must) ||
+                        (castResult == TypeCompareState::MustNot && !isCastClass))
                     {
                         bool isAbstract = (info.compCompHnd->getClassAttribs(likelyCls) &
                                            (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) != 0;
@@ -5529,6 +5510,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                             JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
                                     eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
 
+                            reversedMTCheck = castResult == TypeCompareState::MustNot;
                             canExpandInline = true;
                             partialExpand   = true;
                             exactCls        = likelyCls;
@@ -5607,12 +5589,12 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //             op1Copy CNS_INT
     //                      null
     //
-    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewIconNode(0, TYP_REF));
+    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
 
     //
     // expand the true and false trees for the condMT
     //
-    GenTree* condFalse = gtClone(op1);
+    GenTree* condFalse = reversedMTCheck ? gtNewNull() : gtClone(op1);
     GenTree* condTrue;
     if (isCastClass)
     {
@@ -5669,7 +5651,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //                      /     \.
     //                qmarkMT   op1Copy
     //
-    temp      = new (this, GT_COLON) GenTreeColon(TYP_REF, gtClone(op1), qmarkMT);
+    temp      = new (this, GT_COLON) GenTreeColon(TYP_REF, reversedMTCheck ? gtNewNull() : gtClone(op1), qmarkMT);
     qmarkNull = gtNewQmarkNode(TYP_REF, condNull, temp->AsColon());
     qmarkNull->gtFlags |= GTF_QMARK_CAST_INSTOF;
 
@@ -11062,20 +11044,6 @@ inline void Compiler::impReimportMarkBlock(BasicBlock* block)
 }
 
 /*****************************************************************************
- *  Mark the successors of the given block as unimported.
- *  Note that the caller is responsible for calling impImportBlockPending()
- *  for all the successors, with the appropriate stack-state.
- */
-
-void Compiler::impReimportMarkSuccessors(BasicBlock* block)
-{
-    for (BasicBlock* const succBlock : block->Succs())
-    {
-        impReimportMarkBlock(succBlock);
-    }
-}
-
-/*****************************************************************************
  *
  *  Filter wrapper to handle only passed in exception code
  *  from it).
@@ -11397,38 +11365,35 @@ SPILLSTACK:
             baseTmp = impGetSpillTmpBase(block);
         }
 
-        /* Spill all stack entries into temps */
-        unsigned level, tempNum;
+        // Spill all stack entries into temps
 
         JITDUMP("\nSpilling stack entries into temps\n");
-        for (level = 0, tempNum = baseTmp; level < verCurrentState.esStackDepth; level++, tempNum++)
+        for (unsigned level = 0, tempNum = baseTmp; level < verCurrentState.esStackDepth; level++, tempNum++)
         {
             GenTree* tree = verCurrentState.esStack[level].val;
 
-            /* VC generates code where it pushes a byref from one branch, and an int (ldc.i4 0) from
-               the other. This should merge to a byref in unverifiable code.
-               However, if the branch which leaves the TYP_I_IMPL on the stack is imported first, the
-               successor would be imported assuming there was a TYP_I_IMPL on
-               the stack. Thus the value would not get GC-tracked. Hence,
-               change the temp to TYP_BYREF and reimport the successors.
-               Note: We should only allow this in unverifiable code.
-            */
-            if (tree->gtType == TYP_BYREF && lvaTable[tempNum].lvType == TYP_I_IMPL)
+            // VC generates code where it pushes a byref from one branch, and an int (ldc.i4 0) from
+            // the other. This should merge to a byref in unverifiable code.
+            // However, if the branch which leaves the TYP_I_IMPL on the stack is imported first, the
+            // successor would be imported assuming there was a TYP_I_IMPL on
+            // the stack. Thus the value would not get GC-tracked. Hence,
+            // change the temp to TYP_BYREF and reimport the clique.
+            LclVarDsc* tempDsc = lvaGetDesc(tempNum);
+            if (tree->TypeIs(TYP_BYREF) && (tempDsc->TypeGet() == TYP_I_IMPL))
             {
-                lvaTable[tempNum].lvType = TYP_BYREF;
-                impReimportMarkSuccessors(block);
-                markImport = true;
+                tempDsc->lvType     = TYP_BYREF;
+                reimportSpillClique = true;
             }
 
 #ifdef TARGET_64BIT
-            if (genActualType(tree->gtType) == TYP_I_IMPL && lvaTable[tempNum].lvType == TYP_INT)
+            if ((genActualType(tree) == TYP_I_IMPL) && (tempDsc->TypeGet() == TYP_INT))
             {
                 // Some other block in the spill clique set this to "int", but now we have "native int".
                 // Change the type and go back to re-import any blocks that used the wrong type.
-                lvaTable[tempNum].lvType = TYP_I_IMPL;
-                reimportSpillClique      = true;
+                tempDsc->lvType     = TYP_I_IMPL;
+                reimportSpillClique = true;
             }
-            else if (genActualType(tree->gtType) == TYP_INT && lvaTable[tempNum].lvType == TYP_I_IMPL)
+            else if ((genActualType(tree) == TYP_INT) && (tempDsc->TypeGet() == TYP_I_IMPL))
             {
                 // Spill clique has decided this should be "native int", but this block only pushes an "int".
                 // Insert a sign-extension to "native int" so we match the clique.
@@ -11443,14 +11408,14 @@ SPILLSTACK:
             // imported already, we need to change the type of the local and reimport the spill clique.
             // If the 'byref' side has imported, we insert a cast from int to 'native int' to match
             // the 'byref' size.
-            if (genActualType(tree->gtType) == TYP_BYREF && lvaTable[tempNum].lvType == TYP_INT)
+            if ((genActualType(tree) == TYP_BYREF) && (tempDsc->TypeGet() == TYP_INT))
             {
                 // Some other block in the spill clique set this to "int", but now we have "byref".
                 // Change the type and go back to re-import any blocks that used the wrong type.
-                lvaTable[tempNum].lvType = TYP_BYREF;
-                reimportSpillClique      = true;
+                tempDsc->lvType     = TYP_BYREF;
+                reimportSpillClique = true;
             }
-            else if (genActualType(tree->gtType) == TYP_INT && lvaTable[tempNum].lvType == TYP_BYREF)
+            else if ((genActualType(tree) == TYP_INT) && (tempDsc->TypeGet() == TYP_BYREF))
             {
                 // Spill clique has decided this should be "byref", but this block only pushes an "int".
                 // Insert a sign-extension to "native int" so we match the clique size.
@@ -11459,14 +11424,14 @@ SPILLSTACK:
 
 #endif // TARGET_64BIT
 
-            if (tree->gtType == TYP_DOUBLE && lvaTable[tempNum].lvType == TYP_FLOAT)
+            if (tree->TypeIs(TYP_DOUBLE) && (tempDsc->lvType == TYP_FLOAT))
             {
                 // Some other block in the spill clique set this to "float", but now we have "double".
                 // Change the type and go back to re-import any blocks that used the wrong type.
-                lvaTable[tempNum].lvType = TYP_DOUBLE;
-                reimportSpillClique      = true;
+                tempDsc->lvType     = TYP_DOUBLE;
+                reimportSpillClique = true;
             }
-            else if (tree->gtType == TYP_FLOAT && lvaTable[tempNum].lvType == TYP_DOUBLE)
+            else if (tree->TypeIs(TYP_FLOAT) && (tempDsc->TypeGet() == TYP_DOUBLE))
             {
                 // Spill clique has decided this should be "double", but this block only pushes a "float".
                 // Insert a cast to "double" so we match the clique.
@@ -11477,11 +11442,11 @@ SPILLSTACK:
                are spilling to the temps already used by a previous block),
                we need to spill addStmt */
 
-            if (addStmt != nullptr && !newTemps && gtHasRef(addStmt->GetRootNode(), tempNum))
+            if ((addStmt != nullptr) && !newTemps && gtHasRef(addStmt->GetRootNode(), tempNum))
             {
                 GenTree* addTree = addStmt->GetRootNode();
 
-                if (addTree->gtOper == GT_JTRUE)
+                if (addTree->OperIs(GT_JTRUE))
                 {
                     GenTree* relOp = addTree->AsOp()->gtOp1;
                     assert(relOp->OperIsCompare());
@@ -11506,7 +11471,7 @@ SPILLSTACK:
                 }
                 else
                 {
-                    assert(addTree->gtOper == GT_SWITCH && genActualTypeIsIntOrI(addTree->AsOp()->gtOp1->TypeGet()));
+                    assert(addTree->OperIs(GT_SWITCH) && genActualTypeIsIntOrI(addTree->AsOp()->gtOp1->TypeGet()));
 
                     unsigned temp = lvaGrabTemp(true DEBUGARG("spill addStmt SWITCH"));
                     impStoreTemp(temp, addTree->AsOp()->gtOp1, level);

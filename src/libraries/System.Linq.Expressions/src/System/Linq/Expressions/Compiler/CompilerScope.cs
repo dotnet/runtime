@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Dynamic.Utils;
 using static System.Linq.Expressions.CachedReflectionInfo;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Expressions.Compiler
 {
@@ -28,6 +29,7 @@ namespace System.Linq.Expressions.Compiler
     /// Instances are produced by VariableBinder, which does a tree walk
     /// looking for scope nodes: LambdaExpression, BlockExpression, and CatchBlock.
     /// </summary>
+    [RequiresDynamicCode(Expression.StrongBoxRequiresDynamicCode)]
     internal sealed partial class CompilerScope
     {
         /// <summary>
@@ -394,6 +396,7 @@ namespace System.Linq.Expressions.Compiler
             return ReferenceCount.TryGetValue(v, out refCount) && ShouldCache(v, refCount);
         }
 
+        [RequiresDynamicCode(Expression.StrongBoxRequiresDynamicCode)]
         private void CacheBoxToLocal(LambdaCompiler lc, ParameterExpression v)
         {
             Debug.Assert(ShouldCache(v) && !_locals.ContainsKey(v));

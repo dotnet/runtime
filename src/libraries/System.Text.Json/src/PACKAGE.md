@@ -237,10 +237,10 @@ The main types provided by this library are:
 * `System.Text.Json.Nodes.JsonNode`
 * `System.Text.Json.Serialization.Metadata.JsonTypeInfo`
 
-## Addtional Documentation
+## Additional Documentation
 
-* [Conceptual documentation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/overview)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/system.text.json)
+* [Conceptual documentation](https://learn.microsoft.com/dotnet/standard/serialization/system-text-json/overview)
+* [API documentation](https://learn.microsoft.com/dotnet/api/system.text.json)
 
 ## Related Packages
 

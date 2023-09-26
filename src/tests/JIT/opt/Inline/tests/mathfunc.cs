@@ -17,7 +17,7 @@ namespace JitInliningTest
         };
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Random r = new Random(Seed);
 
@@ -44,7 +44,6 @@ namespace JitInliningTest
             b += Math.Tanh(r.Next(1, 5));
 
             Console.WriteLine(b);
-            return 100;
         }
     }
 }

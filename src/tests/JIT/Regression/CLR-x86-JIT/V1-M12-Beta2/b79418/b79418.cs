@@ -15,10 +15,9 @@ public class PInvokeTest
     static String bar = "bar";
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         if (foo == bar)
             foo = "foo";
-        return 100;
     }
 }

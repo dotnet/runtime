@@ -169,14 +169,17 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedMultiplyCheckedNullableNumberTest(bool useInterpreter)
         {
-            Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
-            for (int i = 0; i < values.Length; i++)
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(() =>
             {
-                for (int j = 0; j < values.Length; j++)
+                Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
+                for (int i = 0; i < values.Length; i++)
                 {
-                    VerifyMultiplyCheckedNullableNumber(values[i], values[j], useInterpreter);
+                    for (int j = 0; j < values.Length; j++)
+                    {
+                        VerifyMultiplyCheckedNullableNumber(values[i], values[j], useInterpreter);
+                    }
                 }
-            }
+            });
         }
 
         #endregion

@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- Exposed publicly only in implementation for serialization compat. -->
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Data.Odbc.ODBC32</Target>
@@ -10,7 +10,6 @@
     <Target>T:System.Data.Odbc.ODBC32</Target>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
-  <!-- Cannot be exposed in the ref yet as it is new API that doesn't exist in net472. -->
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
@@ -24,5 +23,33 @@
     <Target>M:System.Data.Odbc.OdbcParameterCollection.Add(System.String,System.Object):[T:System.ObsoleteAttribute]</Target>
     <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
     <Right>lib/net462/System.Data.Odbc.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Data.Common, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Data.Common, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>lib/net7.0/System.Data.Odbc.dll</Left>
+    <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>lib/net7.0/System.Data.Odbc.dll</Left>
+    <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
 </Suppressions>

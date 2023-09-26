@@ -2311,7 +2311,7 @@ public:
     void SetIndirExceptionFlags(Compiler* comp);
 
 #if MEASURE_NODE_SIZE
-    static void DumpNodeSizes(FILE* fp);
+    static void DumpNodeSizes();
 #endif
 
 #ifdef DEBUG
@@ -6343,6 +6343,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
 
+    genTreeOps HWOperGet();
+
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 
@@ -8622,7 +8624,7 @@ public:
             NONE, NONE, SGE,  SGT,  SLT,  SLE,  NS, S,
             NE,   EQ,   UGE,  UGT,  ULT,  ULE,  NC, C,
             FNEU, FEQU, FGEU, FGTU, FLTU, FLEU, NO, O,
-            FNE,  FEQ,  FGE,  FGT,  FLT,  FGT,  NP, P
+            FNE,  FEQ,  FGE,  FGT,  FLT,  FLE,  NP, P
         };
         // clang-format on
 

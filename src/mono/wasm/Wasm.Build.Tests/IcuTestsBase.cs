@@ -28,7 +28,7 @@ public abstract class IcuTestsBase : TestMainJsTestBase
     }
 
     // custom file contains only locales "cy-GB", "is-IS", "bs-BA", "lb-LU" and fallback locale: "en-US":
-    protected static string s_customIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
+    public static string CustomIcuPath = Path.Combine(BuildEnvironment.TestAssetsPath, "icudt_custom.dat");
 
     protected static readonly string s_customIcuTestedLocales = $@"new Locale[] {{
         new Locale(""cy-GB"",  ""Dydd Sul""), new Locale(""is-IS"",  ""sunnudagur""), new Locale(""bs-BA"",  ""nedjelja""), new Locale(""lb-LU"",  ""Sonndeg""),

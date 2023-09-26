@@ -35,7 +35,7 @@ extends:
       jobs:
 
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-        
+
         # build mono
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -74,27 +74,6 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 720
 
-        # build mono on wasm
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
-            runtimeFlavor: mono
-            platforms:
-            - browser_wasm
-            jobParameters:
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-              nameSuffix: wasm
-              isOfficialBuild: false
-              extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
-              extraStepsParameters:
-                rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-                includeRootFolder: true
-                displayName: Browser Wasm Artifacts
-                artifactName: BrowserWasm
-                archiveType: zip
-                archiveExtension: .zip
-
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
         # build coreclr and libraries
@@ -109,27 +88,6 @@ extends:
             - windows_arm64
             jobParameters:
               testGroup: perf
-
-        # build mono on wasm
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
-            runtimeFlavor: mono
-            platforms:
-            - browser_wasm
-            jobParameters:
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-              nameSuffix: wasm
-              isOfficialBuild: false
-              extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
-              extraStepsParameters:
-                rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-                includeRootFolder: true
-                displayName: Browser Wasm Artifacts
-                artifactName: BrowserWasm
-                archiveType: zip
-                archiveExtension: .zip
 
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -158,7 +116,7 @@ extends:
           parameters:
             jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
             buildConfig: release
-            runtimeFlavor: mono
+            runtimeFlavor: aot
             platforms:
             - linux_arm64
             jobParameters:

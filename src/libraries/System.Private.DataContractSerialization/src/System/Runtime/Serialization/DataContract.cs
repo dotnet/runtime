@@ -299,9 +299,9 @@ namespace System.Runtime.Serialization.DataContracts
         internal class DataContractCriticalHelper
         {
             private static readonly ConcurrentDictionary<nint, int> s_typeToIDCache = new();
-            private static DataContract[] s_dataContractCache = new DataContract[32];
+            private static readonly ContextAwareDataContractIndex s_dataContractCache = new(32);
             private static int s_dataContractID;
-            private static readonly ConcurrentDictionary<Type, DataContract?> s_typeToBuiltInContract = new();
+            private static readonly ContextAwareDictionary<Type, DataContract?> s_typeToBuiltInContract = new();
             private static Dictionary<XmlQualifiedName, DataContract?>? s_nameToBuiltInContract;
             private static Dictionary<string, DataContract?>? s_typeNameToBuiltInContract;
             private static readonly Hashtable s_namespaces = new Hashtable();
@@ -335,7 +335,7 @@ namespace System.Runtime.Serialization.DataContracts
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static DataContract GetDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type? type)
             {
-                DataContract dataContract = s_dataContractCache[id];
+                DataContract? dataContract = s_dataContractCache.GetItem(id);
                 if (dataContract == null)
                 {
                     dataContract = CreateDataContract(id, typeHandle, type);
@@ -351,13 +351,13 @@ namespace System.Runtime.Serialization.DataContracts
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static DataContract GetGetOnlyCollectionDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type? type)
             {
-                DataContract dataContract = s_dataContractCache[id] ?? CreateGetOnlyCollectionDataContract(id, typeHandle, type);
+                DataContract dataContract = s_dataContractCache.GetItem(id) ?? CreateGetOnlyCollectionDataContract(id, typeHandle, type);
                 return dataContract;
             }
 
             internal static DataContract GetDataContractForInitialization(int id)
             {
-                DataContract dataContract = s_dataContractCache[id];
+                DataContract? dataContract = s_dataContractCache.GetItem(id);
                 if (dataContract == null)
                 {
                     throw new SerializationException(SR.DataContractCacheOverflow);
@@ -368,14 +368,14 @@ namespace System.Runtime.Serialization.DataContracts
             internal static int GetIdForInitialization(ClassDataContract classContract)
             {
                 int id = DataContract.GetId(classContract.TypeForInitialization.TypeHandle);
-                if (id < s_dataContractCache.Length && ContractMatches(classContract, s_dataContractCache[id]))
+                if (id < s_dataContractCache.Length && ContractMatches(classContract, s_dataContractCache.GetItem(id)))
                 {
                     return id;
                 }
                 int currentDataContractId = DataContractCriticalHelper.s_dataContractID;
                 for (int i = 0; i < currentDataContractId; i++)
                 {
-                    if (ContractMatches(classContract, s_dataContractCache[i]))
+                    if (ContractMatches(classContract, s_dataContractCache.GetItem(id)))
                     {
                         return i;
                     }
@@ -383,7 +383,7 @@ namespace System.Runtime.Serialization.DataContracts
                 throw new SerializationException(SR.DataContractCacheOverflow);
             }
 
-            private static bool ContractMatches(DataContract contract, DataContract cachedContract)
+            private static bool ContractMatches(DataContract contract, DataContract? cachedContract)
             {
                 return (cachedContract != null && cachedContract.UnderlyingType == contract.UnderlyingType);
             }
@@ -410,7 +410,7 @@ namespace System.Runtime.Serialization.DataContracts
                                     Debug.Fail("DataContract cache overflow");
                                     throw new SerializationException(SR.DataContractCacheOverflow);
                                 }
-                                Array.Resize<DataContract>(ref s_dataContractCache, newSize);
+                                s_dataContractCache.Resize(newSize);
                             }
                             return nextId;
                         });
@@ -427,12 +427,12 @@ namespace System.Runtime.Serialization.DataContracts
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private static DataContract CreateDataContract(int id, RuntimeTypeHandle typeHandle, Type? type)
             {
-                DataContract? dataContract = s_dataContractCache[id];
+                DataContract? dataContract = s_dataContractCache.GetItem(id);
                 if (dataContract == null)
                 {
                     lock (s_createDataContractLock)
                     {
-                        dataContract = s_dataContractCache[id];
+                        dataContract = s_dataContractCache.GetItem(id);
                         if (dataContract == null)
                         {
                             type ??= Type.GetTypeFromHandle(typeHandle)!;
@@ -499,7 +499,7 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 lock (s_cacheLock)
                 {
-                    s_dataContractCache[id] = dataContract;
+                    s_dataContractCache.SetItem(id, dataContract);
                 }
             }
 
@@ -510,7 +510,7 @@ namespace System.Runtime.Serialization.DataContracts
                 DataContract? dataContract = null;
                 lock (s_createDataContractLock)
                 {
-                    dataContract = s_dataContractCache[id];
+                    dataContract = s_dataContractCache.GetItem(id);
                     if (dataContract == null)
                     {
                         type ??= Type.GetTypeFromHandle(typeHandle)!;

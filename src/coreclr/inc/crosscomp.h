@@ -445,10 +445,9 @@ typedef struct DECLSPEC_ALIGN(16) _T_CONTEXT {
     DWORD64 Pc;
 
     //
-    // Floating Point Registers
+    // Floating Point Registers: FPR64/LSX/LASX.
     //
-    //TODO-LoongArch64: support the SIMD.
-    ULONGLONG F[32];
+    ULONGLONG F[4*32];
     DWORD64 Fcc;
     DWORD   Fcsr;
 } T_CONTEXT, *PT_CONTEXT;

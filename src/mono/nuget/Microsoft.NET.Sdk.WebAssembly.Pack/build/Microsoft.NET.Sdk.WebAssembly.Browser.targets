@@ -19,9 +19,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
 
     <WasmAppHostDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'WasmAppHost'))</WasmAppHostDir>
-    <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(OutputPath), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
+
+    <_RunWorkingDirectory>$(OutputPath)</_RunWorkingDirectory>
+    <_RunWorkingDirectory Condition="'$(_RunWorkingDirectory)' != '' and !$([System.IO.Path]::IsPathRooted($(_RunWorkingDirectory)))">$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(_RunWorkingDirectory)))</_RunWorkingDirectory>
+    <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_RunWorkingDirectory), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
+    
     <RunArguments>exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --use-staticwebassets --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
-    <RunWorkingDirectory>$(OutputPath)</RunWorkingDirectory>
+    <RunWorkingDirectory>$(_RunWorkingDirectory)</RunWorkingDirectory>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -169,15 +173,23 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Warning Condition="'$(InvariantGlobalization)' == 'true' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(BlazorIcuDataFileName)' != '' AND '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(BlazorIcuDataFileName) is set." />
     <PropertyGroup>
-      <HybridGlobalization Condition="'$(BlazorIcuDataFileName)' != ''">false</HybridGlobalization>
+      <_RuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_RuntimePackDir>
+      <_RuntimePackDir Condition="'$(_RuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_RuntimePackDir>
+      <_RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(_RuntimePackDir), 'runtimes', 'browser-wasm', 'native'))</_RuntimePackNativeDir>
+      <_LoadCustomIcuData Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' != 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' != 'true' AND '$(BlazorIcuDataFileName)' != ''">true</_LoadCustomIcuData>
+      <_LoadCustomIcuData Condition="'$(_LoadCustomIcuData)' == ''">false</_LoadCustomIcuData>
+      <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true' AND Exists('$(BlazorIcuDataFileName)')">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
+      <_BlazorIcuDataFileName Condition="'$(_LoadCustomIcuData)' == 'true' AND !Exists('$(BlazorIcuDataFileName)') AND !$([System.IO.Path]::IsPathRooted($(BlazorIcuDataFileName)))">$(_RuntimePackNativeDir)$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
+      <_IsHybridGlobalization Condition="'$(InvariantGlobalization)' != 'true' AND '$(_LoadCustomIcuData)' != 'true'">$(HybridGlobalization)</_IsHybridGlobalization>
+      <_IsHybridGlobalization Condition="'$(_IsHybridGlobalization)' == ''">false</_IsHybridGlobalization>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' != 'true' AND '$(HybridGlobalization)' != 'true'">$(BlazorWebAssemblyLoadAllGlobalizationData)</_BlazorWebAssemblyLoadAllGlobalizationData>
       <_BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(_BlazorWebAssemblyLoadAllGlobalizationData)' == ''">false</_BlazorWebAssemblyLoadAllGlobalizationData>
-      <_IsHybridGlobalization>$(HybridGlobalization)</_IsHybridGlobalization>
-      <_IsHybridGlobalization Condition="'$(InvariantGlobalization)' == 'true' OR '$(HybridGlobalization)' == ''">false</_IsHybridGlobalization>
-      <_BlazorIcuDataFileName Condition="'$(InvariantGlobalization)' != 'true' AND '$(BlazorWebAssemblyLoadAllGlobalizationData)' != 'true' AND '$(HybridGlobalization)' != 'true'">$(BlazorIcuDataFileName)</_BlazorIcuDataFileName>
-      <_LoadCustomIcuData>false</_LoadCustomIcuData>
-      <_LoadCustomIcuData Condition="'$(_BlazorIcuDataFileName)' != ''">true</_LoadCustomIcuData>
     </PropertyGroup>
+    <ItemGroup Condition="'$(_LoadCustomIcuData)' == 'true' AND Exists('$(BlazorIcuDataFileName)')">
+      <!-- if ICU comes from runtime pack then it is already included in ReferenceCopyLocalPaths -->
+      <ReferenceCopyLocalPaths Include="$(_BlazorIcuDataFileName)" />
+    </ItemGroup>
+    <Error Condition="'$(_LoadCustomIcuData)' == 'true' AND !Exists('$(_BlazorIcuDataFileName)')" Text="Could not find %24(BlazorIcuDataFileName)=$(BlazorIcuDataFileName), or when used as a path relative to the runtime pack (='$(_RuntimePackNativeDir)')."/>
   </Target>
 
   <Target Name="_ResolveWasmConfiguration" DependsOnTargets="_ResolveGlobalizationConfiguration">
@@ -216,7 +228,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmRuntimePackVersion>%(ResolvedRuntimePack.NuGetPackageVersion)</_WasmRuntimePackVersion>
     </PropertyGroup>
 
-    <Error Code="WASM0005" Message="Unnable to resolve WebAssembly runtime pack version" Condition="'$(_WasmRuntimePackVersion)' == ''" />
+    <Error Code="WASM0005" Text="Unable to resolve WebAssembly runtime pack version" Condition="'$(_WasmRuntimePackVersion)' == ''" />
   </Target>
 
   <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild;_GetWasmRuntimePackVersion">

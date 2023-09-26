@@ -31,7 +31,8 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
 
             Assert.Throws<ArgumentNullException>("configSectionPath", () =>
             {
-                optionsBuilder.BindConfiguration(configSectionPath);
+                optionsBuilder
+                    .BindConfiguration(configSectionPath);
             });
         }
 
@@ -170,8 +171,8 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
                     .Add(configSource)
                     .Build());
-            OptionsBuilder<FakeOptions> optionsBuilder = services.AddOptions<FakeOptions>();
-            _ = optionsBuilder.BindConfiguration(configSectionName);
+            _ = services.AddOptions<FakeOptions>()
+                .BindConfiguration(configSectionName);
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
             var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<FakeOptions>>();
             bool updateHasRun = false;

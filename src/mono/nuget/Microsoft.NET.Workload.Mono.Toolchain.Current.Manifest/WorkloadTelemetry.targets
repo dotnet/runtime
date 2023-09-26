@@ -19,6 +19,7 @@
       <WorkloadPublishProperties Include="LibraryMode" Value="$(_WorkloadUsesLibraryMode)" />
       <WorkloadPublishProperties Include="HybridGlobalization" Value="$(HybridGlobalization)" />
       <WorkloadPublishProperties Include="ResolvedRuntimePack" Value="$(_MonoWorkloadRuntimePackPackageVersion)" />
+      <WorkloadPublishProperties Include="StripILAfterAOT" Value="$(_WorkloadUsesStripILAfterAOT)" />
     </ItemGroup>
 
     <AllowEmptyTelemetry EventName="WorkloadPublishProperties" EventData="@(WorkloadPublishProperties)" />
@@ -29,17 +30,19 @@
       <_WorkloadUsesBlazorWasm>$(UsingMicrosoftNETSdkBlazorWebAssembly)</_WorkloadUsesBlazorWasm>
       <_WorkloadUsesWasmSDK>$(UsingMicrosoftNETSdkWebAssembly)</_WorkloadUsesWasmSDK>
       <_WorkloadUsesMonoAOT>$(RunAOTCompilation)</_WorkloadUsesMonoAOT>
-      <_WorkloadUsesMonoAOT Condition="'$(RunAOTCompilation)' == '' and '$(PublishAot)' != 'true' and ('$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos')">$(_RunAotCompiler)</_WorkloadUsesMonoAOT>
+      <!-- _RunAotCompiler is defined in xamarin ios targets -->
+      <_WorkloadUsesMonoAOT Condition="'$(_WorkloadUsesMonoAOT)' == '' and '$(PublishAot)' != 'true' and ('$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos')">$(_RunAotCompiler)</_WorkloadUsesMonoAOT>
       <_WorkloadUsesNativeAOT>$(PublishAot)</_WorkloadUsesNativeAOT>
       <_WorkloadUsesInterpreter>$(MonoForceInterpreter)</_WorkloadUsesInterpreter>
       <_WorkloadUsesInterpreter Condition="'$(_WorkloadUsesInterpreter)' == '' and '$(UseInterpreter)' == 'true'">true</_WorkloadUsesInterpreter>
       <_WorkloadUsesInterpreter Condition="'$(_WorkloadUsesInterpreter)' == '' and '$(RunAOTCompilation)' != 'true' and ('$(_WorkloadUsesBlazorWasm)' == 'true' or '$(_WorkloadUsesWasmSDK)' == 'true')">true</_WorkloadUsesInterpreter>
       <_WorkloadUsesLibraryMode Condition="'$(NativeLib)' != '' and ('$(_WorkloadUsesMonoAOT)' == 'true' or '$(_WorkloadUsesNativeAOT)' == 'true')">true</_WorkloadUsesLibraryMode>
+      <_WorkloadUsesStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == 'true' or '$(AndroidStripILAfterAOT)' == 'true'">true</_WorkloadUsesStripILAfterAOT>
     </PropertyGroup>
 
     <PropertyGroup>
-      <_WorkloadUsesOther Condition="'$([System.IO.Path]::GetFileName(%(ReferencePath.Identity)).ToLower())' == 'avalonia.dll'">true</_WorkloadUsesOther>
-      <_WorkloadUsesOther Condition="'$([System.IO.Path]::GetFileName(%(ReferencePath.Identity)).ToLower())' == 'uno.dll'">true</_WorkloadUsesOther>
+      <_WorkloadUsesOther Condition="'$([System.IO.Path]::GetFileName(&quot;%(ReferencePath.Identity)&quot;).ToLowerInvariant())' == 'avalonia.dll'">true</_WorkloadUsesOther>
+      <_WorkloadUsesOther Condition="'$([System.IO.Path]::GetFileName(&quot;%(ReferencePath.Identity)&quot;).ToLowerInvariant())' == 'uno.dll'">true</_WorkloadUsesOther>
       <_WorkloadUsesMobileSDKOnly Condition="'$(RuntimeIdentifier)' != 'browser-wasm' and '$(UseMaui)' != 'true' and '$(_WorkloadUsesOther)' != 'true'">true</_WorkloadUsesMobileSDKOnly>
     </PropertyGroup>
   </Target>

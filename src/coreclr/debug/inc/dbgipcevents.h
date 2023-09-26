@@ -2011,6 +2011,7 @@ struct MSLAYOUT DebuggerIPCEvent
             SIZE_T       offset;
             SIZE_T       encVersion;
             LSPTR_METHODDESC  nativeCodeMethodDescToken; // points to the MethodDesc if !isIL
+            CORDB_ADDRESS codeStartAddress;
         } BreakpointData;
 
         struct MSLAYOUT
