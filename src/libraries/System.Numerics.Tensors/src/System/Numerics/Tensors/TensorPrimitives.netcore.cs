@@ -1380,10 +1380,19 @@ namespace System.Numerics.Tensors
                     (current > result ? current : result);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<float> Invoke(Vector128<float> result, Vector128<float> current) =>
-                Vector128.ConditionalSelect(Vector128.Equals(result, current),
-                    Vector128.ConditionalSelect(IsNegative(result), current, result),
-                    Vector128.Max(result, current));
+            public static Vector128<float> Invoke(Vector128<float> result, Vector128<float> current)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    return AdvSimd.Max(result, current);
+                }
+
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(result, current),
+                        Vector128.ConditionalSelect(IsNegative(result), current, result),
+                        Vector128.Max(result, current));
+            }
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<float> Invoke(Vector256<float> result, Vector256<float> current) =>
                 Vector256.ConditionalSelect(Vector256.Equals(result, current),
@@ -1411,14 +1420,22 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x, float y) => MathF.Max(x, y);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y) =>
-                Vector128.ConditionalSelect(Vector128.Equals(x, x),
-                    Vector128.ConditionalSelect(Vector128.Equals(y, y),
-                        Vector128.ConditionalSelect(Vector128.Equals(x, y),
-                            Vector128.ConditionalSelect(IsNegative(x), y, x),
-                            Vector128.Max(x, y)),
-                        y),
-                    x);
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    return AdvSimd.Max(x, y);
+                }
+
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(x, x),
+                        Vector128.ConditionalSelect(Vector128.Equals(y, y),
+                            Vector128.ConditionalSelect(Vector128.Equals(x, y),
+                                Vector128.ConditionalSelect(IsNegative(x), y, x),
+                                Vector128.Max(x, y)),
+                            y),
+                        x);
+            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) =>
@@ -1553,10 +1570,18 @@ namespace System.Numerics.Tensors
                     (current < result ? current : result);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<float> Invoke(Vector128<float> result, Vector128<float> current) =>
-                Vector128.ConditionalSelect(Vector128.Equals(result, current),
-                    Vector128.ConditionalSelect(IsNegative(current), current, result),
-                    Vector128.Min(result, current));
+            public static Vector128<float> Invoke(Vector128<float> result, Vector128<float> current)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    return AdvSimd.Min(result, current);
+                }
+
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(result, current),
+                        Vector128.ConditionalSelect(IsNegative(current), current, result),
+                        Vector128.Min(result, current));
+            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<float> Invoke(Vector256<float> result, Vector256<float> current) =>
@@ -1585,14 +1610,22 @@ namespace System.Numerics.Tensors
             public static float Invoke(float x, float y) => MathF.Min(x, y);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y) =>
-                Vector128.ConditionalSelect(Vector128.Equals(x, x),
-                    Vector128.ConditionalSelect(Vector128.Equals(y, y),
-                        Vector128.ConditionalSelect(Vector128.Equals(x, y),
-                            Vector128.ConditionalSelect(IsNegative(x), x, y),
-                            Vector128.Min(x, y)),
-                        y),
-                    x);
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    return AdvSimd.Min(x, y);
+                }
+
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(x, x),
+                        Vector128.ConditionalSelect(Vector128.Equals(y, y),
+                            Vector128.ConditionalSelect(Vector128.Equals(x, y),
+                                Vector128.ConditionalSelect(IsNegative(x), x, y),
+                                Vector128.Min(x, y)),
+                            y),
+                        x);
+            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) =>
