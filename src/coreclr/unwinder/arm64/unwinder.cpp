@@ -1666,7 +1666,7 @@ Routine Description:
 Arguments:
 
     ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the IamgeBase.
+        function, as an offset relative to the ImageBase.
 
     ImageBase - Supplies the base address of the image that contains the
         function being unwound.
@@ -1726,7 +1726,7 @@ Return Value:
     UNREFERENCED_PARAMETER(UnwindFlags);
 
     //
-    // Unless a special frame is enountered, assume that any unwinding
+    // Unless a special frame is encountered, assume that any unwinding
     // will return us to the return address of a call and set the flag
     // appropriately (it will be cleared again if the special cases apply).
     //
@@ -2624,7 +2624,7 @@ Return Value:
     // Make sure out-of-bound stack accesses don't send us into an infinite
     // unwinding loop.
     //
-#ifdef HOST_WINDOWS
+#if 0
     __try {
 #endif
         //
@@ -2688,7 +2688,7 @@ Return Value:
                                             &UnwindParams,
                                             UnwindFlags);
         }
- #ifdef HOST_WINDOWS
+ #if 0
     }
 
     //
@@ -2778,7 +2778,6 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 #if defined(HOST_UNIX)
 
 #undef PRUNTIME_FUNCTION
-//#undef PKNONVOLATILE_CONTEXT_POINTERS
 
 PEXCEPTION_ROUTINE
 RtlVirtualUnwind(
