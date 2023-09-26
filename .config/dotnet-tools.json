@@ -31,6 +31,12 @@
       "commands": [
         "dotnet-format"
       ]
+    },
+    "dotnet-serve": {
+      "version": "1.10.172",
+      "commands": [
+        "dotnet-serve"
+      ]
     }
   }
 }

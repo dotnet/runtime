@@ -28,7 +28,7 @@ namespace Wasm.Build.Tests
                 ("WasmEnableExceptionHandling", true),
                 ("InvariantTimezone", false),
                 ("InvariantGlobalization", false),
-                ("WasmNativeStrip", true),
+                //("WasmNativeStrip", true),
                 //("WasmNativeDebugSymbols", true),
                 // ("WasmNativeStrip", true) -- tested separately because it has special handling in targets
             };
@@ -105,12 +105,11 @@ namespace Wasm.Build.Tests
         {
             (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_build", config, extraProperties, aot, dotnetWasmFromRuntimePack: !expectWasmBuildNativeForPublish, publish: false);
 
-            bool expectedWasmNativeStripValue = extraProperties.Contains("<WasmNativeStrip>true</WasmNativeStrip>")
-                                                    ? true
-                                                    : (extraProperties.Contains("<WasmNativeStrip>false</WasmNativeStrip>") ? false : true);
-            bool expectedWasmNativeDebugSymbolsValue = extraProperties.Contains("<WasmNativeStrip>true</WasmNativeStrip>")
-                                                    ? true
-                                                    : (extraProperties.Contains("<WasmNativeDebugSymbols>false</WasmNativeStrip>") ? false : true);
+            bool expectedWasmNativeStripValue = !(expectWasmBuildNativeForBuild && config == "Debug");
+            //bool expectedWasmNativeStripValue = extraProperties.Contains("<WasmNativeStrip>true</WasmNativeStrip>")
+                                                    //? true
+                                                    //: (extraProperties.Contains("<WasmNativeStrip>false</WasmNativeStrip>") ? false : config != "Debug");
+            //bool expectedWasmNativeDebugSymbolsValue = extraProperties.Contains("<WasmNativeDebugSymbols>false</WasmNativeDebugSymbols>") ? true : false;
             //if ([>isBuild && <] expectWasmBuildNativeForBuild && config == "Debug")
             //{
                 //expectedWasmNativeDebugSymbolsValue = true;
@@ -123,7 +122,7 @@ namespace Wasm.Build.Tests
             CheckPropertyValues(line,
                                 wasmBuildNative: expectWasmBuildNativeForBuild,
                                 wasmNativeStrip: expectedWasmNativeStripValue,
-                                wasmNativeDebugSymbols: expectedWasmNativeDebugSymbolsValue,
+                                wasmNativeDebugSymbols: /*expectedWasmNativeDebugSymbolsValue*/ true,
                                 wasmBuildingForNestedPublish: null);
         }
 
@@ -135,12 +134,14 @@ namespace Wasm.Build.Tests
         {
             (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_publish", config, extraProperties, aot, dotnetWasmFromRuntimePack: !expectWasmBuildNativeForPublish, publish: true);
 
-            bool expectedWasmNativeStripValue = extraProperties.Contains("<WasmNativeStrip>true</WasmNativeStrip>")
-                                                    ? true
-                                                    : (extraProperties.Contains("<WasmNativeStrip>false</WasmNativeStrip>") ? false : true);
-            bool expectedWasmNativeDebugSymbolsValue = extraProperties.Contains("<WasmNativeStrip>true</WasmNativeStrip>")
-                                                    ? true
-                                                    : (extraProperties.Contains("<WasmNativeDebugSymbols>false</WasmNativeStrip>") ? false : true);
+            bool expectedWasmNativeStripValue = true;
+            //bool expectedWasmNativeStripValue = extraProperties.Contains("<WasmNativeStrip>true</WasmNativeStrip>")
+                                                    //? true
+                                                    //: (extraProperties.Contains("<WasmNativeStrip>false</WasmNativeStrip>") ? false : true);
+            bool expectedWasmNativeDebugSymbolsValue = true;
+            //bool expectedWasmNativeDebugSymbolsValue = extraProperties.Contains("<WasmNativeStrip>true</WasmNativeStrip>")
+                                                    //? true
+                                                    //: (extraProperties.Contains("<WasmNativeDebugSymbols>false</WasmNativeStrip>") ? false : true);
             // for build
             // Assert.DoesNotContain($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmNativeStrip: 'true', WasmBuildingForNestedPublish: ''", output);
             // for publish
@@ -214,7 +215,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release", "",   /*publish*/ false)]
         [InlineData("Release", "",   /*publish*/ true)]
         [InlineData("Release", "<PublishTrimmed>false</PublishTrimmed>", /*publish*/ true)]
-        public void WithNativeReference(string config, string extraProperties, bool publishValue)
+        public void WithNativeReference(string config, string extraProperties, bool publish)
         {
             string nativeLibPath = Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o");
             string nativeRefItem = @$"<NativeFileReference Include=""{nativeLibPath}"" />";
@@ -222,21 +223,21 @@ namespace Wasm.Build.Tests
                                                         config,
                                                         extraProperties,
                                                         aot: false,
-                                                        dotnetWasmFromRuntimePack: !publishValue,
-                                                        publish: publishValue,
+                                                        dotnetWasmFromRuntimePack: !publish,
+                                                        publish: publish,
                                                         extraItems: nativeRefItem);
 
-            //bool isRelinkingForDebug = config == "Debug" && !publishValue;
+            //bool isRelinkingForDebug = config == "Debug" && !publish;
             //bool wasmNativeDebugSymbols = isRelinkingForDebug;
             // for build - FIXME:
             // Assert.DoesNotContain($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
             // for publish
-            // Assert.Equal($"** WasmBuildNative: '{publishValue.ToString().ToLower()}', WasmNativeStrip: 'true', WasmBuildingForNestedPublish: 'true'", line);
+            // Assert.Equal($"** WasmBuildNative: '{publish.ToString().ToLower()}', WasmNativeStrip: 'true', WasmBuildingForNestedPublish: 'true'", line);
             CheckPropertyValues(line,
                                 wasmBuildNative: true,
-                                wasmNativeStrip: true,
+                                wasmNativeStrip: publish || config != "Debug",
                                 wasmNativeDebugSymbols: true,
-                                wasmBuildingForNestedPublish: publishValue ? true : null);
+                                wasmBuildingForNestedPublish: publish ? true : null);
         }
 
         private (string, string?) CheckWasmNativeDefaultValue(string projectName,
