@@ -110,14 +110,14 @@
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>8.0.0-rc.1.23406.6</MicrosoftNETCoreILAsmVersion>
     <MicrosoftNETCoreILAsmVersion>8.0.0-preview.7.23325.2</MicrosoftNETCoreILAsmVersion>
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23423.1</runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23423.1</runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23423.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23423.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion>
-    <runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23423.1</runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23423.1</runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>
-    <runtimeosxarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23423.1</runtimeosxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23423.1</runtimeosxx64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23472.2</runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23472.2</runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23472.2</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23472.2</runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23472.2</runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23472.2</runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimeosxarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23472.2</runtimeosxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
+    <runtimeosxx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.23472.2</runtimeosxx64MicrosoftNETCoreRuntimeObjWriterVersion>
     <!-- Libraries dependencies -->
     <MicrosoftBclAsyncInterfacesVersion>6.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftBclHashCodeVersion>1.1.1</MicrosoftBclHashCodeVersion>
@@ -186,7 +186,7 @@
     <MicrosoftDotNetXHarnessTestRunnersCommonVersion>8.0.0-prerelease.23407.2</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>8.0.0-prerelease.23407.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>8.0.0-prerelease.23407.2</MicrosoftDotNetXHarnessCLIVersion>
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>8.0.0-alpha.0.23468.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>8.0.0-alpha.0.23475.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <XUnitVersion>2.4.2</XUnitVersion>
     <XUnitAnalyzersVersion>1.0.0</XUnitAnalyzersVersion>
     <XUnitRunnerVisualStudioVersion>2.4.5</XUnitRunnerVisualStudioVersion>
@@ -222,38 +222,38 @@
     <MicrosoftNativeQuicMsQuicVersion>2.2.2</MicrosoftNativeQuicMsQuicVersion>
     <SystemNetMsQuicTransportVersion>8.0.0-alpha.1.23468.1</SystemNetMsQuicTransportVersion>
     <!-- Mono LLVM -->
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23423.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23423.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23423.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23423.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23423.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23423.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23423.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23423.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23423.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23423.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23423.1</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23423.1</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23423.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23423.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23472.2</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23472.2</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23472.2</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23472.2</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23472.2</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23472.2</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23472.2</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23472.2</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23472.2</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23472.2</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23472.2</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23472.2</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>16.0.5-alpha.1.23472.2</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>16.0.5-alpha.1.23472.2</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>8.0.0-rtm.23470.1</MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>8.0.0-rtm.23475.3</MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
     <!-- JIT Tools -->
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23423.1</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23423.1</runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23423.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23423.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23423.1</runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23423.1</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23423.1</runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23423.1</runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23472.2</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23472.2</runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23472.2</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23472.2</runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23472.2</runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23472.2</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23472.2</runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>16.0.5-alpha.1.23472.2</runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>
     <!-- BrowserDebugProxy libs -->
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
