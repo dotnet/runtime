@@ -250,7 +250,7 @@ namespace System
             if (!WriteHexValue("offset"u8, frame.GetNativeOffset()))
                 return false;
 
-            string method = DeveloperExperience.GetMethodName(ip, out IntPtr _);
+            string method = DeveloperExperience.GetMethodName(ip, out _, out _);
             if (method != null)
             {
                 if (!WriteStringValue("name"u8, method, maxNameSize))

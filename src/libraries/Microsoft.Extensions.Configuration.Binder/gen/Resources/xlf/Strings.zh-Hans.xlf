@@ -8,8 +8,8 @@
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
-        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</source>
-        <target state="translated">未为联编程序调用生成绑定逻辑。不支持的输入模式包括泛型调用和传递装箱对象。</target>
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
+        <target state="needs-review-translation">未为联编程序调用生成绑定逻辑。不支持的输入模式包括泛型调用和传递装箱对象。</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">

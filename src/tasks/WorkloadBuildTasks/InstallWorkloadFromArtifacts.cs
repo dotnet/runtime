@@ -49,6 +49,11 @@ namespace Microsoft.Workload.Build.Tasks
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
         private string _tempDir = string.Empty;
         private string _nugetCachePath = string.Empty;
+        private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip
+        };
 
         [GeneratedRegex(@"^\d+\.\d+\.\d+(-[A-z]*\.*\d*)?")]
         private static partial Regex bandVersionRegex();
@@ -330,11 +335,7 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 manifest = JsonSerializer.Deserialize<ManifestInformation>(
                                                     File.ReadAllBytes(jsonPath),
-                                                    new JsonSerializerOptions(JsonSerializerDefaults.Web)
-                                                    {
-                                                        AllowTrailingCommas = true,
-                                                        ReadCommentHandling = JsonCommentHandling.Skip
-                                                    });
+                                                    s_jsonOptions);
 
                 if (manifest == null)
                 {

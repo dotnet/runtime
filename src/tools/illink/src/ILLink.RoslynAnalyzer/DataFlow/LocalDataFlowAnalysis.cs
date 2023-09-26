@@ -7,6 +7,7 @@ using System.Diagnostics;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
@@ -52,6 +53,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 			var oldInterproceduralState = interproceduralState.Clone ();
 
+			if (OperationBlock is IAttributeOperation attribute) {
+				AnalyzeAttribute (Context.OwningSymbol, attribute);
+				return;
+			}
+
 			if (Context.OwningSymbol is not IMethodSymbol owningMethod)
 				return;
 
@@ -71,6 +77,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 		}
 
+		void AnalyzeAttribute (ISymbol owningSymbol, IAttributeOperation attribute)
+		{
+			var cfg = Context.GetControlFlowGraph (attribute);
+			var lValueFlowCaptures = LValueFlowCapturesProvider.CreateLValueFlowCaptures (cfg);
+			var visitor = GetVisitor (owningSymbol, cfg, lValueFlowCaptures, default);
+			Fixpoint (new ControlFlowGraphProxy (cfg), Lattice, visitor);
+		}
+
 		void AnalyzeMethod (MethodBodyValue method, ref InterproceduralState<TValue, TLattice> interproceduralState)
 		{
 			var cfg = method.ControlFlowGraph;
@@ -84,7 +98,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		}
 
 		protected abstract TTransfer GetVisitor (
-			IMethodSymbol method,
+			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
 			InterproceduralState<TValue, TLattice> interproceduralState);

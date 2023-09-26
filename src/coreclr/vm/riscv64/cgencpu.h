@@ -107,7 +107,7 @@ struct CalleeSavedRegisters {
 #define NUM_ARGUMENT_REGISTERS 8
 typedef DPTR(struct ArgumentRegisters) PTR_ArgumentRegisters;
 struct ArgumentRegisters {
-    INT64 a[8]; // a0 ....a7
+    INT64 a[NUM_ARGUMENT_REGISTERS]; // a0 ....a7
 };
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
@@ -124,9 +124,30 @@ struct ArgumentRegisters {
 typedef DPTR(struct FloatArgumentRegisters) PTR_FloatArgumentRegisters;
 struct FloatArgumentRegisters {
     //TODO: not supports RISCV64-SIMD.
-    double  f[8];  // f0-f7
+    double  f[NUM_FLOAT_ARGUMENT_REGISTERS];  // f0-f7
 };
 
+//**********************************************************************
+// Profiling
+//**********************************************************************
+
+#ifdef PROFILING_SUPPORTED
+
+struct PROFILE_PLATFORM_SPECIFIC_DATA
+{
+    void*                  Fp;
+    void*                  Pc;
+    ArgumentRegisters      argumentRegisters;
+    FunctionID             functionId;
+    FloatArgumentRegisters floatArgumentRegisters;
+    void*                  probeSp;
+    void*                  profiledSp;
+    void*                  hiddenArg;
+    UINT64                 flags;
+    // Scratch space to reconstruct struct passed in two registers
+    BYTE                   buffer[sizeof(ArgumentRegisters) + sizeof(FloatArgumentRegisters)];
+};
+#endif  // PROFILING_SUPPORTED
 
 //**********************************************************************
 // Exception handling
@@ -359,8 +380,6 @@ private:
     void EmitLoad(FloatReg dest, IntReg srcAddr, int offset = 0);
     void EmitStore(IntReg src, IntReg destAddr, int offset = 0);
     void EmitStore(FloatReg src, IntReg destAddr, int offset = 0);
-
-    void EmitRet(IntReg reg);
 };
 
 extern "C" void SinglecastDelegateInvokeStub();

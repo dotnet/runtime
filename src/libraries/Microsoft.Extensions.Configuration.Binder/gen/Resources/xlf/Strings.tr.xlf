@@ -8,8 +8,8 @@
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
-        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</source>
-        <target state="translated">Bir bağlayıcı çağrısı için bağlama mantığı oluşturulmadı. Desteklenmeyen giriş desenleri genel çağrılar ve geçici kutulu nesneler içeriyor.</target>
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls, passing boxed objects, and passing types that are not 'public' or 'internal'.</source>
+        <target state="needs-review-translation">Bir bağlayıcı çağrısı için bağlama mantığı oluşturulmadı. Desteklenmeyen giriş desenleri genel çağrılar ve geçici kutulu nesneler içeriyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="CouldNotDetermineTypeInfoTitle">

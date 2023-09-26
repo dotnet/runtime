@@ -27,6 +27,7 @@ namespace System.Memory.Tests.Span
         [InlineData(StringComparison.OrdinalIgnoreCase, "a")]
         [InlineData(StringComparison.OrdinalIgnoreCase, "A")]
         [InlineData(StringComparison.OrdinalIgnoreCase, "A", "a")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, "Ab", "Abc")]
         [InlineData(StringComparison.OrdinalIgnoreCase, "a", "Ab", "abc", "bC")]
         public static void Values_ImplementsSearchValuesBase(StringComparison comparisonType, params string[] values)
         {

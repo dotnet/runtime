@@ -178,7 +178,6 @@ namespace Microsoft.Interop
 
         public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => _inner.GetNativeSignatureBehavior(info);
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => _inner.GetValueBoundaryBehavior(info, context);
-        public bool IsSupported(TargetFramework target, Version version) => _inner.IsSupported(target, version);
         public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
             => _inner.SupportsByValueMarshalKind(marshalKind, info, context, out diagnostic);
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _inner.UsesNativeIdentifier(info, context);
@@ -200,8 +199,6 @@ namespace Microsoft.Interop
         public override bool SingleFrameSpansNativeContext => _innerContext.SingleFrameSpansNativeContext;
 
         public override bool AdditionalTemporaryStateLivesAcrossStages => _innerContext.AdditionalTemporaryStateLivesAcrossStages;
-
-        public override (TargetFramework framework, Version version) GetTargetFramework() => _innerContext.GetTargetFramework();
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {

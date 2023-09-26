@@ -544,7 +544,7 @@ mono_imul_ovf (gint32 a, gint32 b)
 		return 0;
 	}
 
-	return res;
+	return GINT64_TO_INT32 (res);
 }
 
 gint32
@@ -559,7 +559,7 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 		return 0;
 	}
 
-	return res;
+	return GUINT64_TO_INT32 (res);
 }
 
 gint32
@@ -574,7 +574,7 @@ mono_imul_ovf_un_oom (guint32 a, guint32 b)
 		return 0;
 	}
 
-	return res;
+	return GUINT64_TO_INT32 (res);
 }
 #endif
 

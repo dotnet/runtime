@@ -20,7 +20,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "rangecheck.h"
 #include "lower.h"
 #include "stacklevelsetter.h"
-#include "jittelemetry.h"
 #include "patchpointinfo.h"
 #include "jitstd/algorithm.h"
 
@@ -155,7 +154,7 @@ void Compiler::JitLogEE(unsigned level, const char* fmt, ...)
     if (verbose)
     {
         va_start(args, fmt);
-        vflogf(jitstdout, fmt, args);
+        vflogf(jitstdout(), fmt, args);
         va_end(args);
     }
 
@@ -1230,13 +1229,14 @@ void DisplayNowayAssertMap()
             fout = _wfopen(strJitMeasureNowayAssertFile, W("a"));
             if (fout == nullptr)
             {
-                fprintf(jitstdout, "Failed to open JitMeasureNowayAssertFile \"%ws\"\n", strJitMeasureNowayAssertFile);
+                fprintf(jitstdout(), "Failed to open JitMeasureNowayAssertFile \"%ws\"\n",
+                        strJitMeasureNowayAssertFile);
                 return;
             }
         }
         else
         {
-            fout = jitstdout;
+            fout = jitstdout();
         }
 
         // Iterate noway assert map, create sorted table by occurrence, dump it.
@@ -1253,7 +1253,7 @@ void DisplayNowayAssertMap()
 
         jitstd::sort(nacp, nacp + count, NowayAssertCountMap::compare());
 
-        if (fout == jitstdout)
+        if (fout == jitstdout())
         {
             // Don't output the header if writing to a file, since we'll be appending to existing dumps in that case.
             fprintf(fout, "\nnoway_assert counts:\n");
@@ -1266,7 +1266,7 @@ void DisplayNowayAssertMap()
                     nacp[i].fl.m_condStr);
         }
 
-        if (fout != jitstdout)
+        if (fout != jitstdout())
         {
             fclose(fout);
             fout = nullptr;
@@ -1331,7 +1331,7 @@ void Compiler::compStartup()
     // Static vars of ValueNumStore
     ValueNumStore::ValidateValueNumStoreStatics();
 
-    compDisplayStaticSizes(jitstdout);
+    compDisplayStaticSizes();
 }
 
 /*****************************************************************************
@@ -1389,11 +1389,8 @@ void Compiler::compShutdown()
 #endif
 
 #if NODEBASH_STATS
-    GenTree::ReportOperBashing(jitstdout);
+    GenTree::ReportOperBashing(jitstdout());
 #endif
-
-    // Where should we write our statistics output?
-    FILE* fout = jitstdout;
 
 #ifdef FEATURE_JIT_METHOD_PERF
     if (compJitTimeLogFilename != nullptr)
@@ -1445,7 +1442,7 @@ void Compiler::compShutdown()
         unsigned countLarge = 0;
         unsigned countSmall = 0;
 
-        fprintf(fout, "\nGenTree operator counts (approximate):\n\n");
+        jitprintf("\nGenTree operator counts (approximate):\n\n");
 
         for (OperInfo oper : opers)
         {
@@ -1465,8 +1462,8 @@ void Compiler::compShutdown()
             // Let's not show anything below a threshold
             if (percentage >= 0.5)
             {
-                fprintf(fout, "    GT_%-17s   %7u (%4.1lf%%) %3u bytes each\n", GenTree::OpName(oper.Oper), count,
-                        percentage, size);
+                jitprintf("    GT_%-17s   %7u (%4.1lf%%) %3u bytes each\n", GenTree::OpName(oper.Oper), count,
+                          percentage, size);
                 remainingCount -= count;
             }
             else
@@ -1484,14 +1481,14 @@ void Compiler::compShutdown()
 
         if (remainingCount > 0)
         {
-            fprintf(fout, "    All other GT_xxx ...   %7u (%4.1lf%%) ... %4.1lf%% small + %4.1lf%% large\n",
-                    remainingCount, 100.0 * remainingCount / totalCount, 100.0 * remainingCountSmall / totalCount,
-                    100.0 * remainingCountLarge / totalCount);
+            jitprintf("    All other GT_xxx ...   %7u (%4.1lf%%) ... %4.1lf%% small + %4.1lf%% large\n", remainingCount,
+                      100.0 * remainingCount / totalCount, 100.0 * remainingCountSmall / totalCount,
+                      100.0 * remainingCountLarge / totalCount);
         }
-        fprintf(fout, "    -----------------------------------------------------\n");
-        fprintf(fout, "    Total    .......   %11u --ALL-- ... %4.1lf%% small + %4.1lf%% large\n", totalCount,
-                100.0 * countSmall / totalCount, 100.0 * countLarge / totalCount);
-        fprintf(fout, "\n");
+        jitprintf("    -----------------------------------------------------\n");
+        jitprintf("    Total    .......   %11u --ALL-- ... %4.1lf%% small + %4.1lf%% large\n", totalCount,
+                  100.0 * countSmall / totalCount, 100.0 * countLarge / totalCount);
+        jitprintf("\n");
     }
 
 #endif // COUNT_AST_OPERS
@@ -1500,49 +1497,49 @@ void Compiler::compShutdown()
 
     if (grossVMsize && grossNCsize)
     {
-        fprintf(fout, "\n");
-        fprintf(fout, "--------------------------------------\n");
-        fprintf(fout, "Function and GC info size stats\n");
-        fprintf(fout, "--------------------------------------\n");
+        jitprintf("\n");
+        jitprintf("--------------------------------------\n");
+        jitprintf("Function and GC info size stats\n");
+        jitprintf("--------------------------------------\n");
 
-        fprintf(fout, "[%7u VM, %8u %6s %4u%%] %s\n", grossVMsize, grossNCsize, Target::g_tgtCPUName,
-                100 * grossNCsize / grossVMsize, "Total (excluding GC info)");
+        jitprintf("[%7u VM, %8u %6s %4u%%] %s\n", grossVMsize, grossNCsize, Target::g_tgtCPUName,
+                  100 * grossNCsize / grossVMsize, "Total (excluding GC info)");
 
-        fprintf(fout, "[%7u VM, %8u %6s %4u%%] %s\n", grossVMsize, totalNCsize, Target::g_tgtCPUName,
-                100 * totalNCsize / grossVMsize, "Total (including GC info)");
+        jitprintf("[%7u VM, %8u %6s %4u%%] %s\n", grossVMsize, totalNCsize, Target::g_tgtCPUName,
+                  100 * totalNCsize / grossVMsize, "Total (including GC info)");
 
         if (gcHeaderISize || gcHeaderNSize)
         {
-            fprintf(fout, "\n");
+            jitprintf("\n");
 
-            fprintf(fout, "GC tables   : [%7uI,%7uN] %7u byt  (%u%% of IL, %u%% of %s).\n",
-                    gcHeaderISize + gcPtrMapISize, gcHeaderNSize + gcPtrMapNSize, totalNCsize - grossNCsize,
-                    100 * (totalNCsize - grossNCsize) / grossVMsize, 100 * (totalNCsize - grossNCsize) / grossNCsize,
-                    Target::g_tgtCPUName);
+            jitprintf("GC tables   : [%7uI,%7uN] %7u byt  (%u%% of IL, %u%% of %s).\n", gcHeaderISize + gcPtrMapISize,
+                      gcHeaderNSize + gcPtrMapNSize, totalNCsize - grossNCsize,
+                      100 * (totalNCsize - grossNCsize) / grossVMsize, 100 * (totalNCsize - grossNCsize) / grossNCsize,
+                      Target::g_tgtCPUName);
 
-            fprintf(fout, "GC headers  : [%7uI,%7uN] %7u byt, [%4.1fI,%4.1fN] %4.1f byt/meth\n", gcHeaderISize,
-                    gcHeaderNSize, gcHeaderISize + gcHeaderNSize, (float)gcHeaderISize / (genMethodICnt + 0.001),
-                    (float)gcHeaderNSize / (genMethodNCnt + 0.001),
-                    (float)(gcHeaderISize + gcHeaderNSize) / genMethodCnt);
+            jitprintf("GC headers  : [%7uI,%7uN] %7u byt, [%4.1fI,%4.1fN] %4.1f byt/meth\n", gcHeaderISize,
+                      gcHeaderNSize, gcHeaderISize + gcHeaderNSize, (float)gcHeaderISize / (genMethodICnt + 0.001),
+                      (float)gcHeaderNSize / (genMethodNCnt + 0.001),
+                      (float)(gcHeaderISize + gcHeaderNSize) / genMethodCnt);
 
-            fprintf(fout, "GC ptr maps : [%7uI,%7uN] %7u byt, [%4.1fI,%4.1fN] %4.1f byt/meth\n", gcPtrMapISize,
-                    gcPtrMapNSize, gcPtrMapISize + gcPtrMapNSize, (float)gcPtrMapISize / (genMethodICnt + 0.001),
-                    (float)gcPtrMapNSize / (genMethodNCnt + 0.001),
-                    (float)(gcPtrMapISize + gcPtrMapNSize) / genMethodCnt);
+            jitprintf("GC ptr maps : [%7uI,%7uN] %7u byt, [%4.1fI,%4.1fN] %4.1f byt/meth\n", gcPtrMapISize,
+                      gcPtrMapNSize, gcPtrMapISize + gcPtrMapNSize, (float)gcPtrMapISize / (genMethodICnt + 0.001),
+                      (float)gcPtrMapNSize / (genMethodNCnt + 0.001),
+                      (float)(gcPtrMapISize + gcPtrMapNSize) / genMethodCnt);
         }
         else
         {
-            fprintf(fout, "\n");
+            jitprintf("\n");
 
-            fprintf(fout, "GC tables   take up %u bytes (%u%% of instr, %u%% of %6s code).\n",
-                    totalNCsize - grossNCsize, 100 * (totalNCsize - grossNCsize) / grossVMsize,
-                    100 * (totalNCsize - grossNCsize) / grossNCsize, Target::g_tgtCPUName);
+            jitprintf("GC tables   take up %u bytes (%u%% of instr, %u%% of %6s code).\n", totalNCsize - grossNCsize,
+                      100 * (totalNCsize - grossNCsize) / grossVMsize, 100 * (totalNCsize - grossNCsize) / grossNCsize,
+                      Target::g_tgtCPUName);
         }
 
 #ifdef DEBUG
 #if DOUBLE_ALIGN
-        fprintf(fout, "%u out of %u methods generated with double-aligned stack\n",
-                Compiler::s_lvaDoubleAlignedProcsCount, genMethodCnt);
+        jitprintf("%u out of %u methods generated with double-aligned stack\n", Compiler::s_lvaDoubleAlignedProcsCount,
+                  genMethodCnt);
 #endif
 #endif
     }
@@ -1550,110 +1547,110 @@ void Compiler::compShutdown()
 #endif // DISPLAY_SIZES
 
 #if CALL_ARG_STATS
-    compDispCallArgStats(fout);
+    compDispCallArgStats(jitstdout());
 #endif
 
 #if COUNT_BASIC_BLOCKS
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "Basic block count frequency table:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    bbCntTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("Basic block count frequency table:\n");
+    jitprintf("--------------------------------------------------\n");
+    bbCntTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
-    fprintf(fout, "\n");
+    jitprintf("\n");
 
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "IL method size frequency table for methods with a single basic block:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    bbOneBBSizeTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("IL method size frequency table for methods with a single basic block:\n");
+    jitprintf("--------------------------------------------------\n");
+    bbOneBBSizeTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "fgComputeDoms `while (change)` iterations:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    domsChangedIterationTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("fgComputeDoms `while (change)` iterations:\n");
+    jitprintf("--------------------------------------------------\n");
+    domsChangedIterationTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "fgComputeReachabilitySets `while (change)` iterations:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    computeReachabilitySetsIterationTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("fgComputeReachabilitySets `while (change)` iterations:\n");
+    jitprintf("--------------------------------------------------\n");
+    computeReachabilitySetsIterationTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "fgComputeReachability `while (change)` iterations:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    computeReachabilityIterationTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("fgComputeReachability `while (change)` iterations:\n");
+    jitprintf("--------------------------------------------------\n");
+    computeReachabilityIterationTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
 #endif // COUNT_BASIC_BLOCKS
 
 #if COUNT_LOOPS
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Loop stats\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Total number of methods with loops is %5u\n", totalLoopMethods);
-    fprintf(fout, "Total number of              loops is %5u\n", totalLoopCount);
-    fprintf(fout, "Maximum number of loops per method is %5u\n", maxLoopsPerMethod);
-    fprintf(fout, "# of methods overflowing nat loop table is %5u\n", totalLoopOverflows);
-    fprintf(fout, "Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
-    fprintf(fout, "# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
-    fprintf(fout, "Total number of loops with an         iterator is %5u\n", iterLoopCount);
-    fprintf(fout, "Total number of loops with a constant iterator is %5u\n", constIterLoopCount);
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("Loop stats\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("Total number of methods with loops is %5u\n", totalLoopMethods);
+    jitprintf("Total number of              loops is %5u\n", totalLoopCount);
+    jitprintf("Maximum number of loops per method is %5u\n", maxLoopsPerMethod);
+    jitprintf("# of methods overflowing nat loop table is %5u\n", totalLoopOverflows);
+    jitprintf("Total number of 'unnatural' loops is %5u\n", totalUnnatLoopCount);
+    jitprintf("# of methods overflowing unnat loop limit is %5u\n", totalUnnatLoopOverflows);
+    jitprintf("Total number of loops with an         iterator is %5u\n", iterLoopCount);
+    jitprintf("Total number of loops with a constant iterator is %5u\n", constIterLoopCount);
 
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "Loop count frequency table:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    loopCountTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
-    fprintf(fout, "Loop exit count frequency table:\n");
-    fprintf(fout, "--------------------------------------------------\n");
-    loopExitCountTable.dump(fout);
-    fprintf(fout, "--------------------------------------------------\n");
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("Loop count frequency table:\n");
+    jitprintf("--------------------------------------------------\n");
+    loopCountTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
+    jitprintf("Loop exit count frequency table:\n");
+    jitprintf("--------------------------------------------------\n");
+    loopExitCountTable.dump(jitstdout());
+    jitprintf("--------------------------------------------------\n");
 
 #endif // COUNT_LOOPS
 
 #if MEASURE_NODE_SIZE
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "GenTree node allocation stats\n");
-    fprintf(fout, "---------------------------------------------------\n");
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("GenTree node allocation stats\n");
+    jitprintf("---------------------------------------------------\n");
 
-    fprintf(fout, "Allocated %6I64u tree nodes (%7I64u bytes total, avg %4I64u bytes per method)\n",
-            genNodeSizeStats.genTreeNodeCnt, genNodeSizeStats.genTreeNodeSize,
-            genNodeSizeStats.genTreeNodeSize / genMethodCnt);
+    jitprintf("Allocated %6I64u tree nodes (%7I64u bytes total, avg %4I64u bytes per method)\n",
+              genNodeSizeStats.genTreeNodeCnt, genNodeSizeStats.genTreeNodeSize,
+              genNodeSizeStats.genTreeNodeSize / genMethodCnt);
 
-    fprintf(fout, "Allocated %7I64u bytes of unused tree node space (%3.2f%%)\n",
-            genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize,
-            (float)(100 * (genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize)) /
-                genNodeSizeStats.genTreeNodeSize);
+    jitprintf("Allocated %7I64u bytes of unused tree node space (%3.2f%%)\n",
+              genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize,
+              (float)(100 * (genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize)) /
+                  genNodeSizeStats.genTreeNodeSize);
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Distribution of per-method GenTree node counts:\n");
-    genTreeNcntHist.dump(fout);
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("Distribution of per-method GenTree node counts:\n");
+    genTreeNcntHist.dump(jitstdout());
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Distribution of per-method GenTree node  allocations (in bytes):\n");
-    genTreeNsizHist.dump(fout);
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("Distribution of per-method GenTree node  allocations (in bytes):\n");
+    genTreeNsizHist.dump(jitstdout());
 
 #endif // MEASURE_NODE_SIZE
 
 #if MEASURE_BLOCK_SIZE
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "BasicBlock and FlowEdge/BasicBlockList allocation stats\n");
-    fprintf(fout, "---------------------------------------------------\n");
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("BasicBlock and FlowEdge/BasicBlockList allocation stats\n");
+    jitprintf("---------------------------------------------------\n");
 
-    fprintf(fout, "Allocated %6u basic blocks (%7u bytes total, avg %4u bytes per method)\n", BasicBlock::s_Count,
-            BasicBlock::s_Size, BasicBlock::s_Size / genMethodCnt);
-    fprintf(fout, "Allocated %6u flow nodes (%7u bytes total, avg %4u bytes per method)\n", genFlowNodeCnt,
-            genFlowNodeSize, genFlowNodeSize / genMethodCnt);
+    jitprintf("Allocated %6u basic blocks (%7u bytes total, avg %4u bytes per method)\n", BasicBlock::s_Count,
+              BasicBlock::s_Size, BasicBlock::s_Size / genMethodCnt);
+    jitprintf("Allocated %6u flow nodes (%7u bytes total, avg %4u bytes per method)\n", genFlowNodeCnt, genFlowNodeSize,
+              genFlowNodeSize / genMethodCnt);
 
 #endif // MEASURE_BLOCK_SIZE
 
@@ -1661,21 +1658,21 @@ void Compiler::compShutdown()
 
     if (s_dspMemStats)
     {
-        fprintf(fout, "\nAll allocations:\n");
-        ArenaAllocator::dumpAggregateMemStats(jitstdout);
+        jitprintf("\nAll allocations:\n");
+        ArenaAllocator::dumpAggregateMemStats(jitstdout());
 
-        fprintf(fout, "\nLargest method:\n");
-        ArenaAllocator::dumpMaxMemStats(jitstdout);
+        jitprintf("\nLargest method:\n");
+        ArenaAllocator::dumpMaxMemStats(jitstdout());
 
-        fprintf(fout, "\n");
-        fprintf(fout, "---------------------------------------------------\n");
-        fprintf(fout, "Distribution of total memory allocated per method (in KB):\n");
-        memAllocHist.dump(fout);
+        jitprintf("\n");
+        jitprintf("---------------------------------------------------\n");
+        jitprintf("Distribution of total memory allocated per method (in KB):\n");
+        memAllocHist.dump(jitstdout());
 
-        fprintf(fout, "\n");
-        fprintf(fout, "---------------------------------------------------\n");
-        fprintf(fout, "Distribution of total memory used      per method (in KB):\n");
-        memUsedHist.dump(fout);
+        jitprintf("\n");
+        jitprintf("---------------------------------------------------\n");
+        jitprintf("Distribution of total memory used      per method (in KB):\n");
+        memUsedHist.dump(jitstdout());
     }
 
 #endif // MEASURE_MEM_ALLOC
@@ -1685,29 +1682,29 @@ void Compiler::compShutdown()
     if (JitConfig.DisplayLoopHoistStats() != 0)
 #endif // DEBUG
     {
-        PrintAggregateLoopHoistStats(jitstdout);
+        PrintAggregateLoopHoistStats(jitstdout());
     }
 #endif // LOOP_HOIST_STATS
 
 #if TRACK_ENREG_STATS
     if (JitConfig.JitEnregStats() != 0)
     {
-        s_enregisterStats.Dump(fout);
+        s_enregisterStats.Dump(jitstdout());
     }
 #endif // TRACK_ENREG_STATS
 
 #if MEASURE_PTRTAB_SIZE
 
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "GC pointer table stats\n");
-    fprintf(fout, "---------------------------------------------------\n");
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("GC pointer table stats\n");
+    jitprintf("---------------------------------------------------\n");
 
-    fprintf(fout, "Reg pointer descriptor size (internal): %8u (avg %4u per method)\n", GCInfo::s_gcRegPtrDscSize,
-            GCInfo::s_gcRegPtrDscSize / genMethodCnt);
+    jitprintf("Reg pointer descriptor size (internal): %8u (avg %4u per method)\n", GCInfo::s_gcRegPtrDscSize,
+              GCInfo::s_gcRegPtrDscSize / genMethodCnt);
 
-    fprintf(fout, "Total pointer table size: %8u (avg %4u per method)\n", GCInfo::s_gcTotalPtrTabSize,
-            GCInfo::s_gcTotalPtrTabSize / genMethodCnt);
+    jitprintf("Total pointer table size: %8u (avg %4u per method)\n", GCInfo::s_gcTotalPtrTabSize,
+              GCInfo::s_gcTotalPtrTabSize / genMethodCnt);
 
 #endif // MEASURE_PTRTAB_SIZE
 
@@ -1715,38 +1712,42 @@ void Compiler::compShutdown()
 
     if (genMethodCnt != 0)
     {
-        fprintf(fout, "\n");
-        fprintf(fout, "A total of %6u methods compiled", genMethodCnt);
+        jitprintf("\n");
+        jitprintf("A total of %6u methods compiled", genMethodCnt);
 #if DISPLAY_SIZES
         if (genMethodICnt || genMethodNCnt)
         {
-            fprintf(fout, " (%u interruptible, %u non-interruptible)", genMethodICnt, genMethodNCnt);
+            jitprintf(" (%u interruptible, %u non-interruptible)", genMethodICnt, genMethodNCnt);
         }
 #endif // DISPLAY_SIZES
-        fprintf(fout, ".\n");
+        jitprintf(".\n");
     }
 
 #endif // MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_PTRTAB_SIZE || DISPLAY_SIZES
 
 #if EMITTER_STATS
-    emitterStats(fout);
+    emitterStats(jitstdout());
 #endif
 
 #if MEASURE_FATAL
-    fprintf(fout, "\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Fatal errors stats\n");
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "   badCode:             %u\n", fatal_badCode);
-    fprintf(fout, "   noWay:               %u\n", fatal_noWay);
-    fprintf(fout, "   implLimitation:      %u\n", fatal_implLimitation);
-    fprintf(fout, "   NOMEM:               %u\n", fatal_NOMEM);
-    fprintf(fout, "   noWayAssertBody:     %u\n", fatal_noWayAssertBody);
+    jitprintf("\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("Fatal errors stats\n");
+    jitprintf("---------------------------------------------------\n");
+    jitprintf("   badCode:             %u\n", fatal_badCode);
+    jitprintf("   noWay:               %u\n", fatal_noWay);
+    jitprintf("   implLimitation:      %u\n", fatal_implLimitation);
+    jitprintf("   NOMEM:               %u\n", fatal_NOMEM);
+    jitprintf("   noWayAssertBody:     %u\n", fatal_noWayAssertBody);
 #ifdef DEBUG
-    fprintf(fout, "   noWayAssertBodyArgs: %u\n", fatal_noWayAssertBodyArgs);
+    jitprintf("   noWayAssertBodyArgs: %u\n", fatal_noWayAssertBodyArgs);
 #endif // DEBUG
-    fprintf(fout, "   NYI:                 %u\n", fatal_NYI);
+    jitprintf("   NYI:                 %u\n", fatal_NYI);
 #endif // MEASURE_FATAL
+
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+    DumpOnShutdown::DumpAll();
+#endif
 }
 
 /*****************************************************************************
@@ -1754,14 +1755,14 @@ void Compiler::compShutdown()
  */
 
 /* static */
-void Compiler::compDisplayStaticSizes(FILE* fout)
+void Compiler::compDisplayStaticSizes()
 {
 #if MEASURE_NODE_SIZE
-    GenTree::DumpNodeSizes(fout);
+    GenTree::DumpNodeSizes();
 #endif
 
 #if EMITTER_STATS
-    emitterStaticStats(fout);
+    emitterStaticStats();
 #endif
 }
 
@@ -1789,7 +1790,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compClassHnd   = compHnd->getMethodClass(methodHnd);
 
 #ifdef DEBUG
-    bRangeAllowStress = false;
+    compAllowStress = true;
 
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
@@ -1829,7 +1830,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     static ConfigMethodRange fJitStressRange;
     fJitStressRange.EnsureInit(JitConfig.JitStressRange());
     assert(!fJitStressRange.Error());
-    bRangeAllowStress = fJitStressRange.Contains(info.compMethodHash());
+    compAllowStress =
+        fJitStressRange.Contains(info.compMethodHash()) &&
+        (JitConfig.JitStressOnly().isEmpty() ||
+         JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args));
+
 #endif // DEBUG
 
     eeInfoInitialized = false;
@@ -1853,19 +1858,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     // Initially, no phase checks are active, and all dumps are enabled.
     activePhaseChecks = PhaseChecks::CHECK_NONE;
     activePhaseDumps  = PhaseDumps::DUMP_ALL;
-
-#ifdef FEATURE_TRACELOGGING
-    // Make sure JIT telemetry is initialized as soon as allocations can be made
-    // but no later than a point where noway_asserts can be thrown.
-    //    1. JIT telemetry could allocate some objects internally.
-    //    2. NowayAsserts are tracked through telemetry.
-    //    Note: JIT telemetry could gather data when compiler is not fully initialized.
-    //          So you have to initialize the compiler variables you use for telemetry.
-    assert((unsigned)PHASE_PRE_IMPORT == 0);
-    info.compILCodeSize = 0;
-    info.compMethodHnd  = nullptr;
-    compJitTelemetry.Initialize(this);
-#endif
 
     fgInit();
     lvaInit();
@@ -2368,16 +2360,8 @@ void DummyProfilerELTStub(UINT_PTR ProfilerHandle)
 
 #endif // PROFILING_SUPPORTED
 
-bool Compiler::compShouldThrowOnNoway(
-#ifdef FEATURE_TRACELOGGING
-    const char* filename, unsigned line
-#endif
-    )
+bool Compiler::compShouldThrowOnNoway()
 {
-#ifdef FEATURE_TRACELOGGING
-    compJitTelemetry.NotifyNowayAssert(filename, line);
-#endif
-
     // In min opts, we don't want the noway assert to go through the exception
     // path. Instead we want it to just silently go through codegen for
     // compat reasons.
@@ -3542,13 +3526,7 @@ unsigned Compiler::compStressAreaHash(compStressArea area)
 //
 bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weight)
 {
-    if (!bRangeAllowStress)
-    {
-        return false;
-    }
-
-    if (!JitConfig.JitStressOnly().isEmpty() &&
-        !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+    if (!compAllowStress)
     {
         return false;
     }
@@ -4343,23 +4321,14 @@ const char* Compiler::compGetStressMessage() const
     if ((JitConfig.JitStressModeNames() != nullptr) || (getJitStressLevel() > 0))
     {
         // Is the method being jitted excluded from stress via range?
-        if (bRangeAllowStress)
+        if (compAllowStress)
         {
-            // Or is it excluded via name?
-            if (!JitConfig.JitStressOnly().isEmpty() ||
-                !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-            {
-                // Not excluded -- stress can happen
-                stressMessage = " JitStress";
-            }
-            else
-            {
-                stressMessage = " NoJitStress(Only)";
-            }
+            // Not excluded -- stress can happen
+            stressMessage = " JitStress";
         }
         else
         {
-            stressMessage = " NoJitStress(Range)";
+            stressMessage = " NoJitStress";
         }
     }
 #endif // DEBUG
@@ -5075,6 +5044,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+
+        // Conditional to Switch conversion
+        //
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
     }
 
     // Determine start of cold region if we are hot/cold splitting
@@ -5171,7 +5144,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if TRACK_LSRA_STATS
     if (JitConfig.DisplayLsraStats() == 2)
     {
-        m_pLinearScan->dumpLsraStatsCsv(jitstdout);
+        m_pLinearScan->dumpLsraStatsCsv(jitstdout());
     }
 #endif // TRACK_LSRA_STATS
 
@@ -5195,10 +5168,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     generatePatchpointInfo();
 
     RecordStateAtEndOfCompilation();
-
-#ifdef FEATURE_TRACELOGGING
-    compJitTelemetry.NotifyEndOfCompilation();
-#endif
 
     unsigned methodsCompiled = (unsigned)InterlockedIncrement((LONG*)&Compiler::jitTotalMethodCompiled);
 
@@ -5276,6 +5245,13 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
     weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
     BasicBlock*            bbHavingAlign         = nullptr;
     BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
+    bool                   visitedLoopNum[BasicBlock::MAX_LOOP_NUM];
+    memset(visitedLoopNum, false, sizeof(visitedLoopNum));
+
+#ifdef DEBUG
+    unsigned visitedBlockForLoopNum[BasicBlock::MAX_LOOP_NUM];
+    memset(visitedBlockForLoopNum, 0, sizeof(visitedBlockForLoopNum));
+#endif
 
     if ((fgFirstBB != nullptr) && fgFirstBB->isLoopAlign())
     {
@@ -5298,7 +5274,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        // If there is a unconditional jump (which is not part of callf/always pair)
+        // If there is an unconditional jump (which is not part of callf/always pair)
         if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
             // Track the lower weight blocks
@@ -5352,12 +5328,19 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
                 madeChanges       = true;
                 unmarkedLoopAlign = true;
             }
-            else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+            else if ((loopTop->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && visitedLoopNum[loopTop->bbNatLoopNum])
             {
+#ifdef DEBUG
+                char buffer[100];
+                sprintf_s(buffer, 100, "loop block " FMT_BB " appears before top of loop",
+                          visitedBlockForLoopNum[loopTop->bbNatLoopNum]);
+#endif
+
                 // In some odd cases we may see blocks within the loop before we see the
                 // top block of the loop. Just bail on aligning such loops.
                 //
-                loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
+
+                loopTop->unmarkLoopAlign(this DEBUG_ARG(buffer));
                 madeChanges       = true;
                 unmarkedLoopAlign = true;
             }
@@ -5391,6 +5374,20 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             {
                 break;
             }
+        }
+
+        if (block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+        {
+#ifdef DEBUG
+            if (!visitedLoopNum[block->bbNatLoopNum])
+            {
+                // Record the first block for which bbNatLoopNum was seen for
+                // debugging purpose.
+                visitedBlockForLoopNum[block->bbNatLoopNum] = block->bbNum;
+            }
+#endif
+            // If this block is part of loop, mark the loopNum as visited.
+            visitedLoopNum[block->bbNatLoopNum] = true;
         }
     }
 
@@ -5873,7 +5870,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     }
 #endif // FUNC_INFO_LOGGING
 
-    // if (s_compMethodsCount==0) setvbuf(jitstdout, NULL, _IONBF, 0);
+    // if (s_compMethodsCount==0) setvbuf(jitstdout(), NULL, _IONBF, 0);
 
     if (compIsForInlining())
     {
@@ -6357,7 +6354,7 @@ void Compiler::compCompileFinish()
     if (s_dspMemStats || verbose)
     {
         printf("\nAllocations for %s (MethodHash=%08x)\n", info.compFullName, info.compMethodHash());
-        compArenaAllocator->dumpMemStats(jitstdout);
+        compArenaAllocator->dumpMemStats(jitstdout());
     }
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
@@ -8286,7 +8283,7 @@ double JitTimer::s_cyclesPerSec = CachedCyclesPerSecond();
 #endif
 #endif // FEATURE_JIT_METHOD_PERF
 
-#if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS || defined(FEATURE_TRACELOGGING)
+#if defined(FEATURE_JIT_METHOD_PERF) || DUMP_FLOWGRAPHS
 const char* PhaseNames[] = {
 #define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) string_nm,
 #include "compphases.h"

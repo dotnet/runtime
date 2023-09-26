@@ -33,5 +33,8 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj"
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\gen\Microsoft.Extensions.Options.SourceGeneration.csproj"
+                      ReferenceOutputAssembly="false"
+                      PackAsAnalyzer="true" />
   </ItemGroup>
 </Project>

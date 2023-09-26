@@ -180,9 +180,11 @@ void FrozenObjectSegment::RegisterOrUpdate(uint8_t* current, size_t sizeCommited
         segment_info si;
         si.pvMem = m_pStart;
         si.ibFirstObject = sizeof(ObjHeader);
-        si.ibAllocated = (size_t)current;
+        si.ibAllocated = (size_t)current - (size_t)si.pvMem;
         si.ibCommit = sizeCommited;
         si.ibReserved = m_Size;
+
+        assert((size_t)current >= (size_t)si.pvMem);
 
         // NOTE: RegisterFrozenSegment may take a GC lock inside.
         m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -14,7 +15,7 @@ namespace System.Buffers
     // This implementation uses 3 precomputed anchor points when searching.
     // This implementation may also be used for length=2 values, in which case two anchors point at the same position.
     // Has an O(i * m) worst-case, with the expected time closer to O(n) for most inputs.
-    internal sealed class SingleStringSearchValuesThreeChars<TCaseSensitivity> : SearchValues<string>
+    internal sealed class SingleStringSearchValuesThreeChars<TCaseSensitivity> : StringSearchValuesBase
         where TCaseSensitivity : struct, ICaseSensitivity
     {
         private const ushort CaseConversionMask = unchecked((ushort)~0x20);
@@ -29,7 +30,7 @@ namespace System.Buffers
 
         private static bool IgnoreCase => typeof(TCaseSensitivity) != typeof(CaseSensitive);
 
-        public SingleStringSearchValuesThreeChars(string value)
+        public SingleStringSearchValuesThreeChars(HashSet<string>? uniqueValues, string value) : base(uniqueValues)
         {
             // We could have more than one entry in 'uniqueValues' if this value is an exact prefix of all the others.
             Debug.Assert(value.Length > 1);
@@ -367,50 +368,12 @@ namespace System.Buffers
         }
 
 
-        internal override bool ContainsCore(string value) =>
-            _value.Equals(value, IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+        internal override bool ContainsCore(string value) => HasUniqueValues
+            ? base.ContainsCore(value)
+            : _value.Equals(value, IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
-        internal override string[] GetValues() =>
-            new string[] { _value };
-
-        internal override int IndexOfAny(ReadOnlySpan<string> span) =>
-            IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(span);
-
-        internal override int IndexOfAnyExcept(ReadOnlySpan<string> span) =>
-            IndexOfAny<IndexOfAnyAsciiSearcher.Negate>(span);
-
-        internal override int LastIndexOfAny(ReadOnlySpan<string> span) =>
-            LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(span);
-
-        internal override int LastIndexOfAnyExcept(ReadOnlySpan<string> span) =>
-            LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate>(span);
-
-        private int IndexOfAny<TNegator>(ReadOnlySpan<string> span)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
-        {
-            for (int i = 0; i < span.Length; i++)
-            {
-                if (TNegator.NegateIfNeeded(ContainsCore(span[i])))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
-
-        private int LastIndexOfAny<TNegator>(ReadOnlySpan<string> span)
-            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
-        {
-            for (int i = span.Length - 1; i >= 0; i--)
-            {
-                if (TNegator.NegateIfNeeded(ContainsCore(span[i])))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
-        }
+        internal override string[] GetValues() => HasUniqueValues
+            ? base.GetValues()
+            : new string[] { _value };
     }
 }

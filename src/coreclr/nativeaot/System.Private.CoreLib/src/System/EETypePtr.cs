@@ -111,7 +111,7 @@ namespace System
         {
             get
             {
-                return _value->IsPointerType;
+                return _value->IsPointer;
             }
         }
 
@@ -119,7 +119,7 @@ namespace System
         {
             get
             {
-                return _value->IsFunctionPointerType;
+                return _value->IsFunctionPointer;
             }
         }
 
@@ -127,7 +127,7 @@ namespace System
         {
             get
             {
-                return _value->IsByRefType;
+                return _value->IsByRef;
             }
         }
 
@@ -214,7 +214,7 @@ namespace System
         {
             get
             {
-                return !_value->IsParameterizedType && !_value->IsFunctionPointerType;
+                return !_value->IsParameterizedType && !_value->IsFunctionPointer;
             }
         }
 

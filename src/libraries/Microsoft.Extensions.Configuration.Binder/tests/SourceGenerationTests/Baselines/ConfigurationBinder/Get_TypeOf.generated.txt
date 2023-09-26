@@ -55,20 +55,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (type == typeof(Program.MyClass2))
             {
                 var instance = new Program.MyClass2();
-                BindCore(configuration, ref instance, binderOptions);
+                BindCore(configuration, ref instance, defaultValueIfNotFound: true, binderOptions);
                 return instance;
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
         }
 
-        public static void BindCore(IConfiguration configuration, ref Program.MyClass2 instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.MyClass2 instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(Program.MyClass2), s_configKeys_ProgramMyClass2, configuration, binderOptions);
 
             if (configuration["MyInt"] is string value1)
             {
                 instance.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.MyInt = default;
             }
         }
 
