@@ -147,7 +147,7 @@
                             Variant="latest"
                             Version="$(PackageVersionForWorkloadManifests)" />
 
-      <WorkloadIdForTesting Include="wasi-experimental-net8,wasi-experimental"
+      <WorkloadIdForTesting Include="wasi-experimental-net8;wasi-experimental"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net8"
                             Variant="net8"
                             Version="$(PackageVersionForWorkloadManifests)" />
