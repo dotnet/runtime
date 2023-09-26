@@ -24,7 +24,7 @@ using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
-    public class CoffObjectWriter : ObjectWriter
+    public sealed class CoffObjectWriter : ObjectWriter
     {
         private Machine _machine;
         private List<(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName)> _sections = new();
@@ -33,6 +33,7 @@ namespace ILCompiler.ObjectWriter
         private List<CoffSymbolRecord> _symbols = new();
         private Dictionary<string, uint> _symbolNameToIndex = new();
         private Dictionary<int, CoffSectionSymbol> _sectionNumberToComdatAuxRecord = new();
+        private HashSet<string> _referencedMethods = new();
 
         // Exception handling
         private SectionWriter _xdataSectionWriter;
@@ -50,7 +51,7 @@ namespace ILCompiler.ObjectWriter
         private ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
         private ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);
 
-        protected CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options)
+        private CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
         {
             _machine = factory.Target.Architecture switch
@@ -65,7 +66,10 @@ namespace ILCompiler.ObjectWriter
         {
             var sectionHeader = new CoffSectionHeader
             {
-                Name = section.Name.StartsWith(".") ? section.Name : "." + section.Name,
+                Name =
+                    section == ObjectNodeSection.TLSSection ? ".tls$" :
+                    section == ObjectNodeSection.HydrationTargetSection ? "hydrated" :
+                    (section.Name.StartsWith(".") ? section.Name : "." + section.Name),
                 SectionCharacteristics = section.Type switch
                 {
                     SectionType.ReadOnly =>
@@ -103,7 +107,7 @@ namespace ILCompiler.ObjectWriter
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
             Debug.Assert(alignment > 0 && BitOperations.IsPow2((uint)alignment));
-            int minimumAlignment = BitOperations.Log2((uint)alignment) << 20;
+            int minimumAlignment = (BitOperations.Log2((uint)alignment) + 1) << 20;
             int currentAlignment = (int)(_sections[sectionIndex].Header.SectionCharacteristics & SectionCharacteristics.AlignMask);
 
             if (currentAlignment < minimumAlignment)
@@ -173,6 +177,11 @@ namespace ILCompiler.ObjectWriter
             }
 
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
+        }
+
+        protected override void EmitReferencedMethod(string symbolName)
+        {
+            _referencedMethods.Add(symbolName);
         }
 
         protected override void EmitSymbolTable()
@@ -257,16 +266,10 @@ namespace ILCompiler.ObjectWriter
                 SectionWriter gfidsSectionWriter = GetOrCreateSection(GfidsSection);
 
                 Span<byte> tempBuffer = stackalloc byte[4];
-                foreach (var (symbolName, symbolDefinition) in GetDefinedSymbols())
+                foreach (var symbolName in _referencedMethods)
                 {
-                    // For now consider all method symbols address taken.
-                    // We could restrict this in the future to those that are referenced from
-                    // reflection tables, EH tables, were actually address taken in code, or are referenced from vtables.
-                    if (symbolDefinition.Size > 0)
-                    {
-                        BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, _symbolNameToIndex[symbolName]);
-                        gfidsSectionWriter.Stream.Write(tempBuffer);
-                    }
+                    BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, _symbolNameToIndex[symbolName]);
+                    gfidsSectionWriter.Stream.Write(tempBuffer);
                 }
 
                 // Emit the feat.00 symbol that controls various linker behaviors

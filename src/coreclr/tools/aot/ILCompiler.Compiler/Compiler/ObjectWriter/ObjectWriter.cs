@@ -162,6 +162,8 @@ namespace ILCompiler.ObjectWriter
             _sectionIndexToRelocations[sectionIndex].Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
         }
 
+        protected virtual void EmitReferencedMethod(string symbolName) { }
+
         /// <summary>
         /// Emit symbolic relocations into object file as format specific
         /// relocations.
@@ -348,12 +350,23 @@ namespace ILCompiler.ObjectWriter
                 {
                     foreach (var reloc in nodeContents.Relocs)
                     {
+                        string relocSymbolName = GetMangledName(reloc.Target);
+
                         sectionWriter.EmitRelocation(
                             reloc.Offset,
                             nodeContents.Data.AsSpan(reloc.Offset),
                             reloc.RelocType,
-                            GetMangledName(reloc.Target),
+                            relocSymbolName,
                             reloc.Target.Offset);
+
+                        if (_options.HasFlag(ObjectWritingOptions.ControlFlowGuard) &&
+                            reloc.Target is IMethodNode or AssemblyStubNode)
+                        {
+                            // For now consider all method symbols address taken.
+                            // We could restrict this in the future to those that are referenced from
+                            // reflection tables, EH tables, were actually address taken in code, or are referenced from vtables.
+                            EmitReferencedMethod(relocSymbolName);
+                        }
                     }
                 }
 
