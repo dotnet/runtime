@@ -460,7 +460,10 @@
     },
     "Microsoft.NETCore.App.Runtime.Mono.net8.wasi-wasm" : {
       "kind": "framework",
-      "version": "${PackageVersionNet8}"
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.wasi-wasm"
+      }
     },
     "Microsoft.NETCore.App.Runtime.net8.win-x64" : {
       "kind": "framework",
