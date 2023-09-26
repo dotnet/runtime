@@ -1510,7 +1510,7 @@ export function getWasmFunctionTable(module?: any) {
     mono_assert (theModule, "Module not available yet");
     mono_assert (theModule["asm"], "Module['asm'] not available yet");
     if (!wasmTable)
-        wasmTable = theModule["asm"]["__indirect_function_table"];
+        wasmTable = Module.getWasmIndirectFunctionTable();
     if (!wasmTable)
         throw new Error("Module did not export the indirect function table");
     return wasmTable;

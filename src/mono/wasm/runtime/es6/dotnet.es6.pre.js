@@ -4,3 +4,4 @@ _nativeModuleLoaded = true;
 Module["getMemory"] = function () { return wasmMemory; }
 createDotnetRuntime = Module = createDotnetRuntime(Module);
 Module["getMemory"] = function () { return wasmMemory; }
+Module["getWasmIndirectFunctionTable"] = function () { return wasmTable; }
