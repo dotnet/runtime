@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .intel_syntax noprefix
-#define NO_SUBSECTIONS_VIA_SYMBOLS
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 

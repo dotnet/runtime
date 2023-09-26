@@ -4,7 +4,7 @@
 #define INVALIDGCVALUE 0xCCCCCCCD
 
 // Enforce subsections via symbols to workaround bugs in Xcode 15 linker.
-#if defined(__APPLE__) && !defined(NO_SUBSECTIONS_VIA_SYMBOLS)
+#if defined(__APPLE__)
 .subsections_via_symbols
 #endif
 
