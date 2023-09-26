@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Xml;
 
@@ -45,10 +44,11 @@ public class TestSummary
             testResultSb.Append($@"<test name=""{Name}"" type=""{ContainingTypeName}"""
                               + $@" method=""{MethodName}"" time=""{Duration.TotalSeconds:F6}""");
 
-            // It is possible for tests to have illegal XML characters in their output.
-            // So, we have to sanitize said output before writing it down to the XML log
-            // because otherwise, the python XML parser crashes. The way we clean it
-            // is by replacing said characters with their hexadecimal notation.
+            // GH dotnet/runtime issue #92092: It is possible for tests to have
+            // illegal XML characters in their output. So, we have to sanitize said
+            // output before writing it down to the XML log because otherwise, the
+            // python XML parser crashes. The way we clean it is by replacing said
+            // characters with their hexadecimal notation in SanitizeOutput().
 
             string outputElement = !string.IsNullOrWhiteSpace(Output)
                                  ? $"<output><![CDATA[{SanitizeOutput(Output)}]]></output>"
@@ -105,56 +105,26 @@ public class TestSummary
 
         private string SanitizeOutput(string output)
         {
-            Dictionary<char, string>? invalidChars = FindInvalidXMLChars(output);
-
-            // All green, we can print the test's output as is.
-            if (invalidChars is null)
-                return output;
-
             StringBuilder sanitizedOutput = new StringBuilder();
+
+            // Check each character in the given test's output:
+            //   * If it's a legal XML character, then write it as is.
+            //   * Otherwise, write it in its hexadecimal notation.
+
             foreach (char ch in output)
             {
-                string? invalidCharHexCode = string.Empty;
-
-                // If this character is in the lookup dictionary, then print its
-                // hex string instead.
-                if (invalidChars.TryGetValue(ch, out invalidCharHexCode))
+                if (XmlConvert.IsXmlChar(ch))
                 {
-                    sanitizedOutput.AppendFormat("_0x{0}_", invalidCharHexCode);
+                    sanitizedOutput.Append(ch);
                 }
                 else
                 {
-                    sanitizedOutput.Append(ch);
+                    int charCode = Convert.ToInt32(ch);
+                    sanitizedOutput.AppendFormat("_0x{0}_", charCode.ToString("X"));
                 }
             }
 
             return sanitizedOutput.ToString();
-        }
-
-        private Dictionary<char, string>? FindInvalidXMLChars(string xmlStr)
-        {
-            // First, we need to know whether the output string has any illegal chars
-            // for XML, and which ones if so.
-
-            IEnumerable<char> invalidCharsFound = xmlStr.ToCharArray()
-                                                        .Where(ch => !XmlConvert.IsXmlChar(ch));
-
-            // All green, we can return.
-            if (invalidCharsFound.Count() == 0)
-                return null;
-
-            // Now that we know which illegal chars appeared, we pair them up with
-            // their respective hexadecimal notations, which will later be printed
-            // onto the test's log.
-
-            Dictionary<char, string> invalidCharsHexCodes = new Dictionary<char, string>();
-            foreach (char ch in invalidCharsFound)
-            {
-                int charCode = Convert.ToInt32(ch);
-                invalidCharsHexCodes.TryAdd(ch, charCode.ToString("X"));
-            }
-
-            return invalidCharsHexCodes;
         }
     }
 
