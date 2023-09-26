@@ -97,6 +97,7 @@ namespace ComWrappersTests.Common
     {
         private readonly ITestVtbl._SetValue _setValue;
         private readonly IntPtr _ptr;
+        private bool _released;
 
         public ITestObjectWrapper(IntPtr ptr)
         {
@@ -104,11 +105,19 @@ namespace ComWrappersTests.Common
             VtblPtr inst = Marshal.PtrToStructure<VtblPtr>(ptr);
             ITestVtbl _vtbl = Marshal.PtrToStructure<ITestVtbl>(inst.Vtbl);
             _setValue = Marshal.GetDelegateForFunctionPointer<ITestVtbl._SetValue>(_vtbl.SetValue);
+            _released = false;
+        }
+
+        public int FinalRelease()
+        {
+            int count = Marshal.Release(_ptr);
+            _released = true;
+            return count;
         }
 
         ~ITestObjectWrapper()
         {
-            if (_ptr != IntPtr.Zero)
+            if (_ptr != IntPtr.Zero && !_released)
             {
                 Marshal.Release(_ptr);
             }

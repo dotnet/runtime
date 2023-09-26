@@ -190,13 +190,13 @@ namespace ComWrappersTests
             Assert.Same(testObj, testObjUnwrapped);
 
             // UniqueInstance and Unwrap should always be a new com object, never unwrapped
-            var testObjUniqueUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap | CreateObjectFlags.UniqueInstance);
+            var testObjUniqueUnwrapped = (ITestObjectWrapper)wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap | CreateObjectFlags.UniqueInstance);
             Assert.NotSame(testObj, testObjUniqueUnwrapped);
+            testObjUniqueUnwrapped.FinalRelease();
 
             // Release the wrapper
             int count = Marshal.Release(comWrapper);
-            // Expect 1 reference remaining from UniqueInstance
-            Assert.Equal(1, count);
+            Assert.Equal(0, count);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
