@@ -148,6 +148,10 @@
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
+    </PropertyGroup>
+
     <!-- Default with nothing set: Build+relink+config=debug -->
     <PropertyGroup Condition="'$(WasmNativeDebugSymbols)' == '' and '$(WasmNativeStrip)' == '' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">
       <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
@@ -157,11 +161,6 @@
     <PropertyGroup>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <!--<WasmBuildNative Condition="'$(WasmBuildNative)' == '' and ('$(WasmNativeStrip)' == 'true' or '$(WasmNativeDebugSymbols)' == 'true')">true</WasmBuildNative>-->
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
 
     <!-- If we want to default to true, and sdk is missing, then just warn, and set it to false -->
