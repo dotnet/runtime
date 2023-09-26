@@ -538,13 +538,13 @@ namespace System.Threading.Tasks.Tests
                 var contingentProperties = contingentPropertiesField.GetValue(faultedTask);
                 if (contingentProperties != null)
                 {
-                    var exceptionsHolderField = contingentProperties.GetType().GetField("m_exceptionsHolder", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    var exceptionsHolderField = typeof(Task).GetNestedType("ContingentProperties", BindingFlags.NonPublic).GetField("m_exceptionsHolder", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                     if (exceptionsHolderField != null)
                     {
                         holderObject = exceptionsHolderField.GetValue(contingentProperties);
                         if (holderObject != null)
                         {
-                            isHandledField = holderObject.GetType().GetField("m_isHandled", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            isHandledField = Type.GetType("System.Threading.Tasks.TaskExceptionHolder").GetField("m_isHandled", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                         }
                     }
                 }

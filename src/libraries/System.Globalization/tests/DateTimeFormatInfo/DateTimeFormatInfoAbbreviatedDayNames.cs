@@ -37,10 +37,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, new string[] { "রবি", "সোম", "মঙ্গল", "বুধ", "বৃহস্পতি", "শুক্র", "শনি" } };
             yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, new string[] { "dg.", "dl.", "dt.", "dc.", "dj.", "dv.", "ds." } };
             yield return new object[] { new CultureInfo("cs-CZ").DateTimeFormat, new string[] { "ne", "po", "út", "st", "čt", "pá", "so" } };
-            string[] dannishDays = PlatformDetection.IsNodeJS ?
-                new string[] { "søn", "man", "tir", "ons", "tor", "fre", "lør" } :
-                new string[] { "søn.", "man.", "tirs.", "ons.", "tors.", "fre.", "lør." };
-            yield return new object[] { new CultureInfo("da-DK").DateTimeFormat, dannishDays };
+            yield return new object[] { new CultureInfo("da-DK").DateTimeFormat, new string[] { "søn.", "man.", "tirs.", "ons.", "tors.", "fre.", "lør." } };
             yield return new object[] { new CultureInfo("de-DE").DateTimeFormat, new string[] { "So", "Mo", "Di", "Mi", "Do", "Fr", "Sa" } };
             yield return new object[] { new CultureInfo("el-GR").DateTimeFormat, new string[] { "Κυρ", "Δευ", "Τρί", "Τετ", "Πέμ", "Παρ", "Σάβ" } };
             yield return new object[] { new CultureInfo("en-CA").DateTimeFormat, new string[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" } }; // should be with dots

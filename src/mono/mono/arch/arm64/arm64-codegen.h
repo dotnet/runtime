@@ -179,7 +179,7 @@ arm_is_bl_disp (void *code, void *target)
 static G_GNUC_UNUSED inline unsigned int
 arm_get_disp (void *p, void *target)
 {
-	unsigned int disp = ((char*)target - (char*)p) / 4;
+	unsigned int disp = GINT64_TO_UINT (((char*)target - (char*)p) / 4);
 
 	if (target)
 		g_assert (arm_is_bl_disp (p, target));
@@ -205,7 +205,7 @@ arm_is_disp19 (void *code, void *target)
 static G_GNUC_UNUSED inline unsigned int
 arm_get_disp19 (void *p, void *target)
 {
-	unsigned int disp = ((char*)target - (char*)p) / 4;
+	unsigned int disp = GINT64_TO_UINT (((char*)target - (char*)p) / 4);
 
 	if (target)
 		g_assert (arm_is_disp19 (p, target));
@@ -233,7 +233,7 @@ arm_get_disp19 (void *p, void *target)
 static G_GNUC_UNUSED inline unsigned int
 arm_get_disp15 (void *p, void *target)
 {
-	unsigned int disp = ((char*)target - (char*)p) / 4;
+	unsigned int disp = GINT64_TO_UINT (((char*)target - (char*)p) / 4);
 	return (disp & 0x7fff);
 }
 
@@ -545,7 +545,7 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_movkw(p, rd, imm, shift) do { g_assert ((shift) % 16 == 0); arm_format_mov ((p), 0x0, 0x3, (shift) / 16, (rd), (imm)); } while (0)
 
 /* PC-relative address calculation */
-#define arm_format_adrp(p, op, rd, target) do { guint64 imm1 = (guint64)(target); guint64 imm2 = (guint64)(p); int _imm = imm1 - imm2; arm_emit ((p), ((op) << 31) | (((_imm) & 0x3) << 29) | (0x10 << 24) | (((_imm >> 2) & 0x7ffff) << 5) | ((rd) << 0)); } while (0)
+#define arm_format_adrp(p, op, rd, target) do { guint64 imm1 = (guint64)(target); guint64 imm2 = (guint64)(p); int _imm = GUINT64_TO_INT (imm1 - imm2); arm_emit ((p), ((op) << 31) | (((_imm) & 0x3) << 29) | (0x10 << 24) | (((_imm >> 2) & 0x7ffff) << 5) | ((rd) << 0)); } while (0)
 
 #define arm_adrpx(p, rd, target) arm_format_adrp ((p), 0x1, (rd), (target))
 #define arm_adrx(p, rd, target) arm_format_adrp ((p), 0x0, (rd), (target))

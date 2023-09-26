@@ -178,6 +178,30 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void TestObjectsWithIndexerProperties()
+        {
+            DataAnnotationValidateOptions<MyDictionaryOptions> dataAnnotationValidateOptions1 = new("MyDictionaryOptions");
+            MyDictionaryOptionsOptionsValidator sourceGenOptionsValidator1 = new();
+
+            var options1 = new MyDictionaryOptions();
+            ValidateOptionsResult result1 = sourceGenOptionsValidator1.Validate("MyDictionaryOptions", options1);
+            ValidateOptionsResult result2 = dataAnnotationValidateOptions1.Validate("MyDictionaryOptions", options1);
+
+            Assert.True(result1.Succeeded);
+            Assert.True(result2.Succeeded);
+
+            DataAnnotationValidateOptions<MyListOptions<string>> dataAnnotationValidateOptions2 = new("MyListOptions");
+            MyListOptionsOptionsValidator sourceGenOptionsValidator2 = new();
+
+            var options2 = new MyListOptions<string>() { Prop = "test" };
+            result1 = sourceGenOptionsValidator2.Validate("MyListOptions", options2);
+            result2 = dataAnnotationValidateOptions2.Validate("MyListOptions", options2);
+
+            Assert.True(result1.Succeeded);
+            Assert.True(result2.Succeeded);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void TestValidationWithCyclicReferences()
         {
             NestedOptions nestedOptions = new()
@@ -211,6 +235,37 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             ValidateOptionsResult result2 = dataAnnotationValidateOptions.Validate("MyOptions", options);
             Assert.True(result1.Succeeded);
         }
+
+#if NET8_0_OR_GREATER
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void TestNewDataAnnotationFailures()
+        {
+            NewAttributesValidator sourceGenValidator = new();
+
+            OptionsUsingNewAttributes validOptions = new()
+            {
+                P1 = "123456", P2 = 2, P3 = 4, P4 = "c", P5 = "d"
+            };
+
+            ValidateOptionsResult result = sourceGenValidator.Validate("OptionsUsingNewAttributes", validOptions);
+            Assert.True(result.Succeeded);
+
+            OptionsUsingNewAttributes invalidOptions = new()
+            {
+                P1 = "123", P2 = 4, P3 = 1, P4 = "e", P5 = "c"
+            };
+
+            result = sourceGenValidator.Validate("OptionsUsingNewAttributes", invalidOptions);
+
+            Assert.Equal(new []{
+                "P1: The field OptionsUsingNewAttributes.P1 must be a string or collection type with a minimum length of '5' and maximum length of '10'.",
+                "P2: The OptionsUsingNewAttributes.P2 field does not equal any of the values specified in AllowedValuesAttribute.",
+                "P3: The OptionsUsingNewAttributes.P3 field equals one of the values specified in DeniedValuesAttribute.",
+                "P4: The OptionsUsingNewAttributes.P4 field does not equal any of the values specified in AllowedValuesAttribute.",
+                "P5: The OptionsUsingNewAttributes.P5 field equals one of the values specified in DeniedValuesAttribute."
+            }, result.Failures);
+        }
+#endif // NET8_0_OR_GREATER
     }
 
     public class MyOptions
@@ -270,4 +325,35 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     public partial class MySourceGenOptionsValidator : IValidateOptions<MyOptions>
     {
     }
+
+    public class MyDictionaryOptions : Dictionary<string, string> { [Required] public string Prop { get; set; } = "test"; }
+    [OptionsValidator] public partial class MyDictionaryOptionsOptionsValidator : IValidateOptions<MyDictionaryOptions> { }
+
+    public class MyListOptions<T> : List<T> { [Required] public T Prop { get; set; } = default; }
+    [OptionsValidator] public partial class MyListOptionsOptionsValidator : IValidateOptions<MyListOptions<string>> { }
+
+#if NET8_0_OR_GREATER
+    public class OptionsUsingNewAttributes
+    {
+        [Length(5, 10)]
+        public string P1 { get; set; }
+
+        [AllowedValues(1, 2, 3)]
+        public int P2 { get; set; }
+
+        [DeniedValues(1, 2, 3)]
+        public int P3 { get; set; }
+
+        [AllowedValues(new object?[] { "a", "b", "c" })]
+        public string P4 { get; set; }
+
+        [DeniedValues(new object?[] { "a", "b", "c" })]
+        public string P5 { get; set; }
+    }
+
+    [OptionsValidator]
+    public partial class NewAttributesValidator : IValidateOptions<OptionsUsingNewAttributes>
+    {
+    }
+#endif // NET8_0_OR_GREATER
 }

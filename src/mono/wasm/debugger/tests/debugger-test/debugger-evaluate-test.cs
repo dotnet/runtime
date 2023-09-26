@@ -506,6 +506,8 @@ namespace DebuggerTests
 
     public class EvaluateLocalsWithIndexingTests
     {
+        public record Indexer(int index);
+
         public class TestEvaluate
         {
             public List<int> numList;
@@ -522,19 +524,23 @@ namespace DebuggerTests
             public int idx0;
             public int idx1;
 
-            // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
             public string this[char key] => "res_" + key;
             public string this[bool key] => key.ToString();
             public bool this[string key] => key.Length > 3;
             public int this[double key] => (int)key;
             public int this[float key] => (int)key;
             public int this[decimal key] => (int)key;
+            public int this[Indexer indexer] => indexer.index;
+            public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
+
+            public double this[int key1, double key2] => key1 + key2;
+            public string this[char key1, string key2, string key3] => $"{key1}-{key2}-{key3}";
 
             public void run()
             {
                 numList = new List<int> { 1, 2 };
                 textList = new List<string> { "1", "2" };
-                numArray = new int[] { 1, 2 };
+                numArray = new int[] { 1, 2, 0 };
                 textArray = new string[] { "1", "2" };
                 numArrayOfArrays = new int[][] { numArray, numArray };
                 numListOfLists = new List<List<int>> { numList, numList };
@@ -561,6 +567,8 @@ namespace DebuggerTests
             float aFloat = 1.23f;
             double aDouble = 2.34;
             decimal aDecimal = 3.34m;
+            Indexer objIdx = new(index: 123);
+            char[] arr = new char[] { 't', 'e', 's', 't' };
         }
     }
 
@@ -2039,6 +2047,20 @@ namespace DebuggerTests
         {
             var instance = new InstanceProperties();
             var localString = "aB.c[";
+        }
+    }
+
+    public static class EvaluateMethodsOnEnum
+    {
+        public static SampleEnum s_valueTypeEnum = SampleEnum.no;
+        public class MemberClass
+        {
+            public SampleEnum valueTypeEnum = SampleEnum.yes;
+        }
+        public static void run()
+        {
+            MemberClass mc = new();
+            Console.WriteLine("Break here");
         }
     }
 }

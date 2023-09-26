@@ -93,7 +93,7 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // _MSC_VER
 
-extern "C" bool RhInitialize();
+extern "C" bool RhInitialize(bool isDll);
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 extern "C" bool RhRegisterOSModule(void * pModule,
@@ -164,7 +164,13 @@ extern "C" void __managed__Startup();
 
 static int InitializeRuntime()
 {
-    if (!RhInitialize())
+    if (!RhInitialize(
+#ifdef NATIVEAOT_DLL
+        /* isDll */ true
+#else
+        /* isDll */ false
+#endif
+        ))
         return -1;
 
     void * osModule = PalGetModuleHandleFromPointer((void*)&NATIVEAOT_ENTRYPOINT);
@@ -191,26 +197,12 @@ static int InitializeRuntime()
 
 #ifndef NATIVEAOT_DLL
 
-#ifdef ENSURE_PRIMARY_STACK_SIZE
-__attribute__((noinline, optnone))
-static void EnsureStackSize(int stackSize)
-{
-    volatile char* s = (char*)_alloca(stackSize);
-    *s = 0;
-}
-#endif // ENSURE_PRIMARY_STACK_SIZE
-
 #if defined(_WIN32)
 int __cdecl wmain(int argc, wchar_t* argv[])
 #else
 int main(int argc, char* argv[])
 #endif
 {
-#ifdef ENSURE_PRIMARY_STACK_SIZE
-    // TODO: https://github.com/dotnet/runtimelab/issues/791
-    EnsureStackSize(1536 * 1024);
-#endif
-
     int initval = InitializeRuntime();
     if (initval != 0)
         return initval;

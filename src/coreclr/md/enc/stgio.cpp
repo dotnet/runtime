@@ -232,7 +232,7 @@ HRESULT StgIO::Open(                    // Return code.
             // most of the security risk anyway).
             if ((fFlags & DBPROP_TMODEF_TRYLOADLIBRARY) != 0)
             {
-                m_hModule = WszLoadLibraryEx(szName, NULL, LOAD_LIBRARY_AS_IMAGE_RESOURCE);
+                m_hModule = WszLoadLibrary(szName, NULL, LOAD_LIBRARY_AS_IMAGE_RESOURCE);
                 if (m_hModule != NULL)
                 {
                     m_iType = STGIO_HMODULE;

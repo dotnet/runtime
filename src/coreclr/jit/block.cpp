@@ -792,9 +792,6 @@ bool BasicBlock::IsLIR() const
 //------------------------------------------------------------------------
 // firstStmt: Returns the first statement in the block
 //
-// Arguments:
-//    None.
-//
 // Return Value:
 //    The first statement in the block's bbStmtList.
 //
@@ -804,10 +801,18 @@ Statement* BasicBlock::firstStmt() const
 }
 
 //------------------------------------------------------------------------
-// lastStmt: Returns the last statement in the block
+// hasSingleStmt: Returns true if block has a single statement
 //
-// Arguments:
-//    None.
+// Return Value:
+//    true if block has a single statement, false otherwise
+//
+bool BasicBlock::hasSingleStmt() const
+{
+    return (firstStmt() != nullptr) && (firstStmt() == lastStmt());
+}
+
+//------------------------------------------------------------------------
+// lastStmt: Returns the last statement in the block
 //
 // Return Value:
 //    The last statement in the block's bbStmtList.

@@ -242,6 +242,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         /// Creates a new instance of the <see cref="JsonNode"/>. All children nodes are recursively cloned.
         /// </summary>
+        /// <returns>A new cloned instance of the current node.</returns>
         public JsonNode DeepClone() => DeepCloneCore();
 
         internal abstract JsonNode DeepCloneCore();

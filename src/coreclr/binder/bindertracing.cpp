@@ -119,8 +119,8 @@ namespace BinderTracing
 {
     static thread_local bool t_AssemblyLoadStartInProgress = false;
 
-    AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const SString& assemblyPath)
-        : m_bindRequest { assemblySpec, SString::Empty(), assemblyPath }
+    AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const WCHAR* assemblyPath)
+        : m_bindRequest { assemblySpec, SString{ SString::Empty() }, SString{ assemblyPath } }
         , m_populatedBindRequest { false }
         , m_checkedIgnoreBind { false }
         , m_ignoreBind { false }

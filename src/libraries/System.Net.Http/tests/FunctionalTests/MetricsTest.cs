@@ -75,8 +75,8 @@ namespace System.Net.Http.Functional.Tests
             Version? protocolVersion = null,
             int? statusCode = null,
             string method = "GET",
-            string[] acceptedErrorReasons = null) =>
-            VerifyRequestDuration(InstrumentNames.RequestDuration, measurement.Value, measurement.Tags.ToArray(), uri, protocolVersion, statusCode, method, acceptedErrorReasons);
+            string[] acceptedErrorTypes = null) =>
+            VerifyRequestDuration(InstrumentNames.RequestDuration, measurement.Value, measurement.Tags.ToArray(), uri, protocolVersion, statusCode, method, acceptedErrorTypes);
 
         protected static void VerifyRequestDuration(string instrumentName,
             double measurement,
@@ -85,7 +85,7 @@ namespace System.Net.Http.Functional.Tests
             Version? protocolVersion,
             int? statusCode,
             string method = "GET",
-            string[] acceptedErrorReasons = null)
+            string[] acceptedErrorTypes = null)
         {
             Assert.Equal(InstrumentNames.RequestDuration, instrumentName);
             Assert.InRange(measurement, double.Epsilon, 60);
@@ -93,14 +93,14 @@ namespace System.Net.Http.Functional.Tests
             VerifyTag(tags, "http.request.method", method);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifyTag(tags, "http.response.status_code", statusCode);
-            if (acceptedErrorReasons == null)
+            if (acceptedErrorTypes == null)
             {
-                Assert.DoesNotContain(tags, t => t.Key == "http.error.reason");
+                Assert.DoesNotContain(tags, t => t.Key == "error.type");
             }
             else
             {
-                string errorReason = (string)tags.Single(t => t.Key == "http.error.reason").Value;
-                Assert.Contains(errorReason, acceptedErrorReasons);
+                string errorReason = (string)tags.Single(t => t.Key == "error.type").Value;
+                Assert.Contains(errorReason, acceptedErrorTypes);
             }
         }
 
@@ -659,7 +659,7 @@ namespace System.Net.Http.Functional.Tests
                     : [nameof(TaskCanceledException), nameof(OperationCanceledException)];
 
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
-                VerifyRequestDuration(m, uri, acceptedErrorReasons: expectedExceptionTypes);
+                VerifyRequestDuration(m, uri, acceptedErrorTypes: expectedExceptionTypes);
 
                 clientCompleted.SetResult();
             },
@@ -703,7 +703,7 @@ namespace System.Net.Http.Functional.Tests
             _output.WriteLine($"Client exception: {ex}");
 
             Measurement<double> m = Assert.Single(recorder.GetMeasurements());
-            VerifyRequestDuration(m, uri, acceptedErrorReasons: ["connection_error"]);
+            VerifyRequestDuration(m, uri, acceptedErrorTypes: ["connection_error"]);
         }
 
         protected override void Dispose(bool disposing)
@@ -793,6 +793,29 @@ namespace System.Net.Http.Functional.Tests
             }, content: "x"));
         }
 
+        [Theory]
+        [InlineData(400)]
+        [InlineData(404)]
+        [InlineData(599)]
+        public Task RequestDuration_ErrorStatus_ErrorTypeRecorded(int statusCode)
+        {
+            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+
+                using HttpResponseMessage response = await SendAsync(client, request);
+
+                Measurement<double> m = Assert.Single(recorder.GetMeasurements());
+                VerifyRequestDuration(m, uri, UseVersion, statusCode, "GET", acceptedErrorTypes: new[] { $"{statusCode}" });
+
+            }, async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: (HttpStatusCode)statusCode);
+            });
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Browser is relaxed about validating HTTP headers")]
         public async Task RequestDuration_ConnectionClosedWhileReceivingHeaders_Recorded()
@@ -814,7 +837,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(ex is HttpRequestException or TaskCanceledException);
 
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
-                VerifyRequestDuration(m, uri, acceptedErrorReasons: [nameof(TaskCanceledException), "response_ended"]);
+                VerifyRequestDuration(m, uri, acceptedErrorTypes: [nameof(TaskCanceledException), "response_ended"]);
             }, async server =>
             {
                 try
@@ -869,7 +892,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await Assert.ThrowsAsync<HttpRequestException>(() => clientTask);
                     Measurement<double> m = Assert.Single(recorder.GetMeasurements());
-                    VerifyRequestDuration(m, server.Address, acceptedErrorReasons: ["response_ended"]);
+                    VerifyRequestDuration(m, server.Address, acceptedErrorTypes: ["response_ended"]);
                 }
                 else
                 {
@@ -967,7 +990,7 @@ namespace System.Net.Http.Functional.Tests
             });
 
             Measurement<double> m = Assert.Single(recorder.GetMeasurements());
-            VerifyRequestDuration(m, server.Address, acceptedErrorReasons: ["http_protocol_error"]);
+            VerifyRequestDuration(m, server.Address, acceptedErrorTypes: ["http_protocol_error"]);
         }
     }
 

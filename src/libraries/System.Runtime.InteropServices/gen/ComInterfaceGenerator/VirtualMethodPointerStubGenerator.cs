@@ -22,8 +22,6 @@ namespace Microsoft.Interop
 
             // Generate stub code
             var stubGenerator = new ManagedToNativeVTableMethodGenerator(
-                methodStub.ManagedToUnmanagedGeneratorFactory.Key.TargetFramework,
-                methodStub.ManagedToUnmanagedGeneratorFactory.Key.TargetFrameworkVersion,
                 methodStub.SignatureContext.ElementTypeInformation,
                 methodStub.VtableIndexData.SetLastError,
                 methodStub.VtableIndexData.ImplicitThisParameter,
@@ -71,8 +69,6 @@ namespace Microsoft.Interop
 
             // Generate stub code
             var stubGenerator = new UnmanagedToManagedStubGenerator(
-                methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
-                methodStub.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
                 elements,
                 diagnostics,
                 methodStub.UnmanagedToManagedGeneratorFactory.GeneratorFactory);
@@ -172,8 +168,6 @@ namespace Microsoft.Interop
             var diagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), method.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             var stubGenerator = new UnmanagedToManagedStubGenerator(
-                method.UnmanagedToManagedGeneratorFactory.Key.TargetFramework,
-                method.UnmanagedToManagedGeneratorFactory.Key.TargetFrameworkVersion,
                 AddImplicitElementInfos(method),
                 diagnostics,
                 method.UnmanagedToManagedGeneratorFactory.GeneratorFactory);

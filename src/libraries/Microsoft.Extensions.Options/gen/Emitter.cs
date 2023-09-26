@@ -316,7 +316,7 @@ namespace Microsoft.Extensions.Options.Generators
                 attrInstantiationStatementLines.Add("}");
             }
 
-            var instantiationStatement = string.Join(Environment.NewLine, attrInstantiationStatementLines);
+            var instantiationStatement = string.Join("\n", attrInstantiationStatementLines);
 
             if (!staticValidationAttributesDict.TryGetValue(instantiationStatement, out var staticValidationAttributeInstance))
             {
