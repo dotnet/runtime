@@ -18,11 +18,6 @@
     </ReadLinesFromFile>
 
     <ItemGroup>
-      <!-- ActiveIssue: https://github.com/dotnet/runtime/issues/81170 -->
-      <_DebuggerTestsClassName Remove="@(_DebuggerTestsClassName)" Condition="'%(Identity)' == 'DebuggerTests.ExceptionTests'" />
-    </ItemGroup>
-
-    <ItemGroup>
       <HelixWorkItem Include="@(_DebuggerTestsClassName -> '$(DebuggerHost)-%(Identity)')">
         <PayloadArchive>$(TestArchiveTestsDir)Wasm.Debugger.Tests.zip</PayloadArchive>
         <Command>$(HelixCommand)</Command>

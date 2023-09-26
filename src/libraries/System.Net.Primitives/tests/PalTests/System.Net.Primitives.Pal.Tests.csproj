@@ -39,6 +39,10 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs"
+             Link="Common\System\Net\IPEndPointExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressExtensions.cs"
+             Link="Common\System\Net\SocketAddressExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HostInformationPalTest.cs" />

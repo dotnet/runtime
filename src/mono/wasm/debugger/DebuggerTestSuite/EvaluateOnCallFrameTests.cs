@@ -585,7 +585,7 @@ namespace DebuggerTests
                 Assert.Equal("Unable to evaluate element access 'f.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["result"]?["description"]?.Value<string>());
                 var exceptionDetailsStack = res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0];
                 Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", exceptionDetailsStack?["functionName"]?.Value<string>());
-                Assert.Equal(556, exceptionDetailsStack?["lineNumber"]?.Value<int>());
+                Assert.Equal(559, exceptionDetailsStack?["lineNumber"]?.Value<int>());
                 Assert.Equal(12, exceptionDetailsStack?["columnNumber"]?.Value<int>());
                 (_, res) = await EvaluateOnCallFrame(id, "f[1]", expect_ok: false );
                 Assert.Equal( "Unable to evaluate element access 'f[1]': Cannot apply indexing with [] to an object of type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate'", res.Error["result"]?["description"]?.Value<string>());
@@ -621,7 +621,7 @@ namespace DebuggerTests
                    ("f.textArray[i]", TString("1")));
            });
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateObjectIndexingByNonIntConst() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
@@ -633,22 +633,24 @@ namespace DebuggerTests
                     ("f[\"-\"]", TBool(false)),
                     ("f[\'-\']", TString("res_-")),
                     ("f[true]", TString("True")),
-                    // ("f[1.23]", TNumber(1)) // Not supported yet - float/double
-
-                    // FixMe: https://github.com/dotnet/runtime/issues/76013
-                    // ("f.indexedByStr[\"1\"]", TBool(true)) // keyNotFoundException
-                    // ("f.indexedByStr[\"111\"]", TBool(false)), // keyNotFoundException
-                    // ("f.indexedByStr[\"true\"]", TBool(true)), // keyNotFoundException
+                    //("f[1.23]", TNumber(1)) // Not supported yet - float/double
+                    ("f.indexedByStr[\"1\"]", TBool(true)),
+                    ("f.indexedByStr[\"111\"]", TBool(false)),
+                    ("f.indexedByStr[\"true\"]", TBool(true)),
                     ("f.indexedByChar[\'i\']", TString("I")),
                     ("f.indexedByChar[\'5\']", TString("5")),
                     ("f.indexedByBool[true]", TString("TRUE")),
                     ("f.indexedByBool[false]", TString("FALSE"))
                 );
+                var (_, res) = await EvaluateOnCallFrame(id,"f.indexedByStr[\"invalid\"]", expect_ok: false);
+                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(f.indexedByStr[\"invalid\"]", StringComparison.Ordinal)); 
+                (_, res) = await EvaluateOnCallFrame(id,"f.indexedByStr[null]", expect_ok: false);
+                Assert.True(res.Error["result"]?["description"]?.Value<string>().StartsWith("Cannot evaluate '(f.indexedByStr[null]", StringComparison.Ordinal)); 
             });
 
         [Fact]
         public async Task EvaluateObjectByNonIntLocals() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 13, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -657,12 +659,11 @@ namespace DebuggerTests
                     ("f[longString]", TBool(true)),
                     ("f[aBool]", TString("True")),
                     ("f[aChar]", TString("res_9")),
-                    ("f[shortString]", TBool(false))
-                    // ("f[aFloat]", TNumber(1)),
-                    // ("f[aDouble]", TNumber(2)),
-
-                    // FixMe: https://github.com/dotnet/runtime/issues/76014
-                    // ("f[aDecimal]", TNumber(3)) // object
+                    ("f[shortString]", TBool(false)),
+                    ("f[aFloat]", TNumber(1)),
+                    ("f[aDouble]", TNumber(2)),
+                    ("f[aDecimal]", TNumber(3)),
+                    ("f[objIdx]", TNumber(123))
                 );
             });
 
@@ -722,7 +723,7 @@ namespace DebuggerTests
                 Assert.Equal("Unable to evaluate element access 'f.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["result"]?["description"]?.Value<string>());
                 var exceptionDetailsStack = res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0];
                 Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", exceptionDetailsStack?["functionName"]?.Value<string>());
-                Assert.Equal(556, exceptionDetailsStack?["lineNumber"]?.Value<int>());
+                Assert.Equal(559, exceptionDetailsStack?["lineNumber"]?.Value<int>());
                 Assert.Equal(12, exceptionDetailsStack?["columnNumber"]?.Value<int>());
             });
 

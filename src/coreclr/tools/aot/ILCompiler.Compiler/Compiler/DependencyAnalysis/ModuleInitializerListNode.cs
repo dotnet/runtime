@@ -113,9 +113,8 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     foreach (var module in allModules)
                     {
-                        if (!markedModules.Contains(module))
+                        if (markedModules.Add(module))
                         {
-                            markedModules.Add(module);
                             if (modulesWithCctor.Contains(module.Module))
                                 sortedModules.Add(module.Module);
                             break;

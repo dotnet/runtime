@@ -9,8 +9,6 @@ namespace Microsoft.Interop
 {
     public sealed class Forwarder : IMarshallingGenerator
     {
-        public bool IsSupported(TargetFramework target, Version version) => true;
-
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             return info.ManagedType;
@@ -33,6 +31,7 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => ByValueMarshalKindSupport.Supported;
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+            => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
     }
 }

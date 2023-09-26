@@ -1,23 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-** Purpose: Create a Memorystream over an UnmanagedMemoryStream
-**
-===========================================================*/
-
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.IO
 {
-    // Needed for backwards compatibility with V1.x usages of the
-    // ResourceManager, where a MemoryStream is now returned as an
-    // UnmanagedMemoryStream from ResourceReader.
+    /// <summary>
+    /// Creates a <see cref="MemoryStream"/> over an <see cref="UnmanagedMemoryStream"/>.
+    /// </summary>
     internal sealed class UnmanagedMemoryStreamWrapper : MemoryStream
     {
         private readonly UnmanagedMemoryStream _unmanagedStream;

@@ -135,11 +135,17 @@ BOOL DacValidateEEClass(PTR_EEClass pEEClass)
 
 BOOL DacValidateMethodTable(PTR_MethodTable pMT, BOOL &bIsFree)
 {
+    bIsFree = FALSE;
+
+    if ((pMT == NULL) || dac_cast<TADDR>(pMT) == (TADDR)-1)
+    {
+        return FALSE;
+    }
+
     // Verify things are right.
     BOOL retval = FALSE;
     EX_TRY
     {
-        bIsFree = FALSE;
         if (HOST_CDADDR(pMT) == HOST_CDADDR(g_pFreeObjectMethodTable))
         {
             bIsFree = TRUE;
@@ -182,7 +188,7 @@ BadMethodTable: ;
 
 BOOL DacValidateMD(PTR_MethodDesc pMD)
 {
-    if (pMD == NULL)
+    if ((pMD == NULL) || dac_cast<TADDR>(pMD) == (TADDR)-1)
     {
         return FALSE;
     }
@@ -2642,8 +2648,7 @@ ClrDataAccess::GetAssemblyLocation(CLRDATA_ADDRESS assembly, int count, _Inout_u
     // Turn from bytes to wide characters
     if (!pAssembly->GetPEAssembly()->GetPath().IsEmpty())
     {
-        if (!pAssembly->GetPEAssembly()->GetPath().
-            DacGetUnicode(count, location, pNeeded))
+        if (!pAssembly->GetPEAssembly()->GetPath().DacGetUnicode(count, location, pNeeded))
         {
             hr = E_FAIL;
         }
@@ -3249,8 +3254,8 @@ ClrDataAccess::GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int ind
 
 HRESULT ClrDataAccess::GetHandleEnum(ISOSHandleEnum **ppHandleEnum)
 {
-    unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_VARIABLE, HNDTYPE_DEPENDENT,
-                            HNDTYPE_ASYNCPINNED, HNDTYPE_SIZEDREF,
+    unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
+                            HNDTYPE_SIZEDREF,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
@@ -3287,8 +3292,8 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
 
     SOSDacEnter();
 
-    unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_VARIABLE, HNDTYPE_DEPENDENT,
-                            HNDTYPE_ASYNCPINNED, HNDTYPE_SIZEDREF,
+    unsigned int types[] = {HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG, HNDTYPE_STRONG, HNDTYPE_PINNED, HNDTYPE_DEPENDENT,
+                            HNDTYPE_SIZEDREF,
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
                             HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL

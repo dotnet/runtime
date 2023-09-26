@@ -44,9 +44,9 @@ namespace System
         private const int MaxKeyLength = 255;
 
         private readonly string _id;
-        private readonly string? _displayName;
-        private readonly string? _standardDisplayName;
-        private readonly string? _daylightDisplayName;
+        private string? _displayName;
+        private string? _standardDisplayName;
+        private string? _daylightDisplayName;
         private readonly TimeSpan _baseUtcOffset;
         private readonly bool _supportsDaylightSavingTime;
         private readonly AdjustmentRule[]? _adjustmentRules;
@@ -85,9 +85,9 @@ namespace System
                         timeZone = new TimeZoneInfo(
                                             timeZone._id,
                                             timeZone._baseUtcOffset,
-                                            timeZone._displayName,
-                                            timeZone._standardDisplayName,
-                                            timeZone._daylightDisplayName,
+                                            timeZone.DisplayName,
+                                            timeZone.StandardName,
+                                            timeZone.DaylightName,
                                             timeZone._adjustmentRules,
                                             disableDaylightSavingTime: false,
                                             timeZone.HasIanaId);
@@ -131,6 +131,7 @@ namespace System
 
             public Dictionary<string, TimeZoneInfo>? _systemTimeZones;
             public ReadOnlyCollection<TimeZoneInfo>? _readOnlySystemTimeZones;
+            public ReadOnlyCollection<TimeZoneInfo>? _readOnlyUnsortedSystemTimeZones;
             public Dictionary<string, TimeZoneInfo>? _timeZonesUsingAlternativeIds;
             public bool _allSystemTimeZonesRead;
         }
@@ -146,11 +147,38 @@ namespace System
         /// </summary>
         public bool HasIanaId { get; }
 
-        public string DisplayName => _displayName ?? string.Empty;
+        public string DisplayName
+        {
+            get
+            {
+                if (_displayName == null)
+                    Interlocked.CompareExchange(ref _displayName, PopulateDisplayName(), null);
 
-        public string StandardName => _standardDisplayName ?? string.Empty;
+                return _displayName ?? string.Empty;
+            }
+        }
 
-        public string DaylightName => _daylightDisplayName ?? string.Empty;
+        public string StandardName
+        {
+            get
+            {
+                if (_standardDisplayName == null)
+                    Interlocked.CompareExchange(ref _standardDisplayName, PopulateStandardDisplayName(), null);
+
+                return _standardDisplayName ?? string.Empty;
+            }
+        }
+
+        public string DaylightName
+        {
+            get
+            {
+                if (_daylightDisplayName == null)
+                    Interlocked.CompareExchange(ref _daylightDisplayName, PopulateDaylightDisplayName(), null);
+
+                return _daylightDisplayName ?? string.Empty;
+            }
+        }
 
         public TimeSpan BaseUtcOffset => _baseUtcOffset;
 
@@ -853,16 +881,28 @@ namespace System
         /// <see cref="DisplayName"/>.
         /// This method does *not* throw TimeZoneNotFoundException or InvalidTimeZoneException.
         /// </summary>
-        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones()
+        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones() => GetSystemTimeZones(skipSorting: false);
+
+        /// <summary>
+        /// Returns a <see cref="ReadOnlyCollection{TimeZoneInfo}"/> containing all valid TimeZone's from the local machine.
+        /// This method does *not* throw TimeZoneNotFoundException or InvalidTimeZoneException.
+        /// </summary>
+        /// <param name="skipSorting">If true, The collection returned may not necessarily be sorted.</param>
+        /// <remarks>By setting the skipSorting parameter to true, the method will attempt to avoid sorting the returned collection.
+        /// This option can be beneficial when the caller does not require a sorted list and aims to enhance the performance. </remarks>
+        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones(bool skipSorting)
         {
             CachedData cachedData = s_cachedData;
 
             lock (cachedData)
             {
-                if (cachedData._readOnlySystemTimeZones == null)
+                if ((skipSorting ? cachedData._readOnlyUnsortedSystemTimeZones : cachedData._readOnlySystemTimeZones) is null)
                 {
-                    PopulateAllSystemTimeZones(cachedData);
-                    cachedData._allSystemTimeZonesRead = true;
+                    if (!cachedData._allSystemTimeZonesRead)
+                    {
+                        PopulateAllSystemTimeZones(cachedData);
+                        cachedData._allSystemTimeZonesRead = true;
+                    }
 
                     if (cachedData._systemTimeZones != null)
                     {
@@ -870,24 +910,33 @@ namespace System
                         TimeZoneInfo[] array = new TimeZoneInfo[cachedData._systemTimeZones.Count];
                         cachedData._systemTimeZones.Values.CopyTo(array, 0);
 
-                        // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
-                        Array.Sort(array, static (x, y) =>
+                        if (!skipSorting)
                         {
-                            // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
-                            int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
-                            return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
-                        });
+                            // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
+                            Array.Sort(array, static (x, y) =>
+                            {
+                                // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
+                                int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
+                                return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
+                            });
 
-                        cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
+                            // Always reset _readOnlyUnsortedSystemTimeZones even if it was initialized before. This prevents the need to maintain two separate cache lists in memory
+                            // and guarantees that if _readOnlySystemTimeZones is initialized, _readOnlyUnsortedSystemTimeZones is also initialized.
+                            cachedData._readOnlySystemTimeZones = cachedData._readOnlyUnsortedSystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
+                        }
+                        else
+                        {
+                            cachedData._readOnlyUnsortedSystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
+                        }
                     }
                     else
                     {
-                        cachedData._readOnlySystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
+                        cachedData._readOnlySystemTimeZones = cachedData._readOnlyUnsortedSystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
                     }
                 }
             }
 
-            return cachedData._readOnlySystemTimeZones;
+            return skipSorting ? cachedData._readOnlyUnsortedSystemTimeZones! : cachedData._readOnlySystemTimeZones!;
         }
 
         /// <summary>
@@ -907,9 +956,9 @@ namespace System
             AdjustmentRule[]? currentRules = _adjustmentRules;
             AdjustmentRule[]? otherRules = other._adjustmentRules;
 
-            if (currentRules is null || otherRules is null)
+            if (currentRules is null && otherRules is null)
             {
-                return currentRules == otherRules;
+                return true;
             }
 
             return currentRules.AsSpan().SequenceEqual(otherRules);
@@ -962,9 +1011,9 @@ namespace System
 
             _id = id;
             _baseUtcOffset = baseUtcOffset;
-            _displayName = displayName;
-            _standardDisplayName = standardDisplayName;
-            _daylightDisplayName = disableDaylightSavingTime ? null : daylightDisplayName;
+            _displayName = displayName ?? string.Empty;
+            _standardDisplayName = standardDisplayName ?? string.Empty;
+            _daylightDisplayName = disableDaylightSavingTime ? string.Empty : daylightDisplayName ?? string.Empty;
             _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
             _adjustmentRules = adjustmentRules;
 

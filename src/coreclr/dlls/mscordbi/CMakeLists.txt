@@ -55,6 +55,7 @@ else(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 add_library_clr(mscordbi SHARED ${MSCORDBI_SOURCES})
+set_target_properties(mscordbi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(mscordbi PRIVATE $<$<COMPILE_LANGUAGE:CXX>:stdafx.h>)
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -125,4 +126,4 @@ elseif(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_WIN32)
 
 # add the install targets
-install_clr(TARGETS mscordbi DESTINATIONS . sharedFramework COMPONENT runtime)
+install_clr(TARGETS mscordbi DESTINATIONS . sharedFramework COMPONENT debug)

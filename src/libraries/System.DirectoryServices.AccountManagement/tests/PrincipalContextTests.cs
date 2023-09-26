@@ -24,6 +24,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34442", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(ContextType.Machine, null)]
         [InlineData(ContextType.Machine, "")]
@@ -50,6 +51,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34442", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(ContextType.Machine, null, null)]
         [InlineData(ContextType.Machine, "", null)]
@@ -76,6 +78,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34442", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(ContextType.Machine, null, null, ContextOptions.Negotiate)]
         [InlineData(ContextType.Machine, "", null, ContextOptions.Negotiate)]

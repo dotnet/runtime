@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
-import { Module, INTERNAL } from "../globals";
+import { Module, INTERNAL, loaderHelpers } from "../globals";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { _release_temp_frame } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
@@ -76,6 +76,7 @@ export function mono_bind_assembly_entry_point(assembly: string, signature?: str
     const js_method = mono_bind_method(method, signature!, false, "_" + assembly + "__entrypoint");
 
     return async function (...args: any[]) {
+        loaderHelpers.assert_runtime_running();
         if (args.length > 0 && Array.isArray(args[0]))
             args[0] = js_array_to_mono_array(args[0], true, false);
         return js_method(...args);

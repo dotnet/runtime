@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Text;
 using System.Runtime.CompilerServices;
 using BrowserDebugProxy;
+using Microsoft.FileFormats.PE;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -204,6 +205,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         GetTypeFromToken = 11,
         GetMethodFromToken = 12,
         HasDebugInfo = 13,
+        HasDebugInfoLoaded = 18
     }
 
     internal enum CmdModule {
@@ -360,6 +362,31 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         Minimal,
         LineColumn
+    }
+
+    internal sealed class AssemblyAndPdbData
+    {
+        public bool IsAsmMetadataOnly { get; init; }
+        public byte[] AsmBytes { get; set; }
+        public byte[] PdbBytes { get; set; }
+        public bool HasDebugInfo { get; set; }
+        public int PdbAge { get; set; }
+        public Guid PdbGuid { get; set; }
+        public string PdbPath { get; set; }
+        public int PdbUncompressedSize { get; set; }
+        public bool IsPortableCodeView { get; init; }
+        public List<PdbChecksum> PdbChecksums { get; init; }
+        internal AssemblyAndPdbData(byte[] asm, byte[] pdb)
+        {
+            AsmBytes = asm;
+            PdbBytes = pdb;
+        }
+        internal AssemblyAndPdbData()
+        {
+            IsPortableCodeView = true;
+            IsAsmMetadataOnly = true;
+            PdbChecksums = new();
+        }
     }
 
     internal sealed record ArrayDimensions
@@ -560,7 +587,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             switch (type)
             {
-                case ElementType.U1:
+                case ElementType.I1:
                 case ElementType.I2:
                 case ElementType.I4:
                     Write((ElementType)type, (int)value);
@@ -577,7 +604,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         intBoolVal = (bool)value ? 1 : 0;
                     Write((ElementType)type, intBoolVal);
                     return true;
-                case ElementType.I1:
+                case ElementType.U1:
                 case ElementType.U2:
                 case ElementType.U4:
                     Write((ElementType)type, (uint)value);
@@ -688,14 +715,41 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        public async Task<bool> WriteJsonValue(JObject objValue, MonoSDBHelper SdbHelper, CancellationToken token)
+        public async Task<bool> WriteJsonValue(JObject objValue, MonoSDBHelper SdbHelper, ElementType? expectedType, CancellationToken token)
         {
             switch (objValue["type"].Value<string>())
             {
                 case "number":
                 {
-                    // FixMe: what if the number is not int but single/double?
-                    Write(ElementType.I4, objValue["value"].Value<int>());
+                    var expected = expectedType is not null ? expectedType.Value : ElementType.I4;
+                    switch (expected)
+                    {
+                        case ElementType.I1:
+                        case ElementType.I2:
+                        case ElementType.I4:
+                            Write(expected, objValue["value"].Value<int>());
+                            break;
+                        case ElementType.U1:
+                        case ElementType.U2:
+                        case ElementType.U4:
+                            Write(expected, objValue["value"].Value<uint>());
+                            break;
+                        case ElementType.I8:
+                            Write(expected, objValue["value"].Value<long>());
+                            break;
+                        case ElementType.U8:
+                            Write(expected, objValue["value"].Value<ulong>());
+                            break;
+                        case ElementType.R4:
+                            Write(expected, objValue["value"].Value<float>());
+                            break;
+                        case ElementType.R8:
+                            Write(expected, objValue["value"].Value<double>());
+                            break;
+                        default:
+                            objValue["value"].Value<int>();
+                            break;
+                    };
                     return true;
                 }
                 case "symbol":
@@ -791,7 +845,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private static int debuggerObjectId;
         private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
-        private const int MINOR_VERSION = 61;
+        private const int MINOR_VERSION = 65;
         private const int MAJOR_VERSION = 2;
 
         private int VmMinorVersion { get; set; }
@@ -807,19 +861,23 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal readonly ILogger logger;
 
-#pragma warning disable SYSLIB1045
-        private static Regex regexForAsyncLocals = new (@"\<(?<varName>[^)]*)\>(?<varId>[^)]*)(__)(?<scopeId>\d+)", RegexOptions.Singleline);
+        [GeneratedRegex(@"\<(?<varName>[^)]*)\>(?<varId>[^)]*)(__)(?<scopeId>\d+)", RegexOptions.Singleline)]
+        private static partial Regex RegexForAsyncLocals(); //<testCSharpScope>5__1 // works
 
-        private static Regex regexForVBAsyncLocals = new (@"\$VB\$ResumableLocal_(?<varName>[^\$]*)\$(?<scopeId>\d+)", RegexOptions.Singleline); //$VB$ResumableLocal_testVbScope$2
+        [GeneratedRegex(@"\$VB\$ResumableLocal_(?<varName>[^\$]*)\$(?<scopeId>\d+)", RegexOptions.Singleline)]
+        private static partial Regex RegexForVBAsyncLocals(); //$VB$ResumableLocal_testVbScope$2
 
-        private static Regex regexForVBAsyncMethodName = new (@"VB\$StateMachine_(\d+)_(?<methodName>.*)", RegexOptions.Singleline); //VB$StateMachine_2_RunVBScope
+        [GeneratedRegex(@"VB\$StateMachine_(\d+)_(?<methodName>.*)", RegexOptions.Singleline)]
+        private static partial Regex RegexForVBAsyncMethodName(); //VB$StateMachine_2_RunVBScope
 
-        private static Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)");
+        [GeneratedRegex(@"\<([^>]*)\>([d][_][_])([0-9]*)")]
+        private static partial Regex RegexForAsyncMethodName();
 
-        private static Regex regexForGenericArgs = new (@"[`][0-9]+");
+        [GeneratedRegex(@"[`][0-9]+")]
+        private static partial Regex RegexForGenericArgs();
 
-        private static Regex regexForNestedLeftRightAngleBrackets = new ("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*"); // <ContinueWithStaticAsync>b__3_0
-#pragma warning restore SYSLIB1045
+        [GeneratedRegex("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*")]
+        private static partial Regex RegexForNestedLeftRightAngleBrackets(); // <ContinueWithStaticAsync>b__3_0
 
         public JObjectValueCreator ValueCreator { get; init; }
 
@@ -878,6 +936,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                     logger.LogDebug($"Created assembly without debug information: {assemblyName}");
                 }
             }
+            else
+            {
+                if (asm.asmMetadataReader is null) //load on demand
+                {
+                    var assemblyAndPdbData = await GetDataFromAssemblyAndPdbAsync(asm.Name, true, token);
+                    if (assemblyAndPdbData is not null)
+                        asm.LoadInfoFromBytes(proxy, sessionId, assemblyAndPdbData, token);
+                }
+            }
             asm.SetDebugId(assemblyId);
             assemblies[assemblyId] = asm;
             return asm;
@@ -886,7 +953,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             methodName = methodName.Replace(':', '.');
             methodName = methodName.Replace('/', '.');
-            methodName = regexForGenericArgs.Replace(methodName, "");
+            methodName = RegexForGenericArgs().Replace(methodName, "");
             return methodName;
         }
 
@@ -1268,7 +1335,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var ret = retDebuggerCmdReader.ReadString();
                     if (ret.IndexOf(':') is int index && index > 0)
                         ret = ret.Substring(0, index);
-                    ret = regexForAsyncMethodName.Replace(ret, "$1");
+                    ret = RegexForAsyncMethodName().Replace(ret, "$1");
                     var numGenericTypeArgs = retDebuggerCmdReader.ReadInt32();
                     var numGenericMethodArgs = retDebuggerCmdReader.ReadInt32();
                     int numTotalGenericArgs = numGenericTypeArgs + numGenericMethodArgs;
@@ -1276,17 +1343,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                     for (int i = 0; i < numTotalGenericArgs; i++)
                     {
                         var typeArgC = retDebuggerCmdReader.ReadString();
-                        typeArgC = regexForGenericArgs.Replace(typeArgC, "");
+                        typeArgC = RegexForGenericArgs().Replace(typeArgC, "");
                         genericArgs.Add(typeArgC);
                     }
-                    var match = regexForGenericArgs.Match(ret);
+                    var match = RegexForGenericArgs().Match(ret);
                     while (match.Success)
                     {
                         var countArgs = Convert.ToInt32(match.Value.Remove(0, 1));
                         ret = ret.Remove(match.Index, match.Value.Length);
                         ret = ret.Insert(match.Index, $"<{string.Join(", ", genericArgs.Take(countArgs))}>");
                         genericArgs.RemoveRange(0, countArgs);
-                        match = regexForGenericArgs.Match(ret);
+                        match = RegexForGenericArgs().Match(ret);
                     }
                     ret = ret.Replace('/', '.');
                     return ret;
@@ -1306,7 +1373,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else if (klassName.StartsWith("VB$"))
                         {
-                            var match = regexForVBAsyncMethodName.Match(klassName);
+                            var match = RegexForVBAsyncMethodName().Match(klassName);
                             if (match.Success)
                                 ret = ret.Insert(0, match.Groups["methodName"].Value);
                             else
@@ -1314,7 +1381,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else
                         {
-                            var matchOnClassName = regexForNestedLeftRightAngleBrackets.Match(klassName);
+                            var matchOnClassName = RegexForNestedLeftRightAngleBrackets().Match(klassName);
                             if (matchOnClassName.Success && matchOnClassName.Groups["Close"].Captures.Count > 0)
                                 klassName = matchOnClassName.Groups["Close"].Captures[0].Value;
                             if (ret.Length > 0)
@@ -1323,7 +1390,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
                     var methodName = retDebuggerCmdReader.ReadString();
-                    var matchOnMethodName = regexForNestedLeftRightAngleBrackets.Match(methodName);
+                    var matchOnMethodName = RegexForNestedLeftRightAngleBrackets().Match(methodName);
                     if (matchOnMethodName.Success && matchOnMethodName.Groups["Close"].Captures.Count > 0)
                     {
                         if (isAnonymous && anonymousMethodId.Length == 0 && methodName.Contains("__"))
@@ -1676,17 +1743,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return null;
         }
-#pragma warning disable SYSLIB1045
-        private static Regex regexForGenericArity = new (@"`\d+");
-        private static Regex regexForSquareBrackets = new (@"[[, ]+]");
-#pragma warning restore SYSLIB1045
+
+        [GeneratedRegex(@"`\d+")]
+        private static partial Regex RegexForGenericArity();
+
+        [GeneratedRegex(@"[[, ]+]")]
+        private static partial Regex RegexForSquareBrackets();
 
         public async Task<string> GetTypeName(int typeId, CancellationToken token)
         {
             string className = await GetTypeNameOriginal(typeId, token);
             className = className.Replace("+", ".");
-            className = regexForGenericArity.Replace(className, "");
-            className = regexForSquareBrackets.Replace(className, "__SQUARED_BRACKETS__");
+            className = RegexForGenericArity().Replace(className, "");
+            className = RegexForSquareBrackets().Replace(className, "__SQUARED_BRACKETS__");
             //className = className.Replace("[]", "__SQUARED_BRACKETS__");
             className = className.Replace("[", "<");
             className = className.Replace("]", ">");
@@ -1891,14 +1960,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 : throw new ArgumentException($"Cannot invoke method with id {methodId} on {dotnetObjectId}", nameof(dotnetObjectId));
         }
 
-        public async Task<string> InvokeToStringAsync(IEnumerable<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, CancellationToken token)
+        public async Task<string> InvokeToStringAsync(IEnumerable<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, bool invokeToStringInObject, CancellationToken token)
         {
             try
             {
                 foreach (var typeId in typeIds)
                 {
                     var typeInfo = await GetTypeInfo(typeId, token);
-                    if (typeInfo == null || typeInfo.Name == "object")
+                    if (typeInfo == null || (typeInfo.Name == "object" && !invokeToStringInObject))
                         continue;
                     Microsoft.WebAssembly.Diagnostics.MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
                     if (isEnum != true && methodInfo == null)
@@ -1909,7 +1978,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     foreach (var methodId in methodIds)
                     {
                         var methodInfoFromRuntime = await GetMethodInfo(methodId, token);
-                        if (methodInfoFromRuntime.Info.GetParametersInfo().Length > 0)
+                        if (methodInfoFromRuntime?.Info?.GetParametersInfo()?.Length > 0)
                             continue;
                         var retMethod = await InvokeMethod(objectId, methodId, isValueType, token);
                         return retMethod["value"]?["value"].Value<string>();
@@ -2029,7 +2098,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else if (fieldName.StartsWith('<')) //examples: <code>5__2
                 {
-                    var match = regexForAsyncLocals.Match(fieldName);
+                    var match = RegexForAsyncLocals().Match(fieldName);
                     if (match.Success)
                     {
                         if (!method.Info.ContainsAsyncScope(Convert.ToInt32(match.Groups["scopeId"].Value), offset))
@@ -2044,7 +2113,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else if (fieldName.StartsWith("$VB$ResumableLocal_", StringComparison.Ordinal))
                 {
-                    var match = regexForVBAsyncLocals.Match(fieldName);
+                    var match = RegexForVBAsyncLocals().Match(fieldName);
                     if (match.Success)
                     {
                         if (!method.Info.ContainsAsyncScope(Convert.ToInt32(match.Groups["scopeId"].Value) + 1, offset))
@@ -2475,23 +2544,59 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        public async Task<byte[][]> GetBytesFromAssemblyAndPdb(string assemblyName, CancellationToken token)
+        public async Task<bool> HasDebugInfoLoadedByRuntimeAsync(string assemblyName, CancellationToken token)
         {
+            var assemblyId = await GetAssemblyId(assemblyName, token);
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(assemblyId);
+            using var retDebuggerCmdReader1 = await SendDebuggerAgentCommand(CmdAssembly.HasDebugInfoLoaded, commandParamsWriter, token);
+            return retDebuggerCmdReader1.ReadByte() == 1;
+        }
+
+        public async Task<AssemblyAndPdbData> GetDataFromAssemblyAndPdbAsync(string assemblyName, bool ignoreJMC, CancellationToken token)
+        {
+            if (!ignoreJMC && proxy.JustMyCode && !assemblyName.StartsWith("System.Private.CoreLib", StringComparison.Ordinal) && !(await HasDebugInfoLoadedByRuntimeAsync(assemblyName, token)))
+                return null; //only load symbols if JustMyCode is disabled, or it's corelib or has debug info loaded by runtime which mean it's an user assembly
             using var commandParamsWriter = new MonoBinaryWriter();
             byte[] assembly_buf = null;
             byte[] pdb_buf = null;
+            var pdbUncompressedSize = 0;
+            (int MajorVersion, int MinorVersion) = await GetVMVersion(token);
+
             commandParamsWriter.Write(assemblyName);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.GetAssemblyAndPdbBytes, commandParamsWriter, token);
             int assembly_size = retDebuggerCmdReader.ReadInt32();
             if (assembly_size > 0)
                 assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
+            if (MajorVersion == 2 && MinorVersion >= 64 || MajorVersion >= 2)
+                pdbUncompressedSize = retDebuggerCmdReader.ReadInt32();
             int pdb_size = retDebuggerCmdReader.ReadInt32();
             if (pdb_size > 0)
                 pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
-            byte[][] ret = new byte[2][];
-            ret[0] = assembly_buf;
-            ret[1] = pdb_buf;
-            return ret;
+
+            if (!(MajorVersion == 2 && MinorVersion >= 64 || MajorVersion >= 2)) //versions older than 2.64 do not support this new format of GetAssemblyAndPdbBytes
+                return new(assembly_buf, pdb_buf);
+
+            AssemblyAndPdbData data = new();
+            data.AsmBytes = assembly_buf;
+            data.PdbBytes = pdb_buf;
+            data.HasDebugInfo = retDebuggerCmdReader.ReadBoolean();
+            data.PdbUncompressedSize = pdbUncompressedSize;
+            if (!data.HasDebugInfo)
+                return data;
+
+            data.PdbAge = retDebuggerCmdReader.ReadInt32();
+            var pdbGuidSize = retDebuggerCmdReader.ReadInt32();
+            data.PdbGuid = new Guid(retDebuggerCmdReader.ReadBytes(pdbGuidSize));
+            data.PdbPath = retDebuggerCmdReader.ReadString();
+            var pdbChecksumCount = retDebuggerCmdReader.ReadInt32();
+            for (int i = 0; i < pdbChecksumCount; i++)
+            {
+                var algorithmName = retDebuggerCmdReader.ReadString();
+                var pdbChecksumSize = retDebuggerCmdReader.ReadInt32();
+                data.PdbChecksums.Add(new PdbChecksum(algorithmName, retDebuggerCmdReader.ReadBytes(pdbChecksumSize)));
+            }
+            return data;
         }
         private static readonly string[] s_primitiveTypeNames = new[]
             {

@@ -174,7 +174,7 @@ public:
     //
     // EnC functions
     //
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Notify that an existing method has been edited in a loaded type
     virtual HRESULT UpdateFunction(MethodDesc* md, SIZE_T enCVersion) = 0;
 
@@ -199,11 +199,11 @@ public:
     // Used by FixContextAndResume
     virtual void SendSetThreadContextNeeded(CONTEXT *context) = 0;
     virtual BOOL IsOutOfProcessSetContextEnabled() = 0;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     // Get debugger variable information for a specific version of a method
     virtual     void GetVarInfo(MethodDesc *       fd,         // [IN] method of interest
-                                void *DebuggerVersionToken,    // [IN] which edit version
+                                CORDB_ADDRESS nativeCodeAddress,    // [IN] which edit version
                                 SIZE_T *           cVars,      // [OUT] size of 'vars'
                                 const ICorDebugInfo::NativeVarInfo **vars     // [OUT] map telling where local vars are stored
                                 ) = 0;
@@ -261,11 +261,6 @@ public:
     ) = 0;
 
     virtual bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod) = 0;
-
-    // Given a method, get's its EnC version number. 1 if the method is not EnCed.
-    // Note that MethodDescs are reused between versions so this will give us
-    // the most recent EnC number.
-    virtual int GetMethodEncNumber(MethodDesc * pMethod) = 0;
 
     virtual void SendLogSwitchSetting (int iLevel,
                                        int iReason,
@@ -413,6 +408,11 @@ public:
     virtual void ResumeForGarbageCollectionStarted() = 0;
 #endif
     virtual BOOL IsSynchronizing() = 0;
+
+#ifndef DACCESS_COMPILE
+    virtual HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef) = 0;
+    virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
+#endif //DACCESS_COMPILE
 };
 
 #ifndef DACCESS_COMPILE

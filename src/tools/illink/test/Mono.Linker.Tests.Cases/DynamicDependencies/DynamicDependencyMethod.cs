@@ -1,8 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+
+#if NATIVEAOT
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
+#endif
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
 {

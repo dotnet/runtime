@@ -1282,8 +1282,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     ssize_t ival2 = opr2->AsIntCon()->gtIconVal;
 
     // Is the value a boolean?
-    // We can either have a boolean expression (marked GTF_BOOLEAN) or
-    // a local variable that is marked as being boolean (lvIsBoolean)
+    // We can either have a boolean expression (marked GTF_BOOLEAN) or a constant 0/1.
 
     if (opr1->gtFlags & GTF_BOOLEAN)
     {
@@ -1292,18 +1291,6 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     else if ((opr1->gtOper == GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
     {
         pOptTest->isBool = true;
-    }
-    else if (opr1->gtOper == GT_LCL_VAR)
-    {
-        // is it a boolean local variable?
-
-        unsigned lclNum = opr1->AsLclVarCommon()->GetLclNum();
-        noway_assert(lclNum < m_comp->lvaCount);
-
-        if (m_comp->lvaTable[lclNum].lvIsBoolean)
-        {
-            pOptTest->isBool = true;
-        }
     }
 
     // Was our comparison against the constant 1 (i.e. true)

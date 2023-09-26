@@ -44,7 +44,7 @@ namespace Tests
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             System.Console.WriteLine("----------------");
 
@@ -790,8 +790,6 @@ namespace Tests
             Console.WriteLine(string9);
             Console.WriteLine(string10);
             Console.WriteLine(string11);
-
-            return 100;
         }
     }
 }

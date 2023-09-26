@@ -26,7 +26,7 @@ namespace System.Net.WebSockets
     /// </remarks>
     internal sealed partial class ManagedWebSocket : WebSocket
     {
-        /// <summary>Encoding for the payload of text messages: UTF8 encoding that throws if invalid bytes are discovered, per the RFC.</summary>
+        /// <summary>Encoding for the payload of text messages: UTF-8 encoding that throws if invalid bytes are discovered, per the RFC.</summary>
         private static readonly UTF8Encoding s_textEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
         /// <summary>Valid states to be in when calling SendAsync.</summary>
@@ -61,7 +61,7 @@ namespace System.Net.WebSockets
         /// <summary>Buffer used for reading data from the network.</summary>
         private readonly Memory<byte> _receiveBuffer;
         /// <summary>
-        /// Tracks the state of the validity of the UTF8 encoding of text payloads.  Text may be split across fragments.
+        /// Tracks the state of the validity of the UTF-8 encoding of text payloads.  Text may be split across fragments.
         /// </summary>
         private readonly Utf8MessageState _utf8TextState = new Utf8MessageState();
         /// <summary>
@@ -213,12 +213,35 @@ namespace System.Net.WebSockets
                 _disposed = true;
                 _keepAliveTimer?.Dispose();
                 _stream.Dispose();
-                _inflater?.Dispose();
-                _deflater?.Dispose();
 
                 if (_state < WebSocketState.Aborted)
                 {
                     _state = WebSocketState.Closed;
+                }
+
+                DisposeSafe(_inflater, _receiveMutex);
+                DisposeSafe(_deflater, _sendMutex);
+            }
+        }
+
+        private static void DisposeSafe(IDisposable? resource, AsyncMutex mutex)
+        {
+            if (resource is not null)
+            {
+                Task lockTask = mutex.EnterAsync(CancellationToken.None);
+
+                if (lockTask.IsCompleted)
+                {
+                    resource.Dispose();
+                    mutex.Exit();
+                }
+                else
+                {
+                    lockTask.GetAwaiter().UnsafeOnCompleted(() =>
+                    {
+                        resource.Dispose();
+                        mutex.Exit();
+                    });
                 }
             }
         }
@@ -511,6 +534,8 @@ namespace System.Net.WebSockets
         /// <summary>Writes a frame into the send buffer, which can then be sent over the network.</summary>
         private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlySpan<byte> payloadBuffer)
         {
+            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
+
             if (_deflater is not null && !disableCompression)
             {
                 payloadBuffer = _deflater.Deflate(payloadBuffer, endOfMessage);
@@ -680,6 +705,8 @@ namespace System.Net.WebSockets
             try
             {
                 await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
+                ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
+
                 try
                 {
                     while (true) // in case we get control frames that should be ignored from the user's perspective

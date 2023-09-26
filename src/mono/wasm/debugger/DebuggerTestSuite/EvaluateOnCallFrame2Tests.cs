@@ -699,5 +699,51 @@ namespace DebuggerTests
                    ("instance.str[3]", TChar('c'))
                 );
            });
+        
+        [Fact]
+        public async Task EvaluateStaticGetterInValueType() => await CheckInspectLocalsAtBreakpointSite(
+             $"DebuggerTests.TypeProperties", "Run", 3, "DebuggerTests.TypeProperties.Run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.TypeProperties:Run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("EvaluateStaticGetterInValueType.A", TNumber(5))
+                );
+           });
+
+        [Fact]
+        public async Task EvaluateSumBetweenObjectAndString() => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.SumObjectAndString", "run", 7, "DebuggerTests.SumObjectAndString.run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.SumObjectAndString:run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("myList+\"asd\"", TString("System.Collections.Generic.List`1[System.Int32]asd")),
+                   ("dt+\"asd\"", TString("1/1/0001 12:00:00 AMasd")),
+                   ("myClass+\"asd\"", TString("OverridenToStringasd")),
+                   ("listNull+\"asd\"", TString("asd"))
+                );
+                await CheckEvaluateFail(id,
+                    ("myClass+dt", "Cannot evaluate '(myClass+dt\n)': (3,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'object'"),
+                    ("myClass+1", "Cannot evaluate '(myClass+1\n)': (2,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'int'"),
+                    ("dt+1", "Cannot evaluate '(dt+1\n)': (2,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'int'")
+                );
+           });
+
+        [Fact]
+        public async Task EvaluateMethodsOnEnum() => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.EvaluateMethodsOnEnum", "run", 2, "DebuggerTests.EvaluateMethodsOnEnum.run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodsOnEnum:run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("s_valueTypeEnum.ToString()", TString("no")),
+                   ("mc.valueTypeEnum.ToString()", TString("yes"))
+                   // ("mc.valueTypeEnum.HasFlag(SampleEnum.no)", TBool(true)) // ToDo: https://github.com/dotnet/runtime/issues/92262
+                );
+           });
     }
 }

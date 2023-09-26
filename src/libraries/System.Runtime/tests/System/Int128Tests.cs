@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -435,6 +436,49 @@ namespace System.Tests
                 Assert.Throws(exceptionType, () => Int128.Parse(value.AsSpan(), style, provider));
 
                 Assert.False(Int128.TryParse(value.AsSpan(), style, provider, out result));
+                Assert.Equal(0, result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, Int128 expected)
+        {
+            Int128 result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            // Default style and provider
+            if ((style == NumberStyles.Integer) && (provider is null))
+            {
+                Assert.True(Int128.TryParse(valueUtf8, out result));
+                Assert.Equal(expected, result);
+            }
+
+            Assert.Equal(expected, Int128.Parse(valueUtf8, style, provider));
+
+            Assert.True(Int128.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value is not null)
+            {
+                Int128 result;
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+
+                // Default style and provider
+                if ((style == NumberStyles.Integer) && (provider is null))
+                {
+                    Assert.False(Int128.TryParse(valueUtf8, out result));
+                    Assert.Equal(0, result);
+                }
+
+                Assert.Throws(exceptionType, () => Int128.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(Int128.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(0, result);
             }
         }

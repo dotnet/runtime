@@ -27,17 +27,26 @@
 #ifndef _VMEVENTTRACE_H_
 #define _VMEVENTTRACE_H_
 
-#include "eventtracebase.h"
-#include "gcinterface.h"
+#include <CommonTypes.h>
+#include <gcenv.base.h>
+#include <gcinterface.h>
 
 #ifdef FEATURE_EVENT_TRACE
+struct ProfilerWalkHeapContext;
 struct ProfilingScanContext : ScanContext
 {
     BOOL fProfilerPinned;
     void * pvEtwContext;
     void *pHeapId;
 
-    ProfilingScanContext(BOOL fProfilerPinnedParam);
+    ProfilingScanContext(BOOL fProfilerPinnedParam)
+        : ScanContext()
+    {
+        pHeapId = NULL;
+        fProfilerPinned = fProfilerPinnedParam;
+        pvEtwContext = NULL;
+        promotion = true;
+    }
 };
 #endif // defined(FEATURE_EVENT_TRACE)
 
@@ -185,18 +194,19 @@ namespace ETW
         static void MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification = TRUE);
         static void EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification = TRUE);
         static void WalkStaticsAndCOMForETW();
-#ifndef FEATURE_NATIVEAOT
-        static void SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj);
-#endif // FEATURE_NATIVEAOT
+        static void WalkHeap();
     };
 };
+
+#ifndef FEATURE_EVENT_TRACE
+inline void ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo) { }
+#endif
 
 #ifndef FEATURE_ETW
 inline BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldTrackMovementForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldWalkStaticsAndCOMForEtw() { return FALSE; }
-inline void ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo) { }
 inline void ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext) { }
 inline void ETW::GCLog::BeginMovedReferences(size_t * pProfilingContext) { }
 inline void ETW::GCLog::MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification) { }
@@ -210,6 +220,7 @@ inline void ETW::GCLog::RootReference(
     ProfilingScanContext * profilingScanContext,
     DWORD dwGCFlags,
     DWORD rootFlags) { }
+inline void ETW::GCLog::WalkHeap() { }
 #endif
 
 #endif //_VMEVENTTRACE_H_

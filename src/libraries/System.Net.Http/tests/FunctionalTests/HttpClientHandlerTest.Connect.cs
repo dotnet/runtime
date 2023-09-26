@@ -21,7 +21,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    HttpRequestMessage request = new HttpRequestMessage(new HttpMethod("CONNECT"), url) { Version = UseVersion };
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Connect, url) { Version = UseVersion };
                     request.Headers.Host = "foo.com:345";
 
                     // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
@@ -80,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    HttpRequestMessage request = new HttpRequestMessage(new HttpMethod("CONNECT"), url) { Version = UseVersion };
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Connect, url) { Version = UseVersion };
                     request.Headers.Host = "foo.com:345";
                     // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
                     Task<HttpResponseMessage> responseTask = client.SendAsync(TestAsync, request,  HttpCompletionOption.ResponseHeadersRead);

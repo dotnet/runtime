@@ -292,35 +292,6 @@ namespace System.Reflection.Emit
             return m_typeBuilder.IsDefined(attributeType, inherit);
         }
 
-        /*****************************************************
-         *
-         * private/protected functions
-         *
-         */
-
-        public override Type MakePointerType()
-        {
-            return SymbolType.FormCompoundType("*", this, 0)!;
-        }
-
-        public override Type MakeByRefType()
-        {
-            return SymbolType.FormCompoundType("&", this, 0)!;
-        }
-
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType()
-        {
-            return SymbolType.FormCompoundType("[]", this, 0)!;
-        }
-
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType(int rank)
-        {
-            string s = GetRankString(rank);
-            return SymbolType.FormCompoundType(s, this, 0)!;
-        }
-
         // Constructs a EnumBuilder.
         // EnumBuilder can only be a top-level (not nested) enum type.
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2064:UnrecognizedReflectionPattern",

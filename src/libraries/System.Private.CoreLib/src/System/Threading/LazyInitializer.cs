@@ -88,7 +88,7 @@ namespace System.Threading
         /// <remarks>
         /// <para>
         /// This method may only be used on reference types, and <paramref name="valueFactory"/> may
-        /// not return a null reference (Nothing in Visual Basic). To ensure initialization of value types or
+        /// not return a null reference (<see langword="Nothing" /> in Visual Basic). To ensure initialization of value types or
         /// to allow null reference types, see other overloads of EnsureInitialized.
         /// </para>
         /// <para>

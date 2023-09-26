@@ -120,7 +120,7 @@ namespace System.Tests
             Assert.False(BinaryNumberHelper<Half>.IsPow2(NegativeZero));
             Assert.False(BinaryNumberHelper<Half>.IsPow2(Half.NaN));
             Assert.False(BinaryNumberHelper<Half>.IsPow2(Zero));
-            Assert.False(BinaryNumberHelper<Half>.IsPow2(Half.Epsilon));
+            Assert.True(BinaryNumberHelper<Half>.IsPow2(Half.Epsilon));
             Assert.False(BinaryNumberHelper<Half>.IsPow2(MaxSubnormal));
             Assert.True(BinaryNumberHelper<Half>.IsPow2(MinNormal));
             Assert.True(BinaryNumberHelper<Half>.IsPow2(One));

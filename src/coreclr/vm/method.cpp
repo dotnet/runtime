@@ -499,7 +499,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
     }
 
     _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
-    return GetMethodTable_NoLogging()->GetSlot(GetSlot());
+    return GetMethodTable()->GetSlot(GetSlot());
 }
 
 PTR_PCODE MethodDesc::GetAddrOfSlot()
@@ -913,7 +913,6 @@ PCODE MethodDesc::GetNativeCode()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
     _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
-
     if (HasNativeCodeSlot())
     {
         // When profiler is enabled, profiler may ask to rejit a code even though we
@@ -933,6 +932,38 @@ PCODE MethodDesc::GetNativeCode()
         return NULL;
 
     return GetStableEntryPoint();
+}
+
+PCODE MethodDesc::GetNativeCodeAnyVersion()
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+
+    PCODE pDefaultCode = GetNativeCode();
+    if (pDefaultCode != NULL)
+    {
+        return pDefaultCode;
+    }
+
+    else
+    {
+        CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        ILCodeVersionCollection ilVersionCollection = pCodeVersionManager->GetILCodeVersions(PTR_MethodDesc(this));
+        for (ILCodeVersionIterator curIL = ilVersionCollection.Begin(), endIL = ilVersionCollection.End(); curIL != endIL; curIL++)
+        {
+            NativeCodeVersionCollection nativeCollection = curIL->GetNativeCodeVersions(PTR_MethodDesc(this));
+            for (NativeCodeVersionIterator curNative = nativeCollection.Begin(), endNative = nativeCollection.End(); curNative != endNative; curNative++)
+            {
+                PCODE native = curNative->GetNativeCode();
+                if(native != NULL)
+                {
+                    return native;
+                }
+            }
+        }
+        return NULL;
+    }
 }
 
 //*******************************************************************************
@@ -1345,19 +1376,6 @@ Module* MethodDesc::GetLoaderModule()
 
 //*******************************************************************************
 Module *MethodDesc::GetModule() const
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    SUPPORTS_DAC;
-
-    Module *pModule = GetModule_NoLogging();
-
-    return pModule;
-}
-
-//*******************************************************************************
-Module *MethodDesc::GetModule_NoLogging() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -3020,8 +3038,8 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functional requirement - These methods have no IL that could be optimized
         !IsWrapperStub() &&
 
-        // Policy - Generating optimized code is not disabled
-        !IsJitOptimizationDisabledForSpecificMethod())
+        // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
+        !IsJitOptimizationLevelRequested())
     {
         m_wFlags3AndTokenRemainder |= enum_flag3_IsEligibleForTieredCompilation;
         _ASSERTE(IsVersionable());
@@ -3045,6 +3063,17 @@ bool MethodDesc::IsJitOptimizationDisabled()
 bool MethodDesc::IsJitOptimizationDisabledForSpecificMethod()
 {
     return (!IsNoMetadata() && IsMiNoOptimization(GetImplAttrs()));
+}
+
+bool MethodDesc::IsJitOptimizationLevelRequested()
+{
+    if (IsNoMetadata())
+    {
+        return false;
+    }
+
+    const DWORD attrs = GetImplAttrs();
+    return IsMiNoOptimization(attrs) || IsMiAggressiveOptimization(attrs);
 }
 
 bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()

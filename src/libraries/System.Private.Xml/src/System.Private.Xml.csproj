@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs" Link="Common\System\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
@@ -119,7 +123,6 @@
     <Compile Include="System\Xml\XmlComplianceUtil.cs" />
     <Compile Include="System\Xml\XmlConvert.cs" />
     <Compile Include="System\Xml\XmlDownloadManager.cs" />
-    <Compile Include="System\Xml\XmlDownloadManagerAsync.cs" />
     <Compile Include="System\Xml\XmlEncoding.cs" />
     <Compile Include="System\Xml\XmlException.cs" />
     <Compile Include="System\Xml\XmlNamespacemanager.cs" />
@@ -130,10 +133,10 @@
     <Compile Include="System\Xml\XmlQualifiedName.cs" />
     <Compile Include="System\Xml\XmlReservedNs.cs" />
     <Compile Include="System\Xml\XmlResolver.cs" />
+    <Compile Include="System\Xml\XmlResolver.FileSystemResolver.cs" />
     <Compile Include="System\Xml\XmlResolver.ThrowingResolver.cs" />
     <Compile Include="System\Xml\XmlSecureResolver.cs" />
     <Compile Include="System\Xml\XmlUrlResolver.cs" />
-    <Compile Include="System\Xml\XmlUrlResolverAsync.cs" />
     <Compile Include="System\Xml\Core\CharEntityEncoderFallback.cs" />
     <Compile Include="System\Xml\Core\ConformanceLevel.cs" />
     <Compile Include="System\Xml\Core\DtdProcessing.cs" />
@@ -759,10 +762,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
-                      ReferenceOutputAssembly="false"
-                      SetTargetFramework="TargetFramework=netstandard2.0"
-                      OutputItemType="Analyzer" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />

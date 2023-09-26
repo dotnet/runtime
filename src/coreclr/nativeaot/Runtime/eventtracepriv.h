@@ -188,7 +188,7 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-    void LogTypeAndParameters(ULONGLONG thAsAddr, ETW::TypeSystemLog::TypeLogBehavior typeLogBehavior);
+    void LogTypeAndParameters(ULONGLONG thAsAddr);
     void FireBulkTypeEvent();
     void Cleanup();
 };

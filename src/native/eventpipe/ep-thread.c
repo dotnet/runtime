@@ -243,7 +243,6 @@ ep_thread_get_session_state (
 
 	ep_thread_requires_lock_held (thread);
 
-	EP_ASSERT (thread->session_state [ep_session_get_index (session)] != NULL);
 	return thread->session_state [ep_session_get_index (session)];
 }
 

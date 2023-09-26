@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Source generators must target netstandard2.0 which doesn't support nullable reference types. In order
+         to enable the nullable reference type compiler checks, we also target NetCoreAppCurrent. -->
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0</TargetFrameworks>
     <CLSCompliant>false</CLSCompliant>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
@@ -17,6 +20,7 @@
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="DiagDescriptors.cs" />
     <Compile Include="DiagDescriptorsBase.cs" />
     <Compile Include="Emitter.cs" />
@@ -32,4 +36,5 @@
     <Compile Include="SymbolLoader.cs" />
     <Compile Include="TypeDeclarationSyntaxReceiver.cs" />
   </ItemGroup>
+
 </Project>

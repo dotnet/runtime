@@ -3280,49 +3280,6 @@ HRESULT Utf2Quick(
     int         iCurLen = 0);           // Initial characters in the array to leave (default 0).
 
 //*****************************************************************************
-//  Extract the movl 64-bit unsigned immediate from an IA64 bundle
-//  (Format X2)
-//*****************************************************************************
-UINT64 GetIA64Imm64(UINT64 * pBundle);
-UINT64 GetIA64Imm64(UINT64 qword0, UINT64 qword1);
-
-//*****************************************************************************
-//  Deposit the movl 64-bit unsigned immediate into an IA64 bundle
-//  (Format X2)
-//*****************************************************************************
-void PutIA64Imm64(UINT64 * pBundle, UINT64 imm64);
-
-//*****************************************************************************
-//  Extract the IP-Relative signed 25-bit immediate from an IA64 bundle
-//  (Formats B1, B2 or B3)
-//  Note that due to branch target alignment requirements
-//       the lowest four bits in the result will always be zero.
-//*****************************************************************************
-INT32 GetIA64Rel25(UINT64 * pBundle, UINT32 slot);
-INT32 GetIA64Rel25(UINT64 qword0, UINT64 qword1, UINT32 slot);
-
-//*****************************************************************************
-//  Deposit the IP-Relative signed 25-bit immediate into an IA64 bundle
-//  (Formats B1, B2 or B3)
-//  Note that due to branch target alignment requirements
-//       the lowest four bits are required to be zero.
-//*****************************************************************************
-void PutIA64Rel25(UINT64 * pBundle, UINT32 slot, INT32 imm25);
-
-//*****************************************************************************
-//  Extract the IP-Relative signed 64-bit immediate from an IA64 bundle
-//  (Formats X3 or X4)
-//*****************************************************************************
-INT64 GetIA64Rel64(UINT64 * pBundle);
-INT64 GetIA64Rel64(UINT64 qword0, UINT64 qword1);
-
-//*****************************************************************************
-//  Deposit the IP-Relative signed 64-bit immediate into a IA64 bundle
-//  (Formats X3 or X4)
-//*****************************************************************************
-void PutIA64Rel64(UINT64 * pBundle, INT64 imm64);
-
-//*****************************************************************************
 //  Extract the 32-bit immediate from movw/movt Thumb2 sequence
 //*****************************************************************************
 UINT32 GetThumb2Mov32(UINT16 * p);

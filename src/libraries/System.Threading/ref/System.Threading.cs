@@ -271,9 +271,9 @@ namespace System.Threading
         public static uint Or(ref uint location1, uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Or(ref ulong location1, ulong value) { throw null; }
-        public static long Read(ref long location) { throw null; }
+        public static long Read(ref readonly long location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong Read(ref ulong location) { throw null; }
+        public static ulong Read(ref readonly ulong location) { throw null; }
     }
     public static partial class LazyInitializer
     {
@@ -511,26 +511,27 @@ namespace System.Threading
     }
     public static partial class Volatile
     {
-        public static bool Read(ref bool location) { throw null; }
-        public static byte Read(ref byte location) { throw null; }
-        public static double Read(ref double location) { throw null; }
-        public static short Read(ref short location) { throw null; }
-        public static int Read(ref int location) { throw null; }
-        public static long Read(ref long location) { throw null; }
-        public static System.IntPtr Read(ref System.IntPtr location) { throw null; }
+        public static bool Read(ref readonly bool location) { throw null; }
+        public static byte Read(ref readonly byte location) { throw null; }
+        public static double Read(ref readonly double location) { throw null; }
+        public static short Read(ref readonly short location) { throw null; }
+        public static int Read(ref readonly int location) { throw null; }
+        public static long Read(ref readonly long location) { throw null; }
+        public static System.IntPtr Read(ref readonly System.IntPtr location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static sbyte Read(ref sbyte location) { throw null; }
-        public static float Read(ref float location) { throw null; }
+        public static sbyte Read(ref readonly sbyte location) { throw null; }
+        public static float Read(ref readonly float location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ushort Read(ref ushort location) { throw null; }
+        public static ushort Read(ref readonly ushort location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static uint Read(ref uint location) { throw null; }
+        public static uint Read(ref readonly uint location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong Read(ref ulong location) { throw null; }
+        public static ulong Read(ref readonly ulong location) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static System.UIntPtr Read(ref System.UIntPtr location) { throw null; }
+        public static System.UIntPtr Read(ref readonly System.UIntPtr location) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")]
-        public static T Read<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")] ref T location) where T : class? { throw null; }
+        public static T Read<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")] ref readonly T location) where T : class? { throw null; }
+
         public static void Write(ref bool location, bool value) { }
         public static void Write(ref byte location, byte value) { }
         public static void Write(ref double location, double value) { }

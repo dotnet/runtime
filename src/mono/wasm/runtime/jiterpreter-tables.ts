@@ -358,23 +358,23 @@ export const simdShiftTable = new Set<SimdIntrinsic3>([
 ]);
 
 export const simdExtractTable: { [intrinsic: number]: [laneCount: number, laneStoreOpcode: WasmOpcode] } = {
-    [SimdIntrinsic3.ExtractLaneI1]: [16, WasmOpcode.i32_store],
-    [SimdIntrinsic3.ExtractLaneU1]: [16, WasmOpcode.i32_store],
-    [SimdIntrinsic3.ExtractLaneI2]: [8, WasmOpcode.i32_store],
-    [SimdIntrinsic3.ExtractLaneU2]: [8, WasmOpcode.i32_store],
-    [SimdIntrinsic3.ExtractLaneD4]: [4, WasmOpcode.i32_store],
-    [SimdIntrinsic3.ExtractLaneR4]: [4, WasmOpcode.f32_store],
-    [SimdIntrinsic3.ExtractLaneD8]: [2, WasmOpcode.i64_store],
-    [SimdIntrinsic3.ExtractLaneR8]: [2, WasmOpcode.f64_store],
+    [SimdIntrinsic3.ExtractScalarI1]: [16, WasmOpcode.i32_store],
+    [SimdIntrinsic3.ExtractScalarU1]: [16, WasmOpcode.i32_store],
+    [SimdIntrinsic3.ExtractScalarI2]: [8, WasmOpcode.i32_store],
+    [SimdIntrinsic3.ExtractScalarU2]: [8, WasmOpcode.i32_store],
+    [SimdIntrinsic3.ExtractScalarD4]: [4, WasmOpcode.i32_store],
+    [SimdIntrinsic3.ExtractScalarR4]: [4, WasmOpcode.f32_store],
+    [SimdIntrinsic3.ExtractScalarD8]: [2, WasmOpcode.i64_store],
+    [SimdIntrinsic3.ExtractScalarR8]: [2, WasmOpcode.f64_store],
 };
 
 export const simdReplaceTable: { [intrinsic: number]: [laneCount: number, laneLoadOpcode: WasmOpcode] } = {
-    [SimdIntrinsic4.ReplaceLaneD1]: [16, WasmOpcode.i32_load],
-    [SimdIntrinsic4.ReplaceLaneD2]: [8, WasmOpcode.i32_load],
-    [SimdIntrinsic4.ReplaceLaneD4]: [4, WasmOpcode.i32_load],
-    [SimdIntrinsic4.ReplaceLaneR4]: [4, WasmOpcode.f32_load],
-    [SimdIntrinsic4.ReplaceLaneD8]: [2, WasmOpcode.i64_load],
-    [SimdIntrinsic4.ReplaceLaneR8]: [2, WasmOpcode.f64_load],
+    [SimdIntrinsic4.ReplaceScalarD1]: [16, WasmOpcode.i32_load],
+    [SimdIntrinsic4.ReplaceScalarD2]: [8, WasmOpcode.i32_load],
+    [SimdIntrinsic4.ReplaceScalarD4]: [4, WasmOpcode.i32_load],
+    [SimdIntrinsic4.ReplaceScalarR4]: [4, WasmOpcode.f32_load],
+    [SimdIntrinsic4.ReplaceScalarD8]: [2, WasmOpcode.i64_load],
+    [SimdIntrinsic4.ReplaceScalarR8]: [2, WasmOpcode.f64_load],
 };
 
 export const simdLoadTable = new Set<SimdIntrinsic2>([

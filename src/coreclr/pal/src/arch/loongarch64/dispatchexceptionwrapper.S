@@ -34,7 +34,7 @@ C_FUNC(PAL_DispatchExceptionReturnOffset):
 
 NESTED_ENTRY PAL_DispatchExceptionWrapper, _TEXT, NoHandler
     //                           $fp,$ra
-    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, 16
     // Should never actually run
     EMIT_BREAKPOINT
     bl      EXTERNAL_C_FUNC(PAL_DispatchException)

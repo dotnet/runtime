@@ -99,3 +99,19 @@ Just like you can use specialized Docker images, you can also do any of the supp
 ## Create the Core_Root
 
 The Core_Root provides one of the main ways to test your build. Full instructions on how to build it in the [CoreCLR testing doc](/docs/workflow/testing/coreclr/testing.md), and we also have a detailed guide on how to use it for your own testing in [its own dedicated doc](/docs/workflow/testing/using-corerun-and-coreroot.md).
+
+## Native Sanitizers
+
+CoreCLR can be built with native sanitizers like AddressSanitizer to help catch memory safety issues. To build the project with native sanitizers, add the `-fsanitize address` argument to the build script like the following:
+
+```bash
+build.sh -s clr -fsanitize address
+```
+
+When building the repo with any native sanitizers, you should build all native components in the repo with the same set of sanitizers.
+
+The following sanitizers are supported for CoreCLR on Linux:
+
+| Sanitizer Name  | `-fsanitize` argument | Support Status |
+|-----------------|-----------------------|----------------|
+| AddressSanitize | `address` | regularly tested on x64 |

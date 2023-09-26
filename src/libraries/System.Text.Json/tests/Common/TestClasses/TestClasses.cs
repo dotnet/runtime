@@ -2293,4 +2293,14 @@ namespace System.Text.Json.Serialization.Tests
         public List<ClassWithRecursiveCollectionTypes> List { get; set; }
         public IReadOnlyDictionary<string, ClassWithRecursiveCollectionTypes>? Dictionary { get; set; }
     }
+
+    internal class MemoryOfTClass<T>
+    {
+        public Memory<T> Memory { get; set; }
+    }
+
+    internal class ReadOnlyMemoryOfTClass<T>
+    {
+        public ReadOnlyMemory<T> ReadOnlyMemory { get; set; }
+    }
 }

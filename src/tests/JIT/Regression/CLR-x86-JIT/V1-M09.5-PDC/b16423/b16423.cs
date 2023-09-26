@@ -36,10 +36,9 @@ public class AA
 	}
 	
 	[Fact]
-	public static int TestEntryPoint()
+	public static void TestEntryPoint()
 	{
 		DoThings();
 		new AA().CheckHeap();
-		return 100;
 	}
 }

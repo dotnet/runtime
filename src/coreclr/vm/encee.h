@@ -17,7 +17,7 @@
 #include "field.h"
 #include "class.h"
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 
 class FieldDesc;
 struct EnCAddedField;
@@ -247,12 +247,14 @@ public:
                                     SIZE_T newILOffset,
                                     T_CONTEXT *pContext);
 
+#ifdef FEATURE_REMAP_FUNCTION
     // Modify the thread context for EnC remap and resume execution
     void FixContextAndResume(MethodDesc *pMD,
                              void *oldDebuggerFuncHandle,
                              T_CONTEXT *pContext,
                              EECodeInfo *pOldCodeInfo,
                              EECodeInfo *pNewCodeInfo);
+#endif // FEATURE_REMAP_FUNCTION
 
     // Get a pointer to the value of a field added by EnC or return NULL if it doesn't exist
     PTR_CBYTE ResolveField(OBJECTREF thisPointer,
@@ -370,7 +372,7 @@ private:
 // The DPTR is actually defined in syncblk.h to make it visible to SyncBlock
 // typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 
-#endif // !EnC_SUPPORTED
+#endif // !FEATURE_METADATA_UPDATER
 
 
 //---------------------------------------------------------------------------------------
@@ -405,7 +407,7 @@ public:
         OnlyEncFields,
     };
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Create and initialize the iterator
     EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, uint32_t flags = None);
 
@@ -421,7 +423,7 @@ public:
     PTR_FieldDesc Next() { WRAPPER_NO_CONTRACT; return m_nonEnCIter.Next(); }
 
     int Count() { WRAPPER_NO_CONTRACT; return m_nonEnCIter.Count(); }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     int GetIteratorType()
     {
@@ -435,7 +437,7 @@ private:
     // We delegate to this for alll non-EnC specific stuff
     ApproxFieldDescIterator m_nonEnCIter;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Return the next available EnC FieldDesc or NULL when done
     PTR_EnCFieldDesc NextEnC();
 

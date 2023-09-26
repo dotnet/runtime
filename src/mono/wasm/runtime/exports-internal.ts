@@ -4,7 +4,7 @@
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import cwraps, { profiler_c_functions } from "./cwraps";
 import { mono_wasm_send_dbg_command_with_parms, mono_wasm_send_dbg_command, mono_wasm_get_dbg_command_info, mono_wasm_get_details, mono_wasm_release_object, mono_wasm_call_function_on, mono_wasm_debugger_resume, mono_wasm_detach_debugger, mono_wasm_raise_debug_event, mono_wasm_change_debugger_log_level, mono_wasm_debugger_attached } from "./debug";
-import { http_wasm_supports_streaming_response, http_wasm_create_abort_controler, http_wasm_abort_request, http_wasm_abort_response, http_wasm_fetch, http_wasm_fetch_bytes, http_wasm_get_response_header_names, http_wasm_get_response_header_values, http_wasm_get_response_bytes, http_wasm_get_response_length, http_wasm_get_streamed_response_bytes } from "./http";
+import { http_wasm_supports_streaming_request, http_wasm_supports_streaming_response, http_wasm_create_abort_controler, http_wasm_abort_request, http_wasm_abort_response, http_wasm_create_transform_stream, http_wasm_transform_stream_write, http_wasm_transform_stream_close, http_wasm_transform_stream_abort, http_wasm_fetch, http_wasm_fetch_stream, http_wasm_fetch_bytes, http_wasm_get_response_header_names, http_wasm_get_response_header_values, http_wasm_get_response_bytes, http_wasm_get_response_length, http_wasm_get_streamed_response_bytes } from "./http";
 import { exportedRuntimeAPI, Module, runtimeHelpers } from "./globals";
 import { get_property, set_property, has_property, get_typeof_property, get_global_this, dynamic_import } from "./invoke-js";
 import { mono_wasm_stringify_as_error_with_stack } from "./logging";
@@ -13,11 +13,16 @@ import { mono_wasm_get_loaded_files } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { getOptions, applyOptions } from "./jiterpreter-support";
 import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
+import { loadLazyAssembly } from "./lazyLoading";
+import { loadSatelliteAssemblies } from "./satelliteAssemblies";
+import { forceDisposeProxies } from "./gc-handles";
+import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
 
 export function export_internal(): any {
     return {
         // tests
         mono_wasm_exit: (exit_code: number) => { Module.err("early exit " + exit_code); },
+        forceDisposeProxies,
 
         // with mono_wasm_debugger_log and mono_wasm_trace_logger
         logging: undefined,
@@ -38,6 +43,7 @@ export function export_internal(): any {
         mono_wasm_change_debugger_log_level,
         mono_wasm_debugger_attached,
         mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
+        mono_wasm_get_func_id_to_name_mappings,
 
         // interop
         get_property,
@@ -58,11 +64,17 @@ export function export_internal(): any {
         ws_wasm_abort,
 
         // BrowserHttpHandler
+        http_wasm_supports_streaming_request,
         http_wasm_supports_streaming_response,
         http_wasm_create_abort_controler,
         http_wasm_abort_request,
         http_wasm_abort_response,
+        http_wasm_create_transform_stream,
+        http_wasm_transform_stream_write,
+        http_wasm_transform_stream_close,
+        http_wasm_transform_stream_abort,
         http_wasm_fetch,
+        http_wasm_fetch_stream,
         http_wasm_fetch_bytes,
         http_wasm_get_response_header_names,
         http_wasm_get_response_header_values,
@@ -78,6 +90,9 @@ export function export_internal(): any {
         // Blazor GC Lock support
         mono_wasm_gc_lock,
         mono_wasm_gc_unlock,
+
+        loadLazyAssembly,
+        loadSatelliteAssemblies
     };
 }
 

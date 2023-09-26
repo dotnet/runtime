@@ -365,7 +365,8 @@ static size_t GetCharCount(UTF8Encoding* self, unsigned char* bytes, size_t coun
     // Initialize stuff
     unsigned char *pSrc = bytes;
     unsigned char *pEnd = pSrc + count;
-    int availableBytes, chc;
+    size_t availableBytes;
+    int chc;
 
     // Start by assuming we have as many as count, charCount always includes the adjustment
     // for the character being decoded
@@ -532,7 +533,7 @@ static size_t GetCharCount(UTF8Encoding* self, unsigned char* bytes, size_t coun
 
     EncodeChar:
 
-        availableBytes = pEnd - pSrc;
+        availableBytes = (size_t)(pEnd - pSrc);
 
         // don't fall into the fast decoding loop if we don't have enough bytes
         if (availableBytes <= 13)
@@ -749,7 +750,7 @@ static size_t GetCharCount(UTF8Encoding* self, unsigned char* bytes, size_t coun
         return 0;                                  \
     }
 
-static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, CHAR16_T* chars, size_t charCount)
+static size_t GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, CHAR16_T* chars, size_t charCount)
 {
     assert(chars != NULL);
     assert(byteCount >= 0);
@@ -982,8 +983,8 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
         *pTarget = (CHAR16_T)ch;
         ENSURE_BUFFER_INC
 
-        int availableChars = pAllocatedBufferEnd - pTarget;
-        int availableBytes = pEnd - pSrc;
+        size_t availableChars = (size_t)(pAllocatedBufferEnd - pTarget);
+        size_t availableBytes = (size_t)(pEnd - pSrc);
 
         // don't fall into the fast decoding loop if we don't have enough bytes
         // Test for availableChars is done because pStop would be <= pTarget.
@@ -1289,7 +1290,7 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
         return 0;
     }
 
-    return pTarget - chars;
+    return (size_t)(pTarget - chars);
 }
 
 static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, unsigned char* bytes, size_t byteCount)
@@ -1510,8 +1511,8 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
         if (fallbackUsed && (ch = EncoderReplacementFallbackBuffer_InternalGetNextChar(&self->buffer.encoder)) != 0)
             goto ProcessChar;
 
-        int availableChars = pEnd - pSrc;
-        int availableBytes = pAllocatedBufferEnd - pTarget;
+        size_t availableChars = (size_t)(pEnd - pSrc);
+        size_t availableBytes = (size_t)(pAllocatedBufferEnd - pTarget);
 
         // don't fall into the fast decoding loop if we don't have enough characters
         // Note that if we don't have enough bytes, pStop will prevent us from entering the fast loop.
@@ -1709,7 +1710,7 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
         return 0;
     }
 
-    return (int)(pTarget - bytes);
+    return (size_t)(pTarget - bytes);
 }
 
 static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
@@ -1889,7 +1890,7 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
             goto ProcessChar;
         }
 
-        int availableChars = pEnd - pSrc;
+        size_t availableChars = (size_t)(pEnd - pSrc);
 
         // don't fall into the fast decoding loop if we don't have enough characters
         if (availableChars <= 13)

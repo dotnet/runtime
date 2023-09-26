@@ -1,25 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: Exception for a missing satellite assembly needed
-**          for ultimate resource fallback.  This usually
-**          indicates a setup and/or deployment problem.
-**
-**
-===========================================================*/
-
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.Resources
 {
+    /// <summary>
+    /// The exception that is thrown when the satellite assembly for the resources of the default culture is missing.
+    /// </summary>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class MissingSatelliteAssemblyException : SystemException

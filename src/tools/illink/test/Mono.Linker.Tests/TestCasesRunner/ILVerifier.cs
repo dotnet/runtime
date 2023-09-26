@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -14,7 +15,7 @@ using Mono.Linker.Tests.Extensions;
 #nullable enable
 namespace Mono.Linker.Tests.TestCasesRunner
 {
-	sealed class ILVerifier : ILVerify.IResolver
+	sealed class ILVerifier : ILVerify.IResolver, IDisposable
 	{
 		readonly Verifier _verifier;
 		readonly NPath _assemblyFolder;
@@ -82,6 +83,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		bool TryLoadAssemblyFromFolder (string assemblyName, NPath folder, [NotNullWhen (true)] out PEReader? peReader)
 		{
+			if (_assemblyCache.TryGetValue (assemblyName, out peReader))
+				return true;
+
 			Assembly? assembly = null;
 			string assemblyPath = Path.Join (folder.ToString (), assemblyName);
 			if (File.Exists (assemblyPath + ".dll"))
@@ -123,6 +127,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public static string GetErrorMessage (VerificationResult result)
 		{
 			return $"IL Verification error:\n{result.Message}";
+		}
+
+		public void Dispose()
+		{
+			foreach(var reader in _assemblyCache.Values)
+				reader.Dispose ();
+			_assemblyCache.Clear ();
 		}
 	}
 }

@@ -708,17 +708,19 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableRegCount       = ACTUAL_REG_COUNT;
     needNonIntegerRegisters = false;
 
-#if defined(TARGET_XARCH)
-
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
 #endif // TARGET_AMD64
 
+#if defined(TARGET_XARCH)
+    rbmAllMask        = compiler->rbmAllMask;
+    rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
+    memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
+
     if (!compiler->canUseEvexEncoding())
     {
-        availableRegCount -= CNT_HIGHFLOAT;
-        availableRegCount -= CNT_MASK_REGS;
+        availableRegCount -= (CNT_HIGHFLOAT + CNT_MASK_REGS);
     }
 #endif // TARGET_XARCH
 
@@ -804,7 +806,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Initialize the availableRegs to use for each TYP_*
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf)                                             \
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf)                                   \
     availableRegs[static_cast<int>(TYP_##tn)] = &regFld;
 #include "typelist.h"
 #undef DEF_TP
@@ -1419,7 +1421,7 @@ PhaseStatus LinearScan::doLinearScan()
 #endif
         )
     {
-        dumpLsraStats(jitstdout);
+        dumpLsraStats(jitstdout());
     }
 #endif // TRACK_LSRA_STATS
 
@@ -2396,9 +2398,12 @@ void LinearScan::checkLastUses(BasicBlock* block)
     VARSET_TP liveInNotComputedLive(VarSetOps::Diff(compiler, block->bbLiveIn, computedLive));
 
     // We may have exception vars in the liveIn set of exception blocks that are not computed live.
-    if (compiler->ehBlockHasExnFlowDsc(block))
+    if (block->HasPotentialEHSuccs(compiler))
     {
-        VarSetOps::DiffD(compiler, liveInNotComputedLive, compiler->fgGetHandlerLiveVars(block));
+        VARSET_TP     ehHandlerLiveVars(VarSetOps::MakeEmpty(compiler));
+        MemoryKindSet memoryLiveness = emptyMemoryKindSet;
+        compiler->fgAddHandlerLiveVars(block, ehHandlerLiveVars, memoryLiveness);
+        VarSetOps::DiffD(compiler, liveInNotComputedLive, ehHandlerLiveVars);
     }
     VarSetOps::Iter liveInNotComputedLiveIter(compiler, liveInNotComputedLive);
     unsigned        liveInNotComputedLiveIndex = 0;
@@ -4867,6 +4872,7 @@ void LinearScan::allocateRegisters()
 
         if (spillAlways() && lastAllocatedRefPosition != nullptr && !lastAllocatedRefPosition->IsPhysRegRef() &&
             !lastAllocatedRefPosition->getInterval()->isInternal &&
+            (!lastAllocatedRefPosition->RegOptional() || (lastAllocatedRefPosition->registerAssignment != RBM_NONE)) &&
             (RefTypeIsDef(lastAllocatedRefPosition->refType) || lastAllocatedRefPosition->getInterval()->isLocalVar))
         {
             assert(lastAllocatedRefPosition->registerAssignment != RBM_NONE);
@@ -5011,7 +5017,7 @@ void LinearScan::allocateRegisters()
                     {
                         // Available registers should not hold constants
                         assert(isRegAvailable(reg, physRegRecord->registerType));
-                        assert(!isRegConstant(reg, physRegRecord->registerType));
+                        assert(!isRegConstant(reg, physRegRecord->registerType) || spillAlways());
                         assert(nextIntervalRef[reg] == MaxLocation);
                         assert(spillCost[reg] == 0);
                     }
@@ -7297,6 +7303,7 @@ void           LinearScan::resolveRegisters()
                     assert(!currentRefPosition->getInterval()->isLocalVar);
                     assert(currentRefPosition->getInterval()->firstRefPosition->spillAfter);
                 }
+
                 continue;
             }
             else if (currentRefPosition->refType == RefTypeUpperVectorRestore)
@@ -7317,6 +7324,8 @@ void           LinearScan::resolveRegisters()
                     }
                 }
                 localVarInterval->isPartiallySpilled = false;
+
+                continue;
             }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 

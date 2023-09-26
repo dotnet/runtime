@@ -150,6 +150,30 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
             }
         }
 
+        if (ehblk->HasFinallyOrFaultHandler() && (ehblk->ebdHndBeg == blk))
+        {
+            // block is a finally or fault handler; all enclosing filters are predecessors
+            unsigned enclosing = ehblk->ebdEnclosingTryIndex;
+            while (enclosing != EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                EHblkDsc* enclosingDsc = ehGetDsc(enclosing);
+                if (enclosingDsc->HasFilter())
+                {
+                    for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
+                         filterBlk             = filterBlk->bbNext)
+                    {
+                        res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+
+                        assert(filterBlk->VisitEHSecondPassSuccs(this, [blk](BasicBlock* succ) {
+                            return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
+                        }) == BasicBlockVisit::Abort);
+                    }
+                }
+
+                enclosing = enclosingDsc->ebdEnclosingTryIndex;
+            }
+        }
+
 #ifdef DEBUG
         unsigned hash = SsaStressHashHelper();
         if (hash != 0)
@@ -768,9 +792,6 @@ bool BasicBlock::IsLIR() const
 //------------------------------------------------------------------------
 // firstStmt: Returns the first statement in the block
 //
-// Arguments:
-//    None.
-//
 // Return Value:
 //    The first statement in the block's bbStmtList.
 //
@@ -780,10 +801,18 @@ Statement* BasicBlock::firstStmt() const
 }
 
 //------------------------------------------------------------------------
-// lastStmt: Returns the last statement in the block
+// hasSingleStmt: Returns true if block has a single statement
 //
-// Arguments:
-//    None.
+// Return Value:
+//    true if block has a single statement, false otherwise
+//
+bool BasicBlock::hasSingleStmt() const
+{
+    return (firstStmt() != nullptr) && (firstStmt() == lastStmt());
+}
+
+//------------------------------------------------------------------------
+// lastStmt: Returns the last statement in the block
 //
 // Return Value:
 //    The last statement in the block's bbStmtList.

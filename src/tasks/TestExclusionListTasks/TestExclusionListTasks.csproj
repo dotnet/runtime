@@ -11,10 +11,12 @@
   <ItemGroup>
     <Compile Include="PatchExclusionListInApks.cs" />
     <Compile Include="../AndroidAppBuilder/ApkBuilder.cs" />
-    <Compile Include="../Common/Builders/AndroidProject.cs" />
     <Compile Include="../Common/Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+      <ProjectReference Include="$(RepoRoot)src\tasks\MobileBuildTasks\MobileBuildTasks.csproj" />
   </ItemGroup>
 </Project>

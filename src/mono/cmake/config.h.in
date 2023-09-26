@@ -253,9 +253,6 @@
 /* Reduce runtime requirements (and capabilities) */
 #cmakedefine MONO_SMALL_CONFIG 1
 
-/* String of disabled features */
-#define DISABLED_FEATURES @DISABLED_FEATURES@
-
 /* Disable AOT Compiler */
 #cmakedefine DISABLE_AOT 1
 
@@ -888,21 +885,6 @@
 /* Enable experiment 'Tiered Compilation' */
 #cmakedefine ENABLE_EXPERIMENT_TIERED 1
 
-/* Enable checked build */
-#cmakedefine ENABLE_CHECKED_BUILD 1
-
-/* Enable GC checked build */
-#cmakedefine ENABLE_CHECKED_BUILD_GC 1
-
-/* Enable metadata checked build */
-#cmakedefine ENABLE_CHECKED_BUILD_METADATA 1
-
-/* Enable thread checked build */
-#cmakedefine ENABLE_CHECKED_BUILD_THREAD 1
-
-/* Enable private types checked build */
-#cmakedefine ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1
-
 /* Enable EventPipe library support */
 #cmakedefine ENABLE_PERFTRACING 1
 
@@ -944,6 +926,9 @@
 
 /* Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata) */
 #cmakedefine ENABLE_CHECKED_BUILD_METADATA 1
+
+/* Enable runtime checks of casts between types */
+#cmakedefine ENABLE_CHECKED_BUILD_CASTS 1
 
 /* Enable static linking of mono runtime components */
 #cmakedefine STATIC_COMPONENTS

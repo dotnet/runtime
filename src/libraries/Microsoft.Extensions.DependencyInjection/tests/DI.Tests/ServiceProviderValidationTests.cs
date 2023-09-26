@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
 
@@ -83,6 +84,30 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             // Act + Assert
             var exception = Assert.Throws<InvalidOperationException>(() => serviceProvider.GetService(typeof(IBar)));
             Assert.Equal($"Cannot resolve scoped service '{typeof(IBar)}' from root provider.", exception.Message);
+        }
+
+        [Fact]
+        public async void GetService_Throws_WhenGetServiceForScopedServiceIsCalledOnRoot_IL_Replacement()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<IBar, Bar>();
+            var serviceProvider = serviceCollection.BuildServiceProvider(validateScopes: true);
+
+            // Act + Assert
+            using (var scope = serviceProvider.CreateScope())
+            {
+                // Switch to an emit-based version which is triggered in the background after 2 calls to GetService.
+                scope.ServiceProvider.GetRequiredService(typeof(IBar));
+                scope.ServiceProvider.GetRequiredService(typeof(IBar));
+
+                // Give the background thread time to generate the emit version.
+                await Task.Delay(100);
+
+                // Ensure the emit-based version has the correct scope checks.
+                var exception = Assert.Throws<InvalidOperationException>(serviceProvider.GetRequiredService<IBar>);
+                Assert.Equal($"Cannot resolve scoped service '{typeof(IBar)}' from root provider.", exception.Message);
+            }
         }
 
         [Fact]

@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if !NETCOREAPP
 using System.Diagnostics;
-#endif
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,43 +15,83 @@ namespace System.Net.Http.Json
 {
     public sealed partial class JsonContent : HttpContent
     {
-        private readonly JsonSerializerOptions? _jsonSerializerOptions;
-        public Type ObjectType { get; }
+        private readonly JsonTypeInfo _typeInfo;
+        public Type ObjectType => _typeInfo.Type;
         public object? Value { get; }
 
-        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         private JsonContent(
             object? inputValue,
-            Type inputType,
-            MediaTypeHeaderValue? mediaType,
-            JsonSerializerOptions? options)
+            JsonTypeInfo jsonTypeInfo,
+            MediaTypeHeaderValue? mediaType)
         {
-            if (inputType is null)
-            {
-                throw new ArgumentNullException(nameof(inputType));
-            }
-
-            if (inputValue != null && !inputType.IsAssignableFrom(inputValue.GetType()))
-            {
-                throw new ArgumentException(SR.Format(SR.SerializeWrongType, inputType, inputValue.GetType()));
-            }
+            Debug.Assert(jsonTypeInfo is not null);
+            Debug.Assert(inputValue is null || jsonTypeInfo.Type.IsAssignableFrom(inputValue.GetType()));
 
             Value = inputValue;
-            ObjectType = inputType;
+            _typeInfo = jsonTypeInfo;
             Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
-            _jsonSerializerOptions = options ?? JsonHelpers.s_defaultSerializerOptions;
         }
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="JsonContent"/> class that will contain the <paramref name="inputValue"/> serialized as JSON.
+        /// </summary>
+        /// <typeparam name="T">The type of the value to serialize.</typeparam>
+        /// <param name="inputValue">The value to serialize.</param>
+        /// <param name="mediaType">The media type to use for the content.</param>
+        /// <param name="options">Options to control the behavior during serialization, the default options are <see cref="JsonSerializerDefaults.Web"/>.</param>
+        /// <returns>A <see cref="JsonContent"/> instance.</returns>
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
-            => Create(inputValue, typeof(T), mediaType, options);
+            => Create(inputValue, JsonHelpers.GetJsonTypeInfo(typeof(T), options), mediaType);
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="JsonContent"/> class that will contain the <paramref name="inputValue"/> serialized as JSON.
+        /// </summary>
+        /// <param name="inputValue">The value to serialize.</param>
+        /// <param name="inputType">The type of the value to serialize.</param>
+        /// <param name="mediaType">The media type to use for the content.</param>
+        /// <param name="options">Options to control the behavior during serialization, the default options are <see cref="JsonSerializerDefaults.Web"/>.</param>
+        /// <returns>A <see cref="JsonContent"/> instance.</returns>
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
-            => new JsonContent(inputValue, inputType, mediaType, options);
+        {
+            ThrowHelper.ThrowIfNull(inputType);
+            EnsureTypeCompatibility(inputValue, inputType);
+
+            return new JsonContent(inputValue, JsonHelpers.GetJsonTypeInfo(inputType, options), mediaType);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="JsonContent"/> class that will contain the <paramref name="inputValue"/> serialized as JSON.
+        /// </summary>
+        /// <typeparam name="T">The type of the value to serialize.</typeparam>
+        /// <param name="inputValue">The value to serialize.</param>
+        /// <param name="jsonTypeInfo">The JsonTypeInfo used to control the serialization behavior.</param>
+        /// <param name="mediaType">The media type to use for the content.</param>
+        /// <returns>A <see cref="JsonContent"/> instance.</returns>
+        public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
+        {
+            ThrowHelper.ThrowIfNull(jsonTypeInfo);
+
+            return new JsonContent(inputValue, jsonTypeInfo, mediaType);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="JsonContent"/> class that will contain the <paramref name="inputValue"/> serialized as JSON.
+        /// </summary>
+        /// <param name="inputValue">The value to serialize.</param>
+        /// <param name="jsonTypeInfo">The JsonTypeInfo used to control the serialization behavior.</param>
+        /// <param name="mediaType">The media type to use for the content.</param>
+        /// <returns>A <see cref="JsonContent"/> instance.</returns>
+        public static JsonContent Create(object? inputValue, JsonTypeInfo jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
+        {
+            ThrowHelper.ThrowIfNull(jsonTypeInfo);
+            EnsureTypeCompatibility(inputValue, jsonTypeInfo.Type);
+
+            return new JsonContent(inputValue, jsonTypeInfo, mediaType);
+        }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             => SerializeToStreamAsyncCore(stream, async: true, CancellationToken.None);
@@ -63,10 +102,6 @@ namespace System.Net.Http.Json
             return false;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is annotated with RequiresUnreferencedCode.")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The ctor is annotated with RequiresDynamicCode.")]
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
             Encoding? targetEncoding = JsonHelpers.GetEncoding(this);
@@ -80,11 +115,11 @@ namespace System.Net.Http.Json
                 {
                     if (async)
                     {
-                        await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                        await JsonSerializer.SerializeAsync(transcodingStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        JsonSerializer.Serialize(transcodingStream, Value, ObjectType, _jsonSerializerOptions);
+                        JsonSerializer.Serialize(transcodingStream, Value, _typeInfo);
                     }
                 }
                 finally
@@ -101,11 +136,11 @@ namespace System.Net.Http.Json
                     }
                 }
 #else
-                Debug.Assert(async);
+                Debug.Assert(async, "HttpContent synchronous serialization is only supported since .NET 5.0");
 
                 using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
                 {
-                    await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(transcodingStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
                     // The transcoding streams use Encoders and Decoders that have internal buffers. We need to flush these
                     // when there is no more data to be written. Stream.FlushAsync isn't suitable since it's
                     // acceptable to Flush a Stream (multiple times) prior to completion.
@@ -117,16 +152,24 @@ namespace System.Net.Http.Json
             {
                 if (async)
                 {
-                    await JsonSerializer.SerializeAsync(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(targetStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
 #if NETCOREAPP
-                    JsonSerializer.Serialize(targetStream, Value, ObjectType, _jsonSerializerOptions);
+                    JsonSerializer.Serialize(targetStream, Value, _typeInfo);
 #else
-                    Debug.Fail("Synchronous serialization is only supported since .NET 5.0");
+                    Debug.Fail("HttpContent synchronous serialization is only supported since .NET 5.0");
 #endif
                 }
+            }
+        }
+
+        private static void EnsureTypeCompatibility(object? inputValue, Type inputType)
+        {
+            if (inputValue is not null && !inputType.IsAssignableFrom(inputValue.GetType()))
+            {
+                throw new ArgumentException(SR.Format(SR.SerializeWrongType, inputType, inputValue.GetType()));
             }
         }
     }

@@ -393,7 +393,11 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_I4:
 		return OP_LOADI4_MEMBASE;
 	case MONO_TYPE_U4:
+#ifdef TARGET_RISCV64
+		return OP_LOADI4_MEMBASE;
+#else
 		return OP_LOADU4_MEMBASE;
+#endif
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
@@ -4568,6 +4572,9 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 	const char *klass_name = m_class_get_name (klass);
 	if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
 		*nelems = 4;
+		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector2")) {
+		*nelems = 2;
 		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];

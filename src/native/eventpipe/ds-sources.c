@@ -28,7 +28,7 @@
 #define PORTABLE_RID_OS "linux-musl"
 #elif defined(TARGET_LINUX)
 #define PORTABLE_RID_OS "linux"
-#elif defined(TARGET_OSX)
+#elif defined(TARGET_OSX) && !defined(TARGET_MACCAT)
 #define PORTABLE_RID_OS "osx"
 #else
 #define PORTABLE_RID_OS "unix"

@@ -82,6 +82,7 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\TestData.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PositionValueStream.cs"
              Link="CommonTest\System\IO\PositionValueStream.cs" />
+    <Compile Include="CngKeyTests.cs" />
     <Compile Include="CngPkcs8Tests.cs" />
     <Compile Include="DSACngPkcs8Tests.cs" />
     <Compile Include="DSACngProvider.cs" />

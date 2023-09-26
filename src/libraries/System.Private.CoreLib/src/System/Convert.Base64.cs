@@ -25,7 +25,7 @@ namespace System
         ///           or a destination span that's too small. <paramref name="consumed"/> and <paramref name="written"/> are set so that
         ///           parsing can continue with a slower whitespace-tolerant algorithm.
         ///
-        /// Note: This is a cut down version of the implementation of Base64.DecodeFromUtf8(), modified the accept UTF16 chars and act as a fast-path
+        /// Note: This is a cut down version of the implementation of Base64.DecodeFromUtf8(), modified the accept UTF-16 chars and act as a fast-path
         /// helper for the Convert routines when the input string contains no whitespace.
         /// </returns>
         private static bool TryDecodeFromUtf16(ReadOnlySpan<char> utf16, Span<byte> bytes, out int consumed, out int written)

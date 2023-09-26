@@ -39,10 +39,23 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <!-- Keep in sync with WasmApp.Native.targets -->
+    <_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded Condition="
+        '$(WasmEnableLegacyJsInterop)' == 'false' or
+        '$(WasmEnableSIMD)' == 'false' or
+        '$(WasmEnableExceptionHandling)' == 'false' or
+        '$(InvariantTimezone)' == 'true' or
+        ('$(_UsingBlazorOrWasmSdk)' != 'true' and '$(InvariantGlobalization)' == 'true') or
+        '$(WasmNativeStrip)' == 'false'">true</_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded>
+
     <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
     <!-- FIXME: is the blazor condition here correct? -->
-    <_WasmNativeWorkloadNeeded Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmEnableSIMD)' == 'true' or '$(WasmEnableLegacyJsInterop)' == 'false' or '$(WasmBuildNative)' == 'true' or
-      '$(WasmGenerateAppBundle)' == 'true' or '$(_UsingBlazorOrWasmSdk)' != 'true'" >true</_WasmNativeWorkloadNeeded>
+    <_WasmNativeWorkloadNeeded Condition="
+        '$(_WasmPropertiesDifferFromRuntimePackThusNativeBuildNeeded)' == 'true' or
+        '$(RunAOTCompilation)' == 'true' or
+        '$(WasmBuildNative)' == 'true' or
+        '$(WasmGenerateAppBundle)' == 'true' or
+        '$(_UsingBlazorOrWasmSdk)' != 'true'" >true</_WasmNativeWorkloadNeeded>
 
     <UsingBrowserRuntimeWorkload Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'">false</UsingBrowserRuntimeWorkload>
     <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == '' and '$(_WasmNativeWorkloadNeeded)' == 'true'">true</UsingBrowserRuntimeWorkload>
@@ -185,10 +198,20 @@
       Text="WebAssembly workloads, required for native relinking, are only supported for projects targeting net6.0+ . Set %24(WasmBuildNative)=false to disable it." />
   </Target>
 
-  <Target Name="_ErrorDualWasmThreadProps"
-    Condition="('$(TargetsCurrent)' == 'true' or '$(TargetsNet7)' == 'true') and '$(RuntimeIdentifier)' == 'browser-wasm' and
+  <Target Name="_ErrorDualWasmThreadPropsOn7"
+    Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and
     '$(BrowserWorkloadDisabled)' != 'true' and '$(WasmEnableThreads)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
     BeforeTargets="Build">
     <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreads or WasmEnablePerfTracing to true, but not both." />
   </Target>
+
+  <Target Name="_SuggestWasmWorkloadForBlazor" BeforeTargets="Publish">
+    <Message
+        Condition="'$(_UsingBlazorOrWasmSdk)' == 'true' and '$(WasmNativeWorkloadAvailable)' != 'true'"
+        Text="Publishing without optimizations. Although it's optional for Blazor, we strongly recommend using `wasm-tools` workload! You can install it by running `dotnet workload install wasm-tools` from the command line."
+        Importance="High" />
+  </Target>
+
+  <Import Condition="'$(TargetsCurrent)' == 'true' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')" 
+          Project="$(MSBuildThisFileDirectory)WorkloadTelemetry.targets" />
 </Project>

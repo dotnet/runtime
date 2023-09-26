@@ -61,6 +61,15 @@
         },
         {
           "labels": [
+            "area-Codegen-Intrinsics-mono"
+          ],
+          "mentionees": [
+            "SamMonoRT",
+            "fanyang-mono"
+          ]
+        },
+        {
+          "labels": [
             "area-CodeGen-meta-Mono"
           ],
           "mentionees": [
@@ -218,7 +227,7 @@
         },
         {
           "labels": [
-            "area-ILVerification"
+            "area-Tools-ILVerification"
           ],
           "mentionees": [
             "JulieLeeMSFT"
@@ -2132,6 +2141,18 @@
                 }
               },
               {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Interop-coreclr"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Runtime.InteropServices"
+                }
+              },
+              {
                 "name": "labelAdded",
                 "parameters": {
                   "label": "area-AssemblyLoader-coreclr"
@@ -2165,6 +2186,18 @@
                 "name": "labelAdded",
                 "parameters": {
                   "label": "area-Tools-ILLink"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-Interop-coreclr"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-System.Runtime.InteropServices"
                 }
               }
             ]

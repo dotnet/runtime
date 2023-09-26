@@ -13,10 +13,11 @@ namespace System.Globalization.Tests
             yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.NativeName };
 
             // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid)
+            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid || PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 yield return new object[] { "en-US", "English (United States)" };
                 yield return new object[] { "en-CA", "English (Canada)" };
+                yield return new object[] { "en-GB", "English (United Kingdom)" };
             }
             else
             {

@@ -34,13 +34,6 @@ mono_dl_get_so_suffixes (void)
 	return suffixes;
 }
 
-const char*
-mono_dl_get_system_dir (void)
-{
-	return NULL;
-}
-
-
 void*
 mono_dl_lookup_symbol (MonoDl *module, const char *name)
 {

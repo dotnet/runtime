@@ -91,6 +91,15 @@ namespace Internal.IL
                         return GenerateAccessorBadImageFailure(method);
                     }
 
+                    // If the non-static method access is for a
+                    // value type, the instance must be byref.
+                    if (kind == UnsafeAccessorKind.Method
+                        && firstArgType.IsValueType
+                        && !firstArgType.IsByRef)
+                    {
+                        return GenerateAccessorBadImageFailure(method);
+                    }
+
                     context.TargetType = ValidateTargetType(firstArgType);
                     if (context.TargetType == null)
                     {

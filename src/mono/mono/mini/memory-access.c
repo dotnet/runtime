@@ -210,7 +210,16 @@ mini_emit_memcpy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src, Mono
 		if (!size_ins)
 			EMIT_NEW_ICONST (cfg, size_ins, size);
 		iargs [2] = size_ins;
-		mono_emit_method_call (cfg, mini_get_memcpy_method (), iargs, NULL);
+		if (COMPILE_LLVM (cfg)) {
+			MonoInst *ins;
+			MONO_INST_NEW (cfg, ins, OP_MEMMOVE);
+			ins->sreg1 = iargs [0]->dreg;
+			ins->sreg2 = iargs [1]->dreg;
+			ins->sreg3 = iargs [2]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+		} else {
+			mono_emit_method_call (cfg, mini_get_memcpy_method (), iargs, NULL);
+		}
 	} else {
 		mini_emit_memcpy (cfg, dest->dreg, 0, src->dreg, 0, size, align);
 	}

@@ -3190,6 +3190,34 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task SimpleInterfaceHierarchyWithNamingConflict_ShouldMaskShadowedProperties()
+        {
+            var value = new ISimpleInterfaceHierarchyWithNamingConflict.Implementation();
+
+            string json = await Serializer.SerializeWrapper<ISimpleInterfaceHierarchyWithNamingConflict>(value);
+            Assert.Equal("""{"Value":2}""", json);
+
+            json = await Serializer.SerializeWrapper<ISimpleInterfaceHierarchyWithNamingConflict.IDerivedInterface>(value);
+            Assert.Equal("""{"Value":1}""", json);
+        }
+
+        public interface ISimpleInterfaceHierarchyWithNamingConflict
+        {
+            int Value { get; set; }
+
+            public interface IDerivedInterface : ISimpleInterfaceHierarchyWithNamingConflict
+            {
+                new int Value { get; set; }
+            }
+
+            public class Implementation : IDerivedInterface
+            {
+                public int Value { get; set; } = 1;
+                int ISimpleInterfaceHierarchyWithNamingConflict.Value { get; set; } = 2;
+            }
+        }
+
+        [Fact]
         public async Task DiamondInterfaceHierarchyWithNamingConflict_ThrowsJsonException()
         {
             var value = new IDiamondInterfaceHierarchyWithNamingConflict.Implementation

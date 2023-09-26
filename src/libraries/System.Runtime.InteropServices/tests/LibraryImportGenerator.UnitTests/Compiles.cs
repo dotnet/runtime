@@ -1,26 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Interop.UnitTests;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using Xunit;
-using SourceGenerators.Tests;
-
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
-using Microsoft.CodeAnalysis.Testing;
-using System.Collections.Immutable;
-using System.Threading;
-using Microsoft.CodeAnalysis.Text;
 using System.Text;
-using GeneratorDiagnostics = Microsoft.Interop.GeneratorDiagnostics;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Testing;
+using Microsoft.CodeAnalysis.Text;
+using Microsoft.Interop.UnitTests;
+using Xunit;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -480,7 +477,7 @@ namespace LibraryImportGenerator.UnitTests
             private readonly IEnumerable<string> _preprocessorSymbols;
 
             public PreprocessorTest(IEnumerable<string> preprocessorSymbols)
-                :base(referenceAncillaryInterop: false)
+                : base(referenceAncillaryInterop: false)
             {
                 _preprocessorSymbols = preprocessorSymbols;
             }
@@ -550,7 +547,7 @@ namespace LibraryImportGenerator.UnitTests
             private readonly bool _expectFallbackForwarder;
 
             public FallbackForwarderTest(TestTargetFramework targetFramework, bool expectFallbackForwarder)
-                :base(targetFramework)
+                : base(targetFramework)
             {
                 _expectFallbackForwarder = expectFallbackForwarder;
             }
@@ -593,7 +590,7 @@ namespace LibraryImportGenerator.UnitTests
         class BlittableAutoForwarderTest : VerifyCS.Test
         {
             public BlittableAutoForwarderTest()
-                :base(referenceAncillaryInterop: false)
+                : base(referenceAncillaryInterop: false)
             {
             }
 
@@ -657,8 +654,8 @@ namespace LibraryImportGenerator.UnitTests
         }
 
 #pragma warning disable xUnit1004 // Test methods should not be skipped.
-                                  // If we have any new experimental APIs that we are implementing that have not been approved,
-                                  // we will add new scenarios for this test.
+        // If we have any new experimental APIs that we are implementing that have not been approved,
+        // we will add new scenarios for this test.
         [Theory(Skip = "No current scenarios to test.")]
 #pragma warning restore xUnit1004
         [MemberData(nameof(CodeSnippetsToCompileWithMarshalType))]
@@ -734,46 +731,17 @@ namespace LibraryImportGenerator.UnitTests
         class NoChangeTest : VerifyCS.Test
         {
             public NoChangeTest(TestTargetFramework framework)
-                :base(framework)
+                : base(framework)
             {
             }
 
-            protected async override Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
+            protected override async Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
             {
                 var originalCompilation = await project.GetCompilationAsync(cancellationToken);
                 var (newCompilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);
                 Assert.Same(originalCompilation, newCompilation);
                 return (newCompilation, diagnostics);
             }
-        }
-
-        public static IEnumerable<object[]> ByValueMarshalKindSnippets()
-        {
-            // Blittable array
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:Out|}"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
-                    .WithLocation(0)
-                    .WithLocation(10)
-                    .WithArguments("[In] and [Out] attributes", "p")
-            } };
-
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}, {|#11:Out|}"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
-                    .WithLocation(0)
-                    .WithLocation(10)
-                    .WithLocation(11)
-                    .WithArguments("[In] and [Out] attributes", "p")
-            } };
-        }
-
-        [MemberData(nameof(ByValueMarshalKindSnippets))]
-        [Theory]
-        public async Task ValidateDiagnosticsForUnnecessaryByValueMarshalKindAttributes(string id, string source, DiagnosticResult[] diagnostics)
-        {
-            _ = id;
-            await VerifyCS.VerifySourceGeneratorAsync(source, diagnostics);
         }
     }
 }

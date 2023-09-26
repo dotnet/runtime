@@ -811,11 +811,18 @@ namespace System.Globalization
             culture._sRealName = cultureName;
             culture._bUseOverridesUserSetting = useUserOverride;
 
-            // Ask native code if that one's real
+            // Ask native code if that one's real, populate _sWindowsName
             if (!culture.InitCultureDataCore() && !culture.InitCompatibilityCultureData())
             {
                 return null;
             }
+#if TARGET_BROWSER
+            // populate fields for which ICU does not provide data in Hybrid mode
+            if (GlobalizationMode.Hybrid && !string.IsNullOrEmpty(culture._sName))
+            {
+                culture = JSLoadCultureInfoFromBrowser(culture._sName, culture);
+            }
+#endif
 
             // We need _sWindowsName to be initialized to know if we're using overrides.
             culture.InitUserOverride(useUserOverride);
@@ -1551,8 +1558,18 @@ namespace System.Globalization
             {
                 if (_iFirstDayOfWeek == undef && !GlobalizationMode.Invariant)
                 {
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                     _iFirstDayOfWeek = GlobalizationMode.Hybrid ? GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek) : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+#elif TARGET_BROWSER
+                    if (GlobalizationMode.Hybrid)
+                    {
+                        Debug.Assert(_sName != null, "[FirstDayOfWeek] Expected _sName to be populated already");
+                        _iFirstDayOfWeek = GetFirstDayOfWeek(_sName);
+                    }
+                    else
+                    {
+                        _iFirstDayOfWeek = IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+                    }
 #else
                     _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
 #endif
@@ -1571,7 +1588,19 @@ namespace System.Globalization
             {
                 if (_iFirstWeekOfYear == undef)
                 {
+#if TARGET_BROWSER
+                    if (GlobalizationMode.Hybrid)
+                    {
+                        Debug.Assert(_sName != null, "[CalendarWeekRule] Expected _sName to be populated already");
+                        _iFirstWeekOfYear = GetFirstWeekOfYear(_sName);
+                    }
+                    else
+                    {
+                        _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
+                    }
+#else
                     _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
+#endif
                 }
                 return _iFirstWeekOfYear;
             }
@@ -1963,7 +1992,7 @@ namespace System.Globalization
                     }
                     else
                     {
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                         string? longTimeFormat =  GlobalizationMode.Hybrid ? GetTimeFormatStringNative() : IcuGetTimeFormatString();
 #else
                         string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
@@ -2303,7 +2332,7 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return 0;
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
 #else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
@@ -2315,7 +2344,7 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return 0;
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
 #else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
@@ -2328,7 +2357,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
 #else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
@@ -2341,7 +2370,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type, uiCultureName);
 #else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
@@ -2354,7 +2383,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
 #else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
@@ -2367,7 +2396,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
 #else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);

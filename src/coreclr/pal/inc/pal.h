@@ -69,6 +69,7 @@ extern "C" {
 
 #include <pal_error.h>
 #include <pal_mstypes.h>
+#include <minipal/utils.h>
 
 // Native system libray handle.
 // On Unix systems, NATIVE_LIBRARY_HANDLE type represents a library handle not registered with the PAL.
@@ -405,17 +406,7 @@ PALIMPORT
 VOID
 PALAPI
 PAL_SetCreateDumpCallback(
-    IN PCREATEDUMP_CALLBACK callback); 
-
-// Must be the same as the copy in excep.h and the WriteDumpFlags enum in the diagnostics repo
-enum
-{
-    GenerateDumpFlagsNone = 0x00,
-    GenerateDumpFlagsLoggingEnabled = 0x01,
-    GenerateDumpFlagsVerboseLoggingEnabled = 0x02,
-    GenerateDumpFlagsCrashReportEnabled = 0x04,
-    GenerateDumpFlagsCrashReportOnlyEnabled = 0x08
-};
+    IN PCREATEDUMP_CALLBACK callback);
 
 PALIMPORT
 BOOL
@@ -1325,47 +1316,6 @@ QueueUserAPC(
          IN HANDLE hThread,
          IN ULONG_PTR dwData);
 
-#ifndef __has_builtin
-#define __has_builtin(x) 0
-#endif
-
-#if defined(HOST_X86) || defined(HOST_AMD64)
-// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
-// We define matching signatures for use on Unix platforms.
-//
-// IMPORTANT: Unlike MSVC, Unix does not explicitly zero ECX for __cpuid
-
-#if __has_builtin(__cpuid)
-extern "C" void __cpuid(int cpuInfo[4], int function_id);
-#else
-inline void __cpuid(int cpuInfo[4], int function_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid\n" \
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id)
-    );
-}
-#endif // __cpuid
-
-#if __has_builtin(__cpuidex)
-extern "C" void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
-#else
-inline void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid\n" \
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id), "2"(subFunction_id)
-    );
-}
-#endif // __cpuidex
-#endif // HOST_X86 || HOST_AMD64
-
 #ifdef HOST_X86
 
 //
@@ -1581,6 +1531,14 @@ typedef struct _XMM_SAVE_AREA32 {
 } XMM_SAVE_AREA32, *PXMM_SAVE_AREA32;
 
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+
+    _CONTEXT() = default;
+    _CONTEXT(const _CONTEXT& ctx)
+    {
+        *this = ctx;
+    }
+
+    _CONTEXT& operator=(const _CONTEXT& ctx);
 
     //
     // Register parameter home addresses.
@@ -2136,7 +2094,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 #define CONTEXT_INTEGER (CONTEXT_LOONGARCH64 | 0x2)
 #define CONTEXT_FLOATING_POINT  (CONTEXT_LOONGARCH64 | 0x4)
 #define CONTEXT_DEBUG_REGISTERS (CONTEXT_LOONGARCH64 | 0x8)
-
 #define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
 
 #define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS)
@@ -2212,10 +2169,10 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     DWORD64 Pc;
 
     //
-    // Floating Point Registers
+    // Floating Point Registers: FPR64/LSX/LASX.
     //
-    // TODO-LoongArch64: support the SIMD.
-    ULONGLONG F[32];
+    ULONGLONG F[4*32];
+    DWORD64 Fcc;
     DWORD Fcsr;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
@@ -2721,12 +2678,6 @@ BOOL
 PALAPI
 PAL_GetCpuLimit(UINT* val);
 
-PALIMPORT
-size_t
-PALAPI
-PAL_GetLogicalProcessorCacheSizeFromOS();
-#define GetLogicalProcessorCacheSizeFromOS PAL_GetLogicalProcessorCacheSizeFromOS
-
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
 
 PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers);
@@ -2802,15 +2753,6 @@ PALIMPORT VOID PALAPI LeaveCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalS
 PALIMPORT VOID PALAPI InitializeCriticalSection(OUT LPCRITICAL_SECTION lpCriticalSection);
 PALIMPORT VOID PALAPI DeleteCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
 
-#define SEM_FAILCRITICALERRORS          0x0001
-#define SEM_NOOPENFILEERRORBOX          0x8000
-
-PALIMPORT
-UINT
-PALAPI
-SetErrorMode(
-         IN UINT uMode);
-
 #define PAGE_NOACCESS                   0x01
 #define PAGE_READONLY                   0x02
 #define PAGE_READWRITE                  0x04
@@ -2884,20 +2826,13 @@ PALAPI
 UnmapViewOfFile(
         IN LPCVOID lpBaseAddress);
 
-
-PALIMPORT
-HMODULE
-PALAPI
-LoadLibraryW(
-        IN LPCWSTR lpLibFileName);
-
 PALIMPORT
 HMODULE
 PALAPI
 LoadLibraryExW(
         IN LPCWSTR lpLibFileName,
-        IN /*Reserved*/ HANDLE hFile,
-        IN DWORD dwFlags);
+        IN /*Reserved*/ HANDLE hFile = NULL,
+        IN DWORD dwFlags = 0);
 
 PALIMPORT
 NATIVE_LIBRARY_HANDLE
@@ -2976,14 +2911,6 @@ Return value:
 BOOL
 PALAPI
 PAL_LOADMarkSectionAsNotNeeded(void * ptr);
-
-#ifdef UNICODE
-#define LoadLibrary LoadLibraryW
-#define LoadLibraryEx LoadLibraryExW
-#else
-#define LoadLibrary LoadLibraryA
-#define LoadLibraryEx LoadLibraryExA
-#endif
 
 PALIMPORT
 FARPROC
@@ -3086,24 +3013,6 @@ VirtualProtect(
            IN SIZE_T dwSize,
            IN DWORD flNewProtect,
            OUT PDWORD lpflOldProtect);
-
-typedef struct _MEMORYSTATUSEX {
-  DWORD     dwLength;
-  DWORD     dwMemoryLoad;
-  DWORDLONG ullTotalPhys;
-  DWORDLONG ullAvailPhys;
-  DWORDLONG ullTotalPageFile;
-  DWORDLONG ullAvailPageFile;
-  DWORDLONG ullTotalVirtual;
-  DWORDLONG ullAvailVirtual;
-  DWORDLONG ullAvailExtendedVirtual;
-} MEMORYSTATUSEX, *LPMEMORYSTATUSEX;
-
-PALIMPORT
-BOOL
-PALAPI
-GlobalMemoryStatusEx(
-            IN OUT LPMEMORYSTATUSEX lpBuffer);
 
 typedef struct _MEMORY_BASIC_INFORMATION {
     PVOID BaseAddress;
@@ -3458,7 +3367,7 @@ BitScanForward64(
 // intrinsic, which returns the number of leading 0-bits in x starting at the most significant
 // bit position (the result is undefined when x = 0).
 //
-// The same is true for BitScanReverse, except that the GCC function is __builtin_clzl.
+// The same is true for BitScanReverse, except that the GCC function is __builtin_clz.
 
 EXTERN_C
 PALIMPORT
@@ -3469,12 +3378,12 @@ BitScanReverse(
     IN OUT PDWORD Index,
     IN UINT qwMask)
 {
-    // The result of __builtin_clzl is undefined when qwMask is zero,
+    // The result of __builtin_clz is undefined when qwMask is zero,
     // but it's still OK to call the intrinsic in that case (just don't use the output).
     // Unconditionally calling the intrinsic in this way allows the compiler to
     // emit branchless code for this function when possible (depending on how the
     // intrinsic is implemented for the target platform).
-    int lzcount = __builtin_clzl(qwMask);
+    int lzcount = __builtin_clz(qwMask);
     *Index = (DWORD)(31 - lzcount);
     return qwMask != 0;
 }
@@ -4518,19 +4427,6 @@ void _mm_setcsr(unsigned int i);
 
 /******************* PAL functions for CPU capability detection *******/
 
-#ifdef  __cplusplus
-
-#if defined(HOST_ARM64) && defined(TARGET_ARM64)
-class CORJIT_FLAGS;
-
-PALIMPORT
-VOID
-PALAPI
-PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags);
-#endif // HOST_ARM64 && TARGET_ARM64
-
-#endif
-
 #ifdef __cplusplus
 
 PALIMPORT
@@ -4554,6 +4450,7 @@ private:
         ExceptionPointers.ExceptionRecord = ex.ExceptionPointers.ExceptionRecord;
         ExceptionPointers.ContextRecord = ex.ExceptionPointers.ContextRecord;
         TargetFrameSp = ex.TargetFrameSp;
+        TargetIp = ex.TargetIp;
         RecordsOnStack = ex.RecordsOnStack;
         IsExternal = ex.IsExternal;
         ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
@@ -4576,6 +4473,8 @@ public:
     EXCEPTION_POINTERS ExceptionPointers;
     // Target frame stack pointer set before the 2nd pass.
     SIZE_T TargetFrameSp;
+    SIZE_T TargetIp;
+    SIZE_T ReturnValue;
     bool RecordsOnStack;
     // The exception is a hardware exception coming from a native code out of
     // the well known runtime helpers
@@ -4589,6 +4488,7 @@ public:
         ExceptionPointers.ExceptionRecord = pExceptionRecord;
         ExceptionPointers.ContextRecord = pContextRecord;
         TargetFrameSp = NoTargetFrameSp;
+        TargetIp = 0;
         RecordsOnStack = onStack;
         IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;
@@ -4628,6 +4528,7 @@ public:
         ExceptionPointers.ExceptionRecord = NULL;
         ExceptionPointers.ContextRecord = NULL;
         TargetFrameSp = NoTargetFrameSp;
+        TargetIp = 0;
         RecordsOnStack = false;
         IsExternal = false;
         ManagedToNativeExceptionCallback = NULL;

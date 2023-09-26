@@ -3414,7 +3414,7 @@
                            task="GarbageCollection"
                            symbol="GCBulkRootStaticVar" message="$(string.RuntimePublisher.GCBulkRootStaticVarEventMessage)"/>
 
-                    <event value="39" version="0" level="win:LogAlways" template="GCDynamicEvent"
+                    <event value="39" version="0" level="win:Informational" template="GCDynamicEvent"
                            keywords= "GCKeyword GCHandleKeyword GCHeapDumpKeyword GCSampledObjectAllocationHighKeyword GCHeapSurvivalAndMovementKeyword ManagedHeapCollectKeyword GCHeapAndTypeNamesKeyword GCSampledObjectAllocationLowKeyword"
                            opcode="GCDynamicEvent"
                            task="GarbageCollection"

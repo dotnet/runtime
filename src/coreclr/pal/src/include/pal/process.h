@@ -178,10 +178,12 @@ Function:
 
 Parameters:
   signal - POSIX signal number
+  siginfo - POSIX signal info or nullptr
+  serialize - allow only one thread to generate core dump
 
 (no return value)
 --*/
-VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo);
+VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize);
 
 /*++
 Function:

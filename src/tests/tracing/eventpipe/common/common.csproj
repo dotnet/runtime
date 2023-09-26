@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <OutputType>Library</OutputType>
-    <CLRTestKind>SharedLibrary</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
