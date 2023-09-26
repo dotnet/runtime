@@ -629,18 +629,16 @@ namespace DebuggerTests
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
-                    ("c[\"longstring\"]", TBool(true)),
+                    ("c[\"longstring\"]", TBool(true)), // class
                     ("c[\"-\"]", TBool(false)),
                     ("c[\'-\']", TString("res_-")),
                     ("c[true]", TString("True")),
                     ("c[1.23]", TNumber(1)),
-
-                    // ("s[\"longstring\"]", TBool(true)),
-                    // ("s[\"-\"]", TBool(false)),
-                    // ("s[\'-\']", TString("res_-")),
-                    // ("s[true]", TString("True")),
-                    // ("s[1.23]", TNumber(1)),
-
+                    ("s[\"longstring\"]", TBool(true)), // struct
+                    ("s[\"-\"]", TBool(false)),
+                    ("s[\'-\']", TString("res_-")),
+                    ("s[true]", TString("True")),
+                    ("s[1.23]", TNumber(1)),
                     ("cc.indexedByStr[\"1\"]", TBool(true)),
                     ("cc.indexedByStr[\"111\"]", TBool(false)),
                     ("cc.indexedByStr[\"true\"]", TBool(true)),
