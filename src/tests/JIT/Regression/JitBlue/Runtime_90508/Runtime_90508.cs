@@ -23,7 +23,7 @@ public class Runtime_90508
     [Fact]
     public static int TestEntryPoint()
     {
-        if (!Ssse3.IsSupported)
+        if (!Sse3.IsSupported)
         {
             return 100;
         }
