@@ -98,22 +98,17 @@ namespace Wasm.Build.Tests
             return data;
         }
 
+#pragma warning disable xUnit1026 // For unused *buildValue*, and *publishValue* parameters
         [Theory]
         [MemberData(nameof(DefaultsTestData), parameters: false)]
         [MemberData(nameof(SettingDifferentFromValuesInRuntimePack), parameters: false)]
         public void DefaultsWithBuild(string config, string extraProperties, bool aot, bool expectWasmBuildNativeForBuild, bool expectWasmBuildNativeForPublish)
         {
-            (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_build", config, extraProperties, aot, dotnetWasmFromRuntimePack: !expectWasmBuildNativeForPublish, publish: false);
+            (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_build", config, extraProperties, aot, dotnetWasmFromRuntimePack: !expectWasmBuildNativeForBuild, publish: false);
 
             InferAndCheckPropertyValues(line, isPublish: false, wasmBuildNative: expectWasmBuildNativeForBuild, config: config);
-            //CheckPropertyValues(line,
-                                //wasmBuildNative: expectWasmBuildNativeForBuild,
-                                //wasmNativeStrip: expectedWasmNativeStripValue,
-                                //wasmNativeDebugSymbols: true,
-                                //wasmBuildingForNestedPublish: null);
         }
 
-#pragma warning disable xUnit1026 // For unused *buildValue* parameter
         [Theory]
         [MemberData(nameof(DefaultsTestData), parameters: true)]
         [MemberData(nameof(SettingDifferentFromValuesInRuntimePack), parameters: true)]
@@ -122,14 +117,8 @@ namespace Wasm.Build.Tests
             (string output, string? line) = CheckWasmNativeDefaultValue("native_defaults_publish", config, extraProperties, aot, dotnetWasmFromRuntimePack: !expectWasmBuildNativeForPublish, publish: true);
 
             InferAndCheckPropertyValues(line, isPublish: true, wasmBuildNative: expectWasmBuildNativeForPublish, config: config);
-            //CheckPropertyValues(line,
-                                //wasmBuildNative: expectWasmBuildNativeForPublish,
-                                //wasmNativeStrip: true,
-                                //wasmNativeDebugSymbols: true,
-                                //wasmBuildingForNestedPublish: true);
         }
 #pragma warning restore xunit1026
-
 
         /*
          * - build+debug -> relink.. nativestrip=false, symbols=false, when unset
