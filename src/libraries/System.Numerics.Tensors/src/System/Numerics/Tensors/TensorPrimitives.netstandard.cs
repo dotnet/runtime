@@ -10,6 +10,12 @@ namespace System.Numerics.Tensors
     {
         private static unsafe bool IsNegative(float f) => *(int*)&f < 0;
 
+        private static float MaxMagnitude(float x, float y) => MathF.Abs(x) >= MathF.Abs(y) ? x : y;
+
+        private static float MinMagnitude(float x, float y) => MathF.Abs(x) < MathF.Abs(y) ? x : y;
+
+        private static float Log2(float x) => MathF.Log(x, 2);
+
         private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
             // Compute the same as:
@@ -551,19 +557,19 @@ namespace System.Numerics.Tensors
             public Vector<float> Invoke(Vector<float> x, Vector<float> y, Vector<float> z) => (x * y) + z;
         }
 
-        private readonly struct LoadIdentity : IUnaryOperator
+        private readonly struct IdentityOperator : IUnaryOperator
         {
             public float Invoke(float x) => x;
             public Vector<float> Invoke(Vector<float> x) => x;
         }
 
-        private readonly struct LoadSquared : IUnaryOperator
+        private readonly struct SquaredOperator : IUnaryOperator
         {
             public float Invoke(float x) => x * x;
             public Vector<float> Invoke(Vector<float> x) => x * x;
         }
 
-        private readonly struct LoadAbsolute : IUnaryOperator
+        private readonly struct AbsoluteOperator : IUnaryOperator
         {
             public float Invoke(float x) => MathF.Abs(x);
 
