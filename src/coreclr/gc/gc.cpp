@@ -19072,9 +19072,9 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
 #ifdef MULTIPLE_HEAPS
 void gc_heap::balance_heaps (alloc_context* acontext)
 {
-    if (acontext->alloc_count < 4)
+    if (acontext->get_alloc_count() < 4)
     {
-        if (acontext->alloc_count == 0)
+        if (acontext->get_alloc_count() == 0)
         {
             int home_hp_num = heap_select::select_heap (acontext);
             acontext->set_home_heap (GCHeap::GetHeap (home_hp_num));
@@ -19123,12 +19123,12 @@ void gc_heap::balance_heaps (alloc_context* acontext)
 #endif //HEAP_BALANCE_INSTRUMENTATION
                 set_home_heap = TRUE;
             }
-            else if ((acontext->alloc_count & 15) == 0)
+            else if ((acontext->get_alloc_count() & 15) == 0)
                 set_home_heap = TRUE;
         }
         else
         {
-            if ((acontext->alloc_count & 3) == 0)
+            if ((acontext->get_alloc_count() & 3) == 0)
                 set_home_heap = TRUE;
         }
 
@@ -19158,7 +19158,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
                 dprintf (HEAP_BALANCE_TEMP_LOG, ("TEMP[p%3d] ph h%3d, hh: %3d, ah: %3d (%dmb-%dmb), ac: %5d(%s)",
                     proc_no, proc_hp_num, home_hp->heap_number,
                     org_hp_num, (total_size / 1024 / 1024), (org_size / 1024 / 1024),
-                    acontext->alloc_count,
+                    acontext->get_alloc_count(),
                     ((proc_hp_num == home_hp->heap_number) ? "AC" : "H")));
 #endif //HEAP_BALANCE_INSTRUMENTATION
 
@@ -19172,7 +19172,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
 
                 if (((size_t)org_size + 2 * delta) >= (size_t)total_size)
                 {
-                    acontext->alloc_count++;
+                    acontext->inc_alloc_count();
                     return;
                 }
 
@@ -19256,10 +19256,10 @@ void gc_heap::balance_heaps (alloc_context* acontext)
                         // alloc_count often increases by multiples of 16 (due to logic at top of routine),
                         // and we want to advance the starting point by 4 between successive calls,
                         // therefore the shift right by 2 bits
-                        int heap_num = start + ((acontext->alloc_count >> 2) + new_home_hp_num) % count;
+                        int heap_num = start + ((acontext->get_alloc_count() >> 2) + new_home_hp_num) % count;
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
-                        dprintf(HEAP_BALANCE_TEMP_LOG, ("TEMP starting at h%d (home_heap_num = %d, alloc_count = %d)", heap_num, new_home_hp_num, acontext->alloc_count));
+                        dprintf(HEAP_BALANCE_TEMP_LOG, ("TEMP starting at h%d (home_heap_num = %d, alloc_count = %d)", heap_num, new_home_hp_num, acontext->get_alloc_count()));
 #endif //HEAP_BALANCE_INSTRUMENTATION
 
                         for (int tries = max_tries; --tries >= 0; heap_num++)
@@ -19375,7 +19375,7 @@ void gc_heap::balance_heaps (alloc_context* acontext)
             }
         }
     }
-    acontext->alloc_count++;
+    acontext->inc_alloc_count();
 }
 
 ptrdiff_t gc_heap::get_balance_heaps_uoh_effective_budget (int generation_num)
@@ -49360,7 +49360,7 @@ GCHeap::FixAllocContext (gc_alloc_context* context, void* arg, void *heap)
 #ifdef MULTIPLE_HEAPS
 
     if (arg != 0)
-        acontext->alloc_count = 0;
+        acontext->init_alloc_count();
 
     uint8_t * alloc_ptr = acontext->alloc_ptr;
 
@@ -50564,6 +50564,7 @@ void GCHeap::AssignHeap (alloc_context* acontext)
     // Assign heap based on processor
     acontext->set_alloc_heap(GetHeap(heap_select::select_heap(acontext)));
     acontext->set_home_heap(acontext->get_alloc_heap());
+    acontext->init_handle_info();
 }
 
 GCHeap* GCHeap::GetHeap (int n)
