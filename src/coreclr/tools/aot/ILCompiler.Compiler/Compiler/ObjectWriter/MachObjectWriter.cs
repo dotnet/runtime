@@ -338,7 +338,7 @@ namespace ILCompiler.ObjectWriter
             _dySymbolTable.ExternalSymbolsIndex = _dySymbolTable.LocalSymbolsCount;
             _dySymbolTable.ExternalSymbolsCount = (uint)definedSymbols.Count;
 
-            List<MachSymbol> undefinedSymbols = new List<MachSymbol>();
+            uint savedSymbolIndex = symbolIndex;
             foreach (var externSymbol in GetUndefinedSymbols())
             {
                 var machSymbol = new MachSymbol
@@ -349,20 +349,13 @@ namespace ILCompiler.ObjectWriter
                     Descriptor = 0,
                     Type = MachSymbolType.Undefined | MachSymbolType.External,
                 };
-                undefinedSymbols.Add(machSymbol);
-            }
-
-            // Sort and insert all undefined external symbols
-            undefinedSymbols.Sort((symA, symB) => string.CompareOrdinal(symA.Name, symB.Name));
-            foreach (var undefinedSymbol in undefinedSymbols)
-            {
-                _symbolTable.Symbols.Add(undefinedSymbol);
-                _symbolNameToIndex[undefinedSymbol.Name] = symbolIndex;
+                _symbolTable.Symbols.Add(machSymbol);
+                _symbolNameToIndex[externSymbol] = symbolIndex;
                 symbolIndex++;
             }
 
             _dySymbolTable.UndefinedSymbolsIndex = _dySymbolTable.LocalSymbolsCount + _dySymbolTable.ExternalSymbolsCount;
-            _dySymbolTable.UndefinedSymbolsCount = (uint)undefinedSymbols.Count;
+            _dySymbolTable.UndefinedSymbolsCount = symbolIndex - savedSymbolIndex;
         }
 
         protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
