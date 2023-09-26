@@ -1426,9 +1426,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	if (!COMPILE_LLVM (cfg)) {
 		if (vector_size != 128)
 			return NULL;
-#ifdef TARGET_WIN32
-		return NULL;
-#endif
 		if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSE41))
 			/* Some opcodes like pextrd require sse41 */
 			return NULL;
@@ -2470,9 +2467,6 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 #ifdef TARGET_AMD64
 	if (!COMPILE_LLVM (cfg) && (size != 16))
 		return NULL;
-#ifdef TARGET_WIN32
-		return NULL;
-#endif
 #endif
 
 	switch (id) {
