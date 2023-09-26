@@ -51,9 +51,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_ReorderedInvocations);
                 result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Modified);
 
-                // No diff from previous step because type model is the same.
+                // We expect different spec because members are reordered.
                 result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_ReorderedConfigTypeMembers);
-                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Unchanged);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Modified);
             }
 
             [Fact]
@@ -93,7 +93,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             }
 
             [Fact]
-            public async Task RunWithDiags_Then_NoOpEdit()
+            public async Task RunWithDiags_Then_ChangeInputOrder()
             {
                 ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver();
 
@@ -104,9 +104,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember_ReorderedInvocations);
                 result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Modified);
 
-                // No diff from previous step because type model is the same.
+                // We expect different spec because members are reordered.
                 result = await driver.RunGeneratorAndUpdateCompilation(BindCallSampleCodeVariant_WithUnsupportedMember_ReorderedConfigTypeMembers);
-                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Unchanged);
+                result.ValidateIncrementalResult(IncrementalStepRunReason.Modified, IncrementalStepRunReason.Modified);
             }
 
             [Fact]

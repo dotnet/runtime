@@ -51,13 +51,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (type == typeof(bool?))
             {
-                return ParseBoolean(value, () => section.Path);
+                return ParseBool(value, () => section.Path);
             }
 
             return null;
         }
 
-        public static bool ParseBoolean(string value, Func<string?> getPath)
+        public static bool ParseBool(string value, Func<string?> getPath)
         {
             try
             {

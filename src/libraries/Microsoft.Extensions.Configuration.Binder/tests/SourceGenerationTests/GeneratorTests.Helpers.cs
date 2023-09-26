@@ -66,6 +66,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         private static readonly Assembly[] s_compilationAssemblyRefs = new[] {
+            typeof(BitArray).Assembly,
             typeof(ConfigurationBinder).Assembly,
             typeof(ConfigurationBuilder).Assembly,
             typeof(CultureInfo).Assembly,
@@ -91,19 +92,18 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         private static async Task VerifyThatSourceIsGenerated(string testSourceCode)
         {
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(testSourceCode);
-
             GeneratedSourceResult? source = result.GeneratedSource;
+
             Assert.NotNull(source);
             Assert.Empty(result.Diagnostics);
             Assert.True(source.Value.SourceText.Lines.Count > 10);
         }
 
-        private static async Task VerifyAgainstBaselineUsingFile(
+        private static async Task<ConfigBindingGenRunResult> VerifyAgainstBaselineUsingFile(
             string filename,
             string testSourceCode,
-            Action<ImmutableArray<Diagnostic>>? assessDiagnostics = null,
             ExtensionClassType extType = ExtensionClassType.None,
-            bool validateOutputDiags = true)
+            ExpectedDiagnostics expectedDiags = ExpectedDiagnostics.None)
         {
             string path = extType is ExtensionClassType.None
                 ? Path.Combine("Baselines", filename)
@@ -112,15 +112,13 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
                                              .Split(Environment.NewLine);
 
-            ConfigBindingGenTestDriver genDriver = new();
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(testSourceCode);
-            Assert.NotNull(result.GeneratedSource);
-            GeneratedSourceResult generatedSource = result.GeneratedSource.Value;
+            result.ValidateDiagnostics(expectedDiags);
 
-            SourceText resultSourceText = generatedSource.SourceText;
+            SourceText resultSourceText = result.GeneratedSource.Value.SourceText;
             bool resultEqualsBaseline = RoslynTestUtils.CompareLines(expectedLines, resultSourceText, out string errorMessage);
 
-#if !UPDATE_BASELINES
+#if UPDATE_BASELINES
             if (!resultEqualsBaseline)
             {
                 const string envVarName = "RepoRootDir";
@@ -138,27 +136,18 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             }
 #endif
 
-            assessDiagnostics ??= static (diagnostics) => Assert.Empty(diagnostics);
-            assessDiagnostics(result.Diagnostics);
             Assert.True(resultEqualsBaseline, errorMessage);
+
+            return result;
         }
 
         private static async Task<ConfigBindingGenRunResult> RunGeneratorAndUpdateCompilation(
             string source,
             LanguageVersion langVersion = LanguageVersion.CSharp12,
-            IEnumerable<Assembly>? assemblyReferences = null,
-            bool validateCompilationDiagnostics = false)
+            IEnumerable<Assembly>? assemblyReferences = null)
         {
             ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver(langVersion, assemblyReferences);
-            ConfigBindingGenRunResult result = await driver.RunGeneratorAndUpdateCompilation(source);
-
-            if (validateCompilationDiagnostics)
-            {
-                ImmutableArray<Diagnostic> compilationDiags = result.OutputCompilation.GetDiagnostics();
-                Assert.False(compilationDiags.Any(d => d.Severity > DiagnosticSeverity.Info));
-            }
-
-            return result;
+            return await driver.RunGeneratorAndUpdateCompilation(source);
         }
 
         private static List<Assembly> GetAssemblyRefsWithAdditional(params Type[] additional)

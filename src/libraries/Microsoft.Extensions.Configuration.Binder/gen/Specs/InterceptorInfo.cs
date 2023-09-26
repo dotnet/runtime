@@ -79,8 +79,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 MethodsToGen |= overload;
 
-                void RegisterInterceptor(ref TypedInterceptorInfoBuildler? infoBuilder) =>
-                    (infoBuilder ??= new()).RegisterInterceptor(overload, type, invocation);
+                void RegisterInterceptor(ref TypedInterceptorInfoBuildler? infoBuilder)
+                {
+                    infoBuilder ??= new TypedInterceptorInfoBuildler();
+                    infoBuilder.RegisterInterceptor(overload, type, invocation);
+                }
             }
 
             public void RegisterInterceptor(MethodsToGen overload, IInvocationOperation operation)
@@ -103,8 +106,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 MethodsToGen |= overload;
 
-                void RegisterInterceptor(ref List<InvocationLocationInfo>? infoList) =>
-                    (infoList ??= new()).Add(new InvocationLocationInfo(overload, operation));
+                void RegisterInterceptor(ref List<InvocationLocationInfo>? infoList)
+                {
+                    infoList ??= new List<InvocationLocationInfo>();
+                    infoList.Add(new InvocationLocationInfo(overload, operation));
+                }
             }
 
             public InterceptorInfo ToIncrementalValue() =>
@@ -112,9 +118,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     MethodsToGen = MethodsToGen,
 
-                    ConfigBinder = _interceptors_configBinder?.OrderBy(i => i.FilePath).ToImmutableEquatableArray(),
-                    OptionsBuilderExt = _interceptors_OptionsBuilderExt?.OrderBy(i => i.FilePath).ToImmutableEquatableArray(),
-                    ServiceCollectionExt = _interceptors_serviceCollectionExt?.OrderBy(i => i.FilePath).ToImmutableEquatableArray(),
+                    ConfigBinder = _interceptors_configBinder?.ToImmutableEquatableArray(),
+                    OptionsBuilderExt = _interceptors_OptionsBuilderExt?.ToImmutableEquatableArray(),
+                    ServiceCollectionExt = _interceptors_serviceCollectionExt?.ToImmutableEquatableArray(),
 
                     ConfigBinder_Bind_instance = _configBinder_InfoBuilder_Bind_instance?.ToIncrementalValue(),
                     ConfigBinder_Bind_instance_BinderOptions = _configBinder_InfoBuilder_Bind_instance_BinderOptions?.ToIncrementalValue(),
@@ -140,7 +146,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public ImmutableEquatableArray<TypedInterceptorInvocationInfo>? ToIncrementalValue() =>
             _invocationInfoBuilderCache.Values
             .Select(b => b.ToIncrementalValue())
-            .OrderBy(i => i.TargetType.TypeRef.FullyQualifiedName)
             .ToImmutableEquatableArray();
     }
 
@@ -155,7 +160,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public TypedInterceptorInvocationInfo ToIncrementalValue() => new(
                 TargetType,
-                Locations: _infoList.OrderBy(i => i.FilePath).ToImmutableEquatableArray());
+                Locations: _infoList.ToImmutableEquatableArray());
         }
     }
 

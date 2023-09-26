@@ -22,11 +22,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public bool CanInstantiate(ComplexTypeSpec typeSpec) => typeSpec switch
         {
-            ObjectSpec objectType => objectType is { InstantiationStrategy: not ObjectInstantiationStrategy.None, InitExceptionMessage: null },
-            DictionarySpec dictionaryType =>
-                // Nullable not allowed; that would cause us to emit code that violates dictionary key notnull generic parameter constraint.
-                GetTypeSpec(dictionaryType.KeyTypeRef) is ParsableFromStringSpec,
-            CollectionSpec => true,
+            ObjectSpec objectSpec => objectSpec is { InstantiationStrategy: not ObjectInstantiationStrategy.None, InitExceptionMessage: null },
+            DictionarySpec dictionarySpec => KeyIsSupported(dictionarySpec),
+            CollectionSpec collectionSpec => CanBindTo(collectionSpec.ElementTypeRef),
             _ => throw new InvalidOperationException(),
         };
 
@@ -34,22 +32,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             typeSpec switch
             {
                 ObjectSpec objectSpec => objectSpec.Properties?.Any(ShouldBindTo) is true,
-                DictionarySpec dictSpec => GetTypeSpec(dictSpec.KeyTypeRef) is ParsableFromStringSpec && CanBindTo(dictSpec.ElementTypeRef),
+                DictionarySpec dictSpec => KeyIsSupported(dictSpec) && CanBindTo(dictSpec.ElementTypeRef),
                 CollectionSpec collectionSpec => CanBindTo(collectionSpec.ElementTypeRef),
                 _ => throw new InvalidOperationException(),
             };
 
         public bool ShouldBindTo(PropertySpec property)
         {
-            bool isAccessible = property.CanGet || property.CanSet;
+            TypeSpec propTypeSpec = GetEffectiveTypeSpec(property.TypeRef);
+            return IsAccessible() && !IsCollectionAndCannotOverride() && !IsDictWithUnsupportedKey();
 
-            bool isCollectionAndCannotOverride = !property.CanSet &&
-                GetEffectiveTypeSpec(property.TypeRef) is CollectionWithCtorInitSpec
+            bool IsAccessible() => property.CanGet || property.CanSet;
+
+            bool IsDictWithUnsupportedKey() => propTypeSpec is DictionarySpec dictionarySpec && !KeyIsSupported(dictionarySpec);
+
+            bool IsCollectionAndCannotOverride() => !property.CanSet &&
+                propTypeSpec is CollectionWithCtorInitSpec
                 {
                     InstantiationStrategy: CollectionInstantiationStrategy.CopyConstructor or CollectionInstantiationStrategy.LinqToDictionary
                 };
-
-            return isAccessible && !isCollectionAndCannotOverride;
         }
 
         public TypeSpec GetEffectiveTypeSpec(TypeRef typeRef)
@@ -94,6 +95,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             string keyTypeDisplayString = GetTypeSpec(((DictionarySpec)type).KeyTypeRef).DisplayString;
             return $"{proxyTypeNameStr}<{keyTypeDisplayString}, {elementTypeDisplayString}>";
+        }
+
+        public bool KeyIsSupported(DictionarySpec typeSpec) =>
+            // Only types that are parsable from string are supported.
+            // Nullable keys not allowed; that would cause us to emit
+            // code that violates dictionary key notnull constraint.
+            GetTypeSpec(typeSpec.KeyTypeRef) is ParsableFromStringSpec;
+
+        public static string GetConfigKeyCacheFieldName(ObjectSpec type) => $"s_configKeys_{type.IdentifierCompatibleSubstring}";
+
+        public static string GetParseMethodName(ParsableFromStringSpec type)
+        {
+            Debug.Assert(type.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
+
+            string displayString = type.DisplayString;
+
+            string parseMethod = type.StringParsableTypeKind is StringParsableTypeKind.ByteArray
+                ? "ParseByteArray"
+                // MinimalDisplayString.Length is certainly > 2.
+                : $"Parse{(char.ToUpper(displayString[0]) + displayString.Substring(1)).Replace(".", "")}";
+
+            return parseMethod;
         }
     }
 }

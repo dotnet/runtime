@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     Debug.Assert(keys is not null);
 
                     string configKeysSource = string.Join(", ", keys);
-                    string fieldName = GetConfigKeyCacheFieldName(objectType);
+                    string fieldName = TypeIndex.GetConfigKeyCacheFieldName(objectType);
                     _writer.WriteLine($@"private readonly static Lazy<{TypeDisplayString.HashSetOfString}> {fieldName} = new(() => new {TypeDisplayString.HashSetOfString}(StringComparer.OrdinalIgnoreCase) {{ {configKeysSource} }});");
                 }
             }
@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     useIncrementalStringValueIdentifier: false);
                             }
                             break;
-                        case ConfigurationSectionSpec configurationSectionSpec:
+                        case ConfigurationSectionSpec:
                             {
                                 EmitCastToIConfigurationSection();
                                 _writer.WriteLine($"return {Identifier.section};");
@@ -660,7 +660,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof({typeDisplayString})}}");
 
-                EmitStartBlock($"public static {typeDisplayString} {GetParseMethodName(type)}(string {Identifier.value}, Func<string?> {Identifier.getPath})");
+                EmitStartBlock($"public static {typeDisplayString} {TypeIndex.GetParseMethodName(type)}(string {Identifier.value}, Func<string?> {Identifier.getPath})");
                 EmitEndBlock($$"""
                     try
                     {
@@ -677,7 +677,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 TypeRef elementTypeRef = type.ElementTypeRef;
                 string elementTypeDisplayString = _typeIndex.GetTypeSpec(elementTypeRef).DisplayString;
-                string tempIdentifier = Identifier.temp;
+                string tempIdentifier = GetIncrementalIdentifier(Identifier.temp);
 
                 // Create temp list.
                 _writer.WriteLine($"var {tempIdentifier} = new List<{elementTypeDisplayString}>();");
@@ -721,7 +721,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 useIncrementalStringValueIdentifier: false);
                         }
                         break;
-                    case ConfigurationSectionSpec configurationSection:
+                    case ConfigurationSectionSpec:
                         {
                             _writer.WriteLine($"{addExpr}({Identifier.section});");
                         }
@@ -772,15 +772,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     useIncrementalStringValueIdentifier: false);
                             }
                             break;
-                        case ConfigurationSectionSpec configurationSection:
+                        case ConfigurationSectionSpec:
                             {
                                 _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {Identifier.section};");
                             }
                             break;
                         case ComplexTypeSpec complexElementType:
                             {
-                                Debug.Assert(_typeIndex.CanBindTo(complexElementType.TypeRef));
-
                                 if (keyType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue)
                                 {
                                     // Save value to local to avoid parsing twice - during look-up and during add.
@@ -816,13 +814,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     EmitEndBlock();
                                 }
 
-                                void EmitBindingLogic() => this.EmitBindingLogic(
-                                    complexElementType,
-                                    Identifier.element,
-                                    Identifier.section,
-                                    InitializationKind.None,
-                                    ValueDefaulting.None,
-                                    writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {parsedValueExpr};"));
+                                void EmitBindingLogic()
+                                {
+                                    this.EmitBindingLogic(
+                                        complexElementType,
+                                        Identifier.element,
+                                        Identifier.section,
+                                        InitializationKind.None,
+                                        ValueDefaulting.None);
+
+                                    _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {Identifier.element};");
+                                }
                             }
                             break;
                     }
@@ -835,7 +837,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 Debug.Assert(_typeIndex.HasBindableMembers(type));
 
-                string keyCacheFieldName = GetConfigKeyCacheFieldName(type);
+                string keyCacheFieldName = TypeIndex.GetConfigKeyCacheFieldName(type);
                 string validateMethodCallExpr = $"{Identifier.ValidateConfigurationKeys}(typeof({type.DisplayString}), {keyCacheFieldName}, {Identifier.configuration}, {Identifier.binderOptions});";
                 _writer.WriteLine(validateMethodCallExpr);
 
@@ -1086,7 +1088,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     StringParsableTypeKind.AssignFromSectionValue => stringValueToParse_Expr,
                     StringParsableTypeKind.Enum => $"ParseEnum<{type.DisplayString}>({stringValueToParse_Expr}, () => {sectionPathExpr})",
-                    _ => $"{GetParseMethodName(type)}({stringValueToParse_Expr}, () => {sectionPathExpr})",
+                    _ => $"{TypeIndex.GetParseMethodName(type)}({stringValueToParse_Expr}, () => {sectionPathExpr})",
                 };
 
                 if (!checkForNullSectionValue)
@@ -1259,15 +1261,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 return "else if";
-            }
-
-            private static string GetConfigKeyCacheFieldName(ObjectSpec type) =>
-                $"s_configKeys_{type.IdentifierCompatibleSubstring}";
-
-            private static string GetParseMethodName(ParsableFromStringSpec type)
-            {
-                Debug.Assert(type.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
-                return $"Parse{type.IdentifierCompatibleSubstring}";
             }
         }
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -312,6 +313,30 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }";
 
             await VerifyAgainstBaselineUsingFile("Get.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
+        }
+
+        [Fact]
+        public async Task Get_PrimitivesOnly()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        config.Get<int>();
+                        config.Get(typeof(string));
+                        config.Get<float>(binderOptions => { });
+                        config.Get(typeof(double), binderOptions => { });
+                    }
+                }
+                """;
+
+            await VerifyAgainstBaselineUsingFile("Get_PrimitivesOnly.generated.txt", source, extType: ExtensionClassType.ConfigurationBinder);
         }
 
         [Fact]
@@ -719,7 +744,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         [Fact]
-        [ActiveIssue("Work out why we aren't getting all the expected diagnostics.")]
         public async Task Collections()
         {
             string source = """
@@ -737,6 +761,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         section.Get<MyClassWithCustomCollections>();
                     }
 
+                    // Diagnostic warning because we don't know how to instantiate two properties on this type.
                     public class MyClassWithCustomCollections
                     {
                         public CustomDictionary<string, int> CustomDictionary { get; set; }
@@ -744,6 +769,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         public ICustomDictionary<string> ICustomDictionary { get; set; }
                         public ICustomSet<MyClassWithCustomCollections> ICustomCollection { get; set; }
                         public IReadOnlyList<int> IReadOnlyList { get; set; }
+                        // Diagnostic warning because we don't know how to instantiate the property type.
                         public IReadOnlyDictionary<MyClassWithCustomCollections, int> UnsupportedIReadOnlyDictionaryUnsupported { get; set; }
                         public IReadOnlyDictionary<string, int> IReadOnlyDictionary { get; set; }
                     }
@@ -756,21 +782,26 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     {
                     }
 
+                    // Diagnostic warning because we don't know how to instantiate this type.
                     public interface ICustomDictionary<T> : IDictionary<T, string>
                     {
                     }
 
+                    // Diagnostic warning because we don't know how to instantiate this type.
                     public interface ICustomSet<T> : ISet<T>
                     {
                     }
                 }
                 """;
 
-            await VerifyAgainstBaselineUsingFile("Collections.generated.txt", source, validateOutputDiags: false, assessDiagnostics: (d) =>
-            {
-                Assert.Equal(3, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
-                Assert.Equal(6, d.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
-            });
+            ConfigBindingGenRunResult result = await VerifyAgainstBaselineUsingFile(
+                "Collections.generated.txt",
+                source,
+                expectedDiags: ExpectedDiagnostics.FromGeneratorOnly);
+
+            ImmutableArray<Diagnostic> diagnostics = result.Diagnostics;
+            Assert.Equal(3, diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+            Assert.Equal(3, diagnostics.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
         }
 
         [Fact]
@@ -812,14 +843,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
                 """;
 
-            await VerifyAgainstBaselineUsingFile(
+            ConfigBindingGenRunResult result = await VerifyAgainstBaselineUsingFile(
                 "EmptyConfigType.generated.txt",
                 source,
-                assessDiagnostics: (d) =>
-                {
-                    Assert.Equal(2, d.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
-                },
-                validateOutputDiags: false);
+                expectedDiags: ExpectedDiagnostics.FromGeneratorOnly);
+
+            Assert.Equal(2, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
         }
     }
 }
