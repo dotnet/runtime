@@ -43,7 +43,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter that switches into a target environment.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        public readonly struct YieldAwaiter : ICriticalNotifyCompletion, IStateMachineBoxAwareAwaiter
+        public readonly struct YieldAwaiter : ICriticalNotifyCompletion2, IStateMachineBoxAwareAwaiter
         {
             /// <summary>Gets whether a yield is not required.</summary>
             /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>

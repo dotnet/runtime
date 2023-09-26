@@ -351,12 +351,15 @@ DEFINE_CLASS(THREAD_START_EXCEPTION,Threading,              ThreadStartException
 DEFINE_METHOD(THREAD_START_EXCEPTION,EX_CTOR,               .ctor,                      IM_Exception_RetVoid)
 
 DEFINE_CLASS(TASK_1, Tasks, Task`1)
+DEFINE_METHOD(TASK_1, GET_AWAITER, GetAwaiter, NoSig)
 
 DEFINE_CLASS(RUNTIME_TASK_STATE_1, Tasks, RuntimeTaskState`1)
 DEFINE_METHOD(RUNTIME_TASK_STATE_1, PUSH, Push, IM_RetVoid)
 DEFINE_METHOD(RUNTIME_TASK_STATE_1, POP, Pop, IM_RetVoid)
 DEFINE_METHOD(RUNTIME_TASK_STATE_1, FROM_EXCEPTION, FromException, IM_Exception_RetTaskOfT)
 DEFINE_METHOD(RUNTIME_TASK_STATE_1, FROM_RESULT, FromResult, IM_T_RetTaskOfT)
+
+DEFINE_CLASS(TASK_AWAITER_1, CompilerServices, TaskAwaiter`1)
 
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
@@ -674,6 +677,11 @@ DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig
 DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  SM_Int_IntPtr_RetIntPtr)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
+
+DEFINE_METHOD(RUNTIME_HELPERS,      GET_OR_CREATE_RESUMPTION_DELEGATE, GetOrCreateResumptionDelegate, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      ABORT_SUSPEND, AbortSuspend, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      SUSPEND_IF_SUSPENSION_NOT_ABORTED, SuspendIfSuspensionNotAborted, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      UNSAFE_AWAIT_AWAITER_FROM_RUNTIME_ASYNC_2, UnsafeAwaitAwaiterFromRuntimeAsync, GM_U_RetT)
 
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)

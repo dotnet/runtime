@@ -32,4 +32,32 @@ namespace System.Runtime.CompilerServices
         /// <remarks>Unlike OnCompleted, UnsafeOnCompleted need not propagate ExecutionContext information.</remarks>
         void UnsafeOnCompleted(Action continuation);
     }
+
+    /// <summary>
+    /// Represents an awaiter used to schedule continuations when an await operation completes. Provides access to the complete api surface for awaiting
+    /// </summary>
+    public interface ICriticalNotifyCompletion2 : ICriticalNotifyCompletion
+    {
+        bool IsCompleted { get; }
+        void GetResult();
+    }
+    public interface ICriticalNotifyCompletion2<TResult> : ICriticalNotifyCompletion
+    {
+        bool IsCompleted { get; }
+        TResult GetResult();
+    }
+
+    /// <summary>
+    /// Represents an awaiter used to schedule continuations when an await operation completes. Provides access to the complete api surface for awaiting
+    /// </summary>
+    public interface INotifyCompletion2 : INotifyCompletion
+    {
+        bool IsCompleted { get; }
+        void GetResult();
+    }
+    public interface INotifyCompletion2<TResult> : INotifyCompletion
+    {
+        bool IsCompleted { get; }
+        TResult GetResult();
+    }
 }

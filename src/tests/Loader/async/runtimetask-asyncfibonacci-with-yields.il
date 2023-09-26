@@ -362,8 +362,8 @@
   IL_0013:  stloc.1
   IL_0014:  ldloc.1
   IL_0015:  brfalse.s  IL_001d
-  IL_0017:  call       int modopt([System.Runtime]System.Threading.Tasks.Task`1) Program::'<<Main>$>g__MyYield|0_2'()
-  IL_001c:  pop
+  IL_0017:  call       valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable [System.Runtime]System.Threading.Tasks.Task::Yield()
+  IL_001c:  call       void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::UnsafeAwaitAwaiterFromRuntimeAsync<valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable>(!!0)
   IL_001d:  ldloc.0
   IL_001e:  ldc.i4     0x773593ed
   IL_0023:  mul
@@ -374,8 +374,8 @@
   IL_002d:  stloc.2
   IL_002e:  ldloc.2
   IL_002f:  brfalse.s  IL_0037
-  IL_0031:  call       int modopt([System.Runtime]System.Threading.Tasks.Task`1) Program::'<<Main>$>g__MyYield|0_2'()
-  IL_0036:  pop
+  IL_0031:  call       valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable [System.Runtime]System.Threading.Tasks.Task::Yield()
+  IL_0036:  call       void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::UnsafeAwaitAwaiterFromRuntimeAsync<valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable>(!!0)
   IL_0037:  ldloc.0
   IL_0038:  ldc.i4     0x773593ed
   IL_003d:  mul
@@ -386,146 +386,14 @@
   IL_0047:  stloc.3
   IL_0048:  ldloc.3
   IL_0049:  brfalse.s  IL_0051
-  IL_004b:  call       int modopt([System.Runtime]System.Threading.Tasks.Task`1) Program::'<<Main>$>g__MyYield|0_2'()
-  IL_0050:  pop
+  IL_004b:  call       valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable [System.Runtime]System.Threading.Tasks.Task::Yield()
+  IL_0050:  call       void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::UnsafeAwaitAwaiterFromRuntimeAsync<valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable>(!!0)
   IL_0051:  ldloc.0
   IL_0052:  stloc.s    V_4
   IL_0054:  br.s       IL_0056
   IL_0056:  ldloc.s    V_4
   IL_0058:  ret
   } // end of method Program::'<<Main>$>g__B|0_1'
-
-.class auto ansi sealed nested private beforefieldinit '<<<Main>$>g__MyYield|0_2>d'
-       extends [System.Runtime]System.ValueType
-       implements [System.Runtime]System.Runtime.CompilerServices.IAsyncStateMachine
-{
-  .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
-  .field public int32 '<>1__state'
-  .field public valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32> '<>t__builder'
-  .field private valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter '<>u__1'
-
-.method private hidebysig newslot virtual final 
-        instance void  MoveNext() cil managed
-{
-  .override [System.Runtime]System.Runtime.CompilerServices.IAsyncStateMachine::MoveNext
-  // Code size       150 (0x96)
-  .maxstack  3
-  .locals init (int32 V_0,
-           int32 V_1,
-           valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter V_2,
-           valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable V_3,
-           class [System.Runtime]System.Exception V_4)
-  IL_0000:  ldarg.0
-  IL_0001:  ldfld      int32 Program/'<<<Main>$>g__MyYield|0_2>d'::'<>1__state'
-  IL_0006:  stloc.0
-  .try
-  {
-    IL_0007:  ldloc.0
-    IL_0008:  brfalse.s  IL_0041
-    IL_000a:  call       valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable [System.Runtime]System.Threading.Tasks.Task::Yield()
-    IL_000f:  stloc.3
-    IL_0010:  ldloca.s   V_3
-    IL_0012:  call       instance valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable::GetAwaiter()
-    IL_0017:  stloc.2
-    IL_0018:  ldloca.s   V_2
-    IL_001a:  call       instance bool [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter::get_IsCompleted()
-    IL_001f:  brtrue.s   IL_005d
-    IL_0021:  ldarg.0
-    IL_0022:  ldc.i4.0
-    IL_0023:  dup
-    IL_0024:  stloc.0
-    IL_0025:  stfld      int32 Program/'<<<Main>$>g__MyYield|0_2>d'::'<>1__state'
-    IL_002a:  ldarg.0
-    IL_002b:  ldloc.2
-    IL_002c:  stfld      valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter Program/'<<<Main>$>g__MyYield|0_2>d'::'<>u__1'
-    IL_0031:  ldarg.0
-    IL_0032:  ldflda     valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32> Program/'<<<Main>$>g__MyYield|0_2>d'::'<>t__builder'
-    IL_0037:  ldloca.s   V_2
-    IL_0039:  ldarg.0
-    IL_003a:  call       instance void valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32>::AwaitUnsafeOnCompleted<valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter,valuetype Program/'<<<Main>$>g__MyYield|0_2>d'>(!!0&,
-                                                                                                                                                                                                                                                                                               !!1&)
-    IL_003f:  leave.s    IL_0095
-    IL_0041:  ldarg.0
-    IL_0042:  ldfld      valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter Program/'<<<Main>$>g__MyYield|0_2>d'::'<>u__1'
-    IL_0047:  stloc.2
-    IL_0048:  ldarg.0
-    IL_0049:  ldflda     valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter Program/'<<<Main>$>g__MyYield|0_2>d'::'<>u__1'
-    IL_004e:  initobj    [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter
-    IL_0054:  ldarg.0
-    IL_0055:  ldc.i4.m1
-    IL_0056:  dup
-    IL_0057:  stloc.0
-    IL_0058:  stfld      int32 Program/'<<<Main>$>g__MyYield|0_2>d'::'<>1__state'
-    IL_005d:  ldloca.s   V_2
-    IL_005f:  call       instance void [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter::GetResult()
-    IL_0064:  ldc.i4.0
-    IL_0065:  stloc.1
-    IL_0066:  leave.s    IL_0081
-  }  // end .try
-  catch [System.Runtime]System.Exception 
-  {
-    IL_0068:  stloc.s    V_4
-    IL_006a:  ldarg.0
-    IL_006b:  ldc.i4.s   -2
-    IL_006d:  stfld      int32 Program/'<<<Main>$>g__MyYield|0_2>d'::'<>1__state'
-    IL_0072:  ldarg.0
-    IL_0073:  ldflda     valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32> Program/'<<<Main>$>g__MyYield|0_2>d'::'<>t__builder'
-    IL_0078:  ldloc.s    V_4
-    IL_007a:  call       instance void valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32>::SetException(class [System.Runtime]System.Exception)
-    IL_007f:  leave.s    IL_0095
-  }  // end handler
-  IL_0081:  ldarg.0
-  IL_0082:  ldc.i4.s   -2
-  IL_0084:  stfld      int32 Program/'<<<Main>$>g__MyYield|0_2>d'::'<>1__state'
-  IL_0089:  ldarg.0
-  IL_008a:  ldflda     valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32> Program/'<<<Main>$>g__MyYield|0_2>d'::'<>t__builder'
-  IL_008f:  ldloc.1
-  IL_0090:  call       instance void valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32>::SetResult(!0)
-  IL_0095:  ret
-} // end of method '<<<Main>$>g__MyYield|0_2>d'::MoveNext
-.method private hidebysig newslot virtual final 
-        instance void  SetStateMachine(class [System.Runtime]System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) cil managed
-{
-  .custom instance void [System.Runtime]System.Diagnostics.DebuggerHiddenAttribute::.ctor() = ( 01 00 00 00 ) 
-  .param [1]
-  .custom instance void System.Runtime.CompilerServices.NullableAttribute::.ctor(uint8) = ( 01 00 01 00 00 ) 
-  .override [System.Runtime]System.Runtime.CompilerServices.IAsyncStateMachine::SetStateMachine
-  // Code size       13 (0xd)
-  .maxstack  8
-  IL_0000:  ldarg.0
-  IL_0001:  ldflda     valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32> Program/'<<<Main>$>g__MyYield|0_2>d'::'<>t__builder'
-  IL_0006:  ldarg.1
-  IL_0007:  call       instance void valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32>::SetStateMachine(class [System.Runtime]System.Runtime.CompilerServices.IAsyncStateMachine)
-  IL_000c:  ret
-} // end of method '<<<Main>$>g__MyYield|0_2>d'::SetStateMachine
-} // end of class '<<<Main>$>g__MyYield|0_2>d'
-
-.method assembly hidebysig static class [System.Runtime]System.Threading.Tasks.Task`1<int32> 
-        '<<Main>$>g__MyYield|0_2'() cil managed
-{
-  .custom instance void System.Runtime.CompilerServices.NullableContextAttribute::.ctor(uint8) = ( 01 00 01 00 00 ) 
-  .custom instance void [System.Runtime]System.Runtime.CompilerServices.AsyncStateMachineAttribute::.ctor(class [System.Runtime]System.Type) = ( 01 00 22 50 72 6F 67 72 61 6D 2B 3C 3C 3C 4D 61   // .."Program+<<<Ma
-                                                                                                                                                 69 6E 3E 24 3E 67 5F 5F 4D 79 59 69 65 6C 64 7C   // in>$>g__MyYield|
-                                                                                                                                                 30 5F 32 3E 64 00 00 )                            // 0_2>d..
-  .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
-  // Code size       47 (0x2f)
-  .maxstack  2
-  .locals init (valuetype Program/'<<<Main>$>g__MyYield|0_2>d' V_0)
-  IL_0000:  ldloca.s   V_0
-  IL_0002:  call       valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<!0> valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32>::Create()
-  IL_0007:  stfld      valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32> Program/'<<<Main>$>g__MyYield|0_2>d'::'<>t__builder'
-  IL_000c:  ldloca.s   V_0
-  IL_000e:  ldc.i4.m1
-  IL_000f:  stfld      int32 Program/'<<<Main>$>g__MyYield|0_2>d'::'<>1__state'
-  IL_0014:  ldloca.s   V_0
-  IL_0016:  ldflda     valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32> Program/'<<<Main>$>g__MyYield|0_2>d'::'<>t__builder'
-  IL_001b:  ldloca.s   V_0
-  IL_001d:  call       instance void valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32>::Start<valuetype Program/'<<<Main>$>g__MyYield|0_2>d'>(!!0&)
-  IL_0022:  ldloca.s   V_0
-  IL_0024:  ldflda     valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32> Program/'<<<Main>$>g__MyYield|0_2>d'::'<>t__builder'
-  IL_0029:  call       instance class [System.Runtime]System.Threading.Tasks.Task`1<!0> valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1<int32>::get_Task()
-  IL_002e:  ret
-} // end of method Program::'<<Main>$>g__MyYield|0_2'
 
 } // end of class Program
 

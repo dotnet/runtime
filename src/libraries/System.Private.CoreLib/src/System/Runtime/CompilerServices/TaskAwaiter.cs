@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace System.Runtime.CompilerServices
 {
     /// <summary>Provides an awaiter for awaiting a <see cref="Task"/>.</summary>
-    public readonly struct TaskAwaiter : ICriticalNotifyCompletion, ITaskAwaiter
+    public readonly struct TaskAwaiter : ICriticalNotifyCompletion2, ITaskAwaiter
     {
         // WARNING: Unsafe.As is used to access the generic TaskAwaiter<> as TaskAwaiter.
         // Its layout must remain the same.
@@ -283,7 +283,7 @@ namespace System.Runtime.CompilerServices
     }
 
     /// <summary>Provides an awaiter for awaiting a <see cref="Task{TResult}"/>.</summary>
-    public readonly struct TaskAwaiter<TResult> : ICriticalNotifyCompletion, ITaskAwaiter
+    public readonly struct TaskAwaiter<TResult> : ICriticalNotifyCompletion2<TResult>, ITaskAwaiter
     {
         // WARNING: Unsafe.As is used to access TaskAwaiter<> as the non-generic TaskAwaiter.
         // Its layout must remain the same.
@@ -376,7 +376,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredTaskAwaitable"/>.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion, IConfiguredTaskAwaiter
+        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion2, IConfiguredTaskAwaiter
         {
             // WARNING: Unsafe.As is used to access the generic ConfiguredTaskAwaiter as this.
             // Its layout must remain the same.
@@ -458,7 +458,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredTaskAwaitable{TResult}"/>.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion, IConfiguredTaskAwaiter
+        public readonly struct ConfiguredTaskAwaiter : ICriticalNotifyCompletion2<TResult>, IConfiguredTaskAwaiter
         {
             // WARNING: Unsafe.As is used to access this as the non-generic ConfiguredTaskAwaiter.
             // Its layout must remain the same.

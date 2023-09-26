@@ -115,5 +115,166 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static bool IsKnownConstant(int t) => false;
 #pragma warning restore IDE0060
+
+        // TODO, this method should be marked so that it is only callable from a runtime async method
+        public static TResult UnsafeAwaitAwaiterFromRuntimeAsync<TResult, TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion2<TResult>
+        {
+            if (!awaiter.IsCompleted)
+            {
+                // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
+                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
+                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
+                // it will resume with a return value of null.
+                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate();
+                if (resumption != null)
+                {
+                    // We are trying to suspend
+                    bool threwException = true;
+                    try
+                    {
+                        // Call the UnsafeOnCompleted api under a try block, as registering the suspension may cause
+                        // an exception to occur.
+                        awaiter.UnsafeOnCompleted(resumption);
+                        threwException = false;
+                    }
+                    finally
+                    {
+                        // If UnsafeOnCompleted itself threw, we should bubble the error up, but we need
+                        // to destroy any allocated tasklets that were created as part of the GetOrCreateResumptionDelegate api
+                        // as that state will never be useable.
+                        if (threwException)
+                            RuntimeHelpers.AbortSuspend();
+                    }
+                    // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
+                    // and return from GetOrCreateResumptionDelegate with a null return value.
+                    RuntimeHelpers.SuspendIfSuspensionNotAborted();
+                }
+            }
+
+            // Get the result from the awaiter, or throw the exception stored in the Task
+            return awaiter.GetResult();
+        }
+
+        // TODO, this method should be marked so that it is only callable from a runtime async method
+        public static TResult AwaitAwaiterFromRuntimeAsync<TResult, TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion2<TResult>
+        {
+            if (!awaiter.IsCompleted)
+            {
+                // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
+                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
+                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
+                // it will resume with a return value of null.
+                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate();
+                if (resumption != null)
+                {
+                    // We are trying to suspend
+                    bool threwException = true;
+                    try
+                    {
+                        // Call the OnCompleted api under a try block, as registering the suspension may cause
+                        // an exception to occur.
+                        awaiter.OnCompleted(resumption);
+                        threwException = false;
+                    }
+                    finally
+                    {
+                        // If OnCompleted itself threw, we should bubble the error up, but we need
+                        // to destroy any allocated tasklets that were created as part of the GetOrCreateResumptionDelegate api
+                        // as that state will never be useable.
+                        if (threwException)
+                            RuntimeHelpers.AbortSuspend();
+                    }
+                    // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
+                    // and return from GetOrCreateResumptionDelegate with a null return value.
+                    RuntimeHelpers.SuspendIfSuspensionNotAborted();
+                }
+            }
+
+            // Get the result from the awaiter, or throw the exception stored in the Task
+            return awaiter.GetResult();
+
+        }
+
+        // TODO, this method should be marked so that it is only callable from a runtime async method
+        public static void UnsafeAwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion2
+        {
+            if (!awaiter.IsCompleted)
+            {
+                // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
+                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
+                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
+                // it will resume with a return value of null.
+                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate();
+                if (resumption != null)
+                {
+                    // We are trying to suspend
+                    bool threwException = true;
+                    try
+                    {
+                        // Call the UnsafeOnCompleted api under a try block, as registering the suspension may cause
+                        // an exception to occur.
+                        awaiter.UnsafeOnCompleted(resumption);
+                        threwException = false;
+                    }
+                    finally
+                    {
+                        // If UnsafeOnCompleted itself threw, we should bubble the error up, but we need
+                        // to destroy any allocated tasklets that were created as part of the GetOrCreateResumptionDelegate api
+                        // as that state will never be useable.
+                        if (threwException)
+                            RuntimeHelpers.AbortSuspend();
+                    }
+                    // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
+                    // and return from GetOrCreateResumptionDelegate with a null return value.
+                    RuntimeHelpers.SuspendIfSuspensionNotAborted();
+                }
+            }
+
+            // Get the result from the awaiter, or throw the exception stored in the Task
+            awaiter.GetResult();
+        }
+
+        // TODO, this method should be marked so that it is only callable from a runtime async method
+        public static void AwaitAwaiterFromRuntimeAsync<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion2
+        {
+            if (!awaiter.IsCompleted)
+            {
+                // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
+                // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
+                // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
+                // it will resume with a return value of null.
+                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate();
+                if (resumption != null)
+                {
+                    // We are trying to suspend
+                    bool threwException = true;
+                    try
+                    {
+                        // Call the OnCompleted api under a try block, as registering the suspension may cause
+                        // an exception to occur.
+                        awaiter.OnCompleted(resumption);
+                        threwException = false;
+                    }
+                    finally
+                    {
+                        // If OnCompleted itself threw, we should bubble the error up, but we need
+                        // to destroy any allocated tasklets that were created as part of the GetOrCreateResumptionDelegate api
+                        // as that state will never be useable.
+                        if (threwException)
+                            RuntimeHelpers.AbortSuspend();
+                    }
+                    // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
+                    // and return from GetOrCreateResumptionDelegate with a null return value.
+                    RuntimeHelpers.SuspendIfSuspensionNotAborted();
+                }
+            }
+
+            // Get the result from the awaiter, or throw the exception stored in the Task
+            awaiter.GetResult();
+        }
+
+        private static void SuspendIfSuspensionNotAborted() {}
+        private static Action? GetOrCreateResumptionDelegate() { return null; }
+        private static void AbortSuspend() {}
     }
 }
