@@ -46,11 +46,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					return RequireAll (GetUnknown ());
 				});
 
+			// When analyzer visits the lambda, its containing symbol is the compiler-generated
+			// backing field of the property, not the property itself.
+			Func<int> PropertyWithReturnStatementInInitializer { get; } =
+			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
+			() => {
+				return RequireAll (GetUnknown ());
+			};
+
+			// For property accessors, the containing symbol is the accessor method.
+			Func<int> PropertyWithReturnStatementInGetter =>
+			[ExpectedWarning ("IL2072", nameof (GetUnknown), nameof (RequireAll))]
+			() => {
+				return RequireAll (GetUnknown ());
+			};
+
 			static int Execute(Func<int> f) => f();
 
 			public static void Test ()
 			{
-				new DataFlowInConstructor ();
+				var instance = new DataFlowInConstructor ();
+				var _ = instance.PropertyWithReturnStatementInGetter;
 			}
 		}
 
