@@ -122,6 +122,7 @@ namespace System.Threading
         private const int SpinWaitCoopThreshold = 1024;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SpinWait")]
+        [SuppressGCTransition]
         private static partial void SpinWaitInternal(int iterations);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SpinWait")]
