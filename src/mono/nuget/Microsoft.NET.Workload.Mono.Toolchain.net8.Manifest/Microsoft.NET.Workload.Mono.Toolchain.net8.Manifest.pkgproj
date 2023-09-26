@@ -11,21 +11,17 @@
 
     <!-- Override the id to include the sdk band as per the workload installer spec -->
     <PropertyGroup>
-      <Id>Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest-$(SdkBandVersionForWorkload_FromRuntimeVersions)</Id>
+      <Id>Microsoft.NET.Workload.Mono.ToolChain.net8.Manifest-$(SdkBandVersionForWorkload_FromRuntimeVersions)</Id>
     </PropertyGroup>
 
     <PropertyGroup>
       <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
       <WorkloadManifestTargetsPath>$(IntermediateOutputPath)WorkloadManifest.targets</WorkloadManifestTargetsPath>
-      <WorkloadManifestWasiTargetsPath>$(IntermediateOutputPath)WorkloadManifest.Wasi.targets</WorkloadManifestWasiTargetsPath>
-      <WorkloadManifestTelemetryTargetsPath>$(MSBuildThisFileDirectory)WorkloadTelemetry.targets</WorkloadManifestTelemetryTargetsPath>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestTargetsPath)" TargetPath="data" />
-      <PackageFile Include="$(WorkloadManifestWasiTargetsPath)" TargetPath="data" />
-      <PackageFile Include="$(WorkloadManifestTelemetryTargetsPath)" TargetPath="data" />
     </ItemGroup>
 
     <ItemGroup>
@@ -43,14 +39,14 @@
 
     <ItemGroup>
       <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
-      <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
       <_WorkloadManifestValues Include="PackageVersionNet8" Value="$(PackageVersionNet8)" Condition="'$(PackageVersionNet8)' != ''" />
       <_WorkloadManifestValues Include="PackageVersionNet8" Value="$(PackageVersion)" Condition="'$(PackageVersionNet8)' == ''" />
-      <_WorkloadManifestValues Include="PackageVersionNet7" Value="$(PackageVersionNet7)" />
-      <_WorkloadManifestValues Include="PackageVersionNet6" Value="$(PackageVersionNet6)" />
-      <_WorkloadManifestValues Include="NetCoreAppCurrent" Value="$(NetCoreAppCurrent)" />
       <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
+      <_WorkloadManifestValues Include="NetCoreAppCurrent" Value="$(NetCoreAppCurrent)" />
     </ItemGroup>
+
+    <Error Condition="'%(_WorkloadManifestValues.Value)' == ''"
+           Text="No version specified for template variable '%(_WorkloadManifestValues.Identity)'" />
 
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.json.in"
@@ -61,11 +57,6 @@
       TemplateFile="WorkloadManifest.targets.in"
       Properties="@(_WorkloadManifestValues)"
       OutputPath="$(WorkloadManifestTargetsPath)" />
-
-    <GenerateFileFromTemplate
-      TemplateFile="WorkloadManifest.Wasi.targets.in"
-      Properties="@(_WorkloadManifestValues)"
-      OutputPath="$(WorkloadManifestWasiTargetsPath)" />
   </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
