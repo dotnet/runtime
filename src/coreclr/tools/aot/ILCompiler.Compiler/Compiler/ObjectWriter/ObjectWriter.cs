@@ -37,7 +37,7 @@ namespace ILCompiler.ObjectWriter
 
         // Standard sections
         private Dictionary<(string, string), int> _sectionNameToSectionIndex = new();
-        private List<Stream> _sectionIndexToStream = new();
+        private List<ObjectWriterStream> _sectionIndexToStream = new();
         private List<List<SymbolicRelocation>> _sectionIndexToRelocations = new();
 
         // Symbol table
@@ -70,18 +70,19 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected abstract void CreateSection(ObjectNodeSection section, out Stream sectionStream);
+        protected abstract void CreateSection(ObjectNodeSection section, Stream sectionStream);
 
         protected internal abstract void UpdateSectionAlignment(int sectionIndex, int alignment);
 
         protected SectionWriter GetOrCreateSection(ObjectNodeSection section)
         {
             int sectionIndex;
-            Stream sectionStream;
+            ObjectWriterStream sectionStream;
 
             if (!_sectionNameToSectionIndex.TryGetValue((section.Name, section.ComdatName), out sectionIndex))
             {
-                CreateSection(section, out sectionStream);
+                sectionStream = new ObjectWriterStream(section.Type == SectionType.Executable ? _insPaddingByte : (byte)0);
+                CreateSection(section, sectionStream);
                 sectionIndex = _sectionNameToSectionIndex.Count;
                 _sectionNameToSectionIndex.Add((section.Name, section.ComdatName), sectionIndex);
                 _sectionIndexToStream.Add(sectionStream);
@@ -95,8 +96,7 @@ namespace ILCompiler.ObjectWriter
             return new SectionWriter(
                 this,
                 sectionIndex,
-                sectionStream,
-                section.Type == SectionType.Executable ? _insPaddingByte : (byte)0);
+                sectionStream);
         }
 
         protected bool ShouldShareSymbol(ObjectNode node)

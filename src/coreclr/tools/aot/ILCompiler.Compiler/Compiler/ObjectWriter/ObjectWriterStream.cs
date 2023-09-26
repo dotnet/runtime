@@ -15,7 +15,7 @@ namespace ILCompiler.ObjectWriter
     /// Implements a stream of chained buffers. It supports appending existing
     /// read-only buffers without copying.
     /// </remarks>
-    internal sealed class ObjectWriterStream : Stream
+    public sealed class ObjectWriterStream : Stream
     {
         private ArrayBufferWriter<byte> _appendBuffer = new();
         private List<ReadOnlyMemory<byte>> _buffers = new();
@@ -60,6 +60,11 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
             }
+        }
+
+        public ObjectWriterStream(byte paddingByte)
+        {
+            _padding.AsSpan().Fill(paddingByte);
         }
 
         public override void Flush()

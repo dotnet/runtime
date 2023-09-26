@@ -56,13 +56,11 @@ namespace ILCompiler.ObjectWriter
             _symbolTable = new ElfSymbolTable { Link = stringSection };
         }
 
-        protected override void CreateSection(ObjectNodeSection section, out Stream sectionStream)
+        protected override void CreateSection(ObjectNodeSection section, Stream sectionStream)
         {
             string sectionName =
                 section.Name == "rdata" ? ".rodata" :
                 (section.Name.StartsWith("_") || section.Name.StartsWith(".") ? section.Name : "." + section.Name);
-
-            sectionStream = new ObjectWriterStream();
 
             if (section.Type == SectionType.Uninitialized)
             {
