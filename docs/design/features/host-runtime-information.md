@@ -90,7 +90,7 @@ Hex string representation of a function pointer. It is set when running a single
 
 Indicates whether or not [`hostpolicy`](./host-components.md#host-policy) is embedded in the host executable. It is set to `true` when running a self-contained single-file application.
 
-**.NET 9 and above**  This property is no longer set by the host. Self-contained single-file includes both host and runtime components in the executable, so the information is known at build-time.
+**.NET 9 and above**  This property is no longer set by the host or read by the runtime. Self-contained single-file includes both host and runtime components in the executable, so the information is known at build-time.
 
 `PINVOKE_OVERRIDE`
 
