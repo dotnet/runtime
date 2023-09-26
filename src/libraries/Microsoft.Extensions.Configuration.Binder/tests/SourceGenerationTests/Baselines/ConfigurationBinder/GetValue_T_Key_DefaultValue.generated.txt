@@ -51,13 +51,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (type == typeof(int))
             {
-                return ParseInt32(value, () => section.Path);
+                return ParseInt(value, () => section.Path);
             }
 
             return null;
         }
 
-        public static int ParseInt32(string value, Func<string?> getPath)
+        public static int ParseInt(string value, Func<string?> getPath)
         {
             try
             {

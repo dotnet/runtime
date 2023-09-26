@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -90,28 +92,33 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 }
             }
         }
+    }
 
-        internal struct ConfigBindingGenRunResult
-        {
-            public required Compilation OutputCompilation { get; init; }
+    internal struct ConfigBindingGenRunResult
+    {
+        public required Compilation OutputCompilation { get; init; }
 
-            public required GeneratedSourceResult? GeneratedSource { get; init; }
+        public required GeneratedSourceResult? GeneratedSource { get; init; }
 
-            /// <summary>
-            /// Diagnostics produced by the generator alone. Doesn't include any from other build participants.
-            /// </summary>
-            public required ImmutableArray<Diagnostic> Diagnostics { get; init; }
+        /// <summary>
+        /// Diagnostics produced by the generator alone. Doesn't include any from other build participants.
+        /// </summary>
+        public required ImmutableArray<Diagnostic> Diagnostics { get; init; }
 
-            public required ImmutableArray<IncrementalGeneratorRunStep> TrackedSteps { get; init; }
+        public required ImmutableArray<IncrementalGeneratorRunStep> TrackedSteps { get; init; }
 
-            public required SourceGenerationSpec? GenerationSpec { get; init; }
-        }
+        public required SourceGenerationSpec? GenerationSpec { get; init; }
+    }
+
+    internal enum ExpectedDiagnostics
+    {
+        None,
+        FromGeneratorOnly,
     }
 
     internal static class ConfigBindingGenTestDriverExtensions
     {
-        public static void ValidateIncrementalResult(
-            this ConfigurationBindingGeneratorTests.ConfigBindingGenRunResult result,
+        public static void ValidateIncrementalResult(this ConfigBindingGenRunResult result,
             IncrementalStepRunReason inputReason,
             IncrementalStepRunReason outputReason)
         {
@@ -120,6 +127,30 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 Assert.Collection(step.Inputs, source => Assert.Equal(inputReason, source.Source.Outputs[source.OutputIndex].Reason));
                 Assert.Collection(step.Outputs, output => Assert.Equal(outputReason, output.Reason));
             });
+        }
+
+        public static void ValidateDiagnostics(this ConfigBindingGenRunResult result, ExpectedDiagnostics expectedDiags)
+        {
+            ImmutableArray<Diagnostic> outputDiagnostics = result.OutputCompilation.GetDiagnostics();
+
+            if (expectedDiags is ExpectedDiagnostics.None)
+            {
+                foreach (Diagnostic diagnostic in outputDiagnostics)
+                {
+                    Assert.True(
+                        IsPermitted(diagnostic),
+                        $"Generator caused dagnostic in output compilation: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}.");
+                }
+            }
+            else
+            {
+                Debug.Assert(expectedDiags is ExpectedDiagnostics.FromGeneratorOnly);
+
+                Assert.NotEmpty(result.Diagnostics);
+                Assert.False(outputDiagnostics.Any(diag => !IsPermitted(diag)));
+            }
+
+            static bool IsPermitted(Diagnostic diagnostic) => diagnostic.Severity <= DiagnosticSeverity.Info;
         }
     }
 }

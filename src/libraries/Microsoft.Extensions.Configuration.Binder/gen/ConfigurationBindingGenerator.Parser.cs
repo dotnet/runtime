@@ -155,11 +155,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (_createdTypeSpecs.TryGetValue(memberTypeSymbol, out TypeSpec? memberTypeSpec))
                 {
-                    if (memberTypeSpec is UnsupportedTypeSpec unsupportedTypeSpec)
-                    {
-                        RecordDiagnostic(unsupportedTypeSpec, memberTypeParseInfo);
-                    }
-
+                    RecordTypeDiagnosticIfRequired(memberTypeParseInfo, memberTypeSpec);
                     return memberTypeSpec.TypeRef;
                 }
 
@@ -207,6 +203,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     spec = CreateUnsupportedTypeSpec(typeParseInfo, NotSupportedReason.UnknownType);
                 }
+
+                RecordTypeDiagnosticIfRequired(typeParseInfo, spec);
 
                 return spec;
             }
@@ -566,7 +564,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (initDiagDescriptor is not null)
                 {
                     Debug.Assert(initExceptionMessage is not null);
-                    RecordDiagnostic(typeParseInfo, initDiagDescriptor);
+                    RecordTypeDiagnostic(typeParseInfo, initDiagDescriptor);
                 }
 
                 Dictionary<string, PropertySpec>? properties = null;
@@ -652,20 +650,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return new ObjectSpec(
                     typeSymbol,
                     initializationStrategy,
-                    properties: properties?.Values.OrderBy(p => p.Name).ToImmutableEquatableArray(),
+                    properties: properties?.Values.ToImmutableEquatableArray(),
                     constructorParameters: ctorParams?.ToImmutableEquatableArray(),
                     initExceptionMessage);
             }
 
-            private UnsupportedTypeSpec CreateUnsupportedTypeSpec(TypeParseInfo typeParseInfo, NotSupportedReason reason)
-            {
-                UnsupportedTypeSpec type = new(typeParseInfo.TypeSymbol) { NotSupportedReason = reason };
-                RecordDiagnostic(type, typeParseInfo);
-                return type;
-            }
-
-            private UnsupportedTypeSpec CreateUnsupportedCollectionSpec(TypeParseInfo typeParseInfo)
+            private static UnsupportedTypeSpec CreateUnsupportedCollectionSpec(TypeParseInfo typeParseInfo)
                 => CreateUnsupportedTypeSpec(typeParseInfo, NotSupportedReason.CollectionNotSupported);
+
+            private static UnsupportedTypeSpec CreateUnsupportedTypeSpec(TypeParseInfo typeParseInfo, NotSupportedReason reason) =>
+                new(typeParseInfo.TypeSymbol) { NotSupportedReason = reason };
 
             private bool TryGetElementType(INamedTypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? elementType)
             {
@@ -803,26 +797,43 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static bool IsEnum(ITypeSymbol type) => type is INamedTypeSymbol { EnumUnderlyingType: INamedTypeSymbol { } };
 
-            private void RecordDiagnostic(UnsupportedTypeSpec type, TypeParseInfo typeParseInfo)
+            private void RecordTypeDiagnosticIfRequired(TypeParseInfo typeParseInfo, TypeSpec typeSpec)
             {
-                DiagnosticDescriptor descriptor = DiagnosticDescriptors.GetNotSupportedDescriptor(type.NotSupportedReason);
-                RecordDiagnostic(typeParseInfo, descriptor);
+                ContainingTypeDiagnosticInfo? containingTypeDiagInfo = typeParseInfo.ContainingTypeDiagnosticInfo;
+
+                if (typeSpec is UnsupportedTypeSpec unsupportedTypeSpec)
+                {
+                    DiagnosticDescriptor descriptor = DiagnosticDescriptors.GetNotSupportedDescriptor(unsupportedTypeSpec.NotSupportedReason);
+                    RecordTypeDiagnostic(typeParseInfo, descriptor);
+                }
+                else if (containingTypeDiagInfo?.Descriptor == DiagnosticDescriptors.DictionaryKeyNotSupported &&
+                    typeSpec is not ParsableFromStringSpec)
+                {
+                    ReportContainingTypeDiagnosticIfRequired(typeParseInfo);
+                }
             }
 
-            private void RecordDiagnostic(TypeParseInfo typeParseInfo, DiagnosticDescriptor descriptor)
+            private void RecordTypeDiagnostic(TypeParseInfo typeParseInfo, DiagnosticDescriptor descriptor)
             {
-                string typeName = typeParseInfo.TypeSymbol.GetName();
-                Location invocationLocation = typeParseInfo.BinderInvocation.Location;
+                RecordDiagnostic(descriptor, typeParseInfo.BinderInvocation.Location, new object?[] { typeParseInfo.TypeName });
+                ReportContainingTypeDiagnosticIfRequired(typeParseInfo);
+            }
 
-                RecordDiagnostic(descriptor, invocationLocation, new object?[] { typeName });
+            private void ReportContainingTypeDiagnosticIfRequired(TypeParseInfo typeParseInfo)
+            {
+                ContainingTypeDiagnosticInfo? containingTypeDiagInfo = typeParseInfo.ContainingTypeDiagnosticInfo;
 
-                if (typeParseInfo.ContainingTypeDiagnosticInfo is ContainingTypeDiagnosticInfo containingTypeDiagInfo)
+                while (containingTypeDiagInfo is not null)
                 {
-                    object[] messageArgs = containingTypeDiagInfo.MemberName is string memberName
-                        ? new[] { memberName, typeName }
-                        : new[] { typeName };
+                    string containingTypeName = containingTypeDiagInfo.TypeName;
 
-                    RecordDiagnostic(containingTypeDiagInfo.Descriptor, invocationLocation, messageArgs);
+                    object[] messageArgs = containingTypeDiagInfo.MemberName is string memberName
+                        ? new[] { memberName, containingTypeName }
+                        : new[] { containingTypeName };
+
+                    RecordDiagnostic(containingTypeDiagInfo.Descriptor, typeParseInfo.BinderInvocation.Location, messageArgs);
+
+                    containingTypeDiagInfo = containingTypeDiagInfo.ContainingTypeInfo;
                 }
             }
 

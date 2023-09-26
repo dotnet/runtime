@@ -39,17 +39,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             TypeName = TypeName,
                             Descriptor = diagDescriptor,
                             MemberName = memberName,
+                            ContainingTypeInfo = ContainingTypeDiagnosticInfo,
                         };
 
                     return Create(memberType, BindingOverload, BinderInvocation, diagnosticInfo);
                 }
             }
 
-            private readonly struct ContainingTypeDiagnosticInfo
+            private sealed class ContainingTypeDiagnosticInfo
             {
                 public required string TypeName { get; init; }
                 public required string? MemberName { get; init; }
                 public required DiagnosticDescriptor Descriptor { get; init; }
+                public required ContainingTypeDiagnosticInfo? ContainingTypeInfo { get; init; }
             }
         }
     }

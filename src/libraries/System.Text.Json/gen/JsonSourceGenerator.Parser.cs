@@ -11,7 +11,6 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
@@ -61,7 +60,7 @@ namespace System.Text.Json.SourceGeneration
                     location = _contextClassLocation;
                 }
 
-                Diagnostics.Add(DiagnosticInfo.Create(descriptor, location, messageArgs ?? Array.Empty<object?>()));
+                Diagnostics.Add(DiagnosticInfo.Create(descriptor, location, messageArgs));
             }
 
             public Parser(KnownTypeSymbols knownSymbols)
