@@ -251,10 +251,12 @@ static void GetVersionedLibFileName(const char* baseFileName, int majorVer, int 
 
     if (minorVer != -1)
     {
-        nameLen += snprintf(result + nameLen, VERSIONED_LIB_NAME_LEN - nameLen, ".%d", minorVer);
+        assert(nameLen <= VERSIONED_LIB_NAME_LEN);
+        nameLen += snprintf(result + nameLen, (size_t)(VERSIONED_LIB_NAME_LEN - nameLen), ".%d", minorVer);
         if (subVer != -1)
         {
-            snprintf(result + nameLen, VERSIONED_LIB_NAME_LEN - nameLen, ".%d", subVer);
+            assert(nameLen <= VERSIONED_LIB_NAME_LEN);
+            snprintf(result + nameLen, (size_t)(VERSIONED_LIB_NAME_LEN - nameLen), ".%d", subVer);
         }
     }
 }
