@@ -368,44 +368,46 @@ namespace System.Numerics.Tensors
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
                 Vector512<float> resultVector = Vector512.LoadUnsafe(ref xRef, 0), current;
-                if (Vector512.EqualsAll(resultVector, resultVector))
+                if (!Vector512.EqualsAll(resultVector, resultVector))
                 {
-                    int oneVectorFromEnd = x.Length - Vector512<float>.Count;
-
-                    // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
-                    i = Vector512<float>.Count;
-                    do
-                    {
-                        // Load the next vector, and early exit on NaN.
-                        current = Vector512.LoadUnsafe(ref xRef, (uint)i);
-                        if (!Vector512.EqualsAll(current, current))
-                        {
-                            goto Scalar;
-                        }
-
-                        resultVector = TMinMax.Invoke(resultVector, current);
-                        i += Vector512<float>.Count;
-                    }
-                    while (i <= oneVectorFromEnd);
-
-                    // If any elements remain, handle them in one final vector.
-                    if (i != x.Length)
-                    {
-                        current = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count));
-                        if (!Vector512.EqualsAll(current, current))
-                        {
-                            goto Scalar;
-                        }
-
-                        resultVector = TMinMax.Invoke(resultVector, current);
-                    }
-
-                    // Aggregate the lanes in the vector to create the final scalar result.
-                    return TMinMax.Invoke(resultVector);
+                    return GetFirstNaN(resultVector);
                 }
+
+                int oneVectorFromEnd = x.Length - Vector512<float>.Count;
+
+                // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
+                i = Vector512<float>.Count;
+                do
+                {
+                    // Load the next vector, and early exit on NaN.
+                    current = Vector512.LoadUnsafe(ref xRef, (uint)i);
+                    if (!Vector512.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                    i += Vector512<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // If any elements remain, handle them in one final vector.
+                if (i != x.Length)
+                {
+                    current = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count));
+                    if (!Vector512.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                }
+
+                // Aggregate the lanes in the vector to create the final scalar result.
+                return TMinMax.Invoke(resultVector);
             }
-            else
 #endif
+
             if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count * 2)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
@@ -413,89 +415,92 @@ namespace System.Numerics.Tensors
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
                 Vector256<float> resultVector = Vector256.LoadUnsafe(ref xRef, 0), current;
-                if (Vector256.EqualsAll(resultVector, resultVector))
+                if (!Vector256.EqualsAll(resultVector, resultVector))
                 {
-                    int oneVectorFromEnd = x.Length - Vector256<float>.Count;
-
-                    // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
-                    i = Vector256<float>.Count;
-                    do
-                    {
-                        // Load the next vector, and early exit on NaN.
-                        current = Vector256.LoadUnsafe(ref xRef, (uint)i);
-                        if (!Vector256.EqualsAll(current, current))
-                        {
-                            goto Scalar;
-                        }
-
-                        resultVector = TMinMax.Invoke(resultVector, current);
-                        i += Vector256<float>.Count;
-                    }
-                    while (i <= oneVectorFromEnd);
-
-                    // If any elements remain, handle them in one final vector.
-                    if (i != x.Length)
-                    {
-                        current = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count));
-                        if (!Vector256.EqualsAll(current, current))
-                        {
-                            goto Scalar;
-                        }
-
-                        resultVector = TMinMax.Invoke(resultVector, current);
-                    }
-
-                    // Aggregate the lanes in the vector to create the final scalar result.
-                    return TMinMax.Invoke(resultVector);
+                    return GetFirstNaN(resultVector);
                 }
+
+                int oneVectorFromEnd = x.Length - Vector256<float>.Count;
+
+                // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
+                i = Vector256<float>.Count;
+                do
+                {
+                    // Load the next vector, and early exit on NaN.
+                    current = Vector256.LoadUnsafe(ref xRef, (uint)i);
+                    if (!Vector256.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                    i += Vector256<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // If any elements remain, handle them in one final vector.
+                if (i != x.Length)
+                {
+                    current = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count));
+                    if (!Vector256.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                }
+
+                // Aggregate the lanes in the vector to create the final scalar result.
+                return TMinMax.Invoke(resultVector);
             }
-            else if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count * 2)
+
+            if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count * 2)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
                 Vector128<float> resultVector = Vector128.LoadUnsafe(ref xRef, 0), current;
-                if (Vector128.EqualsAll(resultVector, resultVector))
+                if (!Vector128.EqualsAll(resultVector, resultVector))
                 {
-                    int oneVectorFromEnd = x.Length - Vector128<float>.Count;
-
-                    // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
-                    i = Vector128<float>.Count;
-                    do
-                    {
-                        // Load the next vector, and early exit on NaN.
-                        current = Vector128.LoadUnsafe(ref xRef, (uint)i);
-                        if (!Vector128.EqualsAll(current, current))
-                        {
-                            goto Scalar;
-                        }
-
-                        resultVector = TMinMax.Invoke(resultVector, current);
-                        i += Vector128<float>.Count;
-                    }
-                    while (i <= oneVectorFromEnd);
-
-                    // If any elements remain, handle them in one final vector.
-                    if (i != x.Length)
-                    {
-                        current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count));
-                        if (!Vector128.EqualsAll(current, current))
-                        {
-                            goto Scalar;
-                        }
-
-                        resultVector = TMinMax.Invoke(resultVector, current);
-                    }
-
-                    // Aggregate the lanes in the vector to create the final scalar result.
-                    return TMinMax.Invoke(resultVector);
+                    return GetFirstNaN(resultVector);
                 }
+
+                int oneVectorFromEnd = x.Length - Vector128<float>.Count;
+
+                // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
+                i = Vector128<float>.Count;
+                do
+                {
+                    // Load the next vector, and early exit on NaN.
+                    current = Vector128.LoadUnsafe(ref xRef, (uint)i);
+                    if (!Vector128.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                    i += Vector128<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // If any elements remain, handle them in one final vector.
+                if (i != x.Length)
+                {
+                    current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count));
+                    if (!Vector128.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                }
+
+                // Aggregate the lanes in the vector to create the final scalar result.
+                return TMinMax.Invoke(resultVector);
             }
 
-            // Scalar path used when either vectorization is not supported, the input is too small to vectorize,
-            // or a NaN is encountered.
-            Scalar:
+            // Scalar path used when either vectorization is not supported or the input is too small to vectorize.
             for (; (uint)i < (uint)x.Length; i++)
             {
                 float current = x[i];
@@ -1267,6 +1272,17 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<float> IsNegative(Vector512<float> vector) =>
             Vector512.LessThan(vector.AsInt32(), Vector512<int>.Zero).AsSingle();
+#endif
+
+        private static float GetFirstNaN(Vector128<float> vector) =>
+            vector[BitOperations.TrailingZeroCount((~Vector128.Equals(vector, vector)).ExtractMostSignificantBits())];
+
+        private static float GetFirstNaN(Vector256<float> vector) =>
+            vector[BitOperations.TrailingZeroCount((~Vector256.Equals(vector, vector)).ExtractMostSignificantBits())];
+
+#if NET8_0_OR_GREATER
+        private static float GetFirstNaN(Vector512<float> vector) =>
+            vector[BitOperations.TrailingZeroCount((~Vector512.Equals(vector, vector)).ExtractMostSignificantBits())];
 #endif
 
         private static float Log2(float x) => MathF.Log2(x);

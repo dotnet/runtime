@@ -217,7 +217,9 @@ namespace System.Numerics.Tensors
                 }
             }
 
-        Scalar:
+            // Scalar path used when either vectorization is not supported, the input is too small to vectorize,
+            // or a NaN is encountered.
+            Scalar:
             for (; (uint)i < (uint)x.Length; i++)
             {
                 float current = x[i];
