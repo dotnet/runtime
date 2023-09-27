@@ -6731,7 +6731,7 @@ GenTree* GenTree::gtGetParent(GenTree*** pUse)
 //                       of the children's flags.
 //
 
-bool GenTree::OperRequiresAsgFlag()
+bool GenTree::OperRequiresAsgFlag() const
 {
     switch (OperGet())
     {
@@ -6769,8 +6769,7 @@ bool GenTree::OperRequiresAsgFlag()
 // OperRequiresCallFlag : Check whether the operation requires GTF_CALL flag regardless
 //                        of the children's flags.
 //
-
-bool GenTree::OperRequiresCallFlag(Compiler* comp)
+bool GenTree::OperRequiresCallFlag(Compiler* comp) const
 {
     switch (gtOper)
     {
@@ -7024,6 +7023,153 @@ bool GenTree::OperMayThrow(Compiler* comp)
     }
 
     return OperExceptions(comp) != ExceptionSetFlags::None;
+}
+
+//------------------------------------------------------------------------------
+// OperRequiresGlobRefFlag : Check whether the operation requires GTF_GLOB_REF
+//                           flag regardless of the children's flags.
+//
+// Arguments:
+//    comp - Compiler instance
+//
+// Return Value:
+//    True if the given operator requires GTF_GLOB_REF
+//
+// Remarks:
+//    Only valid after local morph.
+//
+bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
+{
+    switch (OperGet())
+    {
+        case GT_LCL_VAR:
+        case GT_LCL_FLD:
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+            return comp->lvaGetDesc(AsLclVarCommon())->IsAddressExposed();
+
+        case GT_IND:
+        case GT_BLK:
+            if (AsIndir()->IsInvariantLoad())
+            {
+                return false;
+            }
+            FALLTHROUGH;
+
+        case GT_STOREIND:
+        case GT_STORE_BLK:
+        case GT_STORE_DYN_BLK:
+        case GT_XADD:
+        case GT_XORR:
+        case GT_XAND:
+        case GT_XCHG:
+        case GT_LOCKADD:
+        case GT_CMPXCHG:
+        case GT_MEMORYBARRIER:
+        case GT_KEEPALIVE:
+            return true;
+
+        case GT_CALL:
+            return AsCall()->HasSideEffects(comp, /* ignoreExceptions */ true);
+
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+            return AsHWIntrinsic()->OperRequiresGlobRefFlag();
+#endif // FEATURE_HW_INTRINSICS
+
+        default:
+            assert(!OperRequiresCallFlag(comp) || OperIs(GT_INTRINSIC));
+            assert((!OperIsIndir() || OperIs(GT_NULLCHECK)) && !OperRequiresAsgFlag());
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+// OperSupportsOrderingSideEffect : Check whether the operation supports the
+// GTF_ORDER_SIDEEFF flag.
+//
+// Return Value:
+//   True if the given operator supports GTF_ORDER_SIDEEFF.
+//
+// Remarks:
+//   A node will still have this flag set if an operand has it set, even if the
+//   parent does not support it. This situation indicates that reordering the
+//   parent may be ok as long as it does not break ordering dependencies of the
+//   operand.
+//
+bool GenTree::OperSupportsOrderingSideEffect() const
+{
+    if (TypeIs(TYP_BYREF))
+    {
+        // Forming byrefs may only be legal due to previous checks.
+        return true;
+    }
+
+    switch (OperGet())
+    {
+        case GT_BOUNDS_CHECK:
+        case GT_IND:
+        case GT_BLK:
+        case GT_STOREIND:
+        case GT_STORE_BLK:
+        case GT_STORE_DYN_BLK:
+        case GT_XADD:
+        case GT_XORR:
+        case GT_XAND:
+        case GT_XCHG:
+        case GT_LOCKADD:
+        case GT_CMPXCHG:
+        case GT_MEMORYBARRIER:
+        case GT_CATCH_ARG:
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+#endif
+            return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// OperEffects: Compute effect flags that are relevant to this node only,
+// excluding its children.
+//
+// Arguments:
+//    comp -  Compiler instance
+//
+// Return Value:
+//    The effect flags.
+//
+GenTreeFlags GenTree::OperEffects(Compiler* comp)
+{
+    GenTreeFlags flags = gtFlags & GTF_ALL_EFFECT;
+
+    if (((flags & GTF_ASG) != 0) && !OperRequiresAsgFlag())
+    {
+        flags &= ~GTF_ASG;
+    }
+
+    if (((flags & GTF_CALL) != 0) && !OperRequiresCallFlag(comp))
+    {
+        flags &= ~GTF_CALL;
+    }
+
+    if (((flags & GTF_EXCEPT) != 0) && !OperMayThrow(comp))
+    {
+        flags &= ~GTF_EXCEPT;
+    }
+
+    if (((flags & GTF_GLOB_REF) != 0) && !OperRequiresGlobRefFlag(comp))
+    {
+        flags &= ~GTF_GLOB_REF;
+    }
+
+    if ((flags & GTF_ORDER_SIDEEFF) != 0 && !OperSupportsOrderingSideEffect())
+    {
+        flags &= ~GTF_ORDER_SIDEEFF;
+    }
+
+    return flags;
 }
 
 //-----------------------------------------------------------------------------------
@@ -25343,6 +25489,15 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------------
+// OperRequiresCallFlag : Check whether the operation requires GTF_GLOB_REF flag regardless
+//                        of the children's flags.
+//
+bool GenTreeHWIntrinsic::OperRequiresGlobRefFlag() const
+{
+    return OperIsMemoryLoad() || OperRequiresAsgFlag() || OperRequiresCallFlag();
 }
 
 //------------------------------------------------------------------------
