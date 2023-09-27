@@ -769,7 +769,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         public ICustomDictionary<string> ICustomDictionary { get; set; }
                         public ICustomSet<MyClassWithCustomCollections> ICustomCollection { get; set; }
                         public IReadOnlyList<int> IReadOnlyList { get; set; }
-                        // Diagnostic warning because we don't know how to instantiate the property type.
+                        // Built in collection: diagnostic warning because the key isn't supported for dictionary binding (only string-parsable types are).
                         public IReadOnlyDictionary<MyClassWithCustomCollections, int> UnsupportedIReadOnlyDictionaryUnsupported { get; set; }
                         public IReadOnlyDictionary<string, int> IReadOnlyDictionary { get; set; }
                     }
@@ -802,6 +802,60 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             ImmutableArray<Diagnostic> diagnostics = result.Diagnostics;
             Assert.Equal(3, diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
             Assert.Equal(3, diagnostics.Where(diag => diag.Id == Diagnostics.PropertyNotSupported.Id).Count());
+        }
+
+        [Fact]
+        public async Task DiagnosticsAreSuppressibleWithPragma()
+        {
+            string source = $$"""
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        IConfigurationSection section = config.GetSection("MySection");
+
+                        #pragma warning disable {{Diagnostics.TypeNotSupported.Id}}
+                        #pragma warning disable {{Diagnostics.PropertyNotSupported.Id}}
+                        section.Get<MyClassWithCustomCollections>();
+                        #pragma warning restore {{Diagnostics.TypeNotSupported.Id}}
+                        #pragma warning restore {{Diagnostics.PropertyNotSupported.Id}}
+                    }
+
+                    // Diagnostic warning because we don't know how to instantiate two properties on this type.
+                    public class MyClassWithCustomCollections
+                    {
+                        public string MyString { get; set; }
+                        public ClassWithoutCtor ClassWithoutCtor { get; set; }
+                        public ICustomSet<MyClassWithCustomCollections> ICustomCollection { get; set; }
+                        // Built in collection: diagnostic warning because the key isn't supported for dictionary binding (only string-parsable types are).
+                        public IReadOnlyDictionary<MyClassWithCustomCollections, int> UnsupportedDictionary { get; set; }
+                    }
+
+                    // Diagnostic warning because we don't know how to instantiate this type.
+                    public interface ICustomSet<T> : ISet<T>
+                    {
+                    }
+
+                    public abstract class ClassWithoutCtor { }
+
+                    public interface InterfaceWithoutCtor { }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await VerifyAgainstBaselineUsingFile(
+                "Collections.generated.txt",
+                source,
+                expectedDiags: ExpectedDiagnostics.FromGeneratorOnly);
+
+            foreach (Diagnostic diagnostic in result.Diagnostics)
+            {
+                Assert.True(diagnostic.IsSuppressed);
+            }
         }
 
         [Fact]

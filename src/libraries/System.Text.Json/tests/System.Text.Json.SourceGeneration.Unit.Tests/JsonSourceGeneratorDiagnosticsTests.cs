@@ -601,14 +601,20 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void JsonSerializableAttributeOnNonContextClass()
+        public void JsonSerializableAttributeOnNonContextClass() => JsonSerializableAttributeOnNonContextClassCore(suppressDiagnostics: false);
+
+        private JsonSourceGeneratorResult JsonSerializableAttributeOnNonContextClassCore(bool suppressDiagnostics)
         {
-            Compilation compilation = CompilationHelper.CreateCompilation("""
+            string? GetSuppressionString(string action) => suppressDiagnostics ? $"#pragma warning {action} SYSLIB1224" : null;
+
+            Compilation compilation = CompilationHelper.CreateCompilation($$"""
                 using System.Text.Json.Serialization;
 
                 namespace Application
                 {
+                    {{GetSuppressionString("disable")}}
                     [JsonSerializable(typeof(MyPoco))]
+                    {{GetSuppressionString("restore")}}
                     public partial class MyContext : IDisposable
                     {
                         public void Dispose() { }
@@ -628,6 +634,25 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+
+            bool suppressionStateIsCorrect = suppressDiagnostics;
+            foreach (Diagnostic diagnostic in result.Diagnostics)
+            {
+                Assert.Equal(suppressionStateIsCorrect, diagnostic.IsSuppressed);
+            }
+
+            return result;
+        }
+
+        [Fact]
+        public void DiagnosticsAreSuppressibleWithPragma()
+        {
+            JsonSourceGeneratorResult result = JsonSerializableAttributeOnNonContextClassCore(suppressDiagnostics: true);
+
+            foreach (Diagnostic diagnostic in result.Diagnostics)
+            {
+                Assert.True(diagnostic.IsSuppressed);
+            }
         }
     }
 }

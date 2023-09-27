@@ -4,7 +4,9 @@
 using System;
 using System.Linq;
 using System.Numerics.Hashing;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace SourceGenerators;
 
@@ -14,6 +16,9 @@ namespace SourceGenerators;
 /// </summary>
 internal readonly struct DiagnosticInfo : IEquatable<DiagnosticInfo>
 {
+    private static readonly Lazy<CSharpSyntaxTree?> s_dummySyntaxTree = new Lazy<CSharpSyntaxTree?>(GetDummySyntaxTree);
+    private static readonly Lazy<FieldInfo?> s_sourceTreeBackingFieldInfo = new Lazy<FieldInfo?>(GetSourceTreeBackingFieldInfo);
+
     public DiagnosticDescriptor Descriptor { get; private init; }
     public object?[] MessageArgs { get; private init; }
     public Location? Location { get; private init; }
@@ -30,8 +35,35 @@ internal readonly struct DiagnosticInfo : IEquatable<DiagnosticInfo>
         };
 
         // Creates a copy of the Location instance that does not capture a reference to Compilation.
-        static Location GetTrimmedLocation(Location location)
-            => Location.Create(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
+        static Location? GetTrimmedLocation(Location? sourceLocation)
+        {
+            if (sourceLocation is null)
+            {
+                return null;
+            }
+
+            Location trimmedLocation = Location.Create(sourceLocation.SourceTree?.FilePath ?? "", sourceLocation.SourceSpan, sourceLocation.GetLineSpan().Span);
+
+            if (sourceLocation.IsInSource &&
+                !trimmedLocation.IsInSource &&
+                s_sourceTreeBackingFieldInfo.Value is FieldInfo sourceTreeField &&
+                s_dummySyntaxTree.Value is CSharpSyntaxTree syntaxTree)
+            {
+                // Attempt to mark this as a source location, so that it is suppressible with #pragma.
+                try
+                {
+                    sourceTreeField.SetValue(trimmedLocation, syntaxTree);
+
+                    if (!trimmedLocation.IsInSource)
+                    {
+                        sourceTreeField.SetValue(trimmedLocation, null);
+                    }
+                }
+                catch { }
+            }
+
+            return trimmedLocation;
+        }
     }
 
     public Diagnostic CreateDiagnostic()
@@ -56,5 +88,35 @@ internal readonly struct DiagnosticInfo : IEquatable<DiagnosticInfo>
 
         hashCode = HashHelpers.Combine(hashCode, Location?.GetHashCode() ?? 0);
         return hashCode;
+    }
+
+    private static FieldInfo? GetSourceTreeBackingFieldInfo()
+    {
+        FieldInfo? info;
+
+        try
+        {
+            FieldInfo[] fields = typeof(Location).GetFields(BindingFlags.NonPublic);
+            info = typeof(Location).GetField("<SourceTree>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
+        }
+        catch
+        {
+            info = null;
+        }
+
+        return info;
+    }
+
+    private static CSharpSyntaxTree? GetDummySyntaxTree()
+    {
+        try
+        {
+            Type? dummySyntaxTree = typeof(CSharpSyntaxTree).Assembly.GetType("Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.DummySyntaxTree", throwOnError: false);
+            return dummySyntaxTree is null ? null : (CSharpSyntaxTree?)Activator.CreateInstance(dummySyntaxTree);
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
