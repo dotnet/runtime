@@ -211,12 +211,12 @@ extends:
               parameters:
                 name: windows_x64
             dependsOn:
-            - build_linux_x64_AllSubsets_CoreCLR
-            - build_linux_arm_AllSubsets_CoreCLR
-            - build_linux_arm64_AllSubsets_CoreCLR
-            - build_linux_musl_x64_AllSubsets_CoreCLR
-            - build_linux_musl_arm_AllSubsets_CoreCLR
-            - build_linux_musl_arm64_AllSubsets_CoreCLR
+            - build_linux_x64_release_AllSubsets_CoreCLR
+            - build_linux_arm_release_AllSubsets_CoreCLR
+            - build_linux_arm64_release_AllSubsets_CoreCLR
+            - build_linux_musl_x64_release_AllSubsets_CoreCLR
+            - build_linux_musl_arm_release_AllSubsets_CoreCLR
+            - build_linux_musl_arm64_release_AllSubsets_CoreCLR
           variables:
           - name: crossDacArtifactsPath
             value: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
