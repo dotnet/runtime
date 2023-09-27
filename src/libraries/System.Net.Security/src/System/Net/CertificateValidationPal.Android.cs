@@ -105,6 +105,16 @@ namespace System.Net
             return cert;
         }
 
+        // Check if the local certificate has been sent to the peer during the handshake.
+        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _, SafeDeleteContext? securityContext)
+        {
+            SafeSslHandle? sslContext = ((SafeDeleteSslContext?)securityContext)?.SslContext;
+            if (sslContext == null)
+                return false;
+
+            return Interop.AndroidCrypto.SSLStreamIsLocalCertificateUsed(sslContext);
+        }
+
         //
         // Used only by client SSL code, never returns null.
         //

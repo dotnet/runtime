@@ -37,7 +37,7 @@ namespace System.Net.Security
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext,
-            SslProtocols protocols, EncryptionPolicy policy, bool isServer)
+            SslProtocols protocols, EncryptionPolicy policy, bool isServer, bool newCredentialsRequested = false)
         {
             return new SafeFreeSslCredentials(certificateContext?.Certificate, protocols, policy);
         }
