@@ -71,13 +71,15 @@ namespace ILCompiler.ObjectWriter
         public void EmitSymbolDefinition(
             string symbolName,
             int relativeOffset = 0,
-            int size = 0)
+            int size = 0,
+            bool global = false)
         {
             _objectWriter.EmitSymbolDefinition(
                 SectionIndex,
                 symbolName,
                 (int)Stream.Position + relativeOffset,
-                size);
+                size,
+                global);
         }
 
         public void EmitSymbolReference(
