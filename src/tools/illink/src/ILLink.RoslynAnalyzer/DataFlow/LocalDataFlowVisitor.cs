@@ -579,6 +579,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitFlowAnonymousFunction (IFlowAnonymousFunctionOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
+			// The containing symbol of a lambda is either another method, or a field (for field initializers).
+			// For property initializers, the containing symbol is the compiler-generated backing field.
+			// For property accessors, the containing symbol is the accessor method.
 			Debug.Assert (operation.Symbol.ContainingSymbol is IMethodSymbol or IFieldSymbol);
 			var lambda = operation.Symbol;
 			Debug.Assert (lambda.MethodKind == MethodKind.LambdaMethod);

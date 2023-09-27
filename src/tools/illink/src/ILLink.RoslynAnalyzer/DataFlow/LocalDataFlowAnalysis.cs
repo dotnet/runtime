@@ -57,6 +57,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				AnalyzeAttribute (Context.OwningSymbol, attribute);
 				return;
 			}
+
 			Debug.Assert (Context.OwningSymbol is not IMethodSymbol methodSymbol ||
 				methodSymbol.MethodKind is not (MethodKind.LambdaMethod or MethodKind.LocalFunction));
 			var startMethod = new MethodBodyValue (Context.OwningSymbol, Context.GetControlFlowGraph (OperationBlock));
