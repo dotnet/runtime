@@ -2849,7 +2849,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/92727</Issue>
         </ExcludeList>
     </ItemGroup>
-    </ItemGroup>
 
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsAppleMobile)' == 'true'">
