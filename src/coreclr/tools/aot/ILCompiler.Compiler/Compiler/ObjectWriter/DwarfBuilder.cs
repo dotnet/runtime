@@ -410,76 +410,6 @@ namespace ILCompiler.ObjectWriter
             return _nameMangler.GetMangledTypeName(type);
         }
 
-        private sealed class LexicalScope
-        {
-            private uint _start;
-            private uint _end;
-            private bool _isFuncScope;
-            private List<(DebugVarInfoMetadata, DwarfDIE)> _vars = new();
-            private List<LexicalScope> _innerScopes = new();
-
-            public uint Start => _start;
-            public uint End => _end;
-            public bool IsFuncScope => _isFuncScope;
-            public List<(DebugVarInfoMetadata, DwarfDIE)> Vars => _vars;
-            public List<LexicalScope> InnerScopes => _innerScopes;
-
-            public LexicalScope(uint start, uint end, bool isFuncScope)
-            {
-                _start = start;
-                _end = end;
-                _isFuncScope = isFuncScope;
-            }
-
-            public LexicalScope(DebugVarRangeInfo rangeInfo)
-            {
-                _start = rangeInfo.StartOffset;
-                _end = rangeInfo.EndOffset;
-                _isFuncScope = false;
-            }
-
-            private bool IsContains(DebugVarRangeInfo rangeInfo)
-                => _start <= rangeInfo.StartOffset && _end >= rangeInfo.EndOffset;
-
-            public void AddVar(DebugVarInfoMetadata metadataInfo, DwarfDIE type)
-            {
-                if (metadataInfo.IsParameter && _isFuncScope)
-                {
-                    _vars.Add((metadataInfo, type));
-                    return;
-                }
-
-                foreach (var rangeInfo in metadataInfo.DebugVarInfo.Ranges)
-                {
-                    if (!IsContains(rangeInfo))
-                        return;
-
-                    // Var belongs to inner scope
-                    if (rangeInfo.StartOffset != _start || rangeInfo.EndOffset != _end)
-                    {
-                        // Try to add variable to one the inner scopes
-                        foreach (var innerScope in _innerScopes)
-                        {
-                            if (innerScope.IsContains(rangeInfo))
-                            {
-                                innerScope.AddVar(metadataInfo, type);
-                                return;
-                            }
-                        }
-
-                        // We need to create new inner scope for this var
-                        var newInnerScope = new LexicalScope(rangeInfo);
-                        newInnerScope.AddVar(metadataInfo, type);
-                        _innerScopes.Add(newInnerScope);
-                    }
-                    else
-                    {
-                        _vars.Add((metadataInfo, type));
-                    }
-                }
-            }
-        };
-
         // TODO: Clean-up and share with R2R code
         private enum RegNumAmd64 : int
         {
@@ -712,37 +642,6 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void EmitLexicalBlock(LexicalScope lexicalScope, ulong methodPCStart, bool methodIsStatic, DwarfDIE die)
-        {
-            if (!lexicalScope.IsFuncScope)
-            {
-                var lexicalBlock = new DwarfDIELexicalBlock
-                {
-                    LowPC = methodPCStart + lexicalScope.Start,
-                    HighPC = (int)(lexicalScope.End - lexicalScope.Start),
-                };
-
-                die.AddChild(lexicalBlock);
-                die = lexicalBlock;
-            }
-
-            foreach (var (var, type) in lexicalScope.Vars)
-            {
-                bool isThis = var.IsParameter && var.DebugVarInfo.VarNumber == 0 && !methodIsStatic;
-                var dwarfVar = EmitVar(var, methodPCStart, type, isThis);
-                die.AddChild(dwarfVar);
-                if (isThis)
-                {
-                    ((DwarfDIESubprogram)die).ObjectPointer = dwarfVar;
-                }
-            }
-
-            foreach (var innerScope in lexicalScope.InnerScopes)
-            {
-                EmitLexicalBlock(innerScope, methodPCStart, methodIsStatic, die);
-            }
-        }
-
         public void EmitSubprogramInfo(
             string methodName,
             ulong methodPCStart,
@@ -771,12 +670,19 @@ namespace ILCompiler.ObjectWriter
                 FrameBase = new DwarfLocation(frameExpression),
             };
 
-            var methodScope = new LexicalScope(0u, (uint)methodPCLength, true);
+            /// At the moment, the lexical scope reflects IL, not C#, meaning that
+            /// there is only one scope for the whole method. We could be more precise
+            /// in the future by pulling the scope information from the PDB.
             foreach (var (debugVar, typeIndex) in debugVars)
             {
-                methodScope.AddVar(debugVar, typeIndex == 0 ? null : _rootDIE.Children[(int)typeIndex - 1]);
+                bool isThis = debugVar.IsParameter && debugVar.DebugVarInfo.VarNumber == 0 && subprogramSpec.ObjectPointer != null;
+                var dwarfVar = EmitVar(debugVar, methodPCStart, typeIndex == 0 ? null : _rootDIE.Children[(int)typeIndex - 1], isThis);
+                subprogram.AddChild(dwarfVar);
+                if (isThis)
+                {
+                    subprogram.ObjectPointer = dwarfVar;
+                }
             }
-            EmitLexicalBlock(methodScope, methodPCStart, subprogramSpec.ObjectPointer == null, subprogram);
 
             foreach (var clause in debugEHClauseInfos)
             {
