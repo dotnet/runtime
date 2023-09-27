@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Text;
 using Xunit;
+using System.Runtime.InteropServices;
 
 namespace Common.Tests
 {
@@ -47,12 +48,26 @@ namespace Common.Tests
             Assert.Null(name);
         }
 
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [DllImport("libc")]
+        private static extern uint getuid();
+
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
         public void GetPrettyName_CannotRead_ReturnsNull()
         {
             string path = CreateTestFile();
             File.SetUnixFileMode(path, UnixFileMode.None);
-            Assert.ThrowsAny<Exception>(() => File.ReadAllText(path));
+
+            // If user have root permissions, kernel doesn't care about access priviliges,
+            // so there is no point in expecting System.Exception
+            if (getuid() != 0)
+            {
+                Assert.ThrowsAny<Exception>(() => File.ReadAllText(path)); 
+            }
+            else
+            {
+                Assert.Equal(UnixFileMode.None, File.GetUnixFileMode(path));
+            }
 
             string? name = Interop.OSReleaseFile.GetPrettyName(path);
             Assert.Null(name);
