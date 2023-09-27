@@ -512,7 +512,7 @@ namespace DebuggerTests
         {
             public List<int> numList = new List<int> { 1, 2 };
             public List<string> textList = new List<string> { "1", "2" };
-            public int[] numArray = new int[] { 1, 2 };
+            public int[] numArray = new int[] { 1, 2, 0 };
             public string[] textArray = new string[] { "1", "2" };
             public int[][] numArrayOfArrays;
             public List<List<int>> numListOfLists;
@@ -544,6 +544,9 @@ namespace DebuggerTests
             public int this[decimal key] => (int)key;
             public int this[Indexer indexer] => indexer.index;
             public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
+
+            public double this[int key1, double key2] => key1 + key2;
+            public string this[char key1, string key2, string key3] => $"{key1}-{key2}-{key3}";
         }
 
         public struct StructWithIndexers

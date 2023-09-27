@@ -585,7 +585,7 @@ namespace DebuggerTests
                 Assert.Equal("Unable to evaluate element access 'cc.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["result"]?["description"]?.Value<string>());
                 var exceptionDetailsStack = res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0];
                 Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", exceptionDetailsStack?["functionName"]?.Value<string>());
-                Assert.Equal(568, exceptionDetailsStack?["lineNumber"]?.Value<int>());
+                Assert.Equal(571, exceptionDetailsStack?["lineNumber"]?.Value<int>());
                 Assert.Equal(12, exceptionDetailsStack?["columnNumber"]?.Value<int>());
                 (_, res) = await EvaluateOnCallFrame(id, "c[1]", expect_ok: false );
                 Assert.Equal( "Unable to evaluate element access 'c[1]': Cannot apply indexing with [] to an object of type 'DebuggerTests.EvaluateLocalsWithIndexingTests.ClassWithIndexers'", res.Error["result"]?["description"]?.Value<string>());
@@ -740,7 +740,7 @@ namespace DebuggerTests
                 Assert.Equal("Unable to evaluate element access 'cc.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["result"]?["description"]?.Value<string>());
                 var exceptionDetailsStack = res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0];
                 Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", exceptionDetailsStack?["functionName"]?.Value<string>());
-                Assert.Equal(568, exceptionDetailsStack?["lineNumber"]?.Value<int>());
+                Assert.Equal(571, exceptionDetailsStack?["lineNumber"]?.Value<int>());
                 Assert.Equal(12, exceptionDetailsStack?["columnNumber"]?.Value<int>());
             });
 
@@ -877,7 +877,9 @@ namespace DebuggerTests
                    ("cc.textArrayOfArrays[cc.idx1][cc.idx1]", TString("2")),
                    ("cc.textListOfLists[1][1]", TString("2")),
                    ("cc.textListOfLists[j][j]", TString("2")),
-                   ("cc.textListOfLists[cc.idx1][cc.idx1]", TString("2")));
+                   ("cc.textListOfLists[cc.idx1][cc.idx1]", TString("2")),
+                   ("cc.numArrayOfArrays[cc.numArray[cc.numList[1]]][cc.numList[0]]", TNumber(2))
+                   );
 
            });
 
