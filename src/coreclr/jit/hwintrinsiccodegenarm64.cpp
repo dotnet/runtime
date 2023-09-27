@@ -742,19 +742,19 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
                 GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
                 op2Reg                       = firstField->GetRegNum();
-                INDEBUG(regNumber argReg = op2Reg);
 
+#ifdef DEBUG
+                regNumber argReg = op2Reg;
                 for (GenTreeFieldList::Use& use : fieldList->Uses())
                 {
                     regCount++;
-#ifdef DEBUG
+
                     GenTree* argNode = use.GetNode();
                     assert(argReg == argNode->GetRegNum());
                     argReg = REG_NEXT(argReg);
-#endif
                 }
-
                 assert(regCount == 2);
+#endif
 
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
                 break;
