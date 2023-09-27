@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -18,9 +19,9 @@ namespace System.Numerics.Tensors
             float xSumOfSquares = 0f;
             float ySumOfSquares = 0f;
 
-            int i = 0;
-
-            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count)
+            if (Vector.IsHardwareAccelerated &&
+                Vector<float>.Count <= 16 && // currently never greater than 8, but 16 would occur if/when AVX512 is supported, and logic in remainder handling assumes that maximum
+                x.Length >= Vector<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
                 ref float yRef = ref MemoryMarshal.GetReference(y);
@@ -31,6 +32,7 @@ namespace System.Numerics.Tensors
 
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                int i = 0;
                 do
                 {
                     Vector<float> xVec = AsVector(ref xRef, i);
@@ -44,6 +46,21 @@ namespace System.Numerics.Tensors
                 }
                 while (i <= oneVectorFromEnd);
 
+                // Process the last vector in the span, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    Vector<float> xVec = AsVector(ref xRef, x.Length - Vector<float>.Count);
+                    Vector<float> yVec = AsVector(ref yRef, x.Length - Vector<float>.Count);
+
+                    Vector<float> remainderMask = LoadRemainderMaskSingleVector(x.Length - i);
+                    xVec &= remainderMask;
+                    yVec &= remainderMask;
+
+                    dotProductVector += xVec * yVec;
+                    xSumOfSquaresVector += xVec * xVec;
+                    ySumOfSquaresVector += yVec * yVec;
+                }
+
                 // Sum the vector lanes into the scalar result.
                 for (int e = 0; e < Vector<float>.Count; e++)
                 {
@@ -52,13 +69,16 @@ namespace System.Numerics.Tensors
                     ySumOfSquares += ySumOfSquaresVector[e];
                 }
             }
-
-            // Process any remaining elements past the last vector.
-            for (; (uint)i < (uint)x.Length; i++)
+            else
             {
-                dotProduct += x[i] * y[i];
-                xSumOfSquares += x[i] * x[i];
-                ySumOfSquares += y[i] * y[i];
+                // Vectorization isn't supported or there are too few elements to vectorize.
+                // Use a scalar implementation.
+                for (int i = 0; i < x.Length; i++)
+                {
+                    dotProduct += x[i] * y[i];
+                    xSumOfSquares += x[i] * x[i];
+                    ySumOfSquares += y[i] * y[i];
+                }
             }
 
             // Sum(X * Y) / (|X| * |Y|)
@@ -581,6 +601,15 @@ namespace System.Numerics.Tensors
             (Vector<float>)Vector.LessThan((Vector<int>)f, Vector<int>.Zero);
 
         private static float Log2(float x) => MathF.Log(x, 2);
+
+        private static unsafe Vector<float> LoadRemainderMaskSingleVector(int validItems)
+        {
+            Debug.Assert(Vector<float>.Count is 4 or 8 or 16);
+
+            return AsVector(
+                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
+                (validItems * 16) + (16 - Vector<float>.Count));
+        }
 
         private readonly struct AddOperator : IBinaryOperator
         {

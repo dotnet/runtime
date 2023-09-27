@@ -58,12 +58,6 @@ namespace System.Numerics.Tensors
             // TensorPrimitives.Dot(x, y) / (Math.Sqrt(TensorPrimitives.SumOfSquares(x)) * Math.Sqrt(TensorPrimitives.SumOfSquares(y)))
             // but only looping over each span once.
 
-            float dotProduct = 0f;
-            float xSumOfSquares = 0f;
-            float ySumOfSquares = 0f;
-
-            int i = 0;
-
 #if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
@@ -76,6 +70,7 @@ namespace System.Numerics.Tensors
 
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector512<float>.Count;
+                int i = 0;
                 do
                 {
                     Vector512<float> xVec = Vector512.LoadUnsafe(ref xRef, (uint)i);
@@ -89,13 +84,28 @@ namespace System.Numerics.Tensors
                 }
                 while (i <= oneVectorFromEnd);
 
-                // Sum the vector lanes into the scalar result.
-                dotProduct += Vector512.Sum(dotProductVector);
-                xSumOfSquares += Vector512.Sum(xSumOfSquaresVector);
-                ySumOfSquares += Vector512.Sum(ySumOfSquaresVector);
+                // Process the last vector in the span, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    Vector512<float> xVec = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count));
+                    Vector512<float> yVec = Vector512.LoadUnsafe(ref yRef, (uint)(x.Length - Vector512<float>.Count));
+
+                    Vector512<float> remainderMask = LoadRemainderMaskSingleVector512(x.Length - i);
+                    xVec &= remainderMask;
+                    yVec &= remainderMask;
+
+                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                }
+
+                // Sum(X * Y) / (|X| * |Y|)
+                return
+                    Vector512.Sum(dotProductVector) /
+                    (MathF.Sqrt(Vector512.Sum(xSumOfSquaresVector)) * MathF.Sqrt(Vector512.Sum(ySumOfSquaresVector)));
             }
-            else
 #endif
+
             if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
@@ -107,6 +117,7 @@ namespace System.Numerics.Tensors
 
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector256<float>.Count;
+                int i = 0;
                 do
                 {
                     Vector256<float> xVec = Vector256.LoadUnsafe(ref xRef, (uint)i);
@@ -120,12 +131,28 @@ namespace System.Numerics.Tensors
                 }
                 while (i <= oneVectorFromEnd);
 
-                // Sum the vector lanes into the scalar result.
-                dotProduct += Vector256.Sum(dotProductVector);
-                xSumOfSquares += Vector256.Sum(xSumOfSquaresVector);
-                ySumOfSquares += Vector256.Sum(ySumOfSquaresVector);
+                // Process the last vector in the span, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    Vector256<float> xVec = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count));
+                    Vector256<float> yVec = Vector256.LoadUnsafe(ref yRef, (uint)(x.Length - Vector256<float>.Count));
+
+                    Vector256<float> remainderMask = LoadRemainderMaskSingleVector256(x.Length - i);
+                    xVec &= remainderMask;
+                    yVec &= remainderMask;
+
+                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                }
+
+                // Sum(X * Y) / (|X| * |Y|)
+                return
+                    Vector256.Sum(dotProductVector) /
+                    (MathF.Sqrt(Vector256.Sum(xSumOfSquaresVector)) * MathF.Sqrt(Vector256.Sum(ySumOfSquaresVector)));
             }
-            else if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count)
+
+            if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
                 ref float yRef = ref MemoryMarshal.GetReference(y);
@@ -136,6 +163,7 @@ namespace System.Numerics.Tensors
 
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector128<float>.Count;
+                int i = 0;
                 do
                 {
                     Vector128<float> xVec = Vector128.LoadUnsafe(ref xRef, (uint)i);
@@ -149,14 +177,31 @@ namespace System.Numerics.Tensors
                 }
                 while (i <= oneVectorFromEnd);
 
-                // Sum the vector lanes into the scalar result.
-                dotProduct += Vector128.Sum(dotProductVector);
-                xSumOfSquares += Vector128.Sum(xSumOfSquaresVector);
-                ySumOfSquares += Vector128.Sum(ySumOfSquaresVector);
+                // Process the last vector in the span, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    Vector128<float> xVec = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count));
+                    Vector128<float> yVec = Vector128.LoadUnsafe(ref yRef, (uint)(x.Length - Vector128<float>.Count));
+
+                    Vector128<float> remainderMask = LoadRemainderMaskSingleVector128(x.Length - i);
+                    xVec &= remainderMask;
+                    yVec &= remainderMask;
+
+                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                }
+
+                // Sum(X * Y) / (|X| * |Y|)
+                return
+                    Vector128.Sum(dotProductVector) /
+                    (MathF.Sqrt(Vector128.Sum(xSumOfSquaresVector)) * MathF.Sqrt(Vector128.Sum(ySumOfSquaresVector)));
             }
 
-            // Process any remaining elements past the last vector.
-            for (; (uint)i < (uint)x.Length; i++)
+            // Vectorization isn't supported or there are too few elements to vectorize.
+            // Use a scalar implementation.
+            float dotProduct = 0f, xSumOfSquares = 0f, ySumOfSquares = 0f;
+            for (int i = 0; i < x.Length; i++)
             {
                 dotProduct = MathF.FusedMultiplyAdd(x[i], y[i], dotProduct);
                 xSumOfSquares = MathF.FusedMultiplyAdd(x[i], x[i], xSumOfSquares);
@@ -164,7 +209,9 @@ namespace System.Numerics.Tensors
             }
 
             // Sum(X * Y) / (|X| * |Y|)
-            return dotProduct / (MathF.Sqrt(xSumOfSquares) * MathF.Sqrt(ySumOfSquares));
+            return
+                dotProduct /
+                (MathF.Sqrt(xSumOfSquares) * MathF.Sqrt(ySumOfSquares));
         }
 
         private static float Aggregate<TLoad, TAggregate>(
@@ -1286,6 +1333,26 @@ namespace System.Numerics.Tensors
 #endif
 
         private static float Log2(float x) => MathF.Log2(x);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector128<float> LoadRemainderMaskSingleVector128(int validItems) =>
+            Vector128.LoadUnsafe(
+                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
+                (uint)((validItems * 16) + 12)); // last four floats in the row
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector256<float> LoadRemainderMaskSingleVector256(int validItems) =>
+            Vector256.LoadUnsafe(
+                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
+                (uint)((validItems * 16) + 8)); // last eight floats in the row
+
+#if NET8_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector512<float> LoadRemainderMaskSingleVector512(int validItems) =>
+            Vector512.LoadUnsafe(
+                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
+                (uint)(validItems * 16)); // all sixteen floats in the row
+#endif
 
         private readonly struct AddOperator : IBinaryOperator
         {
