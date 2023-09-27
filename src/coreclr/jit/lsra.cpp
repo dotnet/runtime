@@ -9661,7 +9661,7 @@ void Interval::dump(Compiler* compiler)
     compiler->dumpRegMask(this->registerPreferences);
     if (preferCalleeSave)
     {
-        printf("(callee-save)");
+        printf("(prefer-callee-save)");
     }
 
     if (relatedInterval)
