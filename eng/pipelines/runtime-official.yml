@@ -208,7 +208,7 @@ extends:
                 basePath: $(crossDacArtifactsPath)
                 isOfficialBuild: ${{ variables.isOfficialBuild }}
                 timeoutInMinutes: 30
-            postBuildStep:
+            postBuildSteps:
             # Save packages using the prepare-signed-artifacts format.
             # CrossDac packages are expected to be in the windows_x64 folder.
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
