@@ -439,7 +439,7 @@ extends:
           - windows_arm64
           - linux_arm64
           jobParameters:
-            buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -pgoinstrument
+            buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -pgoinstrument /p:SkipLibrariesNativeRuntimePackages=true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             nameSuffix: PGO
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
