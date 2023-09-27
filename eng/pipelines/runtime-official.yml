@@ -72,7 +72,7 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             signBinaries: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
-      
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -103,12 +103,12 @@ extends:
                   sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
                   targetFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)/sharedFramework
                   overWrite: true
-              
+
               # Now that we've entitled and signed createdump, we can build the rest.
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
                   buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
-              
+
               # Upload the results.
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
@@ -164,7 +164,7 @@ extends:
                   subsetArg: -s packs.installers
                   packagingArgs: -c $(_BuildConfig) --arch $(archType) --os $(osGroup) --ci /p:OfficialBuildId=$(Build.BuildNumber) /p:BuildRpmPackage=true
                   condition: and(succeeded(), eq(variables.osSubgroup, ''), in(variables.archType, 'x64', 'arm64'))
-              
+
               # Upload the results.
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
@@ -174,23 +174,52 @@ extends:
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/crossdac-pack.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
           - windows_x64
           jobParameters:
+            buildArgs: -s crossdacpack -c $(_BuildConfig)
+            nameSuffix: CrossDac
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
-            crossDacPlatforms:
-            - windows_x64
-            - windows_arm64
-            globalBuildCrossDacPlatforms:
-            - linux_x64
-            - linux_arm
-            - linux_arm64
-            - linux_musl_x64
-            - linux_musl_arm
-            - linux_musl_arm64
+            preBuildSteps:
+            - task: DownloadBuildArtifacts@0
+              displayName: Download Runtimes for CrossDac packaging
+              inputs:
+                artifactName: CoreCLRCrossDacArtifacts
+                downloadPath: $(crossDacArtifactsPath)
+                checkDownloadedFiles: true
+            - template: /eng/pipelines/common/templates/global-build-step.yml
+              parameters:
+                buildArgs: -s linuxdac+alpinedac -c $(_BuildConfig)
+                archParameter: -arch x64,x86,arm,arm64
+            - task: CopyFiles@2
+              displayName: Gather CrossDacs
+              inputs:
+                SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+                TargetFolder: $(crossDacArtifactsPath)
+            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+              parameters:
+                basePath: $(crossDacArtifactsPath)
+                isOfficialBuild: ${{ variables.isOfficialBuild }}
+                timeoutInMinutes: 30
+            postBuildStep:
+            # Save packages using the prepare-signed-artifacts format.
+            # CrossDac packages are expected to be in the windows_x64 folder.
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              parameters:
+                name: windows_x64
+            dependsOn:
+            - build_linux_x64_AllSubsets_CoreCLR
+            - build_linux_arm_AllSubsets_CoreCLR
+            - build_linux_arm64_AllSubsets_CoreCLR
+            - build_linux_musl_x64_AllSubsets_CoreCLR
+            - build_linux_musl_arm_AllSubsets_CoreCLR
+            - build_linux_musl_arm64_AllSubsets_CoreCLR
+            variables:
+            - name: crossDacArtifactsPath
+              value: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
 
       #
       # Build NativeAOT runtime packs
