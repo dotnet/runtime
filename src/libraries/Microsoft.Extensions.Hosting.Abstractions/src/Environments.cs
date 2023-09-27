@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.Hosting
     /// <summary>
     /// Commonly used environment names.
     /// </summary>
-    public static class Environments
+    public static partial class Environments
     {
         /// <summary>
         /// Specifies the Development environment.
