@@ -217,9 +217,9 @@ extends:
             - build_linux_musl_x64_AllSubsets_CoreCLR
             - build_linux_musl_arm_AllSubsets_CoreCLR
             - build_linux_musl_arm64_AllSubsets_CoreCLR
-            variables:
-            - name: crossDacArtifactsPath
-              value: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
+          variables:
+          - name: crossDacArtifactsPath
+            value: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
 
       #
       # Build NativeAOT runtime packs
