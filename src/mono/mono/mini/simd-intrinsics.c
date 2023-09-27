@@ -2863,10 +2863,24 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 			}
 
-			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, dreg, args [2]->dreg);
-			ins->inst_c0 = index;
-			ins->inst_c1 = MONO_TYPE_R4;
-			ins->dreg = dreg;
+#ifdef TARGET_ARM64
+			if (!COMPILE_LLVM (cfg) && args [2]->opcode == OP_EXTRACT_R4) {
+				// Optimize x[const_1] = y[const_2] into one ins instruction on arm64
+				// OP_INSERT_Ix inserts from GP reg, not SIMD. Cannot optimize for int types.
+				int srcidx = args [2]->inst_c0;
+				ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, dreg, args [2]->sreg1);
+				ins->inst_c0 = index | (srcidx << 8);
+				ins->inst_c1 = MONO_TYPE_R4;
+				return ins;
+			} 
+			else 
+#endif
+			{
+				ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, dreg, args [2]->dreg);
+				ins->inst_c0 = index;
+				ins->inst_c1 = MONO_TYPE_R4;
+				ins->dreg = dreg;
+			}
 
 			if (indirect) {
 				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, args [0]->dreg, 0, dreg);
