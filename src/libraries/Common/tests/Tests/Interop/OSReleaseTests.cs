@@ -53,7 +53,7 @@ namespace Common.Tests
             string path = CreateTestFile();
             File.SetUnixFileMode(path, UnixFileMode.None);
 
-            // If user have root permissions, kernel doesn't care about access priviliges,
+            // If user have root permissions, kernel doesn't care about access privileges,
             // so there is no point in expecting System.Exception
             if (!Environment.IsPrivilegedProcess)
             {
