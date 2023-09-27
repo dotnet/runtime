@@ -334,7 +334,7 @@ extends:
             runtimeFlavor: mono
             jobParameters:
               buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                          /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+                          /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
               nameSuffix: AllSubsets_Mono_LLVMAOT
               runtimeVariant: LLVMAOT
               isOfficialBuild: ${{ variables.isOfficialBuild }}

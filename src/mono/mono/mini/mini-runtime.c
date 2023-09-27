@@ -5144,6 +5144,7 @@ register_icalls (void)
 	register_icall (mono_throw_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_platform_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_invalid_program, mono_icall_sig_void_ptr, FALSE);
+	register_icall (mono_throw_type_load, mono_icall_sig_void_ptr, FALSE);
 	register_icall_no_wrapper (mono_dummy_jit_icall, mono_icall_sig_void);
 	//register_icall_no_wrapper (mono_dummy_jit_icall_val, mono_icall_sig_void_ptr);
 	register_icall_no_wrapper (mini_init_method_rgctx, mono_icall_sig_void_ptr_ptr);

@@ -1120,7 +1120,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 if (sizeVal != 0)
                 {
                     // Compute the amount of memory to properly STACK_ALIGN.
-                    // Note: The Gentree node is not updated here as it is cheap to recompute stack aligned size.
+                    // Note: The GenTree node is not updated here as it is cheap to recompute stack aligned size.
                     // This should also help in debugging as we can examine the original size specified with
                     // localloc.
                     sizeVal = AlignUp(sizeVal, STACK_ALIGN);

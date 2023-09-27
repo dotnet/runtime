@@ -1489,7 +1489,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
                                                            call, putInIncomingArgArea);
 
 #if defined(DEBUG) && defined(FEATURE_PUT_STRUCT_ARG_STK)
-            if (callArg->AbiInfo.IsStruct)
+            if (varTypeIsStruct(callArg->GetSignatureType()))
             {
                 // We use GT_BLK only for non-SIMD struct arguments.
                 if (arg->OperIs(GT_BLK))
@@ -2061,8 +2061,8 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     GenTree* zeroCns   = comp->gtNewZeroConNode(actualLoadType);
                     result             = newBinaryOp(comp, GT_EQ, TYP_INT, resultOr, zeroCns);
 
-                    BlockRange().InsertAfter(rArgClone, l1Indir, r1Indir, l2Offs, l2AddOffs);
-                    BlockRange().InsertAfter(l2AddOffs, l2Indir, r2Offs, r2AddOffs, r2Indir);
+                    BlockRange().InsertAfter(rArgClone, l1Indir, l2Offs, l2AddOffs, l2Indir);
+                    BlockRange().InsertAfter(l2Indir, r1Indir, r2Offs, r2AddOffs, r2Indir);
                     BlockRange().InsertAfter(r2Indir, lXor, rXor, resultOr, zeroCns);
                     BlockRange().InsertAfter(zeroCns, result);
                 }

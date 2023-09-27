@@ -827,10 +827,6 @@ void CallArg::Dump(Compiler* comp)
     {
         printf(", wellKnown[%s]", getWellKnownArgName(m_wellKnownArg));
     }
-    if (AbiInfo.IsStruct)
-    {
-        printf(", isStruct");
-    }
     printf("]\n");
 }
 #endif
@@ -880,8 +876,6 @@ void CallArgs::SetTemp(CallArg* arg, unsigned tmpNum)
 //
 void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 {
-    bool hasStructRegArg = false;
-
     unsigned argCount = CountArgs();
 
     // Previous argument with GTF_EXCEPT
@@ -914,17 +908,9 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #if FEATURE_ARG_SPLIT
         else if (arg.AbiInfo.IsSplit())
         {
-            hasStructRegArg = true;
             assert(m_hasStackArgs);
         }
-#endif       // FEATURE_ARG_SPLIT
-        else // we have a register argument, next we look for a struct type.
-        {
-            if (varTypeIsStruct(argx) UNIX_AMD64_ABI_ONLY(|| arg.AbiInfo.IsStruct))
-            {
-                hasStructRegArg = true;
-            }
-        }
+#endif // FEATURE_ARG_SPLIT
 
         /* If the argument tree contains an assignment (GTF_ASG) then the argument and
            and every earlier argument (except constants) must be evaluated into temps
@@ -2793,9 +2779,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         }
 #endif // TARGET_ARM
 
-        arg.AbiInfo          = CallArgABIInformation();
-        arg.AbiInfo.ArgType  = argx->TypeGet();
-        arg.AbiInfo.IsStruct = isStructArg;
+        arg.AbiInfo         = CallArgABIInformation();
+        arg.AbiInfo.ArgType = argx->TypeGet();
 
         if (isRegArg)
         {
@@ -3014,7 +2999,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         arg.AbiInfo.SetMultiRegNums();
 
-        if (arg.AbiInfo.IsStruct)
+        if (varTypeIsStruct(arg.GetSignatureType()))
         {
             arg.AbiInfo.PassedByRef = passStructByRef;
             arg.AbiInfo.ArgType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
@@ -3202,10 +3187,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             argx->gtType = TYP_I_IMPL;
         }
 
-        // Struct arguments may be morphed into a node that is not a struct type.
-        // In such case the CallArgABIInformation keeps track of whether the original node (before morphing)
-        // was a struct and the struct classification.
-        bool     isStructArg    = arg.AbiInfo.IsStruct;
+        bool     isStructArg    = varTypeIsStruct(arg.GetSignatureType());
         GenTree* argObj         = argx->gtEffectiveVal(true /*commaOnly*/);
         bool     makeOutArgCopy = false;
 
