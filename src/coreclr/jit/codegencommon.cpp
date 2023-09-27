@@ -664,7 +664,7 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 //    intervals when calling "siStartVariableLiveRange" and "siEndVariableLiveRange".
 //
 // Notes:
-//    If "ForCodeGen" is false, only "compCurLife" set (and no mask) will be setted.
+//    If "ForCodeGen" is false, only "compCurLife" set (and no mask) will be updated.
 //
 template <bool ForCodeGen>
 void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
@@ -8458,6 +8458,7 @@ unsigned CodeGenInterface::getCurrentStackLevel() const
 }
 
 #ifdef DEBUG
+
 //------------------------------------------------------------------------
 //                      VariableLiveRanges dumpers
 //------------------------------------------------------------------------
@@ -8502,10 +8503,11 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRa
 //------------------------------------------------------------------------
 //                      LiveRangeDumper
 //------------------------------------------------------------------------
+
 //------------------------------------------------------------------------
-// resetDumper: If the "liveRange" has its last "VariableLiveRange" closed, it makes
-//  the "LiveRangeDumper" points to end of "liveRange" (nullptr). In other case,
-//  it makes the "LiveRangeDumper" points to the last "VariableLiveRange" of
+// resetDumper: If the "liveRange" has its last "VariableLiveRange" closed, it points
+//  the "LiveRangeDumper" to end of "liveRange" (nullptr). Otherwise,
+//  it points the "LiveRangeDumper" to the last "VariableLiveRange" of
 //  "liveRange", which is opened.
 //
 // Arguments:
@@ -8513,45 +8515,40 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRa
 //      update its "LiveRangeDumper".
 //
 // Notes:
-//  This method is expected to be called once a the code for a BasicBlock has been
+//  This method is expected to be called once the code for a BasicBlock has been
 //  generated and all the new "VariableLiveRange"s of the variable during this block
 //  has been dumped.
+//
 void CodeGenInterface::VariableLiveKeeper::LiveRangeDumper::resetDumper(const LiveRangeList* liveRanges)
 {
     // There must have reported something in order to reset
-    assert(m_hasLiveRangestoDump);
+    assert(m_hasLiveRangesToDump);
 
     if (liveRanges->back().m_EndEmitLocation.Valid())
     {
         // the last "VariableLiveRange" is closed and the variable
         // is no longer alive
-        m_hasLiveRangestoDump = false;
+        m_hasLiveRangesToDump = false;
     }
     else
     {
         // the last "VariableLiveRange" remains opened because it is
         // live at "BasicBlock"s "bbLiveOut".
-        m_StartingLiveRange = liveRanges->backPosition();
+        m_startingLiveRange = liveRanges->backPosition();
     }
 }
 
 //------------------------------------------------------------------------
-// setDumperStartAt: Make "LiveRangeDumper" instance points the last "VariableLiveRange"
-// added so we can starts dumping from there after the actual "BasicBlock"s code is generated.
+// setDumperStartAt: Make "LiveRangeDumper" instance point at the last "VariableLiveRange"
+// added so we can start dumping from there after the "BasicBlock"s code is generated.
 //
 // Arguments:
 //  liveRangeIt - an iterator to a position in "VariableLiveDescriptor::m_VariableLiveRanges"
 //
-// Return Value:
-//  A const pointer to the "LiveRangeList" containing all the "VariableLiveRange"s
-//  of the variable with index "varNum".
-//
-// Notes:
-//  "varNum" should be always a valid inde ("varnum" < "m_LiveDscCount")
 void CodeGenInterface::VariableLiveKeeper::LiveRangeDumper::setDumperStartAt(const LiveRangeListIterator liveRangeIt)
 {
-    m_hasLiveRangestoDump = true;
-    m_StartingLiveRange   = liveRangeIt;
+    m_hasLiveRangesToDump = true;
+    m_startingLiveRange   = liveRangeIt;
 }
 
 //------------------------------------------------------------------------
@@ -8565,11 +8562,11 @@ void CodeGenInterface::VariableLiveKeeper::LiveRangeDumper::setDumperStartAt(con
 CodeGenInterface::VariableLiveKeeper::LiveRangeListIterator CodeGenInterface::VariableLiveKeeper::LiveRangeDumper::
     getStartForDump() const
 {
-    return m_StartingLiveRange;
+    return m_startingLiveRange;
 }
 
 //------------------------------------------------------------------------
-// hasLiveRangesToDump: Retutn whether at least a "VariableLiveRange" was alive during
+// hasLiveRangesToDump: Return whether at least a "VariableLiveRange" was alive during
 //  the current "BasicBlock"'s code generation
 //
 // Return Value:
@@ -8578,20 +8575,23 @@ CodeGenInterface::VariableLiveKeeper::LiveRangeListIterator CodeGenInterface::Va
 //
 bool CodeGenInterface::VariableLiveKeeper::LiveRangeDumper::hasLiveRangesToDump() const
 {
-    return m_hasLiveRangestoDump;
+    return m_hasLiveRangesToDump;
 }
+
 #endif // DEBUG
 
 //------------------------------------------------------------------------
 //                      VariableLiveDescriptor
 //------------------------------------------------------------------------
 
-CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::VariableLiveDescriptor(CompAllocator allocator)
+CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::VariableLiveDescriptor(
+    CompAllocator allocator DEBUG_ARG(unsigned varNum))
 {
     // Initialize an empty list
     m_VariableLiveRanges = new (allocator) LiveRangeList(allocator);
 
     INDEBUG(m_VariableLifeBarrier = new (allocator) LiveRangeDumper(m_VariableLiveRanges));
+    INDEBUG(m_varNum = varNum);
 }
 
 //------------------------------------------------------------------------
@@ -8618,15 +8618,14 @@ CodeGenInterface::VariableLiveKeeper::LiveRangeList* CodeGenInterface::VariableL
 
 //------------------------------------------------------------------------
 // startLiveRangeFromEmitter: Report this variable as being born in "varLocation"
-//  since the instruction where "emit" is located.
+//  at the instruction where "emit" is located.
 //
 // Arguments:
 //  varLocation  - the home of the variable.
-//  emit - an emitter* instance located at the first instruction from
-//  where "varLocation" becomes valid.
+//  emit - an emitter* instance located at the first instruction where "varLocation" becomes valid.
 //
 // Assumptions:
-//  This variable is being born so it should be dead.
+//  This variable is being born so it should currently be dead.
 //
 // Notes:
 //  The position of "emit" matters to ensure intervals inclusive of the
@@ -8644,7 +8643,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
         siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)) &&
         m_VariableLiveRanges->back().m_EndEmitLocation.IsPreviousInsNum(emit))
     {
-        JITDUMP("Extending debug range...\n");
+        JITDUMP("Debug: Extending V%02u debug range...\n", m_varNum);
 
         // The variable is being born just after the instruction at which it died.
         // In this case, i.e. an update of the variable's value, we coalesce the live ranges.
@@ -8652,7 +8651,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     }
     else
     {
-        JITDUMP("New debug range: %s\n",
+        JITDUMP("Debug: New V%02u debug range: %s\n", m_varNum,
                 m_VariableLiveRanges->empty()
                     ? "first"
                     : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation))
@@ -8670,21 +8669,21 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     }
 #endif // DEBUG
 
-    // startEmitLocationendEmitLocation has to be Valid and endEmitLocationendEmitLocation  not
+    // m_startEmitLocation must be Valid. m_EndEmitLocation must not be valid.
     noway_assert(m_VariableLiveRanges->back().m_StartEmitLocation.Valid());
     noway_assert(!m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
 }
 
 //------------------------------------------------------------------------
-// endLiveRangeAtEmitter: Report this variable as becoming dead since the
+// endLiveRangeAtEmitter: Report this variable as becoming dead starting at the
 //  instruction where "emit" is located.
 //
 // Arguments:
-//  emit - an emitter* instance located at the first instruction from
+//  emit - an emitter* instance located at the first instruction where
 //   this variable becomes dead.
 //
 // Assumptions:
-//  This variable is becoming dead so it should be alive.
+//  This variable is becoming dead so it should currently be alive.
 //
 // Notes:
 //  The position of "emit" matters to ensure intervals inclusive of the
@@ -8698,22 +8697,22 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::endLiveRangeA
     // Using [close, open) ranges so as to not compute the size of the last instruction
     m_VariableLiveRanges->back().m_EndEmitLocation.CaptureLocation(emit);
 
-    JITDUMP("Closing debug range.\n");
-    // No m_EndEmitLocation has to be Valid
+    JITDUMP("Debug: Closing V%02u debug range.\n", m_varNum);
+
+    // m_EndEmitLocation must be Valid
     noway_assert(m_VariableLiveRanges->back().m_EndEmitLocation.Valid());
 }
 
 //------------------------------------------------------------------------
-// UpdateLiveRangeAtEmitter: Report this variable as changing its variable
-//  home to "varLocation" since the instruction where "emit" is located.
+// updateLiveRangeAtEmitter: Report this variable as changing its variable
+//  home to "varLocation" at the instruction where "emit" is located.
 //
 // Arguments:
 //  varLocation  - the new variable location.
-//  emit - an emitter* instance located at the first instruction from
-//   where "varLocation" becomes valid.
+//  emit - an emitter* instance located at the first instruction where "varLocation" becomes valid.
 //
 // Assumptions:
-//  This variable is being born so it should be dead.
+//  This variable should already be alive.
 //
 // Notes:
 //  The position of "emit" matters to ensure intervals inclusive of the
@@ -8783,7 +8782,7 @@ bool CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::hasVarLiveRan
 // Reset the barrier so as to dump only next block changes on next block
 void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::endBlockLiveRanges()
 {
-    // make "m_VariableLifeBarrier->m_StartingLiveRange" now points to nullptr for printing purposes
+    // make "m_VariableLifeBarrier->m_startingLiveRange" now points to nullptr for printing purposes
     m_VariableLifeBarrier->resetDumper(m_VariableLiveRanges);
 }
 #endif // DEBUG
@@ -8791,6 +8790,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::endBlockLiveR
 //------------------------------------------------------------------------
 //                      VariableLiveKeeper
 //------------------------------------------------------------------------
+
 // Initialize structures for VariableLiveRanges
 void CodeGenInterface::initializeVariableLiveKeeper()
 {
@@ -8834,25 +8834,25 @@ CodeGenInterface::VariableLiveKeeper::VariableLiveKeeper(unsigned int  totalLoca
 
         for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
         {
-            new (m_vlrLiveDsc + varNum, jitstd::placement_t()) VariableLiveDescriptor(allocator);
-            new (m_vlrLiveDscForProlog + varNum, jitstd::placement_t()) VariableLiveDescriptor(allocator);
+            new (m_vlrLiveDsc + varNum, jitstd::placement_t()) VariableLiveDescriptor(allocator DEBUG_ARG(varNum));
+            new (m_vlrLiveDscForProlog + varNum, jitstd::placement_t())
+                VariableLiveDescriptor(allocator DEBUG_ARG(varNum));
         }
     }
 }
 
 //------------------------------------------------------------------------
-// siStartOrCloseVariableLiveRange: Reports the given variable as beign born
-//  or becoming dead.
+// siStartOrCloseVariableLiveRange: Reports the given variable as being born or becoming dead.
 //
 // Arguments:
 //    varDsc    - the variable for which a location changed will be reported
-//    varNum    - the index of the variable in the "compiler->lvaTable"
-//    isBorn    - whether the variable is being born from where the emitter is located.
-//    isDying   - whether the variable is dying from where the emitter is located.
+//    varNum    - the index of the variable in "lvaTable"
+//    isBorn    - true if the variable is being born where the emitter is located.
+//    isDying   - true if the variable is dying where the emitter is located.
 //
 // Assumptions:
-//    The emitter should be located on the first instruction from where is true that
-//    the variable becoming valid (when isBorn is true) or invalid (when isDying is true).
+//    The emitter should be located on the first instruction where
+//    the variable is becoming valid (when isBorn is true) or invalid (when isDying is true).
 //
 // Notes:
 //    This method is being called from treeLifeUpdater when the variable is being born,
@@ -8920,23 +8920,24 @@ void CodeGenInterface::VariableLiveKeeper::siStartOrCloseVariableLiveRanges(VARS
 // siStartVariableLiveRange: Reports the given variable as being born.
 //
 // Arguments:
-//    varDsc    - the variable for which a location changed will be reported
-//    varNum    - the index of the variable to report home in lvLiveDsc
+//    varDsc    - the variable descriptor for which a location change will be reported
+//    varNum    - the variable number
 //
 // Assumptions:
-//    The emitter should be pointing to the first instruction from where the VariableLiveRange is
+//    The emitter should be pointing to the first instruction where the VariableLiveRange is
 //    becoming valid.
 //    The given "varDsc" should have its VariableRangeLists initialized.
 //
 // Notes:
-//    This method should be called on every place a Variable is becoming alive.
+//    This method should be called at every location where a variable is becoming live.
+//
 void CodeGenInterface::VariableLiveKeeper::siStartVariableLiveRange(const LclVarDsc* varDsc, unsigned int varNum)
 {
     noway_assert(varDsc != nullptr);
 
     // Only the variables that exists in the IL, "this", and special arguments are reported, as long as they were
     // allocated.
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && (varDsc->lvIsInReg() || varDsc->lvOnFrame))
+    if (m_Compiler->opts.compDbgInfo && (varNum < m_LiveDscCount) && (varDsc->lvIsInReg() || varDsc->lvOnFrame))
     {
         // Build siVarLoc for this born "varDsc"
         CodeGenInterface::siVarLoc varLocation =
@@ -8957,22 +8958,23 @@ void CodeGenInterface::VariableLiveKeeper::siStartVariableLiveRange(const LclVar
 //
 // Assumptions:
 //    The given variable should be alive.
-//    The emitter should be pointing to the first instruction from where the VariableLiveRange is
+//    The emitter should be pointing to the first instruction where the VariableLiveRange is
 //    becoming invalid.
 //
 // Notes:
-//    This method should be called on every place a Variable is becoming dead.
+//    This method should be called at every location where a variable is becoming dead.
+//
 void CodeGenInterface::VariableLiveKeeper::siEndVariableLiveRange(unsigned int varNum)
 {
     // Only the variables that exists in the IL, "this", and special arguments
     // will be reported.
 
-    // This method is being called from genUpdateLife, and that one is called after
-    // code for BasicBlock have been generated, but the emitter has no longer
+    // This method is being called from genUpdateLife, which is called after
+    // code for BasicBlock has been generated, but the emitter no longer has
     // a valid IG so we don't report the close of a "VariableLiveRange" after code is
     // emitted.
 
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmitted &&
+    if (m_Compiler->opts.compDbgInfo && (varNum < m_LiveDscCount) && !m_LastBasicBlockHasBeenEmitted &&
         m_vlrLiveDsc[varNum].hasVariableLiveRangeOpen())
     {
         // this variable live range is no longer valid from this point
@@ -8985,26 +8987,26 @@ void CodeGenInterface::VariableLiveKeeper::siEndVariableLiveRange(unsigned int v
 //  given variable.
 //
 // Arguments:
-//    varDsc    - the variable for which tis home has changed.
-//    varNum    - the index of the variable to report home in lvLiveDsc
+//    varDsc    - the variable descriptor for which the home has changed.
+//    varNum    - the variable number
 //
 // Assumptions:
 //    The given variable should be alive.
-//    The emitter should be pointing to the first instruction from where
+//    The emitter should be pointing to the first instruction where
 //    the new variable location is becoming valid.
 //
 void CodeGenInterface::VariableLiveKeeper::siUpdateVariableLiveRange(const LclVarDsc* varDsc, unsigned int varNum)
 {
     noway_assert(varDsc != nullptr);
 
-    // Only the variables that exists in the IL, "this", and special arguments
-    // will be reported. This are locals and arguments, and are counted in
+    // Only the variables that exist in the IL, "this", and special arguments
+    // will be reported. These are locals and arguments, and are counted in
     // "info.compLocalsCount".
 
     // This method is being called when the prolog is being generated, and
-    // the emitter has no longer a valid IG so we don't report the close of
-    //  a "VariableLiveRange" after code is emitted.
-    if (m_Compiler->opts.compDbgInfo && varNum < m_LiveDscCount && !m_LastBasicBlockHasBeenEmitted)
+    // the emitter no longer has a valid IG so we don't report the close of
+    // a "VariableLiveRange" after code is emitted.
+    if (m_Compiler->opts.compDbgInfo && (varNum < m_LiveDscCount) && !m_LastBasicBlockHasBeenEmitted)
     {
         // Build the location of the variable
         CodeGenInterface::siVarLoc siVarLoc =
@@ -9029,6 +9031,7 @@ void CodeGenInterface::VariableLiveKeeper::siUpdateVariableLiveRange(const LclVa
 //    This method is called when the last block being generated to killed all
 //    the live variables and set a flag to avoid reporting variable locations for
 //    on next calls to method that update variable liveness.
+//
 void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange(VARSET_VALARG_TP varsToClose)
 {
     if (m_Compiler->opts.compDbgInfo)
@@ -9045,7 +9048,7 @@ void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange(VARSET_VALA
         }
         else
         {
-            // It seems we are jitting debug code, so we don't have variable
+            // It seems we are compiling debug code, so we don't have variable
             //  liveness info
             siEndAllVariableLiveRange();
         }
@@ -9058,9 +9061,9 @@ void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange(VARSET_VALA
 // siEndAllVariableLiveRange: Reports all live variables as dead.
 //
 // Notes:
-//    This overload exists for the case we are jitting code compiled in
+//    This overload exists for the case we are compiling code compiled in
 //    debug mode. When that happen we don't have variable liveness info
-//    as "BaiscBlock::bbLiveIn" or "BaiscBlock::bbLiveOut" and there is no
+//    as "BasicBlock::bbLiveIn" or "BasicBlock::bbLiveOut" and there is no
 //    tracked variable.
 //
 void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange()
@@ -9161,9 +9164,9 @@ size_t CodeGenInterface::VariableLiveKeeper::getLiveRangesCount() const
 // psiStartVariableLiveRange: Reports the given variable as being born.
 //
 // Arguments:
-//  varLcation  - the variable location
+//  varLocation - the variable location
 //  varNum      - the index of the variable in "compiler->lvaTable" or
-//      "VariableLivekeeper->m_vlrLiveDsc"
+//      "VariableLiveKeeper->m_vlrLiveDsc"
 //
 // Notes:
 //  This function is expected to be called from "psiBegProlog" during
@@ -9184,7 +9187,7 @@ void CodeGenInterface::VariableLiveKeeper::psiStartVariableLiveRange(CodeGenInte
 // psiClosePrologVariableRanges: Report all the parameters as becoming dead.
 //
 // Notes:
-//  This function is expected to be called from preffix "psiEndProlog" after
+//  This function is expected to be called from "psiEndProlog" after
 //  code for prolog has been generated.
 //
 void CodeGenInterface::VariableLiveKeeper::psiClosePrologVariableRanges()

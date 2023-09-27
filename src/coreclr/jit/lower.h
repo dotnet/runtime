@@ -269,7 +269,7 @@ private:
     // operands.
     //
     // Arguments:
-    //     tree  -             Gentree of a binary operation.
+    //     tree  -             GenTree of a binary operation.
     //     isSafeToMarkOp1     True if it's safe to mark op1 as register optional
     //     isSafeToMarkOp2     True if it's safe to mark op2 as register optional
     //

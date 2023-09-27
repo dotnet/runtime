@@ -9260,7 +9260,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 /* V4.0 allows assignment of i4 constant values to i8 type vars when IL verifier is bypassed (full
-                trust apps). The reason this works is that JIT stores an i4 constant in Gentree union during
+                trust apps). The reason this works is that JIT stores an i4 constant in GenTree union during
                 importation and reads from the union as if it were a long during code generation. Though this
                 can potentially read garbage, one can get lucky to have this working correctly.
 
