@@ -75,6 +75,18 @@ namespace ILCompiler.ObjectWriter
                 _sectionIndexToElfSection[_sectionIndex++] = elfSection;
                 _objectFile.AddSection(elfSection);
             }
+            else if (section == ObjectNodeSection.TLSSection)
+            {
+                ElfSection elfSection = new ElfBinarySection(sectionStream)
+                {
+                    Name = sectionName,
+                    Type = ElfSectionType.ProgBits,
+                    Flags = ElfSectionFlags.Alloc | ElfSectionFlags.Write | ElfSectionFlags.Tls
+                };
+
+                _sectionIndexToElfSection[_sectionIndex++] = elfSection;
+                _objectFile.AddSection(elfSection);
+            }
             else
             {
                 ElfSection elfSection = new ElfBinarySection(sectionStream)
@@ -122,7 +134,9 @@ namespace ILCompiler.ObjectWriter
             // the destination with the addend from relocation table.
 
             if (relocType == RelocType.IMAGE_REL_BASED_REL32 ||
-                relocType == RelocType.IMAGE_REL_BASED_RELPTR32)
+                relocType == RelocType.IMAGE_REL_BASED_RELPTR32 ||
+                relocType == RelocType.IMAGE_REL_TLSGD ||
+                relocType == RelocType.IMAGE_REL_TPOFF)
             {
                 addend += BinaryPrimitives.ReadInt32LittleEndian(data);
                 BinaryPrimitives.WriteInt32LittleEndian(data, 0);
@@ -162,13 +176,16 @@ namespace ILCompiler.ObjectWriter
             var sortedSymbols = new List<ElfSymbol>(definedSymbols.Count);
             foreach (var (name, definition) in definedSymbols)
             {
+                var elfSection = _sectionIndexToElfSection[definition.SectionIndex];
                 sortedSymbols.Add(new ElfSymbol
                 {
                     Name = name,
                     Bind = ElfSymbolBind.Global,
-                    Section = _sectionIndexToElfSection[definition.SectionIndex],
+                    Section = elfSection,
                     Value = (ulong)definition.Value,
-                    Type = definition.Size > 0 ? ElfSymbolType.Function : 0,
+                    Type =
+                        elfSection.Flags.HasFlag(ElfSectionFlags.Tls) ? ElfSymbolType.Tls :
+                        definition.Size > 0 ? ElfSymbolType.Function : 0,
                     Size = (ulong)definition.Size,
                     Visibility = definition.Global ? ElfSymbolVisibility.Default : ElfSymbolVisibility.Hidden,
                 });
@@ -263,6 +280,8 @@ namespace ILCompiler.ObjectWriter
                         RelocType.IMAGE_REL_BASED_DIR64 => ElfRelocationType.R_X86_64_64,
                         RelocType.IMAGE_REL_BASED_RELPTR32 => ElfRelocationType.R_X86_64_PC32,
                         RelocType.IMAGE_REL_BASED_REL32 => ElfRelocationType.R_X86_64_PLT32,
+                        RelocType.IMAGE_REL_TLSGD => ElfRelocationType.R_X86_64_TLSGD,
+                        RelocType.IMAGE_REL_TPOFF => ElfRelocationType.R_X86_64_TPOFF32,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
