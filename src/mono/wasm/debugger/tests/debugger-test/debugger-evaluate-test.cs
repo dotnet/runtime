@@ -536,12 +536,12 @@ namespace DebuggerTests
         public class ClassWithIndexers
         {
             // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
-            public string this[char key] => "res_" + key;
-            public string this[bool key] => key.ToString();
-            public bool this[string key] => key.Length > 3;
-            public int this[double key] => (int)key;
-            public int this[float key] => (int)key;
-            public int this[decimal key] => (int)key;
+            public string this[char keyChar] => "res_" + keyChar;
+            public string this[bool keyBool] => keyBool.ToString();
+            public bool this[string keyStr] => keyStr.Length > 3;
+            public int this[double keyDouble] => (int)keyDouble;
+            public int this[float keyFloat] => (int)keyFloat;
+            public int this[decimal keyDecimal] => (int)keyDecimal;
             public int this[Indexer indexer] => indexer.index;
             public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
 
@@ -552,14 +552,16 @@ namespace DebuggerTests
         public struct StructWithIndexers
         {
             // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
-            public string this[char key] => "res_" + key;
-            public string this[bool key] => key.ToString();
-            public bool this[string key] => key.Length > 3;
-            public int this[double key] => (int)key;
-            public int this[float key] => (int)key;
-            public int this[decimal key] => (int)key;
+            public string this[char keyChar] => "res_" + keyChar;
+            public string this[bool keyBool] => keyBool.ToString();
+            public bool this[string keyStr] => keyStr.Length > 3;
+            public int this[double keyDouble] => (int)keyDouble;
+            public int this[float keyFloat] => (int)keyFloat;
+            public int this[decimal keyDecimal] => (int)keyDecimal;
             public int this[Indexer indexer] => indexer.index;
             public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
+
+            // public InlineArray.Arr1 inlineArr; // ToDo: Inline Arrays with Indexers fail on debugger side
         }
 
         public static void EvaluateLocals()
