@@ -6023,7 +6023,18 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 
 bool ValueNumStore::IsVNObjHandle(ValueNum vn)
 {
-    return IsVNHandle(vn) && GetHandleFlags(vn) == GTF_ICON_OBJ_HDL;
+    if (vn == NoVN)
+    {
+        return false;
+    }
+
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    if (c->m_attribs == CEA_Handle)
+    {
+        VNHandle* handle = &reinterpret_cast<VNHandle*>(c->m_defs)[ChunkOffset(vn)];
+        return handle->m_flags == GTF_ICON_OBJ_HDL;
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------

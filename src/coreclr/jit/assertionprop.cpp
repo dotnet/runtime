@@ -5824,9 +5824,15 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
 //
 Compiler::fgWalkResult Compiler::optVNGenericPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
 {
-    if (tree->OperIs(GT_KEEPALIVE) && vnStore->IsVNObjHandle(tree->gtGetOp1()->gtVNPair.GetConservative()))
+    if (tree->OperIs(GT_KEEPALIVE))
     {
-        optAssertionProp_Update(gtNewNothingNode(), tree, stmt);
+        const ValueNumPair opVnp = tree->gtGetOp1()->gtVNPair;
+        if (opVnp.BothEqual() && vnStore->IsVNObjHandle(tree->gtGetOp1()->gtVNPair.GetLiberal()))
+        {
+            tree->gtBashToNOP();
+            optAssertionPropagated            = true;
+            optAssertionPropagatedCurrentStmt = true;
+        }
     }
     return WALK_CONTINUE;
 }
