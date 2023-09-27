@@ -5698,8 +5698,6 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
                                                           GenTree*    tree,
                                                           bool*       changed)
 {
-    *changed = false;
-
     // Don't perform const prop on expressions marked with GTF_DONT_CSE
     // TODO-ASG: delete.
     if (!tree->CanCSE())
@@ -5820,33 +5818,15 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
 //    block   - The block that contains the statement that contains the tree.
 //    stmt    - The statement node in which the "tree" is present.
 //    tree    - The currently visited tree node.
-//    changed - [OUT] changes were made.
 //
 // Return Value:
 //    Returns the standard visitor walk result.
 //
-Compiler::fgWalkResult Compiler::optVNGenericPropCurStmt(BasicBlock* block,
-                                                         Statement*  stmt,
-                                                         GenTree*    tree,
-                                                         bool*       changed)
+Compiler::fgWalkResult Compiler::optVNGenericPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
 {
-    *changed = false;
-
-    switch (tree->OperGet())
+    if (tree->OperIs(GT_KEEPALIVE) && vnStore->IsVNObjHandle(tree->gtGetOp1()->gtVNPair.GetConservative()))
     {
-        case GT_KEEPALIVE:
-        {
-            if (vnStore->IsVNObjHandle(tree->gtGetOp1()->gtVNPair.GetConservative()))
-            {
-                optAssertionProp_Update(gtNewNothingNode(), tree, stmt);
-                *changed = true;
-                return WALK_CONTINUE;
-            }
-        }
-        break;
-
-        default:
-            return WALK_CONTINUE;
+        optAssertionProp_Update(gtNewNothingNode(), tree, stmt);
     }
     return WALK_CONTINUE;
 }
@@ -5913,13 +5893,16 @@ Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTr
 
     pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
 
-    bool         changed;
+    bool         changed    = false;
     fgWalkResult walkResult = pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, *ppTree, &changed);
-    if (!changed && (walkResult == WALK_CONTINUE))
+    // Remove this assert if we decide to use other types WALK_* return values.
+    assert(walkResult == WALK_CONTINUE);
+    if (!changed)
     {
-        walkResult = pThis->optVNGenericPropCurStmt(pData->block, pData->stmt, *ppTree, &changed);
+        walkResult = pThis->optVNGenericPropCurStmt(pData->block, pData->stmt, *ppTree);
+        assert(walkResult == WALK_CONTINUE);
     }
-    return walkResult;
+    return WALK_CONTINUE;
 }
 
 /*****************************************************************************
