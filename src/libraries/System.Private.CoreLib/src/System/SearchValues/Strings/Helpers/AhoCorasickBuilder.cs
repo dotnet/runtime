@@ -48,7 +48,7 @@ namespace System.Buffers
                 _nodes[i].OptimizeChildren();
             }
 
-            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
                 GenerateStartingAsciiCharsBitmap();
             }

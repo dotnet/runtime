@@ -30,7 +30,7 @@ namespace System.Buffers
         {
             get
             {
-                if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && _startingAsciiChars.Bitmap != default)
+                if (Vector128.IsHardwareAccelerated && _startingAsciiChars.Bitmap != default)
                 {
                     // If there are a lot of starting characters such that we often find one early,
                     // the ASCII fast scan may end up performing worse than checking one character at a time.
@@ -87,7 +87,7 @@ namespace System.Buffers
             Debug.Assert(nodeIndex == 0);
             // We are currently in the root node and trying to find the next position of any starting character.
             // If all the values start with an ASCII character, use a vectorized helper to quickly skip over characters that can't start a match.
-            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && typeof(TFastScanVariant) == typeof(IndexOfAnyAsciiFastScan))
+            if (Vector128.IsHardwareAccelerated && typeof(TFastScanVariant) == typeof(IndexOfAnyAsciiFastScan))
             {
                 int remainingLength = span.Length - i;
 
@@ -192,7 +192,7 @@ namespace System.Buffers
         FastScan:
             // We are currently in the root node and trying to find the next position of any starting character.
             // If all the values start with an ASCII character, use a vectorized helper to quickly skip over characters that can't start a match.
-            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && typeof(TFastScanVariant) == typeof(IndexOfAnyAsciiFastScan))
+            if (Vector128.IsHardwareAccelerated && typeof(TFastScanVariant) == typeof(IndexOfAnyAsciiFastScan))
             {
                 if (lowSurrogateUpper != LowSurrogateNotSet)
                 {

@@ -20,7 +20,7 @@ namespace System.Buffers
 
         public ProbabilisticWithAsciiCharSearchValues(scoped ReadOnlySpan<char> values)
         {
-            Debug.Assert(IndexOfAnyAsciiSearcher.IsVectorizationSupported);
+            Debug.Assert(Vector128.IsHardwareAccelerated);
             Debug.Assert(values.ContainsAnyInRange((char)0, (char)127));
 
             IndexOfAnyAsciiSearcher.ComputeAsciiState(values, out _asciiState);
@@ -42,7 +42,7 @@ namespace System.Buffers
 
             // We check whether the first character is ASCII before calling into IndexOfAnyAsciiSearcher
             // in order to minimize the overhead this fast-path has on non-ASCII texts.
-            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && span.Length >= Vector128<short>.Count && char.IsAscii(span[0]))
+            if (span.Length >= Vector128<short>.Count && char.IsAscii(span[0]))
             {
                 // We are using IndexOfAnyAsciiSearcher to search for the first ASCII character in the set, or any non-ASCII character.
                 // We do this by inverting the bitmap and using the opposite search function (Negate instead of DontNegate).
@@ -104,7 +104,7 @@ namespace System.Buffers
 
             // We check whether the first character is ASCII before calling into IndexOfAnyAsciiSearcher
             // in order to minimize the overhead this fast-path has on non-ASCII texts.
-            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && span.Length >= Vector128<short>.Count && char.IsAscii(span[0]))
+            if (span.Length >= Vector128<short>.Count && char.IsAscii(span[0]))
             {
                 // Do a regular IndexOfAnyExcept for the ASCII characters. The search will stop if we encounter a non-ASCII char.
                 offset = IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(
@@ -140,7 +140,7 @@ namespace System.Buffers
         {
             // We check whether the last character is ASCII before calling into IndexOfAnyAsciiSearcher
             // in order to minimize the overhead this fast-path has on non-ASCII texts.
-            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && span.Length >= Vector128<short>.Count && char.IsAscii(span[^1]))
+            if (span.Length >= Vector128<short>.Count && char.IsAscii(span[^1]))
             {
                 // We are using IndexOfAnyAsciiSearcher to search for the last ASCII character in the set, or any non-ASCII character.
                 // We do this by inverting the bitmap and using the opposite search function (Negate instead of DontNegate).
@@ -194,7 +194,7 @@ namespace System.Buffers
         {
             // We check whether the last character is ASCII before calling into IndexOfAnyAsciiSearcher
             // in order to minimize the overhead this fast-path has on non-ASCII texts.
-            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && span.Length >= Vector128<short>.Count && char.IsAscii(span[^1]))
+            if (span.Length >= Vector128<short>.Count && char.IsAscii(span[^1]))
             {
                 // Do a regular LastIndexOfAnyExcept for the ASCII characters. The search will stop if we encounter a non-ASCII char.
                 int offset = IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<IndexOfAnyAsciiSearcher.Negate, TOptimizations>(

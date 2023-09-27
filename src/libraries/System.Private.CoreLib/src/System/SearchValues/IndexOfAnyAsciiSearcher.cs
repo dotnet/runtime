@@ -32,8 +32,6 @@ namespace System.Buffers
             public BitVector256 Lookup = lookup;
         }
 
-        internal static bool IsVectorizationSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
-
         internal static unsafe void ComputeAnyByteState(ReadOnlySpan<byte> values, out AnyByteState state)
         {
             // The exact format of these bitmaps differs from the other ComputeBitmap overloads as it's meant for the full [0, 255] range algorithm.
@@ -139,7 +137,7 @@ namespace System.Buffers
         {
             Debug.Assert(searchSpaceLength >= Vector128<short>.Count);
 
-            if (IsVectorizationSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
                 AsciiState state = default;
 
@@ -166,7 +164,7 @@ namespace System.Buffers
         {
             Debug.Assert(searchSpaceLength >= Vector128<short>.Count);
 
-            if (IsVectorizationSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
                 AsciiState state = default;
 
@@ -187,9 +185,6 @@ namespace System.Buffers
             return false;
         }
 
-        [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
-        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref AsciiState state)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -322,9 +317,6 @@ namespace System.Buffers
             return -1;
         }
 
-        [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
-        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, ref AsciiState state)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -451,9 +443,6 @@ namespace System.Buffers
             return -1;
         }
 
-        [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
-        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AsciiState state)
             where TNegator : struct, INegator
         {
@@ -579,9 +568,6 @@ namespace System.Buffers
             return -1;
         }
 
-        [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
-        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AsciiState state)
             where TNegator : struct, INegator
         {
@@ -703,15 +689,12 @@ namespace System.Buffers
             return -1;
         }
 
-        [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
-        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorizedAnyByte<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AnyByteState state)
             where TNegator : struct, INegator
         {
             ref byte currentSearchSpace = ref searchSpace;
 
-            if (!IsVectorizationSupported || searchSpaceLength < sizeof(ulong))
+            if (!Vector128.IsHardwareAccelerated || searchSpaceLength < sizeof(ulong))
             {
                 ref byte searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
@@ -835,13 +818,10 @@ namespace System.Buffers
             return -1;
         }
 
-        [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
-        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorizedAnyByte<TNegator>(ref byte searchSpace, int searchSpaceLength, ref AnyByteState state)
             where TNegator : struct, INegator
         {
-            if (!IsVectorizationSupported || searchSpaceLength < sizeof(ulong))
+            if (!Vector128.IsHardwareAccelerated || searchSpaceLength < sizeof(ulong))
             {
                 for (int i = searchSpaceLength - 1; i >= 0; i--)
                 {
@@ -964,9 +944,6 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Sse2))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
-        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookup<TNegator, TOptimizations>(Vector128<short> source0, Vector128<short> source1, Vector128<byte> bitmapLookup)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -979,9 +956,6 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
-        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookupCore(Vector128<byte> source, Vector128<byte> bitmapLookup)
         {
             // On X86, the Ssse3.Shuffle instruction will already perform an implicit 'AND 0xF' on the indices, so we can skip it.
@@ -992,17 +966,19 @@ namespace System.Buffers
 
             // On ARM, we have an instruction for an arithmetic right shift of 1-byte signed values.
             // The shift will map values above 127 to values above 16, which the shuffle will then map to 0.
-            // On X86 and WASM, use a logical right shift instead.
+            // On other targets, use a logical right shift instead.
             Vector128<byte> highNibbles = AdvSimd.IsSupported
                 ? AdvSimd.ShiftRightArithmetic(source.AsSByte(), 4).AsByte()
                 : source >>> 4;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibHelper // We are relying on the value of 'Ssse3.IsSupported' to match in this method and the 'ShuffleUnsafe` helper.
             // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.
             // Lookup the rows via the lower nibble and the column via the higher nibble.
             Vector128<byte> bitMask = Vector128.ShuffleUnsafe(bitmapLookup, lowNibbles);
 
             // For values above 127, the high nibble will be above 7. We construct the positions vector for the shuffle such that those values map to 0.
             Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201, 0).AsByte(), highNibbles);
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibHelper
 
             Vector128<byte> result = bitMask & bitPositions;
             return result;
@@ -1034,21 +1010,21 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd))]
-        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookup<TNegator>(Vector128<byte> source, Vector128<byte> bitmapLookup0, Vector128<byte> bitmapLookup1)
             where TNegator : struct, INegator
         {
             // http://0x80.pl/articles/simd-byte-lookup.html#universal-algorithm
 
             Vector128<byte> lowNibbles = source & Vector128.Create((byte)0xF);
-            Vector128<byte> highNibbles = Vector128.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector128.Create((byte)0xF);
+            Vector128<byte> highNibbles = source >>> 4;
 
+            // We are not relying on which exact intrinsic is used here. We're calling ShuffleUnsafe because we know the indices will be [0, 15].
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibHelper
             Vector128<byte> row0 = Vector128.ShuffleUnsafe(bitmapLookup0, lowNibbles);
             Vector128<byte> row1 = Vector128.ShuffleUnsafe(bitmapLookup1, lowNibbles);
 
             Vector128<byte> bitmask = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), highNibbles);
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibHelper
 
             Vector128<byte> mask = Vector128.GreaterThan(highNibbles.AsSByte(), Vector128.Create((sbyte)0x7)).AsByte();
             Vector128<byte> bitsets = Vector128.ConditionalSelect(mask, row1, row0);
@@ -1066,7 +1042,7 @@ namespace System.Buffers
             // http://0x80.pl/articles/simd-byte-lookup.html#universal-algorithm
 
             Vector256<byte> lowNibbles = source & Vector256.Create((byte)0xF);
-            Vector256<byte> highNibbles = Vector256.ShiftRightLogical(source.AsInt32(), 4).AsByte() & Vector256.Create((byte)0xF);
+            Vector256<byte> highNibbles = source >>> 4;
 
             Vector256<byte> row0 = Avx2.Shuffle(bitmapLookup0, lowNibbles);
             Vector256<byte> row1 = Avx2.Shuffle(bitmapLookup1, lowNibbles);
@@ -1276,15 +1252,14 @@ namespace System.Buffers
         internal readonly struct Default : IOptimizations
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [CompExactlyDependsOn(typeof(Sse2))]
-            [CompExactlyDependsOn(typeof(AdvSimd))]
-            [CompExactlyDependsOn(typeof(PackedSimd))]
             public static Vector128<byte> PackSources(Vector128<ushort> lower, Vector128<ushort> upper)
             {
                 return
-                    Sse2.IsSupported ? Sse2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16()) :
+                    Ssse3.IsSupported ? Sse2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16()) :
                     AdvSimd.IsSupported ? AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(lower), upper) :
-                    PackedSimd.ConvertNarrowingSaturateUnsigned(lower.AsInt16(), upper.AsInt16());
+                    PackedSimd.IsSupported ? PackedSimd.ConvertNarrowingSaturateUnsigned(lower.AsInt16(), upper.AsInt16()) :
+                    // Replace the Vector128 path with NarrowWithSaturation once https://github.com/dotnet/runtime/issues/75724 is implemented.
+                    Vector128.Narrow(Vector128.Min(lower, Vector128.Create((ushort)255)), Vector128.Min(upper, Vector128.Create((ushort)255)));
             }
 
             [CompExactlyDependsOn(typeof(Avx2))]

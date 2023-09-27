@@ -233,7 +233,7 @@ namespace System.Buffers
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
-            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported &&
+            if (Vector128.IsHardwareAccelerated &&
                 !ShouldUseSimpleLoop(searchSpaceLength, valuesLength) &&
                 IndexOfAnyAsciiSearcher.TryIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out int index))
             {
@@ -265,7 +265,7 @@ namespace System.Buffers
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
 
-            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported &&
+            if (Vector128.IsHardwareAccelerated &&
                 !ShouldUseSimpleLoop(searchSpaceLength, valuesLength) &&
                 IndexOfAnyAsciiSearcher.TryLastIndexOfAnyExcept(ref searchSpace, searchSpaceLength, valuesSpan, out int index))
             {
