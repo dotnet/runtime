@@ -468,22 +468,6 @@ namespace CorUnix
         };
 
         void
-        BeginTrackingSystemCallErrors(
-            void
-            );
-
-        static void
-        AppendSystemCallError(
-            LPCSTR format,
-            ...
-            );
-
-        LPCSTR
-        EndTrackingSystemCallErrors(
-            bool getSystemCallErrors
-            );
-
-        void
         SetExitCode(
             DWORD dwExitCode
             )

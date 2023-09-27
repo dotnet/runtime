@@ -1048,6 +1048,16 @@ CreateMutexExW(
     IN DWORD dwFlags,
     IN DWORD dwDesiredAccess);
 
+PALIMPORT
+HANDLE
+PALAPI
+PAL_CreateMutexW(
+    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
+    IN BOOL bInitialOwner,
+    IN LPCWSTR lpName,
+    IN LPSTR lpSystemCallErrors,
+    IN DWORD dwSystemCallErrorsBufferSize);
+
 // CreateMutexExW: dwFlags
 #define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
 
@@ -1060,6 +1070,16 @@ OpenMutexW(
        IN DWORD dwDesiredAccess,
        IN BOOL bInheritHandle,
        IN LPCWSTR lpName);
+
+PALIMPORT
+HANDLE
+PALAPI
+PAL_OpenMutexW(
+       IN DWORD dwDesiredAccess,
+       IN BOOL bInheritHandle,
+       IN LPCWSTR lpName,
+       IN LPSTR lpSystemCallErrors,
+       IN DWORD dwSystemCallErrorsBufferSize);
 
 #ifdef UNICODE
 #define OpenMutex  OpenMutexW
@@ -3791,16 +3811,6 @@ VOID
 PALAPI
 SetLastError(
          IN DWORD dwErrCode);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_BeginTrackingSystemCallErrors();
-
-PALIMPORT
-LPCSTR
-PALAPI
-PAL_EndTrackingSystemCallErrors(bool getSystemCallErrors);
 
 PALIMPORT
 LPWSTR

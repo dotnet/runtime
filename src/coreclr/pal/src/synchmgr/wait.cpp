@@ -440,7 +440,7 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
         try
         {
             MutexTryAcquireLockResult tryAcquireLockResult =
-                static_cast<NamedMutexProcessData *>(processDataHeader->GetData())->TryAcquireLock(dwMilliseconds);
+                static_cast<NamedMutexProcessData *>(processDataHeader->GetData())->TryAcquireLock(nullptr, dwMilliseconds);
             switch (tryAcquireLockResult)
             {
                 case MutexTryAcquireLockResult::AcquiredLock:

@@ -447,43 +447,6 @@ FCIMPL1(void, MarshalNative::SetLastPInvokeError, int error)
 FCIMPLEND
 
 /************************************************************************
- * Marshal.BeginTrackingSystemCallErrors
- */
-FCIMPL0(void, MarshalNative::BeginTrackingSystemCallErrors)
-{
-    FCALL_CONTRACT;
-
-#ifdef TARGET_UNIX
-    PAL_BeginTrackingSystemCallErrors();
-#endif // TARGET_UNIX
-}
-FCIMPLEND
-
-/************************************************************************
- * Marshal.EndTrackingSystemCallErrors
- */
-FCIMPL1(StringObject *, MarshalNative::EndTrackingSystemCallErrors, CLR_BOOL getSystemCallErrors)
-{
-    FCALL_CONTRACT;
-
-#ifdef TARGET_UNIX
-    STRINGREF errorsRef = NULL;
-    LPCUTF8 errorsBuffer = PAL_EndTrackingSystemCallErrors(getSystemCallErrors);
-    if (errorsBuffer != NULL)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-        errorsRef = StringObject::NewString(errorsBuffer);
-        HELPER_METHOD_FRAME_END();
-    }
-
-    return (StringObject *)OBJECTREFToObject(errorsRef);
-#else // !TARGET_UNIX
-    return NULL;
-#endif // TARGET_UNIX
-}
-FCIMPLEND
-
-/************************************************************************
  * Support for the GCHandle class.
  */
 

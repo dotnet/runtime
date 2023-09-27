@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
-using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
@@ -17,17 +18,21 @@ namespace System.Threading
 
         private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
         {
-            uint mutexFlags = initiallyOwned ? Interop.Kernel32.CREATE_MUTEX_INITIAL_OWNER : 0;
-            SafeWaitHandle mutexHandle = Interop.Kernel32.CreateMutexEx(IntPtr.Zero, name, mutexFlags, AccessRights);
-            int errorCode = Marshal.GetLastPInvokeError();
+            SafeWaitHandle mutexHandle =
+                CreateMutexCore(0, initiallyOwned, name, AccessRights, out int errorCode, out string? errorDetails);
 
             if (mutexHandle.IsInvalid)
             {
                 mutexHandle.SetHandleAsInvalid();
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+                if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
+                    // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
+                    throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
+#endif
                 if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name, errorDetails);
             }
 
             createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
@@ -43,14 +48,19 @@ namespace System.Threading
             // with parameters to allow us to view & edit the ACL.  This will
             // fail if we don't have permission to view or edit the ACL's.
             // If that happens, ask for less permissions.
-            SafeWaitHandle myHandle = Interop.Kernel32.OpenMutex(AccessRights, false, name);
+            SafeWaitHandle myHandle = OpenMutexCore(AccessRights, false, name, out int errorCode, out string? errorDetails);
 
             if (myHandle.IsInvalid)
             {
-                int errorCode = Marshal.GetLastPInvokeError();
-
                 myHandle.Dispose();
 
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+                if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
+                {
+                    // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
+                    throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
+                }
+#endif
                 if (Interop.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.Errors.ERROR_INVALID_NAME == errorCode)
                     return OpenExistingResult.NameNotFound;
                 if (Interop.Errors.ERROR_PATH_NOT_FOUND == errorCode)
@@ -58,7 +68,7 @@ namespace System.Threading
                 if (Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
 
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name, errorDetails);
             }
 
             result = new Mutex(myHandle);

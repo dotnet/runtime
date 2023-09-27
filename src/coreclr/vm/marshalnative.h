@@ -33,8 +33,6 @@ public:
     static FCDECL1(UINT32, OffsetOfHelper, ReflectFieldObject* pFieldUNSAFE);
     static FCDECL0(int, GetLastPInvokeError);
     static FCDECL1(void, SetLastPInvokeError, int error);
-    static FCDECL0(void, BeginTrackingSystemCallErrors);
-    static FCDECL1(StringObject *, EndTrackingSystemCallErrors, CLR_BOOL getSystemCallErrors);
 
     static FCDECL3(VOID, StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR_BOOL fDeleteOld);
     static FCDECL3(VOID, PtrToStructureHelper, LPVOID ptr, Object* pObjIn, CLR_BOOL allowValueClasses);

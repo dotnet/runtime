@@ -206,29 +206,6 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetLastPInvokeError(int error);
 
-        /// <summary>
-        /// Begins tracking system call errors on the calling thread during PAL APIs. The system call errors may include
-        /// information about the system call made, relevant arguments, return values, and error codes. A call to this method
-        /// should be followed by a call to <see cref="EndTrackingSystemCallErrors"/> on the same thread, which returns the set
-        /// of system call errors that occurred on the thread in that period. Only system call errors that lead to PAL API
-        /// failures may be tracked.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void BeginTrackingSystemCallErrors();
-
-        /// <summary>
-        /// Retrieves system call errors that occurred on the calling thread since <see cref="BeginTrackingSystemCallErrors"/>
-        /// was called.
-        /// </summary>
-        /// <param name="getSystemCallErrors">Indicates whether to return the accumulated system call errors.</param>
-        /// <returns>
-        /// System call errors that occurred on the calling thread since <see cref="BeginTrackingSystemCallErrors"/> was called.
-        /// Returns <code>null</code> if <see cref="BeginTrackingSystemCallErrors"/> has not been called, or if no system call
-        /// errors occurred on the calling thread since it was last called.
-        /// </returns>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern string EndTrackingSystemCallErrors(bool getSystemCallErrors);
-
         private static void PrelinkCore(MethodInfo m)
         {
             if (!(m is RuntimeMethodInfo rmi))

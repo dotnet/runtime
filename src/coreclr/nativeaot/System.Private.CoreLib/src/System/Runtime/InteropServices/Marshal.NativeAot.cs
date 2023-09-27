@@ -210,27 +210,6 @@ namespace System.Runtime.InteropServices
             PInvokeMarshal.t_lastError = error;
         }
 
-        /// <summary>
-        /// Begins tracking system call errors on the calling thread during PAL APIs. The system call errors may include
-        /// information about the system call made, relevant arguments, return values, and error codes. A call to this method
-        /// should be followed by a call to <see cref="EndTrackingSystemCallErrors"/> on the same thread, which returns the set
-        /// of system call errors that occurred on the thread in that period. Only system call errors that lead to PAL API
-        /// failures may be tracked.
-        /// </summary>
-        internal static void BeginTrackingSystemCallErrors() { }
-
-        /// <summary>
-        /// Retrieves system call errors that occurred on the calling thread since <see cref="BeginTrackingSystemCallErrors"/>
-        /// was called.
-        /// </summary>
-        /// <param name="getSystemCallErrors">Indicates whether to return the accumulated system call errors.</param>
-        /// <returns>
-        /// System call errors that occurred on the calling thread since <see cref="BeginTrackingSystemCallErrors"/> was called.
-        /// Returns <code>null</code> if <see cref="BeginTrackingSystemCallErrors"/> has not been called, or if no system call
-        /// errors occurred on the calling thread since it was last called.
-        /// </returns>
-        internal static string EndTrackingSystemCallErrors(bool getSystemCallErrors) => null;
-
         internal static bool IsPinnable(object o)
         {
             return (o == null) || !o.GetEETypePtr().ContainsGCPointers;

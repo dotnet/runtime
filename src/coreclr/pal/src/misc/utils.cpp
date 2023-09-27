@@ -367,11 +367,24 @@ BOOL IsRunningOnMojaveHardenedRuntime()
 
 #endif // __APPLE__
 
-const char *GetFriendlyErrorCodeString(int errorCode, char (&rawErrorCodeStringBuffer)[RawErrorCodeStringBufferSize])
+const char *GetFriendlyErrorCodeString(int errorCode)
 {
+#if HAVE_STRERRORNAME_NP
+    const char *error = strerrorname_np(errorCode);
+    if (error != nullptr)
+    {
+        return error;
+    }
+#else // !HAVE_STRERRORNAME_NP
     switch (errorCode)
     {
         case EACCES: return "EACCES";
+    #if EAGAIN == EWOULDBLOCK
+        case EAGAIN: return "EAGAIN/EWOULDBLOCK";
+    #else
+        case EAGAIN: return "EAGAIN";
+        case EWOULDBLOCK: return "EWOULDBLOCK";
+    #endif
         case EBADF: return "EBADF";
         case EBUSY: return "EBUSY";
         case EDQUOT: return "EDQUOT";
@@ -392,6 +405,12 @@ const char *GetFriendlyErrorCodeString(int errorCode, char (&rawErrorCodeStringB
         case ENOLCK: return "ENOLCK";
         case ENOMEM: return "ENOMEM";
         case ENOSPC: return "ENOSPC";
+    #if ENOTSUP == EOPNOTSUPP
+        case ENOTSUP: return "ENOTSUP/EOPNOTSUPP";
+    #else
+        case ENOTSUP: return "ENOTSUP";
+        case EOPNOTSUPP: return "EOPNOTSUPP";
+    #endif
         case ENOTDIR: return "ENOTDIR";
         case ENOTEMPTY: return "ENOTEMPTY";
         case ENXIO: return "ENXIO";
@@ -401,26 +420,7 @@ const char *GetFriendlyErrorCodeString(int errorCode, char (&rawErrorCodeStringB
         case ETXTBSY: return "ETXTBSY";
         case EXDEV: return "EXDEV";
     }
+#endif // HAVE_STRERRORNAME_NP
 
-    if (errorCode == EAGAIN || errorCode == EWOULDBLOCK)
-    {
-        if (EAGAIN == EWOULDBLOCK) return "EAGAIN/EWOULDBLOCK";
-        if (errorCode == EAGAIN) return "EAGAIN";
-        return "EWOULDBLOCK";
-    }
-    else if (errorCode == ENOTSUP || errorCode == EOPNOTSUPP)
-    {
-        if (ENOTSUP == EOPNOTSUPP) return "ENOTSUP/EOPNOTSUPP";
-        if (errorCode == ENOTSUP) return "ENOTSUP";
-        return "EOPNOTSUPP";
-    }
-
-    int result =
-        _snprintf_s(rawErrorCodeStringBuffer, RawErrorCodeStringBufferSize, RawErrorCodeStringBufferSize - 1, "%d", errorCode);
-    if (result <= 0 || result >= RawErrorCodeStringBufferSize)
-    {
-        rawErrorCodeStringBuffer[0] = '\0';
-    }
-
-    return rawErrorCodeStringBuffer;
+    return strerror(errorCode);
 }
