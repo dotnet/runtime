@@ -35,6 +35,7 @@
     <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
     <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
     <DebuggerSupport>false</DebuggerSupport>
+    <MetricsSupport>false</MetricsSupport>
   </PropertyGroup>
 
   <!-- Use local runtime pack -->
