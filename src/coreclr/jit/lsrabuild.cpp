@@ -377,7 +377,7 @@ void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
 
     Interval* theInterval = rp->getInterval();
 
-    if ((theInterval->firstRefPosition != nullptr) && RefTypeIsUse(rp->refType) && !theInterval->isWriteThru)
+    if ((theInterval->firstRefPosition != nullptr) && RefTypeIsUse(rp->refType) && !theInterval->isWriteThru && !theInterval->isLocalVar)
     {
         if (theInterval->firstRefPosition->nodeLocation < recentKillLocation)
         {
