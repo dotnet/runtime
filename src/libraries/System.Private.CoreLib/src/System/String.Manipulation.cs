@@ -1249,12 +1249,11 @@ namespace System
                     do
                     {
                         Vector512<ushort> vector = Vector512.LoadUnsafe(ref source, offset);
-                        Vector512<byte> cmp = (Vector512.Equals(vector, v1)).AsByte();
 
-                        if (!Vector512.EqualsAll(cmp, Vector512<byte>.Zero))
+                        if (Vector512.EqualsAny(vector, v1))
                         {
                             // Skip every other bit
-                            ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555;
+                            ulong mask = (Vector512.Equals(vector, v1)).AsByte().ExtractMostSignificantBits() & 0x5555555555555555;
                             do
                             {
                                 uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
