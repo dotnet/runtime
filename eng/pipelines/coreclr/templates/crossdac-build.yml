@@ -13,19 +13,3 @@ steps:
 
     - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) ${{ parameters.archType }} -hostarch ${{ parameters.hostArchType }} -ci -os alpine -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" -ninja $(officialBuildIdArg) -component crosscomponents
       displayName: Build Cross OS Linux-musl DAC for Windows
-
-  - ${{ if eq(parameters.osGroup, 'linux') }}:
-    - task: CopyFiles@2
-      displayName: Gather runtime for CrossDac
-      inputs:
-        SourceFolder: $(coreClrProductRootFolderPath)
-        Contents: libcoreclr.so
-        TargetFolder: '$(crossDacArtifactPath)/${{ parameters.osGroup }}${{ parameters.osSubgroup }}.$(archType).$(buildConfigUpper)/${{ parameters.hostArchType }}'
-
-  # Make the assets available in a single container for the packaging job.
-  - task: PublishBuildArtifacts@1
-    displayName: Publish runtime for CrossDac
-    inputs:
-      pathtoPublish:  $(crossDacArtifactPath)
-      PublishLocation: Container
-      artifactName:  $(buildCrossDacArtifactName)

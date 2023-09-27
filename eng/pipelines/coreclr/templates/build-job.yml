@@ -229,7 +229,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(in(parameters.osGroup, 'windows', 'linux'), ne(parameters.archType, 'x86')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows'), ne(parameters.archType, 'x86')) }}:
         - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
           parameters:
             archType: ${{ parameters.archType }}
