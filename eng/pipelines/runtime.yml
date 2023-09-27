@@ -780,7 +780,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+                      /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -799,7 +799,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+                      /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1318,7 +1318,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAot_RuntimeTests
             runtimeVariant: llvmaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             timeoutInMinutes: 180
 
             condition: >-
