@@ -42,6 +42,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # iOS/tvOS devices
