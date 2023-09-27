@@ -179,7 +179,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            buildArgs: -s crossdacpack -c $(_BuildConfig)
+            buildArgs: -s crossdacpack -c $(_BuildConfig) /p:CrossDacArtifactsDir=$(crossDacArtifactsPath)
             nameSuffix: CrossDac
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
@@ -188,7 +188,7 @@ extends:
               displayName: Download Runtimes for CrossDac packaging
               inputs:
                 artifactName: CoreCLRCrossDacArtifacts
-                downloadPath: $(crossDacArtifactsPath)
+                downloadPath: $(Build.SourcesDirectory)/artifacts
                 checkDownloadedFiles: true
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
@@ -198,6 +198,9 @@ extends:
               displayName: Gather CrossDacs
               inputs:
                 SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+                Contents: |
+                  **
+                  !**\sharedFramework\**
                 TargetFolder: $(crossDacArtifactsPath)
             - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
               parameters:
