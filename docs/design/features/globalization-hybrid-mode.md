@@ -272,6 +272,61 @@ Using `IgnoreNonSpace` for these two with `HybridGlobalization` off, also return
 new CultureInfo("de-DE").CompareInfo.IndexOf("strasse", "stra\u00DFe", 0, CompareOptions.IgnoreNonSpace); // 0 or -1
 ```
 
+**Calandars**
+
+Affected public APIs:
+- DateTimeFormatInfo.AbbreviatedDayNames
+- DateTimeFormatInfo.GetAbbreviatedDayName()
+- DateTimeFormatInfo.AbbreviatedMonthGenitiveNames
+- DateTimeFormatInfo.AbbreviatedMonthNames
+- DateTimeFormatInfo.GetAbbreviatedMonthName()
+- DateTimeFormatInfo.AMDesignator
+- DateTimeFormatInfo.CalendarWeekRule
+- DateTimeFormatInfo.DayNames
+- DateTimeFormatInfo.GetDayName
+- DateTimeFormatInfo.GetAbbreviatedEraName()
+- DateTimeFormatInfo.GetEraName()
+- DateTimeFormatInfo.FirstDayOfWeek
+- DateTimeFormatInfo.FullDateTimePattern
+- DateTimeFormatInfo.LongDatePattern
+- DateTimeFormatInfo.LongTimePattern
+- DateTimeFormatInfo.MonthDayPattern
+- DateTimeFormatInfo.MonthGenitiveNames
+- DateTimeFormatInfo.MonthNames
+- DateTimeFormatInfo.GetMonthName()
+- DateTimeFormatInfo.NativeCalendarName
+- DateTimeFormatInfo.PMDesignator
+- DateTimeFormatInfo.ShortDatePattern
+- DateTimeFormatInfo.ShortestDayNames
+- DateTimeFormatInfo.GetShortestDayName()
+- DateTimeFormatInfo.ShortTimePattern
+- DateTimeFormatInfo.YearMonthPattern
+
+
+The Hybrid responses may differ because they use Web API functions. To better ilustrate the mechanism we provide an example for each endpoint. All exceptions cannot be listed, for reference check the response of specific version of Web API on your host.
+|            **API**            |                                                         **Functions used**                                                         | **Example of difference for locale** |   **non-Hybrid**   |     **Hybrid**    |
+|:-----------------------------:|:----------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------:|:------------------:|:-----------------:|
+|      AbbreviatedDayNames      |                                  `Date.prototype.toLocaleDateString(locale, { weekday: "short" })`                                 |                 en-CA                |        Sun.        |        Sun        |
+| AbbreviatedMonthGenitiveNames |                           `Date.prototype.toLocaleDateString(locale, { month: "short", day: "numeric"})`                           |                 kn-IN                |         ಆಗ         |        ಆಗಸ್ಟ್       |
+|     AbbreviatedMonthNames     |                                   `Date.prototype.toLocaleDateString(locale, { month: "short" })`                                  |                 lt-LT                |        saus.       |         01        |
+|          AMDesignator         | `Date.prototype.toLocaleTimeString(locale, { hourCycle: "h12"})`; `Date.prototype.toLocaleTimeString(locale, { hourCycle: "h24"})` |              sr-Cyrl-RS              |      пре подне     |         AM        |
+|        CalendarWeekRule       |                                          `Intl.Locale.prototype.getWeekInfo().minimalDay`                                          |                 none                 |          -         |         -         |
+|            DayNames           |                                  `Date.prototype.toLocaleDateString(locale, { weekday: "long" })`                                  |                 none                 |          -         |         -         |
+|    GetAbbreviatedEraName()    |                                   `Date.prototype.toLocaleDateString(locale, { era: "narrow" })`                                   |                 bn-IN                |       খৃষ্টাব্দ       |        খ্রিঃ       |
+|          GetEraName()         |                                    `Date.prototype.toLocaleDateString(locale, { era: "short" })`                                   |                 vi-VI                |       sau CN       |         CN        |
+|         FirstDayOfWeek        |                                           `Intl.Locale.prototype.getWeekInfo().firstDay`                                           |                 zn-CN                |       Sunday       |       Monday      |
+|      FullDateTimePattern      |                                               `LongDatePattern` and `LongTimePattern`                                              |                   -                  |                    |                   |
+|        LongDatePattern        |           `Intl.DateTimeFormat(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric"}).format(date)`           |                 en-BW                | dddd, dd MMMM yyyy | dddd, d MMMM yyyy |
+|        LongTimePattern        |                                       `Intl.DateTimeFormat(locale, { timeStyle: "medium" })`                                       |                 zn-CN                |      tth:mm:ss     |      HH:mm:ss     |
+|        MonthDayPattern        |                            `Date.prototype.toLocaleDateString(locale, { month: "long", day: "numeric"})`                           |                 en-PH                |       d MMMM       |       MMMM d      |
+|       MonthGenitiveNames      |                            `Date.prototype.toLocaleDateString(locale, { month: "long", day: "numeric"})`                           |                 ca-AD                |      de gener      |       gener       |
+|           MonthNames          |                                   `Date.prototype.toLocaleDateString(locale, { month: "long" })`                                   |                 el-GR                |     Ιανουαρίου     |     Ιανουάριος    |
+|       NativeCalendarName      |                                               `Intl.Locale.prototype.getCalendars()`                                               | for all locales it has English names | Gregorian Calendar |      gregory      |
+|          PMDesignator         | `Date.prototype.toLocaleTimeString(locale, { hourCycle: "h12"})`; `Date.prototype.toLocaleTimeString(locale, { hourCycle: "h24"})` |                 mr-IN                |        म.उ.        |         PM        |
+|        ShortDatePattern       |                                  `Date.prototype.toLocaleDateString(locale, {dateStyle: "short"})`                                 |                 en-CH                |     dd.MM.yyyy     |     dd/MM/yyyy    |
+|        ShortestDayNames       |                                 `Date.prototype.toLocaleDateString(locale, { weekday: "narrow" })`                                 |                 none                 |          -         |         -         |
+|        ShortTimePattern       |                                       `Intl.DateTimeFormat(locale, { timeStyle: "medium" })`                                       |                 bg-BG                |        HH:mm       |        H:mm       |
+|        YearMonthPattern       |                           `Date.prototype.toLocaleDateString(locale, { year: "numeric", month: "long" })`                          |                 ar-SA                |      MMMM yyyy     |    MMMM yyyy g    |
 
 ### OSX
 
@@ -423,3 +478,34 @@ Below function are used from apple native functions:
 - [uppercaseStringWithLocale](https://developer.apple.com/documentation/foundation/nsstring/1413316-uppercasestringwithlocale?language=objc)
 - [lowercaseStringWithLocale](https://developer.apple.com/documentation/foundation/nsstring/1417298-lowercasestringwithlocale?language=objc)
 
+## Calandars
+
+Affected public APIs:
+- DateTimeFormatInfo.AbbreviatedDayNames
+- DateTimeFormatInfo.GetAbbreviatedDayName()
+- DateTimeFormatInfo.AbbreviatedMonthGenitiveNames
+- DateTimeFormatInfo.AbbreviatedMonthNames
+- DateTimeFormatInfo.GetAbbreviatedMonthName()
+- DateTimeFormatInfo.AMDesignator
+- DateTimeFormatInfo.CalendarWeekRule
+- DateTimeFormatInfo.DayNames
+- DateTimeFormatInfo.GetDayName()
+- DateTimeFormatInfo.GetEraName()
+- DateTimeFormatInfo.FirstDayOfWeek
+- DateTimeFormatInfo.FullDateTimePattern
+- DateTimeFormatInfo.LongDatePattern
+- DateTimeFormatInfo.LongTimePattern
+- DateTimeFormatInfo.MonthDayPattern
+- DateTimeFormatInfo.MonthGenitiveNames
+- DateTimeFormatInfo.MonthNames
+- DateTimeFormatInfo.GetMonthName()
+- DateTimeFormatInfo.NativeCalendarName
+- DateTimeFormatInfo.PMDesignator
+- DateTimeFormatInfo.ShortDatePattern
+- DateTimeFormatInfo.ShortestDayNames
+- DateTimeFormatInfo.GetShortestDayName()
+- DateTimeFormatInfo.ShortTimePattern
+- DateTimeFormatInfo.YearMonthPattern
+
+Apple Native API does not have an equivalent for abbreviated era name and will return empty string
+- DateTimeFormatInfo.GetAbbreviatedEraName()

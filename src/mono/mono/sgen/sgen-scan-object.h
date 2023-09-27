@@ -14,7 +14,7 @@
  * "start" will point to the start of the next object, if the scanned
  * object contained references.  If not, the value of "start" should
  * be considered undefined after executing this code.  The object's
- * GC descriptor must be in the variable "mword desc".
+ * GC descriptor must be in the variable "SgenDescriptor desc".
  *
  * The macro `HANDLE_PTR` will be invoked for every reference encountered while scanning the
  * object.  It is called with two parameters: The pointer to the reference (not the

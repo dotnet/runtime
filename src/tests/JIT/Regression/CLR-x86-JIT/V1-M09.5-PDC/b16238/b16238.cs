@@ -52,10 +52,9 @@ namespace DefaultNamespace
             /* 6 operator(s) emitted */
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             new BB().Method1(false);
-            return 100;
         }
     }
 

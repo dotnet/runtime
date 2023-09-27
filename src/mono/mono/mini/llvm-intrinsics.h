@@ -107,10 +107,8 @@ INTRINS_OVR_TAG(SIMD_CEIL, ceil, Generic, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(SIMD_TRUNC, trunc, Generic, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(SIMD_ROUND, round, Generic, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(SIMD_NEAREST, nearbyint, Generic, V64 | V128 | R4 | R8)
-
-#if LLVM_API_VERSION >= 1400
+INTRINS(EH_TYPEID_FOR, eh_typeid_for, Generic)
 INTRINS_OVR_TAG(ROUNDEVEN, roundeven, Generic, Scalar | V64 | V128 | R4 | R8)
-#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 INTRINS(SSE_PMOVMSKB, x86_sse2_pmovmskb_128, X86)
@@ -302,6 +300,9 @@ INTRINS_OVR(WASM_SUB_SAT_SIGNED_V8, wasm_sub_sat_signed, Wasm, sse_i2_t)
 INTRINS_OVR(WASM_SUB_SAT_UNSIGNED_V16, wasm_sub_sat_unsigned, Wasm, sse_i1_t)
 INTRINS_OVR(WASM_SUB_SAT_UNSIGNED_V8, wasm_sub_sat_unsigned, Wasm, sse_i2_t)
 INTRINS(WASM_SWIZZLE, wasm_swizzle, Wasm)
+INTRINS(WASM_GET_EXCEPTION, wasm_get_exception, Wasm)
+INTRINS(WASM_GET_EHSELECTOR, wasm_get_ehselector, Wasm)
+INTRINS(WASM_RETHROW, wasm_rethrow, Wasm)
 #endif
 #if defined(TARGET_ARM64)
 INTRINS_OVR(BITREVERSE_I32, bitreverse, Generic, LLVMInt32Type ())
@@ -443,14 +444,6 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_URSQRTE, aarch64_neon_ursqrte, Arm64, V64 | V12
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRSQRTE, aarch64_neon_frsqrte, Arm64, Scalar | V64 | V128| R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRSQRTS, aarch64_neon_frsqrts, Arm64, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRECPS, aarch64_neon_frecps, Arm64, Scalar | V64 | V128 | R4 | R8)
-
-#if LLVM_API_VERSION < 1400
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RBIT, aarch64_neon_rbit, Arm64, V64 | V128 | I1)
-#endif
-
-#if LLVM_API_VERSION < 1400
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTN, aarch64_neon_frintn, Arm64, Scalar | V64 | V128 | R4 | R8)
-#endif
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_SUQADD, aarch64_neon_suqadd, Arm64, Scalar | V64 | V128 | I1 | I2 | I4 | I8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_USQADD, aarch64_neon_usqadd, Arm64, Scalar | V64 | V128 | I1 | I2 | I4 | I8)

@@ -30,7 +30,6 @@ public class DownloadResourceProgressTests : AppTestBase
 
         var result = await RunSdkStyleApp(new(
             Configuration: "Debug",
-            ForPublish: true,
             TestScenario: "DownloadResourceProgressTest",
             BrowserQueryString: new Dictionary<string, string> { ["failAssemblyDownload"] = failAssemblyDownload.ToString().ToLowerInvariant() }
         ));

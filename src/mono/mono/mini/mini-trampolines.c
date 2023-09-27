@@ -1425,7 +1425,11 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 	invoke = mono_get_delegate_invoke_internal (klass);
 	g_assert (invoke);
 
-	tramp_info = (MonoDelegateTrampInfo *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateTrampInfo));
+	if (method && method->dynamic)
+		// FIXME: Can the dynamic method outlive the delegate class if its unloadable ?
+		tramp_info = (MonoDelegateTrampInfo *)mono_dyn_method_alloc0 (method, sizeof (MonoDelegateTrampInfo));
+	else
+		tramp_info = (MonoDelegateTrampInfo *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateTrampInfo));
 	tramp_info->klass = klass;
 	tramp_info->invoke = invoke;
 	tramp_info->invoke_sig = mono_method_signature_internal (invoke);
@@ -1456,13 +1460,27 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboo
 	}
 #endif
 
-	dpair = (MonoDelegateClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateClassMethodPair));
+	if (method && method->dynamic)
+		dpair = (MonoDelegateClassMethodPair *)mono_dyn_method_alloc0 (method, sizeof (MonoDelegateClassMethodPair));
+	else
+		dpair = (MonoDelegateClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateClassMethodPair));
 	memcpy (dpair, &pair, sizeof (MonoDelegateClassMethodPair));
 
 	/* store trampoline address */
 	jit_mm_lock (jit_mm);
 	g_hash_table_insert (jit_mm->delegate_info_hash, dpair, tramp_info);
 	jit_mm_unlock (jit_mm);
+
+	if (method && method->dynamic) {
+		jit_mm = jit_mm_for_method (method);
+		jit_mm_lock (jit_mm);
+		if (!jit_mm->dyn_delegate_info_hash)
+			jit_mm->dyn_delegate_info_hash = g_hash_table_new (NULL, NULL);
+		GSList *l = g_hash_table_lookup (jit_mm->dyn_delegate_info_hash, method);
+		l = g_slist_prepend (l, dpair);
+		g_hash_table_insert (jit_mm->dyn_delegate_info_hash, method, l);
+		jit_mm_unlock (jit_mm);
+	}
 
 	return tramp_info;
 }

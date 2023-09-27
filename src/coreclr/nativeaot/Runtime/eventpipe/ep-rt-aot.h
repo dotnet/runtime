@@ -18,6 +18,7 @@
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-session-provider.h>
+#include <eventpipe/ep-string.h>
 
 #include "rhassert.h"
 #include <RhConfig.h>
@@ -54,8 +55,7 @@
 
 extern void ep_rt_aot_thread_exited (void);
 
-// shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-// TODO: The NativeAOT ALIGN_UP is defined in a tangled manner that generates linker errors if
+// The NativeAOT ALIGN_UP is defined in a tangled manner that generates linker errors if
 // it is used here; instead, define a version tailored to the existing usage in the shared
 // EventPipe code.
 static inline uint8_t* _rt_aot_align_up(uint8_t* val, uintptr_t alignment)
@@ -81,7 +81,7 @@ static
 inline
 const ep_char8_t *
 ep_rt_entrypoint_assembly_name_get_utf8 (void)
-{ 
+{
     STATIC_CONTRACT_NOTHROW;
 
     extern const ep_char8_t * ep_rt_aot_entrypoint_assembly_name_get_utf8 (void);
@@ -91,7 +91,7 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 static
 const ep_char8_t *
 ep_rt_runtime_version_get_utf8 (void)
-{ 
+{
     STATIC_CONTRACT_NOTHROW;
 
     return reinterpret_cast<const ep_char8_t*>(STRINGIFY(RuntimeProductVersion));
@@ -216,8 +216,8 @@ ep_rt_atomic_inc_int64_t (volatile int64_t *value)
 static
 inline
 int64_t
-ep_rt_atomic_dec_int64_t (volatile int64_t *value) 
-{ 
+ep_rt_atomic_dec_int64_t (volatile int64_t *value)
+{
     STATIC_CONTRACT_NOTHROW;
 
     extern int64_t ep_rt_aot_atomic_dec_int64_t (volatile int64_t *value);
@@ -227,7 +227,7 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 static
 inline
 size_t
-ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value) 
+ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
     STATIC_CONTRACT_NOTHROW;
     extern size_t ep_rt_aot_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value);
@@ -237,8 +237,8 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 static
 inline
 ep_char8_t *
-ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value) 
-{ 
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value)
+{
     STATIC_CONTRACT_NOTHROW;
     extern ep_char8_t * ep_rt_aot_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value);
     return ep_rt_aot_atomic_compare_exchange_utf8_string (target, expected, value);
@@ -246,7 +246,7 @@ ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char
 
 static
 void
-ep_rt_init (void) 
+ep_rt_init (void)
 {
     extern void ep_rt_aot_init (void);
     ep_rt_aot_init();
@@ -324,10 +324,7 @@ ep_rt_method_get_simple_assembly_name (
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Design MethodDesc and method name services if/when needed
-    //PalDebugBreak();
-
+    // NativeAOT does not support method_desc operations
     return false;
 
 }
@@ -339,10 +336,7 @@ ep_rt_method_get_full_name (
     ep_char8_t *name,
     size_t name_len)
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Design MethodDesc and method name services if/when needed
-    //PalDebugBreak();
-
+    // NativeAOT does not support method_desc operations
     return false;
 }
 
@@ -374,9 +368,9 @@ bool
 ep_rt_providers_validate_all_disabled (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context and MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context are not available in NativeAOT
-    return true;
+
+    extern bool ep_rt_aot_providers_validate_all_disabled (void);
+    return ep_rt_aot_providers_validate_all_disabled ();
 }
 
 static
@@ -498,7 +492,7 @@ ep_rt_config_value_get_enable_stackwalk (void)
     if (RhConfig::Environment::TryGetBooleanValue("EventPipeEnableStackwalk", &value))
         return value;
 
-    return true;
+    return false;
 }
 
 /*
@@ -583,8 +577,8 @@ ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 static
 inline
 bool
-ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event) 
-{ 
+ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
+{
     STATIC_CONTRACT_NOTHROW;
     extern bool ep_rt_aot_wait_event_set (ep_rt_wait_event_handle_t *wait_event);
     return ep_rt_aot_wait_event_set (wait_event);
@@ -595,8 +589,8 @@ int32_t
 ep_rt_wait_event_wait (
     ep_rt_wait_event_handle_t *wait_event,
     uint32_t timeout,
-    bool alertable) 
-{ 
+    bool alertable)
+{
     STATIC_CONTRACT_NOTHROW;
     extern int32_t
 ep_rt_aot_wait_event_wait (
@@ -610,22 +604,20 @@ ep_rt_aot_wait_event_wait (
 static
 inline
 EventPipeWaitHandle
-ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event) 
-{ 
+ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
+{
     STATIC_CONTRACT_NOTHROW;
-    // EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: NativeAOT CLREventStatic doesn't have GetHandleUNHOSTED
-    // PalDebugBreak();
+    // This is not reached in the current product
+    abort();
     return 0;
 }
 
 static
 inline
 bool
-ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event) 
-{ 
+ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
+{
     STATIC_CONTRACT_NOTHROW;
     extern bool
     ep_rt_aot_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event);
@@ -675,41 +667,8 @@ ep_rt_create_activity_id (
     uint8_t *activity_id,
     uint32_t activity_id_len)
 {
-    STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (activity_id != NULL);
-    EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
-
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement a way to generate a real Guid
-    // CoCreateGuid (reinterpret_cast<GUID *>(activity_id));
-
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Using roughly Mono's implementation but Mono randomly generates this, hardcoding for now
-    uint8_t data1[] = {0x67,0xac,0x33,0xf1,0x8d,0xed,0x41,0x01,0xb4,0x26,0xc9,0xb7,0x94,0x35,0xf7,0x8a};
-    memcpy (activity_id, data1, EP_ACTIVITY_ID_SIZE);
-
-    const uint16_t version_mask = 0xF000;
-    const uint16_t random_guid_version = 0x4000;
-    const uint8_t clock_seq_hi_and_reserved_mask = 0xC0;
-    const uint8_t clock_seq_hi_and_reserved_value = 0x80;
-
-    // Modify bits indicating the type of the GUID
-    uint8_t *activity_id_c = activity_id + sizeof (uint32_t) + sizeof (uint16_t);
-    uint8_t *activity_id_d = activity_id + sizeof (uint32_t) + sizeof (uint16_t) + sizeof (uint16_t);
-
-    uint16_t c;
-    memcpy (&c, activity_id_c, sizeof (c));
-
-    uint8_t d;
-    memcpy (&d, activity_id_d, sizeof (d));
-
-    // time_hi_and_version
-    c = ((c & ~version_mask) | random_guid_version);
-    // clock_seq_hi_and_reserved
-    d = ((d & ~clock_seq_hi_and_reserved_mask) | clock_seq_hi_and_reserved_value);
-
-    memcpy (activity_id_c, &c, sizeof (c));
-    memcpy (activity_id_d, &d, sizeof (d));
+    extern void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_len);
+    ep_rt_aot_create_activity_id(activity_id, activity_id_len);
 }
 
 static
@@ -718,9 +677,9 @@ bool
 ep_rt_is_running (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Does NativeAot have the concept of EEStarted
-    // PalDebugBreak();
+
+    // This is only used to check if the profiler can be attached
+    // Profiler attach is not supported in NativeAOT
 
     return false;
 }
@@ -732,11 +691,7 @@ ep_rt_execute_rundown (dn_vector_ptr_t *execution_checkpoints)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    //TODO: Write execution checkpoint rundown events.
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
-    // (CLRConfig::INTERNAL_EventPipeCircularMB)
-    // PalDebugBreak();
+    // NativeAOT does not currently support rundown
 }
 
 /*
@@ -772,12 +727,9 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_aot_start_session_or_sampling_thread)
 
     ep_rt_thread_params_t* thread_params = reinterpret_cast<ep_rt_thread_params_t *>(data);
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed.
-    // The session and sampling threads both assert that the incoming thread handle is
-    // non-null, but do not necessarily rely on it otherwise; just pass a meaningless non-null
-    // value until testing shows that a meaningful value is needed.
-    thread_params->thread = reinterpret_cast<ep_rt_thread_handle_t>(1);
+    // We will create a new thread. cannot call ep_rt_aot_thread_get_handle since that will return null
+    extern ep_rt_thread_handle_t ep_rt_aot_setup_thread (void);
+    thread_params->thread = ep_rt_aot_setup_thread ();
 
     size_t result = thread_params->thread_func (thread_params);
     delete thread_params;
@@ -808,9 +760,7 @@ inline
 void
 ep_rt_set_server_name(void)
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Need to set name for  the thread
-    // ::SetThreadName(GetCurrentThread(), W(".NET EventPipe"));
+    // This is optional, decorates the thread name with EventPipe specific information
 }
 
 
@@ -843,15 +793,7 @@ ep_rt_current_processor_get_number (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-#ifndef TARGET_UNIX
-    extern uint32_t *_ep_rt_aot_proc_group_offsets;
-    if (_ep_rt_aot_proc_group_offsets) {
-        // PROCESSOR_NUMBER proc;
-        // GetCurrentProcessorNumberEx (&proc);
-        // return _ep_rt_aot_proc_group_offsets [proc.Group] + proc.Number;
-        // PalDebugBreak();
-    }
-#endif
+    // Follows the mono implementation
     return 0xFFFFFFFF;
 }
 
@@ -865,7 +807,7 @@ ep_rt_processors_get_count (void)
     SYSTEM_INFO sys_info = {};
     GetSystemInfo (&sys_info);
     return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
-#else    
+#else
     // PalDebugBreak();
     return 0xffff;
 #endif
@@ -987,8 +929,12 @@ int32_t
 ep_rt_system_get_alloc_granularity (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // return static_cast<int32_t>(g_SystemInfo.dwAllocationGranularity);
+#ifdef TARGET_WINDOWS
     return 0x10000;
+#else
+    extern int32_t ep_rt_aot_get_os_page_size (void);
+    return ep_rt_aot_get_os_page_size();
+#endif
 }
 
 static
@@ -1269,24 +1215,6 @@ ep_rt_utf8_string_compare_ignore_case (
 
 static
 inline
-bool
-ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    if (str == NULL)
-        return true;
-
-    while (*str) {
-        if (!isspace (*str))
-            return false;
-        str++;
-    }
-    return true;
-}
-
-static
-inline
 ep_char8_t *
 ep_rt_utf8_string_dup (const ep_char8_t *str)
 {
@@ -1330,7 +1258,7 @@ ep_rt_utf8_string_strtok (
     return strtok_r (str, delimiter, context);
 #else
     return strtok_s (str, delimiter, context);
-#endif    
+#endif
 }
 
 // STATIC_CONTRACT_NOTHROW
@@ -1373,49 +1301,6 @@ ep_rt_utf8_string_replace (
     return false;
 }
 
-
-static
-ep_char16_t *
-ep_rt_utf8_to_utf16le_string (
-    const ep_char8_t *str,
-    size_t len)
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    if (!str)
-        return NULL;
-
-    if (len == (size_t) -1) {
-        len = strlen(str);
-    }
-
-    if (len == 0) {
-        // Return an empty string if the length is 0
-        CHAR16_T * lpDestEmptyStr = reinterpret_cast<CHAR16_T *>(malloc(1 * sizeof(CHAR16_T)));
-        if(lpDestEmptyStr==NULL) {
-            return NULL;
-        }
-        *lpDestEmptyStr = '\0';
-        return reinterpret_cast<ep_char16_t*>(lpDestEmptyStr);
-    }
-
-    int32_t flags = MINIPAL_MB_NO_REPLACE_INVALID_CHARS | MINIPAL_TREAT_AS_LITTLE_ENDIAN;
-
-    size_t ret = minipal_get_length_utf8_to_utf16 (str, len, flags);
-
-    if (ret <= 0)
-        return NULL;
-
-    CHAR16_T * lpDestStr = reinterpret_cast<CHAR16_T *>(malloc((ret + 1) * sizeof(CHAR16_T)));
-    if(lpDestStr==NULL) {
-        return NULL;
-    }
-    ret = minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
-    lpDestStr[ret] = '\0';
-
-    return reinterpret_cast<ep_char16_t*>(lpDestStr);
-}
-
 static
 inline
 ep_char16_t *
@@ -1431,6 +1316,13 @@ ep_rt_utf16_string_dup (const ep_char16_t *str)
     if (str_dup)
         memcpy (str_dup, str, str_size);
     return str_dup;
+}
+
+static
+ep_char8_t *
+ep_rt_utf8_string_alloc (size_t len)
+{
+    return reinterpret_cast<ep_char8_t *>(malloc(len));
 }
 
 static
@@ -1456,52 +1348,10 @@ ep_rt_utf16_string_len (const ep_char16_t *str)
 }
 
 static
-ep_char8_t *
-ep_rt_utf16_to_utf8_string (
-    const ep_char16_t *str,
-    size_t len)
+ep_char16_t *
+ep_rt_utf16_string_alloc (size_t len)
 {
-    STATIC_CONTRACT_NOTHROW;
-    if (!str)
-        return NULL;
-
-    if (len == (size_t) -1) {
-        len = ep_rt_utf16_string_len (str);
-    }
-
-    if (len == 0) {
-        // Return an empty string if the length is 0
-        char * lpDestEmptyStr = reinterpret_cast<char *>(malloc(1 * sizeof(char)));
-        if(lpDestEmptyStr==NULL) {
-            return NULL;
-        }
-        *lpDestEmptyStr = '\0';
-        return reinterpret_cast<ep_char8_t*>(lpDestEmptyStr);
-    }
-
-    size_t ret = minipal_get_length_utf16_to_utf8 (reinterpret_cast<const CHAR16_T *>(str), len, 0);
-
-    if (ret <= 0)
-        return NULL;
-
-    char* lpDestStr = reinterpret_cast<char *>(malloc((ret + 1) * sizeof(char)));
-    if(lpDestStr==NULL) {
-        return NULL;
-    }
-    ret = minipal_convert_utf16_to_utf8 (reinterpret_cast<const CHAR16_T*>(str), len, lpDestStr, ret, 0);
-    lpDestStr[ret] = '\0';
-
-    return reinterpret_cast<ep_char8_t*>(lpDestStr);
-}
-
-static
-inline
-ep_char8_t *
-ep_rt_utf16le_to_utf8_string (
-    const ep_char16_t *str,
-    size_t len)
-{
-    return ep_rt_utf16_to_utf8_string (str, len);
+    return reinterpret_cast<ep_char16_t *>(malloc(len * sizeof(ep_char16_t)));
 }
 
 static
@@ -1569,10 +1419,7 @@ ep_rt_thread_setup (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // Thread* thread_handle = SetupThreadNoThrow ();
-    // EP_ASSERT (thread_handle != NULL);
+    // Likely not needed and do nothing until testing shows to be required
 }
 
 static
@@ -1603,10 +1450,9 @@ ep_rt_thread_handle_t
 ep_rt_thread_get_handle (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // return GetThreadNULLOk ();
-    return NULL;
+
+    extern ep_rt_thread_handle_t ep_rt_aot_thread_get_handle (void);
+    return ep_rt_aot_thread_get_handle();
 }
 
 static
@@ -1615,13 +1461,9 @@ ep_rt_thread_id_t
 ep_rt_thread_get_id (ep_rt_thread_handle_t thread_handle)
 {
     STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (thread_handle != NULL);
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // return ep_rt_uint64_t_to_thread_id_t (thread_handle->GetOSThreadId64 ());
-    // PalDebugBreak();
-    return 0;
+    extern ep_rt_thread_id_t ep_rt_aot_thread_get_id (ep_rt_thread_handle_t thread_handle);
+    return ep_rt_aot_thread_get_id(thread_handle);
 }
 
 static
@@ -1646,10 +1488,7 @@ bool
 ep_rt_thread_has_started (ep_rt_thread_handle_t thread_handle)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // return thread_handle != NULL && thread_handle->HasStarted ();
-    return true;
+    return thread_handle != NULL;
 }
 
 static
@@ -1658,11 +1497,7 @@ ep_rt_thread_activity_id_handle_t
 ep_rt_thread_get_activity_id_handle (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // return GetThread ();
-    // PalDebugBreak();
-    return NULL;
+    return ep_rt_thread_get_or_create();
 }
 
 static
@@ -1670,13 +1505,7 @@ inline
 const uint8_t *
 ep_rt_thread_get_activity_id_cref (ep_rt_thread_activity_id_handle_t activity_id_handle)
 {
-    STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (activity_id_handle != NULL);
-
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // return reinterpret_cast<const uint8_t *>(activity_id_handle->GetActivityId ());
-    // PalDebugBreak();
+    EP_UNREACHABLE ("EP_THREAD_INCLUDE_ACTIVITY_ID should have been defined on NativeAOT");
     return NULL;
 }
 
@@ -1693,7 +1522,7 @@ ep_rt_thread_get_activity_id (
     EP_ASSERT (activity_id != NULL);
     EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-    memcpy (activity_id, ep_rt_thread_get_activity_id_cref (activity_id_handle), EP_ACTIVITY_ID_SIZE);
+    memcpy (activity_id, ep_thread_get_activity_id_cref (activity_id_handle), EP_ACTIVITY_ID_SIZE);
 }
 
 static
@@ -1709,10 +1538,7 @@ ep_rt_thread_set_activity_id (
     EP_ASSERT (activity_id != NULL);
     EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement thread creation/management if needed
-    // activity_id_handle->SetActivityId (reinterpret_cast<LPCGUID>(activity_id));
-    // PalDebugBreak();
+    memcpy (ep_thread_get_activity_id_ref (activity_id_handle), activity_id, EP_ACTIVITY_ID_SIZE);
 }
 
 #undef EP_YIELD_WHILE

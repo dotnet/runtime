@@ -70,6 +70,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 		}
 
+		public override void VisitCompilationUnit (CompilationUnitSyntax node)
+		{
+			base.VisitCompilationUnit (node);
+			ValidateDiagnostics (node, node.AttributeLists);
+		}
+
 		public override void VisitClassDeclaration (ClassDeclarationSyntax node)
 		{
 			base.VisitClassDeclaration (node);
@@ -97,6 +103,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public override void VisitPropertyDeclaration (PropertyDeclarationSyntax node)
 		{
 			base.VisitPropertyDeclaration (node);
+			CheckMember (node);
+		}
+
+		public override void VisitEventDeclaration (EventDeclarationSyntax node)
+		{
+			base.VisitEventDeclaration (node);
+			CheckMember (node);
+		}
+
+		public override void VisitEventFieldDeclaration (EventFieldDeclarationSyntax node)
+		{
+			base.VisitEventFieldDeclaration (node);
 			CheckMember (node);
 		}
 

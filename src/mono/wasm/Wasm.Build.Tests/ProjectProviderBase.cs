@@ -21,7 +21,7 @@ namespace Wasm.Build.Tests;
 // For projects using WasmAppBuilder
 public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string? _projectDir)
 {
-    public const string WebcilInWasmExtension = ".wasm";
+    public static string WasmAssemblyExtension = BuildTestBase.s_buildEnv.UseWebcil ? ".wasm" : ".dll";
     protected const string s_dotnetVersionHashRegex = @"\.(?<version>[0-9]+\.[0-9]+\.[a-zA-Z0-9\.-]+)\.(?<hash>[a-zA-Z0-9]+)\.";
 
     private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
@@ -55,8 +55,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         // icu
         if (assertOptions.AssertIcuAssets)
         {
-            _testOutput.WriteLine("Skipping asserting icu assets");
             AssertIcuAssets(assertOptions);
+        }
+        else
+        {
+            _testOutput.WriteLine("Skipping asserting icu assets");
         }
 
         // symbols
@@ -170,7 +173,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             bool expectFingerprint = superSet[expectedFilename];
 
-            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in the list of actual files on disk - {string.Join(", ", actual.Keys)} in bundle directory: {bundleDir}");
+            Assert.True(actual.ContainsKey(expectedFilename), $"Could not find {expectedFilename} in bundle directory: {bundleDir}. Actual files on disk: {string.Join(", ", actual.Keys)}");
 
             // Check that the version and hash are present or not present as expected
             if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
@@ -320,13 +323,13 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         (expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs) || expectFingerprintForThisFile;
 
 
-    public static void AssertRuntimePackPath(string buildOutput, string targetFramework)
+    public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
         var match = s_runtimePackPathRegex.Match(buildOutput);
         if (!match.Success || match.Groups.Count != 2)
             throw new XunitException($"Could not find the pattern in the build output: '{s_runtimePackPathPattern}'.{Environment.NewLine}Build output: {buildOutput}");
 
-        string expectedRuntimePackDir = BuildTestBase.s_buildEnv.GetRuntimePackDir(targetFramework);
+        string expectedRuntimePackDir = BuildTestBase.s_buildEnv.GetRuntimePackDir(targetFramework, runtimeType);
         string actualPath = match.Groups[1].Value;
         if (string.Compare(actualPath, expectedRuntimePackDir) != 0)
             throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
@@ -365,7 +368,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 // predefined ICU name can be identical with the icu files from runtime pack
                 expected.Add(assertOptions.PredefinedIcudt);
                 break;
-            case GlobalizationMode.Default:
+            case GlobalizationMode.Sharded:
                 // icu shard chosen based on the locale
                 expected.Add("icudt_CJK.dat");
                 expected.Add("icudt_EFIGS.dat");
@@ -390,7 +393,21 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
 
         BootJsonData bootJson = ParseBootData(bootJsonPath);
-        var bootJsonEntries = bootJson.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.", StringComparison.Ordinal)).ToArray();
+        string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
+        string? spcActualFilename = bootJson.resources.assembly.Keys
+                                        .Where(a => Path.GetFileNameWithoutExtension(a) == "System.Private.CoreLib")
+                                        .SingleOrDefault();
+        if (spcActualFilename is null)
+            throw new XunitException($"Could not find an assembly named System.Private.CoreLib.* in {bootJsonPath}");
+        if (spcExpectedFilename != spcActualFilename)
+            throw new XunitException($"Expected to find {spcExpectedFilename} but found {spcActualFilename} in {bootJsonPath}");
+
+        var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
+            .Union(bootJson.resources.jsModuleRuntime.Keys)
+            .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
+            .Union(bootJson.resources.wasmSymbols?.Keys ?? Enumerable.Empty<string>())
+            .Union(bootJson.resources.wasmNative.Keys)
+            .ToArray();
 
         var expectedEntries = new SortedDictionary<string, Action<string>>();
         IReadOnlySet<string> expected = GetDotNetFilesExpectedSet(options);
@@ -398,7 +415,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var knownSet = GetAllKnownDotnetFilesToFingerprintMap(options);
         foreach (string expectedFilename in expected)
         {
-            if (Path.GetExtension(expectedFilename) == ".map")
+            // FIXME: Find a systematic solution for skipping dotnet.js from boot json check
+            if (expectedFilename == "dotnet.js" || Path.GetExtension(expectedFilename) == ".map")
                 continue;
 
             bool expectFingerprint = knownSet[expectedFilename];
@@ -452,9 +470,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         expected = expected.Order().Select(f => Path.GetFileName(f)).Distinct();
         var actualFileNames = actual.Order().Select(f => Path.GetFileName(f));
-        Assert.True(expected.Count() == actualFileNames.Count(),
+        if (expected.Count() != actualFileNames.Count())
+        {
+            throw new XunitException(
                     $"Expected: {string.Join(", ", expected)}{Environment.NewLine}" +
                     $"Actual:   {string.Join(", ", actualFileNames)}");
+        }
 
         Assert.Equal(expected, actualFileNames);
     }

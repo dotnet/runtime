@@ -76,14 +76,14 @@ public class TestMainJsProjectProvider : ProjectProviderBase
             TestUtils.AssertFilesExist(assertOptions.BundleDir, new[] { "index.html" });
         TestUtils.AssertFilesExist(assertOptions.BundleDir, new[] { "run-v8.sh" }, expectToExist: assertOptions.HasV8Script);
 
-        string bundledMainAppAssembly =
-            BuildTestBase.UseWebcil ? $"{assertOptions.ProjectName}{WebcilInWasmExtension}" : $"{assertOptions.ProjectName}.dll";
+        string bundledMainAppAssembly = $"{assertOptions.ProjectName}{WasmAssemblyExtension}";
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir, new[] { bundledMainAppAssembly });
     }
 
     public void AssertBundle(BuildArgs buildArgs, BuildProjectOptions buildProjectOptions)
     {
-        string binFrameworkDir = FindBinFrameworkDir(buildArgs.Config,
+        string binFrameworkDir = buildProjectOptions.BinFrameworkDir
+                                    ?? FindBinFrameworkDir(buildArgs.Config,
                                                      buildProjectOptions.Publish,
                                                      buildProjectOptions.TargetFramework);
         NativeFilesType expectedFileType = buildArgs.AOT

@@ -197,8 +197,6 @@ int __cdecl main(int argc, char* argv[])
 
     SetBreakOnException(o.breakOnException);
 
-    SetSuperPmiTargetArchitecture(o.targetArchitecture);
-
     if (o.methodStatsTypes != NULL &&
         (strchr(o.methodStatsTypes, '*') != NULL || strchr(o.methodStatsTypes, 't') != NULL ||
          strchr(o.methodStatsTypes, 'T') != NULL))

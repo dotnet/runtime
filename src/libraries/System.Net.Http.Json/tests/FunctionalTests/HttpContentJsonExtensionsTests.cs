@@ -134,6 +134,33 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        public async Task HttpContentAsAsyncEnumerableHonorsWebDefaults()
+        {
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
+                {
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        HttpResponseMessage response = await client.SendAsync(request);
+                        int count = 0;
+                        await foreach (Person? per in response.Content.ReadFromJsonAsAsyncEnumerable<Person>())
+                        {
+                            Assert.NotNull(per);
+                            Assert.NotNull(per.Name);
+                            count++;
+                        }
+                        Assert.Equal(People.PeopleCount, count);
+                    }
+                },
+                async server =>
+                {
+                    string jsonResponse = JsonSerializer.Serialize(People.WomenOfProgramming, JsonOptions.DefaultSerializerOptions);
+                    await server.HandleRequestAsync(headers: _headers, content: jsonResponse);
+                });
+        }
+
+        [Fact]
         public async Task TestReadFromJsonAsAsyncEnumerableNoMessageBodyAsync()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(

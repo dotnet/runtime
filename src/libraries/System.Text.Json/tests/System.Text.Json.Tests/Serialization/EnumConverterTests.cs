@@ -186,8 +186,8 @@ namespace System.Text.Json.Serialization.Tests
                 options);
             Assert.Equal(@"""directory, compressed, integrity_stream""", json);
 
-            json = JsonSerializer.Serialize(FileAttributes.Compressed & FileAttributes.Device, options);
-            Assert.Equal(@"0", json);
+            json = JsonSerializer.Serialize((FileAttributes)(-1), options);
+            Assert.Equal(@"-1", json);
 
             json = JsonSerializer.Serialize(FileAttributes.Directory & FileAttributes.Compressed | FileAttributes.IntegrityStream, options);
             Assert.Equal(@"""integrity_stream""", json);

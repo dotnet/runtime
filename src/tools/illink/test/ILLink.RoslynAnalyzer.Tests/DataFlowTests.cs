@@ -138,9 +138,21 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task FileScopedClasses ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task GenericParameterDataFlow ()
 		{
 			return RunTest (nameof (GenericParameterDataFlow));
+		}
+
+		[Fact]
+		public Task InlineArrayDataflow ()
+		{
+			return RunTest ();
 		}
 
 		[Fact]

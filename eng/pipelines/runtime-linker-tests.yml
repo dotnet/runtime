@@ -18,6 +18,11 @@ trigger:
     - LICENSE.TXT
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
+    - eng/pipelines/coreclr/perf*yml
+    - eng/pipelines/coreclr/templates/build-perf*
+    - eng/pipelines/coreclr/templates/perf-job.yml
+    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/testing/performance/*
 
 schedules:
   - cron: "0 7,19 * * *" # run at 7:00 and 19:00 (UTC) which is 23:00 and 11:00 (PST).
@@ -102,7 +107,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-            buildArgs: -s clr+libs -c $(_BuildConfig)
+            buildArgs: -s clr+libs+tools.illink -c $(_BuildConfig)
             extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
 
       #
@@ -118,7 +123,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: Runtime_Release
-            buildArgs: -s mono+libs -c $(_BuildConfig) -p:WasmBuildNative=false -p:AotHostArchitecture=x64 -p:AotHostOS=$(_hostedOS)
+            buildArgs: -s mono+libs+tools.illink -c $(_BuildConfig) -p:WasmBuildNative=false -p:AotHostArchitecture=x64 -p:AotHostOS=$(_hostedOS)
             condition:
               or(
                 eq(variables['isRollingBuild'], true),

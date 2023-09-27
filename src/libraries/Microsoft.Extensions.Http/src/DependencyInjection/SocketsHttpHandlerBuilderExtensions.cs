@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [UnsupportedOSPlatform("browser")]
-        private static void FillFromConfig(SocketsHttpHandler handler, SocketsHttpHandlerConfiguration config)
+        private static void FillFromConfig(SocketsHttpHandler handler, in SocketsHttpHandlerConfiguration config)
         {
             if (config.PooledConnectionIdleTimeout is not null)
             {

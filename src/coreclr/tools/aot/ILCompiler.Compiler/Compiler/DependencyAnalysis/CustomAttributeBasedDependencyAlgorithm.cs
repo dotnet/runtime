@@ -128,7 +128,7 @@ namespace ILCompiler.DependencyAnalysis
                     // Make a new list in case we need to abort.
                     var caDependencies = factory.MetadataManager.GetDependenciesForCustomAttribute(factory, constructor, decodedValue, parent) ?? new DependencyList();
 
-                    caDependencies.Add(factory.ReflectedMethod(constructor), "Attribute constructor");
+                    caDependencies.Add(factory.ReflectedMethod(constructor.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Attribute constructor");
                     caDependencies.Add(factory.ReflectedType(constructor.OwningType), "Attribute type");
 
                     if (AddDependenciesFromCustomAttributeBlob(caDependencies, factory, constructor.OwningType, decodedValue))
@@ -234,7 +234,7 @@ namespace ILCompiler.DependencyAnalysis
                             setterMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(setterMethod, (InstantiatedType)attributeType);
                         }
 
-                        dependencies.Add(factory.ReflectedMethod(setterMethod), "Custom attribute blob");
+                        dependencies.Add(factory.ReflectedMethod(setterMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Custom attribute blob");
                     }
 
                     return true;

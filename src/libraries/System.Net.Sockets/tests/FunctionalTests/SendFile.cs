@@ -62,7 +62,6 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task UdpConnection_ThrowsException(bool usePreAndPostbufferOverload)
         {
             // Create file to send
@@ -77,16 +76,14 @@ namespace System.Net.Sockets.Tests
 
             client.Connect(listener.LocalEndPoint);
 
-            SocketException ex;
             if (usePreAndPostbufferOverload)
             {
-                ex = await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path, Array.Empty<byte>(), Array.Empty<byte>(), TransmitFileOptions.UseDefaultWorkerThread));
+                await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(client, tempFile.Path, Array.Empty<byte>(), Array.Empty<byte>(), TransmitFileOptions.UseDefaultWorkerThread));
             }
             else
             {
-                ex = await Assert.ThrowsAsync<SocketException>(() => SendFileAsync(client, tempFile.Path));
+                await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(client, tempFile.Path));
             }
-            Assert.Equal(SocketError.NotConnected, ex.SocketErrorCode);
         }
 
         public static IEnumerable<object[]> SendFile_MemberData()

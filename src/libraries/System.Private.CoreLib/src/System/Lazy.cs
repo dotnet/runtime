@@ -182,7 +182,7 @@ namespace System
     /// </para>
     /// </remarks>
     [DebuggerTypeProxy(typeof(LazyDebugView<>))]
-    [DebuggerDisplay("ThreadSafetyMode={Mode}, IsValueCreated={IsValueCreated}, IsValueFaulted={IsValueFaulted}, Value={ValueForDebugDisplay}")]
+    [DebuggerDisplay("ThreadSafetyMode = {Mode}, IsValueCreated = {IsValueCreated}, IsValueFaulted = {IsValueFaulted}, Value = {ValueForDebugDisplay}")]
     public class Lazy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
     {
         private static T CreateViaDefaultConstructor() => LazyHelper.CreateViaDefaultConstructor<T>();

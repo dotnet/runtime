@@ -711,5 +711,58 @@ namespace DebuggerTests
                    ("EvaluateStaticGetterInValueType.A", TNumber(5))
                 );
            });
+
+        [Fact]
+        public async Task EvaluateSumBetweenObjectAndString() => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.SumObjectAndString", "run", 7, "DebuggerTests.SumObjectAndString.run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.SumObjectAndString:run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("myList+\"asd\"", TString("System.Collections.Generic.List`1[System.Int32]asd")),
+                   ("dt+\"asd\"", TString("1/1/0001 12:00:00 AMasd")),
+                   ("myClass+\"asd\"", TString("OverridenToStringasd")),
+                   ("listNull+\"asd\"", TString("asd"))
+                );
+                await CheckEvaluateFail(id,
+                    ("myClass+dt", "Cannot evaluate '(myClass+dt\n)': (3,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'object'"),
+                    ("myClass+1", "Cannot evaluate '(myClass+1\n)': (2,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'int'"),
+                    ("dt+1", "Cannot evaluate '(dt+1\n)': (2,9): error CS0019: Operator '+' cannot be applied to operands of type 'object' and 'int'")
+                );
+           });
+
+        [Fact]
+        public async Task EvaluateMethodsOnEnum() => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.EvaluateMethodsOnEnum", "run", 2, "DebuggerTests.EvaluateMethodsOnEnum.run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodsOnEnum:run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("s_valueTypeEnum.ToString()", TString("no")),
+                   ("mc.valueTypeEnum.ToString()", TString("yes"))
+                   // ("mc.valueTypeEnum.HasFlag(SampleEnum.no)", TBool(true)) // ToDo: https://github.com/dotnet/runtime/issues/92262
+                );
+           });
+
+        [Fact]
+        public async Task EvaluateObjectIndexingMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("f[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
+                   ("f[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
+                   ("f[aChar, \"&\", longString]", TString("9-&-longString")),
+                   ("f[f.numArray[j], aDouble]", TNumber("4.34")), //ElementAccessExpressionSyntax
+                   ("f[f.numArray[j], f.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
+                   ("f[f.numArray[f.numList[0]], f.numArray[i]]", TNumber("3")),
+                   ("f[f.numArray[f.numList[0]], f.numArray[f.numArray[i]]]", TNumber("4"))
+                ); 
+           });
     }
 }

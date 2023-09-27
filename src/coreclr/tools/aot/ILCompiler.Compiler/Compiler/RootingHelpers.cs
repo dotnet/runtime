@@ -186,7 +186,7 @@ namespace ILCompiler
             }
 
             dependencies ??= new DependencyList();
-            dependencies.Add(factory.ReflectedMethod(method), reason);
+            dependencies.Add(factory.ReflectedMethod(method.GetCanonMethodTarget(CanonicalFormKind.Specific)), reason);
 
             return true;
         }

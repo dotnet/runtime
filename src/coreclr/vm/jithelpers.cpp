@@ -56,6 +56,8 @@
 #include "excep.h"
 #endif
 
+#include "exinfo.h"
+
 //========================================================================
 //
 // This file contains implementation of all JIT helpers. The helpers are
@@ -2454,7 +2456,7 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable *pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored_NoLogging());
+    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -2481,7 +2483,7 @@ HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable* pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored_NoLogging());
+    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -4214,6 +4216,39 @@ HCIMPLEND
 
 /*************************************************************/
 
+#ifdef FEATURE_EH_FUNCLETS
+void ThrowNew(OBJECTREF oref)
+{
+    if (oref == 0)
+        DispatchManagedException(kNullReferenceException);
+    else
+    if (!IsException(oref->GetMethodTable()))
+    {
+        GCPROTECT_BEGIN(oref);
+
+        WrapNonCompliantException(&oref);
+
+        GCPROTECT_END();
+    }
+    else
+    {   // We know that the object derives from System.Exception
+
+        // If the flag indicating ForeignExceptionRaise has been set,
+        // then do not clear the "_stackTrace" field of the exception object.
+        if (GetThread()->GetExceptionState()->IsRaisingForeignException())
+        {
+            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
+        }
+        else
+        {
+            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
+        }
+    }
+
+    DispatchManagedException(oref);
+}
+#endif // FEATURE_EH_FUNCLETS
+
 HCIMPL1(void, IL_Throw,  Object* obj)
 {
     FCALL_CONTRACT;
@@ -4232,6 +4267,13 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        ThrowNew(oref);
+        UNREACHABLE();
+    }
+#endif
 
     if (oref == 0)
         COMPlusThrow(kNullReferenceException);
@@ -4267,6 +4309,31 @@ HCIMPLEND
 
 /*************************************************************/
 
+#ifdef FEATURE_EH_FUNCLETS
+void RethrowNew()
+{
+    CONTEXT ctx = {};
+    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    REGDISPLAY rd;
+    Thread *pThread = GetThread();
+
+    ExInfo *pActiveExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+
+    ExInfo exInfo(pThread, &ctx, &rd, ExKind::None);
+
+    GCPROTECT_BEGIN(exInfo.m_exception);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+    CALL_MANAGED_METHOD_NORET(args)
+    GCPROTECT_END();
+}
+#endif // FEATURE_EH_FUNCLETS
+
 HCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
@@ -4274,6 +4341,14 @@ HCIMPL0(void, IL_Rethrow)
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        RethrowNew();
+        UNREACHABLE();
+    }
+#endif
 
     OBJECTREF throwable = GetThread()->GetThrowable();
     if (throwable != NULL)
@@ -4934,8 +5009,6 @@ HCIMPL0(void, JIT_PInvokeEndRarePath)
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
     thread->HandleThreadAbort();
     HELPER_METHOD_FRAME_END();
-
-    InlinedCallFrame* frame = (InlinedCallFrame*)thread->m_pFrame;
 
     thread->m_pFrame->Pop(thread);
 
@@ -6004,8 +6077,8 @@ HCIMPLEND
 
 // Helpers for scalable approximate counters
 //
-// Here 13 means we count accurately up to 2^13 = 8192 and
-// then start counting probabialistically.
+// Here threshold = 13 means we count accurately up to 2^13 = 8192 and
+// then start counting probabilistically.
 //
 // See docs/design/features/ScalableApproximateCounting.md
 //
@@ -6016,22 +6089,22 @@ HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
 
     LONG count = *pCounter;
     LONG delta = 1;
+    DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
     if (count > 0)
     {
         DWORD logCount = 0;
         BitScanReverse(&logCount, count);
 
-        if (logCount >= 13)
+        if (logCount >= threshold)
         {
-            delta = 1 << (logCount - 12);
+            delta = 1 << (logCount - (threshold - 1));
             const unsigned rand = HandleHistogramProfileRand();
             const bool update = (rand & (delta - 1)) == 0;
             if (!update)
             {
                 return;
             }
-
         }
     }
 
@@ -6046,15 +6119,16 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
 
     LONG64 count = *pCounter;
     LONG64 delta = 1;
+    DWORD threshold = g_pConfig->TieredPGO_ScalableCountThreshold();
 
     if (count > 0)
     {
         DWORD logCount = 0;
         BitScanReverse64(&logCount, count);
 
-        if (logCount >= 13)
+        if (logCount >= threshold)
         {
-            delta = 1LL << (logCount - 12);
+            delta = 1LL << (logCount - (threshold - 1));
             const unsigned rand = HandleHistogramProfileRand();
             const bool update = (rand & (delta - 1)) == 0;
             if (!update)

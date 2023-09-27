@@ -38,7 +38,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets a string suitable for display in the debugger.
         /// </summary>
-        private string DebuggerDisplay => $"{nameof(Index)}: {Index}, {nameof(Count)}: {Count}";
+        private string DebuggerDisplay => $"{nameof(Index)} = {Index}, {nameof(Count)} = {Count}";
     }
 
     /// <summary>

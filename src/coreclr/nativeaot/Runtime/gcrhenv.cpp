@@ -42,7 +42,6 @@
 
 #include "daccess.h"
 
-#include "GCMemoryHelpers.h"
 #include "interoplibinterface.h"
 
 #include "holder.h"
@@ -130,7 +129,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
     ASSERT(!pThread->IsDoNotTriggerGcSet());
     ASSERT(pThread->IsCurrentThreadInCooperativeMode());
 
-    size_t cbSize = pEEType->get_BaseSize();
+    size_t cbSize = pEEType->GetBaseSize();
 
     if (pEEType->HasComponentSize())
     {
@@ -490,23 +489,6 @@ void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, voi
     UNREFERENCED_PARAMETER(pContext);
 }
 
-// Enumerate all the object roots located in handle tables. It is only safe to call this from the context of a
-// GC.
-//
-// static
-void RedhawkGCInterface::ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext)
-{
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
-    ScanRootsContext sContext;
-    sContext.m_pfnCallback = pfnScanCallback;
-    sContext.m_pContext = pContext;
-    Ref_ScanPointers(2, 2, (EnumGcRefScanContext*)&sContext, ScanRootsCallbackWrapper);
-#else
-    UNREFERENCED_PARAMETER(pfnScanCallback);
-    UNREFERENCED_PARAMETER(pContext);
-#endif // !DACCESS_COMPILE
-}
-
 #ifndef DACCESS_COMPILE
 
 uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
@@ -521,11 +503,11 @@ uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, (Object* pObj1, Object* pObj2))
 {
-    ASSERT(pObj1->get_EEType()->IsEquivalentTo(pObj2->get_EEType()));
-    ASSERT(pObj1->get_EEType()->IsValueType());
+    ASSERT(pObj1->GetMethodTable()->IsEquivalentTo(pObj2->GetMethodTable()));
+    ASSERT(pObj1->GetMethodTable()->IsValueType());
 
-    MethodTable * pEEType = pObj1->get_EEType();
-    size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(MethodTable*));
+    MethodTable * pEEType = pObj1->GetMethodTable();
+    size_t cbFields = pEEType->GetBaseSize() - (sizeof(ObjHeader) + sizeof(MethodTable*));
 
     uint8_t * pbFields1 = (uint8_t*)pObj1 + sizeof(MethodTable*);
     uint8_t * pbFields2 = (uint8_t*)pObj2 + sizeof(MethodTable*);
@@ -989,15 +971,19 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
     // Managed code should not be running.
     ASSERT(GCHeapUtilities::GetGCHeap()->IsGCInProgressHelper());
 
-    // the lowermost 1 bit is reserved for storing additional info about the handle
-    const uintptr_t HandleTagBits = 1;
+    // the lowermost 2 bits are reserved for storing additional info about the handle
+    // we can use these bits because handle is at least 4 byte aligned
+    const uintptr_t HandleTagBits = 3;
 
     WeakReference* weakRefObj = (WeakReference*)obj;
     OBJECTHANDLE handle = (OBJECTHANDLE)(weakRefObj->m_taggedHandle & ~HandleTagBits);
-    _ASSERTE((weakRefObj->m_taggedHandle & 2) == 0);
-    HandleType handleType = (weakRefObj->m_taggedHandle & 1) ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
+    HandleType handleType = (weakRefObj->m_taggedHandle & 2) ?
+        HandleType::HNDTYPE_STRONG :
+        (weakRefObj->m_taggedHandle & 1) ?
+        HandleType::HNDTYPE_WEAK_LONG :
+        HandleType::HNDTYPE_WEAK_SHORT;
     // keep the bit that indicates whether this reference was tracking resurrection, clear the rest.
-    weakRefObj->m_taggedHandle &= HandleTagBits;
+    weakRefObj->m_taggedHandle &= (uintptr_t)1;
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
     return true;
 }

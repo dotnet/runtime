@@ -41,8 +41,14 @@
       <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
+    <!-- Make sure marshal-ilgen is included in the components list. -->
+    <ItemGroup Condition="'$(RuntimeComponents)' != '*'">
+      <_RuntimeComponentList Include="$(RuntimeComponents)" />
+      <_RuntimeComponentList Include="marshal-ilgen" KeepDuplicates="false"/>
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(RuntimeComponents)' != '*'">
+      <RuntimeComponents>@(_RuntimeComponentList)</RuntimeComponents>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
@@ -220,17 +226,23 @@
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Android" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_CompilerBinaryPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</_CompilerBinaryPath>
+      <_MonoLLVMPath>$(MonoAotCrossDir)</_MonoLLVMPath>
+      <_MonoLLVMPath Condition="'$(_MonoLLVMPath)' == '' and '$(MonoEnableLLVM)' == 'true'">$([System.IO.Path]::GetDirectoryName("$(_CompilerBinaryPath)"))</_MonoLLVMPath>
+    </PropertyGroup>
+
     <MonoAOTCompiler
         AotModulesTablePath="$(_AotModuleTablePath)"
         AsPrefix="$(_AsPrefixPath)"
         Assemblies="@(_AotInputAssemblies)"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        CompilerBinaryPath="$(_CompilerBinaryPath)"
         DirectPInvokes="@(DirectPInvokes)"
         DirectPInvokeLists="@(DirectPInvokeLists)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
         LibraryFormat="$(_AotLibraryFormat)"
-        LLVMPath="$(MonoAotCrossDir)"
+        LLVMPath="$(_MonoLLVMPath)"
         MibcProfilePath="@(ProfiledAOTProfilePaths)"
         Mode="$(_AOTMode)"
         OutputDir="$(_MobileIntermediateOutputPath)"

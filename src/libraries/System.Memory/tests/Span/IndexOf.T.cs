@@ -234,6 +234,16 @@ namespace System.SpanTests
             }
         }
 
+        [Fact]
+        public static void IndexOfWorksOnAvx512_Integer()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/89512
+
+            var arr = new int[32];
+            arr[1] = 1;
+            Assert.Equal(1, arr.AsSpan().IndexOf(1));
+        }
+
         private readonly struct TwoBytes : IEquatable<TwoBytes>
         {
             private readonly byte _first, _second;

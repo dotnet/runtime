@@ -591,6 +591,13 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                 }
 
+                if (results.Count > 0 && _compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
+                {
+                    // we only support C# 8.0 and above
+                    Diag(DiagnosticDescriptors.LoggingUnsupportedLanguageVersion, null, version.ToDisplayString(), LanguageVersion.CSharp8.ToDisplayString());
+                    return Array.Empty<LoggerClass>();
+                }
+
                 return results;
             }
 

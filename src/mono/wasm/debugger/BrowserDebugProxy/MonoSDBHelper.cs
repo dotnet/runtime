@@ -564,16 +564,29 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public void WriteObj(DotnetObjectId objectId, MonoSDBHelper SdbHelper)
         {
-            if (objectId.Scheme == "object")
+            switch (objectId.Scheme)
             {
-                Write(ElementType.Class, objectId.Value);
-            }
-            else if (objectId.Scheme == "valuetype")
-            {
-                if (SdbHelper.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass vt))
+                case "object":
+                {
+                    Write(ElementType.Class, objectId.Value);
+                    break;
+                }
+                case "array":
+                {
+                    Write(ElementType.Array, objectId.Value);
+                    break;
+                }
+                case "valuetype":
+                {
+                    if (!SdbHelper.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass vt))
+                        throw new ArgumentException($"Could not find any valuetype with id: {objectId.Value}", nameof(objectId.Value));
                     Write(vt.Buffer);
-                else
-                    throw new ArgumentException($"Could not find any valuetype with id: {objectId.Value}", nameof(objectId.Value));
+                    break;
+                }
+                default:
+                {
+                    throw new NotImplementedException($"Writing object of scheme: {objectId.Scheme} is not supported");
+                }
             }
         }
 
@@ -587,7 +600,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             switch (type)
             {
-                case ElementType.U1:
+                case ElementType.I1:
                 case ElementType.I2:
                 case ElementType.I4:
                     Write((ElementType)type, (int)value);
@@ -604,7 +617,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         intBoolVal = (bool)value ? 1 : 0;
                     Write((ElementType)type, intBoolVal);
                     return true;
-                case ElementType.I1:
+                case ElementType.U1:
                 case ElementType.U2:
                 case ElementType.U4:
                     Write((ElementType)type, (uint)value);
@@ -715,14 +728,41 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        public async Task<bool> WriteJsonValue(JObject objValue, MonoSDBHelper SdbHelper, CancellationToken token)
+        public async Task<bool> WriteJsonValue(JObject objValue, MonoSDBHelper SdbHelper, ElementType? expectedType, CancellationToken token)
         {
             switch (objValue["type"].Value<string>())
             {
                 case "number":
                 {
-                    // FixMe: what if the number is not int but single/double?
-                    Write(ElementType.I4, objValue["value"].Value<int>());
+                    var expected = expectedType is not null ? expectedType.Value : ElementType.I4;
+                    switch (expected)
+                    {
+                        case ElementType.I1:
+                        case ElementType.I2:
+                        case ElementType.I4:
+                            Write(expected, objValue["value"].Value<int>());
+                            break;
+                        case ElementType.U1:
+                        case ElementType.U2:
+                        case ElementType.U4:
+                            Write(expected, objValue["value"].Value<uint>());
+                            break;
+                        case ElementType.I8:
+                            Write(expected, objValue["value"].Value<long>());
+                            break;
+                        case ElementType.U8:
+                            Write(expected, objValue["value"].Value<ulong>());
+                            break;
+                        case ElementType.R4:
+                            Write(expected, objValue["value"].Value<float>());
+                            break;
+                        case ElementType.R8:
+                            Write(expected, objValue["value"].Value<double>());
+                            break;
+                        default:
+                            objValue["value"].Value<int>();
+                            break;
+                    };
                     return true;
                 }
                 case "symbol":
@@ -818,7 +858,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private static int debuggerObjectId;
         private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
-        private const int MINOR_VERSION = 62;
+        private const int MINOR_VERSION = 65;
         private const int MAJOR_VERSION = 2;
 
         private int VmMinorVersion { get; set; }
@@ -911,7 +951,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             else
             {
-                if (asm.asmMetadataReader is null && proxy.JustMyCode) //load on demand
+                if (asm.asmMetadataReader is null) //load on demand
                 {
                     var assemblyAndPdbData = await GetDataFromAssemblyAndPdbAsync(asm.Name, true, token);
                     if (assemblyAndPdbData is not null)
@@ -1933,14 +1973,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 : throw new ArgumentException($"Cannot invoke method with id {methodId} on {dotnetObjectId}", nameof(dotnetObjectId));
         }
 
-        public async Task<string> InvokeToStringAsync(IEnumerable<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, CancellationToken token)
+        public async Task<string> InvokeToStringAsync(IEnumerable<int> typeIds, bool isValueType, bool isEnum, int objectId, BindingFlags extraFlags, bool invokeToStringInObject, CancellationToken token)
         {
             try
             {
                 foreach (var typeId in typeIds)
                 {
                     var typeInfo = await GetTypeInfo(typeId, token);
-                    if (typeInfo == null || typeInfo.Name == "object")
+                    if (typeInfo == null || (typeInfo.Name == "object" && !invokeToStringInObject))
                         continue;
                     Microsoft.WebAssembly.Diagnostics.MethodInfo methodInfo = typeInfo.Info.Methods.FirstOrDefault(m => m.Name == "ToString");
                     if (isEnum != true && methodInfo == null)

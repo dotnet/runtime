@@ -67,9 +67,9 @@ class CodeVersionManager;
 class TieredCompilationManager;
 class JITInlineTrackingMap;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 class EnCEEClassData;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 // Hash table parameter of available classes (name -> module/class) hash
 #define AVAILABLE_CLASSES_HASH_BUCKETS 1024
@@ -950,10 +950,10 @@ protected:
         return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Holds a table of EnCEEClassData object for classes in this module that have been modified
     CUnorderedArray<EnCEEClassData*, 5> m_ClassList;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 private:
     void EnableEditAndContinue()

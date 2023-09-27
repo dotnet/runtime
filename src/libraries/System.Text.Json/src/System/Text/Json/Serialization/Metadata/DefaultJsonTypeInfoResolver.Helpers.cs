@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.PopulatePolymorphismMetadata();
             typeInfo.MapInterfaceTypesToCallbacks();
 
-            Func<object>? createObject = MemberAccessor.CreateConstructor(typeInfo.Type);
+            Func<object>? createObject = DetermineCreateObjectDelegate(type, converter);
             typeInfo.SetCreateObjectIfCompatible(createObject);
             typeInfo.CreateObjectForExtensionDataProperty = createObject;
 
@@ -76,27 +76,26 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(!typeInfo.IsReadOnly);
             Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.Object);
 
-            // Compiler adds RequiredMemberAttribute to type if any of the members is marked with 'required' keyword.
             // SetsRequiredMembersAttribute means that all required members are assigned by constructor and therefore there is no enforcement
-            bool shouldCheckMembersForRequiredMemberAttribute =
-                typeInfo.Type.HasRequiredMemberAttribute()
-                && !(typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false);
+            bool constructorHasSetsRequiredMembersAttribute =
+                typeInfo.Converter.ConstructorInfo?.HasSetsRequiredMembersAttribute() ?? false;
 
             JsonTypeInfo.PropertyHierarchyResolutionState state = new();
 
             // Walk the type hierarchy starting from the current type up to the base type(s)
             foreach (Type currentType in typeInfo.Type.GetSortedTypeHierarchy())
             {
-                if (currentType == JsonTypeInfo.ObjectType)
+                if (currentType == JsonTypeInfo.ObjectType ||
+                    currentType == typeof(ValueType))
                 {
-                    // Don't process any members for typeof(object)
+                    // Don't process any members for typeof(object) or System.ValueType
                     break;
                 }
 
                 AddMembersDeclaredBySuperType(
                     typeInfo,
                     currentType,
-                    shouldCheckMembersForRequiredMemberAttribute,
+                    constructorHasSetsRequiredMembersAttribute,
                     ref state);
             }
 
@@ -111,7 +110,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static void AddMembersDeclaredBySuperType(
             JsonTypeInfo typeInfo,
             Type currentType,
-            bool shouldCheckMembersForRequiredMemberAttribute,
+            bool constructorHasSetsRequiredMembersAttribute,
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
             Debug.Assert(!typeInfo.IsReadOnly);
@@ -122,6 +121,10 @@ namespace System.Text.Json.Serialization.Metadata
                 BindingFlags.Public |
                 BindingFlags.NonPublic |
                 BindingFlags.DeclaredOnly;
+
+            // Compiler adds RequiredMemberAttribute to type if any of the members are marked with 'required' keyword.
+            bool shouldCheckMembersForRequiredMemberAttribute =
+                !constructorHasSetsRequiredMembersAttribute && currentType.HasRequiredMemberAttribute();
 
             foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags))
             {
@@ -407,6 +410,25 @@ namespace System.Text.Json.Serialization.Metadata
                     Debug.Fail($"Invalid MemberInfo type: {memberInfo.MemberType}");
                     break;
             }
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static Func<object>? DetermineCreateObjectDelegate(Type type, JsonConverter converter)
+        {
+            ConstructorInfo? defaultCtor = null;
+
+            if (converter.ConstructorInfo != null && !converter.ConstructorIsParameterized)
+            {
+                // A parameterless constructor has been resolved by the converter
+                // (e.g. it might be a non-public ctor with JsonConverterAttribute).
+                defaultCtor = converter.ConstructorInfo;
+            }
+
+            // Fall back to resolving any public constructors on the type.
+            defaultCtor ??= type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
+
+            return MemberAccessor.CreateParameterlessConstructor(type, defaultCtor);
         }
     }
 }

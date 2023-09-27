@@ -268,7 +268,7 @@ namespace System.Collections.Immutable.Tests
                 .Enqueue(3);
 
             ref readonly int safeRef = ref queue.PeekRef();
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(1, queue.PeekRef());
 

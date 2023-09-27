@@ -452,22 +452,10 @@ public:
         return (HasClassInstantiation() || HasMethodInstantiation());
     }
 
-    BOOL HasClassOrMethodInstantiation_NoLogging() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (HasClassInstantiation_NoLogging() || HasMethodInstantiation());
-    }
-
     inline BOOL HasClassInstantiation() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return GetMethodTable()->HasInstantiation();
-    }
-
-    inline BOOL HasClassInstantiation_NoLogging() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetMethodTable_NoLogging()->HasInstantiation();
     }
 
     // Return the instantiation for an instantiated generic method
@@ -980,14 +968,13 @@ public:
     inline EEClass* GetClass()
     {
         WRAPPER_NO_CONTRACT;
-        MethodTable *pMT = GetMethodTable_NoLogging();
-        EEClass *pClass = pMT->GetClass_NoLogging();
+        MethodTable *pMT = GetMethodTable();
+        EEClass *pClass = pMT->GetClass();
         PREFIX_ASSUME(pClass != NULL);
         return pClass;
     }
 
     inline PTR_MethodTable GetMethodTable() const;
-    inline PTR_MethodTable GetMethodTable_NoLogging() const;
 
     inline DPTR(PTR_MethodTable) GetMethodTablePtr() const;
 
@@ -1000,7 +987,6 @@ public:
     inline MethodTable* GetCanonicalMethodTable();
 
     Module *GetModule() const;
-    Module *GetModule_NoLogging() const;
 
     Assembly *GetAssembly() const
     {
@@ -1048,7 +1034,6 @@ public:
 
 public:
     mdMethodDef GetMemberDef() const;
-    mdMethodDef GetMemberDef_NoLogging() const;
 
 #ifdef _DEBUG
     BOOL SanityCheck();
@@ -1139,6 +1124,7 @@ public:
     bool IsJitOptimizationDisabled();
     bool IsJitOptimizationDisabledForAllMethodsInChunk();
     bool IsJitOptimizationDisabledForSpecificMethod();
+    bool IsJitOptimizationLevelRequested();
 
 private:
     // This function is not intended to be called in most places, and is named as such to discourage calling it accidentally
@@ -1388,11 +1374,11 @@ public:
     }
 
     // Perf warning: takes the CodeVersionManagerLock on every call
-    BOOL HasNativeCodeReJITAware()
+    BOOL HasNativeCodeAnyVersion()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return GetNativeCodeReJITAware() != NULL;
+        return GetNativeCodeAnyVersion() != NULL;
     }
 
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
@@ -1452,9 +1438,9 @@ public:
     PCODE GetNativeCode();
 
     // Returns GetNativeCode() if it exists, but also checks to see if there
-    // is a non-default IL code version and returns that.
+    // is a non-default code version that is populated with a code body and returns that.
     // Perf warning: takes the CodeVersionManagerLock on every call
-    PCODE GetNativeCodeReJITAware();
+    PCODE GetNativeCodeAnyVersion();
 
 #if defined(FEATURE_JIT_PITCHING)
     bool IsPitchable();
@@ -1697,7 +1683,7 @@ public:
         m_wFlags |= mdcHasNativeCodeSlot;
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     inline BOOL IsEnCAddedMethod()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1715,7 +1701,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return FALSE;
     }
-#endif // !EnC_SUPPORTED
+#endif // !FEATURE_METADATA_UPDATER
 
     inline BOOL IsIntrinsic()
     {
@@ -1834,7 +1820,7 @@ private:
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
     PCODE JitCompileCode(PrepareCodeConfig* pConfig);
     PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
-    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
+    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
 
 public:
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
@@ -3424,20 +3410,13 @@ private:
 
 };
 
-inline PTR_MethodTable MethodDesc::GetMethodTable_NoLogging() const
+inline PTR_MethodTable MethodDesc::GetMethodTable() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     MethodDescChunk *pChunk = GetMethodDescChunk();
     PREFIX_ASSUME(pChunk != NULL);
     return pChunk->GetMethodTable();
-}
-
-inline PTR_MethodTable MethodDesc::GetMethodTable() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return GetMethodTable_NoLogging();
 }
 
 inline DPTR(PTR_MethodTable) MethodDesc::GetMethodTablePtr() const
@@ -3456,7 +3435,7 @@ inline MethodTable* MethodDesc::GetCanonicalMethodTable()
     return GetMethodTable()->GetCanonicalMethodTable();
 }
 
-inline mdMethodDef MethodDesc::GetMemberDef_NoLogging() const
+inline mdMethodDef MethodDesc::GetMemberDef() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -3468,12 +3447,6 @@ inline mdMethodDef MethodDesc::GetMemberDef_NoLogging() const
     static_assert_no_msg(enum_flag3_TokenRemainderMask == METHOD_TOKEN_REMAINDER_MASK);
 
     return MergeToken(tokrange, tokremainder);
-}
-
-inline mdMethodDef MethodDesc::GetMemberDef() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return GetMemberDef_NoLogging();
 }
 
 // Set the offset of this method desc in a chunk table (which allows us
@@ -3515,7 +3488,7 @@ inline void MethodDesc::SetMemberDef(mdMethodDef mb)
 #ifdef _DEBUG
     if (mb != 0)
     {
-        _ASSERTE(GetMemberDef_NoLogging() == mb);
+        _ASSERTE(GetMemberDef() == mb);
     }
 #endif
 }

@@ -30,7 +30,6 @@ public class AppSettingsTests : AppTestBase
 
         var result = await RunSdkStyleApp(new(
             Configuration: "Debug",
-            ForPublish: true,
             TestScenario: "AppSettingsTest",
             BrowserQueryString: new Dictionary<string, string> { ["applicationEnvironment"] = applicationEnvironment }
         ));

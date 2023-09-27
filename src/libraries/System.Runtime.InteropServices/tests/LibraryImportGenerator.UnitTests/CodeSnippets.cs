@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Interop.UnitTests;
 
@@ -984,6 +985,86 @@ namespace LibraryImportGenerator.UnitTests
                     );
             }
             """;
+
+        public const string IntClassAndMarshaller = IntClassDefinition + IntClassMarshallerDefinition;
+        public const string IntClassDefinition = """
+            internal struct IntClass
+            {
+                public int Field;
+            }
+            """;
+        public const string IntClassMarshallerDefinition = """
+            [CustomMarshaller(typeof(IntClass), MarshalMode.Default, typeof(IntClassMarshaller))]
+            internal static class IntClassMarshaller
+            {
+                public static nint ConvertToUnmanaged(IntClass managed) => (nint)0;
+                public static IntClass ConvertToManaged(nint unmanaged) => default;
+            }
+            """;
+
+        public const string IntStructAndMarshaller = IntStructDefinition + IntStructMarshallerDefinition;
+        public const string IntStructDefinition = """
+            internal struct IntStruct
+            {
+                public int Field;
+            }
+            """;
+        public const string IntStructMarshallerDefinition = """
+            [CustomMarshaller(typeof(IntStruct), MarshalMode.Default, typeof(IntStructMarshaller))]
+            internal static class IntStructMarshaller
+            {
+                public static nint ConvertToUnmanaged(IntStruct managed) => (nint)0;
+                public static IntStruct ConvertToManaged(nint unmanaged) => default;
+            }
+            """;
+
+        public string CollectionMarshallingWithCountRefKinds(
+            (string parameterType, string parameterModifiers, string[] countNames) returnType,
+            params (string parameterType, string parameterModifiers, string parameterName, string[] countNames)[] parameters)
+        {
+            List<string> parameterSources = new();
+            int i = 1;
+            foreach (var (parameterType, parameterModifiers, parameterName, countNames) in parameters)
+            {
+                List<string> marshalUsings = new();
+                int j = 0;
+                foreach (var countName in countNames)
+                {
+                    marshalUsings.Add($"[MarshalUsing(CountElementName = {countName}, ElementIndirectionDepth = {j})]");
+                    j++;
+                }
+                parameterSources.Add($$"""
+                    {{string.Join(' ', marshalUsings)}} {{parameterModifiers}} {{parameterType}} {|#{{i}}:{{parameterName}}|}
+                    """);
+                i++;
+            }
+            string returnTypeSource;
+            string returnAttributes;
+            {
+                List<string> marshalUsings = new();
+                var (parameterType, parameterModifiers, countNames) = returnType;
+                foreach (var countName in countNames)
+                {
+                    marshalUsings.Add($"[return: MarshalUsing(CountElementName = nameof({countName}))]");
+                }
+                returnAttributes = string.Join(' ', marshalUsings);
+                returnTypeSource = $"{parameterModifiers} {parameterType}";
+            }
+            var parametersSource = string.Join(',', parameterSources);
+            return $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                {{DisableRuntimeMarshalling}}
+
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    {{returnAttributes}}
+                    public static partial {{returnTypeSource}} {|#0:Method|}({{parametersSource}});
+                }
+                """;
+        }
 
         public static string MarshalUsingArrayParameterWithSizeParam(string sizeParamType, bool isByRef) => $$"""
             using System.Runtime.InteropServices;
