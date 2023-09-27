@@ -16,43 +16,34 @@ namespace Unity.CoreCLRHelpers;
 /// </summary>
 static class UnsafeExtensions
 {
-#if TESTING_UNITY_CORECLR
-    private static readonly ConcurrentBag<GCHandle> handles = new ();
-#endif
-
+    private static readonly bool s_ReturnHandlesFromAPI = CoreCLRHost.UseRealGC() || CoreCLRHost.ReturnHandlesFromAPI();
     public static object ToManagedRepresentation(this nint intPtr)
-        => Unsafe.As<nint, object>(ref intPtr);
+    {
+        var value = intPtr;
+        if (IsHandle(value))
+        {
+            var handle = (nuint)value & ~kBitMask;
+            return ((GCHandle)(nint)handle).Target;
+        }
+        // legacy pointer code path until we are fully GC safe
+        return Unsafe.As<nint, object>(ref intPtr);
+    }
 
     public static nint ToNativeRepresentation(this object obj)
     {
-#if TESTING_UNITY_CORECLR
-        WorkaroundToGetGCSafety(obj);
-#endif
+        if (s_ReturnHandlesFromAPI)
+        {
+            var handle = (nuint)(nint)(IntPtr)GCHandle.Alloc(obj);
+            handle |= kHandleMask;
+
+            return (nint)handle;
+        }
+
         return Unsafe.As<object, nint>(ref obj);
     }
 
-#if TESTING_UNITY_CORECLR
-    static void WorkaroundToGetGCSafety(object obj)
-    {
-        var valueToPin = 1;
-        var handle = GCHandle.Alloc(valueToPin, GCHandleType.Pinned);
+    static bool IsHandle(IntPtr value) { return   (((nuint)value) & kHandleMask) == kHandleMask; }
 
-        // Now do the same thing as
-        // https://github.com/Unity-Technologies/runtime/blob/unity-main/src/libraries/System[…].Private.CoreLib/src/System/Runtime/InteropServices/GCHandle.cs
-        // Except by pass the pinnable checks so that we can use the GCHandle to hang onto our object
-        var getHandleValueMethod =
-            typeof(GCHandle).GetMethod("GetHandleValue", BindingFlags.Static | BindingFlags.NonPublic);
-        var internalSetMethod =
-            typeof(GCHandle).GetMethod("InternalSet", BindingFlags.Static | BindingFlags.NonPublic);
-
-        var handleValue = getHandleValueMethod.Invoke(handle, new[] {(object)GCHandle.ToIntPtr(handle)});
-        internalSetMethod.Invoke(handle, new []
-        {
-            handleValue,
-            obj
-        });
-
-        handles.Add(handle);
-    }
-#endif
+    const nuint kBitMask = 0b11;
+    const nuint kHandleMask = 0b10; // the low bit may or may not be set depending on the runtime
 }

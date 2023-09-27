@@ -50,6 +50,20 @@ void unity_log(const char *format, ...)
     our_vprintf ("\n", nullptr);
 }
 
+static gboolean s_UseRealGC;
+
+static gboolean use_real_gc()
+{
+    return s_UseRealGC;
+}
+
+static gboolean s_ReturnHandlesFromAPI;
+
+static gboolean return_handles_from_api()
+{
+    return s_ReturnHandlesFromAPI;
+}
+
 #ifdef WIN32
 #define EXPORT_API __declspec(dllexport)
 #define EXPORT_CC __cdecl
@@ -131,6 +145,8 @@ HostStruct* g_HostStruct;
 struct HostStructNative
 {
     void (*unity_log)(const char *format);
+    gboolean (*use_real_gc)();
+    gboolean (*return_handles_from_api)();
 };
 HostStructNative* g_HostStructNative;
 
@@ -1679,6 +1695,8 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_initialize_host_apis(initialize_
     memset(g_HostStructNative, 0, sizeof(HostStructNative));
 
     g_HostStructNative->unity_log = (unity_log_func)&unity_log;
+    g_HostStructNative->use_real_gc = &use_real_gc;
+    g_HostStructNative->return_handles_from_api = &return_handles_from_api;
 
     hr = init_func(g_HostStruct, (int32_t)sizeof(HostStruct), g_HostStructNative, (int32_t)sizeof(HostStructNative));
 
@@ -1688,15 +1706,26 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_initialize_host_apis(initialize_
 
 extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *file, const char* runtime_version)
 {
+    if (runtime_version != NULL)
+    {
+        if (strstr(runtime_version, "return-handles-from-api"))
+            s_ReturnHandlesFromAPI = true;
+        if (strstr(runtime_version, "use-real-gc"))
+            s_UseRealGC = true;
+    }
+
+    if (!s_UseRealGC)
+    {
     #if defined(TARGET_UNIX)
 #if defined(__APPLE__)
-    GCHeapUtilities::SetGCName("libunitygc.dylib");
+        GCHeapUtilities::SetGCName("libunitygc.dylib");
 #else
-    GCHeapUtilities::SetGCName("libunitygc.so");
+        GCHeapUtilities::SetGCName("libunitygc.so");
 #endif
 #else
-    GCHeapUtilities::SetGCName("unitygc.dll");
+        GCHeapUtilities::SetGCName("unitygc.dll");
 #endif
+    }
 
     g_add_internal_lock.Init(CrstLeafLock);
 
@@ -3123,4 +3152,3 @@ extern "C" EXPORT_API gboolean EXPORT_CC unity_mono_method_is_inflated_specific(
     GCX_PREEMP(); // temporary until we sort out our GC thread model
     return g_HostStruct->unity_mono_method_is_inflated_specific(method, klass);
 }
-
