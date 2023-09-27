@@ -46,15 +46,15 @@ public:
 
 static_assert(sizeof(ObjHeader) == sizeof(uintptr_t), "this assumption is made by the VM!");
 
-#define MTFlag_RequireAlign8            0x00001000
-#define MTFlag_Category_ValueType       0x00040000
-#define MTFlag_Category_ValueType_Mask  0x000C0000
-#define MTFlag_ContainsPointers         0x01000000
-#define MTFlag_HasCriticalFinalizer     0x00000002
-#define MTFlag_HasFinalizer             0x00100000
-#define MTFlag_IsArray                  0x00080000
-#define MTFlag_Collectible              0x00200000
-#define MTFlag_HasComponentSize         0x80000000
+#define MTFlag_RequiresAlign8           0x00001000 // enum_flag_RequiresAlign8
+#define MTFlag_Category_ValueType       0x00040000 // enum_flag_Category_ValueType
+#define MTFlag_Category_ValueType_Mask  0x000C0000 // enum_flag_Category_ValueType_Mask
+#define MTFlag_ContainsPointers         0x01000000 // enum_flag_ContainsPointers
+#define MTFlag_HasCriticalFinalizer     0x00000002 // enum_flag_HasCriticalFinalizer
+#define MTFlag_HasFinalizer             0x00100000 // enum_flag_HasFinalizer
+#define MTFlag_IsArray                  0x00080000 // enum_flag_Category_Array
+#define MTFlag_Collectible              0x00200000 // enum_flag_Collectible
+#define MTFlag_HasComponentSize         0x80000000 // enum_flag_HasComponentSize
 
 class MethodTable
 {
@@ -112,7 +112,7 @@ public:
 
     bool RequiresAlign8()
     {
-        return (m_flags & MTFlag_RequireAlign8) != 0;
+        return (m_flags & MTFlag_RequiresAlign8) != 0;
     }
 
     bool IsValueType()
@@ -147,7 +147,7 @@ public:
             return (m_flags & Old_MTFlag_HasCriticalFinalizer) != 0;
         }
 #endif
-        return (m_flags & MTFlag_HasCriticalFinalizer) && !HasComponentSize();
+        return !HasComponentSize() && (m_flags & MTFlag_HasCriticalFinalizer);
     }
 
     bool SanityCheck()

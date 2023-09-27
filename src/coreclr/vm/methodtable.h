@@ -3292,15 +3292,15 @@ private:
         // apply to Strings / Arrays.
 
         enum_flag_UNUSED_ComponentSize_1    = 0x00000001,
-
-        enum_flag_StaticsMask               = 0x00002004,
+        // GC depends on this bit
+        enum_flag_HasCriticalFinalizer      = 0x00000002, // finalizer must be run on Appdomain Unload
+        enum_flag_StaticsMask               = 0x0000000C,
         enum_flag_StaticsMask_NonDynamic    = 0x00000000,
-        enum_flag_StaticsMask_Dynamic       = 0x00002000,   // dynamic statics (EnC, reflection.emit)
+        enum_flag_StaticsMask_Dynamic       = 0x00000008,   // dynamic statics (EnC, reflection.emit)
         enum_flag_StaticsMask_Generics      = 0x00000004,   // generics statics
-        enum_flag_StaticsMask_CrossModuleGenerics       = 0x00002004, // cross module generics statics (NGen)
-        enum_flag_StaticsMask_IfGenericsThenCrossModule = 0x00002000, // helper constant to get rid of unnecessary check
+        enum_flag_StaticsMask_CrossModuleGenerics       = 0x0000000C, // cross module generics statics (NGen)
+        enum_flag_StaticsMask_IfGenericsThenCrossModule = 0x00000008, // helper constant to get rid of unnecessary check
 
-        enum_flag_NotInPZM                  = 0x00000008,   // True if this type is not in its PreferredZapModule
 
         enum_flag_GenericsMask              = 0x00000030,
         enum_flag_GenericsMask_NonGeneric   = 0x00000000,   // no instantiation
@@ -3329,6 +3329,8 @@ private:
 
         enum_flag_IsByRefLike               = 0x00001000,
 
+        enum_flag_NotInPZM                  = 0x00002000,   // True if this type is not in its PreferredZapModule
+
         // In a perfect world we would fill these flags using other flags that we already have
         // which have a constant value for something which has a component size.
         enum_flag_UNUSED_ComponentSize_6    = 0x00004000,
@@ -3342,8 +3344,8 @@ private:
         // As you change the flags in WFLAGS_LOW_ENUM you also need to change this
         // to be up to date to reflect the default values of those flags for the
         // case where this MethodTable is for a String or Array
-        // TODO, AndrewAu, this looks important, do it!
-        enum_flag_StringArrayValues = SET_TRUE(enum_flag_StaticsMask_NonDynamic) |
+        enum_flag_StringArrayValues = SET_FALSE(enum_flag_HasCriticalFinalizer) |
+                                      SET_TRUE(enum_flag_StaticsMask_NonDynamic) |
                                       SET_FALSE(enum_flag_NotInPZM) |
                                       SET_TRUE(enum_flag_GenericsMask_NonGeneric) |
                                       SET_FALSE(enum_flag_HasVariance) |
@@ -3403,9 +3405,6 @@ private:
 
         enum_flag_IsTrackedReferenceWithFinalizer   = 0x04000000,
 
-        // TODO, andrewau, move fields to reflect value changes
-        // GC depends on this bit
-        enum_flag_HasCriticalFinalizer        = 0x00000002, // finalizer must be run on Appdomain Unload
         // GC depends on this bit
         enum_flag_Collectible                 = 0x00200000,
         enum_flag_ContainsGenericVariables    = 0x20000000,   // we cache this flag to help detect these efficiently and

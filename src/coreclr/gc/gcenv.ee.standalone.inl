@@ -14,7 +14,7 @@ extern IGCToCLR* g_theGCToCLR;
 // GC version that the current runtime supports
 extern VersionInfo g_runtimeSupportedVersion;
 
-// Does the runtime use the new method table flags
+// Does the runtime use the old method table flags
 extern bool g_oldMethodTableFlags;
 
 struct StressLogMsg;
