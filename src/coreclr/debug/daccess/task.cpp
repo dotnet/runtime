@@ -5225,7 +5225,7 @@ EnumMethodInstances::Next(ClrDataAccess* dac,
         }
     }
 
-    if (!m_methodIter.Current()->HasNativeCodeReJITAware())
+    if (!m_methodIter.Current()->HasNativeCodeAnyVersion())
     {
         goto NextMethod;
     }
@@ -5243,7 +5243,7 @@ EnumMethodInstances::CdStart(MethodDesc* methodDesc,
                              CLRDATA_ENUM* handle)
 {
     if (!methodDesc->HasClassOrMethodInstantiation() &&
-        !methodDesc->HasNativeCodeReJITAware())
+        !(methodDesc->HasNativeCodeAnyVersion()))
     {
         *handle = 0;
         return S_FALSE;
