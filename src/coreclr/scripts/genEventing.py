@@ -439,10 +439,14 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
 
                 if runtimeFlavor.coreclr or write_xplatheader or runtimeFlavor.nativeaot:
                     if os.name == 'posix':
-                        clrallEvents.append(" || (XplatEventLogger" +
-                        ("::" if target_cpp else "_") +
-                        "IsEventLoggingEnabled() && EventXplatEnabled" +
-                        eventName + "());}\n\n")
+                        # native AOT does not support non-windows eventing other than via event pipe
+                        if not runtimeFlavor.nativeaot:
+                            clrallEvents.append(" || (XplatEventLogger" +
+                            ("::" if target_cpp else "_") +
+                            "IsEventLoggingEnabled() && EventXplatEnabled" +
+                            eventName + "());}\n\n")
+                        else:
+                            clrallEvents.append(";}\n\n")
                     else:
                         clrallEvents.append(" || EventXplatEnabled" + eventName + "();}\n\n")
                 else:
