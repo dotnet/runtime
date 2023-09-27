@@ -300,19 +300,17 @@ namespace ILCompiler.ObjectWriter
                 var rootDIE = (DwarfDIECompileUnit)unit.Root;
                 dwarfFile.AddressRangeTable.AddressSize = unit.AddressSize;
                 dwarfFile.AddressRangeTable.Unit = unit;
-                ulong lowPC = ulong.MaxValue;
-                ulong highPC = 0;
                 foreach (var elfSection in _objectFile.Sections)
                 {
-                    if (elfSection.Flags.HasFlag(ElfSectionFlags.Executable))
+                    if (elfSection.Flags.HasFlag(ElfSectionFlags.Executable) &&
+                        elfSection.Name == "__managedcode")
                     {
                         dwarfFile.AddressRangeTable.Ranges.Add(new DwarfAddressRange(0, elfSection.Offset, elfSection.Size));
-                        lowPC = Math.Max(lowPC, elfSection.Offset);
-                        highPC = Math.Max(highPC, elfSection.Offset + elfSection.Size);
+                        rootDIE.LowPC = elfSection.Offset;
+                        rootDIE.HighPC = (int)elfSection.Size;
+                        break;
                     }
                 }
-                rootDIE.LowPC = 0u;
-                rootDIE.HighPC = (int)highPC;
             }
 
             var outputContext = new DwarfWriterContext
