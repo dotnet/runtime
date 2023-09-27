@@ -202,7 +202,7 @@ namespace ILCompiler.ObjectWriter
                         // SizeOfRawData, NumberOfRelocations, NumberOfLineNumbers
                         // CheckSum will be filled later in EmitObjectFile
 
-                        Number = (ushort)(1 + definingSectionIndex),
+                        Number = (uint)(1 + definingSectionIndex),
                         Selection = definingSectionIndex == sectionIndex ?
                             CoffComdatSelect.IMAGE_COMDAT_SELECT_ANY :
                             CoffComdatSelect.IMAGE_COMDAT_SELECT_ASSOCIATIVE,
@@ -367,17 +367,9 @@ namespace ILCompiler.ObjectWriter
                 SectionWriter xdataSectionWriter;
                 SectionWriter pdataSectionWriter;
                 Span<byte> tempBuffer = stackalloc byte[4];
+                bool shareSymbol = ShouldShareSymbol((ObjectNode)nodeWithCodeInfo);
 
-                if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
-                {
-                    xdataSectionWriter = GetOrCreateSection(GetSharedSection(ObjectNodeSection.XDataSection, currentSymbolName));
-                    pdataSectionWriter = GetOrCreateSection(GetSharedSection(PDataSection, currentSymbolName));
-                }
-                else
-                {
-                    xdataSectionWriter = _xdataSectionWriter;
-                    pdataSectionWriter = _pdataSectionWriter;
-                }
+                pdataSectionWriter = shareSymbol ? GetOrCreateSection(GetSharedSection(PDataSection, currentSymbolName)) : _pdataSectionWriter;
 
                 for (int i = 0; i < frameInfos.Length; i++)
                 {
@@ -388,6 +380,20 @@ namespace ILCompiler.ObjectWriter
                     byte[] blob = frameInfo.BlobData;
 
                     string unwindSymbolName = $"_unwind{i}{currentSymbolName}";
+
+                    if (shareSymbol)
+                    {
+                        // Ideally we would use `currentSymbolName` here and produce an
+                        // associative COMDAT symbol but link.exe cannot always handle that
+                        // and produces errors about duplicate symbols that point into the
+                        // associative section, so we are stuck with one section per each
+                        // unwind symbol.
+                        xdataSectionWriter = GetOrCreateSection(GetSharedSection(ObjectNodeSection.XDataSection, unwindSymbolName));
+                    }
+                    else
+                    {
+                        xdataSectionWriter = _xdataSectionWriter;
+                    }
 
                     // Need to emit the UNWIND_INFO at 4-byte alignment to ensure that the
                     // pointer has the lower two bits in .pdata section set to zero. On ARM64
@@ -928,7 +934,7 @@ namespace ILCompiler.ObjectWriter
             public ushort NumberOfRelocations { get; set; }
             public ushort NumberOfLineNumbers { get; set; }
             public uint CheckSum { get; set; }
-            public ushort Number { get; set; }
+            public uint Number { get; set; }
             public CoffComdatSelect Selection { get; set; }
 
             private const int RegularSize =
@@ -951,8 +957,12 @@ namespace ILCompiler.ObjectWriter
                 BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(4), NumberOfRelocations);
                 BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(6), NumberOfLineNumbers);
                 BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8), CheckSum);
-                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(12), Number);
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(12), (ushort)Number);
                 buffer[14] = (byte)Selection;
+                if (isBigObj)
+                {
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(16), (ushort)(Number >> 16));
+                }
 
                 stream.Write(buffer);
             }
