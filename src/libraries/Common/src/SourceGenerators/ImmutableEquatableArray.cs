@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics.Hashing;
 
-namespace System.Text.Json.SourceGeneration
+namespace SourceGenerators
 {
     /// <summary>
     /// Provides an immutable list implementation which implements sequence equality.
@@ -72,15 +73,9 @@ namespace System.Text.Json.SourceGeneration
         }
     }
 
-    public static class ImmutableEquatableArray
+    internal static class ImmutableEquatableArray
     {
-        public static ImmutableEquatableArray<T> Empty<T>() where T : IEquatable<T>
-            => ImmutableEquatableArray<T>.Empty;
-
         public static ImmutableEquatableArray<T> ToImmutableEquatableArray<T>(this IEnumerable<T> values) where T : IEquatable<T>
             => new(values);
-
-        public static ImmutableEquatableArray<T> Create<T>(params T[] values) where T : IEquatable<T>
-            => values is { Length: > 0 } ? new(values) : ImmutableEquatableArray<T>.Empty;
     }
 }
