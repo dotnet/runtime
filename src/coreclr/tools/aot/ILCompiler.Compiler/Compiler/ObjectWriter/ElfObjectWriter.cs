@@ -170,7 +170,7 @@ namespace ILCompiler.ObjectWriter
                     Value = (ulong)definition.Value,
                     Type = definition.Size > 0 ? ElfSymbolType.Function : 0,
                     Size = (ulong)definition.Size,
-                    Visibility = ElfSymbolVisibility.Hidden,
+                    Visibility = definition.Global ? ElfSymbolVisibility.Default : ElfSymbolVisibility.Hidden,
                 });
             }
 

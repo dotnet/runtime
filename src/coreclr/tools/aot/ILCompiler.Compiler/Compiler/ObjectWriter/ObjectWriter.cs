@@ -24,7 +24,7 @@ namespace ILCompiler.ObjectWriter
 {
     public abstract class ObjectWriter : IDisposable
     {
-        protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0);
+        protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         protected sealed record SymbolicRelocation(int Offset, RelocType Type, string SymbolName, int Addend = 0);
 
         protected NodeFactory _nodeFactory;
@@ -186,11 +186,12 @@ namespace ILCompiler.ObjectWriter
             int sectionIndex,
             string symbolName,
             int offset = 0,
-            int size = 0)
+            int size = 0,
+            bool global = false)
         {
             _definedSymbols.Add(
                 symbolName,
-                new SymbolDefinition(sectionIndex, offset, size));
+                new SymbolDefinition(sectionIndex, offset, size, global));
         }
 
         /// <summary>
@@ -342,7 +343,8 @@ namespace ILCompiler.ObjectWriter
                         sectionWriter.EmitSymbolDefinition(
                             ExternCName(alternateName),
                             n.Offset,
-                            isMethod ? nodeContents.Data.Length : 0);
+                            isMethod ? nodeContents.Data.Length : 0,
+                            global: true);
                     }
                 }
 
