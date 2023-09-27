@@ -7620,7 +7620,8 @@ protected:
 
 public:
     void optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
-    fgWalkResult optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
+    fgWalkResult optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree, bool* changed);
+    fgWalkResult optVNGenericPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree, bool* changed);
     GenTree* optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
     GenTree* optVNConstantPropOnTree(BasicBlock* block, GenTree* tree);
     GenTree* optExtractSideEffListFromConst(GenTree* tree);

@@ -5680,9 +5680,10 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //    This function is called as part of a post-order tree walk.
 //
 // Arguments:
-//    tree  - The currently visited tree node.
-//    stmt  - The statement node in which the "tree" is present.
-//    block - The block that contains the statement that contains the tree.
+//    block   - The block that contains the statement that contains the tree.
+//    stmt    - The statement node in which the "tree" is present.
+//    tree    - The currently visited tree node.
+//    changed - [OUT] changes were made.
 //
 // Return Value:
 //    Returns the standard visitor walk result.
@@ -5692,8 +5693,13 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //    evaluates to constant, then the tree is replaced by its side effects and
 //    the constant node.
 //
-Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
+Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
+                                                          Statement*  stmt,
+                                                          GenTree*    tree,
+                                                          bool*       changed)
 {
+    *changed = false;
+
     // Don't perform const prop on expressions marked with GTF_DONT_CSE
     // TODO-ASG: delete.
     if (!tree->CanCSE())
@@ -5790,6 +5796,8 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         return WALK_CONTINUE;
     }
 
+    *changed = true;
+
     // TODO https://github.com/dotnet/runtime/issues/10450:
     // at that moment stmt could be already removed from the stmt list.
 
@@ -5798,6 +5806,48 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
     JITDUMP("After constant propagation on [%06u]:\n", tree->gtTreeID);
     DBEXEC(VERBOSE, gtDispStmt(stmt));
 
+    return WALK_CONTINUE;
+}
+
+//------------------------------------------------------------------------------
+// optVNGenericPropCurStmt
+//    Performs a general purpose prop on the current statement's tree nodes.
+//
+// Assumption:
+//    This function is called as part of a post-order tree walk.
+//
+// Arguments:
+//    block   - The block that contains the statement that contains the tree.
+//    stmt    - The statement node in which the "tree" is present.
+//    tree    - The currently visited tree node.
+//    changed - [OUT] changes were made.
+//
+// Return Value:
+//    Returns the standard visitor walk result.
+//
+Compiler::fgWalkResult Compiler::optVNGenericPropCurStmt(BasicBlock* block,
+                                                         Statement*  stmt,
+                                                         GenTree*    tree,
+                                                         bool*       changed)
+{
+    *changed = false;
+
+    switch (tree->OperGet())
+    {
+        case GT_KEEPALIVE:
+        {
+            if (vnStore->IsVNObjHandle(tree->gtGetOp1()->gtVNPair.GetConservative()))
+            {
+                optAssertionProp_Update(gtNewNothingNode(), tree, stmt);
+                *changed = true;
+                return WALK_CONTINUE;
+            }
+        }
+        break;
+
+        default:
+            return WALK_CONTINUE;
+    }
     return WALK_CONTINUE;
 }
 
@@ -5852,18 +5902,24 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
 //
 // Description:
 //    An unified value numbering based assertion prop visitor that
-//    performs non-null and constant assertion propagation based on
+//    performs non-null, constant assertion and other types of propagation based on
 //    value numbers.
 //
 /* static */
 Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTree, fgWalkData* data)
 {
-    VNAssertionPropVisitorInfo* pData = (VNAssertionPropVisitorInfo*)data->pCallbackData;
-    Compiler*                   pThis = pData->pThis;
+    auto*     pData = (VNAssertionPropVisitorInfo*)data->pCallbackData;
+    Compiler* pThis = pData->pThis;
 
     pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
 
-    return pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, *ppTree);
+    bool         changed;
+    fgWalkResult walkResult = pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, *ppTree, &changed);
+    if (!changed && (walkResult == WALK_CONTINUE))
+    {
+        walkResult = pThis->optVNGenericPropCurStmt(pData->block, pData->stmt, *ppTree, &changed);
+    }
+    return walkResult;
 }
 
 /*****************************************************************************
