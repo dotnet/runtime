@@ -135,7 +135,7 @@ namespace System
         public override bool IsSecurityTransparent => false;
 
         public override RuntimeTypeHandle TypeHandle
-            => new RuntimeTypeHandle((IntPtr)_pUnderlyingEEType);
+            => new RuntimeTypeHandle(_pUnderlyingEEType);
 
         internal new unsafe bool IsInterface
             => _pUnderlyingEEType->IsInterface;

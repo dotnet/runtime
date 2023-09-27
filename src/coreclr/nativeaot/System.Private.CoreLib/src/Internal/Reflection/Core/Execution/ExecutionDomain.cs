@@ -189,15 +189,7 @@ namespace Internal.Reflection.Core.Execution
         // Miscellaneous.
         //=======================================================================================
         public RuntimeTypeHandle GetTypeHandleIfAvailable(Type type)
-        {
-            if (type is not RuntimeType)
-                return default(RuntimeTypeHandle);
-
-            RuntimeTypeInfo runtimeType = type.ToRuntimeTypeInfo();
-            if (runtimeType == null)
-                return default(RuntimeTypeHandle);
-            return runtimeType.InternalTypeHandleIfAvailable;
-        }
+           => (type is RuntimeType runtimeType) ? runtimeType.TypeHandle : default;
 
         public static bool IsPrimitiveType(Type type)
             => type == typeof(bool) || type == typeof(char)

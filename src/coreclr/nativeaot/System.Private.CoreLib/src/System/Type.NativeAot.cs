@@ -62,21 +62,19 @@ namespace System
 
         internal EETypePtr GetEEType()
         {
-            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
-            Debug.Assert(!typeHandle.IsNull);
-            return typeHandle.ToEETypePtr();
+            Debug.Assert(this is RuntimeType);
+            return ((RuntimeType)this).TypeHandle.ToEETypePtr();
         }
 
         internal bool TryGetEEType(out EETypePtr eeType)
         {
-            RuntimeTypeHandle typeHandle = RuntimeAugments.Callbacks.GetTypeHandleIfAvailable(this);
-            if (typeHandle.IsNull)
+            if (this is RuntimeType runtimeType)
             {
-                eeType = default(EETypePtr);
-                return false;
+                eeType = runtimeType.TypeHandle.ToEETypePtr();
+                return true;
             }
-            eeType = typeHandle.ToEETypePtr();
-            return true;
+            eeType = default;
+            return false;
         }
 
         //
