@@ -1077,7 +1077,18 @@ emit_vector_create_elementwise (
 	MonoClass *vklass = mono_class_from_mono_type_internal (vtype);
 	MonoInst *ins = emit_xzero (cfg, vklass);
 	for (int i = 0; i < fsig->param_count; ++i) {
-		if (!is_zero_const (args [i])) {
+		if (is_zero_const (args [i])) {
+			// element already set to zero
+#ifdef TARGET_ARM64
+		} else if (!COMPILE_LLVM (cfg) && args [i]->opcode == type_to_extract_op (type) && 
+			(type == MONO_TYPE_R4 || type == MONO_TYPE_R8)) {
+			// OP_INSERT_Ix inserts from GP reg, not SIMD. Cannot optimize for int types.
+			int srcidx = args [i]->inst_c0;
+			ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->sreg1);
+			ins->inst_c0 = i | (srcidx << 8);
+			ins->inst_c1 = type;
+#endif
+		} else {
 			ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->dreg);
 			ins->inst_c0 = i;
 			ins->inst_c1 = type;
@@ -1085,6 +1096,7 @@ emit_vector_create_elementwise (
 	}
 	return ins;
 }
+
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
@@ -2287,10 +2299,25 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			}
 
 			int insert_op = type_to_insert_op (arg0_type);
-			MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
-			ins->inst_c0 = index;
-			ins->inst_c1 = arg0_type;
-			return ins;
+
+#ifdef TARGET_ARM64
+			if (!COMPILE_LLVM (cfg) && args [2]->opcode == type_to_extract_op (arg0_type) && (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8)) {
+				// Optimize WithElement(GetElement(x, const_1), const_2) into one ins instruction on arm64
+				// OP_INSERT_Ix inserts from GP reg, not SIMD. Cannot optimize for int types.
+				int srcidx = args [2]->inst_c0;
+				MonoInst* ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->sreg1);
+				ins->inst_c0 = index | (srcidx << 8);
+				ins->inst_c1 = arg0_type;
+				return ins;
+			} 
+			else 
+#endif
+			{
+				MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
+				ins->inst_c0 = index;
+				ins->inst_c1 = arg0_type;
+				return ins;
+			}
 		} 
 
 		if (!COMPILE_LLVM (cfg) && fsig->params [0]->type != MONO_TYPE_GENERICINST)
