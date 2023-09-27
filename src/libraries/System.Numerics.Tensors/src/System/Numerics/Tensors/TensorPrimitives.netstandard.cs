@@ -86,41 +86,57 @@ namespace System.Numerics.Tensors
         }
 
         private static float Aggregate<TLoad, TAggregate>(
-            float identityValue, ReadOnlySpan<float> x, TLoad load = default, TAggregate aggregate = default)
+            ReadOnlySpan<float> x, TLoad load = default, TAggregate aggregate = default)
             where TLoad : struct, IUnaryOperator
-            where TAggregate : struct, IBinaryOperator
+            where TAggregate : struct, IAggregationOperator
         {
-            // Initialize the result to the identity value
-            float result = identityValue;
-            int i = 0;
+            if (x.Length == 0)
+            {
+                return 0;
+            }
 
-            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count * 2)
+            float result;
+
+            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
 
                 // Load the first vector as the initial set of results
                 Vector<float> resultVector = load.Invoke(AsVector(ref xRef, 0));
                 int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                int i = Vector<float>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at
                 // least one full vector left to process.
-                i = Vector<float>.Count;
-                do
+                while (i <= oneVectorFromEnd)
                 {
                     resultVector = aggregate.Invoke(resultVector, load.Invoke(AsVector(ref xRef, i)));
                     i += Vector<float>.Count;
                 }
-                while (i <= oneVectorFromEnd);
+
+                // Process the last vector in the span, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    resultVector = aggregate.Invoke(resultVector,
+                        Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            new Vector<float>(aggregate.IdentityValue),
+                            load.Invoke(AsVector(ref xRef, x.Length - Vector<float>.Count))));
+                }
 
                 // Aggregate the lanes in the vector back into the scalar result
-                for (int f = 0; f < Vector<float>.Count; f++)
+                result = resultVector[0];
+                for (int f = 1; f < Vector<float>.Count; f++)
                 {
                     result = aggregate.Invoke(result, resultVector[f]);
                 }
+
+                return result;
             }
 
             // Aggregate the remaining items in the input span.
-            for (; (uint)i < (uint)x.Length; i++)
+            result = load.Invoke(x[0]);
+            for (int i = 1; i < x.Length; i++)
             {
                 result = aggregate.Invoke(result, load.Invoke(x[i]));
             }
@@ -129,42 +145,62 @@ namespace System.Numerics.Tensors
         }
 
         private static float Aggregate<TBinary, TAggregate>(
-            float identityValue, ReadOnlySpan<float> x, ReadOnlySpan<float> y, TBinary binary = default, TAggregate aggregate = default)
+            ReadOnlySpan<float> x, ReadOnlySpan<float> y, TBinary binary = default, TAggregate aggregate = default)
             where TBinary : struct, IBinaryOperator
-            where TAggregate : struct, IBinaryOperator
+            where TAggregate : struct, IAggregationOperator
         {
-            // Initialize the result to the identity value
-            float result = identityValue;
-            int i = 0;
+            Debug.Assert(x.Length == y.Length);
 
-            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count * 2)
+            if (x.Length == 0)
             {
-                ref float xRef = ref MemoryMarshal.GetReference(x);
-                ref float yRef = ref MemoryMarshal.GetReference(y);
+                return 0;
+            }
 
+            ref float xRef = ref MemoryMarshal.GetReference(x);
+            ref float yRef = ref MemoryMarshal.GetReference(y);
+
+            float result;
+
+            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count)
+            {
                 // Load the first vector as the initial set of results
                 Vector<float> resultVector = binary.Invoke(AsVector(ref xRef, 0), AsVector(ref yRef, 0));
                 int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                int i = Vector<float>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at
                 // least one full vector left to process.
-                i = Vector<float>.Count;
-                do
+                while (i <= oneVectorFromEnd)
                 {
                     resultVector = aggregate.Invoke(resultVector, binary.Invoke(AsVector(ref xRef, i), AsVector(ref yRef, i)));
                     i += Vector<float>.Count;
                 }
-                while (i <= oneVectorFromEnd);
+
+                // Process the last vector in the spans, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    resultVector = aggregate.Invoke(resultVector,
+                        Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            new Vector<float>(aggregate.IdentityValue),
+                            binary.Invoke(
+                                AsVector(ref xRef, x.Length - Vector<float>.Count),
+                                AsVector(ref yRef, x.Length - Vector<float>.Count))));
+                }
 
                 // Aggregate the lanes in the vector back into the scalar result
-                for (int f = 0; f < Vector<float>.Count; f++)
+                result = resultVector[0];
+                for (int f = 1; f < Vector<float>.Count; f++)
                 {
                     result = aggregate.Invoke(result, resultVector[f]);
                 }
+
+                return result;
             }
 
             // Aggregate the remaining items in the input span.
-            for (; (uint)i < (uint)x.Length; i++)
+            result = binary.Invoke(x[0], y[0]);
+            for (int i = 1; i < x.Length; i++)
             {
                 result = aggregate.Invoke(result, binary.Invoke(x[i], y[i]));
             }
@@ -184,11 +220,10 @@ namespace System.Numerics.Tensors
             // otherwise returns the greater of the inputs.
             // It treats +0 as greater than -0 as per the specification.
 
-            // Initialize the result to the identity value
             float result = x[0];
             int i = 0;
 
-            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count * 2)
+            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
 
@@ -198,10 +233,10 @@ namespace System.Numerics.Tensors
                 if (Vector.EqualsAll(resultVector, resultVector))
                 {
                     int oneVectorFromEnd = x.Length - Vector<float>.Count;
+                    i = Vector<float>.Count;
 
                     // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
-                    i = Vector<float>.Count;
-                    do
+                    while (i <= oneVectorFromEnd)
                     {
                         // Load the next vector, and early exit on NaN.
                         current = AsVector(ref xRef, i);
@@ -213,7 +248,6 @@ namespace System.Numerics.Tensors
                         resultVector = minMax.Invoke(resultVector, current);
                         i += Vector<float>.Count;
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // If any elements remain, handle them in one final vector.
                     if (i != x.Length)
@@ -611,10 +645,11 @@ namespace System.Numerics.Tensors
                 (validItems * 16) + (16 - Vector<float>.Count));
         }
 
-        private readonly struct AddOperator : IBinaryOperator
+        private readonly struct AddOperator : IAggregationOperator
         {
             public float Invoke(float x, float y) => x + y;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y) => x + y;
+            public float IdentityValue => 0;
         }
 
         private readonly struct SubtractOperator : IBinaryOperator
@@ -638,10 +673,11 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private readonly struct MultiplyOperator : IBinaryOperator
+        private readonly struct MultiplyOperator : IAggregationOperator
         {
             public float Invoke(float x, float y) => x * y;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y) => x * y;
+            public float IdentityValue => 1;
         }
 
         private readonly struct DivideOperator : IBinaryOperator
@@ -853,6 +889,11 @@ namespace System.Numerics.Tensors
         {
             float Invoke(float x, float y);
             Vector<float> Invoke(Vector<float> x, Vector<float> y);
+        }
+
+        private interface IAggregationOperator : IBinaryOperator
+        {
+            float IdentityValue { get; }
         }
 
         private interface ITernaryOperator
