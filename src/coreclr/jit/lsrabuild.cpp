@@ -3481,8 +3481,6 @@ void LinearScan::RecordDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNo
     assert(useRefPosition != nullptr);
 
     DelayFreeCandidates* delayFreeCandidatesMap = getDelayFreeCandidatesMap();
-
-    printf("Recording #%d against node %d\n", useRefPosition->rpNum, rmwNode->gtTreeID);
     delayFreeCandidatesMap->Set(useRefPosition, rmwNode);
     pendingDelayFree = true;
 }
