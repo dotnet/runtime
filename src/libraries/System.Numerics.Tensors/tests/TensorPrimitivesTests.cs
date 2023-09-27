@@ -42,10 +42,20 @@ namespace System.Numerics.Tensors.Tests
             }
         }
 
-        private static float NextSingle()
-        {
+        private static float NextSingle() =>
             // For testing purposes, get a mix of negative and positive values.
-            return (float)((s_random.NextDouble() * 2) - 1);
+            (float)((s_random.NextDouble() * 2) - 1);
+
+        private static unsafe float MathFMaxMagnitude(float x, float y)
+        {
+            float ax = MathF.Abs(x), ay = MathF.Abs(y);
+            return (ax > ay) || float.IsNaN(ax) || (ax == ay && *(int*)&x >= 0) ? x : y;
+        }
+
+        private static unsafe float MathFMinMagnitude(float x, float y)
+        {
+            float ax = MathF.Abs(x), ay = MathF.Abs(y);
+            return (ax < ay) || float.IsNaN(ax) || (ax == ay && *(int*)&x < 0) ? x : y;
         }
         #endregion
 
@@ -790,9 +800,10 @@ namespace System.Numerics.Tensors.Tests
         [MemberData(nameof(TensorLengths))]
         public static void Max_Tensor_NanReturned(int tensorLength)
         {
-            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> x = CreateTensor(tensorLength);
             foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
             {
+                FillTensor(x);
                 x[expected] = float.NaN;
                 Assert.Equal(float.NaN, TensorPrimitives.Max(x));
             }
@@ -820,6 +831,41 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Max(x[i], y[i]), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Max_TwoTensors_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            // NaNs
+            x[s_random.Next(x.Length)] = float.NaN;
+            y[s_random.Next(y.Length)] = float.NaN;
+
+            // Same magnitude, opposite sign
+            int pos = s_random.Next(x.Length);
+            x[pos] = -5f;
+            y[pos] = 5f;
+
+            // Positive and negative 0s
+            pos = s_random.Next(x.Length);
+            x[pos] = 0f;
+            y[pos] = -0f;
+
+            TensorPrimitives.Max(x, y, destination);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Max(x[i], y[i]), destination[i], Tolerance);
+            }
+
+            TensorPrimitives.Max(y, x, destination);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Max(y[i], x[i]), destination[i], Tolerance);
             }
         }
 
@@ -860,25 +906,23 @@ namespace System.Numerics.Tensors.Tests
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
 
-            int index = 0;
-            for (int i = 0; i < x.Length; i++)
+            float maxMagnitude = x[0];
+            foreach (float i in x.Span)
             {
-                if (MathF.Abs(x[i]) >= MathF.Abs(x[index]))
-                {
-                    index = i;
-                }
+                maxMagnitude = MathFMaxMagnitude(maxMagnitude, i);
             }
 
-            Assert.Equal(x[index], TensorPrimitives.MaxMagnitude(x), Tolerance);
+            Assert.Equal(maxMagnitude, TensorPrimitives.MaxMagnitude(x), Tolerance);
         }
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void MaxMagnitude_Tensor_NanReturned(int tensorLength)
         {
-            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> x = CreateTensor(tensorLength);
             foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
             {
+                FillTensor(x);
                 x[expected] = float.NaN;
                 Assert.Equal(float.NaN, TensorPrimitives.MaxMagnitude(x));
             }
@@ -907,7 +951,42 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Abs(x[i]) >= MathF.Abs(y[i]) ? x[i] : y[i], destination[i], Tolerance);
+                Assert.Equal(MathFMaxMagnitude(x[i], y[i]), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MaxMagnitude_TwoTensors_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            // NaNs
+            x[s_random.Next(x.Length)] = float.NaN;
+            y[s_random.Next(y.Length)] = float.NaN;
+
+            // Same magnitude, opposite sign
+            int pos = s_random.Next(x.Length);
+            x[pos] = -5f;
+            y[pos] = 5f;
+
+            // Positive and negative 0s
+            pos = s_random.Next(x.Length);
+            x[pos] = 0f;
+            y[pos] = -0f;
+
+            TensorPrimitives.MaxMagnitude(x, y, destination);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathFMaxMagnitude(x[i], y[i]), destination[i], Tolerance);
+            }
+
+            TensorPrimitives.MaxMagnitude(y, x, destination);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathFMaxMagnitude(y[i], x[i]), destination[i], Tolerance);
             }
         }
 
@@ -962,9 +1041,10 @@ namespace System.Numerics.Tensors.Tests
         [MemberData(nameof(TensorLengths))]
         public static void Min_Tensor_NanReturned(int tensorLength)
         {
-            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> x = CreateTensor(tensorLength);
             foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
             {
+                FillTensor(x);
                 x[expected] = float.NaN;
                 Assert.Equal(float.NaN, TensorPrimitives.Min(x));
             }
@@ -992,6 +1072,41 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Min(x[i], y[i]), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Min_TwoTensors_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            // NaNs
+            x[s_random.Next(x.Length)] = float.NaN;
+            y[s_random.Next(y.Length)] = float.NaN;
+
+            // Same magnitude, opposite sign
+            int pos = s_random.Next(x.Length);
+            x[pos] = -5f;
+            y[pos] = 5f;
+
+            // Positive and negative 0s
+            pos = s_random.Next(x.Length);
+            x[pos] = 0f;
+            y[pos] = -0f;
+
+            TensorPrimitives.Min(x, y, destination);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Min(x[i], y[i]), destination[i], Tolerance);
+            }
+
+            TensorPrimitives.Min(y, x, destination);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Min(y[i], x[i]), destination[i], Tolerance);
             }
         }
 
@@ -1032,25 +1147,23 @@ namespace System.Numerics.Tensors.Tests
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
 
-            int index = 0;
-            for (int i = 0; i < x.Length; i++)
+            float minMagnitude = x[0];
+            foreach (float i in x.Span)
             {
-                if (MathF.Abs(x[i]) < MathF.Abs(x[index]))
-                {
-                    index = i;
-                }
+                minMagnitude = MathFMinMagnitude(minMagnitude, i);
             }
 
-            Assert.Equal(x[index], TensorPrimitives.MinMagnitude(x), Tolerance);
+            Assert.Equal(minMagnitude, TensorPrimitives.MinMagnitude(x), Tolerance);
         }
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void MinMagnitude_Tensor_NanReturned(int tensorLength)
         {
-            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> x = CreateTensor(tensorLength);
             foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
             {
+                FillTensor(x);
                 x[expected] = float.NaN;
                 Assert.Equal(float.NaN, TensorPrimitives.MinMagnitude(x));
             }
@@ -1077,7 +1190,42 @@ namespace System.Numerics.Tensors.Tests
 
             for (int i = 0; i < tensorLength; i++)
             {
-                Assert.Equal(MathF.Abs(x[i]) < MathF.Abs(y[i]) ? x[i] : y[i], destination[i], Tolerance);
+                Assert.Equal(MathFMinMagnitude(x[i], y[i]), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void MinMagnitude_TwoTensors_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            // NaNs
+            x[s_random.Next(x.Length)] = float.NaN;
+            y[s_random.Next(y.Length)] = float.NaN;
+
+            // Same magnitude, opposite sign
+            int pos = s_random.Next(x.Length);
+            x[pos] = -5f;
+            y[pos] = 5f;
+
+            // Positive and negative 0s
+            pos = s_random.Next(x.Length);
+            x[pos] = 0f;
+            y[pos] = -0f;
+
+            TensorPrimitives.MinMagnitude(x, y, destination);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathFMinMagnitude(x[i], y[i]), destination[i], Tolerance);
+            }
+
+            TensorPrimitives.MinMagnitude(y, x, destination);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathFMinMagnitude(y[i], x[i]), destination[i], Tolerance);
             }
         }
 

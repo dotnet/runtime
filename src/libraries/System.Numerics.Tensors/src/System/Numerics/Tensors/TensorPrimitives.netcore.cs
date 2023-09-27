@@ -52,14 +52,6 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static bool IsNegative(float f) => float.IsNegative(f);
-
-        private static float MaxMagnitude(float x, float y) => MathF.MaxMagnitude(x, y);
-
-        private static float MinMagnitude(float x, float y) => MathF.MinMagnitude(x, y);
-
-        private static float Log2(float x) => MathF.Log2(x);
-
         private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
             // Compute the same as:
@@ -177,8 +169,8 @@ namespace System.Numerics.Tensors
 
         private static float Aggregate<TLoad, TAggregate>(
             float identityValue, ReadOnlySpan<float> x)
-            where TLoad : IUnaryOperator
-            where TAggregate : IBinaryOperator
+            where TLoad : struct, IUnaryOperator
+            where TAggregate : struct, IBinaryOperator
         {
             // Initialize the result to the identity value
             float result = identityValue;
@@ -262,8 +254,8 @@ namespace System.Numerics.Tensors
 
         private static float Aggregate<TBinary, TAggregate>(
             float identityValue, ReadOnlySpan<float> x, ReadOnlySpan<float> y)
-            where TBinary : IBinaryOperator
-            where TAggregate : IBinaryOperator
+            where TBinary : struct, IBinaryOperator
+            where TAggregate : struct, IBinaryOperator
         {
             // Initialize the result to the identity value
             float result = identityValue;
@@ -348,9 +340,184 @@ namespace System.Numerics.Tensors
             return result;
         }
 
+        /// <remarks>
+        /// This is the same as <see cref="Aggregate{TLoad, TAggregate}(float, ReadOnlySpan{float})"/>,
+        /// except it early exits on NaN.
+        /// </remarks>
+        private static float MinMaxCore<TMinMax>(ReadOnlySpan<float> x) where TMinMax : struct, IBinaryOperator
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            // This matches the IEEE 754:2019 `maximum`/`minimum` functions.
+            // It propagates NaN inputs back to the caller and
+            // otherwise returns the greater of the inputs.
+            // It treats +0 as greater than -0 as per the specification.
+
+            // Initialize the result to the identity value
+            float result = x[0];
+            int i = 0;
+
+#if NET8_0_OR_GREATER
+            if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count * 2)
+            {
+                ref float xRef = ref MemoryMarshal.GetReference(x);
+
+                // Load the first vector as the initial set of results, and bail immediately
+                // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
+                Vector512<float> resultVector = Vector512.LoadUnsafe(ref xRef, 0), current;
+                if (!Vector512.EqualsAll(resultVector, resultVector))
+                {
+                    return GetFirstNaN(resultVector);
+                }
+
+                int oneVectorFromEnd = x.Length - Vector512<float>.Count;
+
+                // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
+                i = Vector512<float>.Count;
+                do
+                {
+                    // Load the next vector, and early exit on NaN.
+                    current = Vector512.LoadUnsafe(ref xRef, (uint)i);
+                    if (!Vector512.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                    i += Vector512<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // If any elements remain, handle them in one final vector.
+                if (i != x.Length)
+                {
+                    current = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count));
+                    if (!Vector512.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                }
+
+                // Aggregate the lanes in the vector to create the final scalar result.
+                return TMinMax.Invoke(resultVector);
+            }
+#endif
+
+            if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count * 2)
+            {
+                ref float xRef = ref MemoryMarshal.GetReference(x);
+
+                // Load the first vector as the initial set of results, and bail immediately
+                // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
+                Vector256<float> resultVector = Vector256.LoadUnsafe(ref xRef, 0), current;
+                if (!Vector256.EqualsAll(resultVector, resultVector))
+                {
+                    return GetFirstNaN(resultVector);
+                }
+
+                int oneVectorFromEnd = x.Length - Vector256<float>.Count;
+
+                // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
+                i = Vector256<float>.Count;
+                do
+                {
+                    // Load the next vector, and early exit on NaN.
+                    current = Vector256.LoadUnsafe(ref xRef, (uint)i);
+                    if (!Vector256.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                    i += Vector256<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // If any elements remain, handle them in one final vector.
+                if (i != x.Length)
+                {
+                    current = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count));
+                    if (!Vector256.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                }
+
+                // Aggregate the lanes in the vector to create the final scalar result.
+                return TMinMax.Invoke(resultVector);
+            }
+
+            if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count * 2)
+            {
+                ref float xRef = ref MemoryMarshal.GetReference(x);
+
+                // Load the first vector as the initial set of results, and bail immediately
+                // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
+                Vector128<float> resultVector = Vector128.LoadUnsafe(ref xRef, 0), current;
+                if (!Vector128.EqualsAll(resultVector, resultVector))
+                {
+                    return GetFirstNaN(resultVector);
+                }
+
+                int oneVectorFromEnd = x.Length - Vector128<float>.Count;
+
+                // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
+                i = Vector128<float>.Count;
+                do
+                {
+                    // Load the next vector, and early exit on NaN.
+                    current = Vector128.LoadUnsafe(ref xRef, (uint)i);
+                    if (!Vector128.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                    i += Vector128<float>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                // If any elements remain, handle them in one final vector.
+                if (i != x.Length)
+                {
+                    current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count));
+                    if (!Vector128.EqualsAll(current, current))
+                    {
+                        return GetFirstNaN(current);
+                    }
+
+                    resultVector = TMinMax.Invoke(resultVector, current);
+                }
+
+                // Aggregate the lanes in the vector to create the final scalar result.
+                return TMinMax.Invoke(resultVector);
+            }
+
+            // Scalar path used when either vectorization is not supported or the input is too small to vectorize.
+            for (; (uint)i < (uint)x.Length; i++)
+            {
+                float current = x[i];
+                if (float.IsNaN(current))
+                {
+                    return current;
+                }
+
+                result = TMinMax.Invoke(result, current);
+            }
+
+            return result;
+        }
+
         private static unsafe void InvokeSpanIntoSpan<TUnaryOperator>(
             ReadOnlySpan<float> x, Span<float> destination)
-            where TUnaryOperator : IUnaryOperator
+            where TUnaryOperator : struct, IUnaryOperator
         {
             if (x.Length > destination.Length)
             {
@@ -448,7 +615,7 @@ namespace System.Numerics.Tensors
 
         private static unsafe void InvokeSpanSpanIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
-            where TBinaryOperator : IBinaryOperator
+            where TBinaryOperator : struct, IBinaryOperator
         {
             if (x.Length != y.Length)
             {
@@ -559,7 +726,7 @@ namespace System.Numerics.Tensors
 
         private static unsafe void InvokeSpanScalarIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination)
-            where TBinaryOperator : IBinaryOperator
+            where TBinaryOperator : struct, IBinaryOperator
         {
             if (x.Length > destination.Length)
             {
@@ -670,7 +837,7 @@ namespace System.Numerics.Tensors
 
         private static unsafe void InvokeSpanSpanSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> z, Span<float> destination)
-            where TTernaryOperator : ITernaryOperator
+            where TTernaryOperator : struct, ITernaryOperator
         {
             if (x.Length != y.Length || x.Length != z.Length)
             {
@@ -789,7 +956,7 @@ namespace System.Numerics.Tensors
 
         private static unsafe void InvokeSpanSpanScalarIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, float z, Span<float> destination)
-            where TTernaryOperator : ITernaryOperator
+            where TTernaryOperator : struct, ITernaryOperator
         {
             if (x.Length != y.Length)
             {
@@ -913,7 +1080,7 @@ namespace System.Numerics.Tensors
 
         private static unsafe void InvokeSpanScalarSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, float y, ReadOnlySpan<float> z, Span<float> destination)
-            where TTernaryOperator : ITernaryOperator
+            where TTernaryOperator : struct, ITernaryOperator
         {
             if (x.Length != z.Length)
             {
@@ -1075,6 +1242,51 @@ namespace System.Numerics.Tensors
         }
 #endif
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float HorizontalAggregate<TAggregate>(Vector128<float> x) where TAggregate : struct, IBinaryOperator =>
+            TAggregate.Invoke(
+                TAggregate.Invoke(x[0], x[1]),
+                TAggregate.Invoke(x[2], x[3]));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float HorizontalAggregate<TAggregate>(Vector256<float> x) where TAggregate : struct, IBinaryOperator =>
+            HorizontalAggregate<TAggregate>(TAggregate.Invoke(x.GetLower(), x.GetUpper()));
+
+#if NET8_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float HorizontalAggregate<TAggregate>(Vector512<float> x) where TAggregate : struct, IBinaryOperator =>
+            HorizontalAggregate<TAggregate>(TAggregate.Invoke(x.GetLower(), x.GetUpper()));
+#endif
+
+        private static bool IsNegative(float f) => float.IsNegative(f);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<float> IsNegative(Vector128<float> vector) =>
+            Vector128.LessThan(vector.AsInt32(), Vector128<int>.Zero).AsSingle();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<float> IsNegative(Vector256<float> vector) =>
+            Vector256.LessThan(vector.AsInt32(), Vector256<int>.Zero).AsSingle();
+
+#if NET8_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<float> IsNegative(Vector512<float> vector) =>
+            Vector512.LessThan(vector.AsInt32(), Vector512<int>.Zero).AsSingle();
+#endif
+
+        private static float GetFirstNaN(Vector128<float> vector) =>
+            vector[BitOperations.TrailingZeroCount((~Vector128.Equals(vector, vector)).ExtractMostSignificantBits())];
+
+        private static float GetFirstNaN(Vector256<float> vector) =>
+            vector[BitOperations.TrailingZeroCount((~Vector256.Equals(vector, vector)).ExtractMostSignificantBits())];
+
+#if NET8_0_OR_GREATER
+        private static float GetFirstNaN(Vector512<float> vector) =>
+            vector[BitOperations.TrailingZeroCount((~Vector512.Equals(vector, vector)).ExtractMostSignificantBits())];
+#endif
+
+        private static float Log2(float x) => MathF.Log2(x);
+
         private readonly struct AddOperator : IBinaryOperator
         {
             public static float Invoke(float x, float y) => x + y;
@@ -1139,39 +1351,10 @@ namespace System.Numerics.Tensors
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) => x * y;
 #endif
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static float Invoke(Vector128<float> x)
-            {
-                float f = x[0];
-                for (int i = 1; i < Vector128<float>.Count; i++)
-                {
-                    f *= x[i];
-                }
-                return f;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static float Invoke(Vector256<float> x)
-            {
-                float f = x[0];
-                for (int i = 1; i < Vector256<float>.Count; i++)
-                {
-                    f *= x[i];
-                }
-                return f;
-            }
-
+            public static float Invoke(Vector128<float> x) => HorizontalAggregate<MultiplyOperator>(x);
+            public static float Invoke(Vector256<float> x) => HorizontalAggregate<MultiplyOperator>(x);
 #if NET8_0_OR_GREATER
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static float Invoke(Vector512<float> x)
-            {
-                float f = x[0];
-                for (int i = 1; i < Vector512<float>.Count; i++)
-                {
-                    f *= x[i];
-                }
-                return f;
-            }
+            public static float Invoke(Vector512<float> x) => HorizontalAggregate<MultiplyOperator>(x);
 #endif
         }
 
@@ -1182,6 +1365,385 @@ namespace System.Numerics.Tensors
             public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) => x / y;
 #if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) => x / y;
+#endif
+        }
+
+        private readonly struct MaxOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static float Invoke(float x, float y) =>
+                x == y ?
+                    (IsNegative(x) ? y : x) :
+                    (y > x ? y : x);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    return AdvSimd.Max(x, y);
+                }
+
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(x, y),
+                        Vector128.ConditionalSelect(IsNegative(x), y, x),
+                        Vector128.Max(x, y));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) =>
+                Vector256.ConditionalSelect(Vector256.Equals(x, y),
+                    Vector256.ConditionalSelect(IsNegative(x), y, x),
+                    Vector256.Max(x, y));
+
+#if NET8_0_OR_GREATER
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) =>
+                Vector512.ConditionalSelect(Vector512.Equals(x, y),
+                    Vector512.ConditionalSelect(IsNegative(x), y, x),
+                    Vector512.Max(x, y));
+#endif
+
+            public static float Invoke(Vector128<float> x) => HorizontalAggregate<MaxOperator>(x);
+            public static float Invoke(Vector256<float> x) => HorizontalAggregate<MaxOperator>(x);
+#if NET8_0_OR_GREATER
+            public static float Invoke(Vector512<float> x) => HorizontalAggregate<MaxOperator>(x);
+#endif
+        }
+
+        private readonly struct MaxPropagateNaNOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static float Invoke(float x, float y) => MathF.Max(x, y);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    return AdvSimd.Max(x, y);
+                }
+
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(x, x),
+                        Vector128.ConditionalSelect(Vector128.Equals(y, y),
+                            Vector128.ConditionalSelect(Vector128.Equals(x, y),
+                                Vector128.ConditionalSelect(IsNegative(x), y, x),
+                                Vector128.Max(x, y)),
+                            y),
+                        x);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) =>
+                Vector256.ConditionalSelect(Vector256.Equals(x, x),
+                    Vector256.ConditionalSelect(Vector256.Equals(y, y),
+                        Vector256.ConditionalSelect(Vector256.Equals(x, y),
+                            Vector256.ConditionalSelect(IsNegative(x), y, x),
+                            Vector256.Max(x, y)),
+                        y),
+                    x);
+
+#if NET8_0_OR_GREATER
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) =>
+                Vector512.ConditionalSelect(Vector512.Equals(x, x),
+                    Vector512.ConditionalSelect(Vector512.Equals(y, y),
+                        Vector512.ConditionalSelect(Vector512.Equals(x, y),
+                            Vector512.ConditionalSelect(IsNegative(x), y, x),
+                            Vector512.Max(x, y)),
+                        y),
+                    x);
+#endif
+        }
+
+        private readonly struct MaxMagnitudeOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static float Invoke(float x, float y)
+            {
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
+                return
+                    xMag == yMag ?
+                        (IsNegative(x) ? y : x) :
+                        (xMag > yMag ? x : y);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
+            {
+                Vector128<float> xMag = Vector128.Abs(x), yMag = Vector128.Abs(y);
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(xMag, yMag),
+                        Vector128.ConditionalSelect(IsNegative(x), y, x),
+                        Vector128.ConditionalSelect(Vector128.GreaterThan(xMag, yMag), x, y));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y)
+            {
+                Vector256<float> xMag = Vector256.Abs(x), yMag = Vector256.Abs(y);
+                return
+                    Vector256.ConditionalSelect(Vector256.Equals(xMag, yMag),
+                        Vector256.ConditionalSelect(IsNegative(x), y, x),
+                        Vector256.ConditionalSelect(Vector256.GreaterThan(xMag, yMag), x, y));
+            }
+
+#if NET8_0_OR_GREATER
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
+            {
+                Vector512<float> xMag = Vector512.Abs(x), yMag = Vector512.Abs(y);
+                return
+                    Vector512.ConditionalSelect(Vector512.Equals(xMag, yMag),
+                        Vector512.ConditionalSelect(IsNegative(x), y, x),
+                        Vector512.ConditionalSelect(Vector512.GreaterThan(xMag, yMag), x, y));
+            }
+#endif
+
+            public static float Invoke(Vector128<float> x) => HorizontalAggregate<MaxMagnitudeOperator>(x);
+            public static float Invoke(Vector256<float> x) => HorizontalAggregate<MaxMagnitudeOperator>(x);
+#if NET8_0_OR_GREATER
+            public static float Invoke(Vector512<float> x) => HorizontalAggregate<MaxMagnitudeOperator>(x);
+#endif
+        }
+
+        private readonly struct MaxMagnitudePropagateNaNOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static float Invoke(float x, float y) => MathF.MaxMagnitude(x, y);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
+            {
+                Vector128<float> xMag = Vector128.Abs(x), yMag = Vector128.Abs(y);
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(x, x),
+                        Vector128.ConditionalSelect(Vector128.Equals(y, y),
+                            Vector128.ConditionalSelect(Vector128.Equals(yMag, xMag),
+                                Vector128.ConditionalSelect(IsNegative(x), y, x),
+                                Vector128.ConditionalSelect(Vector128.GreaterThan(yMag, xMag), y, x)),
+                            y),
+                        x);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y)
+            {
+                Vector256<float> xMag = Vector256.Abs(x), yMag = Vector256.Abs(y);
+                return
+                    Vector256.ConditionalSelect(Vector256.Equals(x, x),
+                        Vector256.ConditionalSelect(Vector256.Equals(y, y),
+                            Vector256.ConditionalSelect(Vector256.Equals(xMag, yMag),
+                                Vector256.ConditionalSelect(IsNegative(x), y, x),
+                                Vector256.ConditionalSelect(Vector256.GreaterThan(xMag, yMag), x, y)),
+                            y),
+                        x);
+            }
+
+#if NET8_0_OR_GREATER
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
+            {
+                Vector512<float> xMag = Vector512.Abs(x), yMag = Vector512.Abs(y);
+                return
+                    Vector512.ConditionalSelect(Vector512.Equals(x, x),
+                        Vector512.ConditionalSelect(Vector512.Equals(y, y),
+                            Vector512.ConditionalSelect(Vector512.Equals(xMag, yMag),
+                                Vector512.ConditionalSelect(IsNegative(x), y, x),
+                                Vector512.ConditionalSelect(Vector512.GreaterThan(xMag, yMag), x, y)),
+                            y),
+                        x);
+            }
+#endif
+        }
+
+        private readonly struct MinOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static float Invoke(float x, float y) =>
+                x == y ?
+                    (IsNegative(y) ? y : x) :
+                    (y < x ? y : x);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    return AdvSimd.Min(x, y);
+                }
+
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(x, y),
+                        Vector128.ConditionalSelect(IsNegative(y), y, x),
+                        Vector128.Min(x, y));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) =>
+                Vector256.ConditionalSelect(Vector256.Equals(x, y),
+                    Vector256.ConditionalSelect(IsNegative(y), y, x),
+                    Vector256.Min(x, y));
+
+#if NET8_0_OR_GREATER
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) =>
+                Vector512.ConditionalSelect(Vector512.Equals(x, y),
+                    Vector512.ConditionalSelect(IsNegative(y), y, x),
+                    Vector512.Min(x, y));
+#endif
+
+            public static float Invoke(Vector128<float> x) => HorizontalAggregate<MinOperator>(x);
+            public static float Invoke(Vector256<float> x) => HorizontalAggregate<MinOperator>(x);
+#if NET8_0_OR_GREATER
+            public static float Invoke(Vector512<float> x) => HorizontalAggregate<MinOperator>(x);
+#endif
+        }
+
+        private readonly struct MinPropagateNaNOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static float Invoke(float x, float y) => MathF.Min(x, y);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
+            {
+                if (AdvSimd.IsSupported)
+                {
+                    return AdvSimd.Min(x, y);
+                }
+
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(x, x),
+                        Vector128.ConditionalSelect(Vector128.Equals(y, y),
+                            Vector128.ConditionalSelect(Vector128.Equals(x, y),
+                                Vector128.ConditionalSelect(IsNegative(x), x, y),
+                                Vector128.Min(x, y)),
+                            y),
+                        x);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y) =>
+                Vector256.ConditionalSelect(Vector256.Equals(x, x),
+                    Vector256.ConditionalSelect(Vector256.Equals(y, y),
+                        Vector256.ConditionalSelect(Vector256.Equals(x, y),
+                            Vector256.ConditionalSelect(IsNegative(x), x, y),
+                            Vector256.Min(x, y)),
+                        y),
+                    x);
+
+#if NET8_0_OR_GREATER
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) =>
+                Vector512.ConditionalSelect(Vector512.Equals(x, x),
+                    Vector512.ConditionalSelect(Vector512.Equals(y, y),
+                        Vector512.ConditionalSelect(Vector512.Equals(x, y),
+                            Vector512.ConditionalSelect(IsNegative(x), x, y),
+                            Vector512.Min(x, y)),
+                        y),
+                    x);
+#endif
+        }
+
+        private readonly struct MinMagnitudeOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static float Invoke(float x, float y)
+            {
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
+                return xMag == yMag ?
+                    (IsNegative(y) ? y : x) :
+                    (yMag < xMag ? y : x);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
+            {
+                Vector128<float> xMag = Vector128.Abs(x), yMag = Vector128.Abs(y);
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(yMag, xMag),
+                        Vector128.ConditionalSelect(IsNegative(y), y, x),
+                        Vector128.ConditionalSelect(Vector128.LessThan(yMag, xMag), y, x));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y)
+            {
+                Vector256<float> xMag = Vector256.Abs(x), yMag = Vector256.Abs(y);
+                return
+                    Vector256.ConditionalSelect(Vector256.Equals(yMag, xMag),
+                        Vector256.ConditionalSelect(IsNegative(y), y, x),
+                        Vector256.ConditionalSelect(Vector256.LessThan(yMag, xMag), y, x));
+            }
+
+#if NET8_0_OR_GREATER
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
+            {
+                Vector512<float> xMag = Vector512.Abs(x), yMag = Vector512.Abs(y);
+                return
+                    Vector512.ConditionalSelect(Vector512.Equals(yMag, xMag),
+                        Vector512.ConditionalSelect(IsNegative(y), y, x),
+                        Vector512.ConditionalSelect(Vector512.LessThan(yMag, xMag), y, x));
+            }
+#endif
+
+            public static float Invoke(Vector128<float> x) => HorizontalAggregate<MinMagnitudeOperator>(x);
+            public static float Invoke(Vector256<float> x) => HorizontalAggregate<MinMagnitudeOperator>(x);
+#if NET8_0_OR_GREATER
+            public static float Invoke(Vector512<float> x) => HorizontalAggregate<MinMagnitudeOperator>(x);
+#endif
+        }
+
+        private readonly struct MinMagnitudePropagateNaNOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static float Invoke(float x, float y) => MathF.MinMagnitude(x, y);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y)
+            {
+                Vector128<float> xMag = Vector128.Abs(x), yMag = Vector128.Abs(y);
+                return
+                    Vector128.ConditionalSelect(Vector128.Equals(x, x),
+                        Vector128.ConditionalSelect(Vector128.Equals(y, y),
+                            Vector128.ConditionalSelect(Vector128.Equals(yMag, xMag),
+                                Vector128.ConditionalSelect(IsNegative(x), x, y),
+                                Vector128.ConditionalSelect(Vector128.LessThan(xMag, yMag), x, y)),
+                            y),
+                        x);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y)
+            {
+                Vector256<float> xMag = Vector256.Abs(x), yMag = Vector256.Abs(y);
+                return
+                    Vector256.ConditionalSelect(Vector256.Equals(x, x),
+                        Vector256.ConditionalSelect(Vector256.Equals(y, y),
+                            Vector256.ConditionalSelect(Vector256.Equals(yMag, xMag),
+                                Vector256.ConditionalSelect(IsNegative(x), x, y),
+                                Vector256.ConditionalSelect(Vector256.LessThan(xMag, yMag), x, y)),
+                            y),
+                        x);
+            }
+
+#if NET8_0_OR_GREATER
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y)
+            {
+                Vector512<float> xMag = Vector512.Abs(x), yMag = Vector512.Abs(y);
+                return
+                    Vector512.ConditionalSelect(Vector512.Equals(x, x),
+                        Vector512.ConditionalSelect(Vector512.Equals(y, y),
+                            Vector512.ConditionalSelect(Vector512.Equals(yMag, xMag),
+                                Vector512.ConditionalSelect(IsNegative(x), x, y),
+                                Vector512.ConditionalSelect(Vector512.LessThan(xMag, yMag), x, y)),
+                            y),
+                        x);
+            }
 #endif
         }
 
