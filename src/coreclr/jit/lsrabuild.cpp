@@ -377,7 +377,8 @@ void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
 
     Interval* theInterval = rp->getInterval();
 
-    if ((theInterval->firstRefPosition != nullptr) && RefTypeIsUse(rp->refType) && !theInterval->isWriteThru && !theInterval->isLocalVar)
+    if ((theInterval->firstRefPosition != nullptr) && RefTypeIsUse(rp->refType) && !theInterval->isWriteThru &&
+        !theInterval->isLocalVar)
     {
         if (theInterval->firstRefPosition->nodeLocation < recentKillLocation)
         {
@@ -1203,7 +1204,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 {
                     continue;
                 }
-                Interval*  interval   = getIntervalForLocalVar(varIndex);
+                Interval* interval = getIntervalForLocalVar(varIndex);
 
                 if (isCallKill)
                 {
@@ -1234,7 +1235,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
             }
         }
 
-        insertedKills      = true;
+        insertedKills = true;
     }
 
     if (compiler->killGCRefs(tree))
@@ -1242,7 +1243,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         RefPosition* pos =
             newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree, (availableIntRegs & ~RBM_ARG_REGS));
 
-        insertedKills      = true;
+        insertedKills = true;
     }
 
     return insertedKills;
