@@ -1625,6 +1625,8 @@ private:
     unsigned int bbSeqCount;
     // The Location of the start of the current block.
     LsraLocation curBBStartLocation;
+    // Most recent kill location
+    LsraLocation recentKillLocation;
     // True if the method contains any critical edges.
     bool hasCriticalEdges;
 

@@ -377,6 +377,14 @@ void LinearScan::applyCalleeSaveHeuristics(RefPosition* rp)
 
     Interval* theInterval = rp->getInterval();
 
+    if ((theInterval->firstRefPosition != nullptr) && RefTypeIsUse(rp->refType) && !theInterval->isWriteThru)
+    {
+        if (theInterval->firstRefPosition->nodeLocation < recentKillLocation)
+        {
+            theInterval->preferCalleeSave = true;
+        }
+    }
+
 #ifdef DEBUG
     if (!doReverseCallerCallee())
 #endif // DEBUG
@@ -1159,6 +1167,12 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
     {
         addRefsForPhysRegMask(killMask, currentLoc, RefTypeKill, true);
 
+        const bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
+        if (isCallKill)
+        {
+            recentKillLocation = currentLoc;
+        }
+
         // TODO-CQ: It appears to be valuable for both fp and int registers to avoid killing the callee
         // save regs on infrequently executed paths.  However, it results in a large number of asmDiffs,
         // many of which appear to be regressions (because there is more spill on the infrequently path),
@@ -1190,7 +1204,6 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                     continue;
                 }
                 Interval*  interval   = getIntervalForLocalVar(varIndex);
-                const bool isCallKill = ((killMask == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
 
                 if (isCallKill)
                 {
@@ -1221,14 +1234,15 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
             }
         }
 
-        insertedKills = true;
+        insertedKills      = true;
     }
 
     if (compiler->killGCRefs(tree))
     {
         RefPosition* pos =
             newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree, (availableIntRegs & ~RBM_ARG_REGS));
-        insertedKills = true;
+
+        insertedKills      = true;
     }
 
     return insertedKills;

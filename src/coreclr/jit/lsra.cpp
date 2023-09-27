@@ -826,6 +826,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     blockSequenceWorkList = nullptr;
     curBBSeqNum           = 0;
     bbSeqCount            = 0;
+    recentKillLocation    = 0;
 
     // Information about each block, including predecessor blocks used for variable locations at block entry.
     blockInfo = nullptr;
@@ -9658,6 +9659,10 @@ void Interval::dump(Compiler* compiler)
 
     printf(" Preferences=");
     compiler->dumpRegMask(this->registerPreferences);
+    if (preferCalleeSave)
+    {
+        printf("(callee-save)");
+    }
 
     if (relatedInterval)
     {
