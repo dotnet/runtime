@@ -7125,9 +7125,9 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_HWINTRINSIC:
 #endif
             return true;
+        default:
+            return false;
     }
-
-    return false;
 }
 
 //------------------------------------------------------------------------------
