@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 
 using BindingFlags = System.Reflection.BindingFlags;
 
@@ -14,6 +15,7 @@ internal class Program
     private static int Main()
     {
 #if !MULTIMODULE_BUILD
+        TestHardwareIntrinsics.Run();
         TestLdstr.Run();
         TestException.Run();
         TestThreadStaticNotInitialized.Run();
@@ -59,6 +61,39 @@ internal class Program
 #endif
 
         return 100;
+    }
+}
+
+class TestHardwareIntrinsics
+{
+    class Simple1
+    {
+        public static bool IsSseSupported = Sse.IsSupported;
+    }
+
+    class Simple2
+    {
+        public static bool IsAvxVnniSupported = AvxVnni.IsSupported;
+    }
+
+    class Complex
+    {
+        public static bool IsPopcntSupported = Popcnt.IsSupported;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Simple1));
+        Assert.AreEqual(Sse.IsSupported, Simple1.IsSseSupported);
+
+        Assert.IsPreinitialized(typeof(Simple2));
+        Assert.AreEqual(AvxVnni.IsSupported, Simple2.IsAvxVnniSupported);
+
+        if (RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64)
+            Assert.IsLazyInitialized(typeof(Complex));
+        else
+            Assert.IsPreinitialized(typeof(Complex));
+        Assert.AreEqual(Popcnt.IsSupported, Complex.IsPopcntSupported);
     }
 }
 
