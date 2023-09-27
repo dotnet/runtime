@@ -112,7 +112,7 @@ namespace ILCompiler
             stopwatch.Start();
             if (Environment.GetEnvironmentVariable("DOTNET_USE_LLVM_OBJWRITER") == "1")
                 LlvmObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
-            else if (NodeFactory.Target.OperatingSystem == TargetOS.OSX)
+            else if (NodeFactory.Target.IsOSXLike)
                 MachObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
             else if (NodeFactory.Target.OperatingSystem == TargetOS.Windows)
                 CoffObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
