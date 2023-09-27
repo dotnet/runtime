@@ -5919,10 +5919,7 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 			return emit_vector_2_3_4 (cfg, cmethod, fsig, args);
 	}
 	
-	MonoInst *simd_inst = emit_amd64_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
-	if (simd_inst != NULL)
-		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
-	return simd_inst;
+	return emit_amd64_intrinsics (class_ns, class_name, cfg, cmethod, fsig, args);
 }
 #elif defined(TARGET_WASM)
 static
@@ -6016,7 +6013,10 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		class_ns = m_class_get_name_space (m_class_get_nested_in (cmethod->klass));
 
 
-	return ecb (class_ns, class_name, cfg, cmethod, fsig, args);
+	MonoInst *simd_inst = ecb (class_ns, class_name, cfg, cmethod, fsig, args);
+	if (simd_inst)
+		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
+	return simd_inst;
 }
 
 MonoInst*
