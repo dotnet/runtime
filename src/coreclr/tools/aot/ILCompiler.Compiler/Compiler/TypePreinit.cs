@@ -3126,6 +3126,7 @@ namespace ILCompiler
         }
     }
 
+#pragma warning disable SA1400 // Element 'Extensions' should declare an access modifier
     file static class Extensions
     {
         public static StackValueKind WithNormalizedNativeInt(this StackValueKind kind, TypeSystemContext context)
