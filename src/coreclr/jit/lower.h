@@ -90,6 +90,8 @@ private:
     void ContainCheckNeg(GenTreeOp* neg);
     void TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond);
     void TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
+    GenTree* TryLowerAddSubToMulLongOp(GenTreeOp* op);
+    GenTree* TryLowerNegToMulLongOp(GenTreeOp* op);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
@@ -267,7 +269,7 @@ private:
     // operands.
     //
     // Arguments:
-    //     tree  -             Gentree of a binary operation.
+    //     tree  -             GenTree of a binary operation.
     //     isSafeToMarkOp1     True if it's safe to mark op1 as register optional
     //     isSafeToMarkOp2     True if it's safe to mark op2 as register optional
     //

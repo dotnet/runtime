@@ -118,15 +118,35 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void SleepInternal(int millisecondsTimeout);
 
+        // Max iterations to be done in SpinWait without switching GC modes.
+        private const int SpinWaitCoopThreshold = 1024;
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SpinWait")]
+        [SuppressGCTransition]
+        private static partial void SpinWaitInternal(int iterations);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SpinWait")]
+        private static partial void LongSpinWaitInternal(int iterations);
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
+        private static void LongSpinWait(int iterations) => LongSpinWaitInternal(iterations);
+
         /// <summary>
         /// Wait for a length of time proportional to 'iterations'.  Each iteration is should
         /// only take a few machine instructions.  Calling this API is preferable to coding
         /// a explicit busy loop because the hardware can be informed that it is busy waiting.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void SpinWaitInternal(int iterations);
-
-        public static void SpinWait(int iterations) => SpinWaitInternal(iterations);
+        public static void SpinWait(int iterations)
+        {
+            if (iterations < SpinWaitCoopThreshold)
+            {
+                SpinWaitInternal(iterations);
+            }
+            else
+            {
+                LongSpinWait(iterations);
+            }
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_YieldThread")]
         private static partial Interop.BOOL YieldInternal();

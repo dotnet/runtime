@@ -882,8 +882,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //    None.
 //
 // Assumptions:
-//    The lclVar must be a register candidate (lvRegCandidate)
-
+//    The lclVar must be a register candidate (lvIsRegCandidate())
+//
 void CodeGen::genSpillVar(GenTree* tree)
 {
     unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
@@ -892,7 +892,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     assert(varDsc->lvIsRegCandidate());
 
     // We don't actually need to spill if it is already living in memory
-    bool needsSpill = ((tree->gtFlags & GTF_VAR_DEF) == 0 && varDsc->lvIsInReg());
+    const bool needsSpill = ((tree->gtFlags & GTF_VAR_DEF) == 0) && varDsc->lvIsInReg();
     if (needsSpill)
     {
         // In order for a lclVar to have been allocated to a register, it must not have been aliasable, and can
@@ -954,7 +954,7 @@ void CodeGen::genSpillVar(GenTree* tree)
 
     if (needsSpill)
     {
-        // We need this after "lvRegNum" has change because now we are sure that varDsc->lvIsInReg() is false.
+        // We need this after "lvRegNum" has changed because now we are sure that varDsc->lvIsInReg() is false.
         // "SiVarLoc" constructor uses the "LclVarDsc" of the variable.
         varLiveKeeper->siUpdateVariableLiveRange(varDsc, varNum);
     }
@@ -2106,10 +2106,11 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
 // node in codegen after code has been emitted for it.
 //
 // Arguments:
-//     tree   -  Gentree node
+//     tree   -  GenTree node
 //
 // Return Value:
 //     None.
+//
 void CodeGen::genProduceReg(GenTree* tree)
 {
 #ifdef DEBUG
@@ -2346,8 +2347,8 @@ void CodeGen::genEmitCallIndir(int                   callType,
     int argSize = 0;
 #endif // !defined(TARGET_X86)
 
-    regNumber iReg = (indir->Base()  != nullptr) ? indir->Base()->GetRegNum() : REG_NA;
-    regNumber xReg = (indir->Index() != nullptr) ? indir->Index()->GetRegNum() : REG_NA;
+    regNumber iReg = indir->HasBase()  ? indir->Base()->GetRegNum() : REG_NA;
+    regNumber xReg = indir->HasIndex() ? indir->Index()->GetRegNum() : REG_NA;
 
     // These should have been put in volatile registers to ensure they do not
     // get overridden by epilog sequence during tailcall.

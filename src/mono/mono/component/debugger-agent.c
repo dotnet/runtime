@@ -5512,7 +5512,9 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_FNPTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE) &&
-		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT)) {
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_SZARRAY) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_ARRAY)) {
 		char *name = mono_type_full_name (t);
 		PRINT_DEBUG_MSG (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer) (gsize) mono_native_thread_id_get (), name, type);
 		g_free (name);
@@ -5580,7 +5582,7 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
-			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING || type == MONO_TYPE_ARRAY || type == MONO_TYPE_SZARRAY) {
 				ret += sizeof(MonoObject*);
 				decode_objid (buf, &buf, limit);
 			} else if (type == VALUE_TYPE_ID_NULL) {
@@ -5635,7 +5637,9 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_FNPTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE) &&
-		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT)) {
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_SZARRAY) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_ARRAY)) {
 		char *name = mono_type_full_name (t);
 		PRINT_DEBUG_MSG (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer) (gsize) mono_native_thread_id_get (), name, type);
 		g_free (name);
@@ -5728,7 +5732,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
-			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING || type == MONO_TYPE_ARRAY || type == MONO_TYPE_SZARRAY) {
 				int objid = decode_objid (buf, &buf, limit);
 				MonoObject *obj;
 

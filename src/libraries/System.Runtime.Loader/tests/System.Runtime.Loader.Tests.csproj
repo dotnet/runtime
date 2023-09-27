@@ -37,10 +37,8 @@
     <!-- iOS & tvOS are aot workloads and loading an embedded assembly results in some dynamic codegen, which is not allowed -->
     <ProjectReference Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'tvos'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
     <ProjectReference Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'tvos'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
-    <ProjectReference Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'tvos'" Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" />
     <ProjectReference Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'" Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj" />
     <ProjectReference Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'" Include="System.Runtime.Loader.Test.Assembly2\System.Runtime.Loader.Test.Assembly2.csproj" />
-    <ProjectReference Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'" Include="System.Runtime.Loader.Test.AssemblyNotSupported\System.Runtime.Loader.Test.AssemblyNotSupported.csproj" />
     <ProjectReference Include="ContextualReflectionDependency\System.Runtime.Loader.Test.ContextualReflectionDependency.csproj" />
     <ProjectReference Include="ReferencedClassLib\ReferencedClassLib.csproj" />
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />

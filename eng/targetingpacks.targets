@@ -117,9 +117,9 @@
       <PackageReference Remove="@(PackageReference)"
                         Condition="$([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
       <PackageDownload Remove="@(PackageDownload)"
-                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Crossgen2))" />
+                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Crossgen2'))" />
       <PackageReference Remove="@(PackageReference)"
-                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Crossgen2))" />
+                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Crossgen2'))" />
     </ItemGroup>
   </Target>
 

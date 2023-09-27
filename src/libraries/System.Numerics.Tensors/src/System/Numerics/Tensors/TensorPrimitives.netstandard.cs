@@ -8,8 +8,6 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
-        private static unsafe bool IsNegative(float f) => *(int*)&f < 0;
-
         private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
             // Compute the same as:
@@ -69,8 +67,8 @@ namespace System.Numerics.Tensors
 
         private static float Aggregate<TLoad, TAggregate>(
             float identityValue, ReadOnlySpan<float> x, TLoad load = default, TAggregate aggregate = default)
-            where TLoad : IUnaryOperator
-            where TAggregate : IBinaryOperator
+            where TLoad : struct, IUnaryOperator
+            where TAggregate : struct, IBinaryOperator
         {
             // Initialize the result to the identity value
             float result = identityValue;
@@ -112,8 +110,8 @@ namespace System.Numerics.Tensors
 
         private static float Aggregate<TBinary, TAggregate>(
             float identityValue, ReadOnlySpan<float> x, ReadOnlySpan<float> y, TBinary binary = default, TAggregate aggregate = default)
-            where TBinary : IBinaryOperator
-            where TAggregate : IBinaryOperator
+            where TBinary : struct, IBinaryOperator
+            where TAggregate : struct, IBinaryOperator
         {
             // Initialize the result to the identity value
             float result = identityValue;
@@ -154,9 +152,92 @@ namespace System.Numerics.Tensors
             return result;
         }
 
+        private static float MinMaxCore<TMinMax>(ReadOnlySpan<float> x, TMinMax minMax = default) where TMinMax : struct, IBinaryOperator
+        {
+            if (x.IsEmpty)
+            {
+                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
+            }
+
+            // This matches the IEEE 754:2019 `maximum`/`minimum` functions.
+            // It propagates NaN inputs back to the caller and
+            // otherwise returns the greater of the inputs.
+            // It treats +0 as greater than -0 as per the specification.
+
+            // Initialize the result to the identity value
+            float result = x[0];
+            int i = 0;
+
+            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count * 2)
+            {
+                ref float xRef = ref MemoryMarshal.GetReference(x);
+
+                // Load the first vector as the initial set of results, and bail immediately
+                // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
+                Vector<float> resultVector = AsVector(ref xRef, 0), current;
+                if (Vector.EqualsAll(resultVector, resultVector))
+                {
+                    int oneVectorFromEnd = x.Length - Vector<float>.Count;
+
+                    // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
+                    i = Vector<float>.Count;
+                    do
+                    {
+                        // Load the next vector, and early exit on NaN.
+                        current = AsVector(ref xRef, i);
+                        if (!Vector.EqualsAll(current, current))
+                        {
+                            goto Scalar;
+                        }
+
+                        resultVector = minMax.Invoke(resultVector, current);
+                        i += Vector<float>.Count;
+                    }
+                    while (i <= oneVectorFromEnd);
+
+                    // If any elements remain, handle them in one final vector.
+                    if (i != x.Length)
+                    {
+                        current = AsVector(ref xRef, x.Length - Vector<float>.Count);
+                        if (!Vector.EqualsAll(current, current))
+                        {
+                            goto Scalar;
+                        }
+
+                        resultVector = minMax.Invoke(resultVector, current);
+                    }
+
+                    // Aggregate the lanes in the vector to create the final scalar result.
+                    for (int f = 0; f < Vector<float>.Count; f++)
+                    {
+                        result = minMax.Invoke(result, resultVector[f]);
+                    }
+
+                    return result;
+                }
+            }
+
+            // Scalar path used when either vectorization is not supported, the input is too small to vectorize,
+            // or a NaN is encountered.
+            Scalar:
+            for (; (uint)i < (uint)x.Length; i++)
+            {
+                float current = x[i];
+
+                if (float.IsNaN(current))
+                {
+                    return current;
+                }
+
+                result = minMax.Invoke(result, current);
+            }
+
+            return result;
+        }
+
         private static void InvokeSpanIntoSpan<TUnaryOperator>(
             ReadOnlySpan<float> x, Span<float> destination, TUnaryOperator op = default)
-            where TUnaryOperator : IUnaryOperator
+            where TUnaryOperator : struct, IUnaryOperator
         {
             if (x.Length > destination.Length)
             {
@@ -203,7 +284,7 @@ namespace System.Numerics.Tensors
 
         private static void InvokeSpanSpanIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination, TBinaryOperator op = default)
-            where TBinaryOperator : IBinaryOperator
+            where TBinaryOperator : struct, IBinaryOperator
         {
             if (x.Length != y.Length)
             {
@@ -258,7 +339,7 @@ namespace System.Numerics.Tensors
 
         private static void InvokeSpanScalarIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination, TBinaryOperator op = default)
-            where TBinaryOperator : IBinaryOperator
+            where TBinaryOperator : struct, IBinaryOperator
         {
             if (x.Length > destination.Length)
             {
@@ -309,7 +390,7 @@ namespace System.Numerics.Tensors
 
         private static void InvokeSpanSpanSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> z, Span<float> destination, TTernaryOperator op = default)
-            where TTernaryOperator : ITernaryOperator
+            where TTernaryOperator : struct, ITernaryOperator
         {
             if (x.Length != y.Length || x.Length != z.Length)
             {
@@ -369,7 +450,7 @@ namespace System.Numerics.Tensors
 
         private static void InvokeSpanSpanScalarIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, float z, Span<float> destination, TTernaryOperator op = default)
-            where TTernaryOperator : ITernaryOperator
+            where TTernaryOperator : struct, ITernaryOperator
         {
             if (x.Length != y.Length)
             {
@@ -430,7 +511,7 @@ namespace System.Numerics.Tensors
 
         private static void InvokeSpanScalarSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, float y, ReadOnlySpan<float> z, Span<float> destination, TTernaryOperator op = default)
-            where TTernaryOperator : ITernaryOperator
+            where TTernaryOperator : struct, ITernaryOperator
         {
             if (x.Length != z.Length)
             {
@@ -494,6 +575,13 @@ namespace System.Numerics.Tensors
             ref Unsafe.As<float, Vector<float>>(
                 ref Unsafe.Add(ref start, offset));
 
+        private static unsafe bool IsNegative(float f) => *(int*)&f < 0;
+
+        private static unsafe Vector<float> IsNegative(Vector<float> f) =>
+            (Vector<float>)Vector.LessThan((Vector<int>)f, Vector<int>.Zero);
+
+        private static float Log2(float x) => MathF.Log(x, 2);
+
         private readonly struct AddOperator : IBinaryOperator
         {
             public float Invoke(float x, float y) => x + y;
@@ -533,6 +621,163 @@ namespace System.Numerics.Tensors
             public Vector<float> Invoke(Vector<float> x, Vector<float> y) => x / y;
         }
 
+        private readonly struct MaxOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public float Invoke(float x, float y) =>
+                x == y ?
+                    (IsNegative(x) ? y : x) :
+                    (y > x ? y : x);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y) =>
+                Vector.ConditionalSelect(Vector.Equals(x, y),
+                    Vector.ConditionalSelect(IsNegative(x), y, x),
+                    Vector.Max(x, y));
+        }
+
+        private readonly struct MaxPropagateNaNOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public float Invoke(float x, float y) => MathF.Max(x, y);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y) =>
+                Vector.ConditionalSelect(Vector.Equals(x, x),
+                    Vector.ConditionalSelect(Vector.Equals(y, y),
+                        Vector.ConditionalSelect(Vector.Equals(x, y),
+                            Vector.ConditionalSelect(IsNegative(x), y, x),
+                            Vector.Max(x, y)),
+                        y),
+                    x);
+        }
+
+        private readonly struct MaxMagnitudeOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public float Invoke(float x, float y)
+            {
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
+                return
+                    yMag == xMag ?
+                        (IsNegative(x) ? y : x) :
+                        (xMag > yMag ? x : y);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y)
+            {
+                Vector<float> xMag = Vector.Abs(x), yMag = Vector.Abs(y);
+                return
+                    Vector.ConditionalSelect(Vector.Equals(xMag, yMag),
+                        Vector.ConditionalSelect(IsNegative(x), y, x),
+                        Vector.ConditionalSelect(Vector.GreaterThan(xMag, yMag), x, y));
+            }
+        }
+
+        private readonly struct MaxMagnitudePropagateNaNOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public float Invoke(float x, float y)
+            {
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
+                return xMag > yMag || float.IsNaN(xMag) || (xMag == yMag && !IsNegative(x)) ? x : y;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y)
+            {
+                Vector<float> xMag = Vector.Abs(x), yMag = Vector.Abs(y);
+                return
+                    Vector.ConditionalSelect(Vector.Equals(x, x),
+                        Vector.ConditionalSelect(Vector.Equals(y, y),
+                            Vector.ConditionalSelect(Vector.Equals(xMag, yMag),
+                                Vector.ConditionalSelect(IsNegative(x), y, x),
+                                Vector.ConditionalSelect(Vector.GreaterThan(xMag, yMag), x, y)),
+                            y),
+                        x);
+            }
+        }
+
+        private readonly struct MinOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public float Invoke(float x, float y) =>
+                x == y ?
+                    (IsNegative(y) ? y : x) :
+                    (y < x ? y : x);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y) =>
+                Vector.ConditionalSelect(Vector.Equals(x, y),
+                    Vector.ConditionalSelect(IsNegative(y), y, x),
+                    Vector.Min(x, y));
+        }
+
+        private readonly struct MinPropagateNaNOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public float Invoke(float x, float y) => MathF.Min(x, y);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y) =>
+                Vector.ConditionalSelect(Vector.Equals(x, x),
+                    Vector.ConditionalSelect(Vector.Equals(y, y),
+                        Vector.ConditionalSelect(Vector.Equals(x, y),
+                            Vector.ConditionalSelect(IsNegative(x), x, y),
+                            Vector.Min(x, y)),
+                        y),
+                    x);
+        }
+
+        private readonly struct MinMagnitudeOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public float Invoke(float x, float y)
+            {
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
+                return
+                    yMag == xMag ?
+                        (IsNegative(y) ? y : x) :
+                        (yMag < xMag ? y : x);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y)
+            {
+                Vector<float> xMag = Vector.Abs(x), yMag = Vector.Abs(y);
+                return
+                    Vector.ConditionalSelect(Vector.Equals(yMag, xMag),
+                        Vector.ConditionalSelect(IsNegative(y), y, x),
+                        Vector.ConditionalSelect(Vector.LessThan(yMag, xMag), y, x));
+            }
+        }
+
+        private readonly struct MinMagnitudePropagateNaNOperator : IBinaryOperator
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public float Invoke(float x, float y)
+            {
+                float xMag = MathF.Abs(x), yMag = MathF.Abs(y);
+                return xMag < yMag || float.IsNaN(xMag) || (xMag == yMag && IsNegative(x)) ? x : y;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Vector<float> Invoke(Vector<float> x, Vector<float> y)
+            {
+                Vector<float> xMag = Vector.Abs(x), yMag = Vector.Abs(y);
+
+                return
+                    Vector.ConditionalSelect(Vector.Equals(x, x),
+                        Vector.ConditionalSelect(Vector.Equals(y, y),
+                            Vector.ConditionalSelect(Vector.Equals(yMag, xMag),
+                                Vector.ConditionalSelect(IsNegative(x), x, y),
+                                Vector.ConditionalSelect(Vector.LessThan(xMag, yMag), x, y)),
+                            y),
+                        x);
+            }
+        }
+
         private readonly struct NegateOperator : IUnaryOperator
         {
             public float Invoke(float x) => -x;
@@ -551,28 +796,22 @@ namespace System.Numerics.Tensors
             public Vector<float> Invoke(Vector<float> x, Vector<float> y, Vector<float> z) => (x * y) + z;
         }
 
-        private readonly struct LoadIdentity : IUnaryOperator
+        private readonly struct IdentityOperator : IUnaryOperator
         {
             public float Invoke(float x) => x;
             public Vector<float> Invoke(Vector<float> x) => x;
         }
 
-        private readonly struct LoadSquared : IUnaryOperator
+        private readonly struct SquaredOperator : IUnaryOperator
         {
             public float Invoke(float x) => x * x;
             public Vector<float> Invoke(Vector<float> x) => x * x;
         }
 
-        private readonly struct LoadAbsolute : IUnaryOperator
+        private readonly struct AbsoluteOperator : IUnaryOperator
         {
             public float Invoke(float x) => MathF.Abs(x);
-
-            public Vector<float> Invoke(Vector<float> x)
-            {
-                Vector<uint> raw = Vector.AsVectorUInt32(x);
-                Vector<uint> mask = new Vector<uint>(0x7FFFFFFF);
-                return Vector.AsVectorSingle(raw & mask);
-            }
+            public Vector<float> Invoke(Vector<float> x) => Vector.Abs(x);
         }
 
         private interface IUnaryOperator
