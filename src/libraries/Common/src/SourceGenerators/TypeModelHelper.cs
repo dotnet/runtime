@@ -3,6 +3,8 @@
 
 using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 
 namespace SourceGenerators
 {
@@ -32,5 +34,7 @@ namespace SourceGenerators
                 }
             }
         }
+
+        public static string GetFullyQualifiedName(this ITypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
     }
 }
