@@ -42,13 +42,13 @@ steps:
           $availableFiles | %{ cp $_.FullName $targetDir -v }
         }
 
-        $buildMuslDacRootFolderPath = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/alpine.${{ parameters.archType }}.$(buildConfigUpper)"
-        $buildMuslStagingPath = "$(crossDacArtifactPath)/Linux_musl.${{ parameters.archType }}.$(buildConfigUpper)/${{ parameters.hostArchType }}"
-        
-        $buildLinuxDacRootFolderPath = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/Linux.${{ parameters.archType }}.$(buildConfigUpper)"
-        $buildLinuxDacStagingPath = "$(crossDacArtifactPath)/Linux.${{ parameters.archType }}.$(buildConfigUpper)/${{ parameters.hostArchType }}"
-        
-        
+        $buildMuslDacRootFolderPath = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/linux_musl.${{ parameters.archType }}.$(buildConfigUpper)"
+        $buildMuslStagingPath = "$(crossDacArtifactPath)/linux_musl.${{ parameters.archType }}.$(buildConfigUpper)/${{ parameters.hostArchType }}"
+
+        $buildLinuxDacRootFolderPath = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/linux.${{ parameters.archType }}.$(buildConfigUpper)"
+        $buildLinuxDacStagingPath = "$(crossDacArtifactPath)/linux.${{ parameters.archType }}.$(buildConfigUpper)/${{ parameters.hostArchType }}"
+
+
         CopyAndVerifyCrossOsAssets -CrossDacDir $buildMuslDacRootFolderPath -TargetDir $buildMuslStagingPath
         CopyAndVerifyCrossOsAssets -CrossDacDir $buildLinuxDacRootFolderPath -TargetDir $buildLinuxDacStagingPath
 
