@@ -3482,8 +3482,24 @@ void LinearScan::RecordDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNo
 
     DelayFreeCandidates* delayFreeCandidatesMap = getDelayFreeCandidatesMap();
 
+    printf("Recording #%d against node %d\n", useRefPosition->rpNum, rmwNode->gtTreeID);
     delayFreeCandidatesMap->Set(useRefPosition, rmwNode);
     pendingDelayFree = true;
+}
+
+//------------------------------------------------------------------------
+// IsDelayFreeRecorded: Check if we have already recorded the delay-free for
+//                      useRefPosition
+//
+// Arguments:
+//    useRefPosition - The use refposition for which we want to check delay-freed.
+//
+bool LinearScan::IsDelayFreeRecorded(RefPosition* useRefPosition)
+{
+    assert(useRefPosition != nullptr);
+
+    DelayFreeCandidates* delayFreeCandidatesMap = getDelayFreeCandidatesMap();
+    return delayFreeCandidatesMap->Lookup(useRefPosition);
 }
 
 //------------------------------------------------------------------------

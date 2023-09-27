@@ -1954,6 +1954,7 @@ private:
     int BuildSimple(GenTree* tree);
     int BuildOperandUses(GenTree* node, regMaskTP candidates = RBM_NONE);
     void RecordDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
+    bool IsDelayFreeRecorded(RefPosition* refPosition);
     void AddDelayFreeUses();
     int BuildDelayFreeUses(GenTree*      node,
                            GenTree*      rmwNode        = nullptr,

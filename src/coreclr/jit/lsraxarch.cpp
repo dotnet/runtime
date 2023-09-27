@@ -2317,7 +2317,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                     RefPosition* op3RefPosition;
                     srcCount += BuildDelayFreeUses(op3, op1, RBM_NONE, &op3RefPosition);
-                    if ((op3RefPosition != nullptr) && !op3RefPosition->delayRegFree)
+                    if ((op3RefPosition != nullptr) && !IsDelayFreeRecorded(op3RefPosition))
                     {
                         // If op3 was not marked as delay-free for op1, mark it as delay-free
                         // if needed for op2.
