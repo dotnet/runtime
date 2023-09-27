@@ -153,19 +153,6 @@ namespace System
             return GetEnumInfo(enumType).UnderlyingType;
         }
 
-        //
-        // Checks if value.GetType() matches enumType exactly.
-        //
-        internal static bool ValueTypeMatchesEnumType(Type enumType, object value)
-        {
-            EETypePtr enumEEType;
-            if (!enumType.TryGetEEType(out enumEEType))
-                return false;
-            if (!(enumEEType == value.GetEETypePtr()))
-                return false;
-            return true;
-        }
-
         [Conditional("BIGENDIAN")]
         private static unsafe void AdjustForEndianness(ref byte* pValue, EETypePtr enumEEType)
         {

@@ -352,16 +352,16 @@ namespace System
             return a.GetEETypePtr() == b.GetEETypePtr();
         }
 
-        // Returns a new delegate of the specified type whose implementation is provied by the
+        // Returns a new delegate of the specified type whose implementation is provided by the
         // provided delegate.
         internal static Delegate CreateObjectArrayDelegate(Type t, Func<object?[], object?> handler)
         {
-            EETypePtr delegateEEType;
-            if (!t.TryGetEEType(out delegateEEType))
+            if (t is not RuntimeType delegateRuntimeType)
             {
                 throw new InvalidOperationException();
             }
 
+            EETypePtr delegateEEType = delegateRuntimeType.ToEETypePtr();
             if (!delegateEEType.IsDefType || delegateEEType.IsGenericTypeDefinition)
             {
                 throw new InvalidOperationException();

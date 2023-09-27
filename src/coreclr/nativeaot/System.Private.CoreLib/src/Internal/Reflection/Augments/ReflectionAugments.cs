@@ -43,7 +43,11 @@ namespace Internal.Reflection.Augments
             Debug.Assert(type != null);
 
             EETypePtr eeType;
-            if (!type.TryGetEEType(out eeType))
+            if (type is RuntimeType runtimeType)
+            {
+                eeType = runtimeType.ToEETypePtr();
+            }
+            else
             {
                 // Type exists in metadata only. Aside from the enums, there is no chance a type with a TypeCode would not have an MethodTable,
                 // so if it's not an enum, return the default.

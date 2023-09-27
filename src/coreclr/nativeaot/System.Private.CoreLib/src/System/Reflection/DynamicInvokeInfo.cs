@@ -81,7 +81,7 @@ namespace System.Reflection
                     }
                     Debug.Assert(!argumentType.IsByRef);
 
-                    EETypePtr eeArgumentType = argumentType.GetEEType();
+                    EETypePtr eeArgumentType = ((RuntimeType)argumentType).ToEETypePtr();
 
                     if (eeArgumentType.IsValueType)
                     {
@@ -127,7 +127,7 @@ namespace System.Reflection
                 }
                 Debug.Assert(!returnType.IsByRef);
 
-                EETypePtr eeReturnType = returnType.GetEEType();
+                EETypePtr eeReturnType = ((RuntimeType)returnType).ToEETypePtr();
 
                 if (eeReturnType.IsValueType)
                 {

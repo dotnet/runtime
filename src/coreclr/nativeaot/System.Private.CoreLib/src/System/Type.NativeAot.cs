@@ -60,23 +60,6 @@ namespace System
             return Unsafe.As<RuntimeType>(handle.Target);
         }
 
-        internal EETypePtr GetEEType()
-        {
-            Debug.Assert(this is RuntimeType);
-            return ((RuntimeType)this).TypeHandle.ToEETypePtr();
-        }
-
-        internal bool TryGetEEType(out EETypePtr eeType)
-        {
-            if (this is RuntimeType runtimeType)
-            {
-                eeType = runtimeType.TypeHandle.ToEETypePtr();
-                return true;
-            }
-            eeType = default;
-            return false;
-        }
-
         //
         // This is a port of the desktop CLR's RuntimeType.FormatTypeName() routine. This routine is used by various Reflection ToString() methods
         // to display the name of a type. Do not use for any other purpose as it inherits some pretty quirky desktop behavior.

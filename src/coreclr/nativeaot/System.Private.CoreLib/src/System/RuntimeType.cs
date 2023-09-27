@@ -19,6 +19,8 @@ namespace System
             _pUnderlyingEEType = pUnderlyingEEType;
         }
 
+        internal EETypePtr ToEETypePtr() => new EETypePtr(_pUnderlyingEEType);
+
         public override string? GetEnumName(object value)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -85,7 +87,7 @@ namespace System
 
                 if (value is Enum)
                 {
-                    if (!Enum.ValueTypeMatchesEnumType(this, value))
+                    if (value.GetEETypePtr() != this.ToEETypePtr())
                         throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, value.GetType(), this));
                 }
                 else
