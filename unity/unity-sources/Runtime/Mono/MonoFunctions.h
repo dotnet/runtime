@@ -125,6 +125,8 @@ DO_API(MonoArray*, mono_unity_array_new_3d, (MonoDomain * domain, MonoClass * ec
 DO_API(int, coreclr_array_length, (MonoArray* array))
 DO_API(void*, mono_unity_method_get_function_pointer, (MonoMethod* method))
 
+DO_API(void*, unity_coreclr_create_delegate, (const char* assemblyName, const char* typeName, const char* methodName))
+
 DO_API(MonoClass *, mono_array_class_get, (MonoClass * eclass, guint32 rank))
 
 DO_API(gint32, mono_class_array_element_size, (MonoClass * ac))

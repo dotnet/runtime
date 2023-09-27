@@ -309,3 +309,4 @@ EXPORTS
         unity_mono_method_is_generic_specific
         unity_mono_method_is_inflated_specific
         unity_mono_reflection_method_get_method
+        unity_coreclr_create_delegate

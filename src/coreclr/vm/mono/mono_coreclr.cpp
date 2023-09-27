@@ -1781,6 +1781,7 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
 
     mono_unity_initialize_host_apis(init_func);
 
+    // Note : This logic can be removed once the switch over to using unity_coreclr_create_delegate is complete
     initialize_scripting_runtime_func init_runtime_func;
     hr = coreclr_create_delegate(g_CLRRuntimeHost, g_RootDomainId, "UnityEngine.Scripting", "UnityEngine.Scripting.Initialization", "NativeCallbackToPerformInitialization", (void**)&init_runtime_func);
     if (hr == 0)
@@ -1817,6 +1818,20 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
 
     TRACE_API("%s, %s", file, runtime_version);
     return gCurrentDomain;
+}
+
+// This is a stop gap helper to assist with scripting core initializing itself until the entirety of coreclr initialization can be moved
+// into scripting core.
+extern "C" EXPORT_API void* EXPORT_CC unity_coreclr_create_delegate(const char* assemblyName, const char* typeName, const char* methodName)
+{
+    void* func;
+    HRESULT hr = coreclr_create_delegate(g_CLRRuntimeHost, g_RootDomainId, assemblyName, typeName, methodName, (void**)&func);
+    if(FAILED(hr))
+    {
+        return nullptr;
+    }
+
+    return (void*)func;
 }
 
 extern "C" EXPORT_API void EXPORT_CC mono_jit_parse_options(int argc, char * argv[])
