@@ -14,6 +14,11 @@ namespace System
     {
         private MethodTable* _pUnderlyingEEType;
 
+        internal RuntimeType(MethodTable* pUnderlyingEEType)
+        {
+            _pUnderlyingEEType = pUnderlyingEEType;
+        }
+
         public override string? GetEnumName(object value)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -128,6 +133,9 @@ namespace System
         public override bool IsSecurityCritical => true;
         public override bool IsSecuritySafeCritical => false;
         public override bool IsSecurityTransparent => false;
+
+        public override RuntimeTypeHandle TypeHandle
+            => new RuntimeTypeHandle((IntPtr)_pUnderlyingEEType);
 
         internal new unsafe bool IsInterface
             => _pUnderlyingEEType->IsInterface;

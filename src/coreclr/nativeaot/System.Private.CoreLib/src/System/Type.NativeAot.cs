@@ -49,11 +49,7 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT, ref UnsafeGCHandle handle)
         {
-            // Note: this is bypassing the "fast" unifier cache (based on a simple IntPtr
-            // identity of MethodTable pointers). There is another unifier behind that cache
-            // that ensures this code is race-free.
-            Type result = RuntimeTypeUnifier.GetRuntimeTypeBypassCache(new EETypePtr(pMT));
-            UnsafeGCHandle tempHandle = UnsafeGCHandle.Alloc(result);
+            UnsafeGCHandle tempHandle = UnsafeGCHandle.Alloc(new RuntimeType(pMT));
 
             // We don't want to leak a handle if there's a race
             if (Interlocked.CompareExchange(ref Unsafe.As<UnsafeGCHandle, IntPtr>(ref handle), Unsafe.As<UnsafeGCHandle, IntPtr>(ref tempHandle), default) != default)
