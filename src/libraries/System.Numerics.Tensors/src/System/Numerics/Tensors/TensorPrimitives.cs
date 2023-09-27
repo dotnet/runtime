@@ -408,44 +408,8 @@ namespace System.Numerics.Tensors
         /// <param name="x">The tensor, represented as a span.</param>
         /// <returns>The maximum element in <paramref name="x"/>.</returns>
         /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be greater than zero.</exception>
-        public static float Max(ReadOnlySpan<float> x)
-        {
-            if (x.IsEmpty)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
-
-            float result = float.NegativeInfinity;
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                // This matches the IEEE 754:2019 `maximum` function.
-                // It propagates NaN inputs back to the caller and
-                // otherwise returns the greater of the inputs.
-                // It treats +0 as greater than -0 as per the specification.
-
-                float current = x[i];
-
-                if (current != result)
-                {
-                    if (float.IsNaN(current))
-                    {
-                        return current;
-                    }
-
-                    if (result < current)
-                    {
-                        result = current;
-                    }
-                }
-                else if (IsNegative(result))
-                {
-                    result = current;
-                }
-            }
-
-            return result;
-        }
+        public static float Max(ReadOnlySpan<float> x) =>
+            MinMaxCore<MaxOperator>(x);
 
         /// <summary>Computes the element-wise result of: <c>MathF.Max(<paramref name="x" />, <paramref name="y" />)</c>.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -454,70 +418,15 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <remarks>This method effectively does <c><paramref name="destination" />[i] = MathF.Max(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
-        public static void Max(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
-        {
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MathF.Max(x[i], y[i]);
-            }
-        }
+        public static void Max(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
+            InvokeSpanSpanIntoSpan<MaxPropagateNaNOperator>(x, y, destination);
 
         /// <summary>Computes the maximum magnitude of any element in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <returns>The maximum magnitude of any element in <paramref name="x"/>.</returns>
         /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be greater than zero.</exception>
-        public static float MaxMagnitude(ReadOnlySpan<float> x)
-        {
-            if (x.IsEmpty)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
-
-            float result = float.NegativeInfinity;
-            float resultMag = float.NegativeInfinity;
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                // This matches the IEEE 754:2019 `maximumMagnitude` function.
-                // It propagates NaN inputs back to the caller and
-                // otherwise returns the input with a greater magnitude.
-                // It treats +0 as greater than -0 as per the specification.
-
-                float current = x[i];
-                float currentMag = Math.Abs(current);
-
-                if (currentMag != resultMag)
-                {
-                    if (float.IsNaN(currentMag))
-                    {
-                        return currentMag;
-                    }
-
-                    if (resultMag < currentMag)
-                    {
-                        result = current;
-                        resultMag = currentMag;
-                    }
-                }
-                else if (IsNegative(result))
-                {
-                    result = current;
-                    resultMag = currentMag;
-                }
-            }
-
-            return result;
-        }
+        public static float MaxMagnitude(ReadOnlySpan<float> x) =>
+            MinMaxCore<MaxMagnitudeOperator>(x);
 
         /// <summary>Computes the element-wise result of: <c>MathF.MaxMagnitude(<paramref name="x" />, <paramref name="y" />)</c>.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -526,66 +435,15 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <remarks>This method effectively does <c><paramref name="destination" />[i] = MathF.MaxMagnitude(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
-        public static void MaxMagnitude(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
-        {
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MaxMagnitude(x[i], y[i]);
-            }
-        }
+        public static void MaxMagnitude(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
+            InvokeSpanSpanIntoSpan<MaxMagnitudePropagateNaNOperator>(x, y, destination);
 
         /// <summary>Computes the minimum element in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <returns>The minimum element in <paramref name="x"/>.</returns>
         /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be greater than zero.</exception>
-        public static float Min(ReadOnlySpan<float> x)
-        {
-            if (x.IsEmpty)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
-
-            float result = float.PositiveInfinity;
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                // This matches the IEEE 754:2019 `minimum` function
-                // It propagates NaN inputs back to the caller and
-                // otherwise returns the lesser of the inputs.
-                // It treats +0 as greater than -0 as per the specification.
-
-                float current = x[i];
-
-                if (current != result)
-                {
-                    if (float.IsNaN(current))
-                    {
-                        return current;
-                    }
-
-                    if (current < result)
-                    {
-                        result = current;
-                    }
-                }
-                else if (IsNegative(current))
-                {
-                    result = current;
-                }
-            }
-
-            return result;
-        }
+        public static float Min(ReadOnlySpan<float> x) =>
+            MinMaxCore<MinOperator>(x);
 
         /// <summary>Computes the element-wise result of: <c>MathF.Min(<paramref name="x" />, <paramref name="y" />)</c>.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -594,70 +452,15 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <remarks>This method effectively does <c><paramref name="destination" />[i] = MathF.Min(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
-        public static void Min(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
-        {
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MathF.Min(x[i], y[i]);
-            }
-        }
+        public static void Min(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
+            InvokeSpanSpanIntoSpan<MinPropagateNaNOperator>(x, y, destination);
 
         /// <summary>Computes the minimum magnitude of any element in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <returns>The minimum magnitude of any element in <paramref name="x"/>.</returns>
         /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be greater than zero.</exception>
-        public static float MinMagnitude(ReadOnlySpan<float> x)
-        {
-            if (x.IsEmpty)
-            {
-                ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
-
-            float result = float.PositiveInfinity;
-            float resultMag = float.PositiveInfinity;
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                // This matches the IEEE 754:2019 `minimumMagnitude` function.
-                // It propagates NaN inputs back to the caller and
-                // otherwise returns the input with a lesser magnitude.
-                // It treats +0 as greater than -0 as per the specification.
-
-                float current = x[i];
-                float currentMag = Math.Abs(current);
-
-                if (currentMag != resultMag)
-                {
-                    if (float.IsNaN(currentMag))
-                    {
-                        return currentMag;
-                    }
-
-                    if (currentMag < resultMag)
-                    {
-                        result = current;
-                        resultMag = currentMag;
-                    }
-                }
-                else if (IsNegative(current))
-                {
-                    result = current;
-                    resultMag = currentMag;
-                }
-            }
-
-            return result;
-        }
+        public static float MinMagnitude(ReadOnlySpan<float> x) =>
+            MinMaxCore<MinMagnitudeOperator>(x);
 
         /// <summary>Computes the element-wise result of: <c>MathF.MinMagnitude(<paramref name="x" />, <paramref name="y" />)</c>.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -666,23 +469,8 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Length of '<paramref name="x" />' must be same as length of '<paramref name="y" />'.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <remarks>This method effectively does <c><paramref name="destination" />[i] = MathF.MinMagnitude(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
-        public static void MinMagnitude(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
-        {
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MinMagnitude(x[i], y[i]);
-            }
-        }
+        public static void MinMagnitude(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
+            InvokeSpanSpanIntoSpan<MinMagnitudePropagateNaNOperator>(x, y, destination);
 
         /// <summary>Computes the element-wise result of: <c><paramref name="x" /> * <paramref name="y" /></c>.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
