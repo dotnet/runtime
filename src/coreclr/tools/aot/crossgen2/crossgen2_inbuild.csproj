@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CrossHostArch Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">$(BuildArchitecture)</CrossHostArch>
+    <CrossHostArch Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">$(BuildArchitecture)</CrossHostArch>
     <OutputPath>$(RuntimeBinDir)/$(BuildArchitecture)/crossgen2</OutputPath>
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>
