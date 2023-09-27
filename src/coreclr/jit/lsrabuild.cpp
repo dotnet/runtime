@@ -1207,14 +1207,13 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 
                     if (newPreferences != RBM_NONE)
                     {
-                        interval->updateRegisterPreferences(newPreferences);
-
                         if (!interval->isWriteThru)
                         {
                             // Update the register aversion as long as this is not write-thru vars for
-                            // reason mentioned above. 
+                            // reason mentioned above.
                             interval->registerAversion |= killMask;
                         }
+                        interval->updateRegisterPreferences(newPreferences);
                     }
                     else
                     {
@@ -3186,9 +3185,9 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         }
 #endif
 
+        interval->registerAversion |= unpref;
         regMaskTP newPreferences = allRegs(interval->registerType) & ~unpref;
         interval->updateRegisterPreferences(newPreferences);
-        interval->registerAversion |= unpref;
     }
 }
 

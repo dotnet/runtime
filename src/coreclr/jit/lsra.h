@@ -2324,6 +2324,14 @@ public:
         // It is invalid to update with empty preferences
         assert(preferences != RBM_NONE);
 
+        preferences &= ~registerAversion;
+        if (preferences == RBM_NONE)
+        {
+            // Do not include the preferences if all they contain
+            // are the registers we recorded as want to avoid.
+            return;
+        }
+
         regMaskTP commonPreferences = (registerPreferences & preferences);
         if (commonPreferences != RBM_NONE)
         {
