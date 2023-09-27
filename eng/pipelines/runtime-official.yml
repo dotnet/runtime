@@ -187,8 +187,8 @@ extends:
             - task: DownloadBuildArtifacts@0
               displayName: Download Runtimes for CrossDac packaging
               inputs:
-                artifactName: CoreCLRCrossDacArtifacts
-                downloadPath: $(Build.SourcesDirectory)/artifacts
+                artifactName: $(crossDacArtifactsContainer)
+                downloadPath: $(crossDacArtifactsBasePath)
                 checkDownloadedFiles: true
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
@@ -221,8 +221,12 @@ extends:
             - build_linux_musl_arm_release_AllSubsets_CoreCLR
             - build_linux_musl_arm64_release_AllSubsets_CoreCLR
           variables:
+          - name: crossDacArtifactsContainer
+            value: CoreCLRCrossDacArtifacts
+          - name: crossDacArtifactsBasePath
+            value: $(Build.StagingDirectory)/CrossDac
           - name: crossDacArtifactsPath
-            value: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
+            value: $(crossDacArtifactsBasePath)/$(crossDacArtifactsContainer)
 
       #
       # Build NativeAOT runtime packs
