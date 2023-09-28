@@ -7,7 +7,7 @@
 #include "gchandleutilities.h"
 
 #include "gceventstatus.h"
-
+#include "holder.h"
 #include "RhConfig.h"
 
 // This is the global GC heap, maintained by the VM.
@@ -410,8 +410,44 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
         return GCHeapUtilities::InitializeDefaultGC();
     }
 
-    // TODO, AndrewAu, append local path
-    HANDLE hMod = PalLoadLibrary(moduleName);
+    NewArrayHolder<char> moduleNameHolder(moduleName);    
+    HANDLE executableModule = PalGetModuleHandleFromPointer((void*)&GC_Initialize);
+    const TCHAR * executableModulePath = NULL;
+    PalGetModuleFileName(&executableModulePath, executableModule);
+    char* convertedExecutableModulePath = PalCopyTCharAsChar(executableModulePath);
+    if (!convertedExecutableModulePath)
+    {
+        return E_OUTOFMEMORY;
+    }
+    NewArrayHolder<char> convertedExecutableModulePathHolder(convertedExecutableModulePath);
+    {
+        char* p = convertedExecutableModulePath;
+        char* q = nullptr;
+        while (*p != '\0')
+        {
+            if (*p == DIRECTORY_SEPARATOR_CHAR)
+            {
+                q = p;
+            }
+            p++;
+        }
+        assert(q != nullptr);
+        q++;
+        *q = '\0';
+    }
+    size_t folderLength = strlen(convertedExecutableModulePath);
+    size_t nameLength = strlen(moduleName);
+    char* moduleFullPath = new (nothrow) char[folderLength + nameLength + 1];
+    if (!moduleFullPath)
+    {
+        return E_OUTOFMEMORY;
+    }
+    NewArrayHolder<char> moduleFullPathHolder(moduleFullPath);
+    strcpy(moduleFullPath, convertedExecutableModulePath);
+    strcpy(moduleFullPath + folderLength, moduleName);
+
+    HANDLE hMod = PalLoadLibrary(moduleFullPath);
+    
     if (!hMod)
     {
         // TODO, andrewau, report error appropriately

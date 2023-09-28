@@ -1,8 +1,10 @@
+#include <stdio.h>
+
 typedef long HRESULT;
 
-HRESULT InitializeStandaloneGC();
+HRESULT InitializeDefaultGC();
 
 HRESULT InitializeGCSelector()
 {
-    return InitializeStandaloneGC();
+    return InitializeDefaultGC();
 }
