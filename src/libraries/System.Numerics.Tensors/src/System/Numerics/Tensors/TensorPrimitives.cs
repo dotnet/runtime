@@ -260,7 +260,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
-            return MathF.Sqrt(Aggregate<SubtractSquaredOperator, AddOperator>(0f, x, y));
+            return MathF.Sqrt(Aggregate<SubtractSquaredOperator, AddOperator>(x, y));
         }
 
         /// <summary>Computes the element-wise division of single-precision floating-point numbers in the specified tensors.</summary>
@@ -340,7 +340,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
-            return Aggregate<MultiplyOperator, AddOperator>(0f, x, y);
+            return Aggregate<MultiplyOperator, AddOperator>(x, y);
         }
 
         /// <summary>Computes the element-wise result of raising <c>e</c> to the single-precision floating-point number powers in the specified tensor.</summary>
@@ -1015,7 +1015,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            return Aggregate<IdentityOperator, MultiplyOperator>(1.0f, x);
+            return Aggregate<IdentityOperator, MultiplyOperator>(x);
         }
 
         /// <summary>Computes the product of the element-wise differences of the single-precision floating-point numbers in the specified non-empty tensors.</summary>
@@ -1051,7 +1051,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
-            return Aggregate<SubtractOperator, MultiplyOperator>(1.0f, x, y);
+            return Aggregate<SubtractOperator, MultiplyOperator>(x, y);
         }
 
         /// <summary>Computes the product of the element-wise sums of the single-precision floating-point numbers in the specified non-empty tensors.</summary>
@@ -1087,7 +1087,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
-            return Aggregate<AddOperator, MultiplyOperator>(1.0f, x, y);
+            return Aggregate<AddOperator, MultiplyOperator>(x, y);
         }
 
         /// <summary>Computes the element-wise sigmoid function on the specified non-empty tensor of single-precision floating-point numbers.</summary>
@@ -1264,7 +1264,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static float Sum(ReadOnlySpan<float> x) =>
-            Aggregate<IdentityOperator, AddOperator>(0f, x);
+            Aggregate<IdentityOperator, AddOperator>(x);
 
         /// <summary>Computes the sum of the absolute values of every element in the specified tensor of single-precision floating-point numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -1285,7 +1285,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static float SumOfMagnitudes(ReadOnlySpan<float> x) =>
-            Aggregate<AbsoluteOperator, AddOperator>(0f, x);
+            Aggregate<AbsoluteOperator, AddOperator>(x);
 
         /// <summary>Computes the sum of the square of every element in the specified tensor of single-precision floating-point numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -1306,7 +1306,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static float SumOfSquares(ReadOnlySpan<float> x) =>
-            Aggregate<SquaredOperator, AddOperator>(0f, x);
+            Aggregate<SquaredOperator, AddOperator>(x);
 
         /// <summary>Computes the element-wise hyperbolic tangent of each single-precision floating-point radian angle in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -1344,5 +1344,31 @@ namespace System.Numerics.Tensors
                 destination[i] = MathF.Tanh(x[i]);
             }
         }
+
+        /// <summary>Mask used to handle remaining elements after vectorized handling of the input.</summary>
+        /// <remarks>
+        /// Logically 16 rows of 16 uints. The Nth row should be used to handle N remaining elements at the
+        /// end of the input, where elements in the vector prior to that will be zero'd.
+        /// </remarks>
+        private static ReadOnlySpan<uint> RemainderUInt32Mask_16x16 => new uint[]
+        {
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+            0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+        };
     }
 }
