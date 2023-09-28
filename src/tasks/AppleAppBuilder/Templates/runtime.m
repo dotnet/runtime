@@ -376,11 +376,17 @@ mono_ios_runtime_init (int argc, char** argv)
 
     if (wait_for_debugger) {
         argc++;
-        // The caller should invoke free_managed_args to free the memory
-        argv = (char**)realloc (argv, argc * sizeof(char*));
-        argv [argc - 1] = strdup ("--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556");
+        char** copy_argv = (char**) malloc (argc * sizeof (char*));
+        memcpy (copy_argv, argv, (argc - 1) * sizeof (char*));
+        copy_argv [argc - 1] = strdup ("--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556");
+
+        mono_jit_parse_options (argc, copy_argv);
+        // The caller should invoke free_managed_args to free other items
+        free (copy_argv [argc - 1]);
+        free (copy_argv);
+    } else {
+        mono_jit_parse_options (argc, argv);
     }
-    mono_jit_parse_options (argc, argv);
 
     MonoDomain *domain = mono_jit_init_version ("dotnet.ios", "mobile");
     assert (domain);
