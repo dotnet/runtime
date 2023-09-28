@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
+using System.Text.RegularExpressions;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -40,6 +41,7 @@ namespace System.Text.Json.Serialization.Converters
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
         private const int NameCacheSizeSoftLimit = 64;
+        private const string NumericPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
 
         public override bool CanConvert(Type type)
         {
@@ -107,19 +109,14 @@ namespace System.Text.Json.Serialization.Converters
                     return default;
                 }
 
-#if !NETCOREAPP
-                string? enumString = reader.GetString();
-#endif
-                if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0 || !IsNumericString(ref reader))
-                {
 #if NETCOREAPP
-                    if (TryParseEnumCore(ref reader, options, out T value))
+                if (TryParseEnumCore(ref reader, options, out T value))
 #else
-                    if (TryParseEnumCore(enumString, options, out T value))
+                string? enumString = reader.GetString();
+                if (TryParseEnumCore(enumString, options, out T value))
 #endif
-                    {
-                        return value;
-                    }
+                {
+                    return value;
                 }
 
 #if NETCOREAPP
@@ -193,101 +190,6 @@ namespace System.Text.Json.Serialization.Converters
 
             ThrowHelper.ThrowJsonException();
             return default;
-        }
-
-        private static bool IsNumericString(ref Utf8JsonReader reader)
-        {
-            ReadOnlySpan<byte> span = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-
-            // Numeric value with Leading and trailing whitespaces should be treated as valid based on behavior of Enum.TryParse()
-#if NETCOREAPP
-            span = span.Trim((byte)' ');
-#else
-            int leftIdx = 0;
-            for (; leftIdx < span.Length; leftIdx++)
-            {
-                if (span[leftIdx] != ' ')
-                {
-                    break;
-                }
-            }
-
-            int rightIdx = span.Length - 1;
-            for (; rightIdx > leftIdx; rightIdx--)
-            {
-                if (span[rightIdx] != ' ')
-                {
-                    break;
-                }
-            }
-
-            span = span.Slice(leftIdx, rightIdx - leftIdx + 1);
-#endif
-            if (span.Length > 1 && span[0] == '+')
-            {
-                if ((uint)(span[1] - '0') > 9)
-                {
-                    return false;
-                }
-
-                // Utf8Parser.TryParse() doesn't treat "+1" as a valid unsigned numeric value but Enum.TryParse() does, so need to remove '+' to align behavior
-                span = span.Slice(1);
-            }
-
-            switch (s_enumTypeCode)
-            {
-                // Switch cases ordered by expected frequency
-                case TypeCode.Int32:
-                    if (Utf8Parser.TryParse(span, out int _, out int bytesConsumed) && span.Length == bytesConsumed)
-                    {
-                        return true;
-                    }
-                    break;
-                case TypeCode.UInt32:
-                    if (Utf8Parser.TryParse(span, out uint _, out bytesConsumed) && span.Length == bytesConsumed)
-                    {
-                        return true;
-                    }
-                    break;
-                case TypeCode.UInt64:
-                    if (Utf8Parser.TryParse(span, out ulong _, out bytesConsumed) && span.Length == bytesConsumed)
-                    {
-                        return true;
-                    }
-                    break;
-                case TypeCode.Int64:
-                    if (Utf8Parser.TryParse(span, out long _, out bytesConsumed) && span.Length == bytesConsumed)
-                    {
-                        return true;
-                    }
-                    break;
-                case TypeCode.SByte:
-                    if (Utf8Parser.TryParse(span, out sbyte _, out bytesConsumed) && span.Length == bytesConsumed)
-                    {
-                        return true;
-                    }
-                    break;
-                case TypeCode.Byte:
-                    if (Utf8Parser.TryParse(span, out byte _, out bytesConsumed) && span.Length == bytesConsumed)
-                    {
-                        return true;
-                    }
-                    break;
-                case TypeCode.Int16:
-                    if (Utf8Parser.TryParse(span, out short _, out bytesConsumed) && span.Length == bytesConsumed)
-                    {
-                        return true;
-                    }
-                    break;
-                case TypeCode.UInt16:
-                    if (Utf8Parser.TryParse(span, out ushort _, out bytesConsumed) && span.Length == bytesConsumed)
-                    {
-                        return true;
-                    }
-                    break;
-            }
-
-            return false;
         }
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
@@ -459,7 +361,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
 #if NETCOREAPP
-        private static bool TryParseEnumCore(ref Utf8JsonReader reader, JsonSerializerOptions options, out T value)
+        private bool TryParseEnumCore(ref Utf8JsonReader reader, JsonSerializerOptions options, out T value)
         {
             char[]? rentedBuffer = null;
             int bufferLength = reader.ValueLength;
@@ -471,8 +373,18 @@ namespace System.Text.Json.Serialization.Converters
             int charsWritten = reader.CopyString(charBuffer);
             ReadOnlySpan<char> source = charBuffer.Slice(0, charsWritten);
 
-            // Try parsing case sensitive first
-            bool success = Enum.TryParse(source, out T result) || Enum.TryParse(source, ignoreCase: true, out result);
+            bool success;
+            T result;
+            if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0 || !Regex.IsMatch(source, NumericPattern))
+            {
+                // Try parsing case sensitive first
+                success = Enum.TryParse(source, out result) || Enum.TryParse(source, ignoreCase: true, out result);
+            }
+            else
+            {
+                success = false;
+                result = default;
+            }
 
             if (rentedBuffer != null)
             {
@@ -484,8 +396,14 @@ namespace System.Text.Json.Serialization.Converters
             return success;
         }
 #else
-        private static bool TryParseEnumCore(string? enumString, JsonSerializerOptions _, out T value)
+        private bool TryParseEnumCore(string? enumString, JsonSerializerOptions _, out T value)
         {
+            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0 && Regex.IsMatch(enumString, NumericPattern))
+            {
+                value = default;
+                return false;
+            }
+
             // Try parsing case sensitive first
             bool success = Enum.TryParse(enumString, out T result) || Enum.TryParse(enumString, ignoreCase: true, out result);
             value = result;
