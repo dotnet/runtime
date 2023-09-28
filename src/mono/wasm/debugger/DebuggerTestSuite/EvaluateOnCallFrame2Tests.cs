@@ -451,7 +451,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateMethodWithDefaultParam() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.DefaultParamMethods", "Evaluate", 3, "DebuggerTests.DefaultParamMethods.Evaluate",
+            $"DebuggerTests.DefaultParamMethods", "Evaluate", 5, "DebuggerTests.DefaultParamMethods.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.DefaultParamMethods:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -498,6 +498,10 @@ namespace DebuggerTests
                     ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
                     ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
                     ("test.GetDefaultAndRequiredParam(number)", TNumber(126)),
+                    ("test.GetDefaultAndRequiredParam(DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.StaticField)", TNumber(23)),
+                    ("test.GetDefaultAndRequiredParam(EvaluateStaticFieldsInInstanceClass.StaticField)", TNumber(73)),
+                    ("test.GetDefaultAndRequiredParam(instance.StaticField)", TNumber(73)),
+                    ("test.GetDefaultAndRequiredParam(instance2.propInt)", TNumber(15)),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))

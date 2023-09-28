@@ -1980,6 +1980,8 @@ namespace DebuggerTests
         {
             var test = new TestClass();
             int number = 123;
+            EvaluateStaticFieldsInInstanceClass instance = new();
+            PrimitiveTypeMethods.TestClass instance2 = new();
         }
     }
 
