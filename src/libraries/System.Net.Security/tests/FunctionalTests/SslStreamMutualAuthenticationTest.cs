@@ -14,6 +14,7 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    [PlatformSpecific(TestPlatforms.Windows)]
     public class SslStreamMutualAuthenticationTest : IDisposable
     {
         private readonly X509Certificate2 _clientCertificate;
@@ -86,9 +87,6 @@ namespace System.Net.Security.Tests
                     case ClientCertSource.SelectionCallback:
                         clientOptions.LocalCertificateSelectionCallback = ClientCertSelectionCallback;
                         break;
-//                    case ClientCertSource.CertificateContext:
-//                        clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(_clientCertificate, new());
-//                        break;
                 }
 
                 Task t2 = client.AuthenticateAsClientAsync(clientOptions);

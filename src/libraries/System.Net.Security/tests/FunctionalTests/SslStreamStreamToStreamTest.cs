@@ -72,12 +72,6 @@ namespace System.Net.Security.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")]
         public async Task SslStream_StreamToStream_Authentication_Success(X509Certificate serverCert = null, X509Certificate clientCert = null)
         {
-            if (PlatformDetection.IsWindows10Version20348OrGreater)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58927")]
-                throw new SkipTestException("Unstable on Windows 11");
-            }
-
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, false, AllowAnyServerCertificate))
             using (var server = new SslStream(stream2, false, delegate { return true; }))
