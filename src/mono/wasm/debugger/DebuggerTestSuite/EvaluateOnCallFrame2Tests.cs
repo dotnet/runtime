@@ -451,55 +451,56 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateMethodWithDefaultParam() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "DebuggerTests.DefaultParamMethods.Evaluate",
+            $"DebuggerTests.DefaultParamMethods", "Evaluate", 3, "DebuggerTests.DefaultParamMethods.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.DefaultParamMethods:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
-                   ("test.GetByte()", TNumber(1)),
-                   ("test.GetSByte()", TNumber(1)),
-                   ("test.GetByteNullable()", TNumber(1)),
-                   ("test.GetSByteNullable()", TNumber(1)),
+                    ("test.GetByte()", TNumber(1)),
+                    ("test.GetSByte()", TNumber(1)),
+                    ("test.GetByteNullable()", TNumber(1)),
+                    ("test.GetSByteNullable()", TNumber(1)),
 
-                   ("test.GetInt16()", TNumber(1)),
-                   ("test.GetUInt16()", TNumber(1)),
-                   ("test.GetInt16Nullable()", TNumber(1)),
-                   ("test.GetUInt16Nullable()", TNumber(1)),
+                    ("test.GetInt16()", TNumber(1)),
+                    ("test.GetUInt16()", TNumber(1)),
+                    ("test.GetInt16Nullable()", TNumber(1)),
+                    ("test.GetUInt16Nullable()", TNumber(1)),
 
-                   ("test.GetInt32()", TNumber(1)),
-                   ("test.GetUInt32()", TNumber(1)),
-                   ("test.GetInt32Nullable()", TNumber(1)),
-                   ("test.GetUInt32Nullable()", TNumber(1)),
+                    ("test.GetInt32()", TNumber(1)),
+                    ("test.GetUInt32()", TNumber(1)),
+                    ("test.GetInt32Nullable()", TNumber(1)),
+                    ("test.GetUInt32Nullable()", TNumber(1)),
 
-                   ("test.GetInt64()", TNumber(1)),
-                   ("test.GetUInt64()", TNumber(1)),
-                   ("test.GetInt64Nullable()", TNumber(1)),
-                   ("test.GetUInt64Nullable()", TNumber(1)),
+                    ("test.GetInt64()", TNumber(1)),
+                    ("test.GetUInt64()", TNumber(1)),
+                    ("test.GetInt64Nullable()", TNumber(1)),
+                    ("test.GetUInt64Nullable()", TNumber(1)),
 
-                   ("test.GetChar()", TChar('T')),
-                   ("test.GetCharNullable()", TChar('T')),
-                   ("test.GetUnicodeChar()", TChar('\u0105')),
+                    ("test.GetChar()", TChar('T')),
+                    ("test.GetCharNullable()", TChar('T')),
+                    ("test.GetUnicodeChar()", TChar('\u0105')),
 
-                   ("test.GetString()", TString("1.23")),
-                   ("test.GetUnicodeString()", TString("\u017C\u00F3\u0142\u0107")),
-                   ("test.GetString(null)", TString(null)),
-                   ("test.GetStringNullable()", TString("1.23")),
+                    ("test.GetString()", TString("1.23")),
+                    ("test.GetUnicodeString()", TString("\u017C\u00F3\u0142\u0107")),
+                    ("test.GetString(null)", TString(null)),
+                    ("test.GetStringNullable()", TString("1.23")),
 
-                   ("test.GetSingle()", TNumber("1.23", isDecimal: true)),
-                   ("test.GetDouble()",  TNumber("1.23", isDecimal: true)),
-                   ("test.GetSingleNullable()",  TNumber("1.23", isDecimal: true)),
-                   ("test.GetDoubleNullable()",  TNumber("1.23", isDecimal: true)),
+                    ("test.GetSingle()", TNumber("1.23", isDecimal: true)),
+                    ("test.GetDouble()",  TNumber("1.23", isDecimal: true)),
+                    ("test.GetSingleNullable()",  TNumber("1.23", isDecimal: true)),
+                    ("test.GetDoubleNullable()",  TNumber("1.23", isDecimal: true)),
 
-                   ("test.GetBool()", TBool(true)),
-                   ("test.GetBoolNullable()", TBool(true)),
-                   ("test.GetNull()", TBool(true)),
+                    ("test.GetBool()", TBool(true)),
+                    ("test.GetBoolNullable()", TBool(true)),
+                    ("test.GetNull()", TBool(true)),
 
-                   ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
-                   ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
-                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
-                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
-                   ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))
+                    ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
+                    ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
+                    ("test.GetDefaultAndRequiredParam(number)", TNumber(126)),
+                    ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
+                    ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
+                    ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))
                    );
 
                 var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false);

@@ -1979,6 +1979,7 @@ namespace DebuggerTests
         public static void Evaluate()
         {
             var test = new TestClass();
+            int number = 123;
         }
     }
 
