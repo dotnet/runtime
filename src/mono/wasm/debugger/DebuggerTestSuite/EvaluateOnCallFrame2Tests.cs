@@ -497,11 +497,6 @@ namespace DebuggerTests
 
                     ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
                     ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
-                    ("test.GetDefaultAndRequiredParam(number)", TNumber(126)),
-                    ("test.GetDefaultAndRequiredParam(DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.StaticField)", TNumber(23)),
-                    ("test.GetDefaultAndRequiredParam(EvaluateStaticFieldsInInstanceClass.StaticField)", TNumber(73)),
-                    ("test.GetDefaultAndRequiredParam(instance.StaticField)", TNumber(73)),
-                    ("test.GetDefaultAndRequiredParam(instance2.propInt)", TNumber(15)),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))
@@ -747,7 +742,7 @@ namespace DebuggerTests
                 await EvaluateOnCallFrameAndCheck(id,
                    ("s_valueTypeEnum.ToString()", TString("no")),
                    ("mc.valueTypeEnum.ToString()", TString("yes"))
-                   // ("mc.valueTypeEnum.HasFlag(SampleEnum.no)", TBool(true)) // ToDo: https://github.com/dotnet/runtime/issues/92262
+                //    ("mc.valueTypeEnum.HasFlag(SampleEnum.no)", TBool(true)) // ToDo: https://github.com/dotnet/runtime/issues/92262
                 );
            });
 
@@ -767,6 +762,25 @@ namespace DebuggerTests
                    ("f[f.numArray[j], f.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
                    ("f[f.numArray[f.numList[0]], f.numArray[i]]", TNumber("3")),
                    ("f[f.numArray[f.numList[0]], f.numArray[f.numArray[i]]]", TNumber("4"))
+                ); 
+           });
+
+        
+        [Fact]
+        public async Task EvaluateMethodsWithObjectParams() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.FastCheck", "run", 6, "DebuggerTests.FastCheck.run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.FastCheck:run'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("mc.Method(number)", TNumber(-123)),
+                    ("mc.Method(ic)", TNumber(123)),
+                    ("mc.Method(ic.number)", TNumber(123)),
+                    ("mc.Method(DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.StaticField)", TNumber(20)),
+                    ("mc.Method(EvaluateStaticFieldsInInstanceClass.StaticField)", TNumber(70)),
+                    ("mc.Method(instance.StaticField)", TNumber(70)),
+                    ("mc.Method(instance2.propInt)", TNumber(12))
                 ); 
            });
     }
