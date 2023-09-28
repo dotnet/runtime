@@ -47,7 +47,9 @@ jobs:
         value: ''
 
     condition: ${{ parameters.condition }}
+
     steps:
+
     - task: UseDotNet@2
       # This should match what jitutils YML uses to build.
       displayName: 'Install .NET SDK'
@@ -56,12 +58,10 @@ jobs:
         version: '6.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -r $(Build.SourcesDirectory) -o $(osGroup) -a $(archType) $(LinuxCrossArg)
-        value: ''
 
-    condition: ${{ parameters.condition }}
-    steps:
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -r $(Build.SourcesDirectory) -o $(osGroup) -a $(archType) $(LinuxCrossArg)
       displayName: Run jitformat.py
+
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
       inputs:
