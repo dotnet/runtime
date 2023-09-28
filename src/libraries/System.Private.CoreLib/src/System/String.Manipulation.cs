@@ -1274,7 +1274,7 @@ namespace System
                         Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, offset);
                         Vector256<byte> cmp = (Vector256.Equals(vector, v1)).AsByte();
 
-                        if (!Vector256.EqualsAll(cmp, Vector256<byte>.Zero))
+                        if (cmp != Vector256<byte>.Zero)
                         {
                             // Skip every other bit
                             uint mask = cmp.ExtractMostSignificantBits() & 0x55555555;
@@ -1298,7 +1298,7 @@ namespace System
                         Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
                         Vector128<byte> cmp = (Vector128.Equals(vector, v1)).AsByte();
 
-                        if (!Vector128.EqualsAll(cmp, Vector128<byte>.Zero))
+                        if (cmp != Vector128<byte>.Zero)
                         {
                             // Skip every other bit
                             uint mask = cmp.ExtractMostSignificantBits() & 0x5555;
@@ -2005,7 +2005,7 @@ namespace System
                     Vector512<ushort> v3Eq = Vector512.Equals(vector, v3);
                     Vector512<byte> cmp = (v1Eq | v2Eq | v3Eq).AsByte();
 
-                    if (!Vector512.EqualsAll(cmp, Vector512<byte>.Zero))
+                    if (cmp != Vector512<byte>.Zero)
                     {
                         // Skip every other bit
                         ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555;
@@ -2034,7 +2034,7 @@ namespace System
                     Vector256<ushort> v3Eq = Vector256.Equals(vector, v3);
                     Vector256<byte> cmp = (v1Eq | v2Eq | v3Eq).AsByte();
 
-                    if (!Vector256.EqualsAll(cmp, Vector256<byte>.Zero))
+                    if (cmp != Vector256<byte>.Zero)
                     {
                         // Skip every other bit
                         uint mask = cmp.ExtractMostSignificantBits() & 0x55555555;
@@ -2063,7 +2063,7 @@ namespace System
                     Vector128<ushort> v3Eq = Vector128.Equals(vector, v3);
                     Vector128<byte> cmp = (v1Eq | v2Eq | v3Eq).AsByte();
 
-                    if (!Vector128.EqualsAll(cmp, Vector128<byte>.Zero))
+                    if (cmp != Vector128<byte>.Zero)
                     {
                         // Skip every other bit
                         uint mask = cmp.ExtractMostSignificantBits() & 0x5555;
