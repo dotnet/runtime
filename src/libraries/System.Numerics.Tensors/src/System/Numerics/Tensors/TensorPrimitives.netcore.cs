@@ -1404,22 +1404,25 @@ namespace System.Numerics.Tensors
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe Vector128<float> LoadRemainderMaskSingleVector128(int validItems) =>
-            Vector128.LoadUnsafe(
-                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
-                (uint)((validItems * 16) + 12)); // last four floats in the row
+            Vector128.ConditionalSelect(
+                Vector128.LessThan(Vector128.Create(3, 2, 1, 0), Vector128.Create(validItems)).AsSingle(),
+                Vector128<float>.AllBitsSet,
+                Vector128<float>.Zero);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe Vector256<float> LoadRemainderMaskSingleVector256(int validItems) =>
-            Vector256.LoadUnsafe(
-                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
-                (uint)((validItems * 16) + 8)); // last eight floats in the row
+            Vector256.ConditionalSelect(
+                Vector256.LessThan(Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0), Vector256.Create(validItems)).AsSingle(),
+                Vector256<float>.AllBitsSet,
+                Vector256<float>.Zero);
 
 #if NET8_0_OR_GREATER
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe Vector512<float> LoadRemainderMaskSingleVector512(int validItems) =>
-            Vector512.LoadUnsafe(
-                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
-                (uint)(validItems * 16)); // all sixteen floats in the row
+            Vector512.ConditionalSelect(
+                Vector512.LessThan(Vector512.Create(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0), Vector512.Create(validItems)).AsSingle(),
+                Vector512<float>.AllBitsSet,
+                Vector512<float>.Zero);
 #endif
 
         private readonly struct AddOperator : IAggregationOperator

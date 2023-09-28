@@ -625,8 +625,8 @@ namespace System.Numerics.Tensors
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref Vector<float> AsVector(ref float start, int offset) =>
-            ref Unsafe.As<float, Vector<float>>(
+        private static ref Vector<T> AsVector<T>(ref T start, int offset = 0) where T : unmanaged =>
+            ref Unsafe.As<T, Vector<T>>(
                 ref Unsafe.Add(ref start, offset));
 
         private static unsafe bool IsNegative(float f) => *(int*)&f < 0;
@@ -640,10 +640,13 @@ namespace System.Numerics.Tensors
         {
             Debug.Assert(Vector<float>.Count is 4 or 8 or 16);
 
-            return AsVector(
-                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
-                (validItems * 16) + (16 - Vector<float>.Count));
+            return Vector.ConditionalSelect(
+                (Vector<float>)Vector.GreaterThan(AsVector(ref MemoryMarshal.GetReference<int>(s_0through15)), new Vector<int>(Vector<int>.Count - 1 - validItems)),
+                ~Vector<float>.Zero,
+                Vector<float>.Zero);
         }
+
+        private static readonly int[] s_0through15 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
         private readonly struct AddOperator : IAggregationOperator
         {
