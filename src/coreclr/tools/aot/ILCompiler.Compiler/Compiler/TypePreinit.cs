@@ -755,15 +755,17 @@ namespace ILCompiler
 
                     case ILOpcode.conv_i:
                     case ILOpcode.conv_u:
+                    case ILOpcode.conv_i1:
                     case ILOpcode.conv_i2:
                     case ILOpcode.conv_i4:
                     case ILOpcode.conv_i8:
+                    case ILOpcode.conv_u1:
                     case ILOpcode.conv_u2:
                     case ILOpcode.conv_u4:
                     case ILOpcode.conv_u8:
                         {
                             StackEntry popped = stack.Pop();
-                            if (popped.ValueKind == StackValueKind.Int32)
+                            if (popped.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
                             {
                                 int val = popped.Value.AsInt32();
                                 switch (opcode)
@@ -776,14 +778,26 @@ namespace ILCompiler
                                         stack.Push(StackValueKind.NativeInt,
                                             context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((uint)val) : ValueTypeValue.FromInt32(val));
                                         break;
+                                    case ILOpcode.conv_i1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
+                                        break;
                                     case ILOpcode.conv_i2:
                                         stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
+                                        break;
+                                    case ILOpcode.conv_i4:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(val));
                                         break;
                                     case ILOpcode.conv_i8:
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
                                         break;
+                                    case ILOpcode.conv_u1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
+                                        break;
                                     case ILOpcode.conv_u2:
                                         stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
+                                        break;
+                                    case ILOpcode.conv_u4:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(val));
                                         break;
                                     case ILOpcode.conv_u8:
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((uint)val));
@@ -792,20 +806,7 @@ namespace ILCompiler
                                         return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
                             }
-                            else if (popped.ValueKind == StackValueKind.NativeInt)
-                            {
-                                long val = context.Target.PointerSize == 8 ? popped.Value.AsInt64() : popped.Value.AsInt32();
-                                switch (opcode)
-                                {
-                                    case ILOpcode.conv_i4:
-                                    case ILOpcode.conv_u4:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
-                                        break;
-                                    default:
-                                        return Status.Fail(methodIL.OwningMethod, opcode);
-                                }
-                            }
-                            else if (popped.ValueKind == StackValueKind.Int64)
+                            else if (popped.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
                             {
                                 long val = popped.Value.AsInt64();
                                 switch (opcode)
@@ -814,6 +815,30 @@ namespace ILCompiler
                                     case ILOpcode.conv_i:
                                         stack.Push(StackValueKind.NativeInt,
                                             context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(val) : ValueTypeValue.FromInt32((int)val));
+                                        break;
+                                    case ILOpcode.conv_i1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
+                                        break;
+                                    case ILOpcode.conv_i2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
+                                        break;
+                                    case ILOpcode.conv_i4:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
+                                        break;
+                                    case ILOpcode.conv_i8:
+                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
+                                        break;
+                                    case ILOpcode.conv_u1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
+                                        break;
+                                    case ILOpcode.conv_u2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
+                                        break;
+                                    case ILOpcode.conv_u4:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
+                                        break;
+                                    case ILOpcode.conv_u8:
+                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
                                         break;
                                     default:
                                         return Status.Fail(methodIL.OwningMethod, opcode);
