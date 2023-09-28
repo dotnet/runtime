@@ -434,6 +434,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\RangeByteSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\RangeCharSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticCharSearchValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Latin1CharSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SearchValues.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\SearchValuesDebugView.cs" />

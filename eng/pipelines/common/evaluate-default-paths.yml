@@ -189,6 +189,8 @@ jobs:
       - eng/Version.Details.xml
       - eng/Versions.props
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - eng/testing/tests.browser.targets
+      - eng/testing/tests.was*.targets
       - eng/testing/workloads-testing.targets
       - src/installer/pkg/sfx/Microsoft.NETCore.App/*
       - src/libraries/sendtohelix*

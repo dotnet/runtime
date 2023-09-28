@@ -2387,15 +2387,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case9/**">
             <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case04/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case05/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/RefFields/Validate/**">
             <Issue>expected failure: unsupported type with ref field fails at AOT compile time, not runtime</Issue>
         </ExcludeList>
@@ -3698,6 +3689,12 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/**">
             <Issue>System.Diagnostics.Process is not supported</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
         </ExcludeList>
     </ItemGroup>
 

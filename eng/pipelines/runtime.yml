@@ -19,6 +19,11 @@ trigger:
     - LICENSE.TXT
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
+    - eng/pipelines/coreclr/perf*yml
+    - eng/pipelines/coreclr/templates/build-perf*
+    - eng/pipelines/coreclr/templates/perf-job.yml
+    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/testing/performance/*
 
 schedules:
   - cron: "0 8,20 * * *" # run at 8:00 and 20:00 (UTC) which is 00:00 and 12:00 (PST).
@@ -820,7 +825,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+                      /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -839,7 +844,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAOT
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+                      /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1358,7 +1363,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAot_RuntimeTests
             runtimeVariant: llvmaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             timeoutInMinutes: 180
 
             condition: >-
