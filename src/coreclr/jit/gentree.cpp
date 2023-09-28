@@ -8330,7 +8330,7 @@ void Compiler::gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlag
     }
     if ((indirFlags & GTF_IND_VOLATILE) != 0)
     {
-        indir->gtFlags |= GTF_ORDER_SIDEEFF;
+        indir->SetHasOrderingSideEffect();
     }
 }
 

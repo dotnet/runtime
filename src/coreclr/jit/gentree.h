@@ -2158,6 +2158,12 @@ public:
         gtFlags |= sourceFlags;
     }
 
+    void SetHasOrderingSideEffect()
+    {
+        assert(OperSupportsOrderingSideEffect());
+        gtFlags |= GTF_ORDER_SIDEEFF;
+    }
+
     inline bool IsCnsIntOrI() const;
 
     inline bool IsIntegralConst() const;
