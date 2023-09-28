@@ -451,7 +451,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateMethodWithDefaultParam() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.DefaultParamMethods", "Evaluate", 5, "DebuggerTests.DefaultParamMethods.Evaluate",
+            $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "DebuggerTests.DefaultParamMethods.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.DefaultParamMethods:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
