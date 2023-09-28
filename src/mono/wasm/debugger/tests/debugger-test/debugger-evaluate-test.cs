@@ -547,6 +547,8 @@ namespace DebuggerTests
 
             public double this[int key1, double key2] => key1 + key2;
             public string this[char key1, string key2, string key3] => $"{key1}-{key2}-{key3}";
+
+            public InlineArray.Arr1 inlineArr;
         }
 
         public struct StructWithIndexers
@@ -561,7 +563,7 @@ namespace DebuggerTests
             public int this[Indexer indexer] => indexer.index;
             public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
 
-            // public InlineArray.Arr1 inlineArr; // ToDo: Inline Arrays with Indexers fail on debugger side
+            public InlineArray.Arr1 inlineArr;
         }
 
         public static void EvaluateLocals()
