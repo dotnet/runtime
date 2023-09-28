@@ -3177,6 +3177,56 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe void StorePairScalarNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            ///   A64: ST2 { Vn.16B, Vn+1.16B }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.16B, Vn+1.16B }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2(sbyte* address, (Vector128<sbyte> Value1, Vector128<sbyte> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.8H, Vn+1.8H }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2(short* address, (Vector128<short> Value1, Vector128<short> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.8H, Vn+1.8H }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2(ushort* address, (Vector128<ushort> Value1, Vector128<ushort> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2(int* address, (Vector128<int> Value1, Vector128<int> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2(uint* address, (Vector128<uint> Value1, Vector128<uint> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///    A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2(long* address, (Vector128<long> Value1, Vector128<long> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2(ulong* address, (Vector128<ulong> Value1, Vector128<ulong> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2(float* address, (Vector128<float> Value1, Vector128<float> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe void StoreVector128x2(double* address, (Vector128<double> Value1, Vector128<double> Value2) value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FSUB Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -3746,56 +3796,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: TBX Vd.16B, {Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B}, Vm.16B
             /// </summary>
             public static Vector128<sbyte> VectorTableLookupExtension(Vector128<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   A64: ST2 { Vn.16B, Vn+1.16B }, [Xn]
-            /// </summary>
-            public static unsafe void StoreVector128x2(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2) value) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   A64: ST2 { Vn.16B, Vn+1.16B }, [Xn]
-            /// </summary>
-            public static unsafe void StoreVector128x2(sbyte* address, (Vector128<sbyte> Value1, Vector128<sbyte> Value2) value) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   A64: ST2 { Vn.8H, Vn+1.8H }, [Xn]
-            /// </summary>
-            public static unsafe void StoreVector128x2(short* address, (Vector128<short> Value1, Vector128<short> Value2) value) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   A64: ST2 { Vn.8H, Vn+1.8H }, [Xn]
-            /// </summary>
-            public static unsafe void StoreVector128x2(ushort* address, (Vector128<ushort> Value1, Vector128<ushort> Value2) value) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]
-            /// </summary>
-            public static unsafe void StoreVector128x2(int* address, (Vector128<int> Value1, Vector128<int> Value2) value) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]
-            /// </summary>
-            public static unsafe void StoreVector128x2(uint* address, (Vector128<uint> Value1, Vector128<uint> Value2) value) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///    A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]
-            /// </summary>
-            public static unsafe void StoreVector128x2(long* address, (Vector128<long> Value1, Vector128<long> Value2) value) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]
-            /// </summary>
-            public static unsafe void StoreVector128x2(ulong* address, (Vector128<ulong> Value1, Vector128<ulong> Value2) value) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   A64: ST2 { Vn.4S, Vn+1.4S }, [Xn]
-            /// </summary>
-            public static unsafe void StoreVector128x2(float* address, (Vector128<float> Value1, Vector128<float> Value2) value) { throw new PlatformNotSupportedException(); }
-
-            /// <summary>
-            ///   A64: ST2 { Vn.2D, Vn+1.2D }, [Xn]
-            /// </summary>
-            public static unsafe void StoreVector128x2(double* address, (Vector128<double> Value1, Vector128<double> Value2) value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint8x8_t vzip2_u8(uint8x8_t a, uint8x8_t b)
