@@ -19,6 +19,11 @@ namespace System.Numerics.Tensors
         /// <param name="source">The source span from which to copy values.</param>
         /// <param name="destination">The destination span into which the converted values should be written.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = (Half)<paramref name="source" />[i]</c>.
+        /// </para>
+        /// </remarks>
         public static void ConvertToHalf(ReadOnlySpan<float> source, Span<Half> destination)
         {
             if (source.Length > destination.Length)
@@ -39,6 +44,11 @@ namespace System.Numerics.Tensors
         /// <param name="source">The source span from which to copy values.</param>
         /// <param name="destination">The destination span into which the converted values should be written.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = (float)<paramref name="source" />[i]</c>.
+        /// </para>
+        /// </remarks>
         public static void ConvertToSingle(ReadOnlySpan<Half> source, Span<float> destination)
         {
             if (source.Length > destination.Length)
