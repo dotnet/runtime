@@ -62,16 +62,32 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
           - windows_x86
           - windows_x64
           - windows_arm64
           jobParameters:
+            buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+            nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
-            signBinaries: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
+            postBuildSteps:
+            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+              parameters:
+                basePath: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+                isOfficialBuild: ${{ variables.isOfficialBuild }}
+                timeoutInMinutes: 30
+            # Now that we've signed the diagnostic files, do the rest of the build.
+            - template: /eng/pipelines/common/templates/global-build-step.yml
+              parameters:
+                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
+
+            # Upload the results.
+            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              parameters:
+                name: $(osGroup)$(osSubgroup)_$(archType)
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -113,7 +129,7 @@ extends:
               # Upload the results.
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
-                  name: CoreCLR_$(osGroup)$(osSubgroup)_$(archType)
+                  name: $(osGroup)$(osSubgroup)_$(archType)
 
       #
       # Build CoreCLR and upload CoreCLR runtime for CrossDac packaging
@@ -169,7 +185,7 @@ extends:
               # Upload the results.
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
-                  name: CoreCLR_$(osGroup)$(osSubgroup)_$(archType)
+                  name: $(osGroup)$(osSubgroup)_$(archType)
             extraVariablesTemplates:
               - template: /eng/pipelines/coreclr/templates/crossdac-hostarch.yml
 
@@ -481,24 +497,6 @@ extends:
                     name: MonoRuntimePacks
 
       #
-      # Build libraries using live CoreLib from CoreCLR
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
-          buildConfig: Release
-          platforms:
-          - windows_x86
-          - windows_x64
-          - windows_arm64
-          jobParameters:
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            liveRuntimeBuildConfig: release
-            # Official builds don't run tests, locally or on Helix
-            runTests: false
-            useHelix: false
-
-      #
       # Build libraries AllConfigurations for packages
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -530,22 +528,6 @@ extends:
                 parameters:
                   name: SourceBuildPackages
             timeoutInMinutes: 95
-
-      #
-      # Installer Build
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
-          buildConfig: Release
-          jobParameters:
-            liveRuntimeBuildConfig: release
-            liveLibrariesBuildConfig: Release
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-          platforms:
-          - windows_x86
-          - windows_x64
-          - windows_arm64
 
       #
       # Build PGO Instrumented CoreCLR Release
@@ -598,9 +580,9 @@ extends:
             - Build_tvossimulator_arm64_release_AllSubsets_Mono
             - Build_tvossimulator_x64_release_AllSubsets_Mono
             - Build_windows_x64_release_CrossAOT_Mono
-            - installer_coreclr__windows_x64_Release_
-            - installer_coreclr__windows_x86_Release_
-            - installer_coreclr__windows_arm64_Release_
+            - Build_windows_x64_release_AllSubsets_CoreCLR
+            - Build_windows_x86_release_AllSubsets_CoreCLR
+            - Build_windows_arm64_release_AllSubsets_CoreCLR
 
     - ${{ if eq(variables.isOfficialBuild, true) }}:
       - template: /eng/pipelines/official/stages/publish.yml
