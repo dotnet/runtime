@@ -545,7 +545,7 @@ namespace System.Numerics.Tensors
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <returns>The L2 norm.</returns>
         public static float Norm(ReadOnlySpan<float> x) => // BLAS1: nrm2
-            MathF.Sqrt(Aggregate<SquaredOperator, AddOperator>(0f, x));
+            MathF.Sqrt(SumOfSquares(x));
 
         /// <summary>Computes the product of all elements in <paramref name="x"/>.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
