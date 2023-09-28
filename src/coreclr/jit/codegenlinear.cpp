@@ -29,6 +29,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void CodeGen::genInitializeRegisterState()
 {
     // Initialize the spill tracking logic
+    // This is a bogus comment to test no need for formatting
 
     regSet.rsSpillBeg();
 
