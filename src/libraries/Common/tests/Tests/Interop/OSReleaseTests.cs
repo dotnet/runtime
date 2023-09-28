@@ -47,15 +47,9 @@ namespace Common.Tests
             Assert.Null(name);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess)), PlatformSpecific(TestPlatforms.Linux)]
         public void GetPrettyName_CannotRead_ReturnsNull()
         {
-            // This test only applies for non-root users.
-            if (Environment.IsPrivilegedProcess)
-            {
-                return;
-            }
-
             string path = CreateTestFile();
             File.SetUnixFileMode(path, UnixFileMode.None);
 
@@ -65,15 +59,9 @@ namespace Common.Tests
             Assert.Null(name);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess)), PlatformSpecific(TestPlatforms.Linux)]
         public void GetPrettyName_NonePrivileges_CanRead_ReturnsNull()
         {
-            // This test only applies for root users.
-            if (!Environment.IsPrivilegedProcess)
-            {
-                return;
-            }
-
             string path = CreateTestFile();
             File.SetUnixFileMode(path, UnixFileMode.None);
 
