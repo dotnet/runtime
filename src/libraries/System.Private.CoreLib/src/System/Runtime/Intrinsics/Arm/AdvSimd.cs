@@ -1797,6 +1797,56 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadPairVector128NonTemporal(ulong* address) => LoadPairVector128NonTemporal(address);
 
             /// <summary>
+            ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) LoadVector128x2(byte* address) => LoadVector128x2(address);
+
+            /// <summary>
+            ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) LoadVector128x2(sbyte* address) => LoadVector128x2(address);
+
+            /// <summary>
+            ///   A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) LoadVector128x2(short* address) => LoadVector128x2(address);
+
+            /// <summary>
+            ///   A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2) LoadVector128x2(ushort* address) => LoadVector128x2(address);
+
+            /// <summary>
+            ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2) LoadVector128x2(int* address) => LoadVector128x2(address);
+
+            /// <summary>
+            ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2) LoadVector128x2(uint* address) => LoadVector128x2(address);
+
+            /// <summary>
+            ///   A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2) LoadVector128x2(long* address)  => LoadVector128x2(address);
+
+            /// <summary>
+            ///   A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2) LoadVector128x2(ulong* address) => LoadVector128x2(address);
+
+            /// <summary>
+            ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2) LoadVector128x2(float* address) => LoadVector128x2(address);
+
+            /// <summary>
+            ///   A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2) LoadVector128x2(double* address) => LoadVector128x2(address);
+
+            /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FMAX Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -8323,6 +8373,41 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 Vt.2D, [Xn]
         /// </summary>
         public static unsafe Vector128<ulong> LoadVector128(ulong* address) => LoadVector128(address);
+
+        /// <summary>
+        ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) LoadVector64x2(byte* address) => LoadVector64x2(address);
+
+        /// <summary>
+        ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) LoadVector64x2(sbyte* address) => LoadVector64x2(address);
+
+        /// <summary>
+        ///   A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) LoadVector64x2(short* address) => LoadVector64x2(address);
+
+        /// <summary>
+        ///   A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2) LoadVector64x2(ushort* address) => LoadVector64x2(address);
+
+        /// <summary>
+        ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadVector64x2(int* address) => LoadVector64x2(address);
+
+        /// <summary>
+        ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadVector64x2(uint* address) => LoadVector64x2(address);
+
+        /// <summary>
+        ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadVector64x2(float* address) => LoadVector64x2(address);
 
         /// <summary>
         /// uint8x8_t vmax_u8 (uint8x8_t a, uint8x8_t b)
