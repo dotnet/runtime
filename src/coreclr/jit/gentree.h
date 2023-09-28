@@ -1863,7 +1863,6 @@ public:
 
     bool OperSupportsOrderingSideEffect() const;
 
-    // Compute effect flags that only pertain to this node excluding its children.
     GenTreeFlags OperEffects(Compiler* comp);
 
     unsigned GetScaleIndexMul();
@@ -7188,7 +7187,9 @@ struct GenTreeIndir : public GenTreeOp
     // True if this indirection is invariant.
     bool IsInvariantLoad() const
     {
-        return (gtFlags & GTF_IND_INVARIANT) != 0;
+        bool isInvariant = (gtFlags & GTF_IND_INVARIANT) != 0;
+        assert(!isInvariant || OperIs(GT_IND, GT_BLK));
+        return isInvariant;
     }
 
 #if DEBUGGABLE_GENTREE

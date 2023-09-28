@@ -7036,7 +7036,13 @@ bool GenTree::OperMayThrow(Compiler* comp)
 //    True if the given operator requires GTF_GLOB_REF
 //
 // Remarks:
-//    Only valid after local morph.
+//    Globally visible stores and loads, as well as some equivalently modeled
+//    operations, require the GLOB_REF flag to be set on the node.
+//
+//    This function is only valid after local morph when we know which locals
+//    are address exposed, and the flag in gtFlags is only kept valid after
+//    morph has run. Before local morph the property can be conservatively
+//    approximated for locals with lvHasLdAddrOp.
 //
 bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
 {
@@ -7071,6 +7077,9 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
 
         case GT_CALL:
             return AsCall()->HasSideEffects(comp, /* ignoreExceptions */ true);
+
+        case GT_ALLOCOBJ:
+            return AsAllocObj()->gtHelperHasSideEffects;
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
@@ -7121,9 +7130,6 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_CATCH_ARG:
-#if defined(FEATURE_HW_INTRINSICS)
-        case GT_HWINTRINSIC:
-#endif
             return true;
         default:
             return false;
@@ -7164,7 +7170,7 @@ GenTreeFlags GenTree::OperEffects(Compiler* comp)
         flags &= ~GTF_GLOB_REF;
     }
 
-    if ((flags & GTF_ORDER_SIDEEFF) != 0 && !OperSupportsOrderingSideEffect())
+    if (((flags & GTF_ORDER_SIDEEFF) != 0) && !OperSupportsOrderingSideEffect())
     {
         flags &= ~GTF_ORDER_SIDEEFF;
     }
@@ -25492,8 +25498,8 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
 }
 
 //------------------------------------------------------------------------------
-// OperRequiresCallFlag : Check whether the operation requires GTF_GLOB_REF flag regardless
-//                        of the children's flags.
+// OperRequiresGlobRefFlag : Check whether the operation requires GTF_GLOB_REF
+//                           flag regardless of the children's flags.
 //
 bool GenTreeHWIntrinsic::OperRequiresGlobRefFlag() const
 {
