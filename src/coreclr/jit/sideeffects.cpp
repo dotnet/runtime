@@ -575,6 +575,25 @@ bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, bool stric
 }
 
 //------------------------------------------------------------------------
+// SideEffectSet::InterferesWith:
+//    Returns true if the side effects in this set interfere with the side
+//    effects for the given node.
+//
+//    A side effect set interferes with a given node iff it interferes
+//    with the side effect set of the node.
+//
+// Arguments:
+//    compiler - The compiler context.
+//    node - The node in question.
+//    overriddenSideEffects - Side effect flags to use in place of the ones from the node
+//    strict - True if the analysis should be strict as described above.
+//
+bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, unsigned overriddenSideEffects, bool strict) const
+{
+    return InterferesWith(overriddenSideEffects, AliasSet::NodeInfo(compiler, node), strict);
+}
+
+//------------------------------------------------------------------------
 // SideEffectSet::Clear:
 //    Clears the current side effect set.
 //

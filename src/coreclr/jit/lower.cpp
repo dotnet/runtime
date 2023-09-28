@@ -7935,7 +7935,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
                 if (addr->OperIsLocal() && GenTree::Compare(addr, prevAddr))
                 {
                     JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
-                            Compiler::dspTreeID(addr), Compiler::dspTreeID(prevAddr), offs1, offs2);
+                            Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), offs1, offs2);
                     if (abs(offs1 - offs2) == genTypeSize(ind))
                     {
                         JITDUMP("  ..and they are amenable to ldp optimization\n");
@@ -7995,66 +7995,106 @@ bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
         return false;
     }
 
-    JITDUMP("  ..and it is within range. Range:\n");
-    DISPRANGE(LIR::ReadOnlyRange(prevIndir, indir));
+    JITDUMP(
+        "  ..and it is close by. Trying to move the following range (where * are nodes part of the data flow):\n\n");
+#ifdef DEBUG
+    bool     isClosed;
+    GenTree* startDumpNode = BlockRange().GetTreeRange(prevIndir, &isClosed).FirstNode();
+    GenTree* endDumpNode   = indir->gtNext;
+
+    auto dumpWithMarks = [=]() {
+        if (!comp->verbose)
+        {
+            return;
+        }
+
+        for (GenTree* node = startDumpNode; node != endDumpNode; node = node->gtNext)
+        {
+            const char* prefix;
+            if (node == prevIndir)
+                prefix = "1. ";
+            else if (node == indir)
+                prefix = "2. ";
+            else if ((node->gtLIRFlags & LIR::Flags::Mark) != 0)
+                prefix = "*  ";
+            else
+                prefix = "   ";
+
+            comp->gtDispLIRNode(node, prefix);
+        }
+    };
+
+#endif
 
     MarkTree(indir);
 
-    GenTree* curRangeStart = prevIndir->gtNext;
-    while ((curRangeStart->gtLIRFlags & LIR::Flags::Mark) != 0)
+    INDEBUG(dumpWithMarks());
+    JITDUMP("\n");
+
+    m_scratchSideEffects.Clear();
+
+    for (GenTree* cur = prevIndir->gtNext; cur != indir; cur = cur->gtNext)
     {
-        if (curRangeStart == indir)
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
         {
-            UnmarkTree(indir);
-            return true;
-        }
-
-        curRangeStart = curRangeStart->gtNext;
-    }
-
-    GenTree* curRangeEnd = curRangeStart;
-    while (true)
-    {
-        GenTree* next = curRangeEnd->gtNext;
-        if ((next->gtLIRFlags & LIR::Flags::Mark) == 0)
-        {
-            curRangeEnd = next;
-            continue;
-        }
-
-        while ((next != indir) && ((next->gtNext->gtLIRFlags & LIR::Flags::Mark) != 0))
-        {
-            next = next->gtNext;
-        }
-
-        JITDUMP("\n---------------------------------- Moving nodes that aren't part of data flow "
-                "-----------------------------------\n\n");
-        DISPRANGE(LIR::ReadOnlyRange(curRangeStart, curRangeEnd));
-        JITDUMP("\n-------------------------------------------- Past the following nodes "
-                "-------------------------------------------\n\n");
-        DISPRANGE(LIR::ReadOnlyRange(curRangeEnd->gtNext, next));
-        JITDUMP("\n----------------------------------------------------------------------------------------------------"
-                "-------------\n");
-
-        if (IsRangeInvariantInRange(curRangeStart, curRangeEnd, next->gtNext, indir))
-        {
-            LIR::Range movedRange = BlockRange().Remove(curRangeStart, curRangeEnd);
-            BlockRange().InsertAfter(next, std::move(movedRange));
-            JITDUMP("Moved!\n");
-
-            if (next == indir)
+            // Part of data flow of 'indir', so we will be moving past this node.
+            if (m_scratchSideEffects.InterferesWith(comp, cur, true))
             {
+                JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
                 UnmarkTree(indir);
-                return true;
+                return false;
             }
         }
         else
         {
-            JITDUMP("Not invariant\n");
-            UnmarkTree(indir);
-            return false;
+            // Part of dataflow; add its effects.
+            m_scratchSideEffects.AddNode(comp, cur);
         }
     }
+
+    // Can we move it past the 'indir'? We can ignore effect flags when
+    // checking this, as we know the previous indir will make it non-faulting
+    // and keep the ordering correct. This makes use of the fact that
+    // non-volatile indirs have ordering side effects only for the "suppressed
+    // NRE" case.
+    // We still need some interference cehcks to ensure that the indir reads
+    // the same value even after reordering.
+    if (m_scratchSideEffects.InterferesWith(comp, indir, GTF_EMPTY, true))
+    {
+        JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(indir));
+        UnmarkTree(indir);
+        return false;
+    }
+
+    JITDUMP("Interference checks passed. Moving nodes that are not part of data flow tree\n\n",
+            Compiler::dspTreeID(indir));
+
+    GenTree* previous = prevIndir;
+    for (GenTree* node = prevIndir->gtNext;;)
+    {
+        GenTree* next = node->gtNext;
+
+        if ((node->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            // Part of data flow. Move it to happen right after 'previous'.
+            BlockRange().Remove(node);
+            BlockRange().InsertAfter(previous, node);
+            previous = node;
+        }
+
+        if (node == indir)
+        {
+            break;
+        }
+
+        node = next;
+    }
+
+    JITDUMP("Result:\n\n");
+    INDEBUG(dumpWithMarks());
+    JITDUMP("\n");
+    UnmarkTree(indir);
+    return true;
 }
 
 //------------------------------------------------------------------------
