@@ -381,6 +381,7 @@ namespace DebuggerTests
         {
             public const int Length = 42;
             public int e;
+            public int InlineMethod(int n) => n + 100;
         }
         
         [System.Runtime.CompilerServices.InlineArray(1)]
