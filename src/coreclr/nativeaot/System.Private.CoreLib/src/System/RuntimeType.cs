@@ -166,7 +166,9 @@ namespace System
         protected override unsafe bool HasElementTypeImpl()
             => _pUnderlyingEEType->IsParameterizedType;
 
-        public override Type? GetElementType() => throw new NotImplementedException();
+        public override Type? GetElementType()
+            => _pUnderlyingEEType->IsParameterizedType ? GetTypeFromMethodTable(_pUnderlyingEEType->RelatedParameterType) : null;
+
         protected override TypeAttributes GetAttributeFlagsImpl() => throw new NotImplementedException();
         protected override bool IsCOMObjectImpl() => false;
         protected override bool IsPrimitiveImpl() => throw new NotImplementedException();
