@@ -28,13 +28,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //    This method is intended to be called only from initializeStructuresBeforeBlockCodeGeneration.
 void CodeGen::genInitializeRegisterState()
 {
-    // Initialize the spill tracking logic
+            // Initialize the spill tracking logic
 
-    regSet.rsSpillBeg();
+        regSet.rsSpillBeg       ();
 
     // If any arguments live in registers, mark those regs as such
 
-    unsigned   varNum;
+    unsigned varNum;
     LclVarDsc* varDsc;
 
     for (varNum = 0, varDsc = compiler->lvaTable; varNum < compiler->lvaCount; varNum++, varDsc++)
