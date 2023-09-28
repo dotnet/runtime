@@ -228,6 +228,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
     GetEmitter()->emitIns_J(INS_call, block->bbJumpDest);
 
+    BasicBlock* const nextBlock = block->bbNext;
+    BasicBlock* const jumpDest  = nextBlock->bbJumpDest;
+
     if (block->bbFlags & BBF_RETLESS_CALL)
     {
         // We have a retless call, and the last instruction generated was a call.
@@ -235,7 +238,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // block), then we need to generate a breakpoint here (since it will never
         // get executed) to get proper unwind behavior.
 
-        if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
+        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
             instGen(INS_BREAKPOINT); // This should never get executed
         }
@@ -252,8 +255,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 #endif // JIT32_GCENCODER
 
         // Now go to where the finally funclet needs to return to.
-        if ((block->bbNext->bbJumpDest == block->bbNext->bbNext) &&
-            !compiler->fgInDifferentRegions(block->bbNext, block->bbNext->bbJumpDest))
+        if ((jumpDest == nextBlock->bbNext) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
         {
             // Fall-through.
             // TODO-XArch-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -263,7 +265,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-            inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
+            inst_JMP(EJ_jmp, jumpDest);
         }
 
 #ifndef JIT32_GCENCODER
@@ -313,7 +315,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        GetEmitter()->emitIns_J(INS_push_hide, block->bbNext->bbJumpDest);
+        GetEmitter()->emitIns_J(INS_push_hide, jumpDest);
     }
     else
     {
@@ -333,7 +335,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        block = block->bbNext;
+        block = nextBlock;
     }
     return block;
 }
