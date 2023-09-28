@@ -74,6 +74,39 @@ namespace System.DirectoryServices.Protocols.Tests
             _ = (SearchResponse) connection.SendRequest(searchRequest);
             // Does not throw
         }
+
+
+        private LdapConnection GetConnectionWithServerNameAndPort()
+        {
+            LdapDirectoryIdentifier directoryIdentifier = new LdapDirectoryIdentifier($"{LdapConfiguration.Configuration.ServerName}:{LdapConfiguration.Configuration.Port}", true, false);
+            NetworkCredential credential = new NetworkCredential(LdapConfiguration.Configuration.UserName, LdapConfiguration.Configuration.Password);
+
+            LdapConnection connection = new LdapConnection(directoryIdentifier, credential)
+            {
+                AuthType = AuthType.Basic
+            };
+
+            // Set server protocol before bind; OpenLDAP servers default
+            // to LDAP v2, which we do not support, and will return LDAP_PROTOCOL_ERROR
+            connection.SessionOptions.ProtocolVersion = 3;
+            connection.SessionOptions.SecureSocketLayer = LdapConfiguration.Configuration.UseTls;
+            connection.Bind();
+
+            connection.Timeout = new TimeSpan(0, 3, 0);
+            return connection;
+        }
+
+        [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        public void TestServerWithPortNumber()
+        {
+            using LdapConnection connection = GetConnectionWithServerNameAndPort();
+
+            var searchRequest = new SearchRequest(LdapConfiguration.Configuration.SearchDn, "(objectClass=*)", SearchScope.Subtree);
+
+            _ = (SearchResponse)connection.SendRequest(searchRequest);
+            // Shall succeed
+        }
+
         [InlineData(60)]
         [InlineData(0)]
         [InlineData(-60)]
