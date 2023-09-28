@@ -260,22 +260,6 @@ public:
         return (m_uFlags & OptionalFieldsFlag) != 0;
     }
 
-    bool IsEquivalentTo(MethodTable * pOtherEEType)
-    {
-        if (this == pOtherEEType)
-            return true;
-
-        MethodTable * pThisEEType = this;
-
-        if (pThisEEType->IsParameterizedType() && pOtherEEType->IsParameterizedType())
-        {
-            return pThisEEType->GetRelatedParameterType()->IsEquivalentTo(pOtherEEType->GetRelatedParameterType()) &&
-                pThisEEType->GetParameterizedTypeShape() == pOtherEEType->GetParameterizedTypeShape();
-        }
-
-        return false;
-    }
-
     // How many vtable slots are there?
     uint16_t GetNumVtableSlots()
         { return m_usNumVtableSlots; }
@@ -348,4 +332,3 @@ public:
 };
 
 #pragma warning(pop)
-
