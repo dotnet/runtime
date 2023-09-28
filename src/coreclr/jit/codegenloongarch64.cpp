@@ -1540,7 +1540,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         GetEmitter()->emitDisableGC();
 
         // Now go to where the finally funclet needs to return to.
-        if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
+        if ((block->bbNext->bbJumpDest == block->bbNext->bbNext)
+            && !compiler->fgInDifferentRegions(block->bbNext, block->bbNext->bbJumpDest))
         {
             // Fall-through.
             // TODO-LOONGARCH64-CQ: Can we get rid of this instruction, and just have the call return directly
