@@ -45,7 +45,7 @@ namespace ILCompiler.ObjectWriter
             if (targetArchitecture == TargetArchitecture.ARM64)
             {
                 CodeAlignFactor = 1;
-                DataAlignFactor = -8;
+                DataAlignFactor = -4;
                 ReturnAddressRegister = 30; // LR
                 Instructions = new byte[]
                 {
