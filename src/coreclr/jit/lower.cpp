@@ -409,8 +409,11 @@ GenTree* Lowering::LowerNode(GenTree* node)
     {
         case GT_NULLCHECK:
         case GT_IND:
-            LowerIndir(node->AsIndir());
-            break;
+        {
+            GenTree* next = nullptr;
+            LowerIndir(node->AsIndir(), &next);
+            return next;
+        }
 
         case GT_STOREIND:
             LowerStoreIndirCommon(node->AsStoreInd());
@@ -7334,6 +7337,7 @@ void Lowering::LowerBlock(BasicBlock* block)
     assert(block->isEmpty() || block->IsLIR());
 
     m_block = block;
+    m_blockIndirs.Reset();
 
     // NOTE: some of the lowering methods insert calls before the node being
     // lowered (See e.g. InsertPInvoke{Method,Call}{Prolog,Epilog}). In
@@ -7823,6 +7827,10 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
         LowerStoreIndir(ind);
     }
+
+#ifdef TARGET_ARM64
+    m_blockIndirs.Push(ind);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -7831,8 +7839,13 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 // Arguments:
 //    ind - the ind node we are lowering.
 //
-void Lowering::LowerIndir(GenTreeIndir* ind)
+void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
 {
+    if (next != nullptr)
+    {
+        *next = ind->gtNext;
+    }
+
     assert(ind->OperIs(GT_IND, GT_NULLCHECK));
     // Process struct typed indirs separately unless they are unused;
     // they only appear as the source of a block copy operation or a return node.
@@ -7879,6 +7892,209 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         const bool isContainable = false;
         TryCreateAddrMode(ind->Addr(), isContainable, ind);
     }
+
+#ifdef TARGET_ARM64
+    if (ind->OperIs(GT_IND) && comp->opts.OptimizationEnabled() && (next != nullptr))
+    {
+        target_ssize_t offs1 = 0;
+        GenTree*       addr  = ind->Addr();
+        if (addr->OperIs(GT_LEA) && !addr->AsAddrMode()->HasIndex())
+        {
+            offs1 = (target_ssize_t)addr->AsAddrMode()->Offset();
+            addr  = addr->AsAddrMode()->Base();
+        }
+        else if (addr->OperIs(GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
+        {
+            offs1 = (target_ssize_t)addr->gtGetOp2()->AsIntConCommon()->IconValue();
+            addr  = addr->gtGetOp1();
+        }
+
+        if (ind->TypeIs(TYP_INT, TYP_LONG, TYP_DOUBLE, TYP_SIMD16))
+        {
+            for (int i = 0; i < m_blockIndirs.Height(); i++)
+            {
+                GenTreeIndir* prevIndir = m_blockIndirs.Top(i);
+                if (!prevIndir->OperIs(GT_IND))
+                {
+                    continue;
+                }
+
+                target_ssize_t offs2    = 0;
+                GenTree*       prevAddr = prevIndir->Addr();
+                if (prevAddr->OperIs(GT_LEA) && !prevAddr->AsAddrMode()->HasIndex())
+                {
+                    offs2    = (target_ssize_t)prevAddr->AsAddrMode()->Offset();
+                    prevAddr = prevAddr->AsAddrMode()->Base();
+                }
+                else if (prevAddr->OperIs(GT_ADD) && prevAddr->gtGetOp2()->IsCnsIntOrI())
+                {
+                    offs2    = (target_ssize_t)prevAddr->gtGetOp2()->AsIntConCommon()->IconValue();
+                    prevAddr = prevAddr->gtGetOp1();
+                }
+
+                if (addr->OperIsLocal() && GenTree::Compare(addr, prevAddr))
+                {
+                    JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
+                            Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), offs1, offs2);
+                    if (abs(offs1 - offs2) == genTypeSize(ind))
+                    {
+                        JITDUMP("  ..and they are amenable to ldp optimization\n");
+                        TryOptimizeForLdp(prevIndir, ind);
+                        break;
+                    }
+                    else
+                    {
+                        JITDUMP("  ..but at wrong offset\n");
+                    }
+                }
+            }
+        }
+
+        m_blockIndirs.Push(ind);
+    }
+#endif
+}
+
+static void MarkTree(GenTree* node)
+{
+    node->gtLIRFlags |= LIR::Flags::Mark;
+    node->VisitOperands([](GenTree* op) {
+        MarkTree(op);
+        return GenTree::VisitResult::Continue;
+    });
+}
+
+static void UnmarkTree(GenTree* node)
+{
+    node->gtLIRFlags &= ~LIR::Flags::Mark;
+    node->VisitOperands([](GenTree* op) {
+        UnmarkTree(op);
+        return GenTree::VisitResult::Continue;
+    });
+}
+
+bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
+{
+    if ((indir->gtFlags & GTF_IND_VOLATILE) != 0)
+    {
+        JITDUMP("  ..but second indir is volatile\n");
+        return false;
+    }
+
+    GenTree* cur = prevIndir;
+    for (int i = 0; i < 16; i++)
+    {
+        cur = cur->gtNext;
+        if (cur == indir)
+            break;
+    }
+
+    if (cur != indir)
+    {
+        JITDUMP("  ..but it is too far away\n");
+        return false;
+    }
+
+    JITDUMP(
+        "  ..and it is close by. Trying to move the following range (where * are nodes part of the data flow):\n\n");
+#ifdef DEBUG
+    bool     isClosed;
+    GenTree* startDumpNode = BlockRange().GetTreeRange(prevIndir, &isClosed).FirstNode();
+    GenTree* endDumpNode   = indir->gtNext;
+
+    auto dumpWithMarks = [=]() {
+        if (!comp->verbose)
+        {
+            return;
+        }
+
+        for (GenTree* node = startDumpNode; node != endDumpNode; node = node->gtNext)
+        {
+            const char* prefix;
+            if (node == prevIndir)
+                prefix = "1. ";
+            else if (node == indir)
+                prefix = "2. ";
+            else if ((node->gtLIRFlags & LIR::Flags::Mark) != 0)
+                prefix = "*  ";
+            else
+                prefix = "   ";
+
+            comp->gtDispLIRNode(node, prefix);
+        }
+    };
+
+#endif
+
+    MarkTree(indir);
+
+    INDEBUG(dumpWithMarks());
+    JITDUMP("\n");
+
+    m_scratchSideEffects.Clear();
+
+    for (GenTree* cur = prevIndir->gtNext; cur != indir; cur = cur->gtNext)
+    {
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            // Part of data flow of 'indir', so we will be moving past this node.
+            if (m_scratchSideEffects.InterferesWith(comp, cur, true))
+            {
+                JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
+                UnmarkTree(indir);
+                return false;
+            }
+        }
+        else
+        {
+            // Part of dataflow; add its effects.
+            m_scratchSideEffects.AddNode(comp, cur);
+        }
+    }
+
+    // Can we move it past the 'indir'? We can ignore effect flags when
+    // checking this, as we know the previous indir will make it non-faulting
+    // and keep the ordering correct. This makes use of the fact that
+    // non-volatile indirs have ordering side effects only for the "suppressed
+    // NRE" case.
+    // We still need some interference cehcks to ensure that the indir reads
+    // the same value even after reordering.
+    if (m_scratchSideEffects.InterferesWith(comp, indir, GTF_EMPTY, true))
+    {
+        JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(indir));
+        UnmarkTree(indir);
+        return false;
+    }
+
+    JITDUMP("Interference checks passed. Moving nodes that are not part of data flow tree\n\n",
+            Compiler::dspTreeID(indir));
+
+    GenTree* previous = prevIndir;
+    for (GenTree* node = prevIndir->gtNext;;)
+    {
+        GenTree* next = node->gtNext;
+
+        if ((node->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            // Part of data flow. Move it to happen right after 'previous'.
+            BlockRange().Remove(node);
+            BlockRange().InsertAfter(previous, node);
+            previous = node;
+        }
+
+        if (node == indir)
+        {
+            break;
+        }
+
+        node = next;
+    }
+
+    JITDUMP("Result:\n\n");
+    INDEBUG(dumpWithMarks());
+    JITDUMP("\n");
+    UnmarkTree(indir);
+    return true;
 }
 
 //------------------------------------------------------------------------
