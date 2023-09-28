@@ -535,7 +535,6 @@ namespace DebuggerTests
 
         public class ClassWithIndexers
         {
-            // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
             public string this[char keyChar] => "res_" + keyChar;
             public string this[bool keyBool] => keyBool.ToString();
             public bool this[string keyStr] => keyStr.Length > 3;
@@ -553,7 +552,6 @@ namespace DebuggerTests
 
         public struct StructWithIndexers
         {
-            // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
             public string this[char keyChar] => "res_" + keyChar;
             public string this[bool keyBool] => keyBool.ToString();
             public bool this[string keyStr] => keyStr.Length > 3;
@@ -562,6 +560,9 @@ namespace DebuggerTests
             public int this[decimal keyDecimal] => (int)keyDecimal;
             public int this[Indexer indexer] => indexer.index;
             public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
+
+            public double this[int key1, double key2] => key1 + key2;
+            public string this[char key1, string key2, string key3] => $"{key1}-{key2}-{key3}";
 
             public InlineArray.Arr1 inlineArr;
         }
