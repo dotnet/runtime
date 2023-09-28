@@ -255,7 +255,7 @@ void register_aot_modules (void);
 #endif
 
 void
-mono_ios_runtime_init (void)
+mono_ios_runtime_init (int argc, char** argv)
 {
 #if INVARIANT_GLOBALIZATION
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
@@ -375,9 +375,11 @@ mono_ios_runtime_init (void)
     mono_set_crash_chaining (TRUE);
 
     if (wait_for_debugger) {
-        char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556" };
-        mono_jit_parse_options (1, options);
+        argc++;
+        argv = (char**)realloc (argv, argc * sizeof(char*));
+        argv [argc - 1] = strdup ("--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556");
     }
+    mono_jit_parse_options (argc, argv);
 
     MonoDomain *domain = mono_jit_init_version ("dotnet.ios", "mobile");
     assert (domain);

@@ -32,7 +32,7 @@
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         void *del = dlsym (RTLD_DEFAULT, "exposed_managed_method");
         NSAssert(del != NULL, @"'exposed_managed_method' not found");
-        mono_ios_runtime_init ();
+        mono_ios_runtime_init (0, NULL);
     });
 }
 

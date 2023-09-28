@@ -56,7 +56,7 @@ void (*clickHandlerApplyUpdatePtr)(void);
     [self.view addSubview:apply_button];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        mono_ios_runtime_init ();
+        mono_ios_runtime_init (0, NULL);
     });
 }
 -(void) buttonClicked:(UIButton*)sender
