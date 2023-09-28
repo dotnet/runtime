@@ -23,7 +23,9 @@ class Lowering final : public Phase
 {
 public:
     inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
-        : Phase(compiler, PHASE_LOWERING), vtableCallTemp(BAD_VAR_NUM)
+        : Phase(compiler, PHASE_LOWERING)
+        , vtableCallTemp(BAD_VAR_NUM)
+        , m_blockIndirs(compiler->getAllocator(CMK_ArrayStack))
     {
         m_lsra = (LinearScan*)lsra;
         assert(m_lsra);
@@ -310,7 +312,8 @@ private:
 
     // Per tree node member functions
     void LowerStoreIndirCommon(GenTreeStoreInd* ind);
-    void LowerIndir(GenTreeIndir* ind);
+    void LowerIndir(GenTreeIndir* ind, GenTree** next = nullptr);
+    bool TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir);
     void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
@@ -559,6 +562,7 @@ private:
 #ifdef FEATURE_FIXED_OUT_ARGS
     unsigned m_outgoingArgSpaceSize = 0;
 #endif
+    ArrayStack<GenTreeIndir*> m_blockIndirs;
 };
 
 #endif // _LOWER_H_

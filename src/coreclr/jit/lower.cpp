@@ -409,8 +409,11 @@ GenTree* Lowering::LowerNode(GenTree* node)
     {
         case GT_NULLCHECK:
         case GT_IND:
-            LowerIndir(node->AsIndir());
-            break;
+        {
+            GenTree* next = nullptr;
+            LowerIndir(node->AsIndir(), &next);
+            return next;
+        }
 
         case GT_STOREIND:
             LowerStoreIndirCommon(node->AsStoreInd());
@@ -7334,6 +7337,7 @@ void Lowering::LowerBlock(BasicBlock* block)
     assert(block->isEmpty() || block->IsLIR());
 
     m_block = block;
+    m_blockIndirs.Reset();
 
     // NOTE: some of the lowering methods insert calls before the node being
     // lowered (See e.g. InsertPInvoke{Method,Call}{Prolog,Epilog}). In
@@ -7823,6 +7827,10 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
         LowerStoreIndir(ind);
     }
+
+#ifdef TARGET_ARM64
+    m_blockIndirs.Push(ind);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -7831,8 +7839,13 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 // Arguments:
 //    ind - the ind node we are lowering.
 //
-void Lowering::LowerIndir(GenTreeIndir* ind)
+void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
 {
+    if (next != nullptr)
+    {
+        *next = ind->gtNext;
+    }
+
     assert(ind->OperIs(GT_IND, GT_NULLCHECK));
     // Process struct typed indirs separately unless they are unused;
     // they only appear as the source of a block copy operation or a return node.
@@ -7878,6 +7891,174 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // is a complex one it could benefit from an `LEA` that is not contained.
         const bool isContainable = false;
         TryCreateAddrMode(ind->Addr(), isContainable, ind);
+    }
+
+#ifdef TARGET_ARM64
+    if (ind->OperIs(GT_IND) && comp->opts.OptimizationEnabled() && (next != nullptr))
+    {
+        target_ssize_t offs1 = 0;
+        GenTree*       addr  = ind->Addr();
+        if (addr->OperIs(GT_LEA) && !addr->AsAddrMode()->HasIndex())
+        {
+            offs1 = (target_ssize_t)addr->AsAddrMode()->Offset();
+            addr  = addr->AsAddrMode()->Base();
+        }
+        else if (addr->OperIs(GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
+        {
+            offs1 = (target_ssize_t)addr->gtGetOp2()->AsIntConCommon()->IconValue();
+            addr  = addr->gtGetOp1();
+        }
+
+        if (ind->TypeIs(TYP_INT, TYP_LONG, TYP_DOUBLE, TYP_SIMD16))
+        {
+            for (int i = 0; i < m_blockIndirs.Height(); i++)
+            {
+                GenTreeIndir* prevIndir = m_blockIndirs.Top(i);
+                if (!prevIndir->OperIs(GT_IND))
+                {
+                    continue;
+                }
+
+                target_ssize_t offs2    = 0;
+                GenTree*       prevAddr = prevIndir->Addr();
+                if (prevAddr->OperIs(GT_LEA) && !prevAddr->AsAddrMode()->HasIndex())
+                {
+                    offs2    = (target_ssize_t)prevAddr->AsAddrMode()->Offset();
+                    prevAddr = prevAddr->AsAddrMode()->Base();
+                }
+                else if (prevAddr->OperIs(GT_ADD) && prevAddr->gtGetOp2()->IsCnsIntOrI())
+                {
+                    offs2    = (target_ssize_t)prevAddr->gtGetOp2()->AsIntConCommon()->IconValue();
+                    prevAddr = prevAddr->gtGetOp1();
+                }
+
+                if (addr->OperIsLocal() && GenTree::Compare(addr, prevAddr))
+                {
+                    JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
+                            Compiler::dspTreeID(addr), Compiler::dspTreeID(prevAddr), offs1, offs2);
+                    if (abs(offs1 - offs2) == genTypeSize(ind))
+                    {
+                        JITDUMP("  ..and they are amenable to ldp optimization\n");
+                        if (TryOptimizeForLdp(prevIndir, ind))
+                        {
+                            JITDUMP("Full block:\n\n");
+                            DISPRANGE(BlockRange());
+                            BlockRange().CheckLIR(comp, false);
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        JITDUMP("  ..but at wrong offset\n");
+                    }
+                }
+            }
+        }
+
+        m_blockIndirs.Push(ind);
+    }
+#endif
+}
+
+static void MarkTree(GenTree* node)
+{
+    node->gtLIRFlags |= LIR::Flags::Mark;
+    node->VisitOperands([](GenTree* op) {
+        MarkTree(op);
+        return GenTree::VisitResult::Continue;
+    });
+}
+
+static void UnmarkTree(GenTree* node)
+{
+    node->gtLIRFlags &= ~LIR::Flags::Mark;
+    node->VisitOperands([](GenTree* op) {
+        UnmarkTree(op);
+        return GenTree::VisitResult::Continue;
+    });
+}
+
+bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
+{
+    if ((indir->gtFlags & GTF_IND_VOLATILE) != 0)
+    {
+        JITDUMP("  ..but second indir is volatile\n");
+        return false;
+    }
+
+    GenTree* cur = prevIndir;
+    for (int i = 0; i < 16; i++)
+    {
+        cur = cur->gtNext;
+        if (cur == indir)
+            break;
+    }
+
+    if (cur != indir)
+    {
+        JITDUMP("  ..but it is too far away\n");
+        return false;
+    }
+
+    JITDUMP("  ..and it is within range. Range:\n");
+    DISPRANGE(LIR::ReadOnlyRange(prevIndir, indir));
+
+    MarkTree(indir);
+
+    GenTree* curRangeStart = prevIndir->gtNext;
+    while ((curRangeStart->gtLIRFlags & LIR::Flags::Mark) != 0)
+    {
+        if (curRangeStart == indir)
+        {
+            UnmarkTree(indir);
+            return true;
+        }
+
+        curRangeStart = curRangeStart->gtNext;
+    }
+
+    GenTree* curRangeEnd = curRangeStart;
+    while (true)
+    {
+        GenTree* next = curRangeEnd->gtNext;
+        if ((next->gtLIRFlags & LIR::Flags::Mark) == 0)
+        {
+            curRangeEnd = next;
+            continue;
+        }
+
+        while ((next != indir) && ((next->gtNext->gtLIRFlags & LIR::Flags::Mark) != 0))
+        {
+            next = next->gtNext;
+        }
+
+        JITDUMP("\n---------------------------------- Moving nodes that aren't part of data flow "
+                "-----------------------------------\n\n");
+        DISPRANGE(LIR::ReadOnlyRange(curRangeStart, curRangeEnd));
+        JITDUMP("\n-------------------------------------------- Past the following nodes "
+                "-------------------------------------------\n\n");
+        DISPRANGE(LIR::ReadOnlyRange(curRangeEnd->gtNext, next));
+        JITDUMP("\n----------------------------------------------------------------------------------------------------"
+                "-------------\n");
+
+        if (IsRangeInvariantInRange(curRangeStart, curRangeEnd, next->gtNext, indir))
+        {
+            LIR::Range movedRange = BlockRange().Remove(curRangeStart, curRangeEnd);
+            BlockRange().InsertAfter(next, std::move(movedRange));
+            JITDUMP("Moved!\n");
+
+            if (next == indir)
+            {
+                UnmarkTree(indir);
+                return true;
+            }
+        }
+        else
+        {
+            JITDUMP("Not invariant\n");
+            UnmarkTree(indir);
+            return false;
+        }
     }
 }
 
