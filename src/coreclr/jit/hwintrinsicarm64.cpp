@@ -1728,9 +1728,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_StoreVector64x2:
         case NI_AdvSimd_Arm64_StoreVector128x2:
         {
-
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
 

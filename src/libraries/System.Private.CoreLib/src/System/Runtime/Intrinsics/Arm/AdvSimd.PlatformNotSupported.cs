@@ -14488,6 +14488,41 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        ///   A64: ST2 { Vn.8B, Vn+1.8B }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2(byte* address, (Vector64<byte> Value1, Vector64<byte> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.8B, Vn+1.8B }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2(sbyte* address, (Vector64<sbyte> Value1, Vector64<sbyte> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.4H, Vn+1.4H }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2(short* address, (Vector64<short> Value1, Vector64<short> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.4H, Vn+1.4H }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2(ushort* address, (Vector64<ushort> Value1, Vector64<ushort> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.2S, Vn+1.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2(int* address, (Vector64<int> Value1, Vector64<int> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.2S, Vn+1.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2(uint* address, (Vector64<uint> Value1, Vector64<uint> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: ST2 { Vn.2S, Vn+1.2S }, [Xn]
+        /// </summary>
+        public static unsafe void StoreVector64x2(float* address, (Vector64<float> Value1, Vector64<float> Value2) value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VSUB.I8 Dd, Dn, Dm
         ///   A64: SUB Vd.8B, Vn.8B, Vm.8B

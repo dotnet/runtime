@@ -1572,6 +1572,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 BuildDef(intrinsicTree);
                 *pDstCount = 1;
                 break;
+            case NI_AdvSimd_StoreVector64x2:
             case NI_AdvSimd_Arm64_StoreVector128x2:
                 assert(intrin.op1 != nullptr);
                 srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
