@@ -22,7 +22,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [Fact]
         public static void {TestName}()
         {
-            var test = new StoreVector128x2Test__{Op1BaseType}();
+            var test = new StoreVector{Op2VectorType}x2Test__{Op1BaseType}();
             if (test.IsSupported)
             {
                 // Validates basic functionality works, using Unsafe.Read
@@ -62,7 +62,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class StoreVector128x2Test__{Op1BaseType}
+    public sealed unsafe class StoreVector{Op2VectorType}x2Test__{Op1BaseType}
     {
         private struct DataTable
         {
@@ -133,7 +133,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return testStruct;
             }
 
-            public void RunStructFldScenario(StoreVector128x2Test__{Op1BaseType} testClass)
+            public void RunStructFldScenario(StoreVector{Op2VectorType}x2Test__{Op1BaseType} testClass)
             {
                 {Isa}.{Method}(({Op1BaseType}*)testClass._dataTable.outArrayPtr, (_fld1, _fld2));
 
@@ -154,7 +154,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        public StoreVector128x2Test__{Op1BaseType}()
+        public StoreVector{Op2VectorType}x2Test__{Op1BaseType}()
         {
             Succeeded = true;
             for (var i = 0; i < OpElementCount; i++) { _data1[i] = {NextValueOp2}; _data2[i] = {NextValueOp2}; }
