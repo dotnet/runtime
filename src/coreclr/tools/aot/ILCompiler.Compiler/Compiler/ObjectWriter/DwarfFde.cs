@@ -62,12 +62,13 @@ namespace ILCompiler.ObjectWriter
                 {
                     // Advance
                     int diff = (int)((codeOffset - lastCodeOffset) / cie.CodeAlignFactor);
-                    if (diff < 0x3f)
+                    if (diff <= 0x3f)
                     {
                         cfiCode[cfiCodeOffset++] = (byte)((byte)DW_CFA_advance_loc | diff);
                     }
                     else
                     {
+                        Debug.Assert(diff <= 0xff);
                         cfiCode[cfiCodeOffset++] = (byte)DW_CFA_advance_loc1;
                         cfiCode[cfiCodeOffset++] = (byte)diff;
                     }
@@ -82,8 +83,21 @@ namespace ILCompiler.ObjectWriter
                         break;
 
                     case CFI_OPCODE.CFI_REL_OFFSET:
-                        Debug.Assert(dwarfReg <= 0x3f);
-                        cfiCode[cfiCodeOffset++] = (byte)((byte)DW_CFA_offset | (byte)dwarfReg);
+                        if (dwarfReg <= 0x3f)
+                        {
+                            cfiCode[cfiCodeOffset++] = (byte)((byte)DW_CFA_offset | (byte)dwarfReg);
+                        }
+                        else
+                        {
+                            cfiCode[cfiCodeOffset++] = DW_CFA_offset_extended;
+                            temp = (uint)dwarfReg;
+                            do
+                            {
+                                cfiCode[cfiCodeOffset++] = (byte)((temp & 0x7f) | ((temp >= 0x80) ? 0x80u : 0));
+                                temp >>= 7;
+                            }
+                            while (temp > 0);
+                        }
                         temp = (uint)((cfiOffset - cfaOffset) / cie.DataAlignFactor);
                         do
                         {
