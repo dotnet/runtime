@@ -376,6 +376,7 @@ mono_ios_runtime_init (int argc, char** argv)
 
     if (wait_for_debugger) {
         argc++;
+        // The caller should invoke free_managed_args to free the memory
         argv = (char**)realloc (argv, argc * sizeof(char*));
         argv [argc - 1] = strdup ("--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556");
     }
