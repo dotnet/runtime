@@ -602,7 +602,9 @@ mono_decompose_op_imm (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 	mono_bblock_insert_before_ins (bb, ins, temp);
 
 	if (opcode2 == -1)
+		#ifndef DISABLE_LOGGING
 		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (ins->opcode));
+		#endif
 	ins->opcode = GINT_TO_OPCODE (opcode2);
 
 	if (ins->opcode == OP_LOCALLOC)
