@@ -112,6 +112,10 @@
       <PackageReference Remove="@(PackageReference)"
                         Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Runtime'))" />
       <PackageDownload Remove="@(PackageDownload)"
+                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Crossgen2'))" />
+      <PackageReference Remove="@(PackageReference)"
+                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Crossgen2'))" />
+      <PackageDownload Remove="@(PackageDownload)"
                        Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
       <!-- Always remove the PackageReference items as some of the packages are only via PackageReference -->
       <PackageReference Remove="@(PackageReference)"
