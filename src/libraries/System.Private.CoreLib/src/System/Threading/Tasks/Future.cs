@@ -27,7 +27,7 @@ namespace System.Threading.Tasks
             RuntimeHelpers.PushAsyncData(ref dataFrame);
         }
 
-        public void Pop() { RuntimeHelpers.PopAsyncData(); }
+        public void Pop() { RuntimeHelpers.PopAsyncData(ref dataFrame); }
         public Task<TResult> FromResult(TResult result)
         {
             if (dataFrame._maintainedData == null || !dataFrame._maintainedData._suspendActive)

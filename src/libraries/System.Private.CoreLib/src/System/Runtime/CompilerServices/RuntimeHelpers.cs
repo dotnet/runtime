@@ -307,6 +307,10 @@ namespace System.Runtime.CompilerServices
             public byte _dummy;
             public bool _abortSuspend;
 
+            public ExecutionContext? _executionCtx;
+            public SynchronizationContext? _syncCtx;
+
+
             public Tasklet *_nextTasklet;
             public Tasklet* _oldTaskletNext;
 
@@ -351,6 +355,16 @@ namespace System.Runtime.CompilerServices
                     PushAsyncData(ref dataFrame);
                     try
                     {
+                        // PushAsyncData will fill in the value of _previousExecutionCtx and _previousSyncCtx
+                        if (_syncCtx != dataFrame._previousSyncCtx)
+                        {
+                            dataFrame._currentThread._synchronizationContext = _syncCtx;
+                        }
+                        if (_executionCtx != dataFrame._previousExecutionCtx)
+                        {
+                            ExecutionContext.RestoreChangedContextToThread(dataFrame._currentThread, _executionCtx, dataFrame._previousExecutionCtx);
+                        }
+
                         while (_nextTasklet != null)
                         {
                             int maxStackNeeded = _nextTasklet->GetMaxStackNeeded();
@@ -389,7 +403,7 @@ namespace System.Runtime.CompilerServices
                     }
                     finally
                     {
-                        PopAsyncData();
+                        PopAsyncData(ref dataFrame);
                     }
                 }
                 catch (Exception e)
@@ -462,6 +476,13 @@ namespace System.Runtime.CompilerServices
             public void* _next;
             public Func<RuntimeAsyncMaintainedData>? _createRuntimeMaintainedData;
             public RuntimeAsyncMaintainedData? _maintainedData;
+            public Thread _currentThread = Thread.CurrentThread;
+
+            // Store current ExecutionContext and SynchronizationContext as "previousXxx".
+            // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
+            // so that they won't "leak" out of the first await.
+            public ExecutionContext? _previousExecutionCtx;
+            public SynchronizationContext? _previousSyncCtx;
         }
 
         internal enum TaskletReturnType
@@ -487,12 +508,28 @@ namespace System.Runtime.CompilerServices
         internal static unsafe void PushAsyncData(ref AsyncDataFrame asyncData)
         {
             asyncData._next = t_asyncData;
+            asyncData._previousExecutionCtx = asyncData._currentThread._executionContext;
+            asyncData._previousSyncCtx = asyncData._currentThread._synchronizationContext;
+
             t_asyncData = Unsafe.AsPointer(ref asyncData);
         }
 
-        internal static unsafe void PopAsyncData()
+        internal static unsafe void PopAsyncData(ref AsyncDataFrame asyncData)
         {
             t_asyncData = Unsafe.AsRef<AsyncDataFrame>(t_asyncData)._next;
+
+            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+            if (asyncData._previousSyncCtx != asyncData._currentThread._synchronizationContext)
+            {
+                // Restore changed SynchronizationContext back to previous
+                asyncData._currentThread._synchronizationContext = asyncData._previousSyncCtx;
+            }
+
+            ExecutionContext? currentExecutionCtx = asyncData._currentThread._executionContext;
+            if (asyncData._previousExecutionCtx != currentExecutionCtx)
+            {
+                ExecutionContext.RestoreChangedContextToThread(asyncData._currentThread, asyncData._previousExecutionCtx, currentExecutionCtx);
+            }
         }
 
         internal static unsafe bool HasCurrentAsyncDataFrame()
@@ -556,6 +593,10 @@ namespace System.Runtime.CompilerServices
 
             maintainedData._abortSuspend = false;
             maintainedData._suspendActive = true;
+
+            maintainedData._executionCtx = asyncFrame._currentThread._executionContext;
+            maintainedData._syncCtx = asyncFrame._currentThread._synchronizationContext;
+
 
             return maintainedData._resumption;
         }
