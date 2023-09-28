@@ -670,6 +670,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     break;
                 }
+                case SyntaxKind.UnaryPlusExpression:
+                {
+                    switch (constValue.Operand)
+                    {
+                        case LiteralExpressionSyntax les:
+                        {
+                            return WriteNumber(les.Token.Value, convertToNegative: false);
+                        }
+                        default:
+                        {
+                            // not supported yet
+                            break;
+                        }
+                    }
+                    break;
+                }
             }
             return false;
         }

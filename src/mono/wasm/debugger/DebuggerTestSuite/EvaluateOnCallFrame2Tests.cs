@@ -497,6 +497,7 @@ namespace DebuggerTests
 
                    ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
                    ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
+                   ("test.GetDefaultAndRequiredParam(3, +2)", TNumber(5)),
                    ("test.GetDefaultAndRequiredParam(3, -2)", TNumber(1)),
                    ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
                    ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
