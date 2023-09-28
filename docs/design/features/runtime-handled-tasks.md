@@ -182,6 +182,13 @@ TBD, design in progress... there are some notes, but this is very incomplete at 
 
 The general design is to leverage the notion that a normal code generated function at a function call point is effectively a state machine. The index for resumption is the IP that returning to the function will set, and the stackframe + saved registers are the current state of the state machine. I believe we can achieve performance comparable to synchronous code with this scheme for non-suspended scenarios, and we may achieve acceptable overall performance as an async mechanism if suspension is relatively rare.
 
+#### JIT Code changes
+1. Do not allow InlinedCallFrames to be linked to the frame chain across a suspend (Or disable p/invoke inlining in these methods)
+2. Report frame pointers as ByRef
+3. Report all pointers to locals as ByRef
+4. (If possible) tweak codegen for return processing to not use the address returned in RAX when doing byref returns
+5. Force the AwaitAwaiterFromRuntimeAsync to be treated as an async2 method even though it isn't marked as such (due to compiler limitations)
+
 #### Thunk from the Task api surface to async2 based implementation
 
 A thunk from the Task api surface to an async2 based implementation will have the following psuedocode if it is not required to throw `InvalidProgramException`

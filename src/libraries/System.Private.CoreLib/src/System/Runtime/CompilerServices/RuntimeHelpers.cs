@@ -3,6 +3,8 @@
 
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Runtime.CompilerServices
 {
@@ -273,8 +275,306 @@ namespace System.Runtime.CompilerServices
             awaiter.GetResult();
         }
 
-        private static void SuspendIfSuspensionNotAborted() {}
-        private static Action? GetOrCreateResumptionDelegate() { return null; }
-        private static void AbortSuspend() {}
+        [ThreadStatic]
+        private static unsafe void* t_asyncData;
+
+        internal struct RuntimeAsyncReturnValue
+        {
+            public RuntimeAsyncReturnValue(object? obj)
+            {
+                _obj = obj;
+                _ptr = IntPtr.Zero;
+                _isObj = true;
+            }
+            public RuntimeAsyncReturnValue(IntPtr ptr)
+            {
+                _obj = null;
+                _ptr = ptr;
+                _isObj = false;
+            }
+            public IntPtr _ptr;
+            public object? _obj;
+            public bool _isObj;
+        }
+
+        internal abstract unsafe class RuntimeAsyncMaintainedData
+        {
+            public Action? _resumption;
+            public Exception? _exception;
+            public bool _suspendActive;
+            public bool _initialTaskEntry = true;
+            public bool _completed;
+            public byte _dummy;
+            public bool _abortSuspend;
+
+            public Tasklet *_nextTasklet;
+            public Tasklet* _oldTaskletNext;
+
+            public RuntimeAsyncReturnValue _retValue;
+            public virtual ref byte GetReturnPointer() { return ref _dummy; }
+
+            public Task? _task;
+            public abstract Task GetTask();
+        }
+
+
+        // These are all implemented by the same assembly helper that will setup the tasklet in its new home on the stack
+        // and then tail-call into it. We will need a different entrypoint name for each type of register based return that can happen
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe object ResumeTaskletReferenceReturn(Tasklet* pTasklet, ref RuntimeAsyncReturnValue retValue);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe IntPtr ResumeTaskletIntegerRegisterReturn(Tasklet* pTasklet, ref RuntimeAsyncReturnValue retValue);
+
+        internal sealed class RuntimeAsyncMaintainedData<T> : RuntimeAsyncMaintainedData, ICriticalNotifyCompletion
+        {
+            public RuntimeAsyncMaintainedData()
+            {
+                _task = CompletionTask();
+                _resumption = ResumptionFunc;
+            }
+
+            public unsafe void ResumptionFunc()
+            {
+                if (HasCurrentAsyncDataFrame() && GetCurrentAsyncDataFrame()._maintainedData == this)
+                {
+                    _abortSuspend = true;
+                    return;
+                }
+                // Once we perform a resumption we no longer need to worry about handling the ultimate return data from the run of Tasklets
+                _initialTaskEntry = false;
+
+                int collectiveStackAllocsPerformed = 0;
+
+                try
+                {
+                    AsyncDataFrame dataFrame = new AsyncDataFrame(this);
+                    PushAsyncData(ref dataFrame);
+                    try
+                    {
+                        while (_nextTasklet != null)
+                        {
+                            int maxStackNeeded = _nextTasklet->GetMaxStackNeeded();
+                            if (maxStackNeeded > collectiveStackAllocsPerformed)
+                            {
+#pragma warning disable CA2014
+                                // This won't stack overflow unless MaxStackNeeded is actually too high, as the extra allocation is controlled by collectiveStackAllocsPerformed
+                                // TODO This is doing terrible things with the ABI, so we may need to be more careful here
+                                int stackToAlloc = maxStackNeeded - collectiveStackAllocsPerformed;
+                                byte *pStackAlloc = stackalloc byte[stackToAlloc];
+                                collectiveStackAllocsPerformed += stackToAlloc;
+#pragma warning restore CA2014
+// The optimizer does nothing with variable sized StackAlloc KeepStackAllocAlive(pStackAlloc);
+                            }
+
+                            try
+                            {
+                                switch (_nextTasklet->taskletReturnType)
+                                {
+                                    case TaskletReturnType.ObjectReference:
+                                        _retValue = new RuntimeAsyncReturnValue(ResumeTaskletReferenceReturn(_nextTasklet, ref _retValue));
+                                        break;
+                                    case TaskletReturnType.Integer:
+                                        _retValue = new RuntimeAsyncReturnValue(ResumeTaskletIntegerRegisterReturn(_nextTasklet, ref _retValue));
+                                        break;
+                                    case TaskletReturnType.ByReference:
+                                        throw new NotImplementedException(); // This will be awkward (but not impossible) to implement. Hold off for now
+                                }
+                            }
+                            finally
+                            {
+                                DeleteTasklet(_nextTasklet);
+                            }
+                            _nextTasklet = _nextTasklet->pTaskletNextInStack;
+                        }
+                    }
+                    finally
+                    {
+                        PopAsyncData();
+                    }
+                }
+                catch (Exception e)
+                {
+                    SetException(e);
+                }
+            }
+
+            private Action? _taskResumer;
+            private T? _returnData;
+            public override ref byte GetReturnPointer()
+            {
+                return ref Unsafe.As<T, byte>(ref _returnData!);
+            }
+
+            public RuntimeAsyncMaintainedData<T> GetAwaiter()
+            {
+                return this;
+            }
+
+            public bool IsCompleted => _completed;
+
+            public override Task GetTask()
+            {
+                return _task!;
+            }
+
+            public void SetException(Exception exception)
+            {
+                _exception = exception;
+                _completed = true;
+                _taskResumer!();
+            }
+
+            public void SetResultDone()
+            {
+                _completed = true;
+                _taskResumer!();
+            }
+
+            public void OnCompleted(Action resumer) { throw new NotSupportedException(); }
+            public void UnsafeOnCompleted(Action resumer) { _taskResumer = resumer; }
+            public T? GetResult() { if (_exception != null) throw _exception; return _returnData; }
+
+            private async Task<T?> CompletionTask()
+            {
+                return await this;
+            }
+        }
+
+        internal unsafe struct AsyncDataFrame
+        {
+            public AsyncDataFrame(RuntimeAsyncMaintainedData maintainedData)
+            {
+                _maintainedData = maintainedData;
+                _crawlMark = StackCrawlMark.LookForMe;
+                _next = null;
+                _createRuntimeMaintainedData = null;
+            }
+
+            public AsyncDataFrame(Func<RuntimeAsyncMaintainedData> getMaintainedData)
+            {
+                _maintainedData = null;
+                _crawlMark = StackCrawlMark.LookForMe;
+                _next = null;
+                _createRuntimeMaintainedData = getMaintainedData;
+            }
+
+            public StackCrawlMark _crawlMark;
+            public void* _next;
+            public Func<RuntimeAsyncMaintainedData>? _createRuntimeMaintainedData;
+            public RuntimeAsyncMaintainedData? _maintainedData;
+        }
+
+        internal enum TaskletReturnType
+        {
+            // These return types are OS/architecture specific. For instance, Arm64 supports returning structs in a register pair
+            Integer,
+            ObjectReference,
+            ByReference
+        }
+        internal unsafe struct Tasklet
+        {
+            public Tasklet* pTaskletNextInStack;
+            public Tasklet* pTaskletNextInLiveList;
+            public Tasklet* pTaskletPrevInLiveList;
+            public byte* pStackData;
+            public byte* pStackDataInfo;
+            public int maxStackNeeded;
+            public TaskletReturnType taskletReturnType;
+
+            public int GetMaxStackNeeded() { return maxStackNeeded; }
+        }
+
+        internal static unsafe void PushAsyncData(ref AsyncDataFrame asyncData)
+        {
+            asyncData._next = t_asyncData;
+            t_asyncData = Unsafe.AsPointer(ref asyncData);
+        }
+
+        internal static unsafe void PopAsyncData()
+        {
+            t_asyncData = Unsafe.AsRef<AsyncDataFrame>(t_asyncData)._next;
+        }
+
+        internal static unsafe bool HasCurrentAsyncDataFrame()
+        {
+            return t_asyncData != null;
+        }
+
+        private static unsafe ref AsyncDataFrame GetCurrentAsyncDataFrame()
+        {
+            return ref Unsafe.AsRef<AsyncDataFrame>(t_asyncData);
+        }
+
+        // Capture stack into a series of tasklets (one per stack frame)
+        // These tasklets hold the stack data for a particular frame, as well as the contents of the saved registers as needed by that frame, GC data for reporting the frame, and data for restoring the frame.
+        // To make this work.
+        // 1. All addresses of locals are to be used as byrefs
+        // 2. Frame pointers are to be reported as byrefs
+        // 3. Return values are to be returned by reference in all cases where the return value is not a simple object return or return of a simple value in the return value register (this makes the resumption function reasonable to write. Notably, floating point, and ref return will be returned by reference as well as generalized struct return, and return which would normally involve multiple return value registers)
+        // 4. There are to be no refs to the outermost caller function exceptn for the valuetype return address (methods which begin on an instance valuetype will have the thunk box the valuetype and the runtime async method on the boxed instance)
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeSuspension_CaptureTasklets")]
+        private static unsafe partial Tasklet *CaptureCurrentStackIntoTasklets(StackCrawlMarkHandle stackMarkTop, ref byte returnValueHandle, [MarshalAs(UnmanagedType.U1)] bool useReturnValueHandle, void* taskAsyncData, out Tasklet* lastTasklet);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeSuspension_DeleteTasklet")]
+        private static unsafe partial void DeleteTasklet(Tasklet *tasklet);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void UnwindToFunctionWithAsyncFrame(ref AsyncDataFrame dataFrame);
+
+        private static void SuspendIfSuspensionNotAborted()
+        {
+            ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
+            RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
+            if (maintainedData._abortSuspend)
+            {
+                AbortSuspend();
+            }
+            else
+            {
+                UnwindToFunctionWithAsyncFrame(ref asyncFrame);
+            }
+        }
+
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        private static unsafe Action? GetOrCreateResumptionDelegate()
+        {
+            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
+            ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
+
+            asyncFrame._maintainedData ??= asyncFrame._createRuntimeMaintainedData!();
+
+            RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData;
+
+            Tasklet* lastTasklet = null;
+            Tasklet* nextTaskletInStack = CaptureCurrentStackIntoTasklets(new StackCrawlMarkHandle(ref stackMark), ref maintainedData.GetReturnPointer(), maintainedData._initialTaskEntry, t_asyncData, out lastTasklet);
+            if (nextTaskletInStack == null)
+                throw new OutOfMemoryException();
+
+            maintainedData._oldTaskletNext = maintainedData._nextTasklet;
+            lastTasklet->pTaskletNextInStack = maintainedData._nextTasklet;
+            maintainedData._nextTasklet = nextTaskletInStack;
+
+            maintainedData._abortSuspend = false;
+            maintainedData._suspendActive = true;
+
+            return maintainedData._resumption;
+        }
+
+        private static unsafe void AbortSuspend()
+        {
+            ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
+            RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
+
+            Tasklet* pTaskletCur = maintainedData._nextTasklet;
+            while (pTaskletCur != maintainedData._oldTaskletNext)
+            {
+                Tasklet* pTaskletPrev = pTaskletCur;
+                pTaskletCur = pTaskletPrev;
+                DeleteTasklet(pTaskletPrev);
+            }
+            maintainedData._nextTasklet = maintainedData._oldTaskletNext;
+            maintainedData._oldTaskletNext = null;
+            maintainedData._suspendActive = false;
+        }
     }
 }
