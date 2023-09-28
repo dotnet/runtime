@@ -7939,12 +7939,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
                     if (abs(offs1 - offs2) == genTypeSize(ind))
                     {
                         JITDUMP("  ..and they are amenable to ldp optimization\n");
-                        if (TryOptimizeForLdp(prevIndir, ind))
-                        {
-                            JITDUMP("Full block:\n\n");
-                            DISPRANGE(BlockRange());
-                            BlockRange().CheckLIR(comp, false);
-                        }
+                        TryOptimizeForLdp(prevIndir, ind);
                         break;
                     }
                     else
