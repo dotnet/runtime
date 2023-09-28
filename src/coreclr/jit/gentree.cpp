@@ -7120,6 +7120,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_IND:
         case GT_BLK:
         case GT_STOREIND:
+        case GT_NULLCHECK:
         case GT_STORE_BLK:
         case GT_STORE_DYN_BLK:
         case GT_XADD:
