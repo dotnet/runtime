@@ -1918,11 +1918,11 @@ namespace System.Numerics.Tensors
 
         private readonly struct MultiplyAddOperator : ITernaryOperator
         {
-            public static float Invoke(float x, float y, float z) => MathF.FusedMultiplyAdd(x, y, z);
-            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y, Vector128<float> z) => FusedMultiplyAdd(x, y, z);
-            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y, Vector256<float> z) => FusedMultiplyAdd(x, y, z);
+            public static float Invoke(float x, float y, float z) => (x * y) + z;
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y, Vector128<float> z) => (x * y) + z;
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y, Vector256<float> z) => (x * y) + z;
 #if NET8_0_OR_GREATER
-            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y, Vector512<float> z) => FusedMultiplyAdd(x, y, z);
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y, Vector512<float> z) => (x * y) + z;
 #endif
         }
 

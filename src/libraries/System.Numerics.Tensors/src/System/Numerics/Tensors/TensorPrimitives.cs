@@ -19,14 +19,10 @@ namespace System.Numerics.Tensors
         /// </para>
         /// <para>
         /// If a value is equal to <see cref="float.NegativeInfinity"/> or <see cref="float.PositiveInfinity"/>, the result stored into the corresponding destination location is set to <see cref="float.PositiveInfinity"/>.
-        /// If a value is equal to <see cref="float.NaN"/>, the result stored into the corresponding destination location is set to <see cref="float.NaN"/>.
+        /// If a value is equal to <see cref="float.NaN"/>, the result stored into the corresponding destination location is the original NaN value with the sign bit removed.
         /// </para>
         /// <para>
         /// <paramref name="x"/> and <paramref name="destination"/> may not overlap; if they do, behavior is undefined.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
         /// </para>
         /// </remarks>
         public static void Abs(ReadOnlySpan<float> x, Span<float> destination) =>
@@ -46,11 +42,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="y"/> may overlap, but neither may overlap with <paramref name="destination"/>; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If either of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static unsafe void Add(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
@@ -69,11 +61,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="destination"/> may not overlap; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If either of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void Add(ReadOnlySpan<float> x, float y, Span<float> destination) =>
@@ -94,11 +82,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/>, <paramref name="y"/>, and <paramref name="multiplier"/> may overlap, but none of them may overlap with <paramref name="destination"/>; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If any of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If any of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void AddMultiply(ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> multiplier, Span<float> destination) =>
@@ -119,11 +103,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="y"/> may overlap, but neither may overlap with <paramref name="destination"/>; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If any of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If any of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void AddMultiply(ReadOnlySpan<float> x, ReadOnlySpan<float> y, float multiplier, Span<float> destination) =>
@@ -144,11 +124,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="multiplier"/> may overlap, but neither may overlap with <paramref name="destination"/>; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If any of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If any of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void AddMultiply(ReadOnlySpan<float> x, float y, ReadOnlySpan<float> multiplier, Span<float> destination) =>
@@ -167,7 +143,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// <para>
         /// If a value is equal to <see cref="float.NegativeInfinity"/> or <see cref="float.PositiveInfinity"/>, the result stored into the corresponding destination location is set to <see cref="float.PositiveInfinity"/>.
-        /// If a value is <see cref="float.NaN"/>, the result stored into the corresponding destination location is set to <see cref="float.NaN"/>.
+        /// If a value is equal to <see cref="float.NaN"/>, the result stored into the corresponding destination location is also NaN.
         /// </para>
         /// <para>
         /// The angles in x must be in radians. Multiply by <see cref="MathF.PI"/>/180 to convert degrees to radians.
@@ -202,7 +178,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// <para>
         /// If any element in either input tensor is equal to <see cref="float.NegativeInfinity"/>, <see cref="float.PositiveInfinity"/>, or <see cref="float.NaN"/>,
-        /// <see cref="float.NaN"/> is returned.
+        /// NaN is returned.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -241,7 +217,7 @@ namespace System.Numerics.Tensors
         /// but without requiring additional temporary storage for the intermediate differences.
         /// </para>
         /// <para>
-        /// If any element in either input tensor is equal to <see cref="float.NaN"/>, <see cref="float.NaN"/> is returned.
+        /// If any element in either input tensor is equal to <see cref="float.NaN"/>, NaN is returned.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -277,11 +253,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="y"/> may overlap, but neither may overlap with <paramref name="destination"/>; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If either of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void Divide(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
@@ -300,11 +272,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="destination"/> may not overlap; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If either of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void Divide(ReadOnlySpan<float> x, float y, Span<float> destination) =>
@@ -326,7 +294,7 @@ namespace System.Numerics.Tensors
         /// but without requiring additional temporary storage for the intermediate products. It corresponds to the <c>dot</c> method defined by <c>BLAS1</c>.
         /// </para>
         /// <para>
-        /// If any of the input elements is <see cref="float.NaN"/>, the resulting value is <see cref="float.NaN"/>.
+        /// If any of the input elements is equal to <see cref="float.NaN"/>, the resulting value is also NaN.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -355,7 +323,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="destination"/> may not overlap; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If a value equals <see cref="float.NaN"/> or <see cref="float.PositiveInfinity"/>, the result stored into the corresponding destination location is set to <see cref="float.NaN"/>.
+        /// If a value equals <see cref="float.NaN"/> or <see cref="float.PositiveInfinity"/>, the result stored into the corresponding destination location is set to NaN.
         /// If a value equals <see cref="float.NegativeInfinity"/>, the result stored into the corresponding destination location is set to 0.
         /// </para>
         /// <para>
@@ -381,8 +349,8 @@ namespace System.Numerics.Tensors
         /// <returns>The index of the maximum element in <paramref name="x"/>, or -1 if <paramref name="x"/> is empty.</returns>
         /// <remarks>
         /// <para>
-        /// The determination of the maximum element matches the IEEE 754:2019 `maximum` function. If any <see cref="float.NaN"/>
-        /// value is present, the index of the first is returned. Positive 0 is considered greater than negative 0.
+        /// The determination of the maximum element matches the IEEE 754:2019 `maximum` function. If any value equal to <see cref="float.NaN"/>
+        /// is present, the index of the first is returned. Positive 0 is considered greater than negative 0.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -430,8 +398,8 @@ namespace System.Numerics.Tensors
         /// <returns>The index of the element in <paramref name="x"/> with the largest magnitude (absolute value), or -1 if <paramref name="x"/> is empty.</returns>
         /// <remarks>
         /// <para>
-        /// The determination of the maximum magnitude matches the IEEE 754:2019 `maximumMagnitude` function. If any <see cref="float.NaN"/>
-        /// value is present, the index of the first is returned. If two values have the same magnitude and one is positive and the other is negative,
+        /// The determination of the maximum magnitude matches the IEEE 754:2019 `maximumMagnitude` function. If any value equal to <see cref="float.NaN"/>
+        /// is present, the index of the first is returned. If two values have the same magnitude and one is positive and the other is negative,
         /// the positive value is considered to have the larger magnitude.
         /// </para>
         /// <para>
@@ -484,8 +452,8 @@ namespace System.Numerics.Tensors
         /// <returns>The index of the minimum element in <paramref name="x"/>, or -1 if <paramref name="x"/> is empty.</returns>
         /// <remarks>
         /// <para>
-        /// The determination of the minimum element matches the IEEE 754:2019 `minimum` function. If any <see cref="float.NaN"/>
-        /// value is present, the index of the first is returned. Negative 0 is considered smaller than positive 0.
+        /// The determination of the minimum element matches the IEEE 754:2019 `minimum` function. If any value equal to <see cref="float.NaN"/>
+        /// is present, the index of the first is returned. Negative 0 is considered smaller than positive 0.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -533,8 +501,8 @@ namespace System.Numerics.Tensors
         /// <returns>The index of the element in <paramref name="x"/> with the smallest magnitude (absolute value), or -1 if <paramref name="x"/> is empty.</returns>
         /// <remarks>
         /// <para>
-        /// The determination of the minimum magnitude matches the IEEE 754:2019 `minimumMagnitude` function. If any <see cref="float.NaN"/>
-        /// value is present, the index of the first is returned. If two values have the same magnitude and one is positive and the other is negative,
+        /// The determination of the minimum magnitude matches the IEEE 754:2019 `minimumMagnitude` function. If any value equal to <see cref="float.NaN"/>
+        /// is present, the index of the first is returned. If two values have the same magnitude and one is positive and the other is negative,
         /// the negative value is considered to have the smaller magnitude.
         /// </para>
         /// <para>
@@ -595,7 +563,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// <para>
         /// If a value equals 0, the result stored into the corresponding destination location is set to <see cref="float.NegativeInfinity"/>.
-        /// If a value is negative or NaN, the result stored into the corresponding destination location is set to <see cref="float.NaN"/>.
+        /// If a value is negative or equal to <see cref="float.NaN"/>, the result stored into the corresponding destination location is set to NaN.
         /// If a value is positive infinity, the result stored into the corresponding destination location is set to <see cref="float.PositiveInfinity"/>.
         /// Otherwise, if a value is positive, its natural logarithm is stored into the corresponding destination location.
         /// </para>
@@ -630,7 +598,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// <para>
         /// If a value equals 0, the result stored into the corresponding destination location is set to <see cref="float.NegativeInfinity"/>.
-        /// If a value is negative or NaN, the result stored into the corresponding destination location is set to <see cref="float.NaN"/>.
+        /// If a value is negative or equal to <see cref="float.NaN"/>, the result stored into the corresponding destination location is set to NaN.
         /// If a value is positive infinity, the result stored into the corresponding destination location is set to <see cref="float.PositiveInfinity"/>.
         /// Otherwise, if a value is positive, its natural logarithm is stored into the corresponding destination location.
         /// </para>
@@ -658,8 +626,8 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be greater than zero.</exception>
         /// <remarks>
         /// <para>
-        /// The determination of the maximum element matches the IEEE 754:2019 `maximum` function. If any <see cref="float.NaN"/>
-        /// value is present, the first is returned. Positive 0 is considered greater than negative 0.
+        /// The determination of the maximum element matches the IEEE 754:2019 `maximum` function. If any value equal to <see cref="float.NaN"/>
+        /// is present, the first is returned. Positive 0 is considered greater than negative 0.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -683,7 +651,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="y"/> may overlap, but neither may overlap with <paramref name="destination"/>; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// The determination of the maximum element matches the IEEE 754:2019 `maximum` function. If either value is <see cref="float.NaN"/>,
+        /// The determination of the maximum element matches the IEEE 754:2019 `maximum` function. If either value is equal to <see cref="float.NaN"/>,
         /// that value is stored as the result. Positive 0 is considered greater than negative 0.
         /// </para>
         /// <para>
@@ -700,8 +668,8 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be greater than zero.</exception>
         /// <remarks>
         /// <para>
-        /// The determination of the maximum magnitude matches the IEEE 754:2019 `maximumMagnitude` function. If any <see cref="float.NaN"/>
-        /// value is present, the first is returned. If two values have the same magnitude and one is positive and the other is negative,
+        /// The determination of the maximum magnitude matches the IEEE 754:2019 `maximumMagnitude` function. If any value equal to <see cref="float.NaN"/>
+        /// is present, the first is returned. If two values have the same magnitude and one is positive and the other is negative,
         /// the positive value is considered to have the larger magnitude.
         /// </para>
         /// <para>
@@ -721,7 +689,7 @@ namespace System.Numerics.Tensors
         /// <remarks>This method effectively computes <c><paramref name="destination" />[i] = MathF.MaxMagnitude(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
         /// <remarks>
         /// <para>
-        /// The determination of the maximum magnitude matches the IEEE 754:2019 `maximumMagnitude` function. If either value is <see cref="float.NaN"/>,
+        /// The determination of the maximum magnitude matches the IEEE 754:2019 `maximumMagnitude` function. If either value is equal to <see cref="float.NaN"/>,
         /// that value is stored as the result. If the two values have the same magnitude and one is positive and the other is negative,
         /// the positive value is considered to have the larger magnitude.
         /// </para>
@@ -742,8 +710,8 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be greater than zero.</exception>
         /// <remarks>
         /// <para>
-        /// The determination of the minimum element matches the IEEE 754:2019 `minimum` function. If any <see cref="float.NaN"/>
-        /// value is present, the first is returned. Negative 0 is considered smaller than positive 0.
+        /// The determination of the minimum element matches the IEEE 754:2019 `minimum` function. If any value is equal to <see cref="float.NaN"/>
+        /// is present, the first is returned. Negative 0 is considered smaller than positive 0.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -764,7 +732,7 @@ namespace System.Numerics.Tensors
         /// This method effectively computes <c><paramref name="destination" />[i] = MathF.Max(<paramref name="x" />[i], <paramref name="y" />[i])</c>.
         /// </para>
         /// <para>
-        /// The determination of the maximum element matches the IEEE 754:2019 `maximum` function. If either value is <see cref="float.NaN"/>,
+        /// The determination of the maximum element matches the IEEE 754:2019 `maximum` function. If either value is equal to <see cref="float.NaN"/>,
         /// that value is stored as the result. Positive 0 is considered greater than negative 0.
         /// </para>
         /// <para>
@@ -784,8 +752,8 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be greater than zero.</exception>
         /// <remarks>
         /// <para>
-        /// The determination of the minimum magnitude matches the IEEE 754:2019 `minimumMagnitude` function. If any <see cref="float.NaN"/>
-        /// value is present, the first is returned. If two values have the same magnitude and one is positive and the other is negative,
+        /// The determination of the minimum magnitude matches the IEEE 754:2019 `minimumMagnitude` function. If any value equal to <see cref="float.NaN"/>
+        /// is present, the first is returned. If two values have the same magnitude and one is positive and the other is negative,
         /// the negative value is considered to have the smaller magnitude.
         /// </para>
         /// <para>
@@ -805,7 +773,7 @@ namespace System.Numerics.Tensors
         /// <remarks>This method effectively computes <c><paramref name="destination" />[i] = MathF.MinMagnitude(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
         /// <remarks>
         /// <para>
-        /// The determination of the maximum magnitude matches the IEEE 754:2019 `minimumMagnitude` function. If either value is <see cref="float.NaN"/>,
+        /// The determination of the maximum magnitude matches the IEEE 754:2019 `minimumMagnitude` function. If either value is equal to <see cref="float.NaN"/>,
         /// that value is stored as the result. If the two values have the same magnitude and one is positive and the other is negative,
         /// the negative value is considered to have the smaller magnitude.
         /// </para>
@@ -834,11 +802,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="y"/> may overlap, but neither may overlap with <paramref name="destination"/>; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If either of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void Multiply(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
@@ -858,11 +822,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="destination"/> may not overlap; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If either of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void Multiply(ReadOnlySpan<float> x, float y, Span<float> destination) =>
@@ -883,14 +843,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/>, <paramref name="y"/>, and <paramref name="addend"/> may overlap, but none of them may overlap with <paramref name="destination"/>; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If any of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures. On some platforms, this may perform the operation rounded as one ternary operation, such that it computes (<paramref name="x"/> * <paramref name="y"/>)
-        /// as if to infinite precision, adds <paramref name="addend"/> to that result as if to infinite precision, and finally rounds to the nearest representable value. On architectures where such
-        /// a fused multiply-add is not supported, this will compute (<paramref name="x"/> * <paramref name="y"/>) as if to infinite precision, round the result to the nearest representable value,
-        /// add <paramref name="addend"/> to the rounded result as if to infinite precision, and finally round to the nearest representable value.
+        /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void MultiplyAdd(ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> addend, Span<float> destination) =>
@@ -912,14 +865,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="y"/> may overlap, but neither may overlap with <paramref name="destination"/>; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If any of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures. On some platforms, this may perform the operation rounded as one ternary operation, such that it computes (<paramref name="x"/> * <paramref name="y"/>)
-        /// as if to infinite precision, adds <paramref name="addend"/> to that result as if to infinite precision, and finally rounds to the nearest representable value. On architectures where such
-        /// a fused multiply-add is not supported, this will compute (<paramref name="x"/> * <paramref name="y"/>) as if to infinite precision, round the result to the nearest representable value,
-        /// add <paramref name="addend"/> to the rounded result as if to infinite precision, and finally round to the nearest representable value.
+        /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void MultiplyAdd(ReadOnlySpan<float> x, ReadOnlySpan<float> y, float addend, Span<float> destination) =>
@@ -940,14 +886,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="addend"/> may overlap, but neither may overlap with <paramref name="destination"/>; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If any of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures. On some platforms, this may perform the operation rounded as one ternary operation, such that it computes (<paramref name="x"/> * <paramref name="y"/>)
-        /// as if to infinite precision, adds <paramref name="addend"/> to that result as if to infinite precision, and finally rounds to the nearest representable value. On architectures where such
-        /// a fused multiply-add is not supported, this will compute (<paramref name="x"/> * <paramref name="y"/>) as if to infinite precision, round the result to the nearest representable value,
-        /// add <paramref name="addend"/> to the rounded result as if to infinite precision, and finally round to the nearest representable value.
+        /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void MultiplyAdd(ReadOnlySpan<float> x, float y, ReadOnlySpan<float> addend, Span<float> destination) =>
@@ -965,11 +904,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="destination"/> may not overlap; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If any of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If any of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void Negate(ReadOnlySpan<float> x, Span<float> destination) =>
@@ -985,7 +920,7 @@ namespace System.Numerics.Tensors
         /// It corresponds to the <c>nrm2</c> method defined by <c>BLAS1</c>.
         /// </para>
         /// <para>
-        /// If any of the input values is <see cref="float.NaN"/>, the result value is <see cref="float.NaN"/>.
+        /// If any of the input values is equal to <see cref="float.NaN"/>, the result value is also NaN.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -1001,7 +936,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be greater than zero.</exception>
         /// <remarks>
         /// <para>
-        /// If any of the input values is <see cref="float.NaN"/>, the result value is <see cref="float.NaN"/>.
+        /// If any of the input values is equal to <see cref="float.NaN"/>, the result value is also NaN.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -1218,11 +1153,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="y"/> may overlap, but neither may overlap with <paramref name="destination"/>; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If either of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void Subtract(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
@@ -1241,11 +1172,7 @@ namespace System.Numerics.Tensors
         /// <paramref name="x"/> and <paramref name="destination"/> may not overlap; if they do, behavior is undefined.
         /// </para>
         /// <para>
-        /// If either of the element-wise input values is <see cref="float.NaN"/>, the resulting element-wise value is <see cref="float.NaN"/>.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
+        /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
         public static void Subtract(ReadOnlySpan<float> x, float y, Span<float> destination) =>
@@ -1256,7 +1183,7 @@ namespace System.Numerics.Tensors
         /// <returns>The result of adding all elements in <paramref name="x"/>, or zero if <paramref name="x"/> is empty.</returns>
         /// <remarks>
         /// <para>
-        /// If any of the values in the input is <see cref="float.NaN"/>, the result is <see cref="float.NaN"/>.
+        /// If any of the values in the input is equal to <see cref="float.NaN"/>, the result is also NaN.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -1322,7 +1249,7 @@ namespace System.Numerics.Tensors
         /// <para>
         /// If a value is equal to <see cref="float.NegativeInfinity"/>, the corresponding destination location is set to -1.
         /// If a value is equal to <see cref="float.PositiveInfinity"/>, the corresponding destination location is set to 1.
-        /// If a value is <see cref="float.NaN"/>, the corresponding destination location is set to <see cref="float.NaN"/>.
+        /// If a value is equal to <see cref="float.NaN"/>, the corresponding destination location is set to NaN.
         /// </para>
         /// <para>
         /// The angles in x must be in radians. Multiply by <see cref="MathF.PI"/>/180 to convert degrees to radians.
