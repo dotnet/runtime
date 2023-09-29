@@ -1,113 +1,14 @@
-<Project>
-
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputPath>$(RuntimeBinDir)crossgen2</OutputPath>
-    <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
-    <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
-    <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
-    <PublishTrimmed>true</PublishTrimmed>
-    <RuntimeIdentifiers Condition="'$(_IsPublishing)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;freebsd-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(PackageRID)</RuntimeIdentifiers>
-    <SelfContained>false</SelfContained>
-    <SelfContained Condition="'$(_IsPublishing)' == 'true'">true</SelfContained>
+    <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
+    <UseAppHost>false</UseAppHost>
+    <!--
+      When building crossgen2, we don't have the live ref and runtime packs.
+      So even though we'll run against the live-built runtime,
+      we need to compile against the "Tool Current" runtime, which is the latest
+      that ships with the SDK that we build with.
+    -->
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
-
   <Import Project="crossgen2.props" />
-
-  <PropertyGroup Condition="'$(NativeAotSupported)' != 'true'">
-    <PublishSingleFile>true</PublishSingleFile>
-    <PublishReadyToRun>true</PublishReadyToRun>
-    <!-- Disable crossgen on NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
-    <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' Or '$(TargetOS)' == 'illumos' Or '$(TargetOS)' == 'solaris'">false</PublishReadyToRun>
-    <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
-    <PublishReadyToRun Condition="'$(TargetOS)' == 'freebsd' and '$(CrossBuild)' == 'true'">false</PublishReadyToRun>
-    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
-  </PropertyGroup>
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-
-  <PropertyGroup Condition="'$(NativeAotSupported)' == 'true'">
-    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
-    <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
-    <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
-    <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
-    <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
-    <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
-    <TrimmerSingleWarn>false</TrimmerSingleWarn>
-    <!-- Use .dwarf files instead of .dsym files since our symbol exporting may not safely handle folders. -->
-    <NativeSymbolExt Condition="'$(_IsApplePlatform)' == 'true'">.dwarf</NativeSymbolExt>
-    <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_IsApplePlatform)' != 'true' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
-  </ItemGroup>
-
-  <Import Project="$(R2ROverridePath)" Condition="'$(R2ROverridePath)' != ''" />
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"
-          Condition="'$(NativeAotSupported)' == 'true' and '$(_IsPublishing)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
-
-  <Target Name="RewriteRuntimePackDir"
-          Condition="'$(_IsPublishing)' == 'true'"
-          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
-          BeforeTargets="ResolveRuntimePackAssets">
-      <ItemGroup>
-        <!-- Remove AspNetCore runtime pack since we don't build it locally -->
-        <ResolvedRuntimePack Remove="Microsoft.AspNetCore.App.Runtime.$(RuntimeIdentifier)" />
-
-        <ResolvedRuntimePack Update="Microsoft.NETCore.App.Runtime.$(RuntimeIdentifier)">
-          <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackDir)</PackageDirectory>
-        </ResolvedRuntimePack>
-      </ItemGroup>
-  </Target>
-
-  <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->
-  <Target Name="_FixIlcTargetTriple"
-          AfterTargets="SetupOSSpecificProps"
-          Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">
-    <!-- Compute CrossCompileRid, and copy the downstream logic as-is. -->
-    <PropertyGroup>
-      <CrossCompileRid>$(RuntimeIdentifier)</CrossCompileRid>
-
-      <CrossCompileArch />
-      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
-      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' != 'true'">aarch64</CrossCompileArch>
-      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' == 'true'">arm64</CrossCompileArch>
-
-      <TargetTriple />
-      <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-gnu</TargetTriple>
-      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('linux-musl')) or $(CrossCompileRid.StartsWith('alpine')))">$(CrossCompileArch)-alpine-linux-musl</TargetTriple>
-      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(_IsApplePlatform)' != 'true' and '$(TargetTriple)' != ''" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="LocateNativeCompiler"
-          Condition="'$(NativeAotSupported)' == 'true' and '$(_IsPublishing)' == 'true' and '$(HostOS)' != 'windows'"
-          BeforeTargets="SetupOSSpecificProps">
-      <PropertyGroup>
-        <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
-      </PropertyGroup>
-
-      <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo &quot;$CC;$LDFLAGS&quot;' 2>/dev/null"
-            EchoOff="true"
-            ConsoleToMsBuild="true"
-            StandardOutputImportance="Low">
-        <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
-      </Exec>
-
-    <PropertyGroup>
-      <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
-      <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
-      <LinkerFlavor Condition="$(_LDFLAGS.Contains('lld'))">lld</LinkerFlavor>
-    </PropertyGroup>
-  </Target>
-
 </Project>
