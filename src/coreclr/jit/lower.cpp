@@ -7337,7 +7337,9 @@ void Lowering::LowerBlock(BasicBlock* block)
     assert(block->isEmpty() || block->IsLIR());
 
     m_block = block;
+#ifdef TARGET_ARM64
     m_blockIndirs.Reset();
+#endif
 
     // NOTE: some of the lowering methods insert calls before the node being
     // lowered (See e.g. InsertPInvoke{Method,Call}{Prolog,Epilog}). In
@@ -7827,10 +7829,6 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
         LowerStoreIndir(ind);
     }
-
-#ifdef TARGET_ARM64
-    m_blockIndirs.Push(ind);
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -7896,30 +7894,34 @@ void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
 #ifdef TARGET_ARM64
     if (ind->OperIs(GT_IND) && comp->opts.OptimizationEnabled() && (next != nullptr))
     {
-        target_ssize_t offs1  = 0;
+        target_ssize_t offs   = 0;
         GenTree*       addr   = ind->Addr();
         FieldSeq*      fldSeq = nullptr;
-        comp->gtPeelOffsets(&addr, &offs1, &fldSeq);
+        comp->gtPeelOffsets(&addr, &offs, &fldSeq);
 
-        if (ind->TypeIs(TYP_INT, TYP_LONG, TYP_DOUBLE, TYP_SIMD16))
+        if (addr->OperIsLocal() && ind->TypeIs(TYP_INT, TYP_LONG, TYP_DOUBLE, TYP_SIMD16))
         {
-            for (int i = 0; i < m_blockIndirs.Height(); i++)
+            SavedIndir newInd;
+            newInd.Indir    = ind;
+            newInd.AddrBase = addr->AsLclVarCommon();
+            newInd.Offset   = offs;
+
+            int maxCount = min(m_blockIndirs.Height(), 8);
+            for (int i = 0; i < maxCount; i++)
             {
-                GenTreeIndir* prevIndir = m_blockIndirs.Top(i);
-                if ((prevIndir == nullptr) || !prevIndir->OperIs(GT_IND) || (prevIndir->TypeGet() != ind->TypeGet()))
+                SavedIndir&   prev      = m_blockIndirs.TopRef(i);
+                GenTreeIndir* prevIndir = prev.Indir;
+                if ((prevIndir == nullptr) || (prevIndir->TypeGet() != ind->TypeGet()))
                 {
                     continue;
                 }
 
-                target_ssize_t offs2    = 0;
-                GenTree*       prevAddr = prevIndir->Addr();
-                comp->gtPeelOffsets(&prevAddr, &offs2, &fldSeq);
-
-                if (addr->OperIsLocal() && GenTree::Compare(addr, prevAddr))
+                if (GenTree::Compare(addr, prev.AddrBase))
                 {
                     JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
-                            Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), offs1, offs2);
-                    if (abs(offs1 - offs2) == genTypeSize(ind))
+                            Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), (unsigned)offs,
+                            (unsigned)prev.Offset);
+                    if (abs(offs - prev.Offset) == genTypeSize(ind))
                     {
                         JITDUMP("  ..and they are amenable to ldp optimization\n");
                         if (TryOptimizeForLdp(prevIndir, ind))
@@ -7928,7 +7930,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
                             // another instance; that can cause us to e.g. convert
                             // *(x+4), *(x+0), *(x+8), *(x+12) =>
                             // *(x+4), *(x+8), *(x+0), *(x+12)
-                            m_blockIndirs.TopRef(i) = nullptr;
+                            prev.Indir = nullptr;
                         }
                         break;
                     }
@@ -7938,9 +7940,9 @@ void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
                     }
                 }
             }
-        }
 
-        m_blockIndirs.Push(ind);
+            m_blockIndirs.Push(newInd);
+        }
     }
 #endif
 }

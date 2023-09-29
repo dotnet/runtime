@@ -25,7 +25,9 @@ public:
     inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
         : Phase(compiler, PHASE_LOWERING)
         , vtableCallTemp(BAD_VAR_NUM)
+#ifdef TARGET_ARM64
         , m_blockIndirs(compiler->getAllocator(CMK_ArrayStack))
+#endif
     {
         m_lsra = (LinearScan*)lsra;
         assert(m_lsra);
@@ -562,7 +564,16 @@ private:
 #ifdef FEATURE_FIXED_OUT_ARGS
     unsigned m_outgoingArgSpaceSize = 0;
 #endif
-    ArrayStack<GenTreeIndir*> m_blockIndirs;
+
+#ifdef TARGET_ARM64
+    struct SavedIndir
+    {
+        GenTreeIndir*        Indir;
+        GenTreeLclVarCommon* AddrBase;
+        target_ssize_t       Offset;
+    };
+    ArrayStack<SavedIndir> m_blockIndirs;
+#endif
 };
 
 #endif // _LOWER_H_
