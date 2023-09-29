@@ -150,6 +150,7 @@ public:
     void AddNode(Compiler* compiler, GenTree* node);
     bool InterferesWith(const AliasSet& other) const;
     bool InterferesWith(const NodeInfo& node) const;
+    bool WritesLocal(unsigned lclNum);
     void Clear();
 };
 
@@ -181,6 +182,11 @@ public:
     bool InterferesWith(Compiler* compiler, GenTree* node, bool strict) const;
     bool InterferesWith(Compiler* compiler, GenTree* node, unsigned overriddenSideEffects, bool strict) const;
     void Clear();
+
+    bool WritesLocal(unsigned lclNum)
+    {
+        return m_aliasSet.WritesLocal(lclNum);
+    }
 };
 
 #endif // _SIDEEFFECTS_H_

@@ -1204,26 +1204,44 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
     assert((*addr)->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
     *offset = 0;
     *fldSeq = nullptr;
-    while ((*addr)->OperIs(GT_ADD) && !(*addr)->gtOverflow())
+    while (true)
     {
-        GenTree* op1 = (*addr)->gtGetOp1();
-        GenTree* op2 = (*addr)->gtGetOp2();
+        if ((*addr)->OperIs(GT_ADD) && !(*addr)->gtOverflow())
+        {
+            GenTree* op1 = (*addr)->gtGetOp1();
+            GenTree* op2 = (*addr)->gtGetOp2();
 
-        if (op2->IsCnsIntOrI() && !op2->AsIntCon()->IsIconHandle())
-        {
-            assert(op2->TypeIs(TYP_I_IMPL));
-            GenTreeIntCon* intCon = op2->AsIntCon();
-            *offset += (target_ssize_t)intCon->IconValue();
-            *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
-            *addr   = op1;
+            if (op2->IsCnsIntOrI() && !op2->AsIntCon()->IsIconHandle())
+            {
+                assert(op2->TypeIs(TYP_I_IMPL));
+                GenTreeIntCon* intCon = op2->AsIntCon();
+                *offset += (target_ssize_t)intCon->IconValue();
+                *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
+                *addr   = op1;
+            }
+            else if (op1->IsCnsIntOrI() && !op1->AsIntCon()->IsIconHandle())
+            {
+                assert(op1->TypeIs(TYP_I_IMPL));
+                GenTreeIntCon* intCon = op1->AsIntCon();
+                *offset += (target_ssize_t)intCon->IconValue();
+                *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
+                *addr   = op2;
+            }
+            else
+            {
+                break;
+            }
         }
-        else if (op1->IsCnsIntOrI() && !op1->AsIntCon()->IsIconHandle())
+        else if ((*addr)->OperIs(GT_LEA))
         {
-            assert(op1->TypeIs(TYP_I_IMPL));
-            GenTreeIntCon* intCon = op1->AsIntCon();
-            *offset += (target_ssize_t)intCon->IconValue();
-            *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
-            *addr   = op2;
+            GenTreeAddrMode* addrMode = (*addr)->AsAddrMode();
+            if (addrMode->HasIndex())
+            {
+                break;
+            }
+
+            *offset += (target_ssize_t)addrMode->Offset();
+            *addr = addrMode->Base();
         }
         else
         {

@@ -7896,18 +7896,10 @@ void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
 #ifdef TARGET_ARM64
     if (ind->OperIs(GT_IND) && comp->opts.OptimizationEnabled() && (next != nullptr))
     {
-        target_ssize_t offs1 = 0;
-        GenTree*       addr  = ind->Addr();
-        if (addr->OperIs(GT_LEA) && !addr->AsAddrMode()->HasIndex())
-        {
-            offs1 = (target_ssize_t)addr->AsAddrMode()->Offset();
-            addr  = addr->AsAddrMode()->Base();
-        }
-        else if (addr->OperIs(GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
-        {
-            offs1 = (target_ssize_t)addr->gtGetOp2()->AsIntConCommon()->IconValue();
-            addr  = addr->gtGetOp1();
-        }
+        target_ssize_t offs1  = 0;
+        GenTree*       addr   = ind->Addr();
+        FieldSeq*      fldSeq = nullptr;
+        comp->gtPeelOffsets(&addr, &offs1, &fldSeq);
 
         if (ind->TypeIs(TYP_INT, TYP_LONG, TYP_DOUBLE, TYP_SIMD16))
         {
@@ -7921,16 +7913,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
 
                 target_ssize_t offs2    = 0;
                 GenTree*       prevAddr = prevIndir->Addr();
-                if (prevAddr->OperIs(GT_LEA) && !prevAddr->AsAddrMode()->HasIndex())
-                {
-                    offs2    = (target_ssize_t)prevAddr->AsAddrMode()->Offset();
-                    prevAddr = prevAddr->AsAddrMode()->Base();
-                }
-                else if (prevAddr->OperIs(GT_ADD) && prevAddr->gtGetOp2()->IsCnsIntOrI())
-                {
-                    offs2    = (target_ssize_t)prevAddr->gtGetOp2()->AsIntConCommon()->IconValue();
-                    prevAddr = prevAddr->gtGetOp1();
-                }
+                comp->gtPeelOffsets(&prevAddr, &offs2, &fldSeq);
 
                 if (addr->OperIsLocal() && GenTree::Compare(addr, prevAddr))
                 {
@@ -8061,9 +8044,65 @@ bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
     // the same value even after reordering.
     if (m_scratchSideEffects.InterferesWith(comp, indir, GTF_EMPTY, true))
     {
-        JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(indir));
-        UnmarkTree(indir);
-        return false;
+        JITDUMP("Have conservative interference. Trying smarter interference check...\n", Compiler::dspTreeID(indir));
+
+        GenTree*       indirAddr = indir->Addr();
+        target_ssize_t offs      = 0;
+        FieldSeq*      fieldSeq  = nullptr;
+        comp->gtPeelOffsets(&indirAddr, &offs, &fieldSeq);
+
+        bool checkLocal = indirAddr->OperIsLocal();
+        if (checkLocal)
+        {
+            unsigned lclNum = indirAddr->AsLclVarCommon()->GetLclNum();
+            checkLocal = !comp->lvaGetDesc(lclNum)->IsAddressExposed() && !m_scratchSideEffects.WritesLocal(lclNum);
+        }
+
+        for (GenTree* cur = indir->gtPrev; cur != prevIndir; cur = cur->gtPrev)
+        {
+            if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+            {
+                continue;
+            }
+
+            AliasSet::NodeInfo nodeInfo(comp, cur);
+            if (!nodeInfo.WritesAddressableLocation())
+            {
+                continue;
+            }
+
+            if (cur->OperIs(GT_STOREIND, GT_STORE_BLK))
+            {
+                GenTreeIndir*  store     = cur->AsIndir();
+                GenTree*       storeAddr = store->Addr();
+                target_ssize_t storeOffs = 0;
+                comp->gtPeelOffsets(&storeAddr, &storeOffs, &fieldSeq);
+
+                bool distinct = (storeOffs + store->Size() <= offs) || (offs + indir->Size() <= storeOffs);
+                if (checkLocal && GenTree::Compare(indirAddr, storeAddr) && distinct)
+                {
+                    JITDUMP("Cannot interfere with [%06u] since they are off the same local V%02u and indir range "
+                            "[%03u..%03u) does not interfere with store range [%03u..%03u)\n",
+                            Compiler::dspTreeID(cur), indirAddr->AsLclVarCommon()->GetLclNum(), (unsigned)offs,
+                            (unsigned)offs + indir->Size(), (unsigned)storeOffs, store->Size());
+                    continue;
+                }
+
+                // Two indirs off of TYP_REFs cannot overlap if their offset ranges are distinct.
+                if (indirAddr->TypeIs(TYP_REF) && storeAddr->TypeIs(TYP_REF) && distinct)
+                {
+                    JITDUMP("Cannot interfere with [%06u] since they are both off TYP_REF bases and indir range "
+                            "[%03u..%03u) does not interfere with store range [%03u..%03u)\n",
+                            Compiler::dspTreeID(cur), (unsigned)offs, (unsigned)offs + indir->Size(),
+                            (unsigned)storeOffs, store->Size());
+                    continue;
+                }
+            }
+
+            JITDUMP("Indir [%06u] interferes with [%06u]\n", Compiler::dspTreeID(indir), Compiler::dspTreeID(cur));
+            UnmarkTree(indir);
+            return false;
+        }
     }
 
     JITDUMP("Interference checks passed. Moving nodes that are not part of data flow tree\n\n",
