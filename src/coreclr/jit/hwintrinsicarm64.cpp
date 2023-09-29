@@ -1758,7 +1758,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!op2->OperIs(GT_LCL_VAR))
             {
-                unsigned tmp = lvaGrabTemp(true DEBUGARG("StoreVector128x2 temp tree"));
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("StoreVectorNx2 temp tree"));
 
                 impStoreTemp(tmp, op2, CHECK_SPILL_NONE);
                 op2 = gtNewLclvNode(tmp, argType);
