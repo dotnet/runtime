@@ -15,6 +15,7 @@
     <!-- these are imported in this project instead -->
     <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
+    <!-- '/.dockerenv' - is to check if this is running in a codespace -->
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallChromeForTests>
     <InstallV8ForTests Condition="'$(InstallV8ForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallV8ForTests>
 

@@ -262,6 +262,7 @@ namespace Wasm.Build.Tests
             args.Append($" --expected-exit-code={expectedAppExitCode}");
             args.Append($" {extraXHarnessArgs ?? string.Empty}");
 
+            // `/.dockerenv` - is to check if this is running in a codespace
             if (File.Exists("/.dockerenv"))
                 args.Append(" --browser-arg=--no-sandbox");
 
