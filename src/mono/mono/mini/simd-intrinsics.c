@@ -1068,41 +1068,42 @@ support_probe_complete:
 	return custom_emit (cfg, fsig, args, klass, intrin_group, info, id, arg0_type, is_64bit);
 }
 
-#ifdef TARGET_ARM64
-static int
-arm64_make_ins_index (int destidx, int srcidx, int numelems)
+static MonoInst*
+emit_vector_insert_element (
+	MonoCompile* cfg, MonoClass* vklass, MonoInst* ins, MonoTypeEnum type, MonoInst* element, 
+	int index, gboolean is_zero_inited)
 {
-	g_assert (destidx < numelems);
-	g_assert (srcidx < numelems);
-	return destidx | (srcidx << 8);
-}
+	int op = type_to_insert_op (type);
+
+	if (is_zero_inited && is_zero_const (element)) {
+			// element already set to zero
+#ifdef TARGET_ARM64
+	} else if (!COMPILE_LLVM (cfg) && element->opcode == type_to_extract_op (type) && 
+		(type == MONO_TYPE_R4 || type == MONO_TYPE_R8)) {
+		// OP_INSERT_Ix inserts from GP reg, not SIMD. Cannot optimize for int types.
+		ins = emit_simd_ins (cfg, vklass, op, ins->dreg, element->sreg1);
+		ins->inst_c0 = index | ((element->inst_c0) << 8);
+		ins->inst_c1 = type;
 #endif
+	} else {
+		ins = emit_simd_ins (cfg, vklass, op, ins->dreg, element->dreg);
+		ins->inst_c0 = index;
+		ins->inst_c1 = type;
+	}
+
+	return ins;
+}
 
 static MonoInst *
 emit_vector_create_elementwise (
 	MonoCompile *cfg, MonoMethodSignature *fsig, MonoType *vtype,
 	MonoTypeEnum type, MonoInst **args)
 {
-	int op = type_to_insert_op (type);
 	MonoClass *vklass = mono_class_from_mono_type_internal (vtype);
 	MonoInst *ins = emit_xzero (cfg, vklass);
-	for (int i = 0; i < fsig->param_count; ++i) {
-		if (is_zero_const (args [i])) {
-			// element already set to zero
-#ifdef TARGET_ARM64
-		} else if (!COMPILE_LLVM (cfg) && args [i]->opcode == type_to_extract_op (type) && 
-			(type == MONO_TYPE_R4 || type == MONO_TYPE_R8)) {
-			// OP_INSERT_Ix inserts from GP reg, not SIMD. Cannot optimize for int types.
-			ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->sreg1);
-			ins->inst_c0 = arm64_make_ins_index (i, args [i]->inst_c0, fsig->param_count);
-			ins->inst_c1 = type;
-#endif
-		} else {
-			ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->dreg);
-			ins->inst_c0 = i;
-			ins->inst_c1 = type;
-		}
-	}
+	for (int i = 0; i < fsig->param_count; ++i)
+		emit_vector_insert_element (cfg, vklass, ins, type, args[i], i, TRUE);
+
 	return ins;
 }
 
@@ -2300,31 +2301,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
 			int index = GTMREG_TO_INT (args[1]->inst_c0);
-
 			if (index < 0 || index >= elems) {
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 					MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 			}
 
-			int insert_op = type_to_insert_op (arg0_type);
-
-#ifdef TARGET_ARM64
-			if (!COMPILE_LLVM (cfg) && args [2]->opcode == type_to_extract_op (arg0_type) && (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8)) {
-				// Optimize WithElement(GetElement(x, const_1), const_2) into one ins instruction on arm64
-				// OP_INSERT_Ix inserts from GP reg, not SIMD. Cannot optimize for int types.
-				MonoInst* ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->sreg1);
-				ins->inst_c0 = arm64_make_ins_index (index, args [2]->inst_c0, elems);
-				ins->inst_c1 = arg0_type;
-				return ins;
-			} 
-			else 
-#endif
-			{
-				MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
-				ins->inst_c0 = index;
-				ins->inst_c1 = arg0_type;
-				return ins;
-			}
+			return emit_vector_insert_element (cfg, klass, args [0], arg0_type, args [2], index, FALSE);
 		} 
 
 		if (!COMPILE_LLVM (cfg) && fsig->params [0]->type != MONO_TYPE_GENERICINST)
@@ -2725,11 +2707,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			ins->dreg = dreg;
 			ins->inst_c1 = MONO_TYPE_R4;
 
-			for (int i = 1; i < fsig->param_count; ++i) {
-				ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, ins->dreg, args [i + 1]->dreg);
-				ins->inst_c0 = i;
-				ins->inst_c1 = MONO_TYPE_R4;
-			}
+			for (int i = 1; i < fsig->param_count; ++i)
+				ins = emit_vector_insert_element (cfg, klass, ins, MONO_TYPE_R4, args [i + 1], i, FALSE);
+
 			ins->dreg = dreg;
 
 			if (indirect) {
@@ -2870,19 +2850,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 			}
 
-#ifdef TARGET_ARM64
-			if (!COMPILE_LLVM (cfg) && args [2]->opcode == OP_EXTRACT_R4) {
-				// Optimize x[const_1] = y[const_2] into one ins instruction on arm64
-				// OP_INSERT_Ix inserts from GP reg, not SIMD. Cannot optimize for int types.
-				ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, dreg, args [2]->sreg1);
-				ins->inst_c0 = arm64_make_ins_index (index, args [2]->inst_c0, fsig->param_count);
-				ins->inst_c1 = MONO_TYPE_R4;
-				ins->dreg = dreg;
-				return ins;
-			} 
-			else 
-#endif
-			{
+			if (args [0]->dreg == dreg) {
+				ins = emit_vector_insert_element (cfg, klass, args [0], MONO_TYPE_R4, args [2], index, FALSE);
+			} else {
 				ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, dreg, args [2]->dreg);
 				ins->inst_c0 = index;
 				ins->inst_c1 = MONO_TYPE_R4;
