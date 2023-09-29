@@ -20,9 +20,9 @@
                             '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'">
     <UseLocalTargetingRuntimePack Condition="'$(UseLocalTargetingRuntimePack)' == ''">true</UseLocalTargetingRuntimePack>
     <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalAppHostPack>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <EnableRuntimePackDownload>false</EnableRuntimePackDownload>
-    <EnableAppHostPackDownload>false</EnableAppHostPackDownload>
+    <EnableTargetingPackDownload Condition="'$(UseLocalTargetingRuntimePack)' == 'true'">false</EnableTargetingPackDownload>
+    <EnableRuntimePackDownload Condition="'$(UseLocalTargetingRuntimePack)' == 'true'">false</EnableRuntimePackDownload>
+    <EnableAppHostPackDownload Condition="'$(UseLocalAppHostPack)' == 'true'">false</EnableAppHostPackDownload>
     <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
   </PropertyGroup>
 
