@@ -404,13 +404,13 @@ HRESULT InitializeStandaloneGC()
 HRESULT GCHeapUtilities::InitializeStandaloneGC()
 {
     char* moduleName;
-    
+
     if (!RhConfig::Environment::TryGetStringValue("GCName", &moduleName))
     {
         return GCHeapUtilities::InitializeDefaultGC();
     }
 
-    NewArrayHolder<char> moduleNameHolder(moduleName);    
+    NewArrayHolder<char> moduleNameHolder(moduleName);
     HANDLE executableModule = PalGetModuleHandleFromPointer((void*)&GC_Initialize);
     const TCHAR * executableModulePath = NULL;
     PalGetModuleFileName(&executableModulePath, executableModule);
@@ -447,11 +447,10 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
     strcpy(moduleFullPath + folderLength, moduleName);
 
     HANDLE hMod = PalLoadLibrary(moduleFullPath);
-    
+
     if (!hMod)
     {
-        // TODO, andrewau, report error appropriately
-        printf("Error 1!\n");
+        LOG((LF_GC, LL_FATALERROR, "GC initialization failed to load the Standalone GC library.\n"));
         return E_FAIL;
     }
     IGCToCLR* gcToClr = new (nothrow) MyGCToEEInterface();
@@ -463,8 +462,7 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
     GC_VersionInfoFunction versionInfo = (GC_VersionInfoFunction)PalGetProcAddress(hMod, "GC_VersionInfo");
     if (!versionInfo)
     {
-        // TODO, andrewau, report error appropriately
-        printf("Error 2!\n");
+        LOG((LF_GC, LL_FATALERROR, "GC initialization failed with the GC_VersionInfo function not found.\n"));
         return E_FAIL;
     }
 
@@ -475,13 +473,16 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
     versionInfo(&g_gc_version_info);
     g_gc_load_status = GC_LOAD_STATUS_CALL_VERSIONINFO;
 
-    // TODO, andrewau, check and report error
+    if (g_gc_version_info.MajorVersion < GC_INTERFACE_MAJOR_VERSION)
+    {
+        LOG((LF_GC, LL_FATALERROR, "GC initialization failed with the Standalone GC reported a major version lower than what the runtime requires.\n"));
+        return E_FAIL;
+    }
 
     GC_InitializeFunction initFunc = (GC_InitializeFunction)PalGetProcAddress(hMod, "GC_Initialize");
     if (!initFunc)
     {
-        // TODO, andrewau, report error appropriately
-        printf("Error 3!\n");
+        LOG((LF_GC, LL_FATALERROR, "GC initialization failed with the GC_Initialize function not found.\n"));
         return E_FAIL;
     }
 
