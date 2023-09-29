@@ -29,7 +29,7 @@
     <GenerateCMakeProject>false</GenerateCMakeProject>
   </PropertyGroup>
 
-  <PropertyGroup '$(EnableAggressiveTrimming)' != 'true' and '$(EnableSoftTrimming)' != 'true'>
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' != 'true' and '$(EnableSoftTrimming)' != 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
   </PropertyGroup>
@@ -62,35 +62,35 @@
 
     <ItemGroup>
       <!-- Mark all the assemblies for link. We will explicitly mark the non-trimmable ones -->
-      <ResolvedFileToPublish TrimMode="$(TrimMode)" />
+      <AppleAssembliesToBundle TrimMode="$(TrimMode)" />
 
       <!-- Don't trim the main assembly.
            TrimMode="" is needed so the root assemblies are correctly identified -->
-      <ResolvedFileToPublish TrimMode="" Condition="'%(FileName)' == '$(AssemblyName)'" />
+      <AppleAssembliesToBundle TrimMode="" Condition="'%(FileName)' == '$(AssemblyName)'" />
 
       <!-- TODO: find out why these assemblies aren't copied by copyused even though they're referenced -->
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.ComponentModel.EventBasedAsync'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Diagnostics.FileVersionInfo'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Drawing.Primitives'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.IO.Pipelines'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Memory'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Net.WebHeaderCollection'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Runtime.Serialization.Formatters'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.AccessControl'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Claims'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Permissions'" />
-      <ResolvedFileToPublish TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Transactions.Local'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.ComponentModel.EventBasedAsync'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Diagnostics.FileVersionInfo'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Drawing.Primitives'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.IO.Pipelines'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Memory'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Net.WebHeaderCollection'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Runtime.Serialization.Formatters'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.AccessControl'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Claims'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Permissions'" />
+      <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Transactions.Local'" />
 
       <!-- Even though we are trimming the test runner assembly, we want it to be treated
            as a root -->
       <TrimmerRootAssembly
-          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('TestRunner.dll'))"
-          Include="%(ResolvedFileToPublish.FullPath)" />
+          Condition="$([System.String]::Copy('%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)').EndsWith('TestRunner.dll'))"
+          Include="%(AppleAssembliesToBundle.FullPath)" />
     </ItemGroup>
 
     <ItemGroup>
-      <TrimmerRootDescriptor Include="$(BuildBaseDir)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'"  />
-      <TrimmerRootDescriptor Include="$(BuildBaseDir)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
+      <TrimmerRootDescriptor Include="$(_AppleTargetsDir)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'"  />
+      <TrimmerRootDescriptor Include="$(_AppleTargetsDir)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
     </ItemGroup>
   </Target>
 
