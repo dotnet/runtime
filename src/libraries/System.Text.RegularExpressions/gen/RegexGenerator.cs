@@ -373,7 +373,28 @@ namespace System.Text.RegularExpressions.Generator
 
         private sealed class ObjectImmutableArraySequenceEqualityComparer : IEqualityComparer<ImmutableArray<object>>
         {
-            public bool Equals(ImmutableArray<object> x, ImmutableArray<object> y) => x.SequenceEqual(y);
+            public bool Equals(ImmutableArray<object> left, ImmutableArray<object> right)
+            {
+                if (left.Length != right.Length)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < left.Length; i++)
+                {
+                    bool areEqual = left[i] is { } leftElem
+                        ? leftElem.Equals(right[i])
+                        : right[i] is null;
+
+                    if (!areEqual)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
             public int GetHashCode([DisallowNull] ImmutableArray<object> obj)
             {
                 int hash = 0;
