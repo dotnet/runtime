@@ -112,7 +112,10 @@ namespace System.Text.RegularExpressions.Generator
                 })
 
                 // Combine all of the generated text outputs into a single batch. We then generate a single source output from that batch.
-                .Collect();
+                .Collect()
+
+                // Apply sequence equality comparison on the result array for incremental caching.
+                .WithComparer(new ObjectImmutableArraySequenceEqualityComparer());
 
             // When there something to output, take all the generated strings and concatenate them to output,
             // and raise all of the created diagnostics.
@@ -353,6 +356,39 @@ namespace System.Text.RegularExpressions.Generator
         {
             /// <summary>Create a <see cref="Diagnostic"/> from the data.</summary>
             public Diagnostic ToDiagnostic() => Diagnostic.Create(descriptor, location, arg is null ? Array.Empty<object>() : new[] { arg });
+        }
+
+        private sealed class ObjectImmutableArraySequenceEqualityComparer : IEqualityComparer<ImmutableArray<object>>
+        {
+            public bool Equals(ImmutableArray<object> left, ImmutableArray<object> right)
+            {
+                if (left.Length != right.Length)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < left.Length; i++)
+                {
+                    bool areEqual = left[i] is { } leftElem
+                        ? leftElem.Equals(right[i])
+                        : right[i] is null;
+
+                    if (!areEqual)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            public int GetHashCode([DisallowNull] ImmutableArray<object> obj)
+            {
+                int hash = 0;
+                for (int i = 0; i < obj.Length; i++)
+                    hash = (hash, obj[i]).GetHashCode();
+                return hash;
+            }
         }
     }
 }
