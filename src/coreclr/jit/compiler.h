@@ -9897,6 +9897,7 @@ public:
         STRESS_MODE(NO_OLD_PROMOTION) /* Do not use old promotion */                            \
         STRESS_MODE(PHYSICAL_PROMOTION) /* Use physical promotion */                            \
         STRESS_MODE(PHYSICAL_PROMOTION_COST)                                                    \
+        STRESS_MODE(UNWIND) /* stress unwind info; e.g., create function fragments */           \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
