@@ -20,8 +20,8 @@ struct ReplayResults
 {
     ReplayResult Result = ReplayResult::Success;
     bool IsMinOpts = false;
-    size_t NumCodeBytes = 0;
-    unsigned long long NumExecutedInstructions = 0;
+    uint32_t NumCodeBytes = 0;
+    uint64_t NumExecutedInstructions = 0;
 };
 
 class JitInstance

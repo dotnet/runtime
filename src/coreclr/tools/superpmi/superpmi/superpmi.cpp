@@ -148,7 +148,7 @@ static bool PrintDiffsCsvRow(
     const ReplayResults& diffRes,
     bool hasDiff)
 {
-    return fw.Printf("%d,%u,%s,%s,%s,%s,%lld,%lld,%lld,%lld\n",
+    return fw.Printf("%d,%u,%s,%s,%s,%s,%u,%u,%lld,%lld\n",
         context, contextSize,
         ResultToString(baseRes.Result), ResultToString(diffRes.Result),
         baseRes.IsMinOpts ? "True" : "False",
@@ -167,7 +167,7 @@ static bool PrintReplayCsvRow(
     int context, uint32_t contextSize,
     const ReplayResults& res)
 {
-    return fw.Printf("%d,%u,%s,%s,%lld,%lld\n",
+    return fw.Printf("%d,%u,%s,%s,%u,%lld\n",
         context, contextSize,
         ResultToString(res.Result),
         res.IsMinOpts ? "True" : "False",
