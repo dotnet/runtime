@@ -1858,7 +1858,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             JITDUMP("\nNew tree:\n")
             DISPTREE(storeBlk);
-            *next = srcBlk;
+            // TODO: This skips lowering srcBlk and storeBlk.
+            *next = storeBlk->gtNext;
             return true;
         }
         else
@@ -2037,55 +2038,62 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                     BlockRange().InsertAfter(l2Indir, r1Indir, r2Offs, r2AddOffs, r2Indir);
 
 #ifdef TARGET_ARM64
-                    // ARM64 will get efficient ccmp codegen if we emit the normal thing:
-                    //
-                    // bool result = (*(int*)leftArg == *(int)rightArg) & (*(int*)(leftArg + 1) == *(int*)(rightArg +
-                    // 1))
+                    if (!varTypeIsSIMD(loadType))
+                    {
+                        // ARM64 will get efficient ccmp codegen if we emit the normal thing:
+                        //
+                        // bool result = (*(int*)leftArg == *(int)rightArg) & (*(int*)(leftArg + 1) == *(int*)(rightArg
+                        // +
+                        // 1))
 
-                    GenTree* eq1 = newBinaryOp(comp, GT_EQ, actualLoadType, l1Indir, r1Indir);
-                    GenTree* eq2 = newBinaryOp(comp, GT_EQ, actualLoadType, l2Indir, r2Indir);
-                    result       = newBinaryOp(comp, GT_AND, TYP_INT, eq1, eq2);
+                        GenTree* eq1 = newBinaryOp(comp, GT_EQ, TYP_INT, l1Indir, r1Indir);
+                        GenTree* eq2 = newBinaryOp(comp, GT_EQ, TYP_INT, l2Indir, r2Indir);
+                        result       = newBinaryOp(comp, GT_AND, TYP_INT, eq1, eq2);
 
-                    BlockRange().InsertAfter(r2Indir, eq1, eq2, result);
-#else
-                    // We're going to emit something like the following:
-                    //
-                    // bool result = ((*(int*)leftArg ^ *(int*)rightArg) |
-                    //                (*(int*)(leftArg + 1) ^ *((int*)(rightArg + 1)))) == 0;
-                    //
-                    // ^ in the given example we unroll for length=5
-                    //
-                    // In IR:
-                    //
-                    // *  EQ        int
-                    // +--*  OR        int
-                    // |  +--*  XOR       int
-                    // |  |  +--*  IND       int
-                    // |  |  |  \--*  LCL_VAR   byref  V1
-                    // |  |  \--*  IND       int
-                    // |  |     \--*  LCL_VAR   byref  V2
-                    // |  \--*  XOR       int
-                    // |     +--*  IND       int
-                    // |     |  \--*  ADD       byref
-                    // |     |     +--*  LCL_VAR   byref  V1
-                    // |     |     \--*  CNS_INT   int    1
-                    // |     \--*  IND       int
-                    // |        \--*  ADD       byref
-                    // |           +--*  LCL_VAR   byref  V2
-                    // |           \--*  CNS_INT   int    1
-                    // \--*  CNS_INT   int    0
-                    //
-                    // TODO-CQ: Do this as a general optimization similar to TryLowerAndOrToCCMP.
-
-                    GenTree* lXor     = newBinaryOp(comp, GT_XOR, actualLoadType, l1Indir, r1Indir);
-                    GenTree* rXor     = newBinaryOp(comp, GT_XOR, actualLoadType, l2Indir, r2Indir);
-                    GenTree* resultOr = newBinaryOp(comp, GT_OR, actualLoadType, lXor, rXor);
-                    GenTree* zeroCns  = comp->gtNewZeroConNode(actualLoadType);
-                    result            = newBinaryOp(comp, GT_EQ, TYP_INT, resultOr, zeroCns);
-
-                    BlockRange().InsertAfter(r2Indir, lXor, rXor, resultOr, zeroCns);
-                    BlockRange().InsertAfter(zeroCns, result);
+                        BlockRange().InsertAfter(r2Indir, eq1, eq2, result);
+                    }
 #endif
+
+                    if (result == nullptr)
+                    {
+                        // We're going to emit something like the following:
+                        //
+                        // bool result = ((*(int*)leftArg ^ *(int*)rightArg) |
+                        //                (*(int*)(leftArg + 1) ^ *((int*)(rightArg + 1)))) == 0;
+                        //
+                        // ^ in the given example we unroll for length=5
+                        //
+                        // In IR:
+                        //
+                        // *  EQ        int
+                        // +--*  OR        int
+                        // |  +--*  XOR       int
+                        // |  |  +--*  IND       int
+                        // |  |  |  \--*  LCL_VAR   byref  V1
+                        // |  |  \--*  IND       int
+                        // |  |     \--*  LCL_VAR   byref  V2
+                        // |  \--*  XOR       int
+                        // |     +--*  IND       int
+                        // |     |  \--*  ADD       byref
+                        // |     |     +--*  LCL_VAR   byref  V1
+                        // |     |     \--*  CNS_INT   int    1
+                        // |     \--*  IND       int
+                        // |        \--*  ADD       byref
+                        // |           +--*  LCL_VAR   byref  V2
+                        // |           \--*  CNS_INT   int    1
+                        // \--*  CNS_INT   int    0
+                        //
+                        // TODO-CQ: Do this as a general optimization similar to TryLowerAndOrToCCMP.
+
+                        GenTree* lXor     = newBinaryOp(comp, GT_XOR, actualLoadType, l1Indir, r1Indir);
+                        GenTree* rXor     = newBinaryOp(comp, GT_XOR, actualLoadType, l2Indir, r2Indir);
+                        GenTree* resultOr = newBinaryOp(comp, GT_OR, actualLoadType, lXor, rXor);
+                        GenTree* zeroCns  = comp->gtNewZeroConNode(actualLoadType);
+                        result            = newBinaryOp(comp, GT_EQ, TYP_INT, resultOr, zeroCns);
+
+                        BlockRange().InsertAfter(r2Indir, lXor, rXor, resultOr, zeroCns);
+                        BlockRange().InsertAfter(zeroCns, result);
+                    }
                 }
 
                 JITDUMP("\nUnrolled to:\n");
@@ -2111,7 +2119,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                         arg.GetNode()->SetUnusedValue();
                     }
                 }
-                return lArg;
+                return true;
             }
         }
         else
