@@ -8015,7 +8015,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     emitIns_R_S(ins, attr, dataReg, lclNum, offset);
                 }
             }
-            else if (emitIns_valid_imm_for_ldst_offset(offset, attr))
+            else if (emitIns_valid_imm_for_ldst_offset(offset, EA_SIZE(attr)))
             {
                 // Then load/store dataReg from/to [memBase + offset]
                 emitIns_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), offset);

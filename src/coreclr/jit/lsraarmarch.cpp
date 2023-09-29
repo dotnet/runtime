@@ -86,7 +86,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 // ARM does not support both Index and offset so we need an internal register
                 buildInternalIntRegisterDefForNode(indirTree);
             }
-            else if (!emitter::emitIns_valid_imm_for_ldst_offset(cns, emitTypeSize(indirTree)))
+            else if (!emitter::emitIns_valid_imm_for_ldst_offset(cns, EA_SIZE(emitTypeSize(indirTree))))
             {
                 // This offset can't be contained in the ldr/str instruction, so we need an internal register
                 buildInternalIntRegisterDefForNode(indirTree);

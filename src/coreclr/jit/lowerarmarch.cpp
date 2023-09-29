@@ -2250,7 +2250,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
                         var_types loadType = varTypeIsSmall(castToType) ? castToType : castOp->TypeGet();
 
                         if (emitter::emitIns_valid_imm_for_ldst_offset(addr->AsAddrMode()->Offset(),
-                                                                       emitTypeSize(loadType)))
+                                                                       EA_SIZE(emitTypeSize(loadType))))
                         {
                             srcIsContainable = true;
                         }

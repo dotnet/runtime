@@ -399,40 +399,41 @@ enum insTupleType : uint16_t
 #undef EA_UNKNOWN
 enum emitAttr : unsigned
 {
-                EA_UNKNOWN       = 0x000,
-                EA_1BYTE         = 0x001,
-                EA_2BYTE         = 0x002,
-                EA_4BYTE         = 0x004,
-                EA_8BYTE         = 0x008,
-                EA_16BYTE        = 0x010,
+    EA_UNKNOWN       = 0x000,
+    EA_1BYTE         = 0x001,
+    EA_2BYTE         = 0x002,
+    EA_4BYTE         = 0x004,
+    EA_8BYTE         = 0x008,
+    EA_16BYTE        = 0x010,
 
 #if defined(TARGET_XARCH)
-                EA_32BYTE        = 0x020,
-                EA_64BYTE        = 0x040,
-                EA_SIZE_MASK     = 0x07F,
+    EA_32BYTE        = 0x020,
+    EA_64BYTE        = 0x040,
+    EA_SIZE_MASK     = 0x07F,
 #else
-                EA_SIZE_MASK     = 0x01F,
+    EA_SIZE_MASK     = 0x01F,
 #endif
 
 #ifdef TARGET_64BIT
-                EA_PTRSIZE       = EA_8BYTE,
+    EA_PTRSIZE       = EA_8BYTE,
 #else
-                EA_PTRSIZE       = EA_4BYTE,
+    EA_PTRSIZE       = EA_4BYTE,
 #endif
 
-                EA_OFFSET_FLG    = 0x080,
-                EA_OFFSET        = EA_OFFSET_FLG | EA_PTRSIZE,       /* size ==  0 */
-                EA_GCREF_FLG     = 0x100,
-                EA_GCREF         = EA_GCREF_FLG |  EA_PTRSIZE,       /* size == -1 */
-                EA_BYREF_FLG     = 0x200,
-                EA_BYREF         = EA_BYREF_FLG |  EA_PTRSIZE,       /* size == -2 */
-                EA_DSP_RELOC_FLG = 0x400, // Is the displacement of the instruction relocatable?
-                EA_CNS_RELOC_FLG = 0x800, // Is the immediate of the instruction relocatable?
+    EA_OFFSET_FLG    = 0x080,
+    EA_OFFSET        = EA_OFFSET_FLG | EA_PTRSIZE,       /* size ==  0 */
+    EA_GCREF_FLG     = 0x100,
+    EA_GCREF         = EA_GCREF_FLG |  EA_PTRSIZE,       /* size == -1 */
+    EA_BYREF_FLG     = 0x200,
+    EA_BYREF         = EA_BYREF_FLG |  EA_PTRSIZE,       /* size == -2 */
+    EA_DSP_RELOC_FLG = 0x400, // Is the displacement of the instruction relocatable?
+    EA_CNS_RELOC_FLG = 0x800, // Is the immediate of the instruction relocatable?
 };
 
 #define EA_ATTR(x)                  ((emitAttr)(x))
 #define EA_SIZE(x)                  ((emitAttr)(((unsigned)(x)) &  EA_SIZE_MASK))
 #define EA_SIZE_IN_BYTES(x)         ((UNATIVE_OFFSET)(EA_SIZE(x)))
+#define EA_IS_SIZE(x)               (((((unsigned)(x)) & ~EA_SIZE_MASK) == 0) && genExactlyOneBit((unsigned)(x)))
 #define EA_SET_FLG(x, flg)          ((emitAttr)(((unsigned)(x)) | (flg)))
 #define EA_REMOVE_FLG(x, flg)       ((emitAttr)(((unsigned)(x)) & ~(flg)))
 #define EA_4BYTE_DSP_RELOC          (EA_SET_FLG(EA_4BYTE, EA_DSP_RELOC_FLG))

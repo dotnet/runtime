@@ -2391,8 +2391,10 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 }
 
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
-/*static*/ bool emitter::emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr attr)
+/*static*/ bool emitter::emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size)
 {
+    assert(EA_IS_SIZE(size));
+
     if (imm == 0)
         return true; // Encodable using IF_LS_2A
 
@@ -2402,7 +2404,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     if (imm < 0)
         return false; // not encodable
 
-    emitAttr size  = EA_SIZE(attr);
     unsigned scale = NaturalScale_helper(size);
     ssize_t  mask  = size - 1; // the mask of low bits that must be zero to encode the immediate
 
@@ -2419,11 +2420,11 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 }
 
 // true if 'imm' can be encoded as an offset in a ldp/stp instruction
-/*static*/ bool emitter::canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr attr)
+/*static*/ bool emitter::canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr size)
 {
-    assert((attr == EA_4BYTE) || (attr == EA_8BYTE) || (attr == EA_16BYTE));
-    const int size = EA_SIZE_IN_BYTES(attr);
-    return (imm % size == 0) && (imm >= -64 * size) && (imm < 64 * size);
+    assert((size == EA_4BYTE) || (size == EA_8BYTE) || (size == EA_16BYTE));
+    const int sizeInBytes = EA_SIZE_IN_BYTES(size);
+    return (imm % sizeInBytes == 0) && (imm >= -64 * sizeInBytes) && (imm < 64 * sizeInBytes);
 }
 
 /************************************************************************
@@ -2434,7 +2435,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 /*static*/ unsigned emitter::NaturalScale_helper(emitAttr size)
 {
     assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE || size == EA_16BYTE);
-    return BitOperations::Log2((unsigned)size);
+    return BitOperations::Log2(EA_SIZE_IN_BYTES(size));
 }
 
 /************************************************************************
@@ -9169,6 +9170,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeDatasizeLS(emitter::code_t code, emitAttr size)
 {
+    assert(EA_IS_SIZE(size));
+
     bool exclusive = ((code & 0x35000000) == 0);
     bool atomic    = ((code & 0x31200C00) == 0x30200000);
 
@@ -9176,7 +9179,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         if ((code & 0x80000000) == 0) // Is it a ldrsh or ldrsb and not ldrsw ?
         {
-            if (EA_SIZE(size) != EA_8BYTE) // Do we need to encode the 32-bit Rt size bit?
+            if (size != EA_8BYTE) // Do we need to encode the 32-bit Rt size bit?
             {
                 return 0x00400000; // set the bit at location 22
             }
@@ -9184,7 +9187,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
     else if (code & 0x80000000) // Is this a ldr/str/ldur/stur opcode?
     {
-        if (EA_SIZE(size) == EA_8BYTE) // Do we need to encode the 64-bit size bit?
+        if (size == EA_8BYTE) // Do we need to encode the 64-bit size bit?
         {
             return 0x40000000; // set the bit at location 30
         }
@@ -14171,7 +14174,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 // On Arm64, TEB is in r18, so load from the r18 as base.
                 emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue());
             }
-            else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
+            else if (emitIns_valid_imm_for_ldst_offset(offset, EA_SIZE(emitTypeSize(indir->TypeGet()))))
             {
                 // Then load/store dataReg from/to [memBase + offset]
                 emitIns_R_R_I(ins, attr, dataReg, memBase->GetRegNum(), offset);
