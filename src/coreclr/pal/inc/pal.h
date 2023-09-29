@@ -1052,7 +1052,6 @@ PALIMPORT
 HANDLE
 PALAPI
 PAL_CreateMutexW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
     IN BOOL bInitialOwner,
     IN LPCWSTR lpName,
     IN LPSTR lpSystemCallErrors,
@@ -1075,8 +1074,6 @@ PALIMPORT
 HANDLE
 PALAPI
 PAL_OpenMutexW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
        IN LPCWSTR lpName,
        IN LPSTR lpSystemCallErrors,
        IN DWORD dwSystemCallErrorsBufferSize);

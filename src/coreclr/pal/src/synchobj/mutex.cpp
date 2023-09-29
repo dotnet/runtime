@@ -103,7 +103,7 @@ CreateMutexW(
     IN BOOL bInitialOwner,
     IN LPCWSTR lpName)
 {
-    return PAL_CreateMutexW(lpMutexAttributes, bInitialOwner, lpName, nullptr, 0);
+    return PAL_CreateMutexW(bInitialOwner, lpName, nullptr, 0);
 }
 
 /*++
@@ -125,7 +125,6 @@ Parameters:
 HANDLE
 PALAPI
 PAL_CreateMutexW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
     IN BOOL bInitialOwner,
     IN LPCWSTR lpName,
     IN LPSTR lpSystemCallErrors,
@@ -137,9 +136,7 @@ PAL_CreateMutexW(
     char utf8Name[SHARED_MEMORY_MAX_NAME_CHAR_COUNT + 1];
 
     PERF_ENTRY(PAL_CreateMutexW);
-    ENTRY("PAL_CreateMutexW(lpMutexAttr=%p, bInitialOwner=%d, lpName=%p (%S), "
-          "lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d\n",
-          lpMutexAttributes,
+    ENTRY("PAL_CreateMutexW(bInitialOwner=%d, lpName=%p (%S), lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d\n",
           bInitialOwner,
           lpName,
           lpName?lpName:W16_NULLSTRING,
@@ -185,7 +182,7 @@ PAL_CreateMutexW(
         palError = InternalCreateMutex(
             &errors,
             pthr,
-            lpMutexAttributes,
+            nullptr,
             bInitialOwner,
             lpName == nullptr ? nullptr : utf8Name,
             &hMutex
@@ -588,7 +585,7 @@ OpenMutexW(
        IN BOOL bInheritHandle,
        IN LPCWSTR lpName)
 {
-    return PAL_OpenMutexW(dwDesiredAccess, bInheritHandle, lpName, nullptr, 0);
+    return PAL_OpenMutexW(lpName, nullptr, 0);
 }
 
 /*++
@@ -609,8 +606,6 @@ Parameters:
 HANDLE
 PALAPI
 PAL_OpenMutexW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
        IN LPCWSTR lpName,
        IN LPSTR lpSystemCallErrors,
        IN DWORD dwSystemCallErrorsBufferSize)
@@ -621,10 +616,7 @@ PAL_OpenMutexW(
     char utf8Name[SHARED_MEMORY_MAX_NAME_CHAR_COUNT + 1];
 
     PERF_ENTRY(PAL_OpenMutexW);
-    ENTRY("PAL_OpenMutexW(dwDesiredAccess=%#x, bInheritHandle=%d, lpName=%p (%S), "
-          "lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d)\n",
-          dwDesiredAccess,
-          bInheritHandle,
+    ENTRY("PAL_OpenMutexW(lpName=%p (%S), lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d)\n",
           lpName,
           lpName?lpName:W16_NULLSTRING,
           lpSystemCallErrors,

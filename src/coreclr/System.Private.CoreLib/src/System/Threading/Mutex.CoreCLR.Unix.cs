@@ -14,14 +14,9 @@ namespace System.Threading
     /// </summary>
     public sealed partial class Mutex : WaitHandle
     {
-        private const uint AccessRights =
-            (uint)Interop.Kernel32.MAXIMUM_ALLOWED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.MUTEX_MODIFY_STATE;
-
         private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
         {
-            SafeWaitHandle mutexHandle =
-                CreateMutexCore(0, initiallyOwned, name, AccessRights, out int errorCode, out string? errorDetails);
-
+            SafeWaitHandle mutexHandle = CreateMutexCore(initiallyOwned, name, out int errorCode, out string? errorDetails);
             if (mutexHandle.IsInvalid)
             {
                 mutexHandle.SetHandleAsInvalid();
@@ -47,7 +42,7 @@ namespace System.Threading
             // with parameters to allow us to view & edit the ACL.  This will
             // fail if we don't have permission to view or edit the ACL's.
             // If that happens, ask for less permissions.
-            SafeWaitHandle myHandle = OpenMutexCore(AccessRights, false, name, out int errorCode, out string? errorDetails);
+            SafeWaitHandle myHandle = OpenMutexCore(name, out int errorCode, out string? errorDetails);
 
             if (myHandle.IsInvalid)
             {
@@ -89,21 +84,13 @@ namespace System.Threading
         private const int SystemCallErrorsBufferSize = 256;
 
         private static unsafe SafeWaitHandle CreateMutexCore(
-            nint mutexAttributes,
             bool initialOwner,
             string? name,
-            uint desiredAccess,
             out int errorCode,
             out string? errorDetails)
         {
             byte* systemCallErrors = stackalloc byte[SystemCallErrorsBufferSize];
-            SafeWaitHandle mutexHandle =
-                CreateMutex(
-                    mutexAttributes,
-                    initialOwner,
-                    name,
-                    systemCallErrors,
-                    SystemCallErrorsBufferSize);
+            SafeWaitHandle mutexHandle = CreateMutex(initialOwner, name, systemCallErrors, SystemCallErrorsBufferSize);
 
             // Get the error code even if the handle is valid, as it could be ERROR_ALREADY_EXISTS, indicating that the mutex
             // already exists and was opened
@@ -113,16 +100,10 @@ namespace System.Threading
             return mutexHandle;
         }
 
-        private static unsafe SafeWaitHandle OpenMutexCore(
-            uint desiredAccess,
-            bool inheritHandle,
-            string name,
-            out int errorCode,
-            out string? errorDetails)
+        private static unsafe SafeWaitHandle OpenMutexCore(string name, out int errorCode, out string? errorDetails)
         {
             byte* systemCallErrors = stackalloc byte[SystemCallErrorsBufferSize];
-            SafeWaitHandle mutexHandle =
-                OpenMutex(desiredAccess, inheritHandle, name, systemCallErrors, SystemCallErrorsBufferSize);
+            SafeWaitHandle mutexHandle = OpenMutex(name, systemCallErrors, SystemCallErrorsBufferSize);
             errorCode = mutexHandle.IsInvalid ? Marshal.GetLastPInvokeError() : Interop.Errors.ERROR_SUCCESS;
             errorDetails = mutexHandle.IsInvalid ? GetErrorDetails(systemCallErrors) : null;
             return mutexHandle;
@@ -146,9 +127,9 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PAL_CreateMutexW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        private static unsafe partial SafeWaitHandle CreateMutex(nint mutexAttributes, [MarshalAs(UnmanagedType.Bool)] bool initialOwner, string? name, byte* systemCallErrors, uint systemCallErrorsBufferSize);
+        private static unsafe partial SafeWaitHandle CreateMutex([MarshalAs(UnmanagedType.Bool)] bool initialOwner, string? name, byte* systemCallErrors, uint systemCallErrorsBufferSize);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PAL_OpenMutexW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        private static unsafe partial SafeWaitHandle OpenMutex(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, string name, byte* systemCallErrors, uint systemCallErrorsBufferSize);
+        private static unsafe partial SafeWaitHandle OpenMutex(string name, byte* systemCallErrors, uint systemCallErrorsBufferSize);
     }
 }
