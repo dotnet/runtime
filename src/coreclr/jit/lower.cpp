@@ -7906,7 +7906,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
             for (int i = 0; i < m_blockIndirs.Height(); i++)
             {
                 GenTreeIndir* prevIndir = m_blockIndirs.Top(i);
-                if (!prevIndir->OperIs(GT_IND))
+                if ((prevIndir == nullptr) || !prevIndir->OperIs(GT_IND) || (prevIndir->TypeGet() != ind->TypeGet()))
                 {
                     continue;
                 }
@@ -7922,7 +7922,14 @@ void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
                     if (abs(offs1 - offs2) == genTypeSize(ind))
                     {
                         JITDUMP("  ..and they are amenable to ldp optimization\n");
-                        TryOptimizeForLdp(prevIndir, ind);
+                        if (TryOptimizeForLdp(prevIndir, ind))
+                        {
+                            // Do not let the previous one participate in
+                            // another instance; that can cause us to e.g. convert
+                            // *(x+4), *(x+0), *(x+8), *(x+12) =>
+                            // *(x+4), *(x+8), *(x+0), *(x+12)
+                            m_blockIndirs.TopRef(i) = nullptr;
+                        }
                         break;
                     }
                     else
@@ -8018,6 +8025,13 @@ bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
 
     for (GenTree* cur = prevIndir->gtNext; cur != indir; cur = cur->gtNext)
     {
+        if (cur->IsCall() || (cur->OperIsStoreBlk() && (cur->AsBlk()->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper)))
+        {
+            JITDUMP("[Heuristic] Giving up due to node that kills registers [%06u]\n", Compiler::dspTreeID(cur));
+            UnmarkTree(indir);
+            return false;
+        }
+
         if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
         {
             // Part of data flow of 'indir', so we will be moving past this node.
