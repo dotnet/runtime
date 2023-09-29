@@ -1068,6 +1068,16 @@ support_probe_complete:
 	return custom_emit (cfg, fsig, args, klass, intrin_group, info, id, arg0_type, is_64bit);
 }
 
+#ifdef TARGET_ARM64
+static int
+arm64_make_ins_index (int destidx, int srcidx, int numelems)
+{
+	g_assert (destidx < numelems);
+	g_assert (srcidx < numelems);
+	return destidx | (srcidx << 8);
+}
+#endif
+
 static MonoInst *
 emit_vector_create_elementwise (
 	MonoCompile *cfg, MonoMethodSignature *fsig, MonoType *vtype,
@@ -1083,9 +1093,8 @@ emit_vector_create_elementwise (
 		} else if (!COMPILE_LLVM (cfg) && args [i]->opcode == type_to_extract_op (type) && 
 			(type == MONO_TYPE_R4 || type == MONO_TYPE_R8)) {
 			// OP_INSERT_Ix inserts from GP reg, not SIMD. Cannot optimize for int types.
-			int srcidx = args [i]->inst_c0;
 			ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->sreg1);
-			ins->inst_c0 = i | (srcidx << 8);
+			ins->inst_c0 = arm64_make_ins_index (i, args [i]->inst_c0, fsig->param_count);
 			ins->inst_c1 = type;
 #endif
 		} else {
@@ -1096,7 +1105,6 @@ emit_vector_create_elementwise (
 	}
 	return ins;
 }
-
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 
@@ -2304,9 +2312,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			if (!COMPILE_LLVM (cfg) && args [2]->opcode == type_to_extract_op (arg0_type) && (arg0_type == MONO_TYPE_R4 || arg0_type == MONO_TYPE_R8)) {
 				// Optimize WithElement(GetElement(x, const_1), const_2) into one ins instruction on arm64
 				// OP_INSERT_Ix inserts from GP reg, not SIMD. Cannot optimize for int types.
-				int srcidx = args [2]->inst_c0;
 				MonoInst* ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->sreg1);
-				ins->inst_c0 = index | (srcidx << 8);
+				ins->inst_c0 = arm64_make_ins_index (index, args [2]->inst_c0, elems);
 				ins->inst_c1 = arg0_type;
 				return ins;
 			} 
@@ -2867,10 +2874,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			if (!COMPILE_LLVM (cfg) && args [2]->opcode == OP_EXTRACT_R4) {
 				// Optimize x[const_1] = y[const_2] into one ins instruction on arm64
 				// OP_INSERT_Ix inserts from GP reg, not SIMD. Cannot optimize for int types.
-				int srcidx = args [2]->inst_c0;
 				ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, dreg, args [2]->sreg1);
-				ins->inst_c0 = index | (srcidx << 8);
+				ins->inst_c0 = arm64_make_ins_index (index, args [2]->inst_c0, fsig->param_count);
 				ins->inst_c1 = MONO_TYPE_R4;
+				ins->dreg = dreg;
 				return ins;
 			} 
 			else 
