@@ -11,7 +11,7 @@
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
     <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
     <PublishTrimmed>true</PublishTrimmed>
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifiers>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <UseLocalAppHostPack>true</UseLocalAppHostPack>
@@ -56,7 +56,6 @@
     <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_IsApplePlatform)' != 'true' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
   </ItemGroup>
 
-  <Import Project="$(R2ROverridePath)" Condition="'$(R2ROverridePath)' != ''" />
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"
           Condition="'$(NativeAotSupported)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
