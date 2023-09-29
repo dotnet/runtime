@@ -546,19 +546,21 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/libraries/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: Release
           platforms:
           - windows_x64
           jobParameters:
-            framework: allConfigurations
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            isOfficialAllConfigurations: true
-            liveRuntimeBuildConfig: release
-            # Official builds don't run tests, locally or on Helix
-            runTests: false
-            useHelix: false
-
+            buildArgs: -s tools+libs -allConfigurations /p:TestAssemblies=false /p:TestPackages=true
+            nameSuffix: Libraries_AllConfigurations
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: Libraries_AllConfigurations
+            timeoutInMinutes: 95
+      #
+      # Build SourceBuild packages
+      #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
