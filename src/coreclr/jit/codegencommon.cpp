@@ -3340,6 +3340,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
                     // Each field will be inserted into the same destination register.
+                    //
                     assert(varTypeIsSIMD(varDsc));
                     assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
                     assert(argNum > 0);
@@ -3349,20 +3350,21 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     // but is in the wrong part of the register, mark it specially so later
                     // we make sure to move it to the right spot before "freeing" the destination.
                     //
-                    // If the arg is already in the right place we don't need to do anything special
                     destRegNum = varDsc->GetRegNum();
                     if (regNum == destRegNum)
                     {
+                        // We only get here if the HFA part is not already in the right slot in
+                        // the destination. That is, it is not slot-1.
+                        //
                         const int slot = regArgTab[argNum].slot;
-                        if (slot != 1)
-                        {
-                            JITDUMP("HFA conflict; arg num %u needs to move from %s[%u] to %s[%u]\n", argNum,
-                                    getRegName(regNum), 0, getRegName(destRegNum), slot - 1);
-                            regArgTab[argNum].hfaConflict = true;
+                        assert(slot != 1);
+                        JITDUMP("HFA conflict; arg num %u needs to move from %s[%u] to %s[%u]\n", argNum,
+                                getRegName(regNum), 0, getRegName(destRegNum), slot - 1);
+                        regArgTab[argNum].hfaConflict = true;
 
-                            // We'll need to do a special pass to resolve these
-                            hasHfaConflict = true;
-                        }
+                        // We'll need to do a special pass later to resolve these
+                        //
+                        hasHfaConflict = true;
                     }
                     regArgMaskLive &= ~genRegMask(regNum);
                     regArgTab[argNum].circular = false;
@@ -3847,10 +3849,29 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     }
 
 #if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
-    // If we saw any hfa conflicts, handle those now
+    // If we saw any hfa conflicts, handle those now.
     //
     if (hasHfaConflict)
     {
+        // Up above we noticed that there was at least one non-slot-1 HFA arg whose
+        // destination register was the same as the arg register.
+        //
+        // For example, say an HFA was passed as s0-s3 and the destination was v3.
+        // s3 is in the right register, but not in the right slot in the register.
+        //
+        // We handle this by first moving the conflicting part to the right slot
+        // in the destination (via pass 0 below), and then moving the remaining parts
+        // to their respective slots (via pass 1).
+        //
+        // Note the slot index in the register is one less than value of
+        // regArgTab[argNum].slot, so a slot-1 hfa arg goes into slot 0 of the destination).
+        //
+        // So for the above example, we'd first move the "slot-4" s3 (== v3.s[0]) to v3.s[3].
+        // Then we can insert s0 to v3.s[0]) and so on.
+        //
+        // We can exempt slot-1 cases as the conflicting part is already in the
+        // right slot, and code lower down correctly handles populating the remaining slots.
+        //
         for (argNum = 0; argNum < argMax; argNum++)
         {
             if (!regArgTab[argNum].hfaConflict)
@@ -3869,7 +3890,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             assert((argNum >= firstArgNum) && (argNum <= lastArgNum));
             assert(destRegNum == genMapRegArgNumToRegNum(argNum, regType));
 
-            // Pass 0: move the conflicting part; Pass1: insert everthying else
+            // Pass 0: move the conflicting part; Pass1: insert everything else
             //
             for (int pass = 0; pass <= 1; pass++)
             {
