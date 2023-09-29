@@ -8044,7 +8044,7 @@ bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
     // the same value even after reordering.
     if (m_scratchSideEffects.InterferesWith(comp, indir, GTF_EMPTY, true))
     {
-        JITDUMP("Have conservative interference. Trying smarter interference check...\n", Compiler::dspTreeID(indir));
+        JITDUMP("Have conservative interference with last indir. Trying a smarter interference check...\n");
 
         GenTree*       indirAddr = indir->Addr();
         target_ssize_t offs      = 0;
