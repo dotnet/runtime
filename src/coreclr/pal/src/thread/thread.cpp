@@ -2258,8 +2258,6 @@ CPalThread::~CPalThread()
         iError = pthread_mutex_destroy(&m_startMutex);
         _ASSERTE(0 == iError);
     }
-
-    delete m_systemCallErrors;
 }
 
 void
