@@ -205,6 +205,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
+    BasicBlock* const nextBlock = block->bbNext;
+    BasicBlock* const jumpDest  = nextBlock->bbJumpDest;
+
 #if defined(FEATURE_EH_FUNCLETS)
     // Generate a call to the finally, like this:
     //      mov         rcx,qword ptr [rbp + 20H]       // Load rcx with PSPSym
@@ -227,9 +230,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
     }
     GetEmitter()->emitIns_J(INS_call, block->bbJumpDest);
-
-    BasicBlock* const nextBlock = block->bbNext;
-    BasicBlock* const jumpDest  = nextBlock->bbJumpDest;
 
     if (block->bbFlags & BBF_RETLESS_CALL)
     {
