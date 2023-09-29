@@ -14,7 +14,6 @@
       <PublishReadyToRunCrossgen2ExtraArgsList Condition="'$(IncludePgoFiles)' == 'true'" Include="--embed-pgo-data"/>
     </ItemGroup>
 
-    <!-- The following property group can be simplified once runtime repo switches over to SDK 6.0 drop -->
     <PropertyGroup>
       <Crossgen2Dll>$(CoreCLRArtifactsPath)\$(BuildArchitecture)\crossgen2\crossgen2.dll</Crossgen2Dll>
 
