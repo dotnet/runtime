@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,6 +14,82 @@ namespace System.Threading
     /// </summary>
     public sealed partial class Mutex : WaitHandle
     {
+        private const uint AccessRights =
+            (uint)Interop.Kernel32.MAXIMUM_ALLOWED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.MUTEX_MODIFY_STATE;
+
+        private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
+        {
+            SafeWaitHandle mutexHandle =
+                CreateMutexCore(0, initiallyOwned, name, AccessRights, out int errorCode, out string? errorDetails);
+
+            if (mutexHandle.IsInvalid)
+            {
+                mutexHandle.SetHandleAsInvalid();
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+                if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
+                    // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
+                    throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
+#endif
+                if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
+                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name, errorDetails);
+            }
+
+            createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
+            SafeWaitHandle = mutexHandle;
+        }
+
+        private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            result = null;
+            // To allow users to view & edit the ACL's, call OpenMutex
+            // with parameters to allow us to view & edit the ACL.  This will
+            // fail if we don't have permission to view or edit the ACL's.
+            // If that happens, ask for less permissions.
+            SafeWaitHandle myHandle = OpenMutexCore(AccessRights, false, name, out int errorCode, out string? errorDetails);
+
+            if (myHandle.IsInvalid)
+            {
+                myHandle.Dispose();
+
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+                if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
+                {
+                    // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
+                    throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
+                }
+#endif
+                if (Interop.Errors.ERROR_FILE_NOT_FOUND == errorCode || Interop.Errors.ERROR_INVALID_NAME == errorCode)
+                    return OpenExistingResult.NameNotFound;
+                if (Interop.Errors.ERROR_PATH_NOT_FOUND == errorCode)
+                    return OpenExistingResult.PathNotFound;
+                if (Interop.Errors.ERROR_INVALID_HANDLE == errorCode)
+                    return OpenExistingResult.NameInvalid;
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name, errorDetails);
+            }
+
+            result = new Mutex(myHandle);
+            return OpenExistingResult.Success;
+        }
+
+        // Note: To call ReleaseMutex, you must have an ACL granting you
+        // MUTEX_MODIFY_STATE rights (0x0001). The other interesting value
+        // in a Mutex's ACL is MUTEX_ALL_ACCESS (0x1F0001).
+        public void ReleaseMutex()
+        {
+            if (!Interop.Kernel32.ReleaseMutex(SafeWaitHandle))
+            {
+                throw new ApplicationException(SR.Arg_SynchronizationLockException);
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // Unix-specific implementation
+
         private const int SystemCallErrorsBufferSize = 256;
 
         private static unsafe SafeWaitHandle CreateMutexCore(
@@ -73,7 +150,7 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PAL_CreateMutexW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        private static unsafe partial SafeWaitHandle CreateMutex(nint mutexAttributes, [MarshalAs(UnmanagedType.Bool)] bool initialOwner, string? name, byte *systemCallErrors, uint systemCallErrorsBufferSize);
+        private static unsafe partial SafeWaitHandle CreateMutex(nint mutexAttributes, [MarshalAs(UnmanagedType.Bool)] bool initialOwner, string? name, byte* systemCallErrors, uint systemCallErrorsBufferSize);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PAL_OpenMutexW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial SafeWaitHandle OpenMutex(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, string name, byte* systemCallErrors, uint systemCallErrorsBufferSize);
