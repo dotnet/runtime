@@ -464,7 +464,7 @@ SideEffectSet::SideEffectSet(Compiler* compiler, GenTree* node) : m_sideEffectFl
 //
 void SideEffectSet::AddNode(Compiler* compiler, GenTree* node)
 {
-    m_sideEffectFlags |= (node->gtFlags & GTF_ALL_EFFECT);
+    m_sideEffectFlags |= node->OperEffects(compiler);
     m_aliasSet.AddNode(compiler, node);
 }
 
@@ -571,7 +571,7 @@ bool SideEffectSet::InterferesWith(const SideEffectSet& other, bool strict) cons
 //
 bool SideEffectSet::InterferesWith(Compiler* compiler, GenTree* node, bool strict) const
 {
-    return InterferesWith((node->gtFlags & GTF_ALL_EFFECT), AliasSet::NodeInfo(compiler, node), strict);
+    return InterferesWith(node->OperEffects(compiler), AliasSet::NodeInfo(compiler, node), strict);
 }
 
 //------------------------------------------------------------------------

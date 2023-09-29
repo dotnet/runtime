@@ -750,9 +750,10 @@ void MorphCopyBlockHelper::MorphStructCases()
         }
     }
 
-    // Check to see if we are doing a copy to/from the same local block.
-    // If so, morph it to a nop.
-    if ((m_dstVarDsc != nullptr) && (m_srcVarDsc == m_dstVarDsc) && (m_dstLclOffset == m_srcLclOffset))
+    // Check to see if we are doing a copy to/from the same local block. If so, morph it to a nop.
+    // Don't do this for SSA definitions as we have no way to update downstream uses.
+    if ((m_dstVarDsc != nullptr) && (m_srcVarDsc == m_dstVarDsc) && (m_dstLclOffset == m_srcLclOffset) &&
+        !m_store->AsLclVarCommon()->HasSsaIdentity())
     {
         JITDUMP("Self-copy; replaced with a NOP.\n");
         m_transformationDecision = BlockTransformation::Nop;

@@ -1933,6 +1933,29 @@ namespace DebuggerTests
         }
     }
 
+    public static class FastCheck
+    {
+        public class InstanceClass
+        {
+            public int number = 123;
+        }
+
+        public class MemberClass
+        {
+            public int Method(InstanceClass ic) => ic.number;
+            public int Method(int num) => num;
+        }
+
+        public static void run()
+        {
+            int number = -123;
+            InstanceClass ic = new();
+            MemberClass mc = new();
+            EvaluateStaticFieldsInInstanceClass instance = new();
+            PrimitiveTypeMethods.TestClass instance2 = new();
+        }
+    }
+
     public static class DefaultParamMethods
     {
         public class TestClass
