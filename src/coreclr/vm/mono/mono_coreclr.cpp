@@ -50,13 +50,6 @@ void unity_log(const char *format, ...)
     our_vprintf ("\n", nullptr);
 }
 
-static gboolean s_UseRealGC;
-
-static gboolean use_real_gc()
-{
-    return s_UseRealGC;
-}
-
 static gboolean s_ReturnHandlesFromAPI;
 
 static gboolean return_handles_from_api()
@@ -145,7 +138,6 @@ HostStruct* g_HostStruct;
 struct HostStructNative
 {
     void (*unity_log)(const char *format);
-    gboolean (*use_real_gc)();
     gboolean (*return_handles_from_api)();
 };
 HostStructNative* g_HostStructNative;
@@ -1695,7 +1687,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_initialize_host_apis(initialize_
     memset(g_HostStructNative, 0, sizeof(HostStructNative));
 
     g_HostStructNative->unity_log = (unity_log_func)&unity_log;
-    g_HostStructNative->use_real_gc = &use_real_gc;
     g_HostStructNative->return_handles_from_api = &return_handles_from_api;
 
     hr = init_func(g_HostStruct, (int32_t)sizeof(HostStruct), g_HostStructNative, (int32_t)sizeof(HostStructNative));
@@ -1706,15 +1697,19 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_initialize_host_apis(initialize_
 
 extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *file, const char* runtime_version)
 {
+    gboolean useRealGC = false;
     if (runtime_version != NULL)
     {
         if (strstr(runtime_version, "return-handles-from-api"))
             s_ReturnHandlesFromAPI = true;
         if (strstr(runtime_version, "use-real-gc"))
-            s_UseRealGC = true;
+        {
+            useRealGC = true;
+            s_ReturnHandlesFromAPI = true;
+        }
     }
 
-    if (!s_UseRealGC)
+    if (!useRealGC)
     {
     #if defined(TARGET_UNIX)
 #if defined(__APPLE__)
