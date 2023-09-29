@@ -19,6 +19,11 @@ namespace System.Numerics.Tensors
         /// <param name="source">The source span from which to copy values.</param>
         /// <param name="destination">The destination span into which the converted values should be written.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = (Half)<paramref name="source" />[i]</c>.
+        /// </para>
+        /// </remarks>
         public static void ConvertToHalf(ReadOnlySpan<float> source, Span<Half> destination)
         {
             if (source.Length > destination.Length)
@@ -39,6 +44,11 @@ namespace System.Numerics.Tensors
         /// <param name="source">The source span from which to copy values.</param>
         /// <param name="destination">The destination span into which the converted values should be written.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = (float)<paramref name="source" />[i]</c>.
+        /// </para>
+        /// </remarks>
         public static void ConvertToSingle(ReadOnlySpan<Half> source, Span<float> destination)
         {
             if (source.Length > destination.Length)
@@ -58,12 +68,6 @@ namespace System.Numerics.Tensors
             // TensorPrimitives.Dot(x, y) / (Math.Sqrt(TensorPrimitives.SumOfSquares(x)) * Math.Sqrt(TensorPrimitives.SumOfSquares(y)))
             // but only looping over each span once.
 
-            float dotProduct = 0f;
-            float xSumOfSquares = 0f;
-            float ySumOfSquares = 0f;
-
-            int i = 0;
-
 #if NET8_0_OR_GREATER
             if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
@@ -76,6 +80,7 @@ namespace System.Numerics.Tensors
 
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector512<float>.Count;
+                int i = 0;
                 do
                 {
                     Vector512<float> xVec = Vector512.LoadUnsafe(ref xRef, (uint)i);
@@ -89,13 +94,28 @@ namespace System.Numerics.Tensors
                 }
                 while (i <= oneVectorFromEnd);
 
-                // Sum the vector lanes into the scalar result.
-                dotProduct += Vector512.Sum(dotProductVector);
-                xSumOfSquares += Vector512.Sum(xSumOfSquaresVector);
-                ySumOfSquares += Vector512.Sum(ySumOfSquaresVector);
+                // Process the last vector in the span, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    Vector512<float> xVec = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count));
+                    Vector512<float> yVec = Vector512.LoadUnsafe(ref yRef, (uint)(x.Length - Vector512<float>.Count));
+
+                    Vector512<float> remainderMask = LoadRemainderMaskSingleVector512(x.Length - i);
+                    xVec &= remainderMask;
+                    yVec &= remainderMask;
+
+                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                }
+
+                // Sum(X * Y) / (|X| * |Y|)
+                return
+                    Vector512.Sum(dotProductVector) /
+                    (MathF.Sqrt(Vector512.Sum(xSumOfSquaresVector)) * MathF.Sqrt(Vector512.Sum(ySumOfSquaresVector)));
             }
-            else
 #endif
+
             if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
@@ -107,6 +127,7 @@ namespace System.Numerics.Tensors
 
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector256<float>.Count;
+                int i = 0;
                 do
                 {
                     Vector256<float> xVec = Vector256.LoadUnsafe(ref xRef, (uint)i);
@@ -120,12 +141,28 @@ namespace System.Numerics.Tensors
                 }
                 while (i <= oneVectorFromEnd);
 
-                // Sum the vector lanes into the scalar result.
-                dotProduct += Vector256.Sum(dotProductVector);
-                xSumOfSquares += Vector256.Sum(xSumOfSquaresVector);
-                ySumOfSquares += Vector256.Sum(ySumOfSquaresVector);
+                // Process the last vector in the span, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    Vector256<float> xVec = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count));
+                    Vector256<float> yVec = Vector256.LoadUnsafe(ref yRef, (uint)(x.Length - Vector256<float>.Count));
+
+                    Vector256<float> remainderMask = LoadRemainderMaskSingleVector256(x.Length - i);
+                    xVec &= remainderMask;
+                    yVec &= remainderMask;
+
+                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                }
+
+                // Sum(X * Y) / (|X| * |Y|)
+                return
+                    Vector256.Sum(dotProductVector) /
+                    (MathF.Sqrt(Vector256.Sum(xSumOfSquaresVector)) * MathF.Sqrt(Vector256.Sum(ySumOfSquaresVector)));
             }
-            else if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count)
+
+            if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
                 ref float yRef = ref MemoryMarshal.GetReference(y);
@@ -136,6 +173,7 @@ namespace System.Numerics.Tensors
 
                 // Process vectors, summing their dot products and squares, as long as there's a vector's worth remaining.
                 int oneVectorFromEnd = x.Length - Vector128<float>.Count;
+                int i = 0;
                 do
                 {
                     Vector128<float> xVec = Vector128.LoadUnsafe(ref xRef, (uint)i);
@@ -149,14 +187,31 @@ namespace System.Numerics.Tensors
                 }
                 while (i <= oneVectorFromEnd);
 
-                // Sum the vector lanes into the scalar result.
-                dotProduct += Vector128.Sum(dotProductVector);
-                xSumOfSquares += Vector128.Sum(xSumOfSquaresVector);
-                ySumOfSquares += Vector128.Sum(ySumOfSquaresVector);
+                // Process the last vector in the span, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    Vector128<float> xVec = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count));
+                    Vector128<float> yVec = Vector128.LoadUnsafe(ref yRef, (uint)(x.Length - Vector128<float>.Count));
+
+                    Vector128<float> remainderMask = LoadRemainderMaskSingleVector128(x.Length - i);
+                    xVec &= remainderMask;
+                    yVec &= remainderMask;
+
+                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                }
+
+                // Sum(X * Y) / (|X| * |Y|)
+                return
+                    Vector128.Sum(dotProductVector) /
+                    (MathF.Sqrt(Vector128.Sum(xSumOfSquaresVector)) * MathF.Sqrt(Vector128.Sum(ySumOfSquaresVector)));
             }
 
-            // Process any remaining elements past the last vector.
-            for (; (uint)i < (uint)x.Length; i++)
+            // Vectorization isn't supported or there are too few elements to vectorize.
+            // Use a scalar implementation.
+            float dotProduct = 0f, xSumOfSquares = 0f, ySumOfSquares = 0f;
+            for (int i = 0; i < x.Length; i++)
             {
                 dotProduct = MathF.FusedMultiplyAdd(x[i], y[i], dotProduct);
                 xSumOfSquares = MathF.FusedMultiplyAdd(x[i], x[i], xSumOfSquares);
@@ -164,187 +219,256 @@ namespace System.Numerics.Tensors
             }
 
             // Sum(X * Y) / (|X| * |Y|)
-            return dotProduct / (MathF.Sqrt(xSumOfSquares) * MathF.Sqrt(ySumOfSquares));
+            return
+                dotProduct /
+                (MathF.Sqrt(xSumOfSquares) * MathF.Sqrt(ySumOfSquares));
         }
 
         private static float Aggregate<TLoad, TAggregate>(
-            float identityValue, ReadOnlySpan<float> x)
+            ReadOnlySpan<float> x)
             where TLoad : struct, IUnaryOperator
-            where TAggregate : struct, IBinaryOperator
+            where TAggregate : struct, IAggregationOperator
         {
-            // Initialize the result to the identity value
-            float result = identityValue;
-            int i = 0;
+            if (x.Length == 0)
+            {
+                return 0;
+            }
+
+            ref float xRef = ref MemoryMarshal.GetReference(x);
 
 #if NET8_0_OR_GREATER
-            if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count * 2)
+            if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
-                ref float xRef = ref MemoryMarshal.GetReference(x);
-
                 // Load the first vector as the initial set of results
-                Vector512<float> resultVector = TLoad.Invoke(Vector512.LoadUnsafe(ref xRef, 0));
+                Vector512<float> result = TLoad.Invoke(Vector512.LoadUnsafe(ref xRef, 0));
                 int oneVectorFromEnd = x.Length - Vector512<float>.Count;
+                int i = Vector512<float>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at
                 // least one full vector left to process.
-                i = Vector512<float>.Count;
-                do
+                while (i <= oneVectorFromEnd)
                 {
-                    resultVector = TAggregate.Invoke(resultVector, TLoad.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i)));
+                    result = TAggregate.Invoke(result, TLoad.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i)));
                     i += Vector512<float>.Count;
                 }
-                while (i <= oneVectorFromEnd);
+
+                // Process the last vector in the span, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    result = TAggregate.Invoke(result,
+                        Vector512.ConditionalSelect(
+                            Vector512.Equals(LoadRemainderMaskSingleVector512(x.Length - i), Vector512<float>.Zero),
+                            Vector512.Create(TAggregate.IdentityValue),
+                            TLoad.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count)))));
+                }
 
                 // Aggregate the lanes in the vector back into the scalar result
-                result = TAggregate.Invoke(result, TAggregate.Invoke(resultVector));
+                return TAggregate.Invoke(result);
             }
-            else
 #endif
-            if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count * 2)
-            {
-                ref float xRef = ref MemoryMarshal.GetReference(x);
 
+            if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count)
+            {
                 // Load the first vector as the initial set of results
-                Vector256<float> resultVector = TLoad.Invoke(Vector256.LoadUnsafe(ref xRef, 0));
+                Vector256<float> result = TLoad.Invoke(Vector256.LoadUnsafe(ref xRef, 0));
                 int oneVectorFromEnd = x.Length - Vector256<float>.Count;
+                int i = Vector256<float>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at
                 // least one full vector left to process.
-                i = Vector256<float>.Count;
-                do
+                while (i <= oneVectorFromEnd)
                 {
-                    resultVector = TAggregate.Invoke(resultVector, TLoad.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i)));
+                    result = TAggregate.Invoke(result, TLoad.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i)));
                     i += Vector256<float>.Count;
                 }
-                while (i <= oneVectorFromEnd);
+
+                // Process the last vector in the span, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    result = TAggregate.Invoke(result,
+                        Vector256.ConditionalSelect(
+                            Vector256.Equals(LoadRemainderMaskSingleVector256(x.Length - i), Vector256<float>.Zero),
+                            Vector256.Create(TAggregate.IdentityValue),
+                            TLoad.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count)))));
+                }
 
                 // Aggregate the lanes in the vector back into the scalar result
-                result = TAggregate.Invoke(result, TAggregate.Invoke(resultVector));
+                return TAggregate.Invoke(result);
             }
-            else if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count * 2)
-            {
-                ref float xRef = ref MemoryMarshal.GetReference(x);
 
+            if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count)
+            {
                 // Load the first vector as the initial set of results
-                Vector128<float> resultVector = TLoad.Invoke(Vector128.LoadUnsafe(ref xRef, 0));
+                Vector128<float> result = TLoad.Invoke(Vector128.LoadUnsafe(ref xRef, 0));
                 int oneVectorFromEnd = x.Length - Vector128<float>.Count;
+                int i = Vector128<float>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at
                 // least one full vector left to process.
-                i = Vector128<float>.Count;
-                do
+                while (i <= oneVectorFromEnd)
                 {
-                    resultVector = TAggregate.Invoke(resultVector, TLoad.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i)));
+                    result = TAggregate.Invoke(result, TLoad.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i)));
                     i += Vector128<float>.Count;
                 }
-                while (i <= oneVectorFromEnd);
+
+                // Process the last vector in the span, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    result = TAggregate.Invoke(result,
+                        Vector128.ConditionalSelect(
+                            Vector128.Equals(LoadRemainderMaskSingleVector128(x.Length - i), Vector128<float>.Zero),
+                            Vector128.Create(TAggregate.IdentityValue),
+                            TLoad.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count)))));
+                }
 
                 // Aggregate the lanes in the vector back into the scalar result
-                result = TAggregate.Invoke(result, TAggregate.Invoke(resultVector));
+                return TAggregate.Invoke(result);
             }
 
-            // Aggregate the remaining items in the input span.
-            for (; (uint)i < (uint)x.Length; i++)
+            // Vectorization isn't supported or there are too few elements to vectorize.
+            // Use a scalar implementation.
             {
-                result = TAggregate.Invoke(result, TLoad.Invoke(x[i]));
-            }
+                float result = TLoad.Invoke(x[0]);
+                for (int i = 1; i < x.Length; i++)
+                {
+                    result = TAggregate.Invoke(result, TLoad.Invoke(x[i]));
+                }
 
-            return result;
+                return result;
+            }
         }
 
         private static float Aggregate<TBinary, TAggregate>(
-            float identityValue, ReadOnlySpan<float> x, ReadOnlySpan<float> y)
+            ReadOnlySpan<float> x, ReadOnlySpan<float> y)
             where TBinary : struct, IBinaryOperator
-            where TAggregate : struct, IBinaryOperator
+            where TAggregate : struct, IAggregationOperator
         {
-            // Initialize the result to the identity value
-            float result = identityValue;
-            int i = 0;
+            Debug.Assert(x.Length == y.Length);
+
+            if (x.IsEmpty)
+            {
+                return 0;
+            }
+
+            ref float xRef = ref MemoryMarshal.GetReference(x);
+            ref float yRef = ref MemoryMarshal.GetReference(y);
 
 #if NET8_0_OR_GREATER
-            if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count * 2)
+            if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
-                ref float xRef = ref MemoryMarshal.GetReference(x);
-                ref float yRef = ref MemoryMarshal.GetReference(y);
-
                 // Load the first vector as the initial set of results
-                Vector512<float> resultVector = TBinary.Invoke(Vector512.LoadUnsafe(ref xRef, 0), Vector512.LoadUnsafe(ref yRef, 0));
+                Vector512<float> result = TBinary.Invoke(Vector512.LoadUnsafe(ref xRef, 0), Vector512.LoadUnsafe(ref yRef, 0));
                 int oneVectorFromEnd = x.Length - Vector512<float>.Count;
+                int i = Vector512<float>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at
                 // least one full vector left to process.
-                i = Vector512<float>.Count;
-                do
+                while (i <= oneVectorFromEnd)
                 {
-                    resultVector = TAggregate.Invoke(resultVector, TBinary.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i), Vector512.LoadUnsafe(ref yRef, (uint)i)));
+                    result = TAggregate.Invoke(result, TBinary.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i), Vector512.LoadUnsafe(ref yRef, (uint)i)));
                     i += Vector512<float>.Count;
                 }
-                while (i <= oneVectorFromEnd);
+
+                // Process the last vector in the spans, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    result = TAggregate.Invoke(result,
+                        Vector512.ConditionalSelect(
+                            Vector512.Equals(LoadRemainderMaskSingleVector512(x.Length - i), Vector512<float>.Zero),
+                            Vector512.Create(TAggregate.IdentityValue),
+                            TBinary.Invoke(
+                                Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count)),
+                                Vector512.LoadUnsafe(ref yRef, (uint)(x.Length - Vector512<float>.Count)))));
+                }
 
                 // Aggregate the lanes in the vector back into the scalar result
-                result = TAggregate.Invoke(result, TAggregate.Invoke(resultVector));
+                return TAggregate.Invoke(result);
             }
-            else
 #endif
-            if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count * 2)
-            {
-                ref float xRef = ref MemoryMarshal.GetReference(x);
-                ref float yRef = ref MemoryMarshal.GetReference(y);
 
+            if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count)
+            {
                 // Load the first vector as the initial set of results
-                Vector256<float> resultVector = TBinary.Invoke(Vector256.LoadUnsafe(ref xRef, 0), Vector256.LoadUnsafe(ref yRef, 0));
+                Vector256<float> result = TBinary.Invoke(Vector256.LoadUnsafe(ref xRef, 0), Vector256.LoadUnsafe(ref yRef, 0));
                 int oneVectorFromEnd = x.Length - Vector256<float>.Count;
+                int i = Vector256<float>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at
                 // least one full vector left to process.
-                i = Vector256<float>.Count;
-                do
+                while (i <= oneVectorFromEnd)
                 {
-                    resultVector = TAggregate.Invoke(resultVector, TBinary.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i), Vector256.LoadUnsafe(ref yRef, (uint)i)));
+                    result = TAggregate.Invoke(result, TBinary.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i), Vector256.LoadUnsafe(ref yRef, (uint)i)));
                     i += Vector256<float>.Count;
                 }
-                while (i <= oneVectorFromEnd);
+
+                // Process the last vector in the spans, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    result = TAggregate.Invoke(result,
+                        Vector256.ConditionalSelect(
+                            Vector256.Equals(LoadRemainderMaskSingleVector256(x.Length - i), Vector256<float>.Zero),
+                            Vector256.Create(TAggregate.IdentityValue),
+                            TBinary.Invoke(
+                                Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count)),
+                                Vector256.LoadUnsafe(ref yRef, (uint)(x.Length - Vector256<float>.Count)))));
+                }
 
                 // Aggregate the lanes in the vector back into the scalar result
-                result = TAggregate.Invoke(result, TAggregate.Invoke(resultVector));
+                return TAggregate.Invoke(result);
             }
-            else if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count * 2)
-            {
-                ref float xRef = ref MemoryMarshal.GetReference(x);
-                ref float yRef = ref MemoryMarshal.GetReference(y);
 
+            if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count)
+            {
                 // Load the first vector as the initial set of results
-                Vector128<float> resultVector = TBinary.Invoke(Vector128.LoadUnsafe(ref xRef, 0), Vector128.LoadUnsafe(ref yRef, 0));
+                Vector128<float> result = TBinary.Invoke(Vector128.LoadUnsafe(ref xRef, 0), Vector128.LoadUnsafe(ref yRef, 0));
                 int oneVectorFromEnd = x.Length - Vector128<float>.Count;
+                int i = Vector128<float>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at
                 // least one full vector left to process.
-                i = Vector128<float>.Count;
-                do
+                while (i <= oneVectorFromEnd)
                 {
-                    resultVector = TAggregate.Invoke(resultVector, TBinary.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i), Vector128.LoadUnsafe(ref yRef, (uint)i)));
+                    result = TAggregate.Invoke(result, TBinary.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i), Vector128.LoadUnsafe(ref yRef, (uint)i)));
                     i += Vector128<float>.Count;
                 }
-                while (i <= oneVectorFromEnd);
+
+                // Process the last vector in the spans, masking off elements already processed.
+                if (i != x.Length)
+                {
+                    result = TAggregate.Invoke(result,
+                        Vector128.ConditionalSelect(
+                            Vector128.Equals(LoadRemainderMaskSingleVector128(x.Length - i), Vector128<float>.Zero),
+                            Vector128.Create(TAggregate.IdentityValue),
+                            TBinary.Invoke(
+                                Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count)),
+                                Vector128.LoadUnsafe(ref yRef, (uint)(x.Length - Vector128<float>.Count)))));
+                }
 
                 // Aggregate the lanes in the vector back into the scalar result
-                result = TAggregate.Invoke(result, TAggregate.Invoke(resultVector));
+                return TAggregate.Invoke(result);
             }
 
-            // Aggregate the remaining items in the input span.
-            for (; (uint)i < (uint)x.Length; i++)
+            // Vectorization isn't supported or there are too few elements to vectorize.
+            // Use a scalar implementation.
             {
-                result = TAggregate.Invoke(result, TBinary.Invoke(x[i], y[i]));
-            }
+                float result = TBinary.Invoke(xRef, yRef);
+                for (int i = 1; i < x.Length; i++)
+                {
+                    result = TAggregate.Invoke(result,
+                        TBinary.Invoke(
+                            Unsafe.Add(ref xRef, i),
+                            Unsafe.Add(ref yRef, i)));
+                }
 
-            return result;
+                return result;
+            }
         }
 
         /// <remarks>
-        /// This is the same as <see cref="Aggregate{TLoad, TAggregate}(float, ReadOnlySpan{float})"/>,
+        /// This is the same as <see cref="Aggregate{TLoad, TAggregate}(ReadOnlySpan{float})"/>,
         /// except it early exits on NaN.
         /// </remarks>
-        private static float MinMaxCore<TMinMax>(ReadOnlySpan<float> x) where TMinMax : struct, IBinaryOperator
+        private static float MinMaxCore<TMinMax>(ReadOnlySpan<float> x) where TMinMax : struct, IAggregationOperator
         {
             if (x.IsEmpty)
             {
@@ -356,28 +480,24 @@ namespace System.Numerics.Tensors
             // otherwise returns the greater of the inputs.
             // It treats +0 as greater than -0 as per the specification.
 
-            // Initialize the result to the identity value
-            float result = x[0];
-            int i = 0;
-
 #if NET8_0_OR_GREATER
-            if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count * 2)
+            if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector512<float> resultVector = Vector512.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector512.EqualsAll(resultVector, resultVector))
+                Vector512<float> result = Vector512.LoadUnsafe(ref xRef, 0), current;
+                if (!Vector512.EqualsAll(result, result))
                 {
-                    return GetFirstNaN(resultVector);
+                    return GetFirstNaN(result);
                 }
 
                 int oneVectorFromEnd = x.Length - Vector512<float>.Count;
+                int i = Vector512<float>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
-                i = Vector512<float>.Count;
-                do
+                while (i <= oneVectorFromEnd)
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector512.LoadUnsafe(ref xRef, (uint)i);
@@ -386,10 +506,9 @@ namespace System.Numerics.Tensors
                         return GetFirstNaN(current);
                     }
 
-                    resultVector = TMinMax.Invoke(resultVector, current);
+                    result = TMinMax.Invoke(result, current);
                     i += Vector512<float>.Count;
                 }
-                while (i <= oneVectorFromEnd);
 
                 // If any elements remain, handle them in one final vector.
                 if (i != x.Length)
@@ -400,31 +519,31 @@ namespace System.Numerics.Tensors
                         return GetFirstNaN(current);
                     }
 
-                    resultVector = TMinMax.Invoke(resultVector, current);
+                    result = TMinMax.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
-                return TMinMax.Invoke(resultVector);
+                return TMinMax.Invoke(result);
             }
 #endif
 
-            if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count * 2)
+            if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector256<float> resultVector = Vector256.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector256.EqualsAll(resultVector, resultVector))
+                Vector256<float> result = Vector256.LoadUnsafe(ref xRef, 0), current;
+                if (!Vector256.EqualsAll(result, result))
                 {
-                    return GetFirstNaN(resultVector);
+                    return GetFirstNaN(result);
                 }
 
                 int oneVectorFromEnd = x.Length - Vector256<float>.Count;
+                int i = Vector256<float>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
-                i = Vector256<float>.Count;
-                do
+                while (i <= oneVectorFromEnd)
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector256.LoadUnsafe(ref xRef, (uint)i);
@@ -433,10 +552,9 @@ namespace System.Numerics.Tensors
                         return GetFirstNaN(current);
                     }
 
-                    resultVector = TMinMax.Invoke(resultVector, current);
+                    result = TMinMax.Invoke(result, current);
                     i += Vector256<float>.Count;
                 }
-                while (i <= oneVectorFromEnd);
 
                 // If any elements remain, handle them in one final vector.
                 if (i != x.Length)
@@ -447,30 +565,30 @@ namespace System.Numerics.Tensors
                         return GetFirstNaN(current);
                     }
 
-                    resultVector = TMinMax.Invoke(resultVector, current);
+                    result = TMinMax.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
-                return TMinMax.Invoke(resultVector);
+                return TMinMax.Invoke(result);
             }
 
-            if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count * 2)
+            if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector128<float> resultVector = Vector128.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector128.EqualsAll(resultVector, resultVector))
+                Vector128<float> result = Vector128.LoadUnsafe(ref xRef, 0), current;
+                if (!Vector128.EqualsAll(result, result))
                 {
-                    return GetFirstNaN(resultVector);
+                    return GetFirstNaN(result);
                 }
 
                 int oneVectorFromEnd = x.Length - Vector128<float>.Count;
+                int i = Vector128<float>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
-                i = Vector128<float>.Count;
-                do
+                while (i <= oneVectorFromEnd)
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector128.LoadUnsafe(ref xRef, (uint)i);
@@ -479,10 +597,9 @@ namespace System.Numerics.Tensors
                         return GetFirstNaN(current);
                     }
 
-                    resultVector = TMinMax.Invoke(resultVector, current);
+                    result = TMinMax.Invoke(result, current);
                     i += Vector128<float>.Count;
                 }
-                while (i <= oneVectorFromEnd);
 
                 // If any elements remain, handle them in one final vector.
                 if (i != x.Length)
@@ -493,26 +610,34 @@ namespace System.Numerics.Tensors
                         return GetFirstNaN(current);
                     }
 
-                    resultVector = TMinMax.Invoke(resultVector, current);
+                    result = TMinMax.Invoke(result, current);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
-                return TMinMax.Invoke(resultVector);
+                return TMinMax.Invoke(result);
             }
 
             // Scalar path used when either vectorization is not supported or the input is too small to vectorize.
-            for (; (uint)i < (uint)x.Length; i++)
             {
-                float current = x[i];
-                if (float.IsNaN(current))
+                float result = x[0];
+                if (float.IsNaN(result))
                 {
-                    return current;
+                    return result;
                 }
 
-                result = TMinMax.Invoke(result, current);
-            }
+                for (int i = 1; i < x.Length; i++)
+                {
+                    float current = x[i];
+                    if (float.IsNaN(current))
+                    {
+                        return current;
+                    }
 
-            return result;
+                    result = TMinMax.Invoke(result, current);
+                }
+
+                return result;
+            }
         }
 
         private static unsafe void InvokeSpanIntoSpan<TUnaryOperator>(
@@ -1287,7 +1412,27 @@ namespace System.Numerics.Tensors
 
         private static float Log2(float x) => MathF.Log2(x);
 
-        private readonly struct AddOperator : IBinaryOperator
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector128<float> LoadRemainderMaskSingleVector128(int validItems) =>
+            Vector128.LoadUnsafe(
+                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
+                (uint)((validItems * 16) + 12)); // last four floats in the row
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector256<float> LoadRemainderMaskSingleVector256(int validItems) =>
+            Vector256.LoadUnsafe(
+                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
+                (uint)((validItems * 16) + 8)); // last eight floats in the row
+
+#if NET8_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe Vector512<float> LoadRemainderMaskSingleVector512(int validItems) =>
+            Vector512.LoadUnsafe(
+                ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
+                (uint)(validItems * 16)); // all sixteen floats in the row
+#endif
+
+        private readonly struct AddOperator : IAggregationOperator
         {
             public static float Invoke(float x, float y) => x + y;
             public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y) => x + y;
@@ -1301,6 +1446,8 @@ namespace System.Numerics.Tensors
 #if NET8_0_OR_GREATER
             public static float Invoke(Vector512<float> x) => Vector512.Sum(x);
 #endif
+
+            public static float IdentityValue => 0;
         }
 
         private readonly struct SubtractOperator : IBinaryOperator
@@ -1342,7 +1489,7 @@ namespace System.Numerics.Tensors
 #endif
         }
 
-        private readonly struct MultiplyOperator : IBinaryOperator
+        private readonly struct MultiplyOperator : IAggregationOperator
         {
             public static float Invoke(float x, float y) => x * y;
             public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y) => x * y;
@@ -1356,6 +1503,8 @@ namespace System.Numerics.Tensors
 #if NET8_0_OR_GREATER
             public static float Invoke(Vector512<float> x) => HorizontalAggregate<MultiplyOperator>(x);
 #endif
+
+            public static float IdentityValue => 1;
         }
 
         private readonly struct DivideOperator : IBinaryOperator
@@ -1368,7 +1517,7 @@ namespace System.Numerics.Tensors
 #endif
         }
 
-        private readonly struct MaxOperator : IBinaryOperator
+        private readonly struct MaxOperator : IAggregationOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static float Invoke(float x, float y) =>
@@ -1457,7 +1606,7 @@ namespace System.Numerics.Tensors
 #endif
         }
 
-        private readonly struct MaxMagnitudeOperator : IBinaryOperator
+        private readonly struct MaxMagnitudeOperator : IAggregationOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static float Invoke(float x, float y)
@@ -1558,7 +1707,7 @@ namespace System.Numerics.Tensors
 #endif
         }
 
-        private readonly struct MinOperator : IBinaryOperator
+        private readonly struct MinOperator : IAggregationOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static float Invoke(float x, float y) =>
@@ -1647,7 +1796,7 @@ namespace System.Numerics.Tensors
 #endif
         }
 
-        private readonly struct MinMagnitudeOperator : IBinaryOperator
+        private readonly struct MinMagnitudeOperator : IAggregationOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static float Invoke(float x, float y)
@@ -1769,11 +1918,11 @@ namespace System.Numerics.Tensors
 
         private readonly struct MultiplyAddOperator : ITernaryOperator
         {
-            public static float Invoke(float x, float y, float z) => MathF.FusedMultiplyAdd(x, y, z);
-            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y, Vector128<float> z) => FusedMultiplyAdd(x, y, z);
-            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y, Vector256<float> z) => FusedMultiplyAdd(x, y, z);
+            public static float Invoke(float x, float y, float z) => (x * y) + z;
+            public static Vector128<float> Invoke(Vector128<float> x, Vector128<float> y, Vector128<float> z) => (x * y) + z;
+            public static Vector256<float> Invoke(Vector256<float> x, Vector256<float> y, Vector256<float> z) => (x * y) + z;
 #if NET8_0_OR_GREATER
-            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y, Vector512<float> z) => FusedMultiplyAdd(x, y, z);
+            public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y, Vector512<float> z) => (x * y) + z;
 #endif
         }
 
@@ -1825,14 +1974,17 @@ namespace System.Numerics.Tensors
 #if NET8_0_OR_GREATER
             static abstract Vector512<float> Invoke(Vector512<float> x, Vector512<float> y);
 #endif
+        }
 
-            // Operations for aggregating all lanes in a vector into a single value.
-            // These are not supported on most implementations.
-            static virtual float Invoke(Vector128<float> x) => throw new NotSupportedException();
-            static virtual float Invoke(Vector256<float> x) => throw new NotSupportedException();
+        private interface IAggregationOperator : IBinaryOperator
+        {
+            static abstract float Invoke(Vector128<float> x);
+            static abstract float Invoke(Vector256<float> x);
 #if NET8_0_OR_GREATER
-            static virtual float Invoke(Vector512<float> x) => throw new NotSupportedException();
+            static abstract float Invoke(Vector512<float> x);
 #endif
+
+            static virtual float IdentityValue => throw new NotSupportedException();
         }
 
         private interface ITernaryOperator

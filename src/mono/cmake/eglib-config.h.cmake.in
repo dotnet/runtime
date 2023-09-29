@@ -13,7 +13,6 @@
 
 /* FIXME: what should this be ?*/
 #define X_OK 4 /* This is really read */
-#define WNOHANG 1
 #define F_SETFD 1
 #define FD_CLOEXEC 1
 
@@ -25,11 +24,6 @@
 #define strtok_r strtok_s
 
 #undef G_HAVE_UNISTD_H
-#undef G_HAVE_SYS_TIME_H
-#undef G_HAVE_SYS_WAIT_H
-#undef G_HAVE_PWD_H
-#undef G_HAVE_STRNDUP
-#define G_HAVE_GETOPT_H 1
 
 #else
 
@@ -73,7 +67,6 @@
 
 typedef @EGLIB_GSIZE@ gsize;
 typedef @EGLIB_GSSIZE@ gssize;
-typedef @EGLIB_PIDTYPE@ GPid;
 
 #ifdef _MSC_VER
 typedef int pid_t;

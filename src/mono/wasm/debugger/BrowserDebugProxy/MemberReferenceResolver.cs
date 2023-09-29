@@ -754,7 +754,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else if (arg.Expression is IdentifierNameSyntax identifierName)
                         {
-                            if (!await commandParamsObjWriter.WriteJsonValue(memberAccessValues[identifierName.Identifier.Text], context.SdbAgent, methodParamsInfo[argIndex].TypeCode, token))
+                            if (!memberAccessValues.TryGetValue(identifierName.Identifier.Text, out JObject argValue))
+                                argValue = await Resolve(identifierName.Identifier.Text, token);
+                            if (!await commandParamsObjWriter.WriteJsonValue(argValue, context.SdbAgent, methodParamsInfo[argIndex].TypeCode, token))
+                                throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write IdentifierNameSyntax into binary writer.");
+                        }
+                        else if (arg.Expression is MemberAccessExpressionSyntax memberAccess)
+                        {
+                            JObject argValue = await Resolve(memberAccess.ToString(), token);
+                            if (!await commandParamsObjWriter.WriteJsonValue(argValue, context.SdbAgent, methodParamsInfo[argIndex].TypeCode, token))
                                 throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write IdentifierNameSyntax into binary writer.");
                         }
                         else
