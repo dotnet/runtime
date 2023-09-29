@@ -1852,12 +1852,18 @@ public:
     // Returns true if it is a GT_COPY or GT_RELOAD of a multi-reg call node
     inline bool IsCopyOrReloadOfMultiRegCall() const;
 
-    bool OperRequiresAsgFlag();
+    bool OperRequiresAsgFlag() const;
 
-    bool OperRequiresCallFlag(Compiler* comp);
+    bool OperRequiresCallFlag(Compiler* comp) const;
 
-    bool OperMayThrow(Compiler* comp);
     ExceptionSetFlags OperExceptions(Compiler* comp);
+    bool OperMayThrow(Compiler* comp);
+
+    bool OperRequiresGlobRefFlag(Compiler* comp) const;
+
+    bool OperSupportsOrderingSideEffect() const;
+
+    GenTreeFlags OperEffects(Compiler* comp);
 
     unsigned GetScaleIndexMul();
     unsigned GetScaleIndexShf();
@@ -2150,6 +2156,12 @@ public:
     {
         assert((sourceFlags & ~GTF_ALL_EFFECT) == 0);
         gtFlags |= sourceFlags;
+    }
+
+    void SetHasOrderingSideEffect()
+    {
+        assert(OperSupportsOrderingSideEffect());
+        gtFlags |= GTF_ORDER_SIDEEFF;
     }
 
     inline bool IsCnsIntOrI() const;
@@ -6249,6 +6261,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
+    bool OperRequiresGlobRefFlag() const;
 
     unsigned GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
@@ -7175,6 +7188,14 @@ struct GenTreeIndir : public GenTreeOp
     bool IsUnaligned() const
     {
         return (gtFlags & GTF_IND_UNALIGNED) != 0;
+    }
+
+    // True if this indirection is invariant.
+    bool IsInvariantLoad() const
+    {
+        bool isInvariant = (gtFlags & GTF_IND_INVARIANT) != 0;
+        assert(!isInvariant || OperIs(GT_IND, GT_BLK));
+        return isInvariant;
     }
 
 #if DEBUGGABLE_GENTREE
