@@ -8078,7 +8078,8 @@ bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
                 target_ssize_t storeOffs = 0;
                 comp->gtPeelOffsets(&storeAddr, &storeOffs, &fieldSeq);
 
-                bool distinct = (storeOffs + store->Size() <= offs) || (offs + indir->Size() <= storeOffs);
+                bool distinct = (storeOffs + (target_ssize_t)store->Size() <= offs) ||
+                                (offs + (target_ssize_t)indir->Size() <= storeOffs);
                 if (checkLocal && GenTree::Compare(indirAddr, storeAddr) && distinct)
                 {
                     JITDUMP("Cannot interfere with [%06u] since they are off the same local V%02u and indir range "
