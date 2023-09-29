@@ -211,6 +211,8 @@ namespace ILCompiler
         private readonly SortedSet<string> _unsupportedInstructionSets;
         private readonly TargetArchitecture _architecture;
 
+        public TargetArchitecture Architecture => _architecture;
+
         public InstructionSetSupportBuilder(TargetArchitecture architecture)
         {
             _supportedInstructionSets = new SortedSet<string>();
@@ -224,6 +226,13 @@ namespace ILCompiler
             _unsupportedInstructionSets = new SortedSet<string>(other._unsupportedInstructionSets);
             _architecture = other._architecture;
         }
+
+        public override string ToString()
+            => (_supportedInstructionSets.Count > 0 ? "+" : "")
+               + string.Join(",+", _supportedInstructionSets)
+               + (_supportedInstructionSets.Count > 0 && _unsupportedInstructionSets.Count > 0 ? "," : "")
+               + (_unsupportedInstructionSets.Count > 0 ? "-" : "")
+               + string.Join(",-", _unsupportedInstructionSets);
 
         /// <summary>
         /// Add a supported instruction set to the specified list.

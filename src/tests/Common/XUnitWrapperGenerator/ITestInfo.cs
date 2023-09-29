@@ -415,22 +415,18 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
             builder.AppendLine("try");
             using (builder.NewBracesScope())
             {
-                builder.AppendLine($"System.Console.WriteLine(\"{{0:HH:mm:ss.fff}} Running test: {{1}}\", System.DateTime.Now, {test.TestNameExpression});");
+                builder.AppendLine($"{_summaryLocalIdentifier}.ReportStartingTest({test.TestNameExpression}, System.Console.Out);");
                 builder.AppendLine($"{_outputRecorderIdentifier}.ResetTestOutput();");
                 builder.Append(testExecutionExpression);
 
                 builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\","
-                                 + $" stopwatch.Elapsed - testStart, {_outputRecorderIdentifier}.GetTestOutput(), tempLogSw, statsCsvSw);");
-
-                builder.AppendLine($"System.Console.WriteLine(\"{{0:HH:mm:ss.fff}} Passed test: {{1}}\", System.DateTime.Now, {test.TestNameExpression});");
+                                 + $" stopwatch.Elapsed - testStart, {_outputRecorderIdentifier}.GetTestOutput(), System.Console.Out, tempLogSw, statsCsvSw);");
             }
             builder.AppendLine("catch (System.Exception ex)");
             using (builder.NewBracesScope())
             {
                 builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\","
-                                 + $" stopwatch.Elapsed - testStart, ex, {_outputRecorderIdentifier}.GetTestOutput(), tempLogSw, statsCsvSw);");
-
-                builder.AppendLine($"System.Console.WriteLine(\"{{0:HH:mm:ss.fff}} Failed test: {{1}}\", System.DateTime.Now, {test.TestNameExpression});");
+                                 + $" stopwatch.Elapsed - testStart, ex, {_outputRecorderIdentifier}.GetTestOutput(), System.Console.Out, tempLogSw, statsCsvSw);");
             }
         }
         builder.AppendLine("else");

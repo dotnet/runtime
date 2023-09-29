@@ -4073,7 +4073,10 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 
 	sig = mono_method_signature_internal (method);
 
-	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
+	if (target_handle)
+		mb = mono_mb_new_dynamic (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
+	else
+		mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
 
 	/*the target gchandle must be the first entry after size and the wrapper itself.*/
 	mono_mb_add_data (mb, target_handle);
@@ -4181,7 +4184,6 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 												 mb, csig, sig->param_count + 16,
 												 info, NULL);
 		} else {
-			get_marshal_cb ()->mb_set_dynamic (mb);
 			res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
 		}
 	}
@@ -4254,7 +4256,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		mspecs = g_new0 (MonoMarshalSpec*, sig->param_count + 1);
 		mono_method_get_marshal_info (method, mspecs);
 
-		mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
+		mb = mono_mb_new_dynamic (method->klass, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
 		csig = mono_metadata_signature_dup_full (image, sig);
 		csig->hasthis = 0;
 		csig->pinvoke = 1;
@@ -4277,7 +4279,6 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0, error);
 		mono_error_assert_ok (error);
 
-		get_marshal_cb ()->mb_set_dynamic (mb);
 		method = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
 		mono_mb_free (mb);
 
@@ -4292,11 +4293,10 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 	}
 
 	sig = mono_method_signature_internal (method);
-	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_MANAGED);
+	mb = mono_mb_new_dynamic (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_MANAGED);
 
 	param_count = sig->param_count + sig->hasthis;
 	get_marshal_cb ()->emit_vtfixup_ftnptr (mb, method, param_count, type);
-	get_marshal_cb ()->mb_set_dynamic (mb);
 
 	method = mono_mb_create (mb, sig, param_count, NULL);
 	mono_mb_free (mb);
@@ -5573,7 +5573,7 @@ mono_get_addr_compiled_method (gpointer arg, MonoDelegate *del)
 	if (m_type_is_byref (invoke_sig->params [0])) {
 		arg_class = mono_class_from_mono_type_internal (invoke_sig->params [0]);
 	} else {
-		MonoObject *object = (MonoObject*)arg;
+		MonoObject *object = *(MonoObject**)arg;
 		arg_class = object->vtable->klass;
 	}
 
@@ -5764,21 +5764,18 @@ mono_marshal_load_type_info (MonoClass* klass)
 	if (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR)
 		info->native_size = TARGET_SIZEOF_VOID_P;
 
+	gboolean align_size = TRUE;
 	if (layout != TYPE_ATTRIBUTE_AUTO_LAYOUT) {
 		info->native_size = MAX (native_size, info->native_size);
-		/*
-		 * If the provided Size is equal or larger than the calculated size, and there
-		 * was no Pack attribute, we set min_align to 1 to avoid native_size being increased
-		 */
 		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
 			if (native_size && native_size == info->native_size && m_class_get_packing_size (klass) == 0)
-				min_align = 1;
+				align_size = FALSE;
 			else
 				min_align = MIN (min_align, packing);
 		}
 	}
 
-	if (info->native_size & (min_align - 1)) {
+	if (info->native_size & (min_align - 1) && align_size) {
 		info->native_size += min_align - 1;
 		info->native_size &= ~(min_align - 1);
 	}

@@ -6,11 +6,12 @@ TARGET?=iossimulator
 DEPLOY_AND_RUN?=true
 APP_SANDBOX?=false
 STRIP_DEBUG_SYMBOLS?=false # only used when measuring SOD via build-appbundle make target
+HYBRID_GLOBALIZATION?=false
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
 #If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
 #If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is disabled, use DOTNET_DiagnosticPorts when launching application to enable diagnostics.
-#RUNTIME_COMPONENTS=diagnostics_tracing
+#RUNTIME_COMPONENTS=marshal-ilgen;diagnostics_tracing
 #DIAGNOSTIC_PORTS=127.0.0.1:9000,nosuspend
 #DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
 #DIAGNOSTIC_PORTS=$(DOTNET_DiagnosticPorts)
@@ -34,6 +35,7 @@ build-appbundle: clean appbuilder
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	/p:DeployAndRun=false \
+	/p:HybridGlobalization=$(HYBRID_GLOBALIZATION) \
 	/bl
 
 run: clean appbuilder
@@ -43,8 +45,8 @@ run: clean appbuilder
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
-	/p:RuntimeComponents="$(RUNTIME_COMPONENTS)" \
-	/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)" \
+	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
+	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
 	/bl
 
 run-sim: clean appbuilder
@@ -55,8 +57,8 @@ run-sim: clean appbuilder
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:MonoForceInterpreter=false \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
-	/p:RuntimeComponents="$(RUNTIME_COMPONENTS)" \
-	/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)" \
+	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
+	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
 	/bl
 
 run-sim-interp: clean appbuilder
@@ -67,8 +69,8 @@ run-sim-interp: clean appbuilder
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:MonoForceInterpreter=true \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
-	/p:RuntimeComponents="$(RUNTIME_COMPONENTS)" \
-	/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)" \
+	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
+	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
 	/bl
 
 run-catalyst: clean appbuilder
@@ -80,6 +82,7 @@ run-catalyst: clean appbuilder
 	/p:MonoForceInterpreter=false \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:EnableAppSandbox=$(APP_SANDBOX) \
+	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	/bl
 
 run-catalyst-interp: clean appbuilder
@@ -91,6 +94,7 @@ run-catalyst-interp: clean appbuilder
 	/p:MonoForceInterpreter=true \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:EnableAppSandbox=$(APP_SANDBOX) \
+	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	/bl
 
 clean:

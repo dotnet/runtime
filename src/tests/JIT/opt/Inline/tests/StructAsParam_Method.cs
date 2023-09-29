@@ -21,7 +21,7 @@ namespace ConsoleApplication1
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             TheStruct testStruct = new TheStruct();
 
@@ -30,8 +30,6 @@ namespace ConsoleApplication1
             StructTaker_Inline(testStruct);
 
             System.Console.WriteLine("Struct field = {0}", testStruct.fieldinStruct);
-
-            return 100;
         }
     }
 }

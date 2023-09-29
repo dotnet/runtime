@@ -729,6 +729,10 @@ public:
 
     static unsigned __int64 convertDoubleToUInt64(double d);
 
+    static double convertToDouble(float f);
+
+    static float convertToSingle(double d);
+
     static double round(double x);
 
     static float round(float x);
@@ -998,7 +1002,6 @@ bool FitsIn(var_types type, T value)
     {
         case TYP_BYTE:
             return FitsIn<int8_t>(value);
-        case TYP_BOOL:
         case TYP_UBYTE:
             return FitsIn<uint8_t>(value);
         case TYP_SHORT:

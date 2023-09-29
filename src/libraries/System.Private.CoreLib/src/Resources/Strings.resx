@@ -2075,6 +2075,9 @@
   <data name="EventSource_ChannelTypeDoesNotMatchEventChannelValue" xml:space="preserve">
     <value>Channel {0} does not match event channel value {1}.</value>
   </data>
+  <data name="EventSource_CouldNotEnableEventPipe" xml:space="preserve">
+    <value>Failed to open an EventPipe session for NativeRuntimeEventSource.</value>
+  </data>
   <data name="EventSource_DataDescriptorsOutOfRange" xml:space="preserve">
     <value>Data descriptors are out of range.</value>
   </data>
@@ -4181,6 +4184,9 @@
   <data name="InvalidOperation_ComInteropRequireComWrapperInstance" xml:space="preserve">
     <value>COM Interop requires ComWrapper instance registered for marshalling.</value>
   </data>
+  <data name="InvalidOperation_ComInteropRequireComWrapperTrackerInstance" xml:space="preserve">
+    <value>COM Interop requires ComWrapper instance registered for reference tracker support.</value>
+  </data>
   <data name="ArgumentOutOfRange_NotGreaterThanBufferLength" xml:space="preserve">
     <value>Must not be greater than the length of the buffer.</value>
   </data>
@@ -4243,5 +4249,8 @@
   </data>
   <data name="OutOfMemory_StringTooLong" xml:space="preserve">
     <value>String length exceeded supported range.</value>
+  </data>
+  <data name="Argument_SearchValues_UnsupportedStringComparison" xml:space="preserve">
+    <value>SearchValues&lt;string&gt; supports only StringComparison.Ordinal and StringComparison.OrdinalIgnoreCase.</value>
   </data>
 </root>

@@ -27,7 +27,7 @@ namespace System.Numerics
           ISubtractionOperators<TSelf, TSelf, TSelf>,
           IUnaryPlusOperators<TSelf, TSelf>,
           IUnaryNegationOperators<TSelf, TSelf>,
-          IUtf8SpanFormattable,
+          // IUtf8SpanFormattable,
           IUtf8SpanParsable<TSelf>
         where TSelf : INumberBase<TSelf>?
     {
@@ -457,7 +457,9 @@ namespace System.Numerics
             return succeeded;
         }
 
-        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        // Workaround devdiv/#1851707: C++/CLI fails to compile when encountering a Default Interface Method implemented in a derived interface
+        // bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
         {
             char[]? utf16DestinationArray;
             scoped Span<char> utf16Destination;

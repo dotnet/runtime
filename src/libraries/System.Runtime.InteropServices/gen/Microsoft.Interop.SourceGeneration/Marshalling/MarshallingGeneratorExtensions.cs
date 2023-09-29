@@ -137,9 +137,9 @@ namespace Microsoft.Interop
             // so explicitly do not resurface a [MarshalAs(UnmanagdType.CustomMarshaler)] attribute.
             if (info.MarshallingAttributeInfo is MarshalAsInfo { UnmanagedType: not UnmanagedType.CustomMarshaler } marshalAs)
             {
-                marshalAsAttribute = Attribute(ParseName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+                marshalAsAttribute = Attribute(NameSyntaxes.System_Runtime_InteropServices_MarshalAsAttribute)
                         .WithArgumentList(AttributeArgumentList(SingletonSeparatedList(AttributeArgument(
-                        CastExpression(ParseTypeName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
+                        CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
                         LiteralExpression(SyntaxKind.NumericLiteralExpression,
                             Literal((int)marshalAs.UnmanagedType)))))));
                 return true;
@@ -184,7 +184,7 @@ namespace Microsoft.Interop
                 List<AttributeArgumentSyntax> marshalAsArguments = new List<AttributeArgumentSyntax>
                 {
                     AttributeArgument(
-                        CastExpression(ParseTypeName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
+                        CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
                         LiteralExpression(SyntaxKind.NumericLiteralExpression,
                             Literal((int)UnmanagedType.LPArray))))
                 };
@@ -213,12 +213,12 @@ namespace Microsoft.Interop
                 {
                     marshalAsArguments.Add(
                         AttributeArgument(NameEquals("ArraySubType"), null,
-                            CastExpression(ParseTypeName(TypeNames.System_Runtime_InteropServices_UnmanagedType),
+                            CastExpression(TypeSyntaxes.System_Runtime_InteropServices_UnmanagedType,
                             LiteralExpression(SyntaxKind.NumericLiteralExpression,
                                 Literal((int)elementMarshalAs.UnmanagedType))))
                         );
                 }
-                marshalAsAttribute = Attribute(ParseName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute))
+                marshalAsAttribute = Attribute(NameSyntaxes.System_Runtime_InteropServices_MarshalAsAttribute)
                         .WithArgumentList(AttributeArgumentList(SeparatedList(marshalAsArguments)));
                 return true;
             }

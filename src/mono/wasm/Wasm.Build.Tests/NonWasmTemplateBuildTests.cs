@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
 
-public class NonWasmTemplateBuildTests : BuildTestBase
+public class NonWasmTemplateBuildTests : TestMainJsTestBase
 {
     public NonWasmTemplateBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -82,7 +82,6 @@ public class NonWasmTemplateBuildTests : BuildTestBase
                                // net6 is sdk would be needed to run the app
                                shouldRun: targetFramework == s_latestTargetFramework);
 
-
     [Theory]
     [MemberData(nameof(GetTestData))]
     public void NonWasmConsoleBuild_WithWorkload(string config, string extraBuildArgs, string targetFramework)
@@ -98,7 +97,7 @@ public class NonWasmTemplateBuildTests : BuildTestBase
                                      string? directoryBuildTargets = null,
                                      bool shouldRun = true)
     {
-        string id = $"nonwasm_{targetFramework}_{config}_{Path.GetRandomFileName()}";
+        string id = $"nonwasm_{targetFramework}_{config}_{GetRandomId()}";
         InitPaths(id);
         InitProjectDir(_projectDir);
 

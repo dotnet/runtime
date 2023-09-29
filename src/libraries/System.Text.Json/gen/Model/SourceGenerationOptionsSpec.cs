@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Serialization;
+using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -46,6 +47,8 @@ namespace System.Text.Json.SourceGeneration
         public required JsonUnknownTypeHandling? UnknownTypeHandling { get; init; }
 
         public required JsonUnmappedMemberHandling? UnmappedMemberHandling { get; init; }
+
+        public required bool? UseStringEnumConverter { get; init; }
 
         public required bool? WriteIndented { get; init; }
 

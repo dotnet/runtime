@@ -106,6 +106,9 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
+
     - checkout: self
       clean: true
       fetchDepth: $(checkoutFetchDepth)

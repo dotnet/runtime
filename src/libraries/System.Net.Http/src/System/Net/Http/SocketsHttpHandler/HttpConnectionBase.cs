@@ -16,6 +16,8 @@ namespace System.Net.Http
 {
     internal abstract class HttpConnectionBase : IDisposable, IHttpTrace
     {
+        private static long s_connectionCounter = -1;
+
         // May be null if none of the counters were enabled when the connection was established.
         private readonly ConnectionMetrics? _connectionMetrics;
 
@@ -31,44 +33,47 @@ namespace System.Net.Http
         /// <summary>Cached string for the last Server header received on this connection.</summary>
         private string? _lastServerHeaderValue;
 
-        public HttpConnectionBase(HttpConnectionPool pool)
+        public long Id { get; } = Interlocked.Increment(ref s_connectionCounter);
+
+        public HttpConnectionBase(HttpConnectionPool pool, IPEndPoint? remoteEndPoint)
         {
             Debug.Assert(this is HttpConnection or Http2Connection or Http3Connection);
             Debug.Assert(pool.Settings._metrics is not null);
 
             SocketsHttpHandlerMetrics metrics = pool.Settings._metrics;
 
-            if (metrics.CurrentConnections.Enabled ||
-                metrics.IdleConnections.Enabled ||
-                metrics.ConnectionDuration.Enabled)
+            if (metrics.OpenConnections.Enabled || metrics.ConnectionDuration.Enabled)
             {
+                // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
                 string protocol =
-                    this is HttpConnection ? "HTTP/1.1" :
-                    this is Http2Connection ? "HTTP/2" :
-                    "HTTP/3";
-
-                int port = pool.OriginAuthority.Port;
-                int defaultPort = pool.IsSecure ? HttpConnectionPool.DefaultHttpsPort : HttpConnectionPool.DefaultHttpPort;
+                    this is HttpConnection ? "1.1" :
+                    this is Http2Connection ? "2" :
+                    "3";
 
                 _connectionMetrics = new ConnectionMetrics(
                     metrics,
                     protocol,
                     pool.IsSecure ? "https" : "http",
                     pool.OriginAuthority.HostValue,
-                    port == defaultPort ? null : port);
+                    pool.IsDefaultPort ? null : pool.OriginAuthority.Port,
+                    remoteEndPoint?.Address?.ToString());
 
                 _connectionMetrics.ConnectionEstablished();
-
-                MarkConnectionAsIdle();
             }
+
+            _idleSinceTickCount = _creationTickCount;
 
             if (HttpTelemetry.Log.IsEnabled())
             {
                 _httpTelemetryMarkedConnectionAsOpened = true;
 
-                if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionEstablished();
-                else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionEstablished();
-                else HttpTelemetry.Log.Http30ConnectionEstablished();
+                string scheme = pool.IsSecure ? "https" : "http";
+                string host = pool.OriginAuthority.HostValue;
+                int port = pool.OriginAuthority.Port;
+
+                if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionEstablished(Id, scheme, host, port, remoteEndPoint);
+                else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionEstablished(Id, scheme, host, port, remoteEndPoint);
+                else HttpTelemetry.Log.Http30ConnectionEstablished(Id, scheme, host, port, remoteEndPoint);
             }
         }
 
@@ -81,9 +86,9 @@ namespace System.Net.Http
                 // Only decrement the connection count if we counted this connection
                 if (_httpTelemetryMarkedConnectionAsOpened)
                 {
-                    if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionClosed();
-                    else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionClosed();
-                    else HttpTelemetry.Log.Http30ConnectionClosed();
+                    if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionClosed(Id);
+                    else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionClosed(Id);
+                    else HttpTelemetry.Log.Http30ConnectionClosed(Id);
                 }
             }
         }
@@ -91,13 +96,12 @@ namespace System.Net.Http
         public void MarkConnectionAsIdle()
         {
             _idleSinceTickCount = Environment.TickCount64;
-
-            _connectionMetrics?.MarkAsIdle();
+            _connectionMetrics?.IdleStateChanged(idle: true);
         }
 
         public void MarkConnectionAsNotIdle()
         {
-            _connectionMetrics?.MarkAsNotIdle();
+            _connectionMetrics?.IdleStateChanged(idle: false);
         }
 
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>
@@ -127,7 +131,7 @@ namespace System.Net.Http
             if (stream is SslStream sslStream)
             {
                 Trace(
-                    $"{this}. " +
+                    $"{this}. Id:{Id}, " +
                     $"SslProtocol:{sslStream.SslProtocol}, NegotiatedApplicationProtocol:{sslStream.NegotiatedApplicationProtocol}, " +
                     $"NegotiatedCipherSuite:{sslStream.NegotiatedCipherSuite}, CipherAlgorithm:{sslStream.CipherAlgorithm}, CipherStrength:{sslStream.CipherStrength}, " +
                     $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
@@ -136,7 +140,7 @@ namespace System.Net.Http
             }
             else
             {
-                Trace($"{this}");
+                Trace($"{this}. Id:{Id}");
             }
         }
 
@@ -158,7 +162,7 @@ namespace System.Net.Http
                 !IsDigit(status2 = value[1]) ||
                 !IsDigit(status3 = value[2]))
             {
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, System.Text.Encoding.ASCII.GetString(value)));
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(value)));
             }
 
             return 100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0');

@@ -390,7 +390,12 @@ handle_signal_exception (gpointer obj)
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 	MonoContext ctx = jit_tls->ex_ctx;
 
+	MONO_ENTER_GC_UNSAFE_UNBALANCED;
+
 	mono_handle_exception (&ctx, obj);
+
+	MONO_EXIT_GC_UNSAFE_UNBALANCED;
+
 	mono_restore_context (&ctx);
 }
 

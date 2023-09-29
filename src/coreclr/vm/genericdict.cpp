@@ -1144,9 +1144,9 @@ Dictionary::PopulateEntry(
                     pResolvedMD = constraintType.GetMethodTable()->ResolveVirtualStaticMethod(
                         ownerType.GetMethodTable(),
                         pMethod,
-                        /* allowNullResult */ TRUE,
-                        /* verifyImplemented */ FALSE,
-                        /* allowVariantMatches */ TRUE,
+                        ResolveVirtualStaticMethodFlags::AllowNullResult |
+                        ResolveVirtualStaticMethodFlags::AllowVariantMatches |
+                        ResolveVirtualStaticMethodFlags::InstantiateResultOverFinalMethodDesc,
                         &uniqueResolution);
 
                     // If we couldn't get an exact result, fall back to using a stub to make the exact function call

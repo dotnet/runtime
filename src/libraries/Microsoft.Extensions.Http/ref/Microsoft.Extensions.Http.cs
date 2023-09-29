@@ -28,6 +28,12 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RedactLoggedHeaders(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<string, bool> shouldRedactHeaderValue) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RemoveAllLoggers(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder SetHandlerLifetime(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.TimeSpan handlerLifetime) { throw null; }
+#if NET5_0_OR_GREATER
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder UseSocketsHttpHandler(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Action<System.Net.Http.SocketsHttpHandler, System.IServiceProvider>? configureHandler = null) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder UseSocketsHttpHandler(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Action<Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder> configureBuilder) { throw null; }
+#endif
     }
     public static partial class HttpClientFactoryServiceCollectionExtensions
     {
@@ -51,13 +57,29 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClient<TClient, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, System.Action<System.Net.Http.HttpClient> configureClient) where TClient : class where TImplementation : class, TClient { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, System.Func<System.Net.Http.HttpClient, System.IServiceProvider, TImplementation> factory) where TClient : class where TImplementation : class, TClient { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, System.Func<System.Net.Http.HttpClient, TImplementation> factory) where TClient : class where TImplementation : class, TClient { throw null; }
-        public static Microsoft.Extensions.DependencyInjection.IServiceCollection ConfigureHttpClientDefaults(Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Microsoft.Extensions.DependencyInjection.IHttpClientBuilder> configure) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection ConfigureHttpClientDefaults(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Microsoft.Extensions.DependencyInjection.IHttpClientBuilder> configure) { throw null; }
     }
     public partial interface IHttpClientBuilder
     {
         string Name { get; }
         Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
     }
+#if NET5_0_OR_GREATER
+    public partial interface ISocketsHttpHandlerBuilder
+    {
+        string Name { get; }
+        Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
+    }
+#endif
+#if NET5_0_OR_GREATER
+    public static partial class SocketsHttpHandlerBuilderExtensions
+    {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder Configure(this Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder builder, System.Action<System.Net.Http.SocketsHttpHandler, System.IServiceProvider> configure) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder Configure(this Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder builder, Microsoft.Extensions.Configuration.IConfiguration configuration) { throw null; }
+    }
+#endif
 }
 namespace Microsoft.Extensions.Http
 {

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -23,7 +24,7 @@ namespace System.Text.Json.SourceGeneration
     /// When adding new members to the type, please ensure that these properties
     /// are satisfied otherwise we risk breaking incremental caching in the source generator!
     /// </remarks>
-    [DebuggerDisplay("Name={MemberName}, Type={PropertyType.Name}")]
+    [DebuggerDisplay("Name = {MemberName}, Type = {PropertyType.Name}")]
     public sealed record PropertyGenerationSpec
     {
         /// <summary>

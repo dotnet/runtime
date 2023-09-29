@@ -30,10 +30,9 @@ namespace DefaultNamespace
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             MultiDim_ArgCheck_Fail();
-            return 100;
         }
     }
 }

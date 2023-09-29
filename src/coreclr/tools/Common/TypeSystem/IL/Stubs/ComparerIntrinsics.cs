@@ -85,33 +85,28 @@ namespace Internal.IL.Stubs
                 // The comparer will be determined at runtime. We can't tell the exact type at compile time.
                 return null;
             }
-            else if (type.IsNullable)
+
+            if (type.IsNullable)
             {
-                TypeDesc nullableType = type.Instantiation[0];
-
-                if (context.IsCanonicalDefinitionType(nullableType, CanonicalFormKind.Universal))
-                {
-                    // We can't tell at compile time either.
-                    return null;
-                }
-
                 return context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
-                    .MakeInstantiatedType(nullableType);
+                    .MakeInstantiatedType(type.Instantiation[0]);
             }
-            else if (type.IsEnum)
+
+            if (type.IsEnum)
             {
                 // Enums have a specialized comparer that avoids boxing
                 return context.SystemModule.GetKnownType("System.Collections.Generic", $"Enum{flavor}`1")
                     .MakeInstantiatedType(type);
             }
-            else if (ImplementsInterfaceOfSelf(type, interfaceName))
+
+            bool? implementsInterfaceOfSelf = ImplementsInterfaceOfSelf(type, interfaceName);
+            if (!implementsInterfaceOfSelf.HasValue)
             {
-                return context.SystemModule.GetKnownType("System.Collections.Generic", $"Generic{flavor}`1")
-                    .MakeInstantiatedType(type);
+                return null;
             }
 
-            return context.SystemModule.GetKnownType("System.Collections.Generic", $"Object{flavor}`1")
-                    .MakeInstantiatedType(type);
+            return context.SystemModule.GetKnownType("System.Collections.Generic", implementsInterfaceOfSelf.Value ? $"Generic{flavor}`1" : $"Object{flavor}`1")
+                .MakeInstantiatedType(type);
         }
 
         public static TypeDesc[] GetPotentialComparersForType(TypeDesc type)
@@ -151,9 +146,8 @@ namespace Internal.IL.Stubs
                 universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
                         .MakeInstantiatedType(type));
 
-                if (flavor == "EqualityComparer")
-                    universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Enum{flavor}`1")
-                        .MakeInstantiatedType(type));
+                universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Enum{flavor}`1")
+                    .MakeInstantiatedType(type));
 
                 universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Generic{flavor}`1")
                     .MakeInstantiatedType(type));
@@ -172,7 +166,7 @@ namespace Internal.IL.Stubs
             {
                 TypeDesc nullableType = type.Instantiation[0];
 
-                // This should only be reachabe for universal canon code.
+                // This should only be reachable for universal canon code.
                 // For specific canon, this should have been an exact match above.
                 Debug.Assert(context.IsCanonicalDefinitionType(nullableType, CanonicalFormKind.Universal));
 
@@ -194,23 +188,45 @@ namespace Internal.IL.Stubs
             };
         }
 
-        public static bool ImplementsIEquatable(TypeDesc type)
+        public static bool? ImplementsIEquatable(TypeDesc type)
             => ImplementsInterfaceOfSelf(type, "IEquatable`1");
 
-        private static bool ImplementsInterfaceOfSelf(TypeDesc type, string interfaceName)
+        private static bool? ImplementsInterfaceOfSelf(TypeDesc type, string interfaceName)
         {
             MetadataType interfaceType = null;
 
             foreach (TypeDesc implementedInterface in type.RuntimeInterfaces)
             {
                 Instantiation interfaceInstantiation = implementedInterface.Instantiation;
-                if (interfaceInstantiation.Length == 1 &&
-                    interfaceInstantiation[0] == type)
+                if (interfaceInstantiation.Length == 1)
                 {
                     interfaceType ??= interfaceType = type.Context.SystemModule.GetKnownType("System", interfaceName);
 
                     if (implementedInterface.GetTypeDefinition() == interfaceType)
-                        return true;
+                    {
+                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        {
+                            // Ignore interface instantiations that cannot possibly be the interface of self
+                            if (implementedInterface.ConvertToCanonForm(CanonicalFormKind.Specific) !=
+                                interfaceType.MakeInstantiatedType(type).ConvertToCanonForm(CanonicalFormKind.Specific))
+                            {
+                                continue;
+                            }
+                            // Try to prove that the interface of self is always implemented using the type definition.
+                            TypeDesc typeDefinition = type.GetTypeDefinition();
+                            return typeDefinition.CanCastTo(interfaceType.MakeInstantiatedType(typeDefinition)) ? true : null;
+                        }
+                        else
+                        {
+                            // Shortcut for exact match
+                            if (interfaceInstantiation[0] == type)
+                            {
+                                Debug.Assert(type.CanCastTo(interfaceType.MakeInstantiatedType(type)));
+                                return true;
+                            }
+                            return type.CanCastTo(interfaceType.MakeInstantiatedType(type));
+                        }
+                    }
                 }
             }
 

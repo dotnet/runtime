@@ -455,7 +455,14 @@ namespace System.Text.Json.Serialization.Converters
             // Skip the property if not found.
             if (!jsonPropertyInfo.CanDeserializeOrPopulate)
             {
-                reader.Skip();
+                // The Utf8JsonReader.Skip() method will fail fast if it detects that we're reading
+                // from a partially read buffer, regardless of whether the next value is available.
+                // This can result in erroneous failures in cases where a custom converter is calling
+                // into a built-in converter (cf. https://github.com/dotnet/runtime/issues/74108).
+                // For this reason we need to call the TrySkip() method instead -- the serializer
+                // should guarantee sufficient read-ahead has been performed for the current object.
+                bool success = reader.TrySkip();
+                Debug.Assert(success, "Serializer should guarantee sufficient read-ahead has been done.");
             }
             else
             {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
@@ -33,12 +34,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public TrimAnalysisVisitor (
 			LocalStateLattice<MultiValue, ValueSetLattice<SingleValue>> lattice,
-			IMethodSymbol method,
+			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
 			TrimAnalysisPatternStore trimAnalysisPatterns,
 			InterproceduralState<MultiValue, ValueSetLattice<SingleValue>> interproceduralState
-		) : base (lattice, method, methodCFG, lValueFlowCaptures, interproceduralState)
+		) : base (lattice, owningSymbol, methodCFG, lValueFlowCaptures, interproceduralState)
 		{
 			_multiValueLattice = lattice.Lattice.ValueLattice;
 			TrimAnalysisPatterns = trimAnalysisPatterns;
@@ -112,8 +113,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			// The instance reference operation represents a 'this' or 'base' reference to the containing type,
 			// so we get the annotation from the containing method.
-			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow ())
-				return new MethodParameterValue (Method, (ParameterIndex) 0, Method.GetDynamicallyAccessedMemberTypes ());
+			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow ()) {
+				// 'this' is not allowed in field/property initializers, so the owning symbol should be a method.
+				Debug.Assert (OwningSymbol is IMethodSymbol);
+				if (OwningSymbol is IMethodSymbol method)
+					return new MethodParameterValue (method, (ParameterIndex) 0, method.GetDynamicallyAccessedMemberTypes ());
+			}
 
 			return TopValue;
 		}
@@ -219,7 +224,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			return result.Equals (TopValue) ? UnknownValue.Instance : result;
 		}
 
-		public override void HandleArrayElementWrite (MultiValue arrayValue, MultiValue indexValue, MultiValue valueToWrite, IOperation operation)
+		public override void HandleArrayElementWrite (MultiValue arrayValue, MultiValue indexValue, MultiValue valueToWrite, IOperation operation, bool merge)
 		{
 			int? index = indexValue.AsConstInt ();
 			foreach (var arraySingleValue in arrayValue) {
@@ -227,12 +232,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					if (index == null) {
 						// Reset the array to all unknowns - since we don't know which index is being assigned
 						arr.IndexValues.Clear ();
-					} else {
-						if (arr.IndexValues.TryGetValue (index.Value, out _)) {
-							arr.IndexValues[index.Value] = ArrayValue.SanitizeArrayElementValue(valueToWrite);
-						} else if (arr.IndexValues.Count < MaxTrackedArrayValues) {
-							arr.IndexValues[index.Value] = ArrayValue.SanitizeArrayElementValue(valueToWrite);
-						}
+					} else if (arr.IndexValues.TryGetValue (index.Value, out _) || arr.IndexValues.Count < MaxTrackedArrayValues) {
+						var sanitizedValue = ArrayValue.SanitizeArrayElementValue(valueToWrite);
+						arr.IndexValues[index.Value] = merge
+							? _multiValueLattice.Meet (arr.IndexValues[index.Value], sanitizedValue)
+							: sanitizedValue;
 					}
 				}
 			}
@@ -251,7 +255,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			//   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
 			var diagnosticContext = DiagnosticContext.CreateDisabled ();
-			var handleCallAction = new HandleCallAction (diagnosticContext, Method, operation);
+			var handleCallAction = new HandleCallAction (diagnosticContext, OwningSymbol, operation);
 			MethodProxy method = new (calledMethod);
 			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
 
@@ -280,7 +284,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				instance,
 				arguments,
 				operation,
-				Method));
+				OwningSymbol));
 
 			foreach (var argument in arguments) {
 				foreach (var argumentValue in argument) {
@@ -294,14 +298,31 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override void HandleReturnValue (MultiValue returnValue, IOperation operation)
 		{
-			if (Method.ReturnType.IsTypeInterestingForDataflow ()) {
-				var returnParameter = new MethodReturnValue (Method);
+			// Return statements should only happen inside of method bodies.
+			Debug.Assert (OwningSymbol is IMethodSymbol);
+			if (OwningSymbol is not IMethodSymbol method)
+				return;
+
+			if (method.ReturnType.IsTypeInterestingForDataflow ()) {
+				var returnParameter = new MethodReturnValue (method);
 
 				TrimAnalysisPatterns.Add (
 					new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation),
 					isReturnValue: true
 				);
 			}
+		}
+
+		public override MultiValue HandleDelegateCreation (IMethodSymbol method, MultiValue instance, IOperation operation)
+		{
+			TrimAnalysisPatterns.Add (new TrimAnalysisReflectionAccessPattern (
+				method,
+				instance,
+				operation,
+				OwningSymbol
+			));
+
+			return TopValue;
 		}
 
 		static bool TryGetConstantValue (IOperation operation, out MultiValue constValue)

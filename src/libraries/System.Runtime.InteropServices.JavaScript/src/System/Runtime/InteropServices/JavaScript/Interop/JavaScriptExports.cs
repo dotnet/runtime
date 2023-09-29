@@ -143,11 +143,8 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 GCHandle handle = (GCHandle)arg_1.slot.GCHandle;
 
-                lock (JSHostImplementation.s_gcHandleFromJSOwnedObject)
-                {
-                    JSHostImplementation.s_gcHandleFromJSOwnedObject.Remove(handle.Target!);
-                    handle.Free();
-                }
+                JSHostImplementation.ThreadJsOwnedObjects.Remove(handle.Target!);
+                handle.Free();
             }
             catch (Exception ex)
             {

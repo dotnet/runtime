@@ -340,7 +340,7 @@ namespace System.Formats.Tar.Tests
             AssertFileModeEquals(filePath, TestPermission1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void LinkBeforeTarget()
         {
             using TempDirectory source = new TempDirectory();

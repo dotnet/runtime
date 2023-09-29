@@ -174,6 +174,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonSerializerIsReflectionDisabled()
+        {
+            throw new InvalidOperationException(SR.JsonSerializerIsReflectionDisabled);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(Type classType, MemberInfo? memberInfo)
         {
             string location = classType.ToString();

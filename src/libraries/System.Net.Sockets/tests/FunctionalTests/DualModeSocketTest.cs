@@ -975,7 +975,7 @@ namespace System.Net.Sockets.Tests
             
             int port = socket.BindToAnonymousPort(IPAddress.IPv6Loopback);
             EndPoint receivedFrom = new DnsEndPoint("localhost", port, AddressFamily.InterNetworkV6);
-            await AssertExtensions.ThrowsAsync<ArgumentException>("remoteEP", () => ReceiveFromAsync(socket, new byte[1], receivedFrom));
+            await Assert.ThrowsAsync<ArgumentException>(() => ReceiveFromAsync(socket, new byte[1], receivedFrom));
         }
 
         [Fact]

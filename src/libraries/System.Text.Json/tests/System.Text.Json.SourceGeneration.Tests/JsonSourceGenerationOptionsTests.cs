@@ -121,5 +121,34 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(PersonStruct))]
         public partial class ContextWithInvalidSerializerDefaults : JsonSerializerContext
         { }
+
+        [Fact]
+        public static void UseStringEnumConverter_EnablesDefaultStringEnumSerialization()
+        {
+            var value = new ClassWithEnumProperty { StringValue = MyEnum.A, NumberValue = MyEnum.A };
+            string expectedJson = """{"StringValue":"A","NumberValue":0}""";
+
+            string json = JsonSerializer.Serialize(value, ContextWithStringEnumConverterEnabled.Default.ClassWithEnumProperty);
+            Assert.Equal(expectedJson, json);
+
+            value = JsonSerializer.Deserialize(json, ContextWithStringEnumConverterEnabled.Default.ClassWithEnumProperty);
+            Assert.Equal(MyEnum.A, value.StringValue);
+            Assert.Equal(MyEnum.A, value.NumberValue);
+        }
+
+        public class ClassWithEnumProperty
+        {
+            public MyEnum StringValue { get; set; }
+
+            [JsonConverter(typeof(JsonNumberEnumConverter<MyEnum>))]
+            public MyEnum NumberValue { get; set; }
+        }
+
+        public enum MyEnum { A = 0, B = 1, C = 2 }
+
+        [JsonSourceGenerationOptions(UseStringEnumConverter = true)]
+        [JsonSerializable(typeof(ClassWithEnumProperty))]
+        public partial class ContextWithStringEnumConverterEnabled : JsonSerializerContext
+        { }
     }
 }

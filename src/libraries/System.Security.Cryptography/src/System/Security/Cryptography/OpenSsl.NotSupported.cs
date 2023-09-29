@@ -263,6 +263,22 @@ namespace System.Security.Cryptography
         public static long OpenSslVersion =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
+        public static SafeEvpPKeyHandle OpenPrivateKeyFromEngine(string engineName, string keyId) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
+
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
+        public static SafeEvpPKeyHandle OpenPublicKeyFromEngine(string engineName, string keyId) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
+
         public SafeEvpPKeyHandle DuplicateHandle() => null!;
         public override bool IsInvalid => true;
         protected override bool ReleaseHandle() => false;

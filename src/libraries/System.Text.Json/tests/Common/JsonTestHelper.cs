@@ -23,6 +23,16 @@ namespace System.Text.Json
         public const string SingleFormatString = "G9";
 #endif
 
+#if NETCOREAPP
+        public static Half NextHalf(Random random)
+        {
+            double mantissa = (random.NextDouble() * 2.0) - 1.0;
+            double exponent = Math.Pow(2.0, random.Next(-15, 16));
+            Half value = (Half)(mantissa * exponent);
+            return value;
+        }
+#endif
+
         public static float NextFloat(Random random)
         {
             double mantissa = (random.NextDouble() * 2.0) - 1.0;

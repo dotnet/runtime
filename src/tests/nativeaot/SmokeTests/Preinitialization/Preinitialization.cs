@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 
 using BindingFlags = System.Reflection.BindingFlags;
 
@@ -14,6 +15,7 @@ internal class Program
     private static int Main()
     {
 #if !MULTIMODULE_BUILD
+        TestHardwareIntrinsics.Run();
         TestLdstr.Run();
         TestException.Run();
         TestThreadStaticNotInitialized.Run();
@@ -49,12 +51,51 @@ internal class Program
         TestInstanceDelegate.Run();
         TestStringFields.Run();
         TestSharedCode.Run();
+        TestSpan.Run();
         TestReadOnlySpan.Run();
+        TestStaticInterfaceMethod.Run();
+        TestConstrainedCall.Run();
+        TestTypeHandles.Run();
+        TestIndirectLoads.Run();
+        TestInitBlock.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
 
         return 100;
+    }
+}
+
+class TestHardwareIntrinsics
+{
+    class Simple1
+    {
+        public static bool IsSseSupported = Sse.IsSupported;
+    }
+
+    class Simple2
+    {
+        public static bool IsAvxVnniSupported = AvxVnni.IsSupported;
+    }
+
+    class Complex
+    {
+        public static bool IsPopcntSupported = Popcnt.IsSupported;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Simple1));
+        Assert.AreEqual(Sse.IsSupported, Simple1.IsSseSupported);
+
+        Assert.IsPreinitialized(typeof(Simple2));
+        Assert.AreEqual(AvxVnni.IsSupported, Simple2.IsAvxVnniSupported);
+
+        if (RuntimeInformation.ProcessArchitecture is Architecture.X86 or Architecture.X64)
+            Assert.IsLazyInitialized(typeof(Complex));
+        else
+            Assert.IsPreinitialized(typeof(Complex));
+        Assert.AreEqual(Popcnt.IsSupported, Complex.IsPopcntSupported);
     }
 }
 
@@ -1015,6 +1056,41 @@ class TestSharedCode
     }
 }
 
+class TestSpan
+{
+    class StackAlloc
+    {
+        public static byte FirstByte;
+        public static byte LastByte;
+        public static char FirstChar;
+        public static char LastChar;
+
+        static StackAlloc()
+        {
+            Span<byte> s1 = stackalloc byte[8];
+            s1.Slice(0, 1)[0] = 42;
+            s1.Slice(s1.Length - 1, 1)[0] = 100;
+            FirstByte = s1[0];
+            LastByte = s1[7];
+
+            Span<char> s2 = stackalloc char[8];
+            s2.Slice(0, 1)[0] = 'H';
+            s2.Slice(s2.Length - 1, 1)[0] = '!';
+            FirstChar = s2[0];
+            LastChar = s2[7];
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(StackAlloc));
+        Assert.AreEqual(42, StackAlloc.FirstByte);
+        Assert.AreEqual(100, StackAlloc.LastByte);
+        Assert.AreEqual('H', StackAlloc.FirstChar);
+        Assert.AreEqual('!', StackAlloc.LastChar);
+    }
+}
+
 class TestReadOnlySpan
 {
     class SimpleReadOnlySpanAccess
@@ -1054,6 +1130,24 @@ class TestReadOnlySpan
         }
     }
 
+    class MoreOperations
+    {
+        public readonly static int IntsLength;
+        public readonly static int StringLength;
+        public readonly static char FirstChar;
+
+        private static ReadOnlySpan<int> Ints => new int[] { 5, 6, 7, 8 };
+
+        private static ReadOnlySpan<char> GetString() => "Hello World!";
+
+        static MoreOperations()
+        {
+            IntsLength = Ints.Length;
+            StringLength = GetString().Length;
+            FirstChar = GetString()[0];
+        }
+    }
+
     public static void Run()
     {
         Assert.IsPreinitialized(typeof(SimpleReadOnlySpanAccess));
@@ -1066,6 +1160,175 @@ class TestReadOnlySpan
         Assert.IsLazyInitialized(typeof(DefaultInstanceAccess));
         if (SimpleReadOnlySpanAccess.Sum == 1000) // never true
             DefaultInstanceAccess.Sum.ToString(); // make sure cctor is looked at
+
+        Assert.IsPreinitialized(typeof(MoreOperations));
+        Assert.AreEqual(4, MoreOperations.IntsLength);
+        Assert.AreEqual(12, MoreOperations.StringLength);
+        Assert.AreEqual('H', MoreOperations.FirstChar);
+    }
+}
+
+class TestStaticInterfaceMethod
+{
+    interface IFoo
+    {
+        static virtual int GetCookie1() => 42;
+        static virtual int GetCookie2() => 0;
+    }
+
+    struct Foo : IFoo
+    {
+        static int IFoo.GetCookie2() => 100;
+    }
+
+    class SimpleStaticInterfaceMethodCall
+    {
+        public static readonly int s_value1 = Compute1<Foo>();
+        public static readonly int s_value2 = Compute2<Foo>();
+
+        static int Compute1<T>() where T : IFoo => T.GetCookie1();
+        static int Compute2<T>() where T : IFoo => T.GetCookie2();
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(SimpleStaticInterfaceMethodCall));
+        Assert.AreEqual(42, SimpleStaticInterfaceMethodCall.s_value1);
+        Assert.AreEqual(100, SimpleStaticInterfaceMethodCall.s_value2);
+    }
+}
+
+class TestConstrainedCall
+{
+    interface IFoo
+    {
+        int Frob();
+    }
+
+    struct Foo : IFoo
+    {
+        public int val;
+
+        int IFoo.Frob()
+        {
+            val = 42;
+            return 100;
+        }
+    }
+
+    static int Call<T>(ref T inst) where T : IFoo => inst.Frob();
+
+    class ConstrainedCall
+    {
+        public static Foo s_f;
+        public static int s_i;
+
+        static ConstrainedCall()
+        {
+            Foo f = default;
+            s_i = Call<Foo>(ref f);
+            s_f = f;
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(ConstrainedCall));
+        Assert.AreEqual(100, ConstrainedCall.s_i);
+        Assert.AreEqual(42, ConstrainedCall.s_f.val);
+    }
+}
+
+class TestTypeHandles
+{
+    class Foo<T>
+    {
+        public static bool IsChar = typeof(T) == typeof(char);
+        public static bool IsBool = typeof(T) == typeof(bool);
+    }
+
+    class CharHolder
+    {
+        public static readonly Type Type = typeof(char);
+    }
+
+    class IsChar
+    {
+        public static bool Is = typeof(char) == CharHolder.Type;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Foo<char>));
+        Assert.True(Foo<char>.IsChar);
+        Assert.True(!Foo<char>.IsBool);
+
+        Assert.IsPreinitialized(typeof(Foo<bool>));
+        Assert.True(!Foo<bool>.IsChar);
+        Assert.True(Foo<bool>.IsBool);
+
+        Assert.IsLazyInitialized(typeof(CharHolder));
+        Assert.IsLazyInitialized(typeof(IsChar));
+        Assert.True(IsChar.Is);
+    }
+}
+
+class TestIndirectLoads
+{
+    static unsafe U Read<T, U>(T val) where T : unmanaged where U : unmanaged
+        => *(U*)&val;
+
+    class LdindTester
+    {
+        public static sbyte SByte = Read<byte, sbyte>(byte.MaxValue);
+        public static short Short = Read<ushort, short>(ushort.MaxValue);
+        public static int Int = Read<uint, int>(uint.MaxValue);
+        public static long Long = Read<ulong, long>(ulong.MaxValue);
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(LdindTester));
+        Assert.AreEqual(-1, LdindTester.SByte);
+        Assert.AreEqual(-1, LdindTester.Short);
+        Assert.AreEqual(-1, LdindTester.Int);
+        Assert.AreEqual(-1, LdindTester.Long);
+    }
+}
+
+class TestInitBlock
+{
+    class Simple
+    {
+        public static byte Value;
+
+        static Simple()
+        {
+            Value = 123;
+            Unsafe.InitBlockUnaligned(ref Value, 42, 1);
+        }
+    }
+
+    class Overrun
+    {
+        public static byte Value;
+        public static byte Pad;
+
+        static Overrun()
+        {
+            Value = 123;
+            Unsafe.InitBlockUnaligned(ref Value, 42, 2);
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Simple));
+        Assert.AreEqual(42, Simple.Value);
+
+        Assert.IsLazyInitialized(typeof(Overrun));
+        Assert.AreEqual(42, Overrun.Value);
+        Assert.AreEqual(42, Overrun.Pad);
     }
 }
 

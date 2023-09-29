@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
@@ -4299,6 +4300,8 @@ namespace System.Tests
             public string Value { get; set; }
 
             public bool Equals(Bar other) => string.Equals(Value, other.Value);
+            public override bool Equals(object other) => Equals(other as Bar);
+            public override int GetHashCode() => Value.GetHashCode();
         }
 
         public class Foo

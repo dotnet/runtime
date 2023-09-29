@@ -56,6 +56,8 @@
     <Compile Include="System\Linq\Chunk.cs" />
     <Compile Include="System\Linq\Concat.cs" />
     <Compile Include="System\Linq\Contains.cs" />
+    <Compile Include="System\Linq\AggregateBy.cs" />
+    <Compile Include="System\Linq\CountBy.cs" />
     <Compile Include="System\Linq\Count.cs" />
     <Compile Include="System\Linq\DebugView.cs" />
     <Compile Include="System\Linq\DefaultIfEmpty.cs" />

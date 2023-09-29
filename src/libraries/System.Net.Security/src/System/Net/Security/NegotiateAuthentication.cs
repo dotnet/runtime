@@ -16,13 +16,14 @@ namespace System.Net.Security
     /// </summary>
     public sealed class NegotiateAuthentication : IDisposable
     {
-        private readonly NTAuthentication? _ntAuthentication;
+        private readonly NegotiateAuthenticationPal _pal;
         private readonly string _requestedPackage;
         private readonly bool _isServer;
         private readonly TokenImpersonationLevel _requiredImpersonationLevel;
         private readonly ProtectionLevel _requiredProtectionLevel;
         private readonly ExtendedProtectionPolicy? _extendedProtectionPolicy;
         private readonly bool _isSecureConnection;
+        private bool _isDisposed;
         private IIdentity? _remoteIdentity;
 
         /// <summary>
@@ -34,47 +35,11 @@ namespace System.Net.Security
         {
             ArgumentNullException.ThrowIfNull(clientOptions);
 
-            ContextFlagsPal contextFlags = ContextFlagsPal.Connection;
-
-            contextFlags |= clientOptions.RequiredProtectionLevel switch
-            {
-                ProtectionLevel.Sign => ContextFlagsPal.InitIntegrity,
-                ProtectionLevel.EncryptAndSign => ContextFlagsPal.InitIntegrity | ContextFlagsPal.Confidentiality,
-                _ => 0
-            };
-
-            contextFlags |= clientOptions.RequireMutualAuthentication ? ContextFlagsPal.MutualAuth : 0;
-
-            contextFlags |= clientOptions.AllowedImpersonationLevel switch
-            {
-                TokenImpersonationLevel.Identification => ContextFlagsPal.InitIdentify,
-                TokenImpersonationLevel.Delegation => ContextFlagsPal.Delegate,
-                _ => 0
-            };
-
             _isServer = false;
             _requestedPackage = clientOptions.Package;
             _requiredImpersonationLevel = TokenImpersonationLevel.None;
             _requiredProtectionLevel = clientOptions.RequiredProtectionLevel;
-            try
-            {
-                _ntAuthentication = new NTAuthentication(
-                    isServer: false,
-                    clientOptions.Package,
-                    clientOptions.Credential,
-                    clientOptions.TargetName,
-                    contextFlags,
-                    clientOptions.Binding);
-            }
-            catch (PlatformNotSupportedException) // Managed implementation, Unix
-            {
-            }
-            catch (NotSupportedException) // Windows implementation
-            {
-            }
-            catch (Win32Exception) // Unix implementation in native layer
-            {
-            }
+            _pal = NegotiateAuthenticationPal.Create(clientOptions);
         }
 
         /// <summary>
@@ -86,52 +51,13 @@ namespace System.Net.Security
         {
             ArgumentNullException.ThrowIfNull(serverOptions);
 
-            ContextFlagsPal contextFlags = serverOptions.RequiredProtectionLevel switch
-            {
-                ProtectionLevel.Sign => ContextFlagsPal.AcceptIntegrity,
-                ProtectionLevel.EncryptAndSign => ContextFlagsPal.AcceptIntegrity | ContextFlagsPal.Confidentiality,
-                _ => 0
-            } | ContextFlagsPal.Connection;
-
-            if (serverOptions.Policy is not null)
-            {
-                if (serverOptions.Policy.PolicyEnforcement == PolicyEnforcement.WhenSupported)
-                {
-                    contextFlags |= ContextFlagsPal.AllowMissingBindings;
-                }
-
-                if (serverOptions.Policy.PolicyEnforcement != PolicyEnforcement.Never &&
-                    serverOptions.Policy.ProtectionScenario == ProtectionScenario.TrustedProxy)
-                {
-                    contextFlags |= ContextFlagsPal.ProxyBindings;
-                }
-            }
-
             _isServer = true;
             _requestedPackage = serverOptions.Package;
             _requiredImpersonationLevel = serverOptions.RequiredImpersonationLevel;
             _requiredProtectionLevel = serverOptions.RequiredProtectionLevel;
             _extendedProtectionPolicy = serverOptions.Policy;
             _isSecureConnection = serverOptions.Binding != null;
-            try
-            {
-                _ntAuthentication = new NTAuthentication(
-                    isServer: true,
-                    serverOptions.Package,
-                    serverOptions.Credential,
-                    null,
-                    contextFlags,
-                    serverOptions.Binding);
-            }
-            catch (PlatformNotSupportedException) // Managed implementation, Unix
-            {
-            }
-            catch (NotSupportedException) // Windows implementation
-            {
-            }
-            catch (Win32Exception) // Unix implementation in native layer
-            {
-            }
+            _pal = NegotiateAuthenticationPal.Create(serverOptions);
         }
 
         /// <summary>
@@ -140,10 +66,14 @@ namespace System.Net.Security
         /// </summary>
         public void Dispose()
         {
-            _ntAuthentication?.CloseContext();
-            if (_remoteIdentity is IDisposable disposableRemoteIdentity)
+            if (!_isDisposed)
             {
-                disposableRemoteIdentity.Dispose();
+                _isDisposed = true;
+                _pal?.Dispose();
+                if (_remoteIdentity is IDisposable disposableRemoteIdentity)
+                {
+                    disposableRemoteIdentity.Dispose();
+                }
             }
         }
 
@@ -151,7 +81,7 @@ namespace System.Net.Security
         /// Indicates whether authentication was successfully completed and the session
         /// was established.
         /// </summary>
-        public bool IsAuthenticated => _ntAuthentication?.IsCompleted ?? false;
+        public bool IsAuthenticated => _isDisposed ? false : _pal.IsAuthenticated;
 
         /// <summary>
         /// Indicates the negotiated level of protection.
@@ -171,17 +101,17 @@ namespace System.Net.Security
         /// <summary>
         /// Indicates whether data signing was negotiated.
         /// </summary>
-        public bool IsSigned => _ntAuthentication?.IsIntegrityFlag ?? false;
+        public bool IsSigned => _isDisposed ? false : _pal.IsSigned;
 
         /// <summary>
         /// Indicates whether data encryption was negotiated.
         /// </summary>
-        public bool IsEncrypted => _ntAuthentication?.IsConfidentialityFlag ?? false;
+        public bool IsEncrypted => _isDisposed ? false : _pal.IsEncrypted;
 
         /// <summary>
         /// Indicates whether both server and client have been authenticated.
         /// </summary>
-        public bool IsMutuallyAuthenticated => _ntAuthentication?.IsMutualAuthFlag ?? false;
+        public bool IsMutuallyAuthenticated => _isDisposed ? false : _pal.IsMutuallyAuthenticated;
 
         /// <summary>
         /// Indicates whether the local side of the authentication is representing
@@ -204,7 +134,7 @@ namespace System.Net.Security
         /// property will be Kerberos, NTLM, or any other specific protocol that was
         /// negotiated between both sides of the authentication.
         /// </remarks>
-        public string Package => _ntAuthentication?.ProtocolName ?? _requestedPackage;
+        public string Package => _pal.Package ?? _requestedPackage;
 
         /// <summary>
         /// Gets target name (service principal name) of the server.
@@ -216,7 +146,7 @@ namespace System.Net.Security
         /// For client-side of the authentication the property returns the target name
         /// specified in <see cref="NegotiateAuthenticationClientOptions.TargetName" />.
         /// </remarks>
-        public string? TargetName => IsServer ? _ntAuthentication?.ClientSpecifiedSpn : _ntAuthentication?.Spn;
+        public string? TargetName => _pal.TargetName;
 
         /// <summary>
         /// Gets information about the identity of the remote party.
@@ -233,7 +163,7 @@ namespace System.Net.Security
                 IIdentity? identity = _remoteIdentity;
                 if (identity is null)
                 {
-                    if (!IsAuthenticated || _ntAuthentication == null)
+                    if (!IsAuthenticated || _isDisposed)
                     {
                         throw new InvalidOperationException(SR.net_auth_noauth);
                     }
@@ -241,7 +171,7 @@ namespace System.Net.Security
                     if (IsServer)
                     {
                         Debug.Assert(!OperatingSystem.IsTvOS(), "Server authentication is not supported on tvOS");
-                        _remoteIdentity = identity = NegotiateStreamPal.GetIdentity(_ntAuthentication);
+                        _remoteIdentity = identity = _pal.RemoteIdentity;
                     }
                     else
                     {
@@ -256,17 +186,7 @@ namespace System.Net.Security
         /// One of the <see cref="TokenImpersonationLevel" /> values, indicating the negotiated
         /// level of impresonation.
         /// </summary>
-        public System.Security.Principal.TokenImpersonationLevel ImpersonationLevel
-        {
-            get
-            {
-                // We should suppress the delegate flag in NTLM case.
-                return
-                    _ntAuthentication!.IsDelegationFlag && _ntAuthentication.ProtocolName != NegotiationInfoClass.NTLM ? TokenImpersonationLevel.Delegation :
-                    _ntAuthentication.IsIdentifyFlag ? TokenImpersonationLevel.Identification :
-                    TokenImpersonationLevel.Impersonation;
-            }
-        }
+        public System.Security.Principal.TokenImpersonationLevel ImpersonationLevel => _pal.ImpersonationLevel;
 
         /// <summary>
         /// Evaluates an authentication token sent by the other party and returns a token in response.
@@ -287,57 +207,12 @@ namespace System.Net.Security
         /// </remarks>
         public byte[]? GetOutgoingBlob(ReadOnlySpan<byte> incomingBlob, out NegotiateAuthenticationStatusCode statusCode)
         {
-            if (_ntAuthentication == null)
+            if (_isDisposed)
             {
-                // Unsupported protocol
-                statusCode = NegotiateAuthenticationStatusCode.Unsupported;
-                return null;
+                throw new InvalidOperationException(SR.net_auth_noauth);
             }
 
-            byte[]? blob = _ntAuthentication.GetOutgoingBlob(incomingBlob, false, out SecurityStatusPal securityStatus);
-
-            // Map error codes
-            statusCode = securityStatus.ErrorCode switch
-            {
-                SecurityStatusPalErrorCode.OK => NegotiateAuthenticationStatusCode.Completed,
-                SecurityStatusPalErrorCode.ContinueNeeded => NegotiateAuthenticationStatusCode.ContinueNeeded,
-
-                // These code should never be returned and they should be handled internally
-                SecurityStatusPalErrorCode.CompleteNeeded => NegotiateAuthenticationStatusCode.Completed,
-                SecurityStatusPalErrorCode.CompAndContinue => NegotiateAuthenticationStatusCode.ContinueNeeded,
-
-                SecurityStatusPalErrorCode.ContextExpired => NegotiateAuthenticationStatusCode.ContextExpired,
-                SecurityStatusPalErrorCode.Unsupported => NegotiateAuthenticationStatusCode.Unsupported,
-                SecurityStatusPalErrorCode.PackageNotFound => NegotiateAuthenticationStatusCode.Unsupported,
-                SecurityStatusPalErrorCode.CannotInstall => NegotiateAuthenticationStatusCode.Unsupported,
-                SecurityStatusPalErrorCode.InvalidToken => NegotiateAuthenticationStatusCode.InvalidToken,
-                SecurityStatusPalErrorCode.QopNotSupported => NegotiateAuthenticationStatusCode.QopNotSupported,
-                SecurityStatusPalErrorCode.NoImpersonation => NegotiateAuthenticationStatusCode.UnknownCredentials,
-                SecurityStatusPalErrorCode.LogonDenied => NegotiateAuthenticationStatusCode.UnknownCredentials,
-                SecurityStatusPalErrorCode.UnknownCredentials => NegotiateAuthenticationStatusCode.UnknownCredentials,
-                SecurityStatusPalErrorCode.NoCredentials => NegotiateAuthenticationStatusCode.UnknownCredentials,
-                SecurityStatusPalErrorCode.MessageAltered => NegotiateAuthenticationStatusCode.MessageAltered,
-                SecurityStatusPalErrorCode.OutOfSequence => NegotiateAuthenticationStatusCode.OutOfSequence,
-                SecurityStatusPalErrorCode.NoAuthenticatingAuthority => NegotiateAuthenticationStatusCode.InvalidCredentials,
-                SecurityStatusPalErrorCode.IncompleteCredentials => NegotiateAuthenticationStatusCode.InvalidCredentials,
-                SecurityStatusPalErrorCode.IllegalMessage => NegotiateAuthenticationStatusCode.InvalidToken,
-                SecurityStatusPalErrorCode.CertExpired => NegotiateAuthenticationStatusCode.CredentialsExpired,
-                SecurityStatusPalErrorCode.SecurityQosFailed => NegotiateAuthenticationStatusCode.QopNotSupported,
-                SecurityStatusPalErrorCode.UnsupportedPreauth => NegotiateAuthenticationStatusCode.InvalidToken,
-                SecurityStatusPalErrorCode.BadBinding => NegotiateAuthenticationStatusCode.BadBinding,
-                SecurityStatusPalErrorCode.UntrustedRoot => NegotiateAuthenticationStatusCode.UnknownCredentials,
-                SecurityStatusPalErrorCode.SmartcardLogonRequired => NegotiateAuthenticationStatusCode.UnknownCredentials,
-                SecurityStatusPalErrorCode.WrongPrincipal => NegotiateAuthenticationStatusCode.UnknownCredentials,
-                SecurityStatusPalErrorCode.CannotPack => NegotiateAuthenticationStatusCode.InvalidToken,
-                SecurityStatusPalErrorCode.TimeSkew => NegotiateAuthenticationStatusCode.InvalidToken,
-                SecurityStatusPalErrorCode.AlgorithmMismatch => NegotiateAuthenticationStatusCode.InvalidToken,
-                SecurityStatusPalErrorCode.CertUnknown => NegotiateAuthenticationStatusCode.UnknownCredentials,
-
-                // Processing partial inputs is not supported, so this is result of incorrect input
-                SecurityStatusPalErrorCode.IncompleteMessage => NegotiateAuthenticationStatusCode.InvalidToken,
-
-                _ => NegotiateAuthenticationStatusCode.GenericFailure,
-            };
+            byte[]? blob = _pal.GetOutgoingBlob(incomingBlob, out statusCode);
 
             // Additional policy validation
             if (statusCode == NegotiateAuthenticationStatusCode.Completed)
@@ -414,12 +289,12 @@ namespace System.Net.Security
         /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
         public NegotiateAuthenticationStatusCode Wrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted)
         {
-            if (!IsAuthenticated || _ntAuthentication == null)
+            if (!IsAuthenticated || _isDisposed)
             {
                 throw new InvalidOperationException(SR.net_auth_noauth);
             }
 
-            return _ntAuthentication.Wrap(input, outputWriter, requestEncryption, out isEncrypted);
+            return _pal.Wrap(input, outputWriter, requestEncryption, out isEncrypted);
         }
 
         /// <summary>
@@ -441,12 +316,12 @@ namespace System.Net.Security
         /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
         public NegotiateAuthenticationStatusCode Unwrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, out bool wasEncrypted)
         {
-            if (!IsAuthenticated || _ntAuthentication == null)
+            if (!IsAuthenticated || _isDisposed)
             {
                 throw new InvalidOperationException(SR.net_auth_noauth);
             }
 
-            return _ntAuthentication.Unwrap(input, outputWriter, out wasEncrypted);
+            return _pal.Unwrap(input, outputWriter, out wasEncrypted);
         }
 
         /// <summary>
@@ -469,12 +344,12 @@ namespace System.Net.Security
         /// <exception cref="InvalidOperationException">Authentication failed or has not occurred.</exception>
         public NegotiateAuthenticationStatusCode UnwrapInPlace(Span<byte> input, out int unwrappedOffset, out int unwrappedLength, out bool wasEncrypted)
         {
-            if (!IsAuthenticated || _ntAuthentication == null)
+            if (!IsAuthenticated || _isDisposed)
             {
                 throw new InvalidOperationException(SR.net_auth_noauth);
             }
 
-            return _ntAuthentication.UnwrapInPlace(input, out unwrappedOffset, out unwrappedLength, out wasEncrypted);
+            return _pal.UnwrapInPlace(input, out unwrappedOffset, out unwrappedLength, out wasEncrypted);
         }
 
         /// <summary>
@@ -490,12 +365,12 @@ namespace System.Net.Security
         /// </remarks>
         internal void GetMIC(ReadOnlySpan<byte> message, IBufferWriter<byte> signature)
         {
-            if (!IsAuthenticated || _ntAuthentication == null)
+            if (!IsAuthenticated || _isDisposed)
             {
                 throw new InvalidOperationException(SR.net_auth_noauth);
             }
 
-            _ntAuthentication.GetMIC(message, signature);
+            _pal.GetMIC(message, signature);
         }
 
         /// <summary>
@@ -512,20 +387,19 @@ namespace System.Net.Security
         /// </remarks>
         internal bool VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
         {
-            if (!IsAuthenticated || _ntAuthentication == null)
+            if (!IsAuthenticated || _isDisposed)
             {
                 throw new InvalidOperationException(SR.net_auth_noauth);
             }
 
-            return _ntAuthentication.VerifyMIC(message, signature);
+            return _pal.VerifyMIC(message, signature);
         }
 
         private bool CheckSpn()
         {
-            Debug.Assert(_ntAuthentication != null);
             Debug.Assert(_extendedProtectionPolicy != null);
 
-            if (_ntAuthentication.IsKerberos)
+            if (_pal.Package == NegotiationInfoClass.Kerberos)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, SR.net_log_listener_no_spn_kerberos);
                 return true;
@@ -549,7 +423,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            string? clientSpn = _ntAuthentication.ClientSpecifiedSpn;
+            string? clientSpn = _pal.TargetName;
 
             if (string.IsNullOrEmpty(clientSpn))
             {

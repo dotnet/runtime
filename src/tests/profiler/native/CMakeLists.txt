@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(Profiler)
 
 set(SOURCES
+    assemblyprofiler/assemblyprofiler.cpp
     eltprofiler/slowpatheltprofiler.cpp
     eventpipeprofiler/eventpipereadingprofiler.cpp
     eventpipeprofiler/eventpipewritingprofiler.cpp

@@ -76,6 +76,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
             args_count,
             arg_marshalers,
             res_converter,
+            isDisposed: false,
         };
         let bound_fn: Function;
         if (args_count == 0 && !res_converter) {
@@ -106,7 +107,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
             }
         }
 
-        (<any>bound_fn)[bound_cs_function_symbol] = true;
+        (<any>bound_fn)[bound_cs_function_symbol] = closure;
 
         _walk_exports_to_set_function(assembly, namespace, classname, methodname, signature_hash, bound_fn);
         endMeasure(mark, MeasuredBlock.bindCsFunction, js_fqn);
@@ -124,10 +125,11 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
 function bind_fn_0V(closure: BindingClosure) {
     const method = closure.method;
     const fqn = closure.fqn;
-    (<any>closure) = null;
+    if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_0V() {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
+        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(2);
@@ -144,10 +146,11 @@ function bind_fn_1V(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const fqn = closure.fqn;
-    (<any>closure) = null;
+    if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_1V(arg1: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
+        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
@@ -167,10 +170,11 @@ function bind_fn_1R(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
-    (<any>closure) = null;
+    if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_1R(arg1: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
+        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
@@ -194,10 +198,11 @@ function bind_fn_2R(closure: BindingClosure) {
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
-    (<any>closure) = null;
+    if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_2R(arg1: any, arg2: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
+        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(4);
@@ -222,10 +227,11 @@ function bind_fn(closure: BindingClosure) {
     const res_converter = closure.res_converter;
     const method = closure.method;
     const fqn = closure.fqn;
-    (<any>closure) = null;
+    if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn(...js_args: any[]) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
+        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(2 + args_count);
@@ -257,6 +263,7 @@ type BindingClosure = {
     method: MonoMethod,
     arg_marshalers: (BoundMarshalerToCs)[],
     res_converter: BoundMarshalerToJs | undefined,
+    isDisposed: boolean,
 }
 
 export function invoke_method_and_handle_exception(method: MonoMethod, args: JSMarshalerArguments): void {

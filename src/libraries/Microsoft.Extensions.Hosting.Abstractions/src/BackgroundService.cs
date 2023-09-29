@@ -84,6 +84,7 @@ namespace Microsoft.Extensions.Hosting
 
         }
 
+        /// <inheritdoc />
         public virtual void Dispose()
         {
             _stoppingCts?.Cancel();

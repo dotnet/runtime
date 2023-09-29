@@ -436,6 +436,20 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     // NULL out / initialize members of the global profapi structure
     g_profControlBlock.Init();
 
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
+    {
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling disabled via EnableDiagnostics config.\n"));
+
+        return S_OK;
+    }
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics_Profiler) == 0)
+    {
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling disabled via EnableDiagnostics_Profiler config.\n"));
+
+        return S_OK;
+    }
+
+
     AttemptLoadProfilerForStartup();
     AttemptLoadDelayedStartupProfilers();
     AttemptLoadProfilerList();

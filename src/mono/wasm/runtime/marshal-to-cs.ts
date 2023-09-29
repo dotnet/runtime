@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
+import BuildConfiguration from "consts:configuration";
+
 import { isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
 import { assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
@@ -12,7 +14,7 @@ import {
     set_arg_length, get_arg, get_signature_arg1_type, get_signature_arg2_type, js_to_cs_marshalers,
     get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
     get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr, IDisposable,
-    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize
+    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
@@ -22,6 +24,7 @@ import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
 import { mono_log_warn } from "./logging";
 
+export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
 export function initialize_marshalers_to_cs(): void {
     if (js_to_cs_marshalers.size == 0) {
@@ -245,7 +248,7 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
     mono_check(value && value instanceof Function, "Value is not a Function");
 
     // TODO: we could try to cache value -> existing JSHandle
-    const marshal_function_to_cs_wrapper: any = (args: JSMarshalerArguments) => {
+    const wrapper: any = (args: JSMarshalerArguments) => {
         const exc = get_arg(args, 0);
         const res = get_arg(args, 1);
         const arg1 = get_arg(args, 2);
@@ -253,6 +256,8 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
         const arg3 = get_arg(args, 4);
 
         try {
+            mono_assert(!MonoWasmThreads || !wrapper.isDisposed, "Function is disposed and should not be invoked anymore.");
+
             let arg1_js: any = undefined;
             let arg2_js: any = undefined;
             let arg3_js: any = undefined;
@@ -275,8 +280,13 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
         }
     };
 
-    marshal_function_to_cs_wrapper[bound_js_function_symbol] = true;
-    const bound_function_handle = mono_wasm_get_js_handle(marshal_function_to_cs_wrapper)!;
+    wrapper[bound_js_function_symbol] = true;
+    wrapper.isDisposed = false;
+    wrapper.dispose = () => { wrapper.isDisposed = true; };
+    const bound_function_handle = mono_wasm_get_js_handle(wrapper)!;
+    if (BuildConfiguration === "Debug") {
+        wrapper[proxy_debug_symbol] = `Proxy of JS Function with JSHandle ${bound_function_handle}: ${value.toString()}`;
+    }
     set_js_handle(arg, bound_function_handle);
     set_arg_type(arg, MarshalerType.Function);//TODO or action ?
 }
@@ -309,6 +319,9 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     set_arg_type(arg, MarshalerType.Task);
     const holder = new TaskCallbackHolder(value);
     setup_managed_proxy(holder, gc_handle);
+    if (BuildConfiguration === "Debug") {
+        (holder as any)[proxy_debug_symbol] = `C# Task with GCHandle ${gc_handle}`;
+    }
 
     if (MonoWasmThreads)
         addUnsettledPromise();
@@ -316,6 +329,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     value.then(data => {
         try {
             loaderHelpers.assert_runtime_running();
+            mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
             if (MonoWasmThreads)
                 settleUnsettledPromise();
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
@@ -327,13 +341,16 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     }).catch(reason => {
         try {
             loaderHelpers.assert_runtime_running();
+            mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
             if (MonoWasmThreads)
                 settleUnsettledPromise();
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
             teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
         }
         catch (ex) {
-            mono_log_warn("Exception marshalling error of JS promise to CS: ", ex);
+            if (!loaderHelpers.is_exited()) {
+                mono_log_warn("Exception marshalling error of JS promise to CS: ", ex);
+            }
         }
     });
 }
@@ -353,13 +370,15 @@ export function marshal_exception_to_cs(arg: JSMarshalerArgument, value: any): v
         set_arg_type(arg, MarshalerType.JSException);
         const message = value.toString();
         _marshal_string_to_cs_impl(arg, message);
-
         const known_js_handle = value[cs_owned_js_handle_symbol];
         if (known_js_handle) {
             set_js_handle(arg, known_js_handle);
         }
         else {
             const js_handle = mono_wasm_get_js_handle(value)!;
+            if (BuildConfiguration === "Debug" && Object.isExtensible(value)) {
+                value[proxy_debug_symbol] = `JS Error with JSHandle ${js_handle}`;
+            }
             set_js_handle(arg, js_handle);
         }
     }
@@ -371,11 +390,14 @@ export function marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): v
     }
     else {
         // if value was ManagedObject, it would be double proxied, but the C# signature requires that
-        mono_check(value[js_owned_gc_handle_symbol] === undefined, "JSObject proxy of ManagedObject proxy is not supported");
+        mono_check(value[js_owned_gc_handle_symbol] === undefined, () => `JSObject proxy of ManagedObject proxy is not supported. ${jsinteropDoc}`);
         mono_check(typeof value === "function" || typeof value === "object", () => `JSObject proxy of ${typeof value} is not supported`);
 
         set_arg_type(arg, MarshalerType.JSObject);
         const js_handle = mono_wasm_get_js_handle(value)!;
+        if (BuildConfiguration === "Debug" && Object.isExtensible(value)) {
+            value[proxy_debug_symbol] = `JS Object with JSHandle ${js_handle}`;
+        }
         set_js_handle(arg, js_handle);
     }
 }
@@ -441,6 +463,9 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
             else if (js_type == "object") {
                 const js_handle = mono_wasm_get_js_handle(value);
                 set_arg_type(arg, MarshalerType.JSObject);
+                if (BuildConfiguration === "Debug" && Object.isExtensible(value)) {
+                    value[proxy_debug_symbol] = `JS Object with JSHandle ${js_handle}`;
+                }
                 set_js_handle(arg, js_handle);
             }
             else {
@@ -450,7 +475,7 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
         else {
             assert_not_disposed(value);
             if (value instanceof ArraySegment) {
-                throw new Error("NotImplementedException: ArraySegment");
+                throw new Error("NotImplementedException: ArraySegment. " + jsinteropDoc);
             }
             else if (value instanceof ManagedError) {
                 set_arg_type(arg, MarshalerType.Exception);
@@ -460,7 +485,7 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
                 set_arg_type(arg, MarshalerType.Object);
                 set_gc_handle(arg, gc_handle);
             } else {
-                throw new Error("NotImplementedException " + js_type);
+                throw new Error("NotImplementedException " + js_type + ". " + jsinteropDoc);
             }
         }
     }

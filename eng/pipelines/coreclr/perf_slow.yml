@@ -35,7 +35,7 @@ extends:
       jobs:
 
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-        
+
         # build mono
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -74,27 +74,6 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 720
 
-        # build mono on wasm
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
-            runtimeFlavor: mono
-            platforms:
-            - browser_wasm
-            jobParameters:
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-              nameSuffix: wasm
-              isOfficialBuild: false
-              extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
-              extraStepsParameters:
-                rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-                includeRootFolder: true
-                displayName: Browser Wasm Artifacts
-                artifactName: BrowserWasm
-                archiveType: zip
-                archiveExtension: .zip
-
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
         # build coreclr and libraries
@@ -110,27 +89,6 @@ extends:
             jobParameters:
               testGroup: perf
 
-        # build mono on wasm
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
-            runtimeFlavor: mono
-            platforms:
-            - browser_wasm
-            jobParameters:
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-              nameSuffix: wasm
-              isOfficialBuild: false
-              extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
-              extraStepsParameters:
-                rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-                includeRootFolder: true
-                displayName: Browser Wasm Artifacts
-                artifactName: BrowserWasm
-                archiveType: zip
-                archiveExtension: .zip
-
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -140,7 +98,7 @@ extends:
             platforms:
             - linux_arm64
             jobParameters:
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
               nameSuffix: AOT
               isOfficialBuild: false
               extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
@@ -238,7 +196,7 @@ extends:
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
-              timeoutInMinutes: 500
+              timeoutInMinutes: 780
 
       # run coreclr Windows arm64 ampere no dynamic pgo microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -256,7 +214,7 @@ extends:
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               pgoRunType: -NoDynamicPGO
-              timeoutInMinutes: 500
+              timeoutInMinutes: 780
 
         # run coreclr cloudvm microbenchmarks perf job
         # this run is added temporarily for measuring AVX-512 performance

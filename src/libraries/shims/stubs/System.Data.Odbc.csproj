@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ForwardedType Include="System.Data.Odbc.ODBC32"
+                   InnerClass="SQL_HANDLE;SQLRETURN;SQL_CONVERT;SQL_CVT;STMT;SQL_MAX;SQL_IS;SQL_HC;SQL_NB;SQL_CA_SS;SQL_SOPT_SS;SQL_TRANSACTION;SQL_PARAM;SQL_API;SQL_DESC;SQL_COLUMN;SQL_GROUP_BY;SQL_SQL92_RELATIONAL_JOIN_OPERATORS;SQL_OJ_CAPABILITIES;SQL_UPDATABLE;SQL_IDENTIFIER_CASE;SQL_INDEX;SQL_STATISTICS_RESERVED;SQL_SPECIALCOLS;SQL_SCOPE;SQL_NULLABILITY;SQL_SEARCHABLE;SQL_UNNAMED;HANDLER;SQL_STATISTICSTYPE;SQL_PROCEDURETYPE;SQL_C;SQL_TYPE;SQL_ATTR;SQL_INFO;SQL_DRIVER;SQL_PRIMARYKEYS;SQL_STATISTICS;SQL_SPECIALCOLUMNSET;RETCODE" />
+    <ForwardedType Include="System.Data.Odbc.OdbcCommand" />
+    <ForwardedType Include="System.Data.Odbc.OdbcCommandBuilder" />
+    <ForwardedType Include="System.Data.Odbc.OdbcConnection" />
+    <ForwardedType Include="System.Data.Odbc.OdbcConnectionStringBuilder" />
+    <ForwardedType Include="System.Data.Odbc.OdbcDataAdapter" />
+    <ForwardedType Include="System.Data.Odbc.OdbcDataReader"
+                   InnerClass="QualifiedTableName" />
+    <ForwardedType Include="System.Data.Odbc.OdbcError" />
+    <ForwardedType Include="System.Data.Odbc.OdbcErrorCollection" />
+    <ForwardedType Include="System.Data.Odbc.OdbcException" />
+    <ForwardedType Include="System.Data.Odbc.OdbcFactory" />
+    <ForwardedType Include="System.Data.Odbc.OdbcInfoMessageEventArgs" />
+    <ForwardedType Include="System.Data.Odbc.OdbcInfoMessageEventHandler" />
+    <ForwardedType Include="System.Data.Odbc.OdbcMetaDataCollectionNames" />
+    <ForwardedType Include="System.Data.Odbc.OdbcMetaDataColumnNames" />
+    <ForwardedType Include="System.Data.Odbc.OdbcParameter" />
+    <ForwardedType Include="System.Data.Odbc.OdbcParameterCollection" />
+    <ForwardedType Include="System.Data.Odbc.OdbcRowUpdatedEventArgs" />
+    <ForwardedType Include="System.Data.Odbc.OdbcRowUpdatedEventHandler" />
+    <ForwardedType Include="System.Data.Odbc.OdbcRowUpdatingEventArgs" />
+    <ForwardedType Include="System.Data.Odbc.OdbcRowUpdatingEventHandler" />
+    <ForwardedType Include="System.Data.Odbc.OdbcTransaction" />
+    <ForwardedType Include="System.Data.Odbc.OdbcType" />
+  </ItemGroup>
+
+</Project>

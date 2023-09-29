@@ -59,6 +59,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void CurrentManagedThreadId_DifferentForActiveThreads()
         {
             var ids = new HashSet<int>();
@@ -185,15 +186,6 @@ namespace System.Tests
         public void OSVersion_ValidVersion_OSX()
         {
             Version version = Environment.OSVersion.Version;
-
-            // NativeAOT hard-codes the runtime identifier at build time
-            if (!PlatformDetection.IsNativeAot)
-            {
-                // verify that the Environment.OSVersion.Version matches the current RID
-                // As of 12.0, only major version numbers are included in the RID
-                Assert.Contains(version.ToString(1), RuntimeInformation.RuntimeIdentifier);
-            }
-
             Assert.True(version.Minor >= 0, "OSVersion Minor should be non-negative");
             Assert.True(version.Build >= 0, "OSVersion Build should be non-negative");
             Assert.Equal(-1, version.Revision); // Revision is never set on OSX

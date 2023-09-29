@@ -14,7 +14,7 @@ namespace System.Speech.Internal.SrgsCompiler
     /// instead all the arcs are, with a flag to indicate the end arc out of a state */
     /// </summary>
 #if DEBUG
-    [DebuggerDisplay("{ToString ()}")]
+    [DebuggerDisplay("{ToString()}")]
 #endif
     internal sealed class State : IComparable<State>
     {

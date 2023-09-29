@@ -403,31 +403,6 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 	return field;
 }
 
-static gboolean
-mono_metadata_signature_vararg_match (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
-{
-	int i;
-
-	if (sig1->hasthis != sig2->hasthis ||
-	    sig1->sentinelpos != sig2->sentinelpos)
-		return FALSE;
-
-	for (i = 0; i < sig1->sentinelpos; i++) {
-		MonoType *p1 = sig1->params[i];
-		MonoType *p2 = sig2->params[i];
-
-		/*if (p1->attrs != p2->attrs)
-			return FALSE;
-		*/
-		if (!mono_metadata_type_equal (p1, p2))
-			return FALSE;
-	}
-
-	if (!mono_metadata_type_equal (sig1->ret, sig2->ret))
-		return FALSE;
-	return TRUE;
-}
-
 static MonoMethod *
 find_method_in_class (MonoClass *klass, const char *name, const char *qname, const char *fqname,
 		      MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
@@ -441,7 +416,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	/* FIXME: !mono_class_is_ginst (from_class) condition causes test failures. */
-	if (m_class_get_type_token (klass) && !image_is_dynamic (klass_image) && !m_class_get_methods (klass) && !m_class_get_rank (klass) && klass == from_class && !mono_class_is_ginst (from_class)) {
+	if (m_class_get_type_token (klass) && !image_is_dynamic (klass_image) && !m_class_get_methods (klass) && !m_class_get_rank (klass) && klass == from_class && !mono_class_is_ginst (from_class) && (sig->call_convention != MONO_CALL_VARARG)) {
 		int first_idx = mono_class_get_first_method_idx (klass);
 		int mcount = mono_class_get_method_count (klass);
 		for (i = 0; i < mcount; ++i) {
@@ -466,7 +441,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 				other_sig = mono_method_signature_checked (method, error);
 				if (!is_ok (error)) //bail out if we hit a loader error
 					return NULL;
-				if (other_sig && (sig->call_convention != MONO_CALL_VARARG) && mono_metadata_signature_equal (sig, other_sig))
+				if (other_sig && mono_metadata_signature_equal (sig, other_sig))
 					return method;
 			}
 		}
@@ -514,7 +489,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 			continue;
 
 		if (sig->call_convention == MONO_CALL_VARARG) {
-			if (mono_metadata_signature_vararg_match (sig, msig)) {
+			if (mono_metadata_signature_equal_vararg (sig, msig)) {
 				matched = TRUE;
 				break;
 			}
@@ -971,22 +946,6 @@ fail:
 	g_assert (!is_ok (error));
 	return NULL;
 }
-
-MonoMethod*
-mono_unsafe_accessor_find_ctor (MonoClass *in_class, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
-{
-	// This doesn't work for constructors because find_method explicitly disallows ".ctor" and ".cctor"
-	//return find_method (in_class, /*ic*/NULL, name, sig, from_class, error);
-	return find_method_in_class (in_class, ".ctor", /*qname*/NULL, /*fqname*/NULL, sig, from_class, error);
-}
-
-MonoMethod*
-mono_unsafe_accessor_find_method (MonoClass *in_class, const char *name, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
-{
-	// This doesn't work for constructors because find_method explicitly disallows ".ctor" and ".cctor"
-	return find_method (in_class, /*ic*/NULL, name, sig, from_class, error);
-}
-
 
 static MonoMethod *
 method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 idx, MonoError *error)

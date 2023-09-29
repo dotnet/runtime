@@ -24,8 +24,6 @@ jobs:
       # map dependencies variables to local variables
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
-      - name: runOnlyOnWasmPipelinesVar
-        value: ${{ parameters.runOnlyOnWasmOnlyPipelines }}
       - name: shouldRunOnDefaultPipelines
         value: $[
           or(
@@ -53,7 +51,7 @@ jobs:
           eq(variables['alwaysRunVar'], true),
           and(
             eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']),
-            ne(variables['runOnlyOnWasmPipelinesVar'], 'true')))
+            eq(${{ parameters.isWasmOnlyBuild }}, ${{ parameters.runOnlyOnWasmOnlyPipelines }})))
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
         creator: dotnet-bot

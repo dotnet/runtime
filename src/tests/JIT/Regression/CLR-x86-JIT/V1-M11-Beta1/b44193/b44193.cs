@@ -10,7 +10,7 @@ namespace Test
     public class App
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool b;
             int i = 0;
@@ -42,7 +42,6 @@ namespace Test
                     } while (b);
                 } while (b);
             } while (b);
-            return 100;
         }
     }
 }

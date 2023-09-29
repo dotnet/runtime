@@ -272,8 +272,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private static void AddCacheKey(ILEmitResolverBuilderContext argument, ServiceCacheKey key)
         {
-            Debug.Assert(key.ServiceIdentifier != null);
-            var id = key.ServiceIdentifier.Value;
+            var id = key.ServiceIdentifier;
 
             // new ServiceCacheKey(key.ServiceKey, key.type, key.slot)
             AddConstant(argument, id.ServiceKey);

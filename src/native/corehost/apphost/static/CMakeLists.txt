@@ -36,9 +36,7 @@ set(HEADERS
 add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
 remove_definitions(-DEXPORT_SHARED_API)
-add_definitions(-DHOSTPOLICY_EMBEDDED)
 add_definitions(-DNATIVE_LIBS_EMBEDDED)
-
 
 include(../../fxr/files.cmake)
 include(../../hostpolicy/files.cmake)
@@ -46,7 +44,7 @@ include(../../hostcommon/files.cmake)
 
 if(MSVC)
     # Host components don't try to handle asynchronous exceptions
-    add_compile_options(/EHsc)
+    set_property(DIRECTORY PROPERTY CLR_EH_OPTION /EHsc)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     # Prevents libc from calling pthread_cond_destroy on static objects in
     # dlopen()'ed library which we dlclose() in pal::unload_library.
@@ -259,3 +257,5 @@ target_link_libraries(
     ${RUNTIMEINFO_LIB}
     ${END_WHOLE_ARCHIVE}
 )
+
+add_sanitizer_runtime_support(singlefilehost)

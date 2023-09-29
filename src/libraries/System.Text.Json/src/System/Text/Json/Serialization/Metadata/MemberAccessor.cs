@@ -9,8 +9,9 @@ namespace System.Text.Json.Serialization.Metadata
 {
     internal abstract class MemberAccessor
     {
-        public abstract Func<object>? CreateConstructor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type classType);
+        public abstract Func<object>? CreateParameterlessConstructor(
+             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
+             ConstructorInfo? constructorInfo);
 
         public abstract Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor);
 

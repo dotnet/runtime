@@ -93,11 +93,11 @@ namespace Wasm.Build.Tests
         {
             IEnumerable<object?> hostsEnumerable = hosts.Enumerate();
             if (hosts == RunHost.None)
-                return data.Select(d => d.Append((object?) Path.GetRandomFileName()));
+                return data.Select(d => d.Append((object?) BuildTestBase.GetRandomId()));
 
             return data.SelectMany(d =>
             {
-                string runId = Path.GetRandomFileName();
+                string runId = BuildTestBase.GetRandomId();
                 return hostsEnumerable.Select(o =>
                         d.Append((object?)o)
                          .Append((object?)runId));

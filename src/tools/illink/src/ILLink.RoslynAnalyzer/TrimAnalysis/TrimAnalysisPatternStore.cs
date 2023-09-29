@@ -11,12 +11,14 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 	{
 		readonly Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
+		readonly Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
 
 		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice)
 		{
 			AssignmentPatterns = new Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> ();
 			MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern> ();
+			ReflectionAccessPatterns = new Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ();
 			Lattice = lattice;
 		}
 
@@ -48,6 +50,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			MethodCallPatterns[pattern.Operation] = pattern.Merge (Lattice, existingPattern);
 		}
 
+		public void Add (TrimAnalysisReflectionAccessPattern pattern)
+		{
+			if (!ReflectionAccessPatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
+				ReflectionAccessPatterns.Add (pattern.Operation, pattern);
+				return;
+			}
+
+			ReflectionAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, existingPattern);
+		}
+
 		public IEnumerable<Diagnostic> CollectDiagnostics ()
 		{
 			foreach (var assignmentPattern in AssignmentPatterns.Values) {
@@ -57,6 +69,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			foreach (var methodCallPattern in MethodCallPatterns.Values) {
 				foreach (var diagnostic in methodCallPattern.CollectDiagnostics ())
+					yield return diagnostic;
+			}
+
+			foreach (var reflectionAccessPattern in ReflectionAccessPatterns.Values) {
+				foreach (var diagnostic in reflectionAccessPattern.CollectDiagnostics ())
 					yield return diagnostic;
 			}
 		}

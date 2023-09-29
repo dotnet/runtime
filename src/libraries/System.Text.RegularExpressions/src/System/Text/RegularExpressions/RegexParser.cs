@@ -83,7 +83,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Gets the culture to use based on the specified options.</summary>
         internal static CultureInfo GetTargetCulture(RegexOptions options) =>
+#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
             (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+#pragma warning restore RS1035
 
         public static RegexOptions ParseOptionsInPattern(string pattern, RegexOptions options)
         {
@@ -134,7 +136,9 @@ namespace System.Text.RegularExpressions
         /// <summary>This static call constructs a flat concatenation node given a replacement pattern.</summary>
         public static RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
         {
+#pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+#pragma warning restore RS1035
             using var parser = new RegexParser(pattern, options, culture, caps, capsize, capnames, stackalloc int[OptionStackDefaultSize]);
 
             RegexNode root = parser.ScanReplacement();
@@ -521,19 +525,17 @@ namespace System.Text.RegularExpressions
                 int startpos = _pos;
 
                 _pos = _pattern.IndexOf('$', _pos);
-                if (_pos == -1)
+                if (_pos < 0)
+                {
                     _pos = _pattern.Length;
+                }
 
                 AddToConcatenate(startpos, _pos - startpos, isReplacement: true);
 
                 if (_pos < _pattern.Length)
                 {
-                    if (_pattern[_pos++] == '$')
-                    {
-                        _unit = ScanDollar();
-                    }
-
-                    _concatenation.AddChild(_unit!);
+                    _pos++;
+                    _concatenation.AddChild(ScanDollar());
                     _unit = null;
                 }
             }
@@ -864,9 +866,9 @@ namespace System.Text.RegularExpressions
                                 {
                                     string capname = ScanCapname();
 
-                                    if (_capnames != null && _capnames.ContainsKey(capname))
+                                    if (_capnames?[capname] is int tmpCapnum)
                                     {
-                                        capnum = (int)_capnames![capname]!;
+                                        capnum = tmpCapnum;
                                     }
 
                                     // check if we have bogus character after the name
@@ -911,9 +913,9 @@ namespace System.Text.RegularExpressions
                                     {
                                         string uncapname = ScanCapname();
 
-                                        if (_capnames != null && _capnames.ContainsKey(uncapname))
+                                        if (_capnames?[uncapname] is int tmpCapnum)
                                         {
-                                            uncapnum = (int)_capnames![uncapname]!;
+                                            uncapnum = tmpCapnum;
                                         }
                                         else
                                         {
@@ -971,9 +973,9 @@ namespace System.Text.RegularExpressions
                             {
                                 string capname = ScanCapname();
 
-                                if (_capnames != null && _capnames.ContainsKey(capname) && _pos < _pattern.Length && _pattern[_pos++] == ')')
+                                if (_capnames?[capname] is int tmpCapnum && _pos < _pattern.Length && _pattern[_pos++] == ')')
                                 {
-                                    return new RegexNode(RegexNodeKind.BackreferenceConditional, _options, (int)_capnames![capname]!);
+                                    return new RegexNode(RegexNodeKind.BackreferenceConditional, _options, tmpCapnum);
                                 }
                             }
                         }
@@ -1052,13 +1054,15 @@ namespace System.Text.RegularExpressions
                 if ((_options & RegexOptions.IgnorePatternWhitespace) != 0 && _pos < _pattern.Length && _pattern[_pos] == '#')
                 {
                     _pos = _pattern.IndexOf('\n', _pos);
-                    if (_pos == -1)
+                    if (_pos < 0)
+                    {
                         _pos = _pattern.Length;
+                    }
                 }
                 else if (_pos + 2 < _pattern.Length && _pattern[_pos + 2] == '#' && _pattern[_pos + 1] == '?' && _pattern[_pos] == '(')
                 {
                     _pos = _pattern.IndexOf(')', _pos);
-                    if (_pos == -1)
+                    if (_pos < 0)
                     {
                         _pos = _pattern.Length;
                         throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
@@ -1076,6 +1080,8 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans chars following a '\' (not counting the '\'), and returns a RegexNode for the type of atom scanned</summary>
         private RegexNode? ScanBackslash(bool scanOnly)
         {
+            Debug.Assert(_pos < _pattern.Length, "The current reading position must not be at the end of the pattern");
+
             char ch;
             switch (ch = _pattern[_pos])
             {
@@ -1149,6 +1155,8 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans \-style backreferences and character escapes</summary>
         private RegexNode? ScanBasicBackslash(bool scanOnly)
         {
+            Debug.Assert(_pos < _pattern.Length, "The current reading position must not be at the end of the pattern");
+
             int backpos = _pos;
             char close = '\0';
             bool angled = false;
@@ -1263,7 +1271,7 @@ namespace System.Text.RegularExpressions
                 {
                     return
                         scanOnly ? null :
-                        _capnames != null && _capnames.ContainsKey(capname) ? new RegexNode(RegexNodeKind.Backreference, _options, (int)_capnames![capname]!) :
+                        _capnames?[capname] is int tmpCapnum ? new RegexNode(RegexNodeKind.Backreference, _options, tmpCapnum) :
                         throw MakeException(RegexParseError.UndefinedNamedReference, SR.Format(SR.UndefinedNamedReference, capname));
                 }
             }
@@ -1359,9 +1367,9 @@ namespace System.Text.RegularExpressions
                 string capname = ScanCapname();
                 if (_pos < _pattern.Length && _pattern[_pos++] == '}')
                 {
-                    if (_capnames != null && _capnames.ContainsKey(capname))
+                    if (_capnames?[capname] is int tmpCapnum)
                     {
-                        return new RegexNode(RegexNodeKind.Backreference, _options, (int)_capnames![capname]!);
+                        return new RegexNode(RegexNodeKind.Backreference, _options, tmpCapnum);
                     }
                 }
             }
@@ -1480,14 +1488,14 @@ namespace System.Text.RegularExpressions
             {
                 for (; c > 0; c -= 1)
                 {
-                    int d;
                     char ch = _pattern[_pos++];
-                    if ((uint)(d = ch - '0') <= 9)
-                        i = (i * 0x10) + d;
-                    else if ((uint)(d = (ch | 0x20) - 'a') <= 5)
-                        i = (i * 0x10) + d + 0xa;
-                    else
+                    int result = HexConverter.FromChar(ch);
+                    if (result == 0xFF)
+                    {
                         break;
+                    }
+
+                    i = (i * 0x10) + result;
                 }
             }
 
@@ -1968,6 +1976,8 @@ namespace System.Text.RegularExpressions
 
         private readonly bool IsTrueQuantifier()
         {
+            Debug.Assert(_pos < _pattern.Length, "The current reading position must not be at the end of the pattern");
+
             int startpos = _pos;
             char ch = _pattern[startpos];
             if (ch != '{')

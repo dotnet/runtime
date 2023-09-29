@@ -21,6 +21,7 @@ namespace Amd64InstrDecode
     //      M8B      // Memory op is 8  bytes
     //      M16B     // Memory op is 16 bytes
     //      M32B     // Memory op is 32 bytes
+    //      M64B     // Memory op is 64 bytes
     //      M6B      // Memory op is 6  bytes
     //      M10B     // Memory op is 10 bytes
     //      I1B      // Instruction includes 1  byte  of immediates
@@ -30,29 +31,46 @@ namespace Amd64InstrDecode
     //      I8B      // Instruction includes 8  bytes of immediates
     //      Unknown  // Instruction samples did not include a modrm configured to produce RIP addressing
     //      L        // Flags depend on L bit in encoding.  L_<flagsLTrue>_or_<flagsLFalse>
+    //      LL       // Flags depend on L'L bits in EVEX encoding.  LL_<flagsLL00>_<flagsLL01>_<flagsLL10>
+    //                  LL00 = 128-bit vector; LL01 = 256-bit vector; LL10 = 512-bit vector
     //      W        // Flags depend on W bit in encoding.  W_<flagsWTrue>_or_<flagsWFalse>
     //      P        // Flags depend on OpSize prefix for encoding.  P_<flagsNoOpSizePrefix>_or_<flagsOpSizePrefix>
-    //      WP       // Flags depend on W bit in encoding and OpSize prefix.  WP_<flagsWTrue>_or__<flagsNoOpSizePrefix>_or_<flagsOpSizePrefix>
-    //      or       // Flag option separator used in W, L, P, and WP above
+    //      WP       // Flags depend on W bit in encoding and OpSize prefix.  WP_<flagsWTrue>_or_<flagsNoOpSizePrefix>_or_<flagsOpSizePrefix>
+    //      WLL      // Flags depend on W and L'L bits.
+    //               //     WLL_<W=1 LL=00>_<W=1 LL=01>_<W=1 LL=10>_or_<W=0 LL=00>_<W=0 LL=01>_<W=0 LL=10>
+    //      bLL      // Flags depend on EVEX.b and L'L bits.
+    //               //     bLL_<b=1>_<b=0 LL=00>_<b=0 LL=01>_<b=0 LL=10>
+    //      bWLL     // Flags depend on EVEX.b, EVEX.W, and L'L bits, but EVEX.W only affects the EVEX.b case, not the L'L case.
+    //               //     bWLL_<b=1 W=0>_<b=1 W=1>_<b=0 LL=00>_<b=0 LL=01>_<b=0 LL=10>
+    //      WbLL     // Flags depend on EVEX.W, EVEX.b, and L'L bits.
+    //               //     WbLL_<W=1 b=1>_<W=1 b=0 LL=00>_<W=1 b=0 LL=01>_<W=1 b=0 LL=10>_or_<W=0 b=1>_<W=0 b=0 LL=00>_<W=0 b=0 LL=01>_<W=0 b=0 LL=10>
+    //      or       // Flag option separator to help readability in some cases
     enum InstrForm : uint8_t
     {
        None,
        I1B,
-       I1B_W_None_or_MOp_M16B,
        I2B,
        I3B,
        I4B,
        I8B,
+       M1st_bLL_M4B_M16B_M32B_M64B,
+       M1st_bLL_M8B_M16B_M32B_M64B,
        M1st_I1B_L_M16B_or_M8B,
+       M1st_I1B_LL_M8B_M16B_M32B,
        M1st_I1B_W_M8B_or_M4B,
        M1st_I1B_WP_M8B_or_M4B_or_M2B,
        M1st_L_M32B_or_M16B,
+       M1st_LL_M16B_M32B_M64B,
+       M1st_LL_M2B_M4B_M8B,
+       M1st_LL_M4B_M8B_M16B,
+       M1st_LL_M8B_M16B_M32B,
        M1st_M16B,
        M1st_M16B_I1B,
        M1st_M1B,
        M1st_M1B_I1B,
        M1st_M2B,
        M1st_M2B_I1B,
+       M1st_M32B_I1B,
        M1st_M4B,
        M1st_M4B_I1B,
        M1st_M8B,
@@ -73,15 +91,30 @@ namespace Amd64InstrDecode
        MOnly_W_M8B_or_M4B,
        MOnly_WP_M8B_or_M4B_or_M2B,
        MOnly_WP_M8B_or_M8B_or_M2B,
+       MOp_bLL_M4B_M16B_M32B_M64B,
+       MOp_bLL_M4B_M8B_M16B_M32B,
+       MOp_bLL_M8B_M16B_M32B_M64B,
+       MOp_bWLL_M4B_M8B_M16B_M32B_M64B,
+       MOp_bWLL_M4B_M8B_None_M32B_M64B,
+       MOp_I1B_bLL_M2B_M16B_M32B_M64B,
+       MOp_I1B_bLL_M4B_M16B_M32B_M64B,
+       MOp_I1B_bLL_M8B_M16B_M32B_M64B,
+       MOp_I1B_bLL_M8B_None_M32B_M64B,
+       MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,
+       MOp_I1B_bWLL_M4B_M8B_None_M32B_M64B,
        MOp_I1B_L_M32B_or_M16B,
        MOp_I1B_W_M8B_or_M4B,
        MOp_I1B_WP_M8B_or_M4B_or_M2B,
-       MOp_I4B_W_M8B_or_M4B,
        MOp_L_M16B_or_M8B,
        MOp_L_M32B_or_M16B,
        MOp_L_M32B_or_M8B,
        MOp_L_M4B_or_M2B,
        MOp_L_M8B_or_M4B,
+       MOp_LL_M16B_M32B_M64B,
+       MOp_LL_M2B_M4B_M8B,
+       MOp_LL_M4B_M8B_M16B,
+       MOp_LL_M8B_M16B_M32B,
+       MOp_LL_M8B_M32B_M64B,
        MOp_M16B,
        MOp_M16B_I1B,
        MOp_M1B,
@@ -92,7 +125,6 @@ namespace Amd64InstrDecode
        MOp_M32B_I1B,
        MOp_M4B,
        MOp_M4B_I1B,
-       MOp_M4B_I4B,
        MOp_M6B,
        MOp_M8B,
        MOp_M8B_I1B,
@@ -101,6 +133,7 @@ namespace Amd64InstrDecode
        MOp_W_M4B_or_M1B,
        MOp_W_M8B_or_M2B,
        MOp_W_M8B_or_M4B,
+       MOp_WbLL_M8B_M16B_M32B_M64B_or_M4B_M8B_M16B_M32B,
        MOp_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B,
        MOp_WP_M8B_or_M4B_or_M2B,
        WP_I4B_or_I4B_or_I2B,
@@ -111,19 +144,19 @@ namespace Amd64InstrDecode
     // The following instrForm maps correspond to the amd64 instr maps
     // The comments are for debugging convenience.  The comments use a packed opcode followed by a list of observed mnemonics
     // The opcode is packed to be human readable.  PackedOpcode = opcode << 4 + pp
-    //   - For Vex* and Xop* the pp is directly included in the encoding
+    //   - For Vex* the pp is directly included in the encoding
     //   - For the Secondary, F38, and F3A pages the pp is not defined in the encoding, but affects instr form.
     //          - pp = 0 implies no prefix.
     //          - pp = 1 implies 0x66 OpSize prefix only.
     //          - pp = 2 implies 0xF3 prefix.
     //          - pp = 3 implies 0xF2 prefix.
-    //   - For the primary and 3DNow pp is not used. And is always 0 in the comments
+    //   - For the primary map, pp is not used and is always 0 in the comments.
 
 
     // Instruction which change forms based on modrm.reg are encoded in this extension table.
     // Since there are 8 modrm.reg values, they occur is groups of 8.
     // Each group is referenced from the other tables below using Extension|(index >> 3).
-    static const InstrForm instrFormExtension[153]
+    static const InstrForm instrFormExtension[217]
     {
         MOnly_M4B,                               // Primary:0xd90/0 fld
         None,
@@ -158,7 +191,7 @@ namespace Amd64InstrDecode
         MOnly_M10B,                              // Primary:0xdf0/6 fbstp
         MOnly_M8B,                               // Primary:0xdf0/7 fistp
         M1st_M1B_I1B,                            // Primary:0xf60/0 test
-        None,
+        M1st_M1B_I1B,                            // Primary:0xf60/1 test
         MOnly_M1B,                               // Primary:0xf60/2 not
         MOnly_M1B,                               // Primary:0xf60/3 neg
         MOnly_M1B,                               // Primary:0xf60/4 mul
@@ -166,7 +199,7 @@ namespace Amd64InstrDecode
         MOnly_M1B,                               // Primary:0xf60/6 div
         MOnly_M1B,                               // Primary:0xf60/7 idiv
         M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B,   // Primary:0xf70/0 test
-        None,
+        M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B,   // Primary:0xf70/1 test
         MOnly_WP_M8B_or_M4B_or_M2B,              // Primary:0xf70/2 not
         MOnly_WP_M8B_or_M4B_or_M2B,              // Primary:0xf70/3 neg
         MOnly_WP_M8B_or_M4B_or_M2B,              // Primary:0xf70/4 mul
@@ -202,7 +235,7 @@ namespace Amd64InstrDecode
         MOnly_M10B,                              // Secondary:0x012/2 lgdt
         MOnly_M10B,                              // Secondary:0x012/3 lidt
         MOnly_M2B,                               // Secondary:0x012/4 smsw
-        None,
+        MOnly_M8B,                               // Secondary:0x012/5 rstorssp
         MOnly_M2B,                               // Secondary:0x012/6 lmsw
         MOnly_M1B,                               // Secondary:0x012/7 invlpg
         MOnly_M10B,                              // Secondary:0x013/0 sgdt
@@ -213,6 +246,70 @@ namespace Amd64InstrDecode
         None,
         MOnly_M2B,                               // Secondary:0x013/6 lmsw
         MOnly_M1B,                               // Secondary:0x013/7 invlpg
+        MOnly_M1B,                               // Secondary:0x180/0 prefetchnta
+        MOnly_M1B,                               // Secondary:0x180/1 prefetcht0
+        MOnly_M1B,                               // Secondary:0x180/2 prefetcht1
+        MOnly_M1B,                               // Secondary:0x180/3 prefetcht2
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x180/4 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x180/5 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x180/6 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x180/7 nop
+        MOnly_M1B,                               // Secondary:0x181/0 prefetchnta
+        MOnly_M1B,                               // Secondary:0x181/1 prefetcht0
+        MOnly_M1B,                               // Secondary:0x181/2 prefetcht1
+        MOnly_M1B,                               // Secondary:0x181/3 prefetcht2
+        MOnly_M2B,                               // Secondary:0x181/4 nop
+        MOnly_M2B,                               // Secondary:0x181/5 nop
+        MOnly_M2B,                               // Secondary:0x181/6 nop
+        MOnly_M2B,                               // Secondary:0x181/7 nop
+        MOnly_M1B,                               // Secondary:0x182/0 prefetchnta
+        MOnly_M1B,                               // Secondary:0x182/1 prefetcht0
+        MOnly_M1B,                               // Secondary:0x182/2 prefetcht1
+        MOnly_M1B,                               // Secondary:0x182/3 prefetcht2
+        MOnly_M4B,                               // Secondary:0x182/4 nop
+        MOnly_M4B,                               // Secondary:0x182/5 nop
+        MOnly_M4B,                               // Secondary:0x182/6 nop
+        MOnly_M4B,                               // Secondary:0x182/7 nop
+        MOnly_M1B,                               // Secondary:0x183/0 prefetchnta
+        MOnly_M1B,                               // Secondary:0x183/1 prefetcht0
+        MOnly_M1B,                               // Secondary:0x183/2 prefetcht1
+        MOnly_M1B,                               // Secondary:0x183/3 prefetcht2
+        MOnly_M4B,                               // Secondary:0x183/4 nop
+        MOnly_M4B,                               // Secondary:0x183/5 nop
+        MOnly_M4B,                               // Secondary:0x183/6 nop
+        MOnly_M4B,                               // Secondary:0x183/7 nop
+        MOnly_M1B,                               // Secondary:0x1c0/0 cldemote
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/1 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/2 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/3 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/4 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/5 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/6 nop
+        MOnly_W_M8B_or_M4B,                      // Secondary:0x1c0/7 nop
+        MOnly_M2B,                               // Secondary:0x1c1/0 nop
+        MOnly_M2B,                               // Secondary:0x1c1/1 nop
+        MOnly_M2B,                               // Secondary:0x1c1/2 nop
+        MOnly_M2B,                               // Secondary:0x1c1/3 nop
+        MOnly_M2B,                               // Secondary:0x1c1/4 nop
+        MOnly_M2B,                               // Secondary:0x1c1/5 nop
+        MOnly_M2B,                               // Secondary:0x1c1/6 nop
+        MOnly_M2B,                               // Secondary:0x1c1/7 nop
+        MOnly_M4B,                               // Secondary:0x1c2/0 nop
+        MOnly_M4B,                               // Secondary:0x1c2/1 nop
+        MOnly_M4B,                               // Secondary:0x1c2/2 nop
+        MOnly_M4B,                               // Secondary:0x1c2/3 nop
+        MOnly_M4B,                               // Secondary:0x1c2/4 nop
+        MOnly_M4B,                               // Secondary:0x1c2/5 nop
+        MOnly_M4B,                               // Secondary:0x1c2/6 nop
+        MOnly_M4B,                               // Secondary:0x1c2/7 nop
+        MOnly_M4B,                               // Secondary:0x1c3/0 nop
+        MOnly_M4B,                               // Secondary:0x1c3/1 nop
+        MOnly_M4B,                               // Secondary:0x1c3/2 nop
+        MOnly_M4B,                               // Secondary:0x1c3/3 nop
+        MOnly_M4B,                               // Secondary:0x1c3/4 nop
+        MOnly_M4B,                               // Secondary:0x1c3/5 nop
+        MOnly_M4B,                               // Secondary:0x1c3/6 nop
+        MOnly_M4B,                               // Secondary:0x1c3/7 nop
         MOnly_MUnknown,                          // Secondary:0xae0/0 fxsave,fxsave64
         MOnly_MUnknown,                          // Secondary:0xae0/1 fxrstor,fxrstor64
         MOnly_M4B,                               // Secondary:0xae0/2 ldmxcsr
@@ -225,24 +322,24 @@ namespace Amd64InstrDecode
         MOnly_MUnknown,                          // Secondary:0xae1/1 fxrstor
         MOnly_M4B,                               // Secondary:0xae1/2 ldmxcsr
         MOnly_M4B,                               // Secondary:0xae1/3 stmxcsr
-        MOnly_MUnknown,                          // Secondary:0xae1/4 xsave
-        MOnly_MUnknown,                          // Secondary:0xae1/5 xrstor
+        None,
+        None,
         MOnly_M1B,                               // Secondary:0xae1/6 clwb
         MOnly_M1B,                               // Secondary:0xae1/7 clflushopt
         MOnly_MUnknown,                          // Secondary:0xae2/0 fxsave
         MOnly_MUnknown,                          // Secondary:0xae2/1 fxrstor
         MOnly_M4B,                               // Secondary:0xae2/2 ldmxcsr
         MOnly_M4B,                               // Secondary:0xae2/3 stmxcsr
-        MOnly_MUnknown,                          // Secondary:0xae2/4 xsave
-        MOnly_MUnknown,                          // Secondary:0xae2/5 xrstor
+        MOnly_M4B,                               // Secondary:0xae2/4 ptwrite
         None,
+        MOnly_M8B,                               // Secondary:0xae2/6 clrssbsy
         None,
         MOnly_MUnknown,                          // Secondary:0xae3/0 fxsave
         MOnly_MUnknown,                          // Secondary:0xae3/1 fxrstor
         MOnly_M4B,                               // Secondary:0xae3/2 ldmxcsr
         MOnly_M4B,                               // Secondary:0xae3/3 stmxcsr
-        MOnly_MUnknown,                          // Secondary:0xae3/4 xsave
-        MOnly_MUnknown,                          // Secondary:0xae3/5 xrstor
+        None,
+        None,
         None,
         None,
         None,
@@ -483,8 +580,8 @@ namespace Amd64InstrDecode
         M1st_WP_M8B_I4B_or_M4B_I4B_or_M2B_I2B,   // 0xc70 mov
         I3B,                                     // 0xc80 enter,enterw
         None,                                    // 0xc90 leave,leavew
-        I2B,                                     // 0xca0 retf,retfw
-        None,                                    // 0xcb0 retf,retfw
+        I2B,                                     // 0xca0 retf,retfq,retfw
+        None,                                    // 0xcb0 retf,retfq,retfw
         None,                                    // 0xcc0 int3
         I1B,                                     // 0xcd0 int
         None,                                    // 0xce0
@@ -513,8 +610,8 @@ namespace Amd64InstrDecode
         I1B,                                     // 0xe50 in
         I1B,                                     // 0xe60 out
         I1B,                                     // 0xe70 out
-        WP_I4B_or_I4B_or_I2B,                    // 0xe80 call
-        WP_I4B_or_I4B_or_I2B,                    // 0xe90 jmp
+        WP_I4B_or_I4B_or_I2B,                    // 0xe80 call,callw
+        WP_I4B_or_I4B_or_I2B,                    // 0xe90 jmp,jmpw
         None,                                    // 0xea0
         I1B,                                     // 0xeb0 jmp
         None,                                    // 0xec0 in
@@ -522,7 +619,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xee0 out
         None,                                    // 0xef0 out
         None,                                    // 0xf00
-        None,                                    // 0xf10 icebp
+        None,                                    // 0xf10 int1
         None,                                    // 0xf20
         None,                                    // 0xf30
         None,                                    // 0xf40 hlt
@@ -537,266 +634,6 @@ namespace Amd64InstrDecode
         None,                                    // 0xfd0 std
         MOnly_M1B,                               // 0xfe0 dec,inc
         InstrForm(int(Extension)|0x06),          // 0xff0
-    };
-
-    static const InstrForm instrForm3DNow[256]
-    {
-        MOp_M8B_I1B,                             // 0x000
-        MOp_M8B_I1B,                             // 0x010
-        MOp_M8B_I1B,                             // 0x020
-        MOp_M8B_I1B,                             // 0x030
-        MOp_M8B_I1B,                             // 0x040
-        MOp_M8B_I1B,                             // 0x050
-        MOp_M8B_I1B,                             // 0x060
-        MOp_M8B_I1B,                             // 0x070
-        MOp_M8B_I1B,                             // 0x080
-        MOp_M8B_I1B,                             // 0x090
-        MOp_M8B_I1B,                             // 0x0a0
-        MOp_M8B_I1B,                             // 0x0b0
-        MOp_M8B_I1B,                             // 0x0c0 pi2fw
-        MOp_M8B_I1B,                             // 0x0d0 pi2fd
-        MOp_M8B_I1B,                             // 0x0e0
-        MOp_M8B_I1B,                             // 0x0f0
-        MOp_M8B_I1B,                             // 0x100
-        MOp_M8B_I1B,                             // 0x110
-        MOp_M8B_I1B,                             // 0x120
-        MOp_M8B_I1B,                             // 0x130
-        MOp_M8B_I1B,                             // 0x140
-        MOp_M8B_I1B,                             // 0x150
-        MOp_M8B_I1B,                             // 0x160
-        MOp_M8B_I1B,                             // 0x170
-        MOp_M8B_I1B,                             // 0x180
-        MOp_M8B_I1B,                             // 0x190
-        MOp_M8B_I1B,                             // 0x1a0
-        MOp_M8B_I1B,                             // 0x1b0
-        MOp_M8B_I1B,                             // 0x1c0 pf2iw
-        MOp_M8B_I1B,                             // 0x1d0 pf2id
-        MOp_M8B_I1B,                             // 0x1e0
-        MOp_M8B_I1B,                             // 0x1f0
-        MOp_M8B_I1B,                             // 0x200
-        MOp_M8B_I1B,                             // 0x210
-        MOp_M8B_I1B,                             // 0x220
-        MOp_M8B_I1B,                             // 0x230
-        MOp_M8B_I1B,                             // 0x240
-        MOp_M8B_I1B,                             // 0x250
-        MOp_M8B_I1B,                             // 0x260
-        MOp_M8B_I1B,                             // 0x270
-        MOp_M8B_I1B,                             // 0x280
-        MOp_M8B_I1B,                             // 0x290
-        MOp_M8B_I1B,                             // 0x2a0
-        MOp_M8B_I1B,                             // 0x2b0
-        MOp_M8B_I1B,                             // 0x2c0
-        MOp_M8B_I1B,                             // 0x2d0
-        MOp_M8B_I1B,                             // 0x2e0
-        MOp_M8B_I1B,                             // 0x2f0
-        MOp_M8B_I1B,                             // 0x300
-        MOp_M8B_I1B,                             // 0x310
-        MOp_M8B_I1B,                             // 0x320
-        MOp_M8B_I1B,                             // 0x330
-        MOp_M8B_I1B,                             // 0x340
-        MOp_M8B_I1B,                             // 0x350
-        MOp_M8B_I1B,                             // 0x360
-        MOp_M8B_I1B,                             // 0x370
-        MOp_M8B_I1B,                             // 0x380
-        MOp_M8B_I1B,                             // 0x390
-        MOp_M8B_I1B,                             // 0x3a0
-        MOp_M8B_I1B,                             // 0x3b0
-        MOp_M8B_I1B,                             // 0x3c0
-        MOp_M8B_I1B,                             // 0x3d0
-        MOp_M8B_I1B,                             // 0x3e0
-        MOp_M8B_I1B,                             // 0x3f0
-        MOp_M8B_I1B,                             // 0x400
-        MOp_M8B_I1B,                             // 0x410
-        MOp_M8B_I1B,                             // 0x420
-        MOp_M8B_I1B,                             // 0x430
-        MOp_M8B_I1B,                             // 0x440
-        MOp_M8B_I1B,                             // 0x450
-        MOp_M8B_I1B,                             // 0x460
-        MOp_M8B_I1B,                             // 0x470
-        MOp_M8B_I1B,                             // 0x480
-        MOp_M8B_I1B,                             // 0x490
-        MOp_M8B_I1B,                             // 0x4a0
-        MOp_M8B_I1B,                             // 0x4b0
-        MOp_M8B_I1B,                             // 0x4c0
-        MOp_M8B_I1B,                             // 0x4d0
-        MOp_M8B_I1B,                             // 0x4e0
-        MOp_M8B_I1B,                             // 0x4f0
-        MOp_M8B_I1B,                             // 0x500
-        MOp_M8B_I1B,                             // 0x510
-        MOp_M8B_I1B,                             // 0x520
-        MOp_M8B_I1B,                             // 0x530
-        MOp_M8B_I1B,                             // 0x540
-        MOp_M8B_I1B,                             // 0x550
-        MOp_M8B_I1B,                             // 0x560
-        MOp_M8B_I1B,                             // 0x570
-        MOp_M8B_I1B,                             // 0x580
-        MOp_M8B_I1B,                             // 0x590
-        MOp_M8B_I1B,                             // 0x5a0
-        MOp_M8B_I1B,                             // 0x5b0
-        MOp_M8B_I1B,                             // 0x5c0
-        MOp_M8B_I1B,                             // 0x5d0
-        MOp_M8B_I1B,                             // 0x5e0
-        MOp_M8B_I1B,                             // 0x5f0
-        MOp_M8B_I1B,                             // 0x600
-        MOp_M8B_I1B,                             // 0x610
-        MOp_M8B_I1B,                             // 0x620
-        MOp_M8B_I1B,                             // 0x630
-        MOp_M8B_I1B,                             // 0x640
-        MOp_M8B_I1B,                             // 0x650
-        MOp_M8B_I1B,                             // 0x660
-        MOp_M8B_I1B,                             // 0x670
-        MOp_M8B_I1B,                             // 0x680
-        MOp_M8B_I1B,                             // 0x690
-        MOp_M8B_I1B,                             // 0x6a0
-        MOp_M8B_I1B,                             // 0x6b0
-        MOp_M8B_I1B,                             // 0x6c0
-        MOp_M8B_I1B,                             // 0x6d0
-        MOp_M8B_I1B,                             // 0x6e0
-        MOp_M8B_I1B,                             // 0x6f0
-        MOp_M8B_I1B,                             // 0x700
-        MOp_M8B_I1B,                             // 0x710
-        MOp_M8B_I1B,                             // 0x720
-        MOp_M8B_I1B,                             // 0x730
-        MOp_M8B_I1B,                             // 0x740
-        MOp_M8B_I1B,                             // 0x750
-        MOp_M8B_I1B,                             // 0x760
-        MOp_M8B_I1B,                             // 0x770
-        MOp_M8B_I1B,                             // 0x780
-        MOp_M8B_I1B,                             // 0x790
-        MOp_M8B_I1B,                             // 0x7a0
-        MOp_M8B_I1B,                             // 0x7b0
-        MOp_M8B_I1B,                             // 0x7c0
-        MOp_M8B_I1B,                             // 0x7d0
-        MOp_M8B_I1B,                             // 0x7e0
-        MOp_M8B_I1B,                             // 0x7f0
-        MOp_M8B_I1B,                             // 0x800
-        MOp_M8B_I1B,                             // 0x810
-        MOp_M8B_I1B,                             // 0x820
-        MOp_M8B_I1B,                             // 0x830
-        MOp_M8B_I1B,                             // 0x840
-        MOp_M8B_I1B,                             // 0x850
-        MOp_M8B_I1B,                             // 0x860
-        MOp_M8B_I1B,                             // 0x870
-        MOp_M8B_I1B,                             // 0x880
-        MOp_M8B_I1B,                             // 0x890
-        MOp_M8B_I1B,                             // 0x8a0 pfnacc
-        MOp_M8B_I1B,                             // 0x8b0
-        MOp_M8B_I1B,                             // 0x8c0
-        MOp_M8B_I1B,                             // 0x8d0
-        MOp_M8B_I1B,                             // 0x8e0 pfpnacc
-        MOp_M8B_I1B,                             // 0x8f0
-        MOp_M8B_I1B,                             // 0x900 pfcmpge
-        MOp_M8B_I1B,                             // 0x910
-        MOp_M8B_I1B,                             // 0x920
-        MOp_M8B_I1B,                             // 0x930
-        MOp_M8B_I1B,                             // 0x940 pfmin
-        MOp_M8B_I1B,                             // 0x950
-        MOp_M8B_I1B,                             // 0x960 pfrcp
-        MOp_M8B_I1B,                             // 0x970 pfrsqrt
-        MOp_M8B_I1B,                             // 0x980
-        MOp_M8B_I1B,                             // 0x990
-        MOp_M8B_I1B,                             // 0x9a0 pfsub
-        MOp_M8B_I1B,                             // 0x9b0
-        MOp_M8B_I1B,                             // 0x9c0
-        MOp_M8B_I1B,                             // 0x9d0
-        MOp_M8B_I1B,                             // 0x9e0 pfadd
-        MOp_M8B_I1B,                             // 0x9f0
-        MOp_M8B_I1B,                             // 0xa00 pfcmpgt
-        MOp_M8B_I1B,                             // 0xa10
-        MOp_M8B_I1B,                             // 0xa20
-        MOp_M8B_I1B,                             // 0xa30
-        MOp_M8B_I1B,                             // 0xa40 pfmax
-        MOp_M8B_I1B,                             // 0xa50
-        MOp_M8B_I1B,                             // 0xa60 pfrcpit1
-        MOp_M8B_I1B,                             // 0xa70 pfrsqit1
-        MOp_M8B_I1B,                             // 0xa80
-        MOp_M8B_I1B,                             // 0xa90
-        MOp_M8B_I1B,                             // 0xaa0 pfsubr
-        MOp_M8B_I1B,                             // 0xab0
-        MOp_M8B_I1B,                             // 0xac0
-        MOp_M8B_I1B,                             // 0xad0
-        MOp_M8B_I1B,                             // 0xae0 pfacc
-        MOp_M8B_I1B,                             // 0xaf0
-        MOp_M8B_I1B,                             // 0xb00 pfcmpeq
-        MOp_M8B_I1B,                             // 0xb10
-        MOp_M8B_I1B,                             // 0xb20
-        MOp_M8B_I1B,                             // 0xb30
-        MOp_M8B_I1B,                             // 0xb40 pfmul
-        MOp_M8B_I1B,                             // 0xb50
-        MOp_M8B_I1B,                             // 0xb60 pfrcpit2
-        MOp_M8B_I1B,                             // 0xb70 pmulhrw
-        MOp_M8B_I1B,                             // 0xb80
-        MOp_M8B_I1B,                             // 0xb90
-        MOp_M8B_I1B,                             // 0xba0
-        MOp_M8B_I1B,                             // 0xbb0 pswapd
-        MOp_M8B_I1B,                             // 0xbc0
-        MOp_M8B_I1B,                             // 0xbd0
-        MOp_M8B_I1B,                             // 0xbe0
-        MOp_M8B_I1B,                             // 0xbf0 pavgusb
-        MOp_M8B_I1B,                             // 0xc00
-        MOp_M8B_I1B,                             // 0xc10
-        MOp_M8B_I1B,                             // 0xc20
-        MOp_M8B_I1B,                             // 0xc30
-        MOp_M8B_I1B,                             // 0xc40
-        MOp_M8B_I1B,                             // 0xc50
-        MOp_M8B_I1B,                             // 0xc60
-        MOp_M8B_I1B,                             // 0xc70
-        MOp_M8B_I1B,                             // 0xc80
-        MOp_M8B_I1B,                             // 0xc90
-        MOp_M8B_I1B,                             // 0xca0
-        MOp_M8B_I1B,                             // 0xcb0
-        MOp_M8B_I1B,                             // 0xcc0
-        MOp_M8B_I1B,                             // 0xcd0
-        MOp_M8B_I1B,                             // 0xce0
-        MOp_M8B_I1B,                             // 0xcf0
-        MOp_M8B_I1B,                             // 0xd00
-        MOp_M8B_I1B,                             // 0xd10
-        MOp_M8B_I1B,                             // 0xd20
-        MOp_M8B_I1B,                             // 0xd30
-        MOp_M8B_I1B,                             // 0xd40
-        MOp_M8B_I1B,                             // 0xd50
-        MOp_M8B_I1B,                             // 0xd60
-        MOp_M8B_I1B,                             // 0xd70
-        MOp_M8B_I1B,                             // 0xd80
-        MOp_M8B_I1B,                             // 0xd90
-        MOp_M8B_I1B,                             // 0xda0
-        MOp_M8B_I1B,                             // 0xdb0
-        MOp_M8B_I1B,                             // 0xdc0
-        MOp_M8B_I1B,                             // 0xdd0
-        MOp_M8B_I1B,                             // 0xde0
-        MOp_M8B_I1B,                             // 0xdf0
-        MOp_M8B_I1B,                             // 0xe00
-        MOp_M8B_I1B,                             // 0xe10
-        MOp_M8B_I1B,                             // 0xe20
-        MOp_M8B_I1B,                             // 0xe30
-        MOp_M8B_I1B,                             // 0xe40
-        MOp_M8B_I1B,                             // 0xe50
-        MOp_M8B_I1B,                             // 0xe60
-        MOp_M8B_I1B,                             // 0xe70
-        MOp_M8B_I1B,                             // 0xe80
-        MOp_M8B_I1B,                             // 0xe90
-        MOp_M8B_I1B,                             // 0xea0
-        MOp_M8B_I1B,                             // 0xeb0
-        MOp_M8B_I1B,                             // 0xec0
-        MOp_M8B_I1B,                             // 0xed0
-        MOp_M8B_I1B,                             // 0xee0
-        MOp_M8B_I1B,                             // 0xef0
-        MOp_M8B_I1B,                             // 0xf00
-        MOp_M8B_I1B,                             // 0xf10
-        MOp_M8B_I1B,                             // 0xf20
-        MOp_M8B_I1B,                             // 0xf30
-        MOp_M8B_I1B,                             // 0xf40
-        MOp_M8B_I1B,                             // 0xf50
-        MOp_M8B_I1B,                             // 0xf60
-        MOp_M8B_I1B,                             // 0xf70
-        MOp_M8B_I1B,                             // 0xf80
-        MOp_M8B_I1B,                             // 0xf90
-        MOp_M8B_I1B,                             // 0xfa0
-        MOp_M8B_I1B,                             // 0xfb0
-        MOp_M8B_I1B,                             // 0xfc0
-        MOp_M8B_I1B,                             // 0xfd0
-        MOp_M8B_I1B,                             // 0xfe0
-        MOp_M8B_I1B,                             // 0xff0
     };
 
     static const InstrForm instrFormSecondary[1024]
@@ -829,18 +666,18 @@ namespace Amd64InstrDecode
         None,                                    // 0x061 clts
         None,                                    // 0x062 clts
         None,                                    // 0x063 clts
-        None,                                    // 0x070 sysret,sysretq
-        None,                                    // 0x071 sysretw
-        None,                                    // 0x072 sysret
-        None,                                    // 0x073 sysret
+        None,                                    // 0x070 sysretd,sysretq
+        None,                                    // 0x071 sysretd
+        None,                                    // 0x072 sysretd
+        None,                                    // 0x073 sysretd
         None,                                    // 0x080 invd
         None,                                    // 0x081 invd
         None,                                    // 0x082 invd
         None,                                    // 0x083 invd
         None,                                    // 0x090 wbinvd
-        None,                                    // 0x091 wbinvd
-        None,                                    // 0x092 wbinvd
-        None,                                    // 0x093 wbinvd
+        None,                                    // 0x091
+        None,                                    // 0x092 wbnoinvd
+        None,                                    // 0x093
         None,                                    // 0x0a0
         None,                                    // 0x0a1
         None,                                    // 0x0a2
@@ -897,26 +734,26 @@ namespace Amd64InstrDecode
         M1st_M8B,                                // 0x171 movhpd
         None,                                    // 0x172
         None,                                    // 0x173
-        MOnly_M1B,                               // 0x180 nop/reserved,prefetchnta,prefetcht0,prefetcht1,prefetcht2
-        MOnly_M1B,                               // 0x181 nop/reserved,prefetchnta,prefetcht0,prefetcht1,prefetcht2
-        MOnly_M1B,                               // 0x182 nop/reserved,prefetchnta,prefetcht0,prefetcht1,prefetcht2
-        MOnly_M1B,                               // 0x183 nop/reserved,prefetchnta,prefetcht0,prefetcht1,prefetcht2
+        InstrForm(int(Extension)|0x0b),          // 0x180
+        InstrForm(int(Extension)|0x0c),          // 0x181
+        InstrForm(int(Extension)|0x0d),          // 0x182
+        InstrForm(int(Extension)|0x0e),          // 0x183
         MOnly_W_M8B_or_M4B,                      // 0x190 nop
         MOnly_M2B,                               // 0x191 nop
         MOnly_M4B,                               // 0x192 nop
         MOnly_M4B,                               // 0x193 nop
-        MOp_MUnknown,                            // 0x1a0 bndldx
+        None,                                    // 0x1a0
         MOp_MUnknown,                            // 0x1a1 bndmov
         MOp_MUnknown,                            // 0x1a2 bndcl
         MOp_MUnknown,                            // 0x1a3 bndcu
-        M1st_MUnknown,                           // 0x1b0 bndstx
+        None,                                    // 0x1b0
         M1st_MUnknown,                           // 0x1b1 bndmov
-        MOp_MUnknown,                            // 0x1b2 bndmk
+        None,                                    // 0x1b2
         MOp_MUnknown,                            // 0x1b3 bndcn
-        MOnly_W_M8B_or_M4B,                      // 0x1c0 nop
-        MOnly_M2B,                               // 0x1c1 nop
-        MOnly_M4B,                               // 0x1c2 nop
-        MOnly_M4B,                               // 0x1c3 nop
+        InstrForm(int(Extension)|0x0f),          // 0x1c0
+        InstrForm(int(Extension)|0x10),          // 0x1c1
+        InstrForm(int(Extension)|0x11),          // 0x1c2
+        InstrForm(int(Extension)|0x12),          // 0x1c3
         MOnly_W_M8B_or_M4B,                      // 0x1d0 nop
         MOnly_M2B,                               // 0x1d1 nop
         MOnly_M4B,                               // 0x1d2 nop
@@ -1013,10 +850,10 @@ namespace Amd64InstrDecode
         None,                                    // 0x341 sysenter
         None,                                    // 0x342 sysenter
         None,                                    // 0x343 sysenter
-        None,                                    // 0x350 sysexit
-        None,                                    // 0x351 sysexit
-        None,                                    // 0x352 sysexit
-        None,                                    // 0x353 sysexit
+        None,                                    // 0x350 sysexitd,sysexitq
+        None,                                    // 0x351 sysexitd
+        None,                                    // 0x352 sysexitd
+        None,                                    // 0x353 sysexitd
         None,                                    // 0x360
         None,                                    // 0x361
         None,                                    // 0x362
@@ -1497,10 +1334,10 @@ namespace Amd64InstrDecode
         M1st_M2B,                                // 0xad1 shrd
         M1st_M4B,                                // 0xad2 shrd
         M1st_M4B,                                // 0xad3 shrd
-        InstrForm(int(Extension)|0x0b),          // 0xae0
-        InstrForm(int(Extension)|0x0c),          // 0xae1
-        InstrForm(int(Extension)|0x0d),          // 0xae2
-        InstrForm(int(Extension)|0x0e),          // 0xae3
+        InstrForm(int(Extension)|0x13),          // 0xae0
+        InstrForm(int(Extension)|0x14),          // 0xae1
+        InstrForm(int(Extension)|0x15),          // 0xae2
+        InstrForm(int(Extension)|0x16),          // 0xae3
         MOp_W_M8B_or_M4B,                        // 0xaf0 imul
         MOp_M2B,                                 // 0xaf1 imul
         MOp_M4B,                                 // 0xaf2 imul
@@ -1541,10 +1378,10 @@ namespace Amd64InstrDecode
         None,                                    // 0xb81
         MOp_M4B,                                 // 0xb82 popcnt
         None,                                    // 0xb83
-        None,                                    // 0xb90 ud1
-        None,                                    // 0xb91 ud1
-        None,                                    // 0xb92 ud1
-        None,                                    // 0xb93 ud1
+        MOp_W_M8B_or_M4B,                        // 0xb90 ud1
+        MOp_M2B,                                 // 0xb91 ud1
+        MOp_M4B,                                 // 0xb92 ud1
+        MOp_M4B,                                 // 0xb93 ud1
         M1st_I1B_W_M8B_or_M4B,                   // 0xba0 bt,btc,btr,bts
         M1st_M2B_I1B,                            // 0xba1 bt,btc,btr,bts
         M1st_M4B_I1B,                            // 0xba2 bt,btc,btr,bts
@@ -1597,10 +1434,10 @@ namespace Amd64InstrDecode
         MOp_M16B_I1B,                            // 0xc61 shufpd
         None,                                    // 0xc62
         None,                                    // 0xc63
-        InstrForm(int(Extension)|0x0f),          // 0xc70
-        InstrForm(int(Extension)|0x10),          // 0xc71
-        InstrForm(int(Extension)|0x11),          // 0xc72
-        InstrForm(int(Extension)|0x12),          // 0xc73
+        InstrForm(int(Extension)|0x17),          // 0xc70
+        InstrForm(int(Extension)|0x18),          // 0xc71
+        InstrForm(int(Extension)|0x19),          // 0xc72
+        InstrForm(int(Extension)|0x1a),          // 0xc73
         None,                                    // 0xc80 bswap
         None,                                    // 0xc81 bswap
         None,                                    // 0xc82 bswap
@@ -1821,10 +1658,10 @@ namespace Amd64InstrDecode
         MOp_M16B,                                // 0xfe1 paddd
         None,                                    // 0xfe2
         None,                                    // 0xfe3
-        None,                                    // 0xff0
-        None,                                    // 0xff1
-        None,                                    // 0xff2
-        None,                                    // 0xff3
+        MOp_W_M8B_or_M4B,                        // 0xff0 ud0
+        MOp_M2B,                                 // 0xff1 ud0
+        MOp_M4B,                                 // 0xff2 ud0
+        MOp_M4B,                                 // 0xff3 ud0
     };
 
     static const InstrForm instrFormF38[1024]
@@ -2658,7 +2495,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xce2
         None,                                    // 0xce3
         None,                                    // 0xcf0
-        None,                                    // 0xcf1
+        MOp_M16B,                                // 0xcf1 gf2p8mulb
         None,                                    // 0xcf2
         None,                                    // 0xcf3
         None,                                    // 0xd00
@@ -2792,11 +2629,11 @@ namespace Amd64InstrDecode
         MOp_W_M8B_or_M4B,                        // 0xf00 movbe
         MOp_W_M8B_or_M2B,                        // 0xf01 movbe
         None,                                    // 0xf02
-        None,                                    // 0xf03
+        MOp_M1B,                                 // 0xf03 crc32
         M1st_W_M8B_or_M4B,                       // 0xf10 movbe
         M1st_W_M8B_or_M2B,                       // 0xf11 movbe
         None,                                    // 0xf12
-        None,                                    // 0xf13
+        MOp_WP_M8B_or_M4B_or_M2B,                // 0xf13 crc32
         None,                                    // 0xf20
         None,                                    // 0xf21
         None,                                    // 0xf22
@@ -2810,22 +2647,22 @@ namespace Amd64InstrDecode
         None,                                    // 0xf42
         None,                                    // 0xf43
         None,                                    // 0xf50
-        None,                                    // 0xf51
+        M1st_MUnknown,                           // 0xf51 wrussd,wrussq
         None,                                    // 0xf52
         None,                                    // 0xf53
-        None,                                    // 0xf60
+        M1st_MUnknown,                           // 0xf60 wrssd,wrssq
         MOp_W_M8B_or_M4B,                        // 0xf61 adcx
-        None,                                    // 0xf62
+        MOp_W_M8B_or_M4B,                        // 0xf62 adox
         None,                                    // 0xf63
         None,                                    // 0xf70
         None,                                    // 0xf71
         None,                                    // 0xf72
         None,                                    // 0xf73
         None,                                    // 0xf80
-        None,                                    // 0xf81
-        None,                                    // 0xf82
-        None,                                    // 0xf83
-        None,                                    // 0xf90
+        MOp_MUnknown,                            // 0xf81 movdir64b
+        MOp_MUnknown,                            // 0xf82 enqcmds
+        MOp_MUnknown,                            // 0xf83 enqcmd
+        M1st_W_M8B_or_M4B,                       // 0xf90 movdiri
         None,                                    // 0xf91
         None,                                    // 0xf92
         None,                                    // 0xf93
@@ -3242,11 +3079,11 @@ namespace Amd64InstrDecode
         None,                                    // 0x5f2
         None,                                    // 0x5f3
         None,                                    // 0x600
-        MOp_M16B_I1B,                            // 0x601 pcmpestrm
+        MOp_M16B_I1B,                            // 0x601 pcmpestrm,pcmpestrmq
         None,                                    // 0x602
         None,                                    // 0x603
         None,                                    // 0x610
-        MOp_M16B_I1B,                            // 0x611 pcmpestri
+        MOp_M16B_I1B,                            // 0x611 pcmpestri,pcmpestriq
         None,                                    // 0x612
         None,                                    // 0x613
         None,                                    // 0x620
@@ -3682,11 +3519,11 @@ namespace Amd64InstrDecode
         None,                                    // 0xcd2
         None,                                    // 0xcd3
         None,                                    // 0xce0
-        None,                                    // 0xce1
+        MOp_M16B_I1B,                            // 0xce1 gf2p8affineqb
         None,                                    // 0xce2
         None,                                    // 0xce3
         None,                                    // 0xcf0
-        None,                                    // 0xcf1
+        MOp_M16B_I1B,                            // 0xcf1 gf2p8affineinvqb
         None,                                    // 0xcf2
         None,                                    // 0xcf3
         None,                                    // 0xd00
@@ -3963,24 +3800,24 @@ namespace Amd64InstrDecode
         MOp_L_M32B_or_M8B,                       // 0x123 vmovddup
         M1st_M8B,                                // 0x130 vmovlps
         M1st_M8B,                                // 0x131 vmovlpd
-        M1st_M8B,                                // 0x132 vmovlps
-        M1st_M8B,                                // 0x133 vmovlps
+        None,                                    // 0x132
+        None,                                    // 0x133
         MOp_L_M32B_or_M16B,                      // 0x140 vunpcklps
         MOp_L_M32B_or_M16B,                      // 0x141 vunpcklpd
-        MOp_L_M32B_or_M16B,                      // 0x142 vunpcklps
-        MOp_L_M32B_or_M16B,                      // 0x143 vunpcklps
+        None,                                    // 0x142
+        None,                                    // 0x143
         MOp_L_M32B_or_M16B,                      // 0x150 vunpckhps
         MOp_L_M32B_or_M16B,                      // 0x151 vunpckhpd
-        MOp_L_M32B_or_M16B,                      // 0x152 vunpckhps
-        MOp_L_M32B_or_M16B,                      // 0x153 vunpckhps
+        None,                                    // 0x152
+        None,                                    // 0x153
         MOp_M8B,                                 // 0x160 vmovhps
         MOp_M8B,                                 // 0x161 vmovhpd
         MOp_L_M32B_or_M16B,                      // 0x162 vmovshdup
         None,                                    // 0x163
         M1st_M8B,                                // 0x170 vmovhps
         M1st_M8B,                                // 0x171 vmovhpd
-        M1st_M8B,                                // 0x172 vmovhps
-        M1st_M8B,                                // 0x173 vmovhps
+        None,                                    // 0x172
+        None,                                    // 0x173
         None,                                    // 0x180
         None,                                    // 0x181
         None,                                    // 0x182
@@ -4047,20 +3884,20 @@ namespace Amd64InstrDecode
         None,                                    // 0x273
         MOp_L_M32B_or_M16B,                      // 0x280 vmovaps
         MOp_L_M32B_or_M16B,                      // 0x281 vmovapd
-        MOp_L_M32B_or_M16B,                      // 0x282 vmovaps
-        MOp_L_M32B_or_M16B,                      // 0x283 vmovaps
+        None,                                    // 0x282
+        None,                                    // 0x283
         M1st_L_M32B_or_M16B,                     // 0x290 vmovaps
         M1st_L_M32B_or_M16B,                     // 0x291 vmovapd
-        M1st_L_M32B_or_M16B,                     // 0x292 vmovaps
-        M1st_L_M32B_or_M16B,                     // 0x293 vmovaps
+        None,                                    // 0x292
+        None,                                    // 0x293
         None,                                    // 0x2a0
         None,                                    // 0x2a1
         MOp_W_M8B_or_M4B,                        // 0x2a2 vcvtsi2ss
         MOp_W_M8B_or_M4B,                        // 0x2a3 vcvtsi2sd
         M1st_L_M32B_or_M16B,                     // 0x2b0 vmovntps
         M1st_L_M32B_or_M16B,                     // 0x2b1 vmovntpd
-        M1st_L_M32B_or_M16B,                     // 0x2b2 vmovntps
-        M1st_L_M32B_or_M16B,                     // 0x2b3 vmovntps
+        None,                                    // 0x2b2
+        None,                                    // 0x2b3
         None,                                    // 0x2c0
         None,                                    // 0x2c1
         MOp_M4B,                                 // 0x2c2 vcvttss2si
@@ -4223,20 +4060,20 @@ namespace Amd64InstrDecode
         None,                                    // 0x533
         MOp_L_M32B_or_M16B,                      // 0x540 vandps
         MOp_L_M32B_or_M16B,                      // 0x541 vandpd
-        MOp_L_M32B_or_M16B,                      // 0x542 vandps
-        MOp_L_M32B_or_M16B,                      // 0x543 vandps
+        None,                                    // 0x542
+        None,                                    // 0x543
         MOp_L_M32B_or_M16B,                      // 0x550 vandnps
         MOp_L_M32B_or_M16B,                      // 0x551 vandnpd
-        MOp_L_M32B_or_M16B,                      // 0x552 vandnps
-        MOp_L_M32B_or_M16B,                      // 0x553 vandnps
+        None,                                    // 0x552
+        None,                                    // 0x553
         MOp_L_M32B_or_M16B,                      // 0x560 vorps
         MOp_L_M32B_or_M16B,                      // 0x561 vorpd
-        MOp_L_M32B_or_M16B,                      // 0x562 vorps
-        MOp_L_M32B_or_M16B,                      // 0x563 vorps
+        None,                                    // 0x562
+        None,                                    // 0x563
         MOp_L_M32B_or_M16B,                      // 0x570 vxorps
         MOp_L_M32B_or_M16B,                      // 0x571 vxorpd
-        MOp_L_M32B_or_M16B,                      // 0x572 vxorps
-        MOp_L_M32B_or_M16B,                      // 0x573 vxorps
+        None,                                    // 0x572
+        None,                                    // 0x573
         MOp_L_M32B_or_M16B,                      // 0x580 vaddps
         MOp_L_M32B_or_M16B,                      // 0x581 vaddpd
         MOp_M4B,                                 // 0x582 vaddss
@@ -4362,9 +4199,9 @@ namespace Amd64InstrDecode
         None,                                    // 0x762
         None,                                    // 0x763
         None,                                    // 0x770 vzeroall,vzeroupper
-        None,                                    // 0x771
-        None,                                    // 0x772
-        None,                                    // 0x773
+        None,                                    // 0x771 vzeroall,vzeroupper
+        None,                                    // 0x772 vzeroall,vzeroupper
+        None,                                    // 0x773 vzeroall,vzeroupper
         None,                                    // 0x780
         None,                                    // 0x781
         None,                                    // 0x782
@@ -4679,8 +4516,8 @@ namespace Amd64InstrDecode
         None,                                    // 0xc53
         MOp_I1B_L_M32B_or_M16B,                  // 0xc60 vshufps
         MOp_I1B_L_M32B_or_M16B,                  // 0xc61 vshufpd
-        MOp_I1B_L_M32B_or_M16B,                  // 0xc62 vshufps
-        MOp_I1B_L_M32B_or_M16B,                  // 0xc63 vshufps
+        None,                                    // 0xc62
+        None,                                    // 0xc63
         None,                                    // 0xc70
         None,                                    // 0xc71
         None,                                    // 0xc72
@@ -5205,8 +5042,8 @@ namespace Amd64InstrDecode
         None,                                    // 0x481
         None,                                    // 0x482
         None,                                    // 0x483
-        None,                                    // 0x490
-        None,                                    // 0x491
+        MOnly_MUnknown,                          // 0x490 ldtilecfg
+        MOnly_MUnknown,                          // 0x491 sttilecfg
         None,                                    // 0x492
         None,                                    // 0x493
         None,                                    // 0x4a0
@@ -5490,19 +5327,19 @@ namespace Amd64InstrDecode
         None,                                    // 0x8f2
         None,                                    // 0x8f3
         None,                                    // 0x900
-        MOp_W_M8B_or_M4B,                        // 0x901 vpgatherdd,vpgatherdq
+        None,                                    // 0x901
         None,                                    // 0x902
         None,                                    // 0x903
         None,                                    // 0x910
-        MOp_W_M8B_or_M4B,                        // 0x911 vpgatherqd,vpgatherqq
+        None,                                    // 0x911
         None,                                    // 0x912
         None,                                    // 0x913
         None,                                    // 0x920
-        MOp_W_M8B_or_M4B,                        // 0x921 vgatherdpd,vgatherdps
+        None,                                    // 0x921
         None,                                    // 0x922
         None,                                    // 0x923
         None,                                    // 0x930
-        MOp_W_M8B_or_M4B,                        // 0x931 vgatherqpd,vgatherqps
+        None,                                    // 0x931
         None,                                    // 0x932
         None,                                    // 0x933
         None,                                    // 0x940
@@ -5742,7 +5579,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xce2
         None,                                    // 0xce3
         None,                                    // 0xcf0
-        None,                                    // 0xcf1
+        MOp_L_M32B_or_M16B,                      // 0xcf1 vgf2p8mulb
         None,                                    // 0xcf2
         None,                                    // 0xcf3
         None,                                    // 0xd00
@@ -5794,19 +5631,19 @@ namespace Amd64InstrDecode
         None,                                    // 0xdb2
         None,                                    // 0xdb3
         None,                                    // 0xdc0
-        MOp_M16B,                                // 0xdc1 vaesenc
+        MOp_L_M32B_or_M16B,                      // 0xdc1 vaesenc
         None,                                    // 0xdc2
         None,                                    // 0xdc3
         None,                                    // 0xdd0
-        MOp_M16B,                                // 0xdd1 vaesenclast
+        MOp_L_M32B_or_M16B,                      // 0xdd1 vaesenclast
         None,                                    // 0xdd2
         None,                                    // 0xdd3
         None,                                    // 0xde0
-        MOp_M16B,                                // 0xde1 vaesdec
+        MOp_L_M32B_or_M16B,                      // 0xde1 vaesdec
         None,                                    // 0xde2
         None,                                    // 0xde3
         None,                                    // 0xdf0
-        MOp_M16B,                                // 0xdf1 vaesdeclast
+        MOp_L_M32B_or_M16B,                      // 0xdf1 vaesdeclast
         None,                                    // 0xdf2
         None,                                    // 0xdf3
         None,                                    // 0xe00
@@ -6214,7 +6051,7 @@ namespace Amd64InstrDecode
         None,                                    // 0x432
         None,                                    // 0x433
         None,                                    // 0x440
-        MOp_M16B_I1B,                            // 0x441 vpclmulqdq
+        MOp_I1B_L_M32B_or_M16B,                  // 0x441 vpclmulqdq
         None,                                    // 0x442
         None,                                    // 0x443
         None,                                    // 0x450
@@ -6238,15 +6075,15 @@ namespace Amd64InstrDecode
         None,                                    // 0x492
         None,                                    // 0x493
         None,                                    // 0x4a0
-        None,                                    // 0x4a1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x4a1 vblendvps
         None,                                    // 0x4a2
         None,                                    // 0x4a3
         None,                                    // 0x4b0
-        None,                                    // 0x4b1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x4b1 vblendvpd
         None,                                    // 0x4b2
         None,                                    // 0x4b3
         None,                                    // 0x4c0
-        None,                                    // 0x4c1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x4c1 vpblendvb
         None,                                    // 0x4c2
         None,                                    // 0x4c3
         None,                                    // 0x4d0
@@ -6310,27 +6147,27 @@ namespace Amd64InstrDecode
         None,                                    // 0x5b2
         None,                                    // 0x5b3
         None,                                    // 0x5c0
-        None,                                    // 0x5c1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x5c1 vfmaddsubps
         None,                                    // 0x5c2
         None,                                    // 0x5c3
         None,                                    // 0x5d0
-        None,                                    // 0x5d1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x5d1 vfmaddsubpd
         None,                                    // 0x5d2
         None,                                    // 0x5d3
         None,                                    // 0x5e0
-        None,                                    // 0x5e1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x5e1 vfmsubaddps
         None,                                    // 0x5e2
         None,                                    // 0x5e3
         None,                                    // 0x5f0
-        None,                                    // 0x5f1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x5f1 vfmsubaddpd
         None,                                    // 0x5f2
         None,                                    // 0x5f3
         None,                                    // 0x600
-        MOp_M16B_I1B,                            // 0x601 vpcmpestrm
+        MOp_M16B_I1B,                            // 0x601 vpcmpestrm,vpcmpestrmq
         None,                                    // 0x602
         None,                                    // 0x603
         None,                                    // 0x610
-        MOp_M16B_I1B,                            // 0x611 vpcmpestri
+        MOp_M16B_I1B,                            // 0x611 vpcmpestri,vpcmpestriq
         None,                                    // 0x612
         None,                                    // 0x613
         None,                                    // 0x620
@@ -6358,35 +6195,35 @@ namespace Amd64InstrDecode
         None,                                    // 0x672
         None,                                    // 0x673
         None,                                    // 0x680
-        None,                                    // 0x681
+        MOp_I1B_L_M32B_or_M16B,                  // 0x681 vfmaddps
         None,                                    // 0x682
         None,                                    // 0x683
         None,                                    // 0x690
-        None,                                    // 0x691
+        MOp_I1B_L_M32B_or_M16B,                  // 0x691 vfmaddpd
         None,                                    // 0x692
         None,                                    // 0x693
         None,                                    // 0x6a0
-        None,                                    // 0x6a1
+        MOp_M4B_I1B,                             // 0x6a1 vfmaddss
         None,                                    // 0x6a2
         None,                                    // 0x6a3
         None,                                    // 0x6b0
-        None,                                    // 0x6b1
+        MOp_M8B_I1B,                             // 0x6b1 vfmaddsd
         None,                                    // 0x6b2
         None,                                    // 0x6b3
         None,                                    // 0x6c0
-        None,                                    // 0x6c1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x6c1 vfmsubps
         None,                                    // 0x6c2
         None,                                    // 0x6c3
         None,                                    // 0x6d0
-        None,                                    // 0x6d1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x6d1 vfmsubpd
         None,                                    // 0x6d2
         None,                                    // 0x6d3
         None,                                    // 0x6e0
-        None,                                    // 0x6e1
+        MOp_M4B_I1B,                             // 0x6e1 vfmsubss
         None,                                    // 0x6e2
         None,                                    // 0x6e3
         None,                                    // 0x6f0
-        None,                                    // 0x6f1
+        MOp_M8B_I1B,                             // 0x6f1 vfmsubsd
         None,                                    // 0x6f2
         None,                                    // 0x6f3
         None,                                    // 0x700
@@ -6422,35 +6259,35 @@ namespace Amd64InstrDecode
         None,                                    // 0x772
         None,                                    // 0x773
         None,                                    // 0x780
-        None,                                    // 0x781
+        MOp_I1B_L_M32B_or_M16B,                  // 0x781 vfnmaddps
         None,                                    // 0x782
         None,                                    // 0x783
         None,                                    // 0x790
-        None,                                    // 0x791
+        MOp_I1B_L_M32B_or_M16B,                  // 0x791 vfnmaddpd
         None,                                    // 0x792
         None,                                    // 0x793
         None,                                    // 0x7a0
-        None,                                    // 0x7a1
+        MOp_M4B_I1B,                             // 0x7a1 vfnmaddss
         None,                                    // 0x7a2
         None,                                    // 0x7a3
         None,                                    // 0x7b0
-        None,                                    // 0x7b1
+        MOp_M8B_I1B,                             // 0x7b1 vfnmaddsd
         None,                                    // 0x7b2
         None,                                    // 0x7b3
         None,                                    // 0x7c0
-        None,                                    // 0x7c1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x7c1 vfnmsubps
         None,                                    // 0x7c2
         None,                                    // 0x7c3
         None,                                    // 0x7d0
-        None,                                    // 0x7d1
+        MOp_I1B_L_M32B_or_M16B,                  // 0x7d1 vfnmsubpd
         None,                                    // 0x7d2
         None,                                    // 0x7d3
         None,                                    // 0x7e0
-        None,                                    // 0x7e1
+        MOp_M4B_I1B,                             // 0x7e1 vfnmsubss
         None,                                    // 0x7e2
         None,                                    // 0x7e3
         None,                                    // 0x7f0
-        None,                                    // 0x7f1
+        MOp_M8B_I1B,                             // 0x7f1 vfnmsubsd
         None,                                    // 0x7f2
         None,                                    // 0x7f3
         None,                                    // 0x800
@@ -6766,11 +6603,11 @@ namespace Amd64InstrDecode
         None,                                    // 0xcd2
         None,                                    // 0xcd3
         None,                                    // 0xce0
-        None,                                    // 0xce1
+        MOp_I1B_L_M32B_or_M16B,                  // 0xce1 vgf2p8affineqb
         None,                                    // 0xce2
         None,                                    // 0xce3
         None,                                    // 0xcf0
-        None,                                    // 0xcf1
+        MOp_I1B_L_M32B_or_M16B,                  // 0xcf1 vgf2p8affineinvqb
         None,                                    // 0xcf2
         None,                                    // 0xcf3
         None,                                    // 0xd00
@@ -6967,7 +6804,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xff3
     };
 
-    static const InstrForm instrFormXOP8[1024]
+    static const InstrForm instrFormEvex_0F[1024]
     {
         None,                                    // 0x000
         None,                                    // 0x001
@@ -7033,36 +6870,36 @@ namespace Amd64InstrDecode
         None,                                    // 0x0f1
         None,                                    // 0x0f2
         None,                                    // 0x0f3
-        None,                                    // 0x100
-        None,                                    // 0x101
-        None,                                    // 0x102
-        None,                                    // 0x103
-        None,                                    // 0x110
-        None,                                    // 0x111
-        None,                                    // 0x112
-        None,                                    // 0x113
-        None,                                    // 0x120
-        None,                                    // 0x121
-        None,                                    // 0x122
-        None,                                    // 0x123
-        None,                                    // 0x130
-        None,                                    // 0x131
+        MOp_LL_M16B_M32B_M64B,                   // 0x100 vmovups
+        MOp_LL_M16B_M32B_M64B,                   // 0x101 vmovupd
+        MOp_M4B,                                 // 0x102 vmovss
+        MOp_M8B,                                 // 0x103 vmovsd
+        M1st_LL_M16B_M32B_M64B,                  // 0x110 vmovups
+        M1st_LL_M16B_M32B_M64B,                  // 0x111 vmovupd
+        M1st_M4B,                                // 0x112 vmovss
+        M1st_M8B,                                // 0x113 vmovsd
+        MOp_M8B,                                 // 0x120 vmovlps
+        MOp_M8B,                                 // 0x121 vmovlpd
+        MOp_LL_M16B_M32B_M64B,                   // 0x122 vmovsldup
+        MOp_LL_M8B_M32B_M64B,                    // 0x123 vmovddup
+        M1st_M8B,                                // 0x130 vmovlps
+        M1st_M8B,                                // 0x131 vmovlpd
         None,                                    // 0x132
         None,                                    // 0x133
-        None,                                    // 0x140
-        None,                                    // 0x141
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x140 vunpcklps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x141 vunpcklpd
         None,                                    // 0x142
         None,                                    // 0x143
-        None,                                    // 0x150
-        None,                                    // 0x151
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x150 vunpckhps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x151 vunpckhpd
         None,                                    // 0x152
         None,                                    // 0x153
-        None,                                    // 0x160
-        None,                                    // 0x161
-        None,                                    // 0x162
+        MOp_M8B,                                 // 0x160 vmovhps
+        MOp_M8B,                                 // 0x161 vmovhpd
+        MOp_LL_M16B_M32B_M64B,                   // 0x162 vmovshdup
         None,                                    // 0x163
-        None,                                    // 0x170
-        None,                                    // 0x171
+        M1st_M8B,                                // 0x170 vmovhps
+        M1st_M8B,                                // 0x171 vmovhpd
         None,                                    // 0x172
         None,                                    // 0x173
         None,                                    // 0x180
@@ -7129,36 +6966,36 @@ namespace Amd64InstrDecode
         None,                                    // 0x271
         None,                                    // 0x272
         None,                                    // 0x273
-        None,                                    // 0x280
-        None,                                    // 0x281
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x280 vmovaps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x281 vmovapd
         None,                                    // 0x282
         None,                                    // 0x283
-        None,                                    // 0x290
-        None,                                    // 0x291
+        M1st_LL_M16B_M32B_M64B,                  // 0x290 vmovaps
+        M1st_LL_M16B_M32B_M64B,                  // 0x291 vmovapd
         None,                                    // 0x292
         None,                                    // 0x293
         None,                                    // 0x2a0
         None,                                    // 0x2a1
-        None,                                    // 0x2a2
-        None,                                    // 0x2a3
-        None,                                    // 0x2b0
-        None,                                    // 0x2b1
+        MOp_W_M8B_or_M4B,                        // 0x2a2 vcvtsi2ss
+        MOp_W_M8B_or_M4B,                        // 0x2a3 vcvtsi2sd
+        M1st_bLL_M4B_M16B_M32B_M64B,             // 0x2b0 vmovntps
+        M1st_bLL_M8B_M16B_M32B_M64B,             // 0x2b1 vmovntpd
         None,                                    // 0x2b2
         None,                                    // 0x2b3
         None,                                    // 0x2c0
         None,                                    // 0x2c1
-        None,                                    // 0x2c2
-        None,                                    // 0x2c3
+        MOp_M4B,                                 // 0x2c2 vcvttss2si
+        MOp_M8B,                                 // 0x2c3 vcvttsd2si
         None,                                    // 0x2d0
         None,                                    // 0x2d1
-        None,                                    // 0x2d2
-        None,                                    // 0x2d3
-        None,                                    // 0x2e0
-        None,                                    // 0x2e1
+        MOp_M4B,                                 // 0x2d2 vcvtss2si
+        MOp_M8B,                                 // 0x2d3 vcvtsd2si
+        MOp_M4B,                                 // 0x2e0 vucomiss
+        MOp_M8B,                                 // 0x2e1 vucomisd
         None,                                    // 0x2e2
         None,                                    // 0x2e3
-        None,                                    // 0x2f0
-        None,                                    // 0x2f1
+        MOp_M4B,                                 // 0x2f0 vcomiss
+        MOp_M8B,                                 // 0x2f1 vcomisd
         None,                                    // 0x2f2
         None,                                    // 0x2f3
         None,                                    // 0x300
@@ -7293,10 +7130,10 @@ namespace Amd64InstrDecode
         None,                                    // 0x501
         None,                                    // 0x502
         None,                                    // 0x503
-        None,                                    // 0x510
-        None,                                    // 0x511
-        None,                                    // 0x512
-        None,                                    // 0x513
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x510 vsqrtps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x511 vsqrtpd
+        MOp_M4B,                                 // 0x512 vsqrtss
+        MOp_M8B,                                 // 0x513 vsqrtsd
         None,                                    // 0x520
         None,                                    // 0x521
         None,                                    // 0x522
@@ -7305,166 +7142,166 @@ namespace Amd64InstrDecode
         None,                                    // 0x531
         None,                                    // 0x532
         None,                                    // 0x533
-        None,                                    // 0x540
-        None,                                    // 0x541
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x540 vandps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x541 vandpd
         None,                                    // 0x542
         None,                                    // 0x543
-        None,                                    // 0x550
-        None,                                    // 0x551
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x550 vandnps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x551 vandnpd
         None,                                    // 0x552
         None,                                    // 0x553
-        None,                                    // 0x560
-        None,                                    // 0x561
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x560 vorps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x561 vorpd
         None,                                    // 0x562
         None,                                    // 0x563
-        None,                                    // 0x570
-        None,                                    // 0x571
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x570 vxorps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x571 vxorpd
         None,                                    // 0x572
         None,                                    // 0x573
-        None,                                    // 0x580
-        None,                                    // 0x581
-        None,                                    // 0x582
-        None,                                    // 0x583
-        None,                                    // 0x590
-        None,                                    // 0x591
-        None,                                    // 0x592
-        None,                                    // 0x593
-        None,                                    // 0x5a0
-        None,                                    // 0x5a1
-        None,                                    // 0x5a2
-        None,                                    // 0x5a3
-        None,                                    // 0x5b0
-        None,                                    // 0x5b1
-        None,                                    // 0x5b2
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x580 vaddps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x581 vaddpd
+        MOp_M4B,                                 // 0x582 vaddss
+        MOp_M8B,                                 // 0x583 vaddsd
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x590 vmulps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x591 vmulpd
+        MOp_M4B,                                 // 0x592 vmulss
+        MOp_M8B,                                 // 0x593 vmulsd
+        MOp_bLL_M4B_M8B_M16B_M32B,               // 0x5a0 vcvtps2pd
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x5a1 vcvtpd2ps
+        MOp_M4B,                                 // 0x5a2 vcvtss2sd
+        MOp_M8B,                                 // 0x5a3 vcvtsd2ss
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x5b0 vcvtdq2ps,vcvtqq2ps
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x5b1 vcvtps2dq
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x5b2 vcvttps2dq
         None,                                    // 0x5b3
-        None,                                    // 0x5c0
-        None,                                    // 0x5c1
-        None,                                    // 0x5c2
-        None,                                    // 0x5c3
-        None,                                    // 0x5d0
-        None,                                    // 0x5d1
-        None,                                    // 0x5d2
-        None,                                    // 0x5d3
-        None,                                    // 0x5e0
-        None,                                    // 0x5e1
-        None,                                    // 0x5e2
-        None,                                    // 0x5e3
-        None,                                    // 0x5f0
-        None,                                    // 0x5f1
-        None,                                    // 0x5f2
-        None,                                    // 0x5f3
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x5c0 vsubps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x5c1 vsubpd
+        MOp_M4B,                                 // 0x5c2 vsubss
+        MOp_M8B,                                 // 0x5c3 vsubsd
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x5d0 vminps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x5d1 vminpd
+        MOp_M4B,                                 // 0x5d2 vminss
+        MOp_M8B,                                 // 0x5d3 vminsd
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x5e0 vdivps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x5e1 vdivpd
+        MOp_M4B,                                 // 0x5e2 vdivss
+        MOp_M8B,                                 // 0x5e3 vdivsd
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x5f0 vmaxps
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x5f1 vmaxpd
+        MOp_M4B,                                 // 0x5f2 vmaxss
+        MOp_M8B,                                 // 0x5f3 vmaxsd
         None,                                    // 0x600
-        None,                                    // 0x601
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x601 vpunpcklbw
         None,                                    // 0x602
         None,                                    // 0x603
         None,                                    // 0x610
-        None,                                    // 0x611
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x611 vpunpcklwd
         None,                                    // 0x612
         None,                                    // 0x613
         None,                                    // 0x620
-        None,                                    // 0x621
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x621 vpunpckldq
         None,                                    // 0x622
         None,                                    // 0x623
         None,                                    // 0x630
-        None,                                    // 0x631
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x631 vpacksswb
         None,                                    // 0x632
         None,                                    // 0x633
         None,                                    // 0x640
-        None,                                    // 0x641
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x641 vpcmpgtb
         None,                                    // 0x642
         None,                                    // 0x643
         None,                                    // 0x650
-        None,                                    // 0x651
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x651 vpcmpgtw
         None,                                    // 0x652
         None,                                    // 0x653
         None,                                    // 0x660
-        None,                                    // 0x661
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x661 vpcmpgtd
         None,                                    // 0x662
         None,                                    // 0x663
         None,                                    // 0x670
-        None,                                    // 0x671
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x671 vpackuswb
         None,                                    // 0x672
         None,                                    // 0x673
         None,                                    // 0x680
-        None,                                    // 0x681
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x681 vpunpckhbw
         None,                                    // 0x682
         None,                                    // 0x683
         None,                                    // 0x690
-        None,                                    // 0x691
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x691 vpunpckhwd
         None,                                    // 0x692
         None,                                    // 0x693
         None,                                    // 0x6a0
-        None,                                    // 0x6a1
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x6a1 vpunpckhdq
         None,                                    // 0x6a2
         None,                                    // 0x6a3
         None,                                    // 0x6b0
-        None,                                    // 0x6b1
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x6b1 vpackssdw
         None,                                    // 0x6b2
         None,                                    // 0x6b3
         None,                                    // 0x6c0
-        None,                                    // 0x6c1
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x6c1 vpunpcklqdq
         None,                                    // 0x6c2
         None,                                    // 0x6c3
         None,                                    // 0x6d0
-        None,                                    // 0x6d1
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x6d1 vpunpckhqdq
         None,                                    // 0x6d2
         None,                                    // 0x6d3
         None,                                    // 0x6e0
-        None,                                    // 0x6e1
+        MOp_W_M8B_or_M4B,                        // 0x6e1 vmovd,vmovq
         None,                                    // 0x6e2
         None,                                    // 0x6e3
         None,                                    // 0x6f0
-        None,                                    // 0x6f1
-        None,                                    // 0x6f2
-        None,                                    // 0x6f3
+        MOp_LL_M16B_M32B_M64B,                   // 0x6f1 vmovdqa32,vmovdqa64
+        MOp_LL_M16B_M32B_M64B,                   // 0x6f2 vmovdqu32,vmovdqu64
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x6f3 vmovdqu16,vmovdqu8
         None,                                    // 0x700
-        None,                                    // 0x701
-        None,                                    // 0x702
-        None,                                    // 0x703
+        MOp_I1B_bLL_M4B_M16B_M32B_M64B,          // 0x701 vpshufd
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x702 vpshufhw
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x703 vpshuflw
         None,                                    // 0x710
-        None,                                    // 0x711
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x711 vpsllw,vpsraw,vpsrlw
         None,                                    // 0x712
         None,                                    // 0x713
         None,                                    // 0x720
-        None,                                    // 0x721
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x721 vprold,vprolq,vprord,vprorq,vpslld,vpsrad,vpsraq,vpsrld
         None,                                    // 0x722
         None,                                    // 0x723
         None,                                    // 0x730
-        None,                                    // 0x731
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x731 vpslldq,vpsllq,vpsrldq,vpsrlq
         None,                                    // 0x732
         None,                                    // 0x733
         None,                                    // 0x740
-        None,                                    // 0x741
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x741 vpcmpeqb
         None,                                    // 0x742
         None,                                    // 0x743
         None,                                    // 0x750
-        None,                                    // 0x751
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x751 vpcmpeqw
         None,                                    // 0x752
         None,                                    // 0x753
         None,                                    // 0x760
-        None,                                    // 0x761
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x761 vpcmpeqd
         None,                                    // 0x762
         None,                                    // 0x763
         None,                                    // 0x770
         None,                                    // 0x771
         None,                                    // 0x772
         None,                                    // 0x773
-        None,                                    // 0x780
-        None,                                    // 0x781
-        None,                                    // 0x782
-        None,                                    // 0x783
-        None,                                    // 0x790
-        None,                                    // 0x791
-        None,                                    // 0x792
-        None,                                    // 0x793
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x780 vcvttpd2udq,vcvttps2udq
+        MOp_WbLL_M8B_M16B_M32B_M64B_or_M4B_M8B_M16B_M32B, // 0x781 vcvttpd2uqq,vcvttps2uqq
+        MOp_M4B,                                 // 0x782 vcvttss2usi
+        MOp_M8B,                                 // 0x783 vcvttsd2usi
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x790 vcvtpd2udq,vcvtps2udq
+        MOp_WbLL_M8B_M16B_M32B_M64B_or_M4B_M8B_M16B_M32B, // 0x791 vcvtpd2uqq,vcvtps2uqq
+        MOp_M4B,                                 // 0x792 vcvtss2usi
+        MOp_M8B,                                 // 0x793 vcvtsd2usi
         None,                                    // 0x7a0
-        None,                                    // 0x7a1
-        None,                                    // 0x7a2
-        None,                                    // 0x7a3
+        MOp_WbLL_M8B_M16B_M32B_M64B_or_M4B_M8B_M16B_M32B, // 0x7a1 vcvttpd2qq,vcvttps2qq
+        MOp_WbLL_M8B_M16B_M32B_M64B_or_M4B_M8B_M16B_M32B, // 0x7a2 vcvtudq2pd,vcvtuqq2pd
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x7a3 vcvtudq2ps,vcvtuqq2ps
         None,                                    // 0x7b0
-        None,                                    // 0x7b1
-        None,                                    // 0x7b2
-        None,                                    // 0x7b3
+        MOp_WbLL_M8B_M16B_M32B_M64B_or_M4B_M8B_M16B_M32B, // 0x7b1 vcvtpd2qq,vcvtps2qq
+        MOp_W_M8B_or_M4B,                        // 0x7b2 vcvtusi2ss
+        MOp_W_M8B_or_M4B,                        // 0x7b3 vcvtusi2sd
         None,                                    // 0x7c0
         None,                                    // 0x7c1
         None,                                    // 0x7c2
@@ -7474,13 +7311,13 @@ namespace Amd64InstrDecode
         None,                                    // 0x7d2
         None,                                    // 0x7d3
         None,                                    // 0x7e0
-        None,                                    // 0x7e1
-        None,                                    // 0x7e2
+        M1st_W_M8B_or_M4B,                       // 0x7e1 vmovd,vmovq
+        MOp_M8B,                                 // 0x7e2 vmovq
         None,                                    // 0x7e3
         None,                                    // 0x7f0
-        None,                                    // 0x7f1
-        None,                                    // 0x7f2
-        None,                                    // 0x7f3
+        M1st_LL_M16B_M32B_M64B,                  // 0x7f1 vmovdqa32,vmovdqa64
+        M1st_LL_M16B_M32B_M64B,                  // 0x7f2 vmovdqu32,vmovdqu64
+        M1st_LL_M16B_M32B_M64B,                  // 0x7f3 vmovdqu16,vmovdqu8
         None,                                    // 0x800
         None,                                    // 0x801
         None,                                    // 0x802
@@ -7737,32 +7574,32 @@ namespace Amd64InstrDecode
         None,                                    // 0xbf1
         None,                                    // 0xbf2
         None,                                    // 0xbf3
-        I1B_W_None_or_MOp_M16B,                  // 0xc00 vprotb
-        I1B_W_None_or_MOp_M16B,                  // 0xc01 vprotb
-        I1B_W_None_or_MOp_M16B,                  // 0xc02 vprotb
-        I1B_W_None_or_MOp_M16B,                  // 0xc03 vprotb
-        I1B_W_None_or_MOp_M16B,                  // 0xc10 vprotw
-        I1B_W_None_or_MOp_M16B,                  // 0xc11 vprotw
-        I1B_W_None_or_MOp_M16B,                  // 0xc12 vprotw
-        I1B_W_None_or_MOp_M16B,                  // 0xc13 vprotw
-        I1B_W_None_or_MOp_M16B,                  // 0xc20 vprotd
-        I1B_W_None_or_MOp_M16B,                  // 0xc21 vprotd
-        I1B_W_None_or_MOp_M16B,                  // 0xc22 vprotd
-        I1B_W_None_or_MOp_M16B,                  // 0xc23 vprotd
-        I1B_W_None_or_MOp_M16B,                  // 0xc30 vprotq
-        I1B_W_None_or_MOp_M16B,                  // 0xc31 vprotq
-        I1B_W_None_or_MOp_M16B,                  // 0xc32 vprotq
-        I1B_W_None_or_MOp_M16B,                  // 0xc33 vprotq
+        None,                                    // 0xc00
+        None,                                    // 0xc01
+        None,                                    // 0xc02
+        None,                                    // 0xc03
+        None,                                    // 0xc10
+        None,                                    // 0xc11
+        None,                                    // 0xc12
+        None,                                    // 0xc13
+        MOp_I1B_bLL_M4B_M16B_M32B_M64B,          // 0xc20 vcmpps
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0xc21 vcmppd
+        MOp_M4B_I1B,                             // 0xc22 vcmpss
+        MOp_M8B_I1B,                             // 0xc23 vcmpsd
+        None,                                    // 0xc30
+        None,                                    // 0xc31
+        None,                                    // 0xc32
+        None,                                    // 0xc33
         None,                                    // 0xc40
-        None,                                    // 0xc41
+        MOp_M2B_I1B,                             // 0xc41 vpinsrw
         None,                                    // 0xc42
         None,                                    // 0xc43
         None,                                    // 0xc50
         None,                                    // 0xc51
         None,                                    // 0xc52
         None,                                    // 0xc53
-        None,                                    // 0xc60
-        None,                                    // 0xc61
+        MOp_I1B_bLL_M4B_M16B_M32B_M64B,          // 0xc60 vshufps
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0xc61 vshufpd
         None,                                    // 0xc62
         None,                                    // 0xc63
         None,                                    // 0xc70
@@ -7785,22 +7622,1050 @@ namespace Amd64InstrDecode
         None,                                    // 0xcb1
         None,                                    // 0xcb2
         None,                                    // 0xcb3
-        MOp_M16B_I1B,                            // 0xcc0 vpcomb
-        MOp_M16B_I1B,                            // 0xcc1 vpcomb
-        MOp_M16B_I1B,                            // 0xcc2 vpcomb
-        MOp_M16B_I1B,                            // 0xcc3 vpcomb
-        MOp_M16B_I1B,                            // 0xcd0 vpcomw
-        MOp_M16B_I1B,                            // 0xcd1 vpcomw
-        MOp_M16B_I1B,                            // 0xcd2 vpcomw
-        MOp_M16B_I1B,                            // 0xcd3 vpcomw
-        MOp_M16B_I1B,                            // 0xce0 vpcomd
-        MOp_M16B_I1B,                            // 0xce1 vpcomd
-        MOp_M16B_I1B,                            // 0xce2 vpcomd
-        MOp_M16B_I1B,                            // 0xce3 vpcomd
-        MOp_M16B_I1B,                            // 0xcf0 vpcomq
-        MOp_M16B_I1B,                            // 0xcf1 vpcomq
-        MOp_M16B_I1B,                            // 0xcf2 vpcomq
-        MOp_M16B_I1B,                            // 0xcf3 vpcomq
+        None,                                    // 0xcc0
+        None,                                    // 0xcc1
+        None,                                    // 0xcc2
+        None,                                    // 0xcc3
+        None,                                    // 0xcd0
+        None,                                    // 0xcd1
+        None,                                    // 0xcd2
+        None,                                    // 0xcd3
+        None,                                    // 0xce0
+        None,                                    // 0xce1
+        None,                                    // 0xce2
+        None,                                    // 0xce3
+        None,                                    // 0xcf0
+        None,                                    // 0xcf1
+        None,                                    // 0xcf2
+        None,                                    // 0xcf3
+        None,                                    // 0xd00
+        None,                                    // 0xd01
+        None,                                    // 0xd02
+        None,                                    // 0xd03
+        None,                                    // 0xd10
+        MOp_M16B,                                // 0xd11 vpsrlw
+        None,                                    // 0xd12
+        None,                                    // 0xd13
+        None,                                    // 0xd20
+        MOp_M16B,                                // 0xd21 vpsrld
+        None,                                    // 0xd22
+        None,                                    // 0xd23
+        None,                                    // 0xd30
+        MOp_M16B,                                // 0xd31 vpsrlq
+        None,                                    // 0xd32
+        None,                                    // 0xd33
+        None,                                    // 0xd40
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0xd41 vpaddq
+        None,                                    // 0xd42
+        None,                                    // 0xd43
+        None,                                    // 0xd50
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xd51 vpmullw
+        None,                                    // 0xd52
+        None,                                    // 0xd53
+        None,                                    // 0xd60
+        M1st_M8B,                                // 0xd61 vmovq
+        None,                                    // 0xd62
+        None,                                    // 0xd63
+        None,                                    // 0xd70
+        None,                                    // 0xd71
+        None,                                    // 0xd72
+        None,                                    // 0xd73
+        None,                                    // 0xd80
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xd81 vpsubusb
+        None,                                    // 0xd82
+        None,                                    // 0xd83
+        None,                                    // 0xd90
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xd91 vpsubusw
+        None,                                    // 0xd92
+        None,                                    // 0xd93
+        None,                                    // 0xda0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xda1 vpminub
+        None,                                    // 0xda2
+        None,                                    // 0xda3
+        None,                                    // 0xdb0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xdb1 vpandd,vpandq
+        None,                                    // 0xdb2
+        None,                                    // 0xdb3
+        None,                                    // 0xdc0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xdc1 vpaddusb
+        None,                                    // 0xdc2
+        None,                                    // 0xdc3
+        None,                                    // 0xdd0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xdd1 vpaddusw
+        None,                                    // 0xdd2
+        None,                                    // 0xdd3
+        None,                                    // 0xde0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xde1 vpmaxub
+        None,                                    // 0xde2
+        None,                                    // 0xde3
+        None,                                    // 0xdf0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xdf1 vpandnd,vpandnq
+        None,                                    // 0xdf2
+        None,                                    // 0xdf3
+        None,                                    // 0xe00
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xe01 vpavgb
+        None,                                    // 0xe02
+        None,                                    // 0xe03
+        None,                                    // 0xe10
+        MOp_M16B,                                // 0xe11 vpsraw
+        None,                                    // 0xe12
+        None,                                    // 0xe13
+        None,                                    // 0xe20
+        MOp_M16B,                                // 0xe21 vpsrad,vpsraq
+        None,                                    // 0xe22
+        None,                                    // 0xe23
+        None,                                    // 0xe30
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xe31 vpavgw
+        None,                                    // 0xe32
+        None,                                    // 0xe33
+        None,                                    // 0xe40
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xe41 vpmulhuw
+        None,                                    // 0xe42
+        None,                                    // 0xe43
+        None,                                    // 0xe50
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xe51 vpmulhw
+        None,                                    // 0xe52
+        None,                                    // 0xe53
+        None,                                    // 0xe60
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0xe61 vcvttpd2dq
+        MOp_WbLL_M8B_M16B_M32B_M64B_or_M4B_M8B_M16B_M32B, // 0xe62 vcvtdq2pd,vcvtqq2pd
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0xe63 vcvtpd2dq
+        None,                                    // 0xe70
+        M1st_LL_M16B_M32B_M64B,                  // 0xe71 vmovntdq
+        None,                                    // 0xe72
+        None,                                    // 0xe73
+        None,                                    // 0xe80
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xe81 vpsubsb
+        None,                                    // 0xe82
+        None,                                    // 0xe83
+        None,                                    // 0xe90
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xe91 vpsubsw
+        None,                                    // 0xe92
+        None,                                    // 0xe93
+        None,                                    // 0xea0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xea1 vpminsw
+        None,                                    // 0xea2
+        None,                                    // 0xea3
+        None,                                    // 0xeb0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xeb1 vpord,vporq
+        None,                                    // 0xeb2
+        None,                                    // 0xeb3
+        None,                                    // 0xec0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xec1 vpaddsb
+        None,                                    // 0xec2
+        None,                                    // 0xec3
+        None,                                    // 0xed0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xed1 vpaddsw
+        None,                                    // 0xed2
+        None,                                    // 0xed3
+        None,                                    // 0xee0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xee1 vpmaxsw
+        None,                                    // 0xee2
+        None,                                    // 0xee3
+        None,                                    // 0xef0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xef1 vpxord,vpxorq
+        None,                                    // 0xef2
+        None,                                    // 0xef3
+        None,                                    // 0xf00
+        None,                                    // 0xf01
+        None,                                    // 0xf02
+        None,                                    // 0xf03
+        None,                                    // 0xf10
+        MOp_M16B,                                // 0xf11 vpsllw
+        None,                                    // 0xf12
+        None,                                    // 0xf13
+        None,                                    // 0xf20
+        MOp_M16B,                                // 0xf21 vpslld
+        None,                                    // 0xf22
+        None,                                    // 0xf23
+        None,                                    // 0xf30
+        MOp_M16B,                                // 0xf31 vpsllq
+        None,                                    // 0xf32
+        None,                                    // 0xf33
+        None,                                    // 0xf40
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0xf41 vpmuludq
+        None,                                    // 0xf42
+        None,                                    // 0xf43
+        None,                                    // 0xf50
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xf51 vpmaddwd
+        None,                                    // 0xf52
+        None,                                    // 0xf53
+        None,                                    // 0xf60
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xf61 vpsadbw
+        None,                                    // 0xf62
+        None,                                    // 0xf63
+        None,                                    // 0xf70
+        None,                                    // 0xf71
+        None,                                    // 0xf72
+        None,                                    // 0xf73
+        None,                                    // 0xf80
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xf81 vpsubb
+        None,                                    // 0xf82
+        None,                                    // 0xf83
+        None,                                    // 0xf90
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xf91 vpsubw
+        None,                                    // 0xf92
+        None,                                    // 0xf93
+        None,                                    // 0xfa0
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0xfa1 vpsubd
+        None,                                    // 0xfa2
+        None,                                    // 0xfa3
+        None,                                    // 0xfb0
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0xfb1 vpsubq
+        None,                                    // 0xfb2
+        None,                                    // 0xfb3
+        None,                                    // 0xfc0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xfc1 vpaddb
+        None,                                    // 0xfc2
+        None,                                    // 0xfc3
+        None,                                    // 0xfd0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xfd1 vpaddw
+        None,                                    // 0xfd2
+        None,                                    // 0xfd3
+        None,                                    // 0xfe0
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0xfe1 vpaddd
+        None,                                    // 0xfe2
+        None,                                    // 0xfe3
+        None,                                    // 0xff0
+        None,                                    // 0xff1
+        None,                                    // 0xff2
+        None,                                    // 0xff3
+    };
+
+    static const InstrForm instrFormEvex_0F38[1024]
+    {
+        None,                                    // 0x000
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x001 vpshufb
+        None,                                    // 0x002
+        None,                                    // 0x003
+        None,                                    // 0x010
+        None,                                    // 0x011
+        None,                                    // 0x012
+        None,                                    // 0x013
+        None,                                    // 0x020
+        None,                                    // 0x021
+        None,                                    // 0x022
+        None,                                    // 0x023
+        None,                                    // 0x030
+        None,                                    // 0x031
+        None,                                    // 0x032
+        None,                                    // 0x033
+        None,                                    // 0x040
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x041 vpmaddubsw
+        None,                                    // 0x042
+        None,                                    // 0x043
+        None,                                    // 0x050
+        None,                                    // 0x051
+        None,                                    // 0x052
+        None,                                    // 0x053
+        None,                                    // 0x060
+        None,                                    // 0x061
+        None,                                    // 0x062
+        None,                                    // 0x063
+        None,                                    // 0x070
+        None,                                    // 0x071
+        None,                                    // 0x072
+        None,                                    // 0x073
+        None,                                    // 0x080
+        None,                                    // 0x081
+        None,                                    // 0x082
+        None,                                    // 0x083
+        None,                                    // 0x090
+        None,                                    // 0x091
+        None,                                    // 0x092
+        None,                                    // 0x093
+        None,                                    // 0x0a0
+        None,                                    // 0x0a1
+        None,                                    // 0x0a2
+        None,                                    // 0x0a3
+        None,                                    // 0x0b0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x0b1 vpmulhrsw
+        None,                                    // 0x0b2
+        None,                                    // 0x0b3
+        None,                                    // 0x0c0
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x0c1 vpermilps
+        None,                                    // 0x0c2
+        None,                                    // 0x0c3
+        None,                                    // 0x0d0
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x0d1 vpermilpd
+        None,                                    // 0x0d2
+        None,                                    // 0x0d3
+        None,                                    // 0x0e0
+        None,                                    // 0x0e1
+        None,                                    // 0x0e2
+        None,                                    // 0x0e3
+        None,                                    // 0x0f0
+        None,                                    // 0x0f1
+        None,                                    // 0x0f2
+        None,                                    // 0x0f3
+        None,                                    // 0x100
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x101 vpsrlvw
+        M1st_LL_M8B_M16B_M32B,                   // 0x102 vpmovuswb
+        None,                                    // 0x103
+        None,                                    // 0x110
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x111 vpsravw
+        M1st_LL_M4B_M8B_M16B,                    // 0x112 vpmovusdb
+        None,                                    // 0x113
+        None,                                    // 0x120
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x121 vpsllvw
+        M1st_LL_M2B_M4B_M8B,                     // 0x122 vpmovusqb
+        None,                                    // 0x123
+        None,                                    // 0x130
+        MOp_LL_M8B_M16B_M32B,                    // 0x131 vcvtph2ps
+        M1st_LL_M8B_M16B_M32B,                   // 0x132 vpmovusdw
+        None,                                    // 0x133
+        None,                                    // 0x140
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x141 vprorvd,vprorvq
+        M1st_LL_M4B_M8B_M16B,                    // 0x142 vpmovusqw
+        None,                                    // 0x143
+        None,                                    // 0x150
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x151 vprolvd,vprolvq
+        M1st_LL_M8B_M16B_M32B,                   // 0x152 vpmovusqd
+        None,                                    // 0x153
+        None,                                    // 0x160
+        MOp_bWLL_M4B_M8B_None_M32B_M64B,         // 0x161 vpermpd,vpermps
+        None,                                    // 0x162
+        None,                                    // 0x163
+        None,                                    // 0x170
+        None,                                    // 0x171
+        None,                                    // 0x172
+        None,                                    // 0x173
+        None,                                    // 0x180
+        MOp_M4B,                                 // 0x181 vbroadcastss
+        None,                                    // 0x182
+        None,                                    // 0x183
+        None,                                    // 0x190
+        MOp_M8B,                                 // 0x191 vbroadcastf32x2,vbroadcastsd
+        None,                                    // 0x192
+        None,                                    // 0x193
+        None,                                    // 0x1a0
+        MOp_M16B,                                // 0x1a1 vbroadcastf32x4,vbroadcastf64x2
+        None,                                    // 0x1a2
+        None,                                    // 0x1a3
+        None,                                    // 0x1b0
+        MOp_M32B,                                // 0x1b1 vbroadcastf32x8,vbroadcastf64x4
+        None,                                    // 0x1b2
+        None,                                    // 0x1b3
+        None,                                    // 0x1c0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x1c1 vpabsb
+        None,                                    // 0x1c2
+        None,                                    // 0x1c3
+        None,                                    // 0x1d0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x1d1 vpabsw
+        None,                                    // 0x1d2
+        None,                                    // 0x1d3
+        None,                                    // 0x1e0
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x1e1 vpabsd
+        None,                                    // 0x1e2
+        None,                                    // 0x1e3
+        None,                                    // 0x1f0
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x1f1 vpabsq
+        None,                                    // 0x1f2
+        None,                                    // 0x1f3
+        None,                                    // 0x200
+        MOp_LL_M8B_M16B_M32B,                    // 0x201 vpmovsxbw
+        M1st_LL_M8B_M16B_M32B,                   // 0x202 vpmovswb
+        None,                                    // 0x203
+        None,                                    // 0x210
+        MOp_LL_M4B_M8B_M16B,                     // 0x211 vpmovsxbd
+        M1st_LL_M4B_M8B_M16B,                    // 0x212 vpmovsdb
+        None,                                    // 0x213
+        None,                                    // 0x220
+        MOp_LL_M2B_M4B_M8B,                      // 0x221 vpmovsxbq
+        M1st_LL_M2B_M4B_M8B,                     // 0x222 vpmovsqb
+        None,                                    // 0x223
+        None,                                    // 0x230
+        MOp_LL_M8B_M16B_M32B,                    // 0x231 vpmovsxwd
+        M1st_LL_M8B_M16B_M32B,                   // 0x232 vpmovsdw
+        None,                                    // 0x233
+        None,                                    // 0x240
+        MOp_LL_M4B_M8B_M16B,                     // 0x241 vpmovsxwq
+        M1st_LL_M4B_M8B_M16B,                    // 0x242 vpmovsqw
+        None,                                    // 0x243
+        None,                                    // 0x250
+        MOp_LL_M8B_M16B_M32B,                    // 0x251 vpmovsxdq
+        M1st_LL_M8B_M16B_M32B,                   // 0x252 vpmovsqd
+        None,                                    // 0x253
+        None,                                    // 0x260
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x261 vptestmb,vptestmw
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x262 vptestnmb,vptestnmw
+        None,                                    // 0x263
+        None,                                    // 0x270
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x271 vptestmd,vptestmq
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x272 vptestnmd,vptestnmq
+        None,                                    // 0x273
+        None,                                    // 0x280
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x281 vpmuldq
+        None,                                    // 0x282
+        None,                                    // 0x283
+        None,                                    // 0x290
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x291 vpcmpeqq
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x292 vpmovb2m,vpmovw2m
+        None,                                    // 0x293
+        None,                                    // 0x2a0
+        MOp_LL_M16B_M32B_M64B,                   // 0x2a1 vmovntdqa
+        None,                                    // 0x2a2
+        None,                                    // 0x2a3
+        None,                                    // 0x2b0
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x2b1 vpackusdw
+        None,                                    // 0x2b2
+        None,                                    // 0x2b3
+        None,                                    // 0x2c0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x2c1 vscalefpd,vscalefps
+        None,                                    // 0x2c2
+        None,                                    // 0x2c3
+        None,                                    // 0x2d0
+        MOp_W_M8B_or_M4B,                        // 0x2d1 vscalefsd,vscalefss
+        None,                                    // 0x2d2
+        None,                                    // 0x2d3
+        None,                                    // 0x2e0
+        None,                                    // 0x2e1
+        None,                                    // 0x2e2
+        None,                                    // 0x2e3
+        None,                                    // 0x2f0
+        None,                                    // 0x2f1
+        None,                                    // 0x2f2
+        None,                                    // 0x2f3
+        None,                                    // 0x300
+        MOp_LL_M8B_M16B_M32B,                    // 0x301 vpmovzxbw
+        M1st_LL_M8B_M16B_M32B,                   // 0x302 vpmovwb
+        None,                                    // 0x303
+        None,                                    // 0x310
+        MOp_LL_M4B_M8B_M16B,                     // 0x311 vpmovzxbd
+        M1st_LL_M4B_M8B_M16B,                    // 0x312 vpmovdb
+        None,                                    // 0x313
+        None,                                    // 0x320
+        MOp_LL_M2B_M4B_M8B,                      // 0x321 vpmovzxbq
+        M1st_LL_M2B_M4B_M8B,                     // 0x322 vpmovqb
+        None,                                    // 0x323
+        None,                                    // 0x330
+        MOp_LL_M8B_M16B_M32B,                    // 0x331 vpmovzxwd
+        M1st_LL_M8B_M16B_M32B,                   // 0x332 vpmovdw
+        None,                                    // 0x333
+        None,                                    // 0x340
+        MOp_LL_M4B_M8B_M16B,                     // 0x341 vpmovzxwq
+        M1st_LL_M4B_M8B_M16B,                    // 0x342 vpmovqw
+        None,                                    // 0x343
+        None,                                    // 0x350
+        MOp_LL_M8B_M16B_M32B,                    // 0x351 vpmovzxdq
+        M1st_LL_M8B_M16B_M32B,                   // 0x352 vpmovqd
+        None,                                    // 0x353
+        None,                                    // 0x360
+        MOp_bWLL_M4B_M8B_None_M32B_M64B,         // 0x361 vpermd,vpermq
+        None,                                    // 0x362
+        None,                                    // 0x363
+        None,                                    // 0x370
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x371 vpcmpgtq
+        None,                                    // 0x372
+        None,                                    // 0x373
+        None,                                    // 0x380
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x381 vpminsb
+        None,                                    // 0x382
+        None,                                    // 0x383
+        None,                                    // 0x390
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x391 vpminsd,vpminsq
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x392 vpmovd2m,vpmovq2m
+        None,                                    // 0x393
+        None,                                    // 0x3a0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x3a1 vpminuw
+        None,                                    // 0x3a2
+        None,                                    // 0x3a3
+        None,                                    // 0x3b0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x3b1 vpminud,vpminuq
+        None,                                    // 0x3b2
+        None,                                    // 0x3b3
+        None,                                    // 0x3c0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x3c1 vpmaxsb
+        None,                                    // 0x3c2
+        None,                                    // 0x3c3
+        None,                                    // 0x3d0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x3d1 vpmaxsd,vpmaxsq
+        None,                                    // 0x3d2
+        None,                                    // 0x3d3
+        None,                                    // 0x3e0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x3e1 vpmaxuw
+        None,                                    // 0x3e2
+        None,                                    // 0x3e3
+        None,                                    // 0x3f0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x3f1 vpmaxud,vpmaxuq
+        None,                                    // 0x3f2
+        None,                                    // 0x3f3
+        None,                                    // 0x400
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x401 vpmulld,vpmullq
+        None,                                    // 0x402
+        None,                                    // 0x403
+        None,                                    // 0x410
+        None,                                    // 0x411
+        None,                                    // 0x412
+        None,                                    // 0x413
+        None,                                    // 0x420
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x421 vgetexppd,vgetexpps
+        None,                                    // 0x422
+        None,                                    // 0x423
+        None,                                    // 0x430
+        MOp_W_M8B_or_M4B,                        // 0x431 vgetexpsd,vgetexpss
+        None,                                    // 0x432
+        None,                                    // 0x433
+        None,                                    // 0x440
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x441 vplzcntd,vplzcntq
+        None,                                    // 0x442
+        None,                                    // 0x443
+        None,                                    // 0x450
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x451 vpsrlvd,vpsrlvq
+        None,                                    // 0x452
+        None,                                    // 0x453
+        None,                                    // 0x460
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x461 vpsravd,vpsravq
+        None,                                    // 0x462
+        None,                                    // 0x463
+        None,                                    // 0x470
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x471 vpsllvd,vpsllvq
+        None,                                    // 0x472
+        None,                                    // 0x473
+        None,                                    // 0x480
+        None,                                    // 0x481
+        None,                                    // 0x482
+        None,                                    // 0x483
+        None,                                    // 0x490
+        None,                                    // 0x491
+        None,                                    // 0x492
+        None,                                    // 0x493
+        None,                                    // 0x4a0
+        None,                                    // 0x4a1
+        None,                                    // 0x4a2
+        None,                                    // 0x4a3
+        None,                                    // 0x4b0
+        None,                                    // 0x4b1
+        None,                                    // 0x4b2
+        None,                                    // 0x4b3
+        None,                                    // 0x4c0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x4c1 vrcp14pd,vrcp14ps
+        None,                                    // 0x4c2
+        None,                                    // 0x4c3
+        None,                                    // 0x4d0
+        MOp_W_M8B_or_M4B,                        // 0x4d1 vrcp14sd,vrcp14ss
+        None,                                    // 0x4d2
+        None,                                    // 0x4d3
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x4e0 vrsqrt14pd,vrsqrt14ps
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x4e1 vrsqrt14pd,vrsqrt14ps
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x4e2 vrsqrt14pd,vrsqrt14ps
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x4e3 vrsqrt14pd,vrsqrt14ps
+        None,                                    // 0x4f0
+        MOp_W_M8B_or_M4B,                        // 0x4f1 vrsqrt14sd,vrsqrt14ss
+        None,                                    // 0x4f2
+        None,                                    // 0x4f3
+        None,                                    // 0x500
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x501 vpdpbusd
+        None,                                    // 0x502
+        None,                                    // 0x503
+        None,                                    // 0x510
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x511 vpdpbusds
+        None,                                    // 0x512
+        None,                                    // 0x513
+        None,                                    // 0x520
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x521 vpdpwssd
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x522 vdpbf16ps
+        MOp_M16B,                                // 0x523 vp4dpwssd
+        None,                                    // 0x530
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x531 vpdpwssds
+        None,                                    // 0x532
+        MOp_M16B,                                // 0x533 vp4dpwssds
+        None,                                    // 0x540
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x541 vpopcntb,vpopcntw
+        None,                                    // 0x542
+        None,                                    // 0x543
+        None,                                    // 0x550
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x551 vpopcntd,vpopcntq
+        None,                                    // 0x552
+        None,                                    // 0x553
+        None,                                    // 0x560
+        None,                                    // 0x561
+        None,                                    // 0x562
+        None,                                    // 0x563
+        None,                                    // 0x570
+        None,                                    // 0x571
+        None,                                    // 0x572
+        None,                                    // 0x573
+        None,                                    // 0x580
+        MOp_M4B,                                 // 0x581 vpbroadcastd
+        None,                                    // 0x582
+        None,                                    // 0x583
+        None,                                    // 0x590
+        MOp_M8B,                                 // 0x591 vbroadcasti32x2,vpbroadcastq
+        None,                                    // 0x592
+        None,                                    // 0x593
+        None,                                    // 0x5a0
+        MOp_M16B,                                // 0x5a1 vbroadcasti32x4,vbroadcasti64x2
+        None,                                    // 0x5a2
+        None,                                    // 0x5a3
+        None,                                    // 0x5b0
+        MOp_M32B,                                // 0x5b1 vbroadcasti32x8,vbroadcasti64x4
+        None,                                    // 0x5b2
+        None,                                    // 0x5b3
+        None,                                    // 0x5c0
+        None,                                    // 0x5c1
+        None,                                    // 0x5c2
+        None,                                    // 0x5c3
+        None,                                    // 0x5d0
+        None,                                    // 0x5d1
+        None,                                    // 0x5d2
+        None,                                    // 0x5d3
+        None,                                    // 0x5e0
+        None,                                    // 0x5e1
+        None,                                    // 0x5e2
+        None,                                    // 0x5e3
+        None,                                    // 0x5f0
+        None,                                    // 0x5f1
+        None,                                    // 0x5f2
+        None,                                    // 0x5f3
+        None,                                    // 0x600
+        None,                                    // 0x601
+        None,                                    // 0x602
+        None,                                    // 0x603
+        None,                                    // 0x610
+        None,                                    // 0x611
+        None,                                    // 0x612
+        None,                                    // 0x613
+        None,                                    // 0x620
+        MOp_LL_M16B_M32B_M64B,                   // 0x621 vpexpandb,vpexpandw
+        None,                                    // 0x622
+        None,                                    // 0x623
+        None,                                    // 0x630
+        M1st_LL_M16B_M32B_M64B,                  // 0x631 vpcompressb,vpcompressw
+        None,                                    // 0x632
+        None,                                    // 0x633
+        None,                                    // 0x640
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x641 vpblendmd,vpblendmq
+        None,                                    // 0x642
+        None,                                    // 0x643
+        None,                                    // 0x650
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x651 vblendmpd,vblendmps
+        None,                                    // 0x652
+        None,                                    // 0x653
+        None,                                    // 0x660
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x661 vpblendmb,vpblendmw
+        None,                                    // 0x662
+        None,                                    // 0x663
+        None,                                    // 0x670
+        None,                                    // 0x671
+        None,                                    // 0x672
+        None,                                    // 0x673
+        None,                                    // 0x680
+        None,                                    // 0x681
+        None,                                    // 0x682
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x683 vp2intersectd,vp2intersectq
+        None,                                    // 0x690
+        None,                                    // 0x691
+        None,                                    // 0x692
+        None,                                    // 0x693
+        None,                                    // 0x6a0
+        None,                                    // 0x6a1
+        None,                                    // 0x6a2
+        None,                                    // 0x6a3
+        None,                                    // 0x6b0
+        None,                                    // 0x6b1
+        None,                                    // 0x6b2
+        None,                                    // 0x6b3
+        None,                                    // 0x6c0
+        None,                                    // 0x6c1
+        None,                                    // 0x6c2
+        None,                                    // 0x6c3
+        None,                                    // 0x6d0
+        None,                                    // 0x6d1
+        None,                                    // 0x6d2
+        None,                                    // 0x6d3
+        None,                                    // 0x6e0
+        None,                                    // 0x6e1
+        None,                                    // 0x6e2
+        None,                                    // 0x6e3
+        None,                                    // 0x6f0
+        None,                                    // 0x6f1
+        None,                                    // 0x6f2
+        None,                                    // 0x6f3
+        None,                                    // 0x700
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x701 vpshldvw
+        None,                                    // 0x702
+        None,                                    // 0x703
+        None,                                    // 0x710
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x711 vpshldvd,vpshldvq
+        None,                                    // 0x712
+        None,                                    // 0x713
+        None,                                    // 0x720
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x721 vpshrdvw
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x722 vcvtneps2bf16
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0x723 vcvtne2ps2bf16
+        None,                                    // 0x730
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x731 vpshrdvd,vpshrdvq
+        None,                                    // 0x732
+        None,                                    // 0x733
+        None,                                    // 0x740
+        None,                                    // 0x741
+        None,                                    // 0x742
+        None,                                    // 0x743
+        None,                                    // 0x750
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x751 vpermi2b,vpermi2w
+        None,                                    // 0x752
+        None,                                    // 0x753
+        None,                                    // 0x760
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x761 vpermi2d,vpermi2q
+        None,                                    // 0x762
+        None,                                    // 0x763
+        None,                                    // 0x770
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x771 vpermi2pd,vpermi2ps
+        None,                                    // 0x772
+        None,                                    // 0x773
+        None,                                    // 0x780
+        MOp_M1B,                                 // 0x781 vpbroadcastb
+        None,                                    // 0x782
+        None,                                    // 0x783
+        None,                                    // 0x790
+        MOp_M2B,                                 // 0x791 vpbroadcastw
+        None,                                    // 0x792
+        None,                                    // 0x793
+        None,                                    // 0x7a0
+        None,                                    // 0x7a1
+        None,                                    // 0x7a2
+        None,                                    // 0x7a3
+        None,                                    // 0x7b0
+        None,                                    // 0x7b1
+        None,                                    // 0x7b2
+        None,                                    // 0x7b3
+        None,                                    // 0x7c0
+        None,                                    // 0x7c1
+        None,                                    // 0x7c2
+        None,                                    // 0x7c3
+        None,                                    // 0x7d0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x7d1 vpermt2b,vpermt2w
+        None,                                    // 0x7d2
+        None,                                    // 0x7d3
+        None,                                    // 0x7e0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x7e1 vpermt2d,vpermt2q
+        None,                                    // 0x7e2
+        None,                                    // 0x7e3
+        None,                                    // 0x7f0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x7f1 vpermt2pd,vpermt2ps
+        None,                                    // 0x7f2
+        None,                                    // 0x7f3
+        None,                                    // 0x800
+        None,                                    // 0x801
+        None,                                    // 0x802
+        None,                                    // 0x803
+        None,                                    // 0x810
+        None,                                    // 0x811
+        None,                                    // 0x812
+        None,                                    // 0x813
+        None,                                    // 0x820
+        None,                                    // 0x821
+        None,                                    // 0x822
+        None,                                    // 0x823
+        None,                                    // 0x830
+        MOp_bLL_M8B_M16B_M32B_M64B,              // 0x831 vpmultishiftqb
+        None,                                    // 0x832
+        None,                                    // 0x833
+        None,                                    // 0x840
+        None,                                    // 0x841
+        None,                                    // 0x842
+        None,                                    // 0x843
+        None,                                    // 0x850
+        None,                                    // 0x851
+        None,                                    // 0x852
+        None,                                    // 0x853
+        None,                                    // 0x860
+        None,                                    // 0x861
+        None,                                    // 0x862
+        None,                                    // 0x863
+        None,                                    // 0x870
+        None,                                    // 0x871
+        None,                                    // 0x872
+        None,                                    // 0x873
+        None,                                    // 0x880
+        MOp_LL_M16B_M32B_M64B,                   // 0x881 vexpandpd,vexpandps
+        None,                                    // 0x882
+        None,                                    // 0x883
+        None,                                    // 0x890
+        MOp_LL_M16B_M32B_M64B,                   // 0x891 vpexpandd,vpexpandq
+        None,                                    // 0x892
+        None,                                    // 0x893
+        None,                                    // 0x8a0
+        M1st_LL_M16B_M32B_M64B,                  // 0x8a1 vcompresspd,vcompressps
+        None,                                    // 0x8a2
+        None,                                    // 0x8a3
+        None,                                    // 0x8b0
+        M1st_LL_M16B_M32B_M64B,                  // 0x8b1 vpcompressd,vpcompressq
+        None,                                    // 0x8b2
+        None,                                    // 0x8b3
+        None,                                    // 0x8c0
+        None,                                    // 0x8c1
+        None,                                    // 0x8c2
+        None,                                    // 0x8c3
+        None,                                    // 0x8d0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x8d1 vpermb,vpermw
+        None,                                    // 0x8d2
+        None,                                    // 0x8d3
+        None,                                    // 0x8e0
+        None,                                    // 0x8e1
+        None,                                    // 0x8e2
+        None,                                    // 0x8e3
+        None,                                    // 0x8f0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x8f1 vpshufbitqmb
+        None,                                    // 0x8f2
+        None,                                    // 0x8f3
+        None,                                    // 0x900
+        None,                                    // 0x901
+        None,                                    // 0x902
+        None,                                    // 0x903
+        None,                                    // 0x910
+        None,                                    // 0x911
+        None,                                    // 0x912
+        None,                                    // 0x913
+        None,                                    // 0x920
+        None,                                    // 0x921
+        None,                                    // 0x922
+        None,                                    // 0x923
+        None,                                    // 0x930
+        None,                                    // 0x931
+        None,                                    // 0x932
+        None,                                    // 0x933
+        None,                                    // 0x940
+        None,                                    // 0x941
+        None,                                    // 0x942
+        None,                                    // 0x943
+        None,                                    // 0x950
+        None,                                    // 0x951
+        None,                                    // 0x952
+        None,                                    // 0x953
+        None,                                    // 0x960
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x961 vfmaddsub132pd,vfmaddsub132ps
+        None,                                    // 0x962
+        None,                                    // 0x963
+        None,                                    // 0x970
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x971 vfmsubadd132pd,vfmsubadd132ps
+        None,                                    // 0x972
+        None,                                    // 0x973
+        None,                                    // 0x980
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x981 vfmadd132pd,vfmadd132ps
+        None,                                    // 0x982
+        None,                                    // 0x983
+        None,                                    // 0x990
+        MOp_W_M8B_or_M4B,                        // 0x991 vfmadd132sd,vfmadd132ss
+        None,                                    // 0x992
+        None,                                    // 0x993
+        None,                                    // 0x9a0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x9a1 vfmsub132pd,vfmsub132ps
+        None,                                    // 0x9a2
+        MOp_M16B,                                // 0x9a3 v4fmaddps
+        None,                                    // 0x9b0
+        MOp_W_M8B_or_M4B,                        // 0x9b1 vfmsub132sd,vfmsub132ss
+        None,                                    // 0x9b2
+        MOp_M16B,                                // 0x9b3 v4fmaddss
+        None,                                    // 0x9c0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x9c1 vfnmadd132pd,vfnmadd132ps
+        None,                                    // 0x9c2
+        None,                                    // 0x9c3
+        None,                                    // 0x9d0
+        MOp_W_M8B_or_M4B,                        // 0x9d1 vfnmadd132sd,vfnmadd132ss
+        None,                                    // 0x9d2
+        None,                                    // 0x9d3
+        None,                                    // 0x9e0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0x9e1 vfnmsub132pd,vfnmsub132ps
+        None,                                    // 0x9e2
+        None,                                    // 0x9e3
+        None,                                    // 0x9f0
+        MOp_W_M8B_or_M4B,                        // 0x9f1 vfnmsub132sd,vfnmsub132ss
+        None,                                    // 0x9f2
+        None,                                    // 0x9f3
+        None,                                    // 0xa00
+        None,                                    // 0xa01
+        None,                                    // 0xa02
+        None,                                    // 0xa03
+        None,                                    // 0xa10
+        None,                                    // 0xa11
+        None,                                    // 0xa12
+        None,                                    // 0xa13
+        None,                                    // 0xa20
+        None,                                    // 0xa21
+        None,                                    // 0xa22
+        None,                                    // 0xa23
+        None,                                    // 0xa30
+        None,                                    // 0xa31
+        None,                                    // 0xa32
+        None,                                    // 0xa33
+        None,                                    // 0xa40
+        None,                                    // 0xa41
+        None,                                    // 0xa42
+        None,                                    // 0xa43
+        None,                                    // 0xa50
+        None,                                    // 0xa51
+        None,                                    // 0xa52
+        None,                                    // 0xa53
+        None,                                    // 0xa60
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xa61 vfmaddsub213pd,vfmaddsub213ps
+        None,                                    // 0xa62
+        None,                                    // 0xa63
+        None,                                    // 0xa70
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xa71 vfmsubadd213pd,vfmsubadd213ps
+        None,                                    // 0xa72
+        None,                                    // 0xa73
+        None,                                    // 0xa80
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xa81 vfmadd213pd,vfmadd213ps
+        None,                                    // 0xa82
+        None,                                    // 0xa83
+        None,                                    // 0xa90
+        MOp_W_M8B_or_M4B,                        // 0xa91 vfmadd213sd,vfmadd213ss
+        None,                                    // 0xa92
+        None,                                    // 0xa93
+        None,                                    // 0xaa0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xaa1 vfmsub213pd,vfmsub213ps
+        None,                                    // 0xaa2
+        MOp_M16B,                                // 0xaa3 v4fnmaddps
+        None,                                    // 0xab0
+        MOp_W_M8B_or_M4B,                        // 0xab1 vfmsub213sd,vfmsub213ss
+        None,                                    // 0xab2
+        MOp_M16B,                                // 0xab3 v4fnmaddss
+        None,                                    // 0xac0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xac1 vfnmadd213pd,vfnmadd213ps
+        None,                                    // 0xac2
+        None,                                    // 0xac3
+        None,                                    // 0xad0
+        MOp_W_M8B_or_M4B,                        // 0xad1 vfnmadd213sd,vfnmadd213ss
+        None,                                    // 0xad2
+        None,                                    // 0xad3
+        None,                                    // 0xae0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xae1 vfnmsub213pd,vfnmsub213ps
+        None,                                    // 0xae2
+        None,                                    // 0xae3
+        None,                                    // 0xaf0
+        MOp_W_M8B_or_M4B,                        // 0xaf1 vfnmsub213sd,vfnmsub213ss
+        None,                                    // 0xaf2
+        None,                                    // 0xaf3
+        None,                                    // 0xb00
+        None,                                    // 0xb01
+        None,                                    // 0xb02
+        None,                                    // 0xb03
+        None,                                    // 0xb10
+        None,                                    // 0xb11
+        None,                                    // 0xb12
+        None,                                    // 0xb13
+        None,                                    // 0xb20
+        None,                                    // 0xb21
+        None,                                    // 0xb22
+        None,                                    // 0xb23
+        None,                                    // 0xb30
+        None,                                    // 0xb31
+        None,                                    // 0xb32
+        None,                                    // 0xb33
+        None,                                    // 0xb40
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xb41 vpmadd52luq
+        None,                                    // 0xb42
+        None,                                    // 0xb43
+        None,                                    // 0xb50
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xb51 vpmadd52huq
+        None,                                    // 0xb52
+        None,                                    // 0xb53
+        None,                                    // 0xb60
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xb61 vfmaddsub231pd,vfmaddsub231ps
+        None,                                    // 0xb62
+        None,                                    // 0xb63
+        None,                                    // 0xb70
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xb71 vfmsubadd231pd,vfmsubadd231ps
+        None,                                    // 0xb72
+        None,                                    // 0xb73
+        None,                                    // 0xb80
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xb81 vfmadd231pd,vfmadd231ps
+        None,                                    // 0xb82
+        None,                                    // 0xb83
+        None,                                    // 0xb90
+        MOp_W_M8B_or_M4B,                        // 0xb91 vfmadd231sd,vfmadd231ss
+        None,                                    // 0xb92
+        None,                                    // 0xb93
+        None,                                    // 0xba0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xba1 vfmsub231pd,vfmsub231ps
+        None,                                    // 0xba2
+        None,                                    // 0xba3
+        None,                                    // 0xbb0
+        MOp_W_M8B_or_M4B,                        // 0xbb1 vfmsub231sd,vfmsub231ss
+        None,                                    // 0xbb2
+        None,                                    // 0xbb3
+        None,                                    // 0xbc0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xbc1 vfnmadd231pd,vfnmadd231ps
+        None,                                    // 0xbc2
+        None,                                    // 0xbc3
+        None,                                    // 0xbd0
+        MOp_W_M8B_or_M4B,                        // 0xbd1 vfnmadd231sd,vfnmadd231ss
+        None,                                    // 0xbd2
+        None,                                    // 0xbd3
+        None,                                    // 0xbe0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xbe1 vfnmsub231pd,vfnmsub231ps
+        None,                                    // 0xbe2
+        None,                                    // 0xbe3
+        None,                                    // 0xbf0
+        MOp_W_M8B_or_M4B,                        // 0xbf1 vfnmsub231sd,vfnmsub231ss
+        None,                                    // 0xbf2
+        None,                                    // 0xbf3
+        None,                                    // 0xc00
+        None,                                    // 0xc01
+        None,                                    // 0xc02
+        None,                                    // 0xc03
+        None,                                    // 0xc10
+        None,                                    // 0xc11
+        None,                                    // 0xc12
+        None,                                    // 0xc13
+        None,                                    // 0xc20
+        None,                                    // 0xc21
+        None,                                    // 0xc22
+        None,                                    // 0xc23
+        None,                                    // 0xc30
+        None,                                    // 0xc31
+        None,                                    // 0xc32
+        None,                                    // 0xc33
+        None,                                    // 0xc40
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xc41 vpconflictd,vpconflictq
+        None,                                    // 0xc42
+        None,                                    // 0xc43
+        None,                                    // 0xc50
+        None,                                    // 0xc51
+        None,                                    // 0xc52
+        None,                                    // 0xc53
+        None,                                    // 0xc60
+        None,                                    // 0xc61
+        None,                                    // 0xc62
+        None,                                    // 0xc63
+        None,                                    // 0xc70
+        None,                                    // 0xc71
+        None,                                    // 0xc72
+        None,                                    // 0xc73
+        None,                                    // 0xc80
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xc81 vexp2pd,vexp2ps
+        None,                                    // 0xc82
+        None,                                    // 0xc83
+        None,                                    // 0xc90
+        None,                                    // 0xc91
+        None,                                    // 0xc92
+        None,                                    // 0xc93
+        None,                                    // 0xca0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xca1 vrcp28pd,vrcp28ps
+        None,                                    // 0xca2
+        None,                                    // 0xca3
+        None,                                    // 0xcb0
+        MOp_W_M8B_or_M4B,                        // 0xcb1 vrcp28sd,vrcp28ss
+        None,                                    // 0xcb2
+        None,                                    // 0xcb3
+        None,                                    // 0xcc0
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xcc1 vrsqrt28pd,vrsqrt28ps
+        None,                                    // 0xcc2
+        None,                                    // 0xcc3
+        None,                                    // 0xcd0
+        MOp_W_M8B_or_M4B,                        // 0xcd1 vrsqrt28sd,vrsqrt28ss
+        None,                                    // 0xcd2
+        None,                                    // 0xcd3
+        None,                                    // 0xce0
+        None,                                    // 0xce1
+        None,                                    // 0xce2
+        None,                                    // 0xce3
+        None,                                    // 0xcf0
+        MOp_bLL_M4B_M16B_M32B_M64B,              // 0xcf1 vgf2p8mulb
+        None,                                    // 0xcf2
+        None,                                    // 0xcf3
         None,                                    // 0xd00
         None,                                    // 0xd01
         None,                                    // 0xd02
@@ -7850,19 +8715,19 @@ namespace Amd64InstrDecode
         None,                                    // 0xdb2
         None,                                    // 0xdb3
         None,                                    // 0xdc0
-        None,                                    // 0xdc1
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xdc1 vaesenc
         None,                                    // 0xdc2
         None,                                    // 0xdc3
         None,                                    // 0xdd0
-        None,                                    // 0xdd1
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xdd1 vaesenclast
         None,                                    // 0xdd2
         None,                                    // 0xdd3
         None,                                    // 0xde0
-        None,                                    // 0xde1
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xde1 vaesdec
         None,                                    // 0xde2
         None,                                    // 0xde3
         None,                                    // 0xdf0
-        None,                                    // 0xdf1
+        MOp_bWLL_M4B_M8B_M16B_M32B_M64B,         // 0xdf1 vaesdeclast
         None,                                    // 0xdf2
         None,                                    // 0xdf3
         None,                                    // 0xe00
@@ -7881,1034 +8746,6 @@ namespace Amd64InstrDecode
         None,                                    // 0xe31
         None,                                    // 0xe32
         None,                                    // 0xe33
-        None,                                    // 0xe40
-        None,                                    // 0xe41
-        None,                                    // 0xe42
-        None,                                    // 0xe43
-        None,                                    // 0xe50
-        None,                                    // 0xe51
-        None,                                    // 0xe52
-        None,                                    // 0xe53
-        None,                                    // 0xe60
-        None,                                    // 0xe61
-        None,                                    // 0xe62
-        None,                                    // 0xe63
-        None,                                    // 0xe70
-        None,                                    // 0xe71
-        None,                                    // 0xe72
-        None,                                    // 0xe73
-        None,                                    // 0xe80
-        None,                                    // 0xe81
-        None,                                    // 0xe82
-        None,                                    // 0xe83
-        None,                                    // 0xe90
-        None,                                    // 0xe91
-        None,                                    // 0xe92
-        None,                                    // 0xe93
-        None,                                    // 0xea0
-        None,                                    // 0xea1
-        None,                                    // 0xea2
-        None,                                    // 0xea3
-        None,                                    // 0xeb0
-        None,                                    // 0xeb1
-        None,                                    // 0xeb2
-        None,                                    // 0xeb3
-        MOp_M16B_I1B,                            // 0xec0 vpcomub
-        MOp_M16B_I1B,                            // 0xec1 vpcomub
-        MOp_M16B_I1B,                            // 0xec2 vpcomub
-        MOp_M16B_I1B,                            // 0xec3 vpcomub
-        MOp_M16B_I1B,                            // 0xed0 vpcomuw
-        MOp_M16B_I1B,                            // 0xed1 vpcomuw
-        MOp_M16B_I1B,                            // 0xed2 vpcomuw
-        MOp_M16B_I1B,                            // 0xed3 vpcomuw
-        MOp_M16B_I1B,                            // 0xee0 vpcomud
-        MOp_M16B_I1B,                            // 0xee1 vpcomud
-        MOp_M16B_I1B,                            // 0xee2 vpcomud
-        MOp_M16B_I1B,                            // 0xee3 vpcomud
-        MOp_M16B_I1B,                            // 0xef0 vpcomuq
-        MOp_M16B_I1B,                            // 0xef1 vpcomuq
-        MOp_M16B_I1B,                            // 0xef2 vpcomuq
-        MOp_M16B_I1B,                            // 0xef3 vpcomuq
-        None,                                    // 0xf00
-        None,                                    // 0xf01
-        None,                                    // 0xf02
-        None,                                    // 0xf03
-        None,                                    // 0xf10
-        None,                                    // 0xf11
-        None,                                    // 0xf12
-        None,                                    // 0xf13
-        None,                                    // 0xf20
-        None,                                    // 0xf21
-        None,                                    // 0xf22
-        None,                                    // 0xf23
-        None,                                    // 0xf30
-        None,                                    // 0xf31
-        None,                                    // 0xf32
-        None,                                    // 0xf33
-        None,                                    // 0xf40
-        None,                                    // 0xf41
-        None,                                    // 0xf42
-        None,                                    // 0xf43
-        None,                                    // 0xf50
-        None,                                    // 0xf51
-        None,                                    // 0xf52
-        None,                                    // 0xf53
-        None,                                    // 0xf60
-        None,                                    // 0xf61
-        None,                                    // 0xf62
-        None,                                    // 0xf63
-        None,                                    // 0xf70
-        None,                                    // 0xf71
-        None,                                    // 0xf72
-        None,                                    // 0xf73
-        None,                                    // 0xf80
-        None,                                    // 0xf81
-        None,                                    // 0xf82
-        None,                                    // 0xf83
-        None,                                    // 0xf90
-        None,                                    // 0xf91
-        None,                                    // 0xf92
-        None,                                    // 0xf93
-        None,                                    // 0xfa0
-        None,                                    // 0xfa1
-        None,                                    // 0xfa2
-        None,                                    // 0xfa3
-        None,                                    // 0xfb0
-        None,                                    // 0xfb1
-        None,                                    // 0xfb2
-        None,                                    // 0xfb3
-        None,                                    // 0xfc0
-        None,                                    // 0xfc1
-        None,                                    // 0xfc2
-        None,                                    // 0xfc3
-        None,                                    // 0xfd0
-        None,                                    // 0xfd1
-        None,                                    // 0xfd2
-        None,                                    // 0xfd3
-        None,                                    // 0xfe0
-        None,                                    // 0xfe1
-        None,                                    // 0xfe2
-        None,                                    // 0xfe3
-        None,                                    // 0xff0
-        None,                                    // 0xff1
-        None,                                    // 0xff2
-        None,                                    // 0xff3
-    };
-
-    static const InstrForm instrFormXOP9[1024]
-    {
-        None,                                    // 0x000
-        None,                                    // 0x001
-        None,                                    // 0x002
-        None,                                    // 0x003
-        MOp_W_M8B_or_M4B,                        // 0x010 blcfill,blcic,blcs,blsfill,blsic,t1mskc,tzmsk
-        MOp_W_M8B_or_M4B,                        // 0x011 blcfill,blcic,blcs,blsfill,blsic,t1mskc,tzmsk
-        MOp_W_M8B_or_M4B,                        // 0x012 blcfill,blcic,blcs,blsfill,blsic,t1mskc,tzmsk
-        MOp_W_M8B_or_M4B,                        // 0x013 blcfill,blcic,blcs,blsfill,blsic,t1mskc,tzmsk
-        MOp_W_M8B_or_M4B,                        // 0x020 blci,blcmsk
-        MOp_W_M8B_or_M4B,                        // 0x021 blci,blcmsk
-        MOp_W_M8B_or_M4B,                        // 0x022 blci,blcmsk
-        MOp_W_M8B_or_M4B,                        // 0x023 blci,blcmsk
-        None,                                    // 0x030
-        None,                                    // 0x031
-        None,                                    // 0x032
-        None,                                    // 0x033
-        None,                                    // 0x040
-        None,                                    // 0x041
-        None,                                    // 0x042
-        None,                                    // 0x043
-        None,                                    // 0x050
-        None,                                    // 0x051
-        None,                                    // 0x052
-        None,                                    // 0x053
-        None,                                    // 0x060
-        None,                                    // 0x061
-        None,                                    // 0x062
-        None,                                    // 0x063
-        None,                                    // 0x070
-        None,                                    // 0x071
-        None,                                    // 0x072
-        None,                                    // 0x073
-        None,                                    // 0x080
-        None,                                    // 0x081
-        None,                                    // 0x082
-        None,                                    // 0x083
-        None,                                    // 0x090
-        None,                                    // 0x091
-        None,                                    // 0x092
-        None,                                    // 0x093
-        None,                                    // 0x0a0
-        None,                                    // 0x0a1
-        None,                                    // 0x0a2
-        None,                                    // 0x0a3
-        None,                                    // 0x0b0
-        None,                                    // 0x0b1
-        None,                                    // 0x0b2
-        None,                                    // 0x0b3
-        None,                                    // 0x0c0
-        None,                                    // 0x0c1
-        None,                                    // 0x0c2
-        None,                                    // 0x0c3
-        None,                                    // 0x0d0
-        None,                                    // 0x0d1
-        None,                                    // 0x0d2
-        None,                                    // 0x0d3
-        None,                                    // 0x0e0
-        None,                                    // 0x0e1
-        None,                                    // 0x0e2
-        None,                                    // 0x0e3
-        None,                                    // 0x0f0
-        None,                                    // 0x0f1
-        None,                                    // 0x0f2
-        None,                                    // 0x0f3
-        None,                                    // 0x100
-        None,                                    // 0x101
-        None,                                    // 0x102
-        None,                                    // 0x103
-        None,                                    // 0x110
-        None,                                    // 0x111
-        None,                                    // 0x112
-        None,                                    // 0x113
-        I1B,                                     // 0x120 llwpcb,slwpcb
-        I1B,                                     // 0x121 llwpcb,slwpcb
-        I1B,                                     // 0x122 llwpcb,slwpcb
-        I1B,                                     // 0x123 llwpcb,slwpcb
-        None,                                    // 0x130
-        None,                                    // 0x131
-        None,                                    // 0x132
-        None,                                    // 0x133
-        None,                                    // 0x140
-        None,                                    // 0x141
-        None,                                    // 0x142
-        None,                                    // 0x143
-        None,                                    // 0x150
-        None,                                    // 0x151
-        None,                                    // 0x152
-        None,                                    // 0x153
-        None,                                    // 0x160
-        None,                                    // 0x161
-        None,                                    // 0x162
-        None,                                    // 0x163
-        None,                                    // 0x170
-        None,                                    // 0x171
-        None,                                    // 0x172
-        None,                                    // 0x173
-        None,                                    // 0x180
-        None,                                    // 0x181
-        None,                                    // 0x182
-        None,                                    // 0x183
-        None,                                    // 0x190
-        None,                                    // 0x191
-        None,                                    // 0x192
-        None,                                    // 0x193
-        None,                                    // 0x1a0
-        None,                                    // 0x1a1
-        None,                                    // 0x1a2
-        None,                                    // 0x1a3
-        None,                                    // 0x1b0
-        None,                                    // 0x1b1
-        None,                                    // 0x1b2
-        None,                                    // 0x1b3
-        None,                                    // 0x1c0
-        None,                                    // 0x1c1
-        None,                                    // 0x1c2
-        None,                                    // 0x1c3
-        None,                                    // 0x1d0
-        None,                                    // 0x1d1
-        None,                                    // 0x1d2
-        None,                                    // 0x1d3
-        None,                                    // 0x1e0
-        None,                                    // 0x1e1
-        None,                                    // 0x1e2
-        None,                                    // 0x1e3
-        None,                                    // 0x1f0
-        None,                                    // 0x1f1
-        None,                                    // 0x1f2
-        None,                                    // 0x1f3
-        None,                                    // 0x200
-        None,                                    // 0x201
-        None,                                    // 0x202
-        None,                                    // 0x203
-        None,                                    // 0x210
-        None,                                    // 0x211
-        None,                                    // 0x212
-        None,                                    // 0x213
-        None,                                    // 0x220
-        None,                                    // 0x221
-        None,                                    // 0x222
-        None,                                    // 0x223
-        None,                                    // 0x230
-        None,                                    // 0x231
-        None,                                    // 0x232
-        None,                                    // 0x233
-        None,                                    // 0x240
-        None,                                    // 0x241
-        None,                                    // 0x242
-        None,                                    // 0x243
-        None,                                    // 0x250
-        None,                                    // 0x251
-        None,                                    // 0x252
-        None,                                    // 0x253
-        None,                                    // 0x260
-        None,                                    // 0x261
-        None,                                    // 0x262
-        None,                                    // 0x263
-        None,                                    // 0x270
-        None,                                    // 0x271
-        None,                                    // 0x272
-        None,                                    // 0x273
-        None,                                    // 0x280
-        None,                                    // 0x281
-        None,                                    // 0x282
-        None,                                    // 0x283
-        None,                                    // 0x290
-        None,                                    // 0x291
-        None,                                    // 0x292
-        None,                                    // 0x293
-        None,                                    // 0x2a0
-        None,                                    // 0x2a1
-        None,                                    // 0x2a2
-        None,                                    // 0x2a3
-        None,                                    // 0x2b0
-        None,                                    // 0x2b1
-        None,                                    // 0x2b2
-        None,                                    // 0x2b3
-        None,                                    // 0x2c0
-        None,                                    // 0x2c1
-        None,                                    // 0x2c2
-        None,                                    // 0x2c3
-        None,                                    // 0x2d0
-        None,                                    // 0x2d1
-        None,                                    // 0x2d2
-        None,                                    // 0x2d3
-        None,                                    // 0x2e0
-        None,                                    // 0x2e1
-        None,                                    // 0x2e2
-        None,                                    // 0x2e3
-        None,                                    // 0x2f0
-        None,                                    // 0x2f1
-        None,                                    // 0x2f2
-        None,                                    // 0x2f3
-        None,                                    // 0x300
-        None,                                    // 0x301
-        None,                                    // 0x302
-        None,                                    // 0x303
-        None,                                    // 0x310
-        None,                                    // 0x311
-        None,                                    // 0x312
-        None,                                    // 0x313
-        None,                                    // 0x320
-        None,                                    // 0x321
-        None,                                    // 0x322
-        None,                                    // 0x323
-        None,                                    // 0x330
-        None,                                    // 0x331
-        None,                                    // 0x332
-        None,                                    // 0x333
-        None,                                    // 0x340
-        None,                                    // 0x341
-        None,                                    // 0x342
-        None,                                    // 0x343
-        None,                                    // 0x350
-        None,                                    // 0x351
-        None,                                    // 0x352
-        None,                                    // 0x353
-        None,                                    // 0x360
-        None,                                    // 0x361
-        None,                                    // 0x362
-        None,                                    // 0x363
-        None,                                    // 0x370
-        None,                                    // 0x371
-        None,                                    // 0x372
-        None,                                    // 0x373
-        None,                                    // 0x380
-        None,                                    // 0x381
-        None,                                    // 0x382
-        None,                                    // 0x383
-        None,                                    // 0x390
-        None,                                    // 0x391
-        None,                                    // 0x392
-        None,                                    // 0x393
-        None,                                    // 0x3a0
-        None,                                    // 0x3a1
-        None,                                    // 0x3a2
-        None,                                    // 0x3a3
-        None,                                    // 0x3b0
-        None,                                    // 0x3b1
-        None,                                    // 0x3b2
-        None,                                    // 0x3b3
-        None,                                    // 0x3c0
-        None,                                    // 0x3c1
-        None,                                    // 0x3c2
-        None,                                    // 0x3c3
-        None,                                    // 0x3d0
-        None,                                    // 0x3d1
-        None,                                    // 0x3d2
-        None,                                    // 0x3d3
-        None,                                    // 0x3e0
-        None,                                    // 0x3e1
-        None,                                    // 0x3e2
-        None,                                    // 0x3e3
-        None,                                    // 0x3f0
-        None,                                    // 0x3f1
-        None,                                    // 0x3f2
-        None,                                    // 0x3f3
-        None,                                    // 0x400
-        None,                                    // 0x401
-        None,                                    // 0x402
-        None,                                    // 0x403
-        None,                                    // 0x410
-        None,                                    // 0x411
-        None,                                    // 0x412
-        None,                                    // 0x413
-        None,                                    // 0x420
-        None,                                    // 0x421
-        None,                                    // 0x422
-        None,                                    // 0x423
-        None,                                    // 0x430
-        None,                                    // 0x431
-        None,                                    // 0x432
-        None,                                    // 0x433
-        None,                                    // 0x440
-        None,                                    // 0x441
-        None,                                    // 0x442
-        None,                                    // 0x443
-        None,                                    // 0x450
-        None,                                    // 0x451
-        None,                                    // 0x452
-        None,                                    // 0x453
-        None,                                    // 0x460
-        None,                                    // 0x461
-        None,                                    // 0x462
-        None,                                    // 0x463
-        None,                                    // 0x470
-        None,                                    // 0x471
-        None,                                    // 0x472
-        None,                                    // 0x473
-        None,                                    // 0x480
-        None,                                    // 0x481
-        None,                                    // 0x482
-        None,                                    // 0x483
-        None,                                    // 0x490
-        None,                                    // 0x491
-        None,                                    // 0x492
-        None,                                    // 0x493
-        None,                                    // 0x4a0
-        None,                                    // 0x4a1
-        None,                                    // 0x4a2
-        None,                                    // 0x4a3
-        None,                                    // 0x4b0
-        None,                                    // 0x4b1
-        None,                                    // 0x4b2
-        None,                                    // 0x4b3
-        None,                                    // 0x4c0
-        None,                                    // 0x4c1
-        None,                                    // 0x4c2
-        None,                                    // 0x4c3
-        None,                                    // 0x4d0
-        None,                                    // 0x4d1
-        None,                                    // 0x4d2
-        None,                                    // 0x4d3
-        None,                                    // 0x4e0
-        None,                                    // 0x4e1
-        None,                                    // 0x4e2
-        None,                                    // 0x4e3
-        None,                                    // 0x4f0
-        None,                                    // 0x4f1
-        None,                                    // 0x4f2
-        None,                                    // 0x4f3
-        None,                                    // 0x500
-        None,                                    // 0x501
-        None,                                    // 0x502
-        None,                                    // 0x503
-        None,                                    // 0x510
-        None,                                    // 0x511
-        None,                                    // 0x512
-        None,                                    // 0x513
-        None,                                    // 0x520
-        None,                                    // 0x521
-        None,                                    // 0x522
-        None,                                    // 0x523
-        None,                                    // 0x530
-        None,                                    // 0x531
-        None,                                    // 0x532
-        None,                                    // 0x533
-        None,                                    // 0x540
-        None,                                    // 0x541
-        None,                                    // 0x542
-        None,                                    // 0x543
-        None,                                    // 0x550
-        None,                                    // 0x551
-        None,                                    // 0x552
-        None,                                    // 0x553
-        None,                                    // 0x560
-        None,                                    // 0x561
-        None,                                    // 0x562
-        None,                                    // 0x563
-        None,                                    // 0x570
-        None,                                    // 0x571
-        None,                                    // 0x572
-        None,                                    // 0x573
-        None,                                    // 0x580
-        None,                                    // 0x581
-        None,                                    // 0x582
-        None,                                    // 0x583
-        None,                                    // 0x590
-        None,                                    // 0x591
-        None,                                    // 0x592
-        None,                                    // 0x593
-        None,                                    // 0x5a0
-        None,                                    // 0x5a1
-        None,                                    // 0x5a2
-        None,                                    // 0x5a3
-        None,                                    // 0x5b0
-        None,                                    // 0x5b1
-        None,                                    // 0x5b2
-        None,                                    // 0x5b3
-        None,                                    // 0x5c0
-        None,                                    // 0x5c1
-        None,                                    // 0x5c2
-        None,                                    // 0x5c3
-        None,                                    // 0x5d0
-        None,                                    // 0x5d1
-        None,                                    // 0x5d2
-        None,                                    // 0x5d3
-        None,                                    // 0x5e0
-        None,                                    // 0x5e1
-        None,                                    // 0x5e2
-        None,                                    // 0x5e3
-        None,                                    // 0x5f0
-        None,                                    // 0x5f1
-        None,                                    // 0x5f2
-        None,                                    // 0x5f3
-        None,                                    // 0x600
-        None,                                    // 0x601
-        None,                                    // 0x602
-        None,                                    // 0x603
-        None,                                    // 0x610
-        None,                                    // 0x611
-        None,                                    // 0x612
-        None,                                    // 0x613
-        None,                                    // 0x620
-        None,                                    // 0x621
-        None,                                    // 0x622
-        None,                                    // 0x623
-        None,                                    // 0x630
-        None,                                    // 0x631
-        None,                                    // 0x632
-        None,                                    // 0x633
-        None,                                    // 0x640
-        None,                                    // 0x641
-        None,                                    // 0x642
-        None,                                    // 0x643
-        None,                                    // 0x650
-        None,                                    // 0x651
-        None,                                    // 0x652
-        None,                                    // 0x653
-        None,                                    // 0x660
-        None,                                    // 0x661
-        None,                                    // 0x662
-        None,                                    // 0x663
-        None,                                    // 0x670
-        None,                                    // 0x671
-        None,                                    // 0x672
-        None,                                    // 0x673
-        None,                                    // 0x680
-        None,                                    // 0x681
-        None,                                    // 0x682
-        None,                                    // 0x683
-        None,                                    // 0x690
-        None,                                    // 0x691
-        None,                                    // 0x692
-        None,                                    // 0x693
-        None,                                    // 0x6a0
-        None,                                    // 0x6a1
-        None,                                    // 0x6a2
-        None,                                    // 0x6a3
-        None,                                    // 0x6b0
-        None,                                    // 0x6b1
-        None,                                    // 0x6b2
-        None,                                    // 0x6b3
-        None,                                    // 0x6c0
-        None,                                    // 0x6c1
-        None,                                    // 0x6c2
-        None,                                    // 0x6c3
-        None,                                    // 0x6d0
-        None,                                    // 0x6d1
-        None,                                    // 0x6d2
-        None,                                    // 0x6d3
-        None,                                    // 0x6e0
-        None,                                    // 0x6e1
-        None,                                    // 0x6e2
-        None,                                    // 0x6e3
-        None,                                    // 0x6f0
-        None,                                    // 0x6f1
-        None,                                    // 0x6f2
-        None,                                    // 0x6f3
-        None,                                    // 0x700
-        None,                                    // 0x701
-        None,                                    // 0x702
-        None,                                    // 0x703
-        None,                                    // 0x710
-        None,                                    // 0x711
-        None,                                    // 0x712
-        None,                                    // 0x713
-        None,                                    // 0x720
-        None,                                    // 0x721
-        None,                                    // 0x722
-        None,                                    // 0x723
-        None,                                    // 0x730
-        None,                                    // 0x731
-        None,                                    // 0x732
-        None,                                    // 0x733
-        None,                                    // 0x740
-        None,                                    // 0x741
-        None,                                    // 0x742
-        None,                                    // 0x743
-        None,                                    // 0x750
-        None,                                    // 0x751
-        None,                                    // 0x752
-        None,                                    // 0x753
-        None,                                    // 0x760
-        None,                                    // 0x761
-        None,                                    // 0x762
-        None,                                    // 0x763
-        None,                                    // 0x770
-        None,                                    // 0x771
-        None,                                    // 0x772
-        None,                                    // 0x773
-        None,                                    // 0x780
-        None,                                    // 0x781
-        None,                                    // 0x782
-        None,                                    // 0x783
-        None,                                    // 0x790
-        None,                                    // 0x791
-        None,                                    // 0x792
-        None,                                    // 0x793
-        None,                                    // 0x7a0
-        None,                                    // 0x7a1
-        None,                                    // 0x7a2
-        None,                                    // 0x7a3
-        None,                                    // 0x7b0
-        None,                                    // 0x7b1
-        None,                                    // 0x7b2
-        None,                                    // 0x7b3
-        None,                                    // 0x7c0
-        None,                                    // 0x7c1
-        None,                                    // 0x7c2
-        None,                                    // 0x7c3
-        None,                                    // 0x7d0
-        None,                                    // 0x7d1
-        None,                                    // 0x7d2
-        None,                                    // 0x7d3
-        None,                                    // 0x7e0
-        None,                                    // 0x7e1
-        None,                                    // 0x7e2
-        None,                                    // 0x7e3
-        None,                                    // 0x7f0
-        None,                                    // 0x7f1
-        None,                                    // 0x7f2
-        None,                                    // 0x7f3
-        MOp_L_M32B_or_M16B,                      // 0x800 vfrczps
-        MOp_L_M32B_or_M16B,                      // 0x801 vfrczps
-        MOp_L_M32B_or_M16B,                      // 0x802 vfrczps
-        MOp_L_M32B_or_M16B,                      // 0x803 vfrczps
-        MOp_L_M32B_or_M16B,                      // 0x810 vfrczpd
-        MOp_L_M32B_or_M16B,                      // 0x811 vfrczpd
-        MOp_L_M32B_or_M16B,                      // 0x812 vfrczpd
-        MOp_L_M32B_or_M16B,                      // 0x813 vfrczpd
-        MOp_M4B,                                 // 0x820 vfrczss
-        MOp_M4B,                                 // 0x821 vfrczss
-        MOp_M4B,                                 // 0x822 vfrczss
-        MOp_M4B,                                 // 0x823 vfrczss
-        MOp_M8B,                                 // 0x830 vfrczsd
-        MOp_M8B,                                 // 0x831 vfrczsd
-        MOp_M8B,                                 // 0x832 vfrczsd
-        MOp_M8B,                                 // 0x833 vfrczsd
-        None,                                    // 0x840
-        None,                                    // 0x841
-        None,                                    // 0x842
-        None,                                    // 0x843
-        None,                                    // 0x850
-        None,                                    // 0x851
-        None,                                    // 0x852
-        None,                                    // 0x853
-        None,                                    // 0x860
-        None,                                    // 0x861
-        None,                                    // 0x862
-        None,                                    // 0x863
-        None,                                    // 0x870
-        None,                                    // 0x871
-        None,                                    // 0x872
-        None,                                    // 0x873
-        None,                                    // 0x880
-        None,                                    // 0x881
-        None,                                    // 0x882
-        None,                                    // 0x883
-        None,                                    // 0x890
-        None,                                    // 0x891
-        None,                                    // 0x892
-        None,                                    // 0x893
-        None,                                    // 0x8a0
-        None,                                    // 0x8a1
-        None,                                    // 0x8a2
-        None,                                    // 0x8a3
-        None,                                    // 0x8b0
-        None,                                    // 0x8b1
-        None,                                    // 0x8b2
-        None,                                    // 0x8b3
-        None,                                    // 0x8c0
-        None,                                    // 0x8c1
-        None,                                    // 0x8c2
-        None,                                    // 0x8c3
-        None,                                    // 0x8d0
-        None,                                    // 0x8d1
-        None,                                    // 0x8d2
-        None,                                    // 0x8d3
-        None,                                    // 0x8e0
-        None,                                    // 0x8e1
-        None,                                    // 0x8e2
-        None,                                    // 0x8e3
-        None,                                    // 0x8f0
-        None,                                    // 0x8f1
-        None,                                    // 0x8f2
-        None,                                    // 0x8f3
-        MOp_M16B,                                // 0x900 vprotb
-        MOp_M16B,                                // 0x901 vprotb
-        MOp_M16B,                                // 0x902 vprotb
-        MOp_M16B,                                // 0x903 vprotb
-        MOp_M16B,                                // 0x910 vprotw
-        MOp_M16B,                                // 0x911 vprotw
-        MOp_M16B,                                // 0x912 vprotw
-        MOp_M16B,                                // 0x913 vprotw
-        MOp_M16B,                                // 0x920 vprotd
-        MOp_M16B,                                // 0x921 vprotd
-        MOp_M16B,                                // 0x922 vprotd
-        MOp_M16B,                                // 0x923 vprotd
-        MOp_M16B,                                // 0x930 vprotq
-        MOp_M16B,                                // 0x931 vprotq
-        MOp_M16B,                                // 0x932 vprotq
-        MOp_M16B,                                // 0x933 vprotq
-        MOp_M16B,                                // 0x940 vpshlb
-        MOp_M16B,                                // 0x941 vpshlb
-        MOp_M16B,                                // 0x942 vpshlb
-        MOp_M16B,                                // 0x943 vpshlb
-        MOp_M16B,                                // 0x950 vpshlw
-        MOp_M16B,                                // 0x951 vpshlw
-        MOp_M16B,                                // 0x952 vpshlw
-        MOp_M16B,                                // 0x953 vpshlw
-        MOp_M16B,                                // 0x960 vpshld
-        MOp_M16B,                                // 0x961 vpshld
-        MOp_M16B,                                // 0x962 vpshld
-        MOp_M16B,                                // 0x963 vpshld
-        MOp_M16B,                                // 0x970 vpshlq
-        MOp_M16B,                                // 0x971 vpshlq
-        MOp_M16B,                                // 0x972 vpshlq
-        MOp_M16B,                                // 0x973 vpshlq
-        MOp_M16B,                                // 0x980 vpshab
-        MOp_M16B,                                // 0x981 vpshab
-        MOp_M16B,                                // 0x982 vpshab
-        MOp_M16B,                                // 0x983 vpshab
-        MOp_M16B,                                // 0x990 vpshaw
-        MOp_M16B,                                // 0x991 vpshaw
-        MOp_M16B,                                // 0x992 vpshaw
-        MOp_M16B,                                // 0x993 vpshaw
-        MOp_M16B,                                // 0x9a0 vpshad
-        MOp_M16B,                                // 0x9a1 vpshad
-        MOp_M16B,                                // 0x9a2 vpshad
-        MOp_M16B,                                // 0x9a3 vpshad
-        MOp_M16B,                                // 0x9b0 vpshaq
-        MOp_M16B,                                // 0x9b1 vpshaq
-        MOp_M16B,                                // 0x9b2 vpshaq
-        MOp_M16B,                                // 0x9b3 vpshaq
-        None,                                    // 0x9c0
-        None,                                    // 0x9c1
-        None,                                    // 0x9c2
-        None,                                    // 0x9c3
-        None,                                    // 0x9d0
-        None,                                    // 0x9d1
-        None,                                    // 0x9d2
-        None,                                    // 0x9d3
-        None,                                    // 0x9e0
-        None,                                    // 0x9e1
-        None,                                    // 0x9e2
-        None,                                    // 0x9e3
-        None,                                    // 0x9f0
-        None,                                    // 0x9f1
-        None,                                    // 0x9f2
-        None,                                    // 0x9f3
-        None,                                    // 0xa00
-        None,                                    // 0xa01
-        None,                                    // 0xa02
-        None,                                    // 0xa03
-        None,                                    // 0xa10
-        None,                                    // 0xa11
-        None,                                    // 0xa12
-        None,                                    // 0xa13
-        None,                                    // 0xa20
-        None,                                    // 0xa21
-        None,                                    // 0xa22
-        None,                                    // 0xa23
-        None,                                    // 0xa30
-        None,                                    // 0xa31
-        None,                                    // 0xa32
-        None,                                    // 0xa33
-        None,                                    // 0xa40
-        None,                                    // 0xa41
-        None,                                    // 0xa42
-        None,                                    // 0xa43
-        None,                                    // 0xa50
-        None,                                    // 0xa51
-        None,                                    // 0xa52
-        None,                                    // 0xa53
-        None,                                    // 0xa60
-        None,                                    // 0xa61
-        None,                                    // 0xa62
-        None,                                    // 0xa63
-        None,                                    // 0xa70
-        None,                                    // 0xa71
-        None,                                    // 0xa72
-        None,                                    // 0xa73
-        None,                                    // 0xa80
-        None,                                    // 0xa81
-        None,                                    // 0xa82
-        None,                                    // 0xa83
-        None,                                    // 0xa90
-        None,                                    // 0xa91
-        None,                                    // 0xa92
-        None,                                    // 0xa93
-        None,                                    // 0xaa0
-        None,                                    // 0xaa1
-        None,                                    // 0xaa2
-        None,                                    // 0xaa3
-        None,                                    // 0xab0
-        None,                                    // 0xab1
-        None,                                    // 0xab2
-        None,                                    // 0xab3
-        None,                                    // 0xac0
-        None,                                    // 0xac1
-        None,                                    // 0xac2
-        None,                                    // 0xac3
-        None,                                    // 0xad0
-        None,                                    // 0xad1
-        None,                                    // 0xad2
-        None,                                    // 0xad3
-        None,                                    // 0xae0
-        None,                                    // 0xae1
-        None,                                    // 0xae2
-        None,                                    // 0xae3
-        None,                                    // 0xaf0
-        None,                                    // 0xaf1
-        None,                                    // 0xaf2
-        None,                                    // 0xaf3
-        None,                                    // 0xb00
-        None,                                    // 0xb01
-        None,                                    // 0xb02
-        None,                                    // 0xb03
-        None,                                    // 0xb10
-        None,                                    // 0xb11
-        None,                                    // 0xb12
-        None,                                    // 0xb13
-        None,                                    // 0xb20
-        None,                                    // 0xb21
-        None,                                    // 0xb22
-        None,                                    // 0xb23
-        None,                                    // 0xb30
-        None,                                    // 0xb31
-        None,                                    // 0xb32
-        None,                                    // 0xb33
-        None,                                    // 0xb40
-        None,                                    // 0xb41
-        None,                                    // 0xb42
-        None,                                    // 0xb43
-        None,                                    // 0xb50
-        None,                                    // 0xb51
-        None,                                    // 0xb52
-        None,                                    // 0xb53
-        None,                                    // 0xb60
-        None,                                    // 0xb61
-        None,                                    // 0xb62
-        None,                                    // 0xb63
-        None,                                    // 0xb70
-        None,                                    // 0xb71
-        None,                                    // 0xb72
-        None,                                    // 0xb73
-        None,                                    // 0xb80
-        None,                                    // 0xb81
-        None,                                    // 0xb82
-        None,                                    // 0xb83
-        None,                                    // 0xb90
-        None,                                    // 0xb91
-        None,                                    // 0xb92
-        None,                                    // 0xb93
-        None,                                    // 0xba0
-        None,                                    // 0xba1
-        None,                                    // 0xba2
-        None,                                    // 0xba3
-        None,                                    // 0xbb0
-        None,                                    // 0xbb1
-        None,                                    // 0xbb2
-        None,                                    // 0xbb3
-        None,                                    // 0xbc0
-        None,                                    // 0xbc1
-        None,                                    // 0xbc2
-        None,                                    // 0xbc3
-        None,                                    // 0xbd0
-        None,                                    // 0xbd1
-        None,                                    // 0xbd2
-        None,                                    // 0xbd3
-        None,                                    // 0xbe0
-        None,                                    // 0xbe1
-        None,                                    // 0xbe2
-        None,                                    // 0xbe3
-        None,                                    // 0xbf0
-        None,                                    // 0xbf1
-        None,                                    // 0xbf2
-        None,                                    // 0xbf3
-        None,                                    // 0xc00
-        None,                                    // 0xc01
-        None,                                    // 0xc02
-        None,                                    // 0xc03
-        MOp_M16B,                                // 0xc10 vphaddbw
-        MOp_M16B,                                // 0xc11 vphaddbw
-        MOp_M16B,                                // 0xc12 vphaddbw
-        MOp_M16B,                                // 0xc13 vphaddbw
-        MOp_M16B,                                // 0xc20 vphaddbd
-        MOp_M16B,                                // 0xc21 vphaddbd
-        MOp_M16B,                                // 0xc22 vphaddbd
-        MOp_M16B,                                // 0xc23 vphaddbd
-        MOp_M16B,                                // 0xc30 vphaddbq
-        MOp_M16B,                                // 0xc31 vphaddbq
-        MOp_M16B,                                // 0xc32 vphaddbq
-        MOp_M16B,                                // 0xc33 vphaddbq
-        None,                                    // 0xc40
-        None,                                    // 0xc41
-        None,                                    // 0xc42
-        None,                                    // 0xc43
-        None,                                    // 0xc50
-        None,                                    // 0xc51
-        None,                                    // 0xc52
-        None,                                    // 0xc53
-        MOp_M16B,                                // 0xc60 vphaddwd
-        MOp_M16B,                                // 0xc61 vphaddwd
-        MOp_M16B,                                // 0xc62 vphaddwd
-        MOp_M16B,                                // 0xc63 vphaddwd
-        MOp_M16B,                                // 0xc70 vphaddwq
-        MOp_M16B,                                // 0xc71 vphaddwq
-        MOp_M16B,                                // 0xc72 vphaddwq
-        MOp_M16B,                                // 0xc73 vphaddwq
-        None,                                    // 0xc80
-        None,                                    // 0xc81
-        None,                                    // 0xc82
-        None,                                    // 0xc83
-        None,                                    // 0xc90
-        None,                                    // 0xc91
-        None,                                    // 0xc92
-        None,                                    // 0xc93
-        None,                                    // 0xca0
-        None,                                    // 0xca1
-        None,                                    // 0xca2
-        None,                                    // 0xca3
-        MOp_M16B,                                // 0xcb0 vphadddq
-        MOp_M16B,                                // 0xcb1 vphadddq
-        MOp_M16B,                                // 0xcb2 vphadddq
-        MOp_M16B,                                // 0xcb3 vphadddq
-        None,                                    // 0xcc0
-        None,                                    // 0xcc1
-        None,                                    // 0xcc2
-        None,                                    // 0xcc3
-        None,                                    // 0xcd0
-        None,                                    // 0xcd1
-        None,                                    // 0xcd2
-        None,                                    // 0xcd3
-        None,                                    // 0xce0
-        None,                                    // 0xce1
-        None,                                    // 0xce2
-        None,                                    // 0xce3
-        None,                                    // 0xcf0
-        None,                                    // 0xcf1
-        None,                                    // 0xcf2
-        None,                                    // 0xcf3
-        None,                                    // 0xd00
-        None,                                    // 0xd01
-        None,                                    // 0xd02
-        None,                                    // 0xd03
-        MOp_M16B,                                // 0xd10 vphaddubw
-        MOp_M16B,                                // 0xd11 vphaddubw
-        MOp_M16B,                                // 0xd12 vphaddubw
-        MOp_M16B,                                // 0xd13 vphaddubw
-        MOp_M16B,                                // 0xd20 vphaddubd
-        MOp_M16B,                                // 0xd21 vphaddubd
-        MOp_M16B,                                // 0xd22 vphaddubd
-        MOp_M16B,                                // 0xd23 vphaddubd
-        MOp_M16B,                                // 0xd30 vphaddubq
-        MOp_M16B,                                // 0xd31 vphaddubq
-        MOp_M16B,                                // 0xd32 vphaddubq
-        MOp_M16B,                                // 0xd33 vphaddubq
-        None,                                    // 0xd40
-        None,                                    // 0xd41
-        None,                                    // 0xd42
-        None,                                    // 0xd43
-        None,                                    // 0xd50
-        None,                                    // 0xd51
-        None,                                    // 0xd52
-        None,                                    // 0xd53
-        MOp_M16B,                                // 0xd60 vphadduwd
-        MOp_M16B,                                // 0xd61 vphadduwd
-        MOp_M16B,                                // 0xd62 vphadduwd
-        MOp_M16B,                                // 0xd63 vphadduwd
-        MOp_M16B,                                // 0xd70 vphadduwq
-        MOp_M16B,                                // 0xd71 vphadduwq
-        MOp_M16B,                                // 0xd72 vphadduwq
-        MOp_M16B,                                // 0xd73 vphadduwq
-        None,                                    // 0xd80
-        None,                                    // 0xd81
-        None,                                    // 0xd82
-        None,                                    // 0xd83
-        None,                                    // 0xd90
-        None,                                    // 0xd91
-        None,                                    // 0xd92
-        None,                                    // 0xd93
-        None,                                    // 0xda0
-        None,                                    // 0xda1
-        None,                                    // 0xda2
-        None,                                    // 0xda3
-        MOp_M16B,                                // 0xdb0 vphaddudq
-        MOp_M16B,                                // 0xdb1 vphaddudq
-        MOp_M16B,                                // 0xdb2 vphaddudq
-        MOp_M16B,                                // 0xdb3 vphaddudq
-        None,                                    // 0xdc0
-        None,                                    // 0xdc1
-        None,                                    // 0xdc2
-        None,                                    // 0xdc3
-        None,                                    // 0xdd0
-        None,                                    // 0xdd1
-        None,                                    // 0xdd2
-        None,                                    // 0xdd3
-        None,                                    // 0xde0
-        None,                                    // 0xde1
-        None,                                    // 0xde2
-        None,                                    // 0xde3
-        None,                                    // 0xdf0
-        None,                                    // 0xdf1
-        None,                                    // 0xdf2
-        None,                                    // 0xdf3
-        None,                                    // 0xe00
-        None,                                    // 0xe01
-        None,                                    // 0xe02
-        None,                                    // 0xe03
-        MOp_M16B,                                // 0xe10 vphsubbw
-        MOp_M16B,                                // 0xe11 vphsubbw
-        MOp_M16B,                                // 0xe12 vphsubbw
-        MOp_M16B,                                // 0xe13 vphsubbw
-        MOp_M16B,                                // 0xe20 vphsubwd
-        MOp_M16B,                                // 0xe21 vphsubwd
-        MOp_M16B,                                // 0xe22 vphsubwd
-        MOp_M16B,                                // 0xe23 vphsubwd
-        MOp_M16B,                                // 0xe30 vphsubdq
-        MOp_M16B,                                // 0xe31 vphsubdq
-        MOp_M16B,                                // 0xe32 vphsubdq
-        MOp_M16B,                                // 0xe33 vphsubdq
         None,                                    // 0xe40
         None,                                    // 0xe41
         None,                                    // 0xe42
@@ -9023,14 +8860,14 @@ namespace Amd64InstrDecode
         None,                                    // 0xff3
     };
 
-    static const InstrForm instrFormXOPA[1024]
+    static const InstrForm instrFormEvex_0F3A[1024]
     {
         None,                                    // 0x000
-        None,                                    // 0x001
+        MOp_I1B_bLL_M8B_None_M32B_M64B,          // 0x001 vpermq
         None,                                    // 0x002
         None,                                    // 0x003
         None,                                    // 0x010
-        None,                                    // 0x011
+        MOp_I1B_bLL_M8B_None_M32B_M64B,          // 0x011 vpermpd
         None,                                    // 0x012
         None,                                    // 0x013
         None,                                    // 0x020
@@ -9038,15 +8875,15 @@ namespace Amd64InstrDecode
         None,                                    // 0x022
         None,                                    // 0x023
         None,                                    // 0x030
-        None,                                    // 0x031
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x031 valignd,valignq
         None,                                    // 0x032
         None,                                    // 0x033
         None,                                    // 0x040
-        None,                                    // 0x041
+        MOp_I1B_bLL_M4B_M16B_M32B_M64B,          // 0x041 vpermilps
         None,                                    // 0x042
         None,                                    // 0x043
         None,                                    // 0x050
-        None,                                    // 0x051
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0x051 vpermilpd
         None,                                    // 0x052
         None,                                    // 0x053
         None,                                    // 0x060
@@ -9057,20 +8894,20 @@ namespace Amd64InstrDecode
         None,                                    // 0x071
         None,                                    // 0x072
         None,                                    // 0x073
-        None,                                    // 0x080
-        None,                                    // 0x081
+        MOp_I1B_bLL_M2B_M16B_M32B_M64B,          // 0x080 vrndscaleph
+        MOp_I1B_bLL_M4B_M16B_M32B_M64B,          // 0x081 vrndscaleps
         None,                                    // 0x082
         None,                                    // 0x083
         None,                                    // 0x090
-        None,                                    // 0x091
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0x091 vrndscalepd
         None,                                    // 0x092
         None,                                    // 0x093
-        None,                                    // 0x0a0
-        None,                                    // 0x0a1
+        MOp_M2B_I1B,                             // 0x0a0 vrndscalesh
+        MOp_M4B_I1B,                             // 0x0a1 vrndscaless
         None,                                    // 0x0a2
         None,                                    // 0x0a3
         None,                                    // 0x0b0
-        None,                                    // 0x0b1
+        MOp_M8B_I1B,                             // 0x0b1 vrndscalesd
         None,                                    // 0x0b2
         None,                                    // 0x0b3
         None,                                    // 0x0c0
@@ -9086,55 +8923,55 @@ namespace Amd64InstrDecode
         None,                                    // 0x0e2
         None,                                    // 0x0e3
         None,                                    // 0x0f0
-        None,                                    // 0x0f1
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x0f1 vpalignr
         None,                                    // 0x0f2
         None,                                    // 0x0f3
-        MOp_I4B_W_M8B_or_M4B,                    // 0x100 bextr
-        MOp_I4B_W_M8B_or_M4B,                    // 0x101 bextr
-        MOp_I4B_W_M8B_or_M4B,                    // 0x102 bextr
-        MOp_I4B_W_M8B_or_M4B,                    // 0x103 bextr
+        None,                                    // 0x100
+        None,                                    // 0x101
+        None,                                    // 0x102
+        None,                                    // 0x103
         None,                                    // 0x110
         None,                                    // 0x111
         None,                                    // 0x112
         None,                                    // 0x113
-        MOp_M4B_I4B,                             // 0x120 lwpins,lwpval
-        MOp_M4B_I4B,                             // 0x121 lwpins,lwpval
-        MOp_M4B_I4B,                             // 0x122 lwpins,lwpval
+        None,                                    // 0x120
+        None,                                    // 0x121
+        None,                                    // 0x122
         None,                                    // 0x123
         None,                                    // 0x130
         None,                                    // 0x131
         None,                                    // 0x132
         None,                                    // 0x133
         None,                                    // 0x140
-        None,                                    // 0x141
+        M1st_M1B_I1B,                            // 0x141 vpextrb
         None,                                    // 0x142
         None,                                    // 0x143
         None,                                    // 0x150
-        None,                                    // 0x151
+        M1st_M2B_I1B,                            // 0x151 vpextrw
         None,                                    // 0x152
         None,                                    // 0x153
         None,                                    // 0x160
-        None,                                    // 0x161
+        M1st_I1B_W_M8B_or_M4B,                   // 0x161 vpextrd,vpextrq
         None,                                    // 0x162
         None,                                    // 0x163
         None,                                    // 0x170
-        None,                                    // 0x171
+        M1st_M4B_I1B,                            // 0x171 vextractps
         None,                                    // 0x172
         None,                                    // 0x173
         None,                                    // 0x180
-        None,                                    // 0x181
+        MOp_M16B_I1B,                            // 0x181 vinsertf32x4,vinsertf64x2
         None,                                    // 0x182
         None,                                    // 0x183
         None,                                    // 0x190
-        None,                                    // 0x191
+        M1st_M16B_I1B,                           // 0x191 vextractf32x4,vextractf64x2
         None,                                    // 0x192
         None,                                    // 0x193
         None,                                    // 0x1a0
-        None,                                    // 0x1a1
+        MOp_M32B_I1B,                            // 0x1a1 vinsertf32x8,vinsertf64x4
         None,                                    // 0x1a2
         None,                                    // 0x1a3
         None,                                    // 0x1b0
-        None,                                    // 0x1b1
+        M1st_M32B_I1B,                           // 0x1b1 vextractf32x8,vextractf64x4
         None,                                    // 0x1b2
         None,                                    // 0x1b3
         None,                                    // 0x1c0
@@ -9142,31 +8979,31 @@ namespace Amd64InstrDecode
         None,                                    // 0x1c2
         None,                                    // 0x1c3
         None,                                    // 0x1d0
-        None,                                    // 0x1d1
+        M1st_I1B_LL_M8B_M16B_M32B,               // 0x1d1 vcvtps2ph
         None,                                    // 0x1d2
         None,                                    // 0x1d3
         None,                                    // 0x1e0
-        None,                                    // 0x1e1
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x1e1 vpcmpud,vpcmpuq
         None,                                    // 0x1e2
         None,                                    // 0x1e3
         None,                                    // 0x1f0
-        None,                                    // 0x1f1
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x1f1 vpcmpd,vpcmpq
         None,                                    // 0x1f2
         None,                                    // 0x1f3
         None,                                    // 0x200
-        None,                                    // 0x201
+        MOp_M1B_I1B,                             // 0x201 vpinsrb
         None,                                    // 0x202
         None,                                    // 0x203
         None,                                    // 0x210
-        None,                                    // 0x211
+        MOp_M4B_I1B,                             // 0x211 vinsertps
         None,                                    // 0x212
         None,                                    // 0x213
         None,                                    // 0x220
-        None,                                    // 0x221
+        MOp_I1B_W_M8B_or_M4B,                    // 0x221 vpinsrd,vpinsrq
         None,                                    // 0x222
         None,                                    // 0x223
         None,                                    // 0x230
-        None,                                    // 0x231
+        MOp_I1B_bWLL_M4B_M8B_None_M32B_M64B,     // 0x231 vshuff32x4,vshuff64x2
         None,                                    // 0x232
         None,                                    // 0x233
         None,                                    // 0x240
@@ -9174,15 +9011,15 @@ namespace Amd64InstrDecode
         None,                                    // 0x242
         None,                                    // 0x243
         None,                                    // 0x250
-        None,                                    // 0x251
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x251 vpternlogd,vpternlogq
         None,                                    // 0x252
         None,                                    // 0x253
-        None,                                    // 0x260
-        None,                                    // 0x261
+        MOp_I1B_bLL_M2B_M16B_M32B_M64B,          // 0x260 vgetmantph
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x261 vgetmantpd,vgetmantps
         None,                                    // 0x262
         None,                                    // 0x263
-        None,                                    // 0x270
-        None,                                    // 0x271
+        MOp_M2B_I1B,                             // 0x270 vgetmantsh
+        MOp_I1B_W_M8B_or_M4B,                    // 0x271 vgetmantsd,vgetmantss
         None,                                    // 0x272
         None,                                    // 0x273
         None,                                    // 0x280
@@ -9250,19 +9087,19 @@ namespace Amd64InstrDecode
         None,                                    // 0x372
         None,                                    // 0x373
         None,                                    // 0x380
-        None,                                    // 0x381
+        MOp_M16B_I1B,                            // 0x381 vinserti32x4,vinserti64x2
         None,                                    // 0x382
         None,                                    // 0x383
         None,                                    // 0x390
-        None,                                    // 0x391
+        M1st_M16B_I1B,                           // 0x391 vextracti32x4,vextracti64x2
         None,                                    // 0x392
         None,                                    // 0x393
         None,                                    // 0x3a0
-        None,                                    // 0x3a1
+        MOp_M32B_I1B,                            // 0x3a1 vinserti32x8,vinserti64x4
         None,                                    // 0x3a2
         None,                                    // 0x3a3
         None,                                    // 0x3b0
-        None,                                    // 0x3b1
+        M1st_M32B_I1B,                           // 0x3b1 vextracti32x8,vextracti64x4
         None,                                    // 0x3b2
         None,                                    // 0x3b3
         None,                                    // 0x3c0
@@ -9274,11 +9111,11 @@ namespace Amd64InstrDecode
         None,                                    // 0x3d2
         None,                                    // 0x3d3
         None,                                    // 0x3e0
-        None,                                    // 0x3e1
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x3e1 vpcmpub,vpcmpuw
         None,                                    // 0x3e2
         None,                                    // 0x3e3
         None,                                    // 0x3f0
-        None,                                    // 0x3f1
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x3f1 vpcmpb,vpcmpw
         None,                                    // 0x3f2
         None,                                    // 0x3f3
         None,                                    // 0x400
@@ -9289,16 +9126,16 @@ namespace Amd64InstrDecode
         None,                                    // 0x411
         None,                                    // 0x412
         None,                                    // 0x413
-        None,                                    // 0x420
-        None,                                    // 0x421
-        None,                                    // 0x422
-        None,                                    // 0x423
+        MOp_I1B_bLL_M4B_M16B_M32B_M64B,          // 0x420 vdbpsadbw
+        MOp_I1B_bLL_M4B_M16B_M32B_M64B,          // 0x421 vdbpsadbw
+        MOp_I1B_bLL_M4B_M16B_M32B_M64B,          // 0x422 vdbpsadbw
+        MOp_I1B_bLL_M4B_M16B_M32B_M64B,          // 0x423 vdbpsadbw
         None,                                    // 0x430
-        None,                                    // 0x431
+        MOp_I1B_bWLL_M4B_M8B_None_M32B_M64B,     // 0x431 vshufi32x4,vshufi64x2
         None,                                    // 0x432
         None,                                    // 0x433
         None,                                    // 0x440
-        None,                                    // 0x441
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x441 vpclmulqdq
         None,                                    // 0x442
         None,                                    // 0x443
         None,                                    // 0x450
@@ -9346,11 +9183,11 @@ namespace Amd64InstrDecode
         None,                                    // 0x4f2
         None,                                    // 0x4f3
         None,                                    // 0x500
-        None,                                    // 0x501
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x501 vrangepd,vrangeps
         None,                                    // 0x502
         None,                                    // 0x503
         None,                                    // 0x510
-        None,                                    // 0x511
+        MOp_I1B_W_M8B_or_M4B,                    // 0x511 vrangesd,vrangess
         None,                                    // 0x512
         None,                                    // 0x513
         None,                                    // 0x520
@@ -9362,19 +9199,19 @@ namespace Amd64InstrDecode
         None,                                    // 0x532
         None,                                    // 0x533
         None,                                    // 0x540
-        None,                                    // 0x541
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x541 vfixupimmpd,vfixupimmps
         None,                                    // 0x542
         None,                                    // 0x543
         None,                                    // 0x550
-        None,                                    // 0x551
+        MOp_I1B_W_M8B_or_M4B,                    // 0x551 vfixupimmsd,vfixupimmss
         None,                                    // 0x552
         None,                                    // 0x553
-        None,                                    // 0x560
-        None,                                    // 0x561
+        MOp_I1B_bLL_M2B_M16B_M32B_M64B,          // 0x560 vreduceph
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x561 vreducepd,vreduceps
         None,                                    // 0x562
         None,                                    // 0x563
-        None,                                    // 0x570
-        None,                                    // 0x571
+        MOp_M2B_I1B,                             // 0x570 vreducesh
+        MOp_I1B_W_M8B_or_M4B,                    // 0x571 vreducesd,vreducess
         None,                                    // 0x572
         None,                                    // 0x573
         None,                                    // 0x580
@@ -9433,12 +9270,12 @@ namespace Amd64InstrDecode
         None,                                    // 0x651
         None,                                    // 0x652
         None,                                    // 0x653
-        None,                                    // 0x660
-        None,                                    // 0x661
+        MOp_I1B_bLL_M2B_M16B_M32B_M64B,          // 0x660 vfpclassph
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x661 vfpclasspd,vfpclassps
         None,                                    // 0x662
         None,                                    // 0x663
-        None,                                    // 0x670
-        None,                                    // 0x671
+        MOp_M2B_I1B,                             // 0x670 vfpclasssh
+        MOp_I1B_W_M8B_or_M4B,                    // 0x671 vfpclasssd,vfpclassss
         None,                                    // 0x672
         None,                                    // 0x673
         None,                                    // 0x680
@@ -9473,20 +9310,20 @@ namespace Amd64InstrDecode
         None,                                    // 0x6f1
         None,                                    // 0x6f2
         None,                                    // 0x6f3
-        None,                                    // 0x700
-        None,                                    // 0x701
-        None,                                    // 0x702
-        None,                                    // 0x703
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0x700 vpshldw
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0x701 vpshldw
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0x702 vpshldw
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0x703 vpshldw
         None,                                    // 0x710
-        None,                                    // 0x711
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x711 vpshldd,vpshldq
         None,                                    // 0x712
         None,                                    // 0x713
-        None,                                    // 0x720
-        None,                                    // 0x721
-        None,                                    // 0x722
-        None,                                    // 0x723
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0x720 vpshrdw
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0x721 vpshrdw
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0x722 vpshrdw
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0x723 vpshrdw
         None,                                    // 0x730
-        None,                                    // 0x731
+        MOp_I1B_bWLL_M4B_M8B_M16B_M32B_M64B,     // 0x731 vpshrdd,vpshrdq
         None,                                    // 0x732
         None,                                    // 0x733
         None,                                    // 0x740
@@ -9801,9 +9638,9 @@ namespace Amd64InstrDecode
         None,                                    // 0xc11
         None,                                    // 0xc12
         None,                                    // 0xc13
-        None,                                    // 0xc20
+        MOp_I1B_bLL_M2B_M16B_M32B_M64B,          // 0xc20 vcmpph
         None,                                    // 0xc21
-        None,                                    // 0xc22
+        MOp_M2B_I1B,                             // 0xc22 vcmpsh
         None,                                    // 0xc23
         None,                                    // 0xc30
         None,                                    // 0xc31
@@ -9850,7 +9687,7 @@ namespace Amd64InstrDecode
         None,                                    // 0xcd2
         None,                                    // 0xcd3
         None,                                    // 0xce0
-        None,                                    // 0xce1
+        MOp_I1B_bLL_M8B_M16B_M32B_M64B,          // 0xce1 vgf2p8affineqb
         None,                                    // 0xce2
         None,                                    // 0xce3
         None,                                    // 0xcf0

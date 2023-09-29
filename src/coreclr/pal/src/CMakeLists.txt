@@ -33,8 +33,6 @@ if(CORECLR_SET_RPATH)
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
 
-cmake_policy(SET CMP0042 NEW)
-
 # Include directories
 
 include_directories(include)
@@ -106,7 +104,6 @@ set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/context2.S
   arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
   arch/${PAL_ARCH_SOURCES_DIR}/exceptionhelper.S
-  arch/${PAL_ARCH_SOURCES_DIR}/processor.cpp
 )
 
 if(NOT CLR_CMAKE_TARGET_OSX)
@@ -162,7 +159,6 @@ set(SOURCES
   misc/error.cpp
   misc/errorstrings.cpp
   misc/fmtmessage.cpp
-  misc/jitsupport.cpp
   misc/miscpalapi.cpp
   misc/perfjitdump.cpp
   misc/strutil.cpp

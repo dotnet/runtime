@@ -229,12 +229,6 @@ mono_dl_current_error_string (void)
 }
 #endif /* HAVE_API_SUPPORT_WIN32_FORMAT_MESSAGE */
 
-const char*
-mono_dl_get_system_dir (void)
-{
-	return NULL;
-}
-
 #else
 
 #include <mono/utils/mono-compiler.h>

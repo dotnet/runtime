@@ -48,7 +48,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(singleFile, "fullyqualifiedname codebase appcontext cmdlineargs executing_assembly_location basedirectory")
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractionBaseDir.FullName)
+                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractionBaseDir.FullName)
                 .Execute()
                 .Should()
                 .Pass()
