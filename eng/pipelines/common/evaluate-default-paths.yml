@@ -242,6 +242,7 @@ jobs:
       - src/tests/*
       - src/mono/*
       - ${{ parameters._const_paths._wasm_src_native }}
+      - ${{ parameters._const_paths._wasm_chrome }}
       exclude:
       - src/mono/nuget/*
       - src/mono/sample/*

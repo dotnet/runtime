@@ -431,6 +431,17 @@ $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
       <![CDATA[
+if [ -f "$V8_PATH_FOR_TESTS" ]; then
+  # Use the specific version of v8, instead of the system
+  # installed one
+  _v8_dir=`dirname $V8_PATH_FOR_TESTS`
+  if [ ! -f "$_v8_dir/v8" ]; then
+    ln -s "$V8_PATH_FOR_TESTS" "$_v8_dir/v8"
+    chmod +x "$_v8_dir/v8"
+    PATH=$_v8_dir:$PATH
+  fi
+fi
+
 cd WasmApp
 ./run-v8.sh
 CLRTestExitCode=$?

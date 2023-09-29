@@ -75,8 +75,6 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
-    <!-- XHarness telemetry not supported with custom WASM workloads yet -->
-    <EnableXHarnessTelemetry Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</EnableXHarnessTelemetry>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">

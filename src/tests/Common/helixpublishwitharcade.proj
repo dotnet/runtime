@@ -63,6 +63,7 @@
 
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
   <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' != 'true' " />
+  <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" Condition=" '$(TargetsBrowser)' == 'true'" />
 
   <PropertyGroup>
     <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
@@ -531,6 +532,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export V8_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(V8DirName)/$(V8BinaryName)" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export WasmTestAppArgs=&quot;$WasmTestAppArgs --exclusion-list=TestExclusionList.txt&quot;" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set WasmTestAppArgs=%WasmTestAppArgs% --exclusion-list=TestExclusionList.txt" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />

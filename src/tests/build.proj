@@ -5,6 +5,7 @@
 
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
+  <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" Condition="'$(TargetsBrowser)' == 'true'" />
 
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
@@ -12,6 +13,7 @@
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <Language>C#</Language>
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <WasmProvisionAfterTarget />
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,6 +40,7 @@
 
   <ItemGroup>
     <TestBuildSteps Include="RestorePackages" />
+    <TestBuildSteps Include="DownloadAndInstallV8" Condition="'$(TargetsBrowser)' == 'true'" />
     <TestBuildSteps Include="ManagedBuild" />
     <TestBuildSteps Include="CheckTestBuildStep" />
     <TestBuildSteps Include="GenerateLayout" />

@@ -36,13 +36,13 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       nameSuffix: AllSubsets_Mono_RuntimeTests
       runtimeVariant: monointerpreter
-      buildArgs: -s mono+libs -c $(_BuildConfig) /p:InstallV8ForTests=false ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs -c $(_BuildConfig) /p:InstallV8ForTests=true ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 180
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),
           eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
-      extraStepsTemplate: //eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
