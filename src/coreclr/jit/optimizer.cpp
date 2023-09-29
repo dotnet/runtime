@@ -5385,6 +5385,7 @@ PhaseStatus Compiler::optOptimizeLayout()
 
     madeChanges |= fgUpdateFlowGraph(/* allowTailDuplication */ false);
     madeChanges |= fgReorderBlocks(/* useProfile */ true);
+    madeChanges |= fgUpdateFlowGraph();
 
     // fgReorderBlocks can cause IR changes even if it does not modify
     // the flow graph. It calls gtPrepareCost which can cause operand swapping.
