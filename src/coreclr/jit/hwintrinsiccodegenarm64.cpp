@@ -702,12 +702,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector64:
             case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, node->GetOtherReg(), op1Reg);
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, node->GetRegByIndex(1), op1Reg);
                 break;
 
             case NI_AdvSimd_Arm64_LoadPairScalarVector64:
             case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
-                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, node->GetOtherReg(), op1Reg);
+                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, node->GetRegByIndex(1),
+                                            op1Reg);
                 break;
 
             case NI_AdvSimd_StoreSelectedScalar:
@@ -1006,6 +1007,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_ReverseElement8:
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg,
                                           (emitSize == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B);
+                break;
+
+            case NI_AdvSimd_LoadVector64x2:
+            case NI_AdvSimd_Arm64_LoadVector128x2:
+                assert(node->GetRegByIndex(1) == REG_NEXT(targetReg));
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                 break;
 
             case NI_AdvSimd_VectorTableLookup:

@@ -260,6 +260,9 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_MOD]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_UMOD]          = TREE_NODE_SZ_LARGE;
 #endif
+#ifdef TARGET_ARM64
+    GenTree::s_gtNodeSizes[GT_HWINTRINSIC]   = TREE_NODE_SZ_LARGE;
+#endif
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
@@ -335,7 +338,11 @@ void GenTree::InitNodeSize()
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef FEATURE_HW_INTRINSICS
+#ifdef TARGET_ARM64
+    static_assert_no_msg(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_LARGE);
+#else
     static_assert_no_msg(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
+#endif
 #endif // FEATURE_HW_INTRINSICS
     // clang-format on
 }
@@ -3436,7 +3443,7 @@ AGAIN:
                     hash += tree->AsHWIntrinsic()->GetSimdBaseType();
                     hash += tree->AsHWIntrinsic()->GetSimdSize();
                     hash += tree->AsHWIntrinsic()->GetAuxiliaryType();
-                    hash += tree->AsHWIntrinsic()->GetOtherReg();
+                    hash += tree->AsHWIntrinsic()->GetRegByIndex(1);
                     break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -25367,10 +25374,12 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
         case NI_AdvSimd_Arm64_LoadPairVector64:
         case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+        case NI_AdvSimd_LoadVector64x2:
             return compiler->typGetBlkLayout(16);
 
         case NI_AdvSimd_Arm64_LoadPairVector128:
         case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+        case NI_AdvSimd_Arm64_LoadVector128x2:
             return compiler->typGetBlkLayout(32);
 #endif // TARGET_ARM64
 
@@ -25408,7 +25417,7 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
 {
     return (op1->TypeGet() == op2->TypeGet()) && (op1->GetHWIntrinsicId() == op2->GetHWIntrinsicId()) &&
            (op1->GetSimdBaseType() == op2->GetSimdBaseType()) && (op1->GetSimdSize() == op2->GetSimdSize()) &&
-           (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && (op1->GetOtherReg() == op2->GetOtherReg()) &&
+           (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && (op1->GetRegByIndex(1) == op2->GetRegByIndex(1)) &&
            OperandsAreEqual(op1, op2);
 }
 

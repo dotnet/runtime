@@ -769,6 +769,8 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector128:
             case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            case NI_AdvSimd_LoadVector64x2:
+            case NI_AdvSimd_Arm64_LoadVector128x2:
                 return 2;
 #endif
 
