@@ -632,6 +632,7 @@ int __cdecl main(int argc, char* argv[])
                     switch (diffResult)
                     {
                         case NearDifferResult::SuccessWithDiff:
+                            diffsCount++;
                             // This is a difference in ASM outputs from Jit1 & Jit2 and not a playback failure
                             // We will add this MC to the details if there is one below.
                             // Otherwise add it in the failingMCList here.
