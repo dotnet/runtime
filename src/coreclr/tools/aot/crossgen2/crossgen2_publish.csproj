@@ -1,4 +1,9 @@
-<Project>
+<Project DefaultTargets="Publish;PublishItemsOutputGroup">
+  <!-- This project is specifically to build and publish a build of crossgen2 for shipping. -->
+  <PropertyGroup>
+    <_IsPublishing>true</_IsPublishing>
+  </PropertyGroup>
+
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
@@ -6,8 +11,7 @@
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
     <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
     <PublishTrimmed>true</PublishTrimmed>
-    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;freebsd-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(PackageRID)</RuntimeIdentifiers>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifiers>
     <SelfContained>true</SelfContained>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <UseLocalAppHostPack>true</UseLocalAppHostPack>
