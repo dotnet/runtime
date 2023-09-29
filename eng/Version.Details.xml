@@ -85,9 +85,9 @@
       <Sha>02fe27cd6a9b001c8feb7938e6ef4b3799745759b</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23468.2">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23476.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>89be445dd4936157533ad96bafb95f701430653a</Sha>
+      <Sha>13d6536e2dc92404da76d61d248badc040eb0de0</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-alpha.1.23475.2">
@@ -322,37 +322,37 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>736dabeca728ccf8b911d96d1b4c575b4d0db7d2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="8.0.0-prerelease.23471.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="8.0.0-prerelease.23477.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>06fd591dc00862e415eddbec734ae9ea77d35486</Sha>
+      <Sha>2b1d423ce08e1ed78c0a821d0850e0f5ab3b193a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="8.0.0-prerelease.23471.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="8.0.0-prerelease.23477.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>06fd591dc00862e415eddbec734ae9ea77d35486</Sha>
+      <Sha>2b1d423ce08e1ed78c0a821d0850e0f5ab3b193a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="8.0.0-prerelease.23471.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="8.0.0-prerelease.23477.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>06fd591dc00862e415eddbec734ae9ea77d35486</Sha>
+      <Sha>2b1d423ce08e1ed78c0a821d0850e0f5ab3b193a</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="8.0.0-beta.23463.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>1d451c32dda2314c721adbf8829e1c0cd4e681ff</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.23471.3">
+    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.23477.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
+      <Sha>a268dec2bc8ad282a525897b428cf014d5181f77</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.23471.3">
+    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.23477.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
+      <Sha>a268dec2bc8ad282a525897b428cf014d5181f77</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.23471.3">
+    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.23477.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
+      <Sha>a268dec2bc8ad282a525897b428cf014d5181f77</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.23471.3">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.23477.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
+      <Sha>a268dec2bc8ad282a525897b428cf014d5181f77</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="8.0.0-alpha.0.23475.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
@@ -383,18 +383,18 @@
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>2dbc0e4795ffd194777b3dc4efdf7c9b26002b04</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23476.1">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23477.63">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>2a83e3525c7b2287d146e0ebc860f6572afc8d19</Sha>
+      <Sha>b575887007e9390607cdff70621cdbeb59896314</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23471.3">
+    <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23477.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
+      <Sha>a268dec2bc8ad282a525897b428cf014d5181f77</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23471.3">
+    <Dependency Name="optimization.linux-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23477.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>ee166d79f3a269d2a1c6b7d400df7e284b1aa67b</Sha>
+      <Sha>a268dec2bc8ad282a525897b428cf014d5181f77</Sha>
     </Dependency>
     <!-- Necessary for source-build. This allows the package to be retrieved from previously-source-built artifacts
          and flow in as dependencies of the packages produced by runtime. -->
@@ -402,9 +402,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23474.1">
+    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23477.26">
       <Uri>https://github.com/dotnet/installer</Uri>
-      <Sha>59c97b5166cefc312d1220437a6ec3e4f7bf2ef0</Sha>
+      <Sha>c4f57e0fd1d44f9878917447262056e8eee57694</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
