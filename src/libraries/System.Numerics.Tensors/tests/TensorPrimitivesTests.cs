@@ -76,6 +76,21 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Abs_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Abs(x, x);
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                Assert.Equal(MathF.Abs(xOrig[i]), x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void Abs_ThrowsForTooShortDestination(int tensorLength)
         {
@@ -96,10 +111,33 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
             TensorPrimitives.Add(x, y, destination);
-
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(x[i] + y[i], destination[i], Tolerance);
+            }
+
+            float[] xOrig = x.Span.ToArray();
+
+            // Validate that the destination can be the same as an input.
+            TensorPrimitives.Add(x, x, x);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(xOrig[i] + xOrig[i], x[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Add_TwoTensors_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Add(x, x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(xOrig[i] + xOrig[i], x[i], Tolerance);
             }
         }
 
@@ -143,6 +181,22 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Add_TensorScalar_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+            float y = NextSingle();
+
+            TensorPrimitives.Add(x, y, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(xOrig[i] + y, x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void Add_TensorScalar_ThrowsForTooShortDestination(int tensorLength)
         {
@@ -169,6 +223,21 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] + y[i]) * multiplier[i], destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void AddMultiply_ThreeTensors_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.AddMultiply(x, x, x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal((xOrig[i] + xOrig[i]) * xOrig[i], x[i], Tolerance);
             }
         }
 
@@ -216,6 +285,22 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void AddMultiply_TensorTensorScalar_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+            float multiplier = NextSingle();
+
+            TensorPrimitives.AddMultiply(x, x, multiplier, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal((xOrig[i] + xOrig[i]) * multiplier, x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void AddMultiply_TensorTensorScalar_ThrowsForMismatchedLengths_x_y(int tensorLength)
         {
@@ -258,6 +343,22 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void AddMultiply_TensorScalarTensor_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+            float y = NextSingle();
+
+            TensorPrimitives.AddMultiply(x, y, x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal((xOrig[i] + y) * xOrig[i], x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void AddMultiply_TensorScalarTensor_ThrowsForMismatchedLengths_x_z(int tensorLength)
         {
@@ -296,6 +397,21 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Cosh(x[i]), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Cosh_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Cosh(x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Cosh(xOrig[i]), x[i], Tolerance);
             }
         }
 
@@ -422,6 +538,21 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Divide_TwoTensors_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Divide(x, x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(xOrig[i] / xOrig[i], x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void Divide_TwoTensors_ThrowsForMismatchedLengths(int tensorLength)
         {
@@ -457,6 +588,22 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(x[i] / y, destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Divide_TensorScalar_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+            float y = NextSingle();
+
+            TensorPrimitives.Divide(x, y, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(xOrig[i] / y, x[i], Tolerance);
             }
         }
 
@@ -524,6 +671,21 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Exp(x[i]), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Exp_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Exp(x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Exp(xOrig[i]), x[i], Tolerance);
             }
         }
 
@@ -736,6 +898,21 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Log_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Log(x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Log(xOrig[i]), x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void Log_ThrowsForTooShortDestination(int tensorLength)
         {
@@ -759,6 +936,21 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Log(x[i], 2), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Log2_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Log2(x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Log(xOrig[i], 2), x[i], Tolerance);
             }
         }
 
@@ -831,6 +1023,32 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Max(x[i], y[i]), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Max_TwoTensors_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray(), yOrig = y.Span.ToArray();
+
+            TensorPrimitives.Max(x, y, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Max(xOrig[i], y[i]), x[i], Tolerance);
+            }
+
+            xOrig.AsSpan().CopyTo(x.Span);
+            yOrig.AsSpan().CopyTo(y.Span);
+
+            TensorPrimitives.Max(x, y, y);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Max(x[i], yOrig[i]), y[i], Tolerance);
             }
         }
 
@@ -956,6 +1174,32 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void MaxMagnitude_TwoTensors_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray(), yOrig = y.Span.ToArray();
+
+            TensorPrimitives.MaxMagnitude(x, y, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathFMaxMagnitude(xOrig[i], y[i]), x[i], Tolerance);
+            }
+
+            xOrig.AsSpan().CopyTo(x.Span);
+            yOrig.AsSpan().CopyTo(y.Span);
+
+            TensorPrimitives.MaxMagnitude(x, y, y);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathFMaxMagnitude(x[i], yOrig[i]), y[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void MaxMagnitude_TwoTensors_SpecialValues(int tensorLength)
         {
@@ -1072,6 +1316,32 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Min(x[i], y[i]), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Min_TwoTensors_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray(), yOrig = y.Span.ToArray();
+
+            TensorPrimitives.Min(x, y, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Min(xOrig[i], y[i]), x[i], Tolerance);
+            }
+
+            xOrig.AsSpan().CopyTo(x.Span);
+            yOrig.AsSpan().CopyTo(y.Span);
+
+            TensorPrimitives.Min(x, y, y);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Min(x[i], yOrig[i]), y[i], Tolerance);
             }
         }
 
@@ -1195,6 +1465,32 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void MinMagnitude_TwoTensors_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray(), yOrig = y.Span.ToArray();
+
+            TensorPrimitives.MinMagnitude(x, y, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathFMinMagnitude(xOrig[i], y[i]), x[i], Tolerance);
+            }
+
+            xOrig.AsSpan().CopyTo(x.Span);
+            yOrig.AsSpan().CopyTo(y.Span);
+
+            TensorPrimitives.MinMagnitude(x, y, y);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathFMinMagnitude(x[i], yOrig[i]), y[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void MinMagnitude_TwoTensors_SpecialValues(int tensorLength)
         {
@@ -1271,6 +1567,21 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Multiply_TwoTensors_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Multiply(x, x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(xOrig[i] * xOrig[i], x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void Multiply_TwoTensors_ThrowsForMismatchedLengths(int tensorLength)
         {
@@ -1310,6 +1621,22 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Multiply_TensorScalar_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+            float y = NextSingle();
+
+            TensorPrimitives.Multiply(x, y, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(xOrig[i] * y, x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void Multiply_TensorScalar_ThrowsForTooShortDestination(int tensorLength)
         {
@@ -1336,6 +1663,21 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal((x[i] * y[i]) + addend[i], destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void MultiplyAdd_ThreeTensors_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.MultiplyAdd(x, x, x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal((xOrig[i] * xOrig[i]) + xOrig[i], x[i], Tolerance);
             }
         }
 
@@ -1383,6 +1725,22 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void MultiplyAdd_TensorTensorScalar_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+            float addend = NextSingle();
+
+            TensorPrimitives.MultiplyAdd(x, x, addend, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal((xOrig[i] * xOrig[i]) + addend, x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void MultiplyAdd_TensorTensorScalar_ThrowsForTooShortDestination(int tensorLength)
         {
@@ -1412,6 +1770,22 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void MultiplyAdd_TensorScalarTensor_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+            float y = NextSingle();
+
+            TensorPrimitives.MultiplyAdd(x, y, x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal((xOrig[i] * y) + xOrig[i], x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void MultiplyAdd_TensorScalarTensor_ThrowsForTooShortDestination(int tensorLength)
         {
@@ -1437,6 +1811,21 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(-x[i], destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Negate_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Negate(x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(-xOrig[i], x[i], Tolerance);
             }
         }
 
@@ -1600,6 +1989,36 @@ namespace System.Numerics.Tensors.Tests
         #region Sigmoid
         [Theory]
         [MemberData(nameof(TensorLengths))]
+        public static void Sigmoid(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            TensorPrimitives.Sigmoid(x, destination);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(1f / (1f + MathF.Exp(-x[i])), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Sigmoid_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Sigmoid(x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(1f / (1f + MathF.Exp(-xOrig[i])), x[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
         public static void Sigmoid_ThrowsForTooShortDestination(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -1612,7 +2031,7 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(new float[] { -5, -4.5f, -4 }, new float[] { 0.0066f, 0.0109f, 0.0179f })]
         [InlineData(new float[] { 4.5f, 5 }, new float[] { 0.9890f, 0.9933f })]
         [InlineData(new float[] { 0, -3, 3, .5f }, new float[] { 0.5f, 0.0474f, 0.9525f, 0.6224f })]
-        public static void Sigmoid(float[] x, float[] expectedResult)
+        public static void Sigmoid_KnownValues(float[] x, float[] expectedResult)
         {
             using BoundedMemory<float> dest = CreateTensor(x.Length);
             TensorPrimitives.Sigmoid(x, dest);
@@ -1664,6 +2083,21 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Sinh_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Sinh(x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Sinh(xOrig[i]), x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void Sinh_ThrowsForTooShortDestination(int tensorLength)
         {
@@ -1675,6 +2109,38 @@ namespace System.Numerics.Tensors.Tests
         #endregion
 
         #region SoftMax
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SoftMax(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            TensorPrimitives.SoftMax(x, destination);
+
+            float expSum = MemoryMarshal.ToEnumerable<float>(x.Memory).Sum(MathF.Exp);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Exp(x[i]) / expSum, destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SoftMax_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.SoftMax(x, x);
+
+            float expSum = xOrig.Sum(MathF.Exp);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Exp(xOrig[i]) / expSum, x[i], Tolerance);
+            }
+        }
+
         [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void SoftMax_ThrowsForTooShortDestination(int tensorLength)
@@ -1690,7 +2156,7 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(new float[] { 3, 4, 1 }, new float[] { 0.2594f, 0.705384f, 0.0351f })]
         [InlineData(new float[] { 5, 3 }, new float[] { 0.8807f, 0.1192f })]
         [InlineData(new float[] { 4, 2, 1, 9 }, new float[] { 0.0066f, 9.04658e-4f, 3.32805e-4f, 0.9920f })]
-        public static void SoftMax(float[] x, float[] expectedResult)
+        public static void SoftMax_KnownValues(float[] x, float[] expectedResult)
         {
             using BoundedMemory<float> dest = CreateTensor(x.Length);
             TensorPrimitives.SoftMax(x, dest);
@@ -1740,6 +2206,21 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Subtract_TwoTensors_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Subtract(x, x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(xOrig[i] - xOrig[i], x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void Subtract_TwoTensors_ThrowsForMismatchedLengths(int tensorLength)
         {
@@ -1779,6 +2260,22 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Subtract_TensorScalar_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+            float y = NextSingle();
+
+            TensorPrimitives.Subtract(x, y, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(xOrig[i] - y, x[i], Tolerance);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void Subtract_TensorScalar_ThrowsForTooShortDestination(int tensorLength)
         {
@@ -1797,7 +2294,7 @@ namespace System.Numerics.Tensors.Tests
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
 
-            Assert.Equal(Enumerable.Sum(MemoryMarshal.ToEnumerable<float>(x.Memory)), TensorPrimitives.Sum(x), Tolerance);
+            Assert.Equal(MemoryMarshal.ToEnumerable<float>(x.Memory).Sum(), TensorPrimitives.Sum(x), Tolerance);
 
             float sum = 0;
             foreach (float f in x.Span)
@@ -1887,6 +2384,21 @@ namespace System.Numerics.Tensors.Tests
             for (int i = 0; i < tensorLength; i++)
             {
                 Assert.Equal(MathF.Tanh(x[i]), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengthsIncluding0))]
+        public static void Tanh_InPlace(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            float[] xOrig = x.Span.ToArray();
+
+            TensorPrimitives.Tanh(x, x);
+
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Tanh(xOrig[i]), x[i], Tolerance);
             }
         }
 

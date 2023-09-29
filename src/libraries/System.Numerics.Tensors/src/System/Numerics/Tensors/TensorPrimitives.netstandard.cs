@@ -320,7 +320,11 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex));
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex)));
                     }
 
                     return;
@@ -374,8 +378,12 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex),
-                                                                        AsVector(ref yRef, lastVectorIndex));
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex),
+                                      AsVector(ref yRef, lastVectorIndex)));
                     }
 
                     return;
@@ -424,8 +432,11 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex),
-                                                                        yVec);
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex), yVec));
                     }
 
                     return;
@@ -482,9 +493,13 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex),
-                                                                        AsVector(ref yRef, lastVectorIndex),
-                                                                        AsVector(ref zRef, lastVectorIndex));
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex),
+                                      AsVector(ref yRef, lastVectorIndex),
+                                      AsVector(ref zRef, lastVectorIndex)));
                     }
 
                     return;
@@ -543,9 +558,13 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex),
-                                                                        AsVector(ref yRef, lastVectorIndex),
-                                                                        zVec);
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex),
+                                      AsVector(ref yRef, lastVectorIndex),
+                                      zVec));
                     }
 
                     return;
@@ -604,9 +623,13 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex),
-                                                                        yVec,
-                                                                        AsVector(ref zRef, lastVectorIndex));
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex),
+                                      yVec,
+                                      AsVector(ref zRef, lastVectorIndex)));
                     }
 
                     return;
