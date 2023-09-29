@@ -504,81 +504,6 @@ g_strreverse (gchar *str)
 }
 
 gchar *
-g_strjoin (const gchar *separator, ...)
-{
-	va_list args;
-	char *res, *s, *r;
-	size_t len, slen;
-
-	if (separator != NULL)
-		slen = strlen (separator);
-	else
-		slen = 0;
-
-	len = 0;
-	va_start (args, separator);
-	for (s = va_arg (args, char *); s != NULL; s = va_arg (args, char *)){
-		len += strlen (s);
-		len += slen;
-	}
-	va_end (args);
-
-	if (len == 0)
-		return g_strdup ("");
-
-	/* Remove the last separator */
-	if (slen > 0 && len > 0)
-		len -= slen;
-
-	res = (char*)g_malloc (len + 1);
-	va_start (args, separator);
-	s = va_arg (args, char *);
-	r = g_stpcpy (res, s);
-	for (s = va_arg (args, char *); s != NULL; s = va_arg (args, char *)){
-		if (separator != NULL)
-			r = g_stpcpy (r, separator);
-		r = g_stpcpy (r, s);
-	}
-	va_end (args);
-
-	return res;
-}
-
-gchar *
-g_strjoinv (const gchar *separator, gchar **str_array)
-{
-	char *res, *r;
-	size_t slen, len, i;
-
-	if (separator != NULL)
-		slen = strlen (separator);
-	else
-		slen = 0;
-
-	len = 0;
-	for (i = 0; str_array [i] != NULL; i++){
-		len += strlen (str_array [i]);
-		len += slen;
-	}
-
-	if (len == 0)
-		return g_strdup ("");
-
-	if (slen > 0 && len > 0)
-		len -= slen;
-
-	res = g_malloc (len + 1);
-	r = g_stpcpy (res, str_array [0]);
-	for (i = 1; str_array [i] != NULL; i++){
-		if (separator != NULL)
-			r = g_stpcpy (r, separator);
-		r = g_stpcpy (r, str_array [i]);
-	}
-
-	return res;
-}
-
-gchar *
 g_strchug (gchar *str)
 {
 	size_t len;
@@ -771,34 +696,6 @@ g_ascii_strcasecmp (const gchar *s1, const gchar *s2)
 	return g_ascii_charcmp (0, *s2);
 }
 
-gboolean
-g_utf16_ascii_equal (const gunichar2 *utf16, size_t ulen, const char *ascii, size_t alen)
-{
-	size_t i;
-	if (ulen != alen)
-		return FALSE;
-	for (i = 0; i < ulen; ++i) {
-		if (utf16[i] != ascii[i])
-			return FALSE;
-	}
-	return TRUE;
-}
-
-gboolean
-g_utf16_asciiz_equal (const gunichar2 *utf16, const char *ascii)
-// z for zero means null terminated
-{
-	while (1)
-	{
-		char a = *ascii++;
-		gunichar2 u = *utf16++;
-		if (a != u)
-			return FALSE;
-		if (a == 0)
-			return TRUE;
-	}
-}
-
 void
 g_strdelimit (gchar *string, gchar delimiter, gchar new_delimiter)
 {
@@ -844,24 +741,6 @@ g_strlcpy (gchar *dest, const gchar *src, gsize dest_size)
 	/* we need to return the length of src here */
 	while (*s++) ; /* instead of a plain strlen, we use 's' */
 	return s - src - 1;
-#endif
-}
-
-gchar *
-g_stpcpy (gchar *dest, const char *src)
-{
-	g_return_val_if_fail (dest != NULL, dest);
-	g_return_val_if_fail (src != NULL, dest);
-
-#if HAVE_STPCPY
-	return stpcpy (dest, src);
-#else
-	while (*src)
-		*dest++ = *src++;
-
-	*dest = '\0';
-
-	return dest;
 #endif
 }
 

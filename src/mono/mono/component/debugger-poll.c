@@ -9,7 +9,7 @@
 #include <winsock2.h>
 #endif
 
-#include "mono-poll.h"
+#include "debugger-poll.h"
 #include <errno.h>
 #include <mono/utils/mono-errno.h>
 

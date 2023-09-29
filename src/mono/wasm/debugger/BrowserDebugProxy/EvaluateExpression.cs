@@ -201,7 +201,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string node_str = ies.ToString();
                         if (!methodCallToParamName.TryGetValue(node_str, out string id_name))
                         {
-                            throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
+                            throw new Exception($"BUG: Expected to find an id name for the invokation expression string: {node_str}");
                         }
                         AddLocalVariableWithValue(id_name, value);
                     }

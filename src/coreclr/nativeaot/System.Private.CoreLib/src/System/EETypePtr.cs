@@ -164,7 +164,7 @@ namespace System
             {
                 // Q: When is an enum type a constructed generic type?
                 // A: When it's nested inside a generic type.
-                if (!(IsDefType))
+                if (!IsDefType)
                     return false;
 
                 // Generic type definitions that return true for IsPrimitive are type definitions of generic enums.

@@ -1705,7 +1705,8 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
                 JITDUMP("Updating flags on GDV guard inside hot loop. Before:\n");
                 DISPSTMT(stmt);
 
-                indir->gtFlags |= GTF_ORDER_SIDEEFF | GTF_IND_NONFAULTING;
+                indir->gtFlags |= GTF_IND_NONFAULTING;
+                indir->SetHasOrderingSideEffect();
                 indir->gtFlags &= ~GTF_EXCEPT;
                 assert(fgNodeThreading == NodeThreading::None);
                 gtUpdateStmtSideEffects(stmt);

@@ -51,11 +51,13 @@ internal class Program
         TestInstanceDelegate.Run();
         TestStringFields.Run();
         TestSharedCode.Run();
+        TestSpan.Run();
         TestReadOnlySpan.Run();
         TestStaticInterfaceMethod.Run();
         TestConstrainedCall.Run();
         TestTypeHandles.Run();
         TestIndirectLoads.Run();
+        TestInitBlock.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -1054,6 +1056,41 @@ class TestSharedCode
     }
 }
 
+class TestSpan
+{
+    class StackAlloc
+    {
+        public static byte FirstByte;
+        public static byte LastByte;
+        public static char FirstChar;
+        public static char LastChar;
+
+        static StackAlloc()
+        {
+            Span<byte> s1 = stackalloc byte[8];
+            s1.Slice(0, 1)[0] = 42;
+            s1.Slice(s1.Length - 1, 1)[0] = 100;
+            FirstByte = s1[0];
+            LastByte = s1[7];
+
+            Span<char> s2 = stackalloc char[8];
+            s2.Slice(0, 1)[0] = 'H';
+            s2.Slice(s2.Length - 1, 1)[0] = '!';
+            FirstChar = s2[0];
+            LastChar = s2[7];
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(StackAlloc));
+        Assert.AreEqual(42, StackAlloc.FirstByte);
+        Assert.AreEqual(100, StackAlloc.LastByte);
+        Assert.AreEqual('H', StackAlloc.FirstChar);
+        Assert.AreEqual('!', StackAlloc.LastChar);
+    }
+}
+
 class TestReadOnlySpan
 {
     class SimpleReadOnlySpanAccess
@@ -1256,6 +1293,42 @@ class TestIndirectLoads
         Assert.AreEqual(-1, LdindTester.Short);
         Assert.AreEqual(-1, LdindTester.Int);
         Assert.AreEqual(-1, LdindTester.Long);
+    }
+}
+
+class TestInitBlock
+{
+    class Simple
+    {
+        public static byte Value;
+
+        static Simple()
+        {
+            Value = 123;
+            Unsafe.InitBlockUnaligned(ref Value, 42, 1);
+        }
+    }
+
+    class Overrun
+    {
+        public static byte Value;
+        public static byte Pad;
+
+        static Overrun()
+        {
+            Value = 123;
+            Unsafe.InitBlockUnaligned(ref Value, 42, 2);
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Simple));
+        Assert.AreEqual(42, Simple.Value);
+
+        Assert.IsLazyInitialized(typeof(Overrun));
+        Assert.AreEqual(42, Overrun.Value);
+        Assert.AreEqual(42, Overrun.Pad);
     }
 }
 
