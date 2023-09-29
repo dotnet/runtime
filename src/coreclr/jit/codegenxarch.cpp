@@ -206,7 +206,6 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
     BasicBlock* const nextBlock = block->bbNext;
-    BasicBlock* const jumpDest  = nextBlock->bbJumpDest;
 
 #if defined(FEATURE_EH_FUNCLETS)
     // Generate a call to the finally, like this:
@@ -253,6 +252,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 #endif // JIT32_GCENCODER
+
+        BasicBlock* const jumpDest = nextBlock->bbJumpDest;
 
         // Now go to where the finally funclet needs to return to.
         if ((jumpDest == nextBlock->bbNext) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
@@ -315,7 +316,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        GetEmitter()->emitIns_J(INS_push_hide, jumpDest);
+        GetEmitter()->emitIns_J(INS_push_hide, nextBlock->bbJumpDest);
     }
     else
     {
