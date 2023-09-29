@@ -465,7 +465,7 @@ namespace System.Numerics.Tensors
             #pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/44948
             const uint ExponentLowerBound = 0x3880_0000u; // The smallest positive normal number in Half, converted to Single
             const uint ExponentOffset = 0x3800_0000u; // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
-            const uint FloatSignMask = 0x8000_0000; // float.SignMask; // Mask for sign bit in Single
+            const uint SingleSignMask = 0x8000_0000; // float.SignMask; // Mask for sign bit in Single
             const uint HalfExponentMask = 0x7C00; // Mask for exponent bits in Half
             const uint HalfToSingleBitsMask = 0x0FFF_E000; // Mask for bits in Single converted from Half
             #pragma warning restore IDE0059
@@ -473,7 +473,7 @@ namespace System.Numerics.Tensors
             static Vector128<float> HalfAsWidenedUInt32ToSingle_Vector128(Vector128<uint> value)
             {
                 // Extract sign bit of value
-                Vector128<uint> sign = value & Vector128.Create(FloatSignMask);
+                Vector128<uint> sign = value & Vector128.Create(SingleSignMask);
 
                 // Copy sign bit to upper bits
                 Vector128<uint> bitValueInProcess = value;
@@ -516,14 +516,8 @@ namespace System.Numerics.Tensors
 
             static Vector256<float> HalfAsWidenedUInt32ToSingle_Vector256(Vector256<uint> value)
             {
-                const uint ExponentLowerBound = 0x3880_0000u; // The smallest positive normal number in Half, converted to Single
-                const uint ExponentOffset = 0x3800_0000u; // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
-                const uint FloatSignMask = 0x8000_0000; // float.SignMask; // Mask for sign bit in Single
-                const uint HalfExponentMask = 0x7C00; // Mask for exponent bits in Half
-                const uint HalfToSingleBitsMask = 0x0FFF_E000; // Mask for bits in Single converted from Half
-
                 // Extract sign bit of value
-                Vector256<uint> sign = value & Vector256.Create(FloatSignMask);
+                Vector256<uint> sign = value & Vector256.Create(SingleSignMask);
 
                 // Copy sign bit to upper bits
                 Vector256<uint> bitValueInProcess = value;
@@ -567,14 +561,8 @@ namespace System.Numerics.Tensors
 #if NET8_0_OR_GREATER
             static Vector512<float> HalfAsWidenedUInt32ToSingle_Vector512(Vector512<uint> value)
             {
-                const uint ExponentLowerBound = 0x3880_0000u; // The smallest positive normal number in Half, converted to Single
-                const uint ExponentOffset = 0x3800_0000u; // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
-                const uint FloatSignMask = 0x8000_0000; // float.SignMask; // Mask for sign bit in Single
-                const uint HalfExponentMask = 0x7C00; // Mask for exponent bits in Half
-                const uint HalfToSingleBitsMask = 0x0FFF_E000; // Mask for bits in Single converted from Half
-
                 // Extract sign bit of value
-                Vector512<uint> sign = value & Vector512.Create(FloatSignMask);
+                Vector512<uint> sign = value & Vector512.Create(SingleSignMask);
 
                 // Copy sign bit to upper bits
                 Vector512<uint> bitValueInProcess = value;
