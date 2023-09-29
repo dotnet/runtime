@@ -3516,6 +3516,11 @@ public:
         return m_ssaNum.IsComposite();
     }
 
+    bool HasSsaIdentity() const
+    {
+        return !m_ssaNum.IsInvalid();
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeLclVarCommon() : GenTreeUnOp()
     {
