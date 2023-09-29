@@ -343,7 +343,7 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
 
     <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and ('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '')" Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_crossarch.csproj" Category="clr" />
-    <ProjectToBuild Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_inbuild.csproj" Category="clr" />
 
     <ProjectToBuild Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')) or '$(TargetOS)' == 'osx'" Include="$(CoreClrProjectRoot)tools\SuperFileCheck\SuperFileCheck.csproj" Category="clr" />
   </ItemGroup>
