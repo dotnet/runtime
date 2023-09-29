@@ -5353,7 +5353,7 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	gpointer iter = NULL;
 	MonoDomain *d;
 	ErrorCode err;
-	int inlineArray = -1;
+	int inlineArraySize = -1;
 
 	/* is_enum, ignored */
 	decode_byte (buf, &buf, limit);
@@ -5361,7 +5361,7 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
 	if (CHECK_PROTOCOL_VERSION(2, 65))
-		inlineArray = decode_int (buf, &buf, limit);
+		inlineArraySize = decode_int (buf, &buf, limit);
 	if (err != ERR_NONE)
 		return err;
 
@@ -5386,10 +5386,10 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 		if (err != ERR_NONE)
 			return err;
 		nfields --;
-		if (CHECK_PROTOCOL_VERSION(2, 66) && inlineArray > 0)
+		if (CHECK_PROTOCOL_VERSION(2, 66) && inlineArraySize > 0)
 		{
 			int element_size = mono_class_instance_size (mono_class_from_mono_type_internal (f->type)) - MONO_ABI_SIZEOF (MonoObject);
-			for (int i = 1; i < inlineArray; i++)
+			for (int i = 0; i < inlineArraySize; i++)
 				decode_value (f->type, domain, ((char*)mono_vtype_get_field_addr (addr, f)) + (i*element_size), buf, &buf, limit, check_field_datatype, extra_space, members_in_extra_space);
 		}
 	}
@@ -5466,7 +5466,7 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 	gpointer iter = NULL;
 	MonoDomain *d;
 	ErrorCode err;
-	int inlineArray = -1;
+	int inlineArraySize = -1;
 
 	/* is_enum, ignored */
 	decode_byte (buf, &buf, limit);
@@ -5474,7 +5474,7 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
 	if (CHECK_PROTOCOL_VERSION(2, 65))
-		inlineArray = decode_int (buf, &buf, limit);
+		inlineArraySize = decode_int (buf, &buf, limit);
 	if (err != ERR_NONE)
 		goto end;
 
@@ -5497,9 +5497,9 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 		if (err != ERR_NONE)
 			return err;
 		nfields --;
-		if (CHECK_PROTOCOL_VERSION(2, 66) && inlineArray > 0)
+		if (CHECK_PROTOCOL_VERSION(2, 66) && inlineArraySize > 0)
 		{
-			for (int i = 1; i < inlineArray; i++) {
+			for (int i = 0; i < inlineArraySize; i++) {
 				field_size = decode_value_compute_size (f->type, 0, domain, buf, &buf, limit, members_in_extra_space);
 				if (members_in_extra_space)
 					ret += field_size;
