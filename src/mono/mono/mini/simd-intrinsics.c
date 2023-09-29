@@ -1102,7 +1102,7 @@ emit_vector_create_elementwise (
 	MonoClass *vklass = mono_class_from_mono_type_internal (vtype);
 	MonoInst *ins = emit_xzero (cfg, vklass);
 	for (int i = 0; i < fsig->param_count; ++i)
-		emit_vector_insert_element (cfg, vklass, ins, type, args[i], i, TRUE);
+		ins = emit_vector_insert_element (cfg, vklass, ins, type, args[i], i, TRUE);
 
 	return ins;
 }
