@@ -14,6 +14,7 @@
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <UseLocalAppHostPack>true</UseLocalAppHostPack>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />

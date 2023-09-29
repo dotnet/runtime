@@ -84,6 +84,21 @@
     </Reference>
   </ItemGroup>
 
+  <!--
+    SDK tries to download some implicit package references for NativeAOT and trimming.
+    Remove these here.
+   -->
+  <Target Name="RemoveRuntimePackFromDownloadItem"
+          Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
+          AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <PackageReference Remove="Microsoft.DotNet.ILCompiler"
+                        Condition="'%(PackageReference.IsImplicitlyDefined)' == 'true'" />
+      <PackageReference Remove="Microsoft.NET.ILLink.Tasks"
+                        Condition="'%(PackageReference.IsImplicitlyDefined)' == 'true'" />
+    </ItemGroup>
+  </Target>
+
   <!-- Add the resolved targeting pack to the assembly search path. -->
   <Target Name="UseTargetingPackForAssemblySearchPaths"
           BeforeTargets="ResolveAssemblyReferences;
