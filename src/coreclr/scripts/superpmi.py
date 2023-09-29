@@ -482,29 +482,7 @@ def create_artifacts_base_name(coreclr_args, mch_file):
         artifacts_base_name = "{}.{}".format(coreclr_args.tag, artifacts_base_name)
     return artifacts_base_name
 
-
-def read_csv_metrics(path):
-    """ Read a metrics summary file produced by superpmi and return the rows as a dictionary of dictionaries.
-
-    Args:
-        path (str) : path to .csv file
-
-    Returns:
-        A dictionary of dictionaries. For example, dict["Overall"]["Successful
-        compiles"] will access the total number of successful compiles and
-        dict["MinOpts"]["Successful compiles"] will access the number of
-        minopts compilations.
-    """
-
-    dict = {}
-    with open(path) as csv_file:
-        reader = csv.DictReader(csv_file)
-        for row in reader:
-            dict[row["Name"]] = row
-
-    return dict
-
-def read_csv_diffs(path):
+def read_csv(path):
     with open(path) as csv_file:
         reader = csv.DictReader(csv_file)
         return list(reader)
@@ -1620,19 +1598,19 @@ class SuperPMIReplay:
                 flags = common_flags.copy()
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
-                metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_metrics.csv")
+                details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
                 flags += [
                     "-f", fail_mcl_file,  # Failing mc List
-                    "-metricsSummary", metrics_summary_file
+                    "-details", details_info_file
                 ]
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
                 return_code = run_and_log(command)
 
-                metrics = read_csv_metrics(metrics_summary_file)
+                details = read_csv(details_info_file)
+                print_superpmi_result(return_code, self.coreclr_args, self.aggregate_replay_metrics(details), None)
 
-                print_superpmi_result(return_code, self.coreclr_args, metrics, None)
                 if return_code != 0:
                     # Don't report as replay failure missing data (return code 3).
                     # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
@@ -1666,6 +1644,29 @@ class SuperPMIReplay:
                 logging.info("    %s", file)
 
         return result
+
+    def aggregate_replay_metrics(self, details):
+        """ Given the CSV details file output by SPMI for a replay aggregate the
+        successes, misses and failures
+
+        Returns:
+            A dictionary of metrics
+        """
+
+        num_successes = 0
+        num_misses = 0
+        num_failures = 0
+        for row in details:
+            result = row["Result"]
+            if result == "Success":
+                num_successes += 1
+            elif result == "Miss":
+                num_misses += 1
+            else:
+                assert(result == "Failure")
+                num_failures += 1
+
+        return {"Overall": {"Successful compiles": num_successes, "Missing compiles": num_misses, "Failing compiles": num_failures}}
 
 ################################################################################
 # SuperPMI Replay/AsmDiffs
@@ -1752,6 +1753,71 @@ class DetailsSection:
 
     def __exit__(self, *args):
         self.write_fh.write("\n\n</div></details>\n")
+
+def aggregate_diff_metrics(details):
+    """ Given the CSV details file output by SPMI for a diff aggregate the metrics.
+    """
+
+    base_minopts = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0,
+                    "Contexts with diffs": 0, "Diffed code bytes": 0, "Diff executed instructions": 0}
+    base_fullopts = base_minopts.copy()
+
+    diff_minopts = base_minopts.copy()
+    diff_fullopts = base_minopts.copy()
+
+    for row in details:
+        base_result = row["Base result"]
+
+        if row["MinOpts"] == "True":
+            base_dict = base_minopts
+            diff_dict = diff_minopts
+        else:
+            base_dict = base_fullopts
+            diff_dict = diff_fullopts
+
+        if base_result == "Success":
+            base_dict["Successful compiles"] += 1
+        elif base_result == "Miss":
+            base_dict["Missing compiles"] += 1
+        else:
+            assert(base_result == "Failure")
+            base_dict["Failing compiles"] += 1
+
+        diff_result = row["Diff result"]
+        if diff_result == "Success":
+            diff_dict["Successful compiles"] += 1
+        elif diff_result == "Miss":
+            diff_dict["Missing compiles"] += 1
+        else:
+            assert(diff_result == "Failure")
+            diff_dict["Failing compiles"] += 1
+
+        if base_result == "Success" and diff_result == "Success":
+            base_size = int(row["Base size"])
+            diff_size = int(row["Diff size"])
+            base_dict["Diffed code bytes"] += base_size
+            diff_dict["Diffed code bytes"] += diff_size
+
+            base_insts = int(row["Base instructions"])
+            diff_insts = int(row["Diff instructions"])
+            base_dict["Diff executed instructions"] += base_insts
+            diff_dict["Diff executed instructions"] += diff_insts
+
+            if row["Has diff"] == "True":
+                base_dict["Contexts with diffs"] += 1
+                diff_dict["Contexts with diffs"] += 1
+
+    base_overall = base_minopts.copy()
+    for k in base_overall.keys():
+        base_overall[k] += base_fullopts[k]
+
+    diff_overall = diff_minopts.copy()
+    for k in diff_overall.keys():
+        diff_overall[k] += diff_fullopts[k]
+
+    return ({"Overall": base_overall, "MinOpts": base_minopts, "FullOpts": base_fullopts},
+            {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts})
+
 
 class SuperPMIReplayAsmDiffs:
     """ SuperPMI Replay AsmDiffs class
@@ -1905,19 +1971,14 @@ class SuperPMIReplayAsmDiffs:
                 logging.info("Running asm diffs of %s", mch_file)
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
-                diffs_info = os.path.join(temp_location, os.path.basename(mch_file) + "_diffs.csv")
-
-                base_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_base_metrics.csv")
-                diff_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff_metrics.csv")
+                detailed_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
                 flags = [
                     "-a",  # Asm diffs
                     "-v", "ewi",  # display errors, warnings, missing, jit info
                     "-f", fail_mcl_file,  # Failing mc List
-                    "-diffsInfo", diffs_info,  # Information about diffs
+                    "-details", detailed_info_file,  # Detailed information about each context
                     "-r", os.path.join(temp_location, "repro"),  # Repro name prefix, create .mc repro files
-                    "-baseMetricsSummary", base_metrics_summary_file, # Create summary of metrics we can use to get total code size impact
-                    "-diffMetricsSummary", diff_metrics_summary_file,
                 ]
                 flags += altjit_asm_diffs_flags
                 flags += base_option_flags
@@ -1955,8 +2016,8 @@ class SuperPMIReplayAsmDiffs:
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
 
-                base_metrics = read_csv_metrics(base_metrics_summary_file)
-                diff_metrics = read_csv_metrics(diff_metrics_summary_file)
+                details = read_csv(detailed_info_file)
+                (base_metrics, diff_metrics) = aggregate_diff_metrics(details)
 
                 print_superpmi_result(return_code, self.coreclr_args, base_metrics, diff_metrics)
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
@@ -1976,8 +2037,7 @@ class SuperPMIReplayAsmDiffs:
                             repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
                             save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
-                diffs = read_csv_diffs(diffs_info)
-
+                diffs = [r for r in details if r["Has diff"] == "True"]
                 if any(diffs):
                     files_with_asm_diffs.append(mch_file)
 
@@ -2212,13 +2272,9 @@ class SuperPMIReplayAsmDiffs:
                         os.remove(fail_mcl_file)
                         fail_mcl_file = None
 
-                    if os.path.isfile(base_metrics_summary_file):
-                        os.remove(base_metrics_summary_file)
-                        base_metrics_summary_file = None
-
-                    if os.path.isfile(diff_metrics_summary_file):
-                        os.remove(diff_metrics_summary_file)
-                        diff_metrics_summary_file = None
+                    if os.path.isfile(detailed_info_file):
+                        os.remove(detailed_info_file)
+                        detailed_info_file = None
 
             ################################################################################################ end of for mch_file in self.mch_files
 
@@ -2647,8 +2703,7 @@ class SuperPMIReplayThroughputDiff:
 
                 logging.info("Running throughput diff of %s", mch_file)
 
-                base_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_base_metrics.csv")
-                diff_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff_metrics.csv")
+                detailed_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
 
                 pin_options = [
                     "-follow_execv", # attach to child processes
@@ -2656,8 +2711,7 @@ class SuperPMIReplayThroughputDiff:
                 ]
                 flags = [
                     "-applyDiff",
-                    "-baseMetricsSummary", base_metrics_summary_file, # Instruction counts are stored in these
-                    "-diffMetricsSummary", diff_metrics_summary_file,
+                    "-details", detailed_info_file,
                 ]
                 flags += target_flags
                 flags += base_option_flags
@@ -2692,8 +2746,8 @@ class SuperPMIReplayThroughputDiff:
                     command_string = " ".join(command)
                     logging.debug("'%s': Error return code: %s", command_string, return_code)
 
-                base_metrics = read_csv_metrics(base_metrics_summary_file)
-                diff_metrics = read_csv_metrics(diff_metrics_summary_file)
+                details = read_csv(detailed_info_file)
+                (base_metrics, diff_metrics) = aggregate_diff_metrics(details)
 
                 if base_metrics is not None and diff_metrics is not None:
                     base_instructions = int(base_metrics["Overall"]["Diff executed instructions"])
@@ -2711,13 +2765,9 @@ class SuperPMIReplayThroughputDiff:
                     logging.warning("No metric files present?")
 
                 if not self.coreclr_args.skip_cleanup:
-                    if os.path.isfile(base_metrics_summary_file):
-                        os.remove(base_metrics_summary_file)
-                        base_metrics_summary_file = None
-
-                    if os.path.isfile(diff_metrics_summary_file):
-                        os.remove(diff_metrics_summary_file)
-                        diff_metrics_summary_file = None
+                    if os.path.isfile(detailed_info_file):
+                        os.remove(detailed_info_file)
+                        detailed_info_file = None
 
             ################################################################################################ end of for mch_file in self.mch_files
 
