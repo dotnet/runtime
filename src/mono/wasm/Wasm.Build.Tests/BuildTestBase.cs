@@ -265,13 +265,6 @@ namespace Wasm.Build.Tests
             if (File.Exists("/.dockerenv"))
                 args.Append(" --browser-arg=--no-sandbox");
 
-            if (!string.IsNullOrEmpty(EnvironmentVariables.BrowserPathForTests))
-            {
-                if (!File.Exists(EnvironmentVariables.BrowserPathForTests))
-                    throw new Exception($"Cannot find BROWSER_PATH_FOR_TESTS={EnvironmentVariables.BrowserPathForTests}");
-                args.Append($" --browser-path=\"{EnvironmentVariables.BrowserPathForTests}\"");
-            }
-
             args.Append(" -- ");
             if (extraXHarnessMonoArgs != null)
             {
