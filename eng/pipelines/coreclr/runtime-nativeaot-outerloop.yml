@@ -42,6 +42,7 @@ extends:
     stages:
     - stage: Build
       jobs:
+
       #
       # CoreCLR NativeAOT release build and libraries tests
       # Only when CoreCLR or library is changed
@@ -71,11 +72,6 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT release build (checked runtime) and libraries tests
@@ -101,11 +97,6 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_$(_BuildConfig)
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT release build (checked runtime) - SizeOpt and libraries tests
@@ -131,11 +122,6 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_SizeOpt_$(_BuildConfig)
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT release build (checked runtime) - SpeedOpt and libraries tests
@@ -161,11 +147,6 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_SpeedOpt_$(_BuildConfig)
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT checked build and Pri0 tests
@@ -199,12 +180,4 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
                   testGroup: innerloop
-                  isSingleFile: true
-                  nameSuffix: NativeAOT_Libs
-                  buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
-                  timeoutInMinutes: 300 # doesn't normally take this long, but I've seen Helix queues backed up for 160 minutes
-                  # extra steps, run tests
-                  extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-                  extraStepsParameters:
-                    creator: dotnet-bot
-                    testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  liveLibrariesBuildConfig: Release
