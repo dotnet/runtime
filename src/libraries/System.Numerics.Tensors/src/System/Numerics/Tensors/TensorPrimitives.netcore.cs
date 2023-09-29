@@ -23,6 +23,9 @@ namespace System.Numerics.Tensors
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = (Half)<paramref name="source" />[i]</c>.
         /// </para>
+        /// <para>
+        /// <paramref name="source"/> and <paramref name="destination"/> must not overlap. If they do, behavior is undefined.
+        /// </para>
         /// </remarks>
         public static void ConvertToHalf(ReadOnlySpan<float> source, Span<Half> destination)
         {
@@ -338,6 +341,9 @@ namespace System.Numerics.Tensors
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = (float)<paramref name="source" />[i]</c>.
+        /// </para>
+        /// <para>
+        /// <paramref name="source"/> and <paramref name="destination"/> must not overlap. If they do, behavior is undefined.
         /// </para>
         /// </remarks>
         public static void ConvertToSingle(ReadOnlySpan<Half> source, Span<float> destination)
@@ -810,7 +816,10 @@ namespace System.Numerics.Tensors
                         return GetFirstNaN(current);
                     }
 
-                    result = TMinMax.Invoke(result, current);
+                    result = Vector512.ConditionalSelect(
+                        Vector512.Equals(LoadRemainderMaskSingleVector512(x.Length - i), Vector512<float>.Zero),
+                        result,
+                        TMinMax.Invoke(result, current));
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -856,7 +865,10 @@ namespace System.Numerics.Tensors
                         return GetFirstNaN(current);
                     }
 
-                    result = TMinMax.Invoke(result, current);
+                    result = Vector256.ConditionalSelect(
+                        Vector256.Equals(LoadRemainderMaskSingleVector256(x.Length - i), Vector256<float>.Zero),
+                        result,
+                        TMinMax.Invoke(result, current));
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -901,7 +913,10 @@ namespace System.Numerics.Tensors
                         return GetFirstNaN(current);
                     }
 
-                    result = TMinMax.Invoke(result, current);
+                    result = Vector128.ConditionalSelect(
+                        Vector128.Equals(LoadRemainderMaskSingleVector128(x.Length - i), Vector128<float>.Zero),
+                        result,
+                        TMinMax.Invoke(result, current));
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -963,7 +978,10 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector512.ConditionalSelect(
+                            Vector512.Equals(LoadRemainderMaskSingleVector512(x.Length - i), Vector512<float>.Zero),
+                            Vector512.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -989,7 +1007,10 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector256.ConditionalSelect(
+                            Vector256.Equals(LoadRemainderMaskSingleVector256(x.Length - i), Vector256<float>.Zero),
+                            Vector256.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1014,7 +1035,10 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector128.ConditionalSelect(
+                            Vector128.Equals(LoadRemainderMaskSingleVector128(x.Length - i), Vector128<float>.Zero),
+                            Vector128.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1068,8 +1092,11 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
-                                               Vector512.LoadUnsafe(ref yRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector512.ConditionalSelect(
+                            Vector512.Equals(LoadRemainderMaskSingleVector512(x.Length - i), Vector512<float>.Zero),
+                            Vector512.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                   Vector512.LoadUnsafe(ref yRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1096,8 +1123,11 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
-                                               Vector256.LoadUnsafe(ref yRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector256.ConditionalSelect(
+                            Vector256.Equals(LoadRemainderMaskSingleVector256(x.Length - i), Vector256<float>.Zero),
+                            Vector256.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                   Vector256.LoadUnsafe(ref yRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1123,8 +1153,11 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
-                                               Vector128.LoadUnsafe(ref yRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector128.ConditionalSelect(
+                            Vector128.Equals(LoadRemainderMaskSingleVector128(x.Length - i), Vector128<float>.Zero),
+                            Vector128.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                   Vector128.LoadUnsafe(ref yRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1175,8 +1208,11 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
-                                               yVec).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector512.ConditionalSelect(
+                            Vector512.Equals(LoadRemainderMaskSingleVector512(x.Length - i), Vector512<float>.Zero),
+                            Vector512.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TBinaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                   yVec)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1205,8 +1241,11 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
-                                               yVec).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector256.ConditionalSelect(
+                            Vector256.Equals(LoadRemainderMaskSingleVector256(x.Length - i), Vector256<float>.Zero),
+                            Vector256.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                   yVec)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1234,8 +1273,11 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
-                                               yVec).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector128.ConditionalSelect(
+                            Vector128.Equals(LoadRemainderMaskSingleVector128(x.Length - i), Vector128<float>.Zero),
+                            Vector128.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                   yVec)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1292,9 +1334,12 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
-                                                Vector512.LoadUnsafe(ref yRef, lastVectorIndex),
-                                                Vector512.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector512.ConditionalSelect(
+                            Vector512.Equals(LoadRemainderMaskSingleVector512(x.Length - i), Vector512<float>.Zero),
+                            Vector512.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                    Vector512.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                    Vector512.LoadUnsafe(ref zRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1322,9 +1367,12 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
-                                                Vector256.LoadUnsafe(ref yRef, lastVectorIndex),
-                                                Vector256.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector256.ConditionalSelect(
+                            Vector256.Equals(LoadRemainderMaskSingleVector256(x.Length - i), Vector256<float>.Zero),
+                            Vector256.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                    Vector256.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                    Vector256.LoadUnsafe(ref zRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1351,9 +1399,12 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
-                                                Vector128.LoadUnsafe(ref yRef, lastVectorIndex),
-                                                Vector128.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector128.ConditionalSelect(
+                            Vector128.Equals(LoadRemainderMaskSingleVector128(x.Length - i), Vector128<float>.Zero),
+                            Vector128.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                    Vector128.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                    Vector128.LoadUnsafe(ref zRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1412,9 +1463,12 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
-                                                Vector512.LoadUnsafe(ref yRef, lastVectorIndex),
-                                                zVec).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector512.ConditionalSelect(
+                            Vector512.Equals(LoadRemainderMaskSingleVector512(x.Length - i), Vector512<float>.Zero),
+                            Vector512.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                    Vector512.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                    zVec)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1444,9 +1498,12 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
-                                                Vector256.LoadUnsafe(ref yRef, lastVectorIndex),
-                                                zVec).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector256.ConditionalSelect(
+                            Vector256.Equals(LoadRemainderMaskSingleVector256(x.Length - i), Vector256<float>.Zero),
+                            Vector256.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                    Vector256.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                    zVec)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1475,9 +1532,12 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
-                                                Vector128.LoadUnsafe(ref yRef, lastVectorIndex),
-                                                zVec).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector128.ConditionalSelect(
+                            Vector128.Equals(LoadRemainderMaskSingleVector128(x.Length - i), Vector128<float>.Zero),
+                            Vector128.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                    Vector128.LoadUnsafe(ref yRef, lastVectorIndex),
+                                                    zVec)).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1536,9 +1596,12 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector512<float>.Count);
-                        TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
-                                                yVec,
-                                                Vector512.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector512.ConditionalSelect(
+                            Vector512.Equals(LoadRemainderMaskSingleVector512(x.Length - i), Vector512<float>.Zero),
+                            Vector512.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TTernaryOperator.Invoke(Vector512.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                    yVec,
+                                                    Vector512.LoadUnsafe(ref zRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1568,9 +1631,12 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector256<float>.Count);
-                        TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
-                                                yVec,
-                                                Vector256.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector256.ConditionalSelect(
+                            Vector256.Equals(LoadRemainderMaskSingleVector256(x.Length - i), Vector256<float>.Zero),
+                            Vector256.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                    yVec,
+                                                    Vector256.LoadUnsafe(ref zRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
@@ -1599,9 +1665,12 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         uint lastVectorIndex = (uint)(x.Length - Vector128<float>.Count);
-                        TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
-                                                yVec,
-                                                Vector128.LoadUnsafe(ref zRef, lastVectorIndex)).StoreUnsafe(ref dRef, lastVectorIndex);
+                        Vector128.ConditionalSelect(
+                            Vector128.Equals(LoadRemainderMaskSingleVector128(x.Length - i), Vector128<float>.Zero),
+                            Vector128.LoadUnsafe(ref dRef, lastVectorIndex),
+                            TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, lastVectorIndex),
+                                                    yVec,
+                                                    Vector128.LoadUnsafe(ref zRef, lastVectorIndex))).StoreUnsafe(ref dRef, lastVectorIndex);
                     }
 
                     return;
