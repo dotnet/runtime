@@ -176,7 +176,7 @@ bool IntegralRange::Contains(int64_t value) const
             {
                 GenTreeLclVar* const lclVar = addr->gtGetOp1()->AsLclVar();
 
-                if (lclVar->IsSpan(compiler))
+                if (compiler->lvaGetDesc(lclVar->GetLclNum())->IsSpan())
                 {
                     assert(compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
                     return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};

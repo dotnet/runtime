@@ -26150,21 +26150,6 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
     return comp->lvaGetDesc(GetLclNum())->IsNeverNegative();
 }
 
-//------------------------------------------------------------------------
-// GenTreeLclVar::IsSpan: Gets true if the lcl var is a Span<T>; otherwise false.
-//
-// Arguments:
-//    comp - the compiler instance
-//
-// Return Value:
-//    true if the lcl var is a Span<T>; otherwise false.
-//
-bool GenTreeLclVar::IsSpan(Compiler* comp) const
-{
-    assert(OperIs(GT_LCL_VAR));
-    return comp->lvaGetDesc(GetLclNum())->IsSpan();
-}
-
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // GetResultOpNumForRmwIntrinsic: check if the result is written into one of the operands.
