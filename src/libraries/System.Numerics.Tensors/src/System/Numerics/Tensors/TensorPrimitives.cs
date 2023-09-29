@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace System.Numerics.Tensors
 {
     /// <summary>Performs primitive tensor operations over spans of memory.</summary>
@@ -10,6 +13,7 @@ namespace System.Numerics.Tensors
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = MathF.Abs(<paramref name="x" />[i])</c>.
@@ -21,10 +25,6 @@ namespace System.Numerics.Tensors
         /// If a value is equal to <see cref="float.NegativeInfinity"/> or <see cref="float.PositiveInfinity"/>, the result stored into the corresponding destination location is set to <see cref="float.PositiveInfinity"/>.
         /// If a value is equal to <see cref="float.NaN"/>, the result stored into the corresponding destination location is the original NaN value with the sign bit removed.
         /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
-        /// </para>
         /// </remarks>
         public static void Abs(ReadOnlySpan<float> x, Span<float> destination) =>
             InvokeSpanIntoSpan<AbsoluteOperator>(x, destination);
@@ -35,14 +35,11 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <paramref name="x" />[i] + <paramref name="y" />[i]</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="y"/> may overlap arbitrarily, but they may only overlap with <paramref name="destination" />
-        /// if the input and the output span begin at the same memory location; otherwise, behavior is undefined. It is safe, for example,
-        /// to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -56,14 +53,10 @@ namespace System.Numerics.Tensors
         /// <param name="y">The second tensor, represented as a scalar.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <paramref name="x" />[i] + <paramref name="y" /></c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="destination" /> may overlap, but only if they start at the same memory location;
-        /// otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters, such as to perform
-        /// an in-place operation.
         /// </para>
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -79,14 +72,12 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" /> and the length of <paramref name="multiplier" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="multiplier"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = (<paramref name="x" />[i] + <paramref name="y" />[i]) * <paramref name="multiplier" />[i]</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/>, <paramref name="y"/>, and <paramref name="multiplier"/> may overlap arbitrarily, but they may only overlap with
-        /// <paramref name="destination" /> if the input and the output span begin at the same memory location; otherwise, behavior is undefined.
-        /// It is safe, for example, to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// If any of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -102,14 +93,11 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = (<paramref name="x" />[i] + <paramref name="y" />[i]) * <paramref name="multiplier" /></c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="y"/> may overlap arbitrarily, but they may only overlap with
-        /// <paramref name="destination" /> if the input and the output span begin at the same memory location; otherwise, behavior is undefined.
-        /// It is safe, for example, to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// If any of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -125,14 +113,11 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="multiplier" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="multiplier"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = (<paramref name="x" />[i] + <paramref name="y" />) * <paramref name="multiplier" />[i]</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="multiplier"/> may overlap arbitrarily, but they may only overlap with
-        /// <paramref name="destination" /> if the input and the output span begin at the same memory location; otherwise, behavior is undefined.
-        /// It is safe, for example, to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// If any of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -145,13 +130,10 @@ namespace System.Numerics.Tensors
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <see cref="MathF" />.Cosh(<paramref name="x" />[i])</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// If a value is equal to <see cref="float.NegativeInfinity"/> or <see cref="float.PositiveInfinity"/>, the result stored into the corresponding destination location is set to <see cref="float.PositiveInfinity"/>.
@@ -171,6 +153,8 @@ namespace System.Numerics.Tensors
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
+
+            ValidateInputOutputSpanNonOverlapping(x, destination);
 
             for (int i = 0; i < x.Length; i++)
             {
@@ -257,14 +241,11 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <paramref name="x" />[i] / <paramref name="y" />[i]</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="y"/> may overlap arbitrarily, but they may only overlap with <paramref name="destination" />
-        /// if the input and the output span begin at the same memory location; otherwise, behavior is undefined. It is safe, for example,
-        /// to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -278,13 +259,10 @@ namespace System.Numerics.Tensors
         /// <param name="y">The second tensor, represented as a scalar.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <paramref name="x" />[i] / <paramref name="y" /></c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -330,13 +308,10 @@ namespace System.Numerics.Tensors
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <see cref="MathF" />.Exp(<paramref name="x" />[i])</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// If a value equals <see cref="float.NaN"/> or <see cref="float.PositiveInfinity"/>, the result stored into the corresponding destination location is set to NaN.
@@ -353,6 +328,8 @@ namespace System.Numerics.Tensors
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
+
+            ValidateInputOutputSpanNonOverlapping(x, destination);
 
             for (int i = 0; i < x.Length; i++)
             {
@@ -570,13 +547,10 @@ namespace System.Numerics.Tensors
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <see cref="MathF" />.Log(<paramref name="x" />[i])</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// If a value equals 0, the result stored into the corresponding destination location is set to <see cref="float.NegativeInfinity"/>.
@@ -596,6 +570,8 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+
             for (int i = 0; i < x.Length; i++)
             {
                 destination[i] = MathF.Log(x[i]);
@@ -606,13 +582,10 @@ namespace System.Numerics.Tensors
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <see cref="MathF" />.Log2(<paramref name="x" />[i])</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// If a value equals 0, the result stored into the corresponding destination location is set to <see cref="float.NegativeInfinity"/>.
@@ -631,6 +604,8 @@ namespace System.Numerics.Tensors
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
+
+            ValidateInputOutputSpanNonOverlapping(x, destination);
 
             for (int i = 0; i < x.Length; i++)
             {
@@ -661,14 +636,11 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = MathF.Max(<paramref name="x" />[i], <paramref name="y" />[i])</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="y"/> may overlap arbitrarily, but they may only overlap with <paramref name="destination" />
-        /// if the input and the output span begin at the same memory location; otherwise, behavior is undefined. It is safe, for example,
-        /// to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// The determination of the maximum element matches the IEEE 754:2019 `maximum` function. If either value is equal to <see cref="float.NaN"/>,
@@ -706,13 +678,10 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>This method effectively computes <c><paramref name="destination" />[i] = MathF.MaxMagnitude(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
         /// <remarks>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="y"/> may overlap arbitrarily, but they may only overlap with <paramref name="destination" />
-        /// if the input and the output span begin at the same memory location; otherwise, behavior is undefined. It is safe, for example,
-        /// to use the same span for any subset of the span parameters, such as to perform an in-place operation.
-        /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
         /// operating systems or architectures.
@@ -744,6 +713,8 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = MathF.Max(<paramref name="x" />[i], <paramref name="y" />[i])</c>.
@@ -751,11 +722,6 @@ namespace System.Numerics.Tensors
         /// <para>
         /// The determination of the maximum element matches the IEEE 754:2019 `maximum` function. If either value is equal to <see cref="float.NaN"/>,
         /// that value is stored as the result. Positive 0 is considered greater than negative 0.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="y"/> may overlap arbitrarily, but they may only overlap with <paramref name="destination" />
-        /// if the input and the output span begin at the same memory location; otherwise, behavior is undefined. It is safe, for example,
-        /// to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -789,17 +755,14 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>This method effectively computes <c><paramref name="destination" />[i] = MathF.MinMagnitude(<paramref name="x" />[i], <paramref name="y" />[i])</c>.</remarks>
         /// <remarks>
         /// <para>
         /// The determination of the maximum magnitude matches the IEEE 754:2019 `minimumMagnitude` function. If either value is equal to <see cref="float.NaN"/>,
         /// that value is stored as the result. If the two values have the same magnitude and one is positive and the other is negative,
         /// the negative value is considered to have the smaller magnitude.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="y"/> may overlap arbitrarily, but they may only overlap with <paramref name="destination" />
-        /// if the input and the output span begin at the same memory location; otherwise, behavior is undefined. It is safe, for example,
-        /// to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -815,14 +778,11 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <paramref name="x" />[i] * <paramref name="y" />[i]</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="y"/> may overlap arbitrarily, but they may only overlap with <paramref name="destination" />
-        /// if the input and the output span begin at the same memory location; otherwise, behavior is undefined. It is safe, for example,
-        /// to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -836,14 +796,11 @@ namespace System.Numerics.Tensors
         /// <param name="y">The second tensor, represented as a scalar.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <paramref name="x" />[i] * <paramref name="y" /></c>.
         /// It corresponds to the <c>scal</c> method defined by <c>BLAS1</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -859,21 +816,17 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" /> and length of <paramref name="addend" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="addend"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = (<paramref name="x" />[i] * <paramref name="y" />[i]) + <paramref name="addend" />[i]</c>.
         /// </para>
         /// <para>
-        /// <paramref name="x"/>, <paramref name="y"/>, and <paramref name="addend"/> may overlap arbitrarily, but they may only overlap with
-        /// <paramref name="destination" /> if the input and the output span begin at the same memory location; otherwise, behavior is undefined.
-        /// It is safe, for example, to use the same span for any subset of the span parameters, such as to perform an in-place operation.
-        /// </para>
-        /// <para>
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
-
-
         public static void MultiplyAdd(ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> addend, Span<float> destination) =>
             InvokeSpanSpanSpanIntoSpan<MultiplyAddOperator>(x, y, addend, destination);
 
@@ -884,15 +837,12 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = (<paramref name="x" />[i] * <paramref name="y" />[i]) + <paramref name="addend" /></c>.
         /// It corresponds to the <c>axpy</c> method defined by <c>BLAS1</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="y"/> may overlap arbitrarily, but they may only overlap with
-        /// <paramref name="destination" /> if the input and the output span begin at the same memory location; otherwise, behavior is undefined.
-        /// It is safe, for example, to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -908,14 +858,11 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="addend" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="addend"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = (<paramref name="x" />[i] * <paramref name="y" />) + <paramref name="addend" />[i]</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="addend"/> may overlap arbitrarily, but they may only overlap with
-        /// <paramref name="destination" /> if the input and the output span begin at the same memory location; otherwise, behavior is undefined.
-        /// It is safe, for example, to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -928,13 +875,10 @@ namespace System.Numerics.Tensors
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = -<paramref name="x" />[i]</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// If any of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -1063,13 +1007,10 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="x" /> must not be empty.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = 1f / (1f + <see cref="MathF" />.Exp(-<paramref name="x" />[i]))</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -1088,6 +1029,8 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+
             for (int i = 0; i < x.Length; i++)
             {
                 destination[i] = 1f / (1f + MathF.Exp(-x[i]));
@@ -1098,13 +1041,10 @@ namespace System.Numerics.Tensors
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <see cref="MathF" />.Sinh(<paramref name="x" />[i])</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// If a value is equal to <see cref="float.NegativeInfinity"/>, <see cref="float.PositiveInfinity"/>, or <see cref="float.NaN"/>,
@@ -1125,6 +1065,8 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+
             for (int i = 0; i < x.Length; i++)
             {
                 destination[i] = MathF.Sinh(x[i]);
@@ -1136,14 +1078,11 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
         /// <exception cref="ArgumentException"><paramref name="x" /> must not be empty.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes a sum of <c>MathF.Exp(x[i])</c> for all elements in <paramref name="x"/>.
         /// It then effectively computes <c><paramref name="destination" />[i] = MathF.Exp(<paramref name="x" />[i]) / sum</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -1161,6 +1100,8 @@ namespace System.Numerics.Tensors
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
+
+            ValidateInputOutputSpanNonOverlapping(x, destination);
 
             float expSum = 0f;
 
@@ -1181,14 +1122,11 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <paramref name="x" />[i] - <paramref name="y" />[i]</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> and <paramref name="y"/> may overlap arbitrarily, but they may only overlap with
-        /// <paramref name="destination" /> if the input and the output span begin at the same memory location; otherwise, behavior is undefined.
-        /// It is safe, for example, to use the same span for any subset of the span parameters, such as to perform an in-place operation.
         /// </para>
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -1202,13 +1140,10 @@ namespace System.Numerics.Tensors
         /// <param name="y">The second tensor, represented as a scalar.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <paramref name="x" />[i] - <paramref name="y" /></c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
@@ -1278,13 +1213,10 @@ namespace System.Numerics.Tensors
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
         /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
         /// <remarks>
         /// <para>
         /// This method effectively computes <c><paramref name="destination" />[i] = <see cref="MathF" />.Tanh(<paramref name="x" />[i])</c>.
-        /// </para>
-        /// <para>
-        /// <paramref name="x"/> may overlap with <paramref name="destination" />, but only if the input and the output span begin at the same memory
-        /// location; otherwise, behavior is undefined. It is safe, for example, to use the same span for all span parameters.
         /// </para>
         /// <para>
         /// If a value is equal to <see cref="float.NegativeInfinity"/>, the corresponding destination location is set to -1.
@@ -1306,9 +1238,22 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+
             for (int i = 0; i < x.Length; i++)
             {
                 destination[i] = MathF.Tanh(x[i]);
+            }
+        }
+
+        /// <summary>Throws an exception if the <paramref name="input"/> and <paramref name="output"/> spans overlap and don't begin at the same memory location.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ValidateInputOutputSpanNonOverlapping(ReadOnlySpan<float> input, Span<float> output)
+        {
+            if (!Unsafe.AreSame(ref MemoryMarshal.GetReference(input), ref MemoryMarshal.GetReference(output)) &&
+                input.Overlaps(output))
+            {
+                ThrowHelper.ThrowArgument_InputAndDestinationSpanMustNotOverlap();
             }
         }
 
