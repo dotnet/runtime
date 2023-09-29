@@ -16,7 +16,6 @@ namespace Unity.CoreCLRHelpers;
 /// </summary>
 static class UnsafeExtensions
 {
-    private static readonly bool s_ReturnHandlesFromAPI = CoreCLRHost.UseRealGC() || CoreCLRHost.ReturnHandlesFromAPI();
     public static object ToManagedRepresentation(this nint intPtr)
     {
         var value = intPtr;
@@ -31,7 +30,7 @@ static class UnsafeExtensions
 
     public static nint ToNativeRepresentation(this object obj)
     {
-        if (s_ReturnHandlesFromAPI)
+        if (CoreCLRHost.ReturnHandlesFromAPI())
         {
             var handle = (nuint)(nint)(IntPtr)GCHandle.Alloc(obj);
             handle |= kHandleMask;

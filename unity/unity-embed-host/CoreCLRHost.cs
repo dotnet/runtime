@@ -27,6 +27,8 @@ static unsafe partial class CoreCLRHost
     static readonly Dictionary<Assembly, AssemblyCachedInfo> k_AssemblyCache = new ();
     static readonly Dictionary<string, AssemblyCachedInfo> k_AssemblyNameCache = new ();
 
+    private static bool _returnHandlesFromAPI;
+
     class AssemblyCachedInfo : IDisposable
     {
         public AssemblyCachedInfo(Assembly assembly)
@@ -61,7 +63,7 @@ static unsafe partial class CoreCLRHost
         if (Marshal.SizeOf<HostStructNative>() != structSizeNative)
             throw new Exception($"Invalid struct size for {nameof(HostStructNative)}, Managed was {Marshal.SizeOf<HostStructNative>()} and Native was {structSizeNative}");
 
-        InitState();
+        InitState(functionStructNative->return_handles_from_api());
 
         _hostStructNative = functionStructNative;
 
@@ -70,12 +72,14 @@ static unsafe partial class CoreCLRHost
         return 0;
     }
 
-    internal static void InitState()
+    internal static void InitState(bool returnHandlesFromAPI)
     {
         alcWrapper = new ALCWrapper();
         assemblyHandleField = typeof(Assembly).Assembly.GetType("System.Reflection.RuntimeAssembly").GetField("m_assembly", BindingFlags.Instance | BindingFlags.NonPublic);
         if (assemblyHandleField == null)
             throw new Exception("Failed to find RuntimeAssembly.m_assembly field.");
+
+        _returnHandlesFromAPI = returnHandlesFromAPI;
     }
 
     static partial void InitHostStruct(HostStruct* functionStruct);
@@ -733,14 +737,11 @@ static unsafe partial class CoreCLRHost
             _hostStructNative->unity_log(p);
     }
 
-    internal static bool UseRealGC()
-    {
-        return _hostStructNative->use_real_gc();
-    }
+    internal static bool ReturnHandlesFromAPI() => _returnHandlesFromAPI;
 
-    internal static bool ReturnHandlesFromAPI()
+    internal static void OverrideNativeOptions(bool returnHandlesFromAPI)
     {
-        return _hostStructNative->return_handles_from_api();
+        _returnHandlesFromAPI = returnHandlesFromAPI;
     }
 
     private static StringPtr StringToPtr(string s)
