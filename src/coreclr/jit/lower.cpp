@@ -7802,6 +7802,306 @@ void Lowering::ContainCheckBitCast(GenTree* node)
     }
 }
 
+struct StoreCoalescingData
+{
+    var_types            type;
+    GenTreeLclVarCommon* base;
+    GenTreeLclVarCommon* index;
+    uint32_t             scale;
+    int                  offset;
+    GenTree*             val;
+};
+
+//------------------------------------------------------------------------
+// GetStoreCoalescingData: given a STOREIND node, get the data needed to perform
+//    store coalescing including pointer to the previous node.
+//
+// Arguments:
+//    ind      - the STOREIND node
+//    data     - [OUT] the data needed for store coalescing
+//    prevTree - [OUT] the pointer to the previous node
+//
+// Return Value:
+//    true if the data was successfully retrieved, false otherwise.
+//    Basically, false means that we definitely can't do store coalescing.
+//
+static bool GetStoreCoalescingData(GenTreeStoreInd* ind, StoreCoalescingData* data, GenTree** prevTree)
+{
+    // Don't merge volatile stores.
+    if (ind->IsVolatile())
+    {
+        return false;
+    }
+
+    // Data has to be constant. We might allow locals in the future.
+    if (!ind->Data()->IsCnsIntOrI())
+    {
+        return false;
+    }
+
+    // We will need to walk previous trees (up to 4 nodes in a store)
+    // We already know that we have value and addr nodes, LEA might add more.
+    const int MaxTrees        = 4;
+    GenTree*  trees[MaxTrees] = {ind->Data(), ind->Addr(), nullptr, nullptr};
+    int       treesCount      = 2;
+
+    data->type = ind->TypeGet();
+    data->val  = ind->Data();
+    if (ind->Addr()->OperIs(GT_LEA))
+    {
+        GenTree* base  = ind->Addr()->AsAddrMode()->Base();
+        GenTree* index = ind->Addr()->AsAddrMode()->Index();
+        if ((base == nullptr) || !base->IsLocal())
+        {
+            // Base must be a local. It's possible for it to be nullptr when index is not null,
+            // but let's ignore such cases.
+            return false;
+        }
+        if ((index != nullptr) && !index->IsLocal())
+        {
+            // Index is either nullptr or a local.
+            return false;
+        }
+        data->base   = base == nullptr ? nullptr : base->AsLclVarCommon();
+        data->index  = index == nullptr ? nullptr : index->AsLclVarCommon();
+        data->scale  = ind->Addr()->AsAddrMode()->GetScale();
+        data->offset = ind->Addr()->AsAddrMode()->Offset();
+
+        // Add index and base to the list of trees.
+        trees[treesCount++] = base;
+        if (index != nullptr)
+        {
+            trees[treesCount++] = index;
+        }
+    }
+    else if (ind->Addr()->OperIsLocal())
+    {
+        // Address is just a local, no offset, scale is 1
+        data->base   = ind->Addr()->AsLclVarCommon();
+        data->index  = nullptr;
+        data->scale  = 1;
+        data->offset = 0;
+    }
+    else
+    {
+        // Address is not LEA or local.
+        return false;
+    }
+
+    // We expect all the trees to be found in gtPrev (we don't care about the order, just make sure we don't have
+    // unexpected trees in-between)
+    GenTree* prev = ind->gtPrev;
+    for (int i = 0; i < treesCount; i++)
+    {
+        bool found = false;
+
+        // We don't need any O(1) lookups here, the array is too small
+        for (int j = 0; j < MaxTrees; j++)
+        {
+            if (trees[j] == prev)
+            {
+                trees[j] = nullptr;
+                found    = true;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            // Unexpected node in-between.
+            return false;
+        }
+        prev = prev->gtPrev;
+    }
+
+    *prevTree = prev;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// CanBeCoalesced: given two store coalescing data,
+//    determine whether they can be coalesced.
+//
+// Arguments:
+//    data1 - the first store coalescing data
+//    data2 - the second store coalescing data (order is not important)
+//
+// Return Value:
+//    true if the data can be coalesced, false otherwise.
+//
+static bool CanBeCoalesced(StoreCoalescingData* data1, StoreCoalescingData* data2)
+{
+    // base, index, scale and type all have to be the same
+    if ((data1->scale != data2->scale) || (data1->type != data2->type) || !GenTree::Compare(data1->base, data2->base) ||
+        !GenTree::Compare(data1->index, data2->index))
+    {
+        return false;
+    }
+
+    // val has to be a constant
+    if (!data1->val->OperIsConst() && !data2->val->OperIsConst())
+    {
+        return false;
+    }
+
+    // Offset has to match the size of the type
+    // We don't support the same or overlapping offsets.
+    if (abs(data1->offset - data2->offset) != (int)genTypeSize(data1->type))
+    {
+        return false;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
+// LowerCoalescingWithPreviousInd: Try to coalesce a STOREIND with previous STOREINDs. Example:
+//
+//    *  STOREIND  int
+//    +--*  LCL_VAR   byref  V00
+//    \--*  CNS_INT   int    0x1
+//
+//    *  STOREIND  int
+//    +--*  LEA(b+4)  byref
+//    |  \--*  LCL_VAR   byref  V00
+//    \--*  CNS_INT   int    0x2
+//
+//    We can merge these two into into a single store of 8 bytes with (0x1 | (0x2 << 32)) as the value
+//
+//    *  STOREIND  long
+//    +--*  LEA(b+0)  byref
+//    |  \--*  LCL_VAR   byref  V00
+//    \--*  CNS_INT   long  0x200000001
+//
+// Arguments:
+//    ind - the current STOREIND node
+//
+void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
+{
+    if (!comp->opts.OptimizationEnabled())
+    {
+        return;
+    }
+
+    // For now, we require the current STOREIND to have LEA (previous store may not have it)
+    // TODO-CQ: Remove this restriction, we might even not need any LEAs at all for the final coalesced store.
+    if (!ind->Addr()->OperIs(GT_LEA))
+    {
+        return;
+    }
+
+    // This check is not really needed, just for better throughput.
+    // We only support these types for the initial version.
+    if (ind->TypeIs(TYP_SHORT, TYP_USHORT, TYP_INT))
+    {
+        return;
+    }
+
+    StoreCoalescingData currData;
+    StoreCoalescingData prevData;
+    GenTreeStoreInd*    prevInd;
+    GenTree*            prevTree;
+
+    // Get coalescing data for the current STOREIND
+    if (GetStoreCoalescingData(ind, &currData, &prevTree))
+    {
+        while (prevTree != nullptr && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
+        {
+            prevTree = prevTree->gtPrev;
+        }
+
+        if ((prevTree == nullptr) || !prevTree->OperIs(GT_STOREIND))
+        {
+            return;
+        }
+        prevInd = prevTree->AsStoreInd();
+
+        // Get coalescing data for the previous STOREIND
+        if (GetStoreCoalescingData(prevInd->AsStoreInd(), &prevData, &prevTree) && (prevTree != nullptr))
+        {
+            // Check whether we can coalesce the two stores
+            if (CanBeCoalesced(&prevData, &currData))
+            {
+                var_types oldType = ind->TypeGet();
+                var_types newType;
+                switch (oldType)
+                {
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                        newType = TYP_INT;
+                        break;
+
+#ifdef TARGET_64BIT
+                    case TYP_INT:
+                        newType = TYP_LONG;
+                        break;
+#endif
+
+                    // TODO: BYTE, SIMD
+
+                    default:
+                        return;
+                }
+
+                // Delete previous STOREIND
+                BlockRange().Remove(prevTree->gtNext, prevInd);
+
+                // We know it's always LEA for now
+                GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
+
+                // Take the smallest offset
+                addr->SetOffset(min(prevData.offset, currData.offset));
+
+                // Make type twice bigger
+                ind->gtType = newType;
+
+                // We currently only support constants for val
+                assert(prevData.val->IsCnsIntOrI() && currData.val->IsCnsIntOrI());
+
+                size_t lowerCns = (size_t)prevData.val->AsIntCon()->IconValue();
+                size_t upperCns = (size_t)currData.val->AsIntCon()->IconValue();
+
+                ind->Data()->gtType = newType;
+
+                // TP: if both are zero - we're done.
+                if ((lowerCns | upperCns) == 0)
+                {
+                    JITDUMP("Coalesced two stores into a single store with value 0\n");
+                }
+                else
+                {
+                    // if the previous store was at a higher address, swap the constants
+                    if (prevData.offset > currData.offset)
+                    {
+                        std::swap(lowerCns, upperCns);
+                    }
+
+                    // Trim the constants to the size of the type, e.g. for TYP_SHORT and TYP_USHORT
+                    // the mask will be 0xFFFF, for TYP_INT - 0xFFFFFFFF.
+                    size_t mask = ~0 >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_IN_BYTE;
+                    lowerCns &= mask;
+                    upperCns &= mask;
+
+                    ssize_t val = (ssize_t)(lowerCns | (upperCns << (genTypeSize(oldType) * BITS_IN_BYTE)));
+                    JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
+
+                    // It's not expected to be contained yet, but just in case...
+                    ind->Data()->ClearContained();
+                    ind->Data()->AsIntCon()->gtIconVal = val;
+                }
+
+                // Now check whether we can coalesce the new store with the previous one, e.g. we had:
+                //
+                //   STOREIND(int)
+                //   STOREIND(short)
+                //   STOREIND(short)
+                //
+                // so we can coalesce the whole thing into a single store of 8 bytes.
+                LowerCoalescingWithPreviousInd(ind);
+            }
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // LowerStoreIndirCommon: a common logic to lower StoreIndir.
 //
@@ -7842,6 +8142,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
         }
 #endif
 
+        LowerCoalescingWithPreviousInd(ind);
         LowerStoreIndir(ind);
     }
 }
