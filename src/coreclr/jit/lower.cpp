@@ -8035,10 +8035,10 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
                 var_types newType;
                 switch (oldType)
                 {
-// case TYP_SHORT:
-// case TYP_USHORT:
-//    newType = TYP_INT;
-//    break;
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                        newType = TYP_INT;
+                        break;
 
 #ifdef TARGET_64BIT
                     case TYP_INT:
