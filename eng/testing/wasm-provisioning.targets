@@ -174,6 +174,8 @@ export __SCRIPT_DIR=%24( cd -- "%24( dirname -- "%24{BASH_SOURCE[0]}" )" &amp;> 
 
     <WriteLinesToFile Lines="$(_V8Script)" File="$(V8BinaryPath)" Overwrite="true" />
     <Exec Command="chmod +x $(V8BinaryPath) $(V8Dir)/d8" Condition="$([MSBuild]::IsOSPlatform('linux'))" />
+
+    <Touch Files="$(V8StampFile)" AlwaysCreate="true" />
   </Target>
 
   <Target Name="DownloadAndInstallFirefox"
