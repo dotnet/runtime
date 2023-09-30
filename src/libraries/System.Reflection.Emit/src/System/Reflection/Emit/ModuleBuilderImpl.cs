@@ -98,7 +98,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        internal void AppendMetadata()
+        internal void AppendMetadata(MethodBodyStreamEncoder methodBodyEncoder)
         {
             // Add module metadata
             ModuleDefinitionHandle moduleHandle = _metadataBuilder.AddModule(
@@ -161,7 +161,7 @@ namespace System.Reflection.Emit
                 }
 
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
-                WriteMethods(typeBuilder, genericParams);
+                WriteMethods(typeBuilder, genericParams, methodBodyEncoder);
                 WriteFields(typeBuilder);
             }
 
@@ -180,11 +180,18 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void WriteMethods(TypeBuilderImpl typeBuilder, List<GenericTypeParameterBuilderImpl> genericParams)
+        private void WriteMethods(TypeBuilderImpl typeBuilder, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
         {
             foreach (MethodBuilderImpl method in typeBuilder._methodDefinitions)
             {
-                MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), _nextParameterRowId);
+                int offset = -1;
+                ILGeneratorImpl? il = method.ILGeneratorImpl;
+                if (!method.IsAbstract && il != null)
+                {
+                    offset = AddMethodBody(method, il, methodBodyEncoder);
+                }
+
+                MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), offset, _nextParameterRowId);
                 WriteCustomAttributes(method._customAttributes, methodHandle);
                 _nextMethodDefRowId++;
 
@@ -229,6 +236,14 @@ namespace System.Reflection.Emit
                 }
             }
         }
+
+        private static int AddMethodBody(MethodBuilderImpl method, ILGeneratorImpl il, MethodBodyStreamEncoder methodBodyEncoder) =>
+            methodBodyEncoder.AddMethodBody(
+                instructionEncoder: il.Instructions,
+                maxStack: 8, // TODO
+                localVariablesSignature: default, // TODO
+                attributes: method.InitLocals ? MethodBodyAttributes.InitLocals : MethodBodyAttributes.None,
+                hasDynamicStackAllocation: il.HasDynamicStackAllocation);
 
         private void WriteFields(TypeBuilderImpl typeBuilder)
         {
@@ -348,13 +363,13 @@ namespace System.Reflection.Emit
                 fieldList: MetadataTokens.FieldDefinitionHandle(fieldToken),
                 methodList: MetadataTokens.MethodDefinitionHandle(methodToken));
 
-        private MethodDefinitionHandle AddMethodDefinition(MethodBuilderImpl method, BlobBuilder methodSignature, int parameterToken) =>
+        private MethodDefinitionHandle AddMethodDefinition(MethodBuilderImpl method, BlobBuilder methodSignature, int offset, int parameterToken) =>
             _metadataBuilder.AddMethodDefinition(
                 attributes: method.Attributes,
                 implAttributes: method.GetMethodImplementationFlags(),
                 name: _metadataBuilder.GetOrAddString(method.Name),
                 signature: _metadataBuilder.GetOrAddBlob(methodSignature),
-                bodyOffset: -1, // No body supported yet
+                bodyOffset: offset,
                 parameterList: MetadataTokens.ParameterHandle(parameterToken));
 
         private TypeReferenceHandle AddTypeReference(Type type, AssemblyReferenceHandle parent) =>
