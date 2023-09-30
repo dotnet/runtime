@@ -20192,7 +20192,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     var_types      widenedType;
                     unsigned       widenedSimdSize;
 
-                    if (simdSize == 32 && IsBaselineVector512IsaSupported())
+                    if (simdSize == 32 && IsBaselineVector512IsaSupportedOpportunistically())
                     {
                         if (simdBaseType == TYP_BYTE)
                         {
@@ -20224,7 +20224,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     }
                     else if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                     {
-                        if (IsBaselineVector512IsaSupported())
+                        if (IsBaselineVector512IsaSupportedOpportunistically())
                         {
                             widenIntrinsic = NI_AVX2_ConvertToVector256Int16;
 
