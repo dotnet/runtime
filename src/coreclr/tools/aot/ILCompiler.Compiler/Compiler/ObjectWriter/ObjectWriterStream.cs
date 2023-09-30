@@ -23,7 +23,7 @@ namespace ILCompiler.ObjectWriter
         private int _bufferIndex;
         private int _bufferPosition;
         private long _position;
-        private static byte[] _padding = new byte[16];
+        private byte[] _padding = new byte[16];
 
         public override bool CanRead => true;
 
@@ -159,16 +159,19 @@ namespace ILCompiler.ObjectWriter
 
         public void AppendPadding(int paddingLength)
         {
-            if (_appendBuffer.WrittenCount > 0 || paddingLength > _padding.Length)
+            if (paddingLength > 0)
             {
-                _appendBuffer.GetSpan(paddingLength).Slice(0, paddingLength).Clear();
-                _appendBuffer.Advance(paddingLength);
-                _position += paddingLength;
-                _bufferPosition += paddingLength;
-            }
-            else
-            {
-                AppendData(_padding.AsMemory(0, paddingLength));
+                if (_appendBuffer.WrittenCount > 0 || paddingLength > _padding.Length)
+                {
+                    _appendBuffer.GetSpan(paddingLength).Slice(0, paddingLength).Fill(_padding[0]);
+                    _appendBuffer.Advance(paddingLength);
+                    _position += paddingLength;
+                    _bufferPosition += paddingLength;
+                }
+                else
+                {
+                    AppendData(_padding.AsMemory(0, paddingLength));
+                }
             }
         }
 
