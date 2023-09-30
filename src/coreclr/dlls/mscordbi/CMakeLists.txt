@@ -108,7 +108,7 @@ elseif(CLR_CMAKE_HOST_UNIX)
     if(COMMAND check_linker_flag)
         check_linker_flag(CXX -Wl,--undefined-version LINKER_SUPPORTS_UNDEFINED_VERSION)
         if (LINKER_SUPPORTS_UNDEFINED_VERSION)
-            add_linker_flag(-Wl,--undefined-version)
+            target_link_options(mscordbi PRIVATE -Wl,--undefined-version)
         endif(LINKER_SUPPORTS_UNDEFINED_VERSION)
     endif(COMMAND check_linker_flag)
 
