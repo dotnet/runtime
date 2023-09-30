@@ -8088,7 +8088,7 @@ bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
                 continue;
             }
 
-            if (cur->OperIs(GT_STOREIND, GT_STORE_BLK))
+            if (cur->OperIs(GT_STOREIND, GT_STORE_BLK) && !cur->AsIndir()->IsVolatile())
             {
                 GenTreeIndir*  store     = cur->AsIndir();
                 GenTree*       storeAddr = store->Addr();
