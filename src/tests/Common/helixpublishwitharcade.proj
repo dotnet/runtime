@@ -823,6 +823,7 @@
   <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
     <MergedPayloads Update="@(MergedPayloads)">
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
+      <!-- but these two aren't used? -->
       <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).apk</ApkPath>
       <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
     </MergedPayloads>
@@ -868,7 +869,7 @@
 
   <Target Name="PrepareMergedHelixWorkItems" BeforeTargets="CoreTest">
     <ItemGroup>
-      <HelixWorkItem Include="%(MergedPayloads.PayloadGroup)" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true' and '$(StripeMergedStressWorkItems)'!= 'true'">
+      <HelixWorkItem Include="%(MergedPayloads.PayloadGroup)" Condition="('$(TargetHasHelixXHarnessSdkSupport)' != 'true' and '$(StripeMergedStressWorkItems)'!= 'true') or '$(TargetsBrowser)' == 'true'">
         <PayloadDirectory>%(MergedPayloads.PayloadDirectory)</PayloadDirectory>
         <Command>%(MergedPayloads.MergedTestHelixCommand)</Command>
         <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
@@ -893,9 +894,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- dupe this.. and then change the commands for wasm case -->
     <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
-      <Command>$(_WorkaroundForNuGetMigrationsForPrepending) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
+      <Command                                   >$(_WorkaroundForNuGetMigrationsForPrepending) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">$(_WorkaroundForNuGetMigrationsForPrepending) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
       <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
