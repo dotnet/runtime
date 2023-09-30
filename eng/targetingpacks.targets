@@ -113,9 +113,8 @@
     <ItemGroup>
       <PackageDownload Remove="@(PackageDownload)"
                        Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
-      <!-- Always remove the PackageReference items as some of the packages are only via PackageReference -->
-      <PackageReference Remove="@(PackageReference)"
-                        Condition="$([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
+      <!-- Always remove the PackageReference items as some of the packages are consumed via PackageReference only. -->
+      <PackageReference Remove="@(PackageReference->WithMetadataValue('Identity', 'Microsoft.DotNet.ILCompiler')->WithMetadataValue('IsImplicitlyDefined', 'true'))" />
     </ItemGroup>
   </Target>
 
