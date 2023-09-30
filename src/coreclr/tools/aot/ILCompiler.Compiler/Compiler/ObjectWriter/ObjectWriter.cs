@@ -36,7 +36,7 @@ namespace ILCompiler.ObjectWriter
         private byte _insPaddingByte;
 
         // Standard sections
-        private Dictionary<(string, string), int> _sectionNameToSectionIndex = new();
+        private Dictionary<string, int> _sectionNameToSectionIndex = new();
         private List<ObjectWriterStream> _sectionIndexToStream = new();
         private List<List<SymbolicRelocation>> _sectionIndexToRelocations = new();
 
@@ -79,14 +79,17 @@ namespace ILCompiler.ObjectWriter
             int sectionIndex;
             ObjectWriterStream sectionStream;
 
-            if (!_sectionNameToSectionIndex.TryGetValue((section.Name, section.ComdatName), out sectionIndex))
+            if (section.ComdatName is not null || !_sectionNameToSectionIndex.TryGetValue(section.Name, out sectionIndex))
             {
                 sectionStream = new ObjectWriterStream(section.Type == SectionType.Executable ? _insPaddingByte : (byte)0);
                 CreateSection(section, sectionStream);
-                sectionIndex = _sectionNameToSectionIndex.Count;
-                _sectionNameToSectionIndex.Add((section.Name, section.ComdatName), sectionIndex);
+                sectionIndex = _sectionIndexToStream.Count;
                 _sectionIndexToStream.Add(sectionStream);
                 _sectionIndexToRelocations.Add(new());
+                if (section.ComdatName is null)
+                {
+                    _sectionNameToSectionIndex.Add(section.Name, sectionIndex);
+                }
             }
             else
             {
