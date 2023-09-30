@@ -7991,7 +7991,7 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
 
     // This check is not really needed, just for better throughput.
     // We only support these types for the initial version.
-    if (ind->TypeIs(TYP_SHORT, TYP_USHORT, TYP_INT))
+    if (!ind->TypeIs(TYP_SHORT, TYP_USHORT, TYP_INT))
     {
         return;
     }
@@ -8025,10 +8025,10 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
                 var_types newType;
                 switch (oldType)
                 {
-                    case TYP_SHORT:
-                    case TYP_USHORT:
-                        newType = TYP_INT;
-                        break;
+                    //case TYP_SHORT:
+                    //case TYP_USHORT:
+                    //    newType = TYP_INT;
+                    //    break;
 
 #ifdef TARGET_64BIT
                     case TYP_INT:
