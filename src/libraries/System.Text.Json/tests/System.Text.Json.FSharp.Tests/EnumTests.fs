@@ -85,4 +85,5 @@ let ``Successful Deserialize Numeric label Of Enum When Allowing Integer Values`
 [<Fact>]
 let ``Successful Deserialize Numeric label Of Enum But as Underlying value When Allowing Integer Values`` () =
     let actual = JsonSerializer.Deserialize<NumericLabelEnum>(enumWithNonMatchedUnderlyingNumericValueJsonStr, options)
-    Assert.NotEqual(LanguagePrimitives.EnumOfValue 4, actual)
+    Assert.NotEqual(NumericLabelEnum.``3``, actual)
+    Assert.Equal(LanguagePrimitives.EnumOfValue 3, actual)
