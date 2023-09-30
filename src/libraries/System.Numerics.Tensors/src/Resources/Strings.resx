@@ -126,4 +126,7 @@
   <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
     <value>Input span arguments must all have the same length.</value>
   </data>
+  <data name="Argument_InputAndDestinationSpanMustNotOverlap" xml:space="preserve">
+    <value>The destination span may only overlap with an input span if the two spans start at the same memory location.</value>
+  </data>
 </root>

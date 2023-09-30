@@ -133,8 +133,8 @@ private:
     // Call Lowering
     // ------------------------------
     GenTree* LowerCall(GenTree* call);
-    GenTree* LowerCallMemmove(GenTreeCall* call);
-    GenTree* LowerCallMemcmp(GenTreeCall* call);
+    bool LowerCallMemmove(GenTreeCall* call, GenTree** next);
+    bool LowerCallMemcmp(GenTreeCall* call, GenTree** next);
     void LowerCFGCall(GenTreeCall* call);
     void MoveCFGCallArg(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
