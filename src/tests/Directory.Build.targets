@@ -35,7 +35,7 @@
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>
-    <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)) or '$(RequiresProcessIsolation)' == 'true'">Exe</OutputType>
+    <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)) or ('$(RequiresProcessIsolation)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary')">Exe</OutputType>
 
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">SharedLibrary</CLRTestKind>
