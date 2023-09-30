@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class EnumConverter<T> : JsonPrimitiveConverter<T>
+    internal sealed partial class EnumConverter<T> : JsonPrimitiveConverter<T>
         where T : struct, Enum
     {
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
@@ -42,6 +42,13 @@ namespace System.Text.Json.Serialization.Converters
         // Since multiple threads can add to the cache, a few more values might be added.
         private const int NameCacheSizeSoftLimit = 64;
         private const string NumericPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
+
+#if NETCOREAPP
+        [GeneratedRegex(NumericPattern)]
+        private static partial Regex NumericRegex();
+#else
+        private static readonly Regex s_numericRegex = new(NumericPattern);
+#endif
 
         public override bool CanConvert(Type type)
         {
@@ -375,7 +382,7 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success;
             T result;
-            if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0 || !Regex.IsMatch(source, NumericPattern))
+            if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0 || !NumericRegex().IsMatch(source))
             {
                 // Try parsing case sensitive first
                 success = Enum.TryParse(source, out result) || Enum.TryParse(source, ignoreCase: true, out result);
@@ -398,7 +405,7 @@ namespace System.Text.Json.Serialization.Converters
 #else
         private bool TryParseEnumCore(string? enumString, JsonSerializerOptions _, out T value)
         {
-            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0 && Regex.IsMatch(enumString, NumericPattern))
+            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0 && s_numericRegex.IsMatch(enumString))
             {
                 value = default;
                 return false;
