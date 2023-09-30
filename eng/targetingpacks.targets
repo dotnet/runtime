@@ -42,7 +42,7 @@
                              LatestRuntimeFrameworkVersion="$(ProductVersion)"
                              RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
                              RuntimePackNamePatterns="$(LocalFrameworkOverrideName).Runtime.**RID**"
-                             RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;linux-ppc64le"
+                             RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;maccatalyst-x64;maccatalyst-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;freebsd-x64;freebsd-arm64;linux-ppc64le"
                              TargetFramework="$(NetCoreAppCurrent)"
                              TargetingPackName="$(LocalFrameworkOverrideName).Ref"
                              TargetingPackVersion="$(ProductVersion)"
@@ -52,7 +52,7 @@
                       RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
                       LatestRuntimeFrameworkVersion="$(ProductVersion)"
                       RuntimePackNamePatterns="$(LocalFrameworkOverrideName).Runtime.Mono.**RID**"
-                      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;browser-wasm;ios-arm64;ios-arm;iossimulator-arm64;iossimulator-x64;iossimulator-x86;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-x64;maccatalyst-arm64;android-arm64;android-arm;android-x64;android-x86"
+                      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;browser-wasm;wasi-wasm;ios-arm64;ios-arm;iossimulator-arm64;iossimulator-x64;iossimulator-x86;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-x64;maccatalyst-arm64;android-arm64;android-arm;android-x64;android-x86"
                       RuntimePackLabels="Mono"
                       Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and '@(KnownRuntimePack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)')->AnyHaveMetadataValue('RuntimePackLabels', 'Mono'))' != 'true'" />
     <KnownRuntimePack Include="$(LocalFrameworkOverrideName)"
@@ -67,7 +67,7 @@
                          ILCompilerPackNamePattern="runtime.**RID**.Microsoft.DotNet.ILCompiler"
                          TargetFramework="$(NetCoreAppCurrent)"
                          ILCompilerPackVersion="$(ProductVersion)"
-                         ILCompilerRuntimeIdentifiers="linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;win-arm64;win-x64;osx-x64;osx-arm64"
+                         ILCompilerRuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm64;win-x86"
                          Condition="'$(UseLocalILCompilerPack)' == 'true' and '@(KnownILCompilerPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
     <KnownCrossgen2Pack Include="$(LocalFrameworkOverrideName).Crossgen2"
                         TargetFramework="$(NetCoreAppCurrent)"
