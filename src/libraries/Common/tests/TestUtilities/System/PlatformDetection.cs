@@ -428,6 +428,7 @@ namespace System
                 return Registry.GetValue(key, "ContainerType", defaultValue: null) != null;
             }
 
+            // '/.dockerenv' - is to check if this is running in a codespace
             return (IsLinux && File.Exists("/.dockerenv"));
         }
 
