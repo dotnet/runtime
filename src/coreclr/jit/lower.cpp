@@ -7947,6 +7947,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
 #endif
 }
 
+#ifdef TARGET_ARM64
 static void MarkTree(GenTree* node)
 {
     node->gtLIRFlags |= LIR::Flags::Mark;
@@ -8152,6 +8153,7 @@ bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
     UnmarkTree(indir);
     return true;
 }
+#endif
 
 //------------------------------------------------------------------------
 // TransformUnusedIndirection: change the opcode and the type of the unused indirection.
