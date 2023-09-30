@@ -298,6 +298,8 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
             int i = 0, oneVectorFromEnd;
@@ -354,6 +356,9 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+            ValidateInputOutputSpanNonOverlapping(y, destination);
+
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float yRef = ref MemoryMarshal.GetReference(y);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
@@ -407,6 +412,8 @@ namespace System.Numerics.Tensors
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
+
+            ValidateInputOutputSpanNonOverlapping(x, destination);
 
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
@@ -466,6 +473,10 @@ namespace System.Numerics.Tensors
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
+
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+            ValidateInputOutputSpanNonOverlapping(y, destination);
+            ValidateInputOutputSpanNonOverlapping(z, destination);
 
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float yRef = ref MemoryMarshal.GetReference(y);
@@ -531,6 +542,9 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+            ValidateInputOutputSpanNonOverlapping(y, destination);
+
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float yRef = ref MemoryMarshal.GetReference(y);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
@@ -595,6 +609,9 @@ namespace System.Numerics.Tensors
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
+
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+            ValidateInputOutputSpanNonOverlapping(z, destination);
 
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float zRef = ref MemoryMarshal.GetReference(z);
