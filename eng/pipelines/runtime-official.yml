@@ -551,7 +551,7 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            buildArgs: -s tools+libs -allConfigurations /p:TestAssemblies=false /p:TestPackages=true
+            buildArgs: -s tools+libs -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
             nameSuffix: Libraries_AllConfigurations
             postBuildSteps:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
