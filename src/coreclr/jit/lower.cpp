@@ -8004,11 +8004,14 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
     // Get coalescing data for the current STOREIND
     if (GetStoreCoalescingData(ind, &currData, &prevTree))
     {
+        // Now we need to find the previous STOREIND,
+        // we can ignore any NOPs or IL_OFFSETs in-between
         while (prevTree != nullptr && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
         {
             prevTree = prevTree->gtPrev;
         }
 
+        // It's not a STOREIND - bail out.
         if ((prevTree == nullptr) || !prevTree->OperIs(GT_STOREIND))
         {
             return;
@@ -8018,6 +8021,13 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
         // Get coalescing data for the previous STOREIND
         if (GetStoreCoalescingData(prevInd->AsStoreInd(), &prevData, &prevTree) && (prevTree != nullptr))
         {
+            LIR::Use use;
+            if (BlockRange().TryGetUse(ind, &use) || BlockRange().TryGetUse(prevInd, &use))
+            {
+                // Both should be unused
+                return;
+            }
+
             // Check whether we can coalesce the two stores
             if (CanBeCoalesced(&prevData, &currData))
             {
@@ -8025,10 +8035,10 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
                 var_types newType;
                 switch (oldType)
                 {
-                    //case TYP_SHORT:
-                    //case TYP_USHORT:
-                    //    newType = TYP_INT;
-                    //    break;
+// case TYP_SHORT:
+// case TYP_USHORT:
+//    newType = TYP_INT;
+//    break;
 
 #ifdef TARGET_64BIT
                     case TYP_INT:
