@@ -195,6 +195,16 @@ namespace ILCompiler.ObjectWriter
         protected override void EmitSymbolTable()
         {
             var definedSymbols = GetDefinedSymbols();
+            var sectionSymbol = new string[_sections.Count];
+
+            foreach (var (symbolName, symbolDefinition) in definedSymbols)
+            {
+                if (symbolDefinition.Value == 0 &&
+                    sectionSymbol[symbolDefinition.SectionIndex] is null)
+                {
+                    sectionSymbol[symbolDefinition.SectionIndex] = symbolName;
+                }
+            }
 
             int sectionIndex = 0;
             foreach (var (sectionHeader, _, _, comdatName) in _sections)
@@ -237,6 +247,17 @@ namespace ILCompiler.ObjectWriter
                             Value = (uint)definingSymbol.Value,
                             SectionIndex = (uint)(1 + definingSymbol.SectionIndex),
                             StorageClass = 2 // IMAGE_SYM_CLASS_EXTERNAL
+                        });
+                    }
+                    else if (sectionSymbol[sectionIndex] is not null)
+                    {
+                        _symbolNameToIndex.Add(sectionSymbol[sectionIndex], (uint)_symbols.Count);
+                        _symbols.Add(new CoffSymbol
+                        {
+                            Name = sectionSymbol[sectionIndex],
+                            Value = 0,
+                            SectionIndex = (uint)(1 + sectionIndex),
+                            StorageClass = 3 // IMAGE_SYM_CLASS_STATIC
                         });
                     }
                 }
@@ -378,8 +399,6 @@ namespace ILCompiler.ObjectWriter
                 Span<byte> tempBuffer = stackalloc byte[4];
                 bool shareSymbol = ShouldShareSymbol((ObjectNode)nodeWithCodeInfo);
 
-                pdataSectionWriter = shareSymbol ? GetOrCreateSection(GetSharedSection(PDataSection, currentSymbolName)) : _pdataSectionWriter;
-
                 for (int i = 0; i < frameInfos.Length; i++)
                 {
                     FrameInfo frameInfo = frameInfos[i];
@@ -397,11 +416,13 @@ namespace ILCompiler.ObjectWriter
                         // and produces errors about duplicate symbols that point into the
                         // associative section, so we are stuck with one section per each
                         // unwind symbol.
-                        xdataSectionWriter = GetOrCreateSection(GetSharedSection(ObjectNodeSection.XDataSection, unwindSymbolName));
+                        xdataSectionWriter = GetOrCreateSection(GetSharedSection(ObjectNodeSection.XDataSection, currentSymbolName));
+                        pdataSectionWriter = GetOrCreateSection(GetSharedSection(PDataSection, currentSymbolName));
                     }
                     else
                     {
                         xdataSectionWriter = _xdataSectionWriter;
+                        pdataSectionWriter = _pdataSectionWriter;
                     }
 
                     // Need to emit the UNWIND_INFO at 4-byte alignment to ensure that the
