@@ -7991,7 +7991,7 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
 
     // This check is not really needed, just for better throughput.
     // We only support these types for the initial version.
-    if (!ind->TypeIs(TYP_SHORT, TYP_USHORT, TYP_INT))
+    if (!ind->TypeIs(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT))
     {
         return;
     }
@@ -8035,6 +8035,11 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
                 var_types newType;
                 switch (oldType)
                 {
+                    case TYP_BYTE:
+                    case TYP_UBYTE:
+                        newType = TYP_USHORT;
+                        break;
+
                     case TYP_SHORT:
                     case TYP_USHORT:
                         newType = TYP_INT;
@@ -8046,7 +8051,7 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
                         break;
 #endif
 
-                    // TODO: BYTE, SIMD
+                    // TODO: SIMD
 
                     default:
                         return;
@@ -8087,16 +8092,16 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
 
                     // Trim the constants to the size of the type, e.g. for TYP_SHORT and TYP_USHORT
                     // the mask will be 0xFFFF, for TYP_INT - 0xFFFFFFFF.
-                    size_t mask = ~0 >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_IN_BYTE;
+                    size_t mask = ~0UL >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_IN_BYTE;
                     lowerCns &= mask;
                     upperCns &= mask;
 
-                    ssize_t val = (ssize_t)(lowerCns | (upperCns << (genTypeSize(oldType) * BITS_IN_BYTE)));
+                    size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_IN_BYTE)));
                     JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
 
                     // It's not expected to be contained yet, but just in case...
                     ind->Data()->ClearContained();
-                    ind->Data()->AsIntCon()->gtIconVal = val;
+                    ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
                 }
 
                 // Now check whether we can coalesce the new store with the previous one, e.g. we had:
