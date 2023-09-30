@@ -196,7 +196,7 @@ namespace Internal.Runtime.TypeLoader
                     targetTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                     isDefaultInterfaceMethodImplementation = RuntimeAugments.IsInterface(targetTypeHandle);
 #if GVM_RESOLUTION_TRACE
-                    Debug.WriteLine("    Searching for GVM implementation on targe type = " + RuntimeAugments.GetLastResortString(targetTypeHandle));
+                    Debug.WriteLine("    Searching for GVM implementation on targe type = " + targetTypeHandle.LowLevelToString());
 #endif
                 }
                 else
@@ -211,7 +211,7 @@ namespace Internal.Runtime.TypeLoader
                     RuntimeTypeHandle implementingTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
 #if GVM_RESOLUTION_TRACE
-                    Debug.WriteLine("      -> Current implementing type = " + RuntimeAugments.GetLastResortString(implementingTypeHandle));
+                    Debug.WriteLine("      -> Current implementing type = " + implementingTypeHandle.LowLevelToString());
 #endif
 
                     uint numIfaceSigs = entryParser.GetUnsigned();

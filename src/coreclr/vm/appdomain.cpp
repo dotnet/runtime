@@ -956,7 +956,6 @@ void SystemDomain::Attach()
 
     // Initialize stub managers
     PrecodeStubManager::Init();
-    DelegateInvokeStubManager::Init();
     JumpStubStubManager::Init();
     RangeSectionStubManager::Init();
     ILStubManager::Init();
@@ -1140,7 +1139,7 @@ void SystemDomain::Init()
 
     // At this point m_SystemDirectory should already be canonicalized
     m_BaseLibrary.Append(m_SystemDirectory);
-    if (!m_BaseLibrary.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
+    if (!m_BaseLibrary.EndsWith(SString{ DIRECTORY_SEPARATOR_CHAR_W }))
     {
         m_BaseLibrary.Append(DIRECTORY_SEPARATOR_CHAR_W);
     }
@@ -1381,6 +1380,8 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pWeakReferenceClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCE);
         g_pWeakReferenceOfTClass = CoreLibBinder::GetClass(CLASS__WEAKREFERENCEGENERIC);
 
+        g_pCastHelpers = CoreLibBinder::GetClass(CLASS__CASTHELPERS);
+
     #ifdef FEATURE_COMINTEROP
         if (g_pConfig->IsBuiltInCOMSupported())
         {
@@ -1397,6 +1398,10 @@ void SystemDomain::LoadBaseSystemClasses()
     #ifdef FEATURE_ICASTABLE
         g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);
     #endif // FEATURE_ICASTABLE
+
+#ifdef FEATURE_EH_FUNCLETS
+        g_pEHClass = CoreLibBinder::GetClass(CLASS__EH);
+#endif
 
         // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
         // For more details, see comment in code:JITutil_MonEnterWorker around "__me = GetEEFuncEntryPointMacro(JIT_MonEnter)".
@@ -1546,8 +1551,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
         CLASS__MULTICAST_DELEGATE,
-        CLASS__METHOD_INVOKER,
-        CLASS__CONSTRUCTOR_INVOKER,
+        CLASS__METHODBASEINVOKER,
     };
 
     static bool fInited = false;

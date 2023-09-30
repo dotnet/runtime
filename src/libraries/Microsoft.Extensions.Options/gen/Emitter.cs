@@ -3,8 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Microsoft.Extensions.Options.Generators
 {
@@ -13,16 +17,38 @@ namespace Microsoft.Extensions.Options.Generators
     /// </summary>
     internal sealed class Emitter : EmitterBase
     {
-        private const string StaticValidationAttributeHolderClassName = "__Attributes";
-        private const string StaticValidatorHolderClassName = "__Validators";
         private const string StaticFieldHolderClassesNamespace = "__OptionValidationStaticInstances";
-        private const string StaticValidationAttributeHolderClassFQN = $"global::{StaticFieldHolderClassesNamespace}.{StaticValidationAttributeHolderClassName}";
-        private const string StaticValidatorHolderClassFQN = $"global::{StaticFieldHolderClassesNamespace}.{StaticValidatorHolderClassName}";
         private const string StaticListType = "global::System.Collections.Generic.List";
         private const string StaticValidationResultType = "global::System.ComponentModel.DataAnnotations.ValidationResult";
         private const string StaticValidationAttributeType = "global::System.ComponentModel.DataAnnotations.ValidationAttribute";
 
+        private string _staticValidationAttributeHolderClassName = "__Attributes";
+        private string _staticValidatorHolderClassName = "__Validators";
+        private string _staticValidationAttributeHolderClassFQN;
+        private string _staticValidatorHolderClassFQN;
+        private string _modifier;
+        private string _TryGetValueNullableAnnotation;
+
         private sealed record StaticFieldInfo(string FieldTypeFQN, int FieldOrder, string FieldName, IList<string> InstantiationLines);
+
+        public Emitter(Compilation compilation, bool emitPreamble = true) : base(emitPreamble)
+        {
+            if (((CSharpCompilation)compilation).LanguageVersion >= Microsoft.CodeAnalysis.CSharp.LanguageVersion.CSharp11)
+            {
+                _modifier = "file";
+            }
+            else
+            {
+                _modifier = "internal";
+                string suffix = $"_{GetNonRandomizedHashCode(compilation.SourceModule.Name):X8}";
+                _staticValidationAttributeHolderClassName += suffix;
+                _staticValidatorHolderClassName += suffix;
+            }
+
+            _staticValidationAttributeHolderClassFQN = $"global::{StaticFieldHolderClassesNamespace}.{_staticValidationAttributeHolderClassName}";
+            _staticValidatorHolderClassFQN = $"global::{StaticFieldHolderClassesNamespace}.{_staticValidatorHolderClassName}";
+            _TryGetValueNullableAnnotation = GetNullableAnnotationStringForTryValidateValueToUseInGeneratedCode(compilation);
+        }
 
         public string Emit(
             IEnumerable<ValidatorType> validatorTypes,
@@ -37,10 +63,35 @@ namespace Microsoft.Extensions.Options.Generators
                 GenValidatorType(vt, ref staticValidationAttributesDict, ref staticValidatorsDict);
             }
 
-            GenStaticClassWithStaticReadonlyFields(staticValidationAttributesDict.Values, StaticFieldHolderClassesNamespace, StaticValidationAttributeHolderClassName);
-            GenStaticClassWithStaticReadonlyFields(staticValidatorsDict.Values, StaticFieldHolderClassesNamespace, StaticValidatorHolderClassName);
+            GenStaticClassWithStaticReadonlyFields(staticValidationAttributesDict.Values, StaticFieldHolderClassesNamespace, _staticValidationAttributeHolderClassName);
+            GenStaticClassWithStaticReadonlyFields(staticValidatorsDict.Values, StaticFieldHolderClassesNamespace, _staticValidatorHolderClassName);
 
             return Capture();
+        }
+
+        /// <summary>
+        /// Returns the nullable annotation string to use in the code generation according to the first parameter of
+        /// <see cref="System.ComponentModel.DataAnnotations.Validator.TryValidateValue(object, ValidationContext, ICollection{ValidationResult}, IEnumerable{ValidationAttribute})"/> is nullable annotated.
+        /// </summary>
+        /// <param name="compilation">The <see cref="Compilation"/> to consider for analysis.</param>
+        /// <returns>"!" if the first parameter is not nullable annotated, otherwise an empty string.</returns>
+        /// <remarks>
+        /// In .NET 8.0 we have changed the nullable annotation on first parameter of the method cref="System.ComponentModel.DataAnnotations.Validator.TryValidateValue(object, ValidationContext, ICollection{ValidationResult}, IEnumerable{ValidationAttribute})"/>
+        /// The source generator need to detect if we need to append "!" to the first parameter of the method call when running on down-level versions.
+        /// </remarks>
+        private static string GetNullableAnnotationStringForTryValidateValueToUseInGeneratedCode(Compilation compilation)
+        {
+            INamedTypeSymbol? validatorTypeSymbol = compilation.GetBestTypeByMetadataName("System.ComponentModel.DataAnnotations.Validator");
+            if (validatorTypeSymbol is not null)
+            {
+                ImmutableArray<ISymbol> members = validatorTypeSymbol.GetMembers("TryValidateValue");
+                if (members.Length == 1 && members[0] is IMethodSymbol tryValidateValueMethod)
+                {
+                    return tryValidateValueMethod.Parameters[0].NullableAnnotation == NullableAnnotation.NotAnnotated ? "!" : string.Empty;
+                }
+            }
+
+            return "!";
         }
 
         private void GenValidatorType(ValidatorType vt, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
@@ -95,7 +146,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutOpenBrace();
 
             OutGeneratedCodeAttribute();
-            OutLn($"internal static class {className}");
+            OutLn($"{_modifier} static class {className}");
             OutOpenBrace();
 
             var staticValidationAttributes = staticFields
@@ -139,7 +190,7 @@ namespace Microsoft.Extensions.Options.Generators
         {
             if (modelToValidate.SelfValidates)
             {
-                OutLn($"builder.AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));");
+                OutLn($"(builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));");
                 OutLn();
             }
         }
@@ -160,8 +211,7 @@ namespace Microsoft.Extensions.Options.Generators
 
             OutLn($"public {(makeStatic ? "static " : string.Empty)}global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, {modelToValidate.Name} options)");
             OutOpenBrace();
-            OutLn($"var baseName = (string.IsNullOrEmpty(name) ? \"{modelToValidate.SimpleName}\" : name) + \".\";");
-            OutLn($"var builder = new global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder();");
+            OutLn($"global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;");
             OutLn($"var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);");
 
             int capacity = modelToValidate.MembersToValidate.Max(static vm => vm.ValidationAttributes.Count);
@@ -177,33 +227,33 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 if (vm.ValidationAttributes.Count > 0)
                 {
-                    GenMemberValidation(vm, ref staticValidationAttributesDict, cleanListsBeforeUse);
+                    GenMemberValidation(vm, modelToValidate.SimpleName, ref staticValidationAttributesDict, cleanListsBeforeUse);
                     cleanListsBeforeUse = true;
                     OutLn();
                 }
 
                 if (vm.TransValidatorType is not null)
                 {
-                    GenTransitiveValidation(vm, ref staticValidatorsDict);
+                    GenTransitiveValidation(vm, modelToValidate.SimpleName, ref staticValidatorsDict);
                     OutLn();
                 }
 
                 if (vm.EnumerationValidatorType is not null)
                 {
-                    GenEnumerationValidation(vm, ref staticValidatorsDict);
+                    GenEnumerationValidation(vm, modelToValidate.SimpleName, ref staticValidatorsDict);
                     OutLn();
                 }
             }
 
             GenModelSelfValidationIfNecessary(modelToValidate);
-            OutLn($"return builder.Build();");
+            OutLn($"return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();");
             OutCloseBrace();
         }
 
-        private void GenMemberValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, bool cleanListsBeforeUse)
+        private void GenMemberValidation(ValidatedMember vm, string modelName, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, bool cleanListsBeforeUse)
         {
             OutLn($"context.MemberName = \"{vm.Name}\";");
-            OutLn($"context.DisplayName = baseName + \"{vm.Name}\";");
+            OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{modelName}.{vm.Name}\" : $\"{{name}}.{vm.Name}\";");
 
             if (cleanListsBeforeUse)
             {
@@ -214,12 +264,12 @@ namespace Microsoft.Extensions.Options.Generators
             foreach (var attr in vm.ValidationAttributes)
             {
                 var staticValidationAttributeInstance = GetOrAddStaticValidationAttribute(ref staticValidationAttributesDict, attr);
-                OutLn($"validationAttributes.Add({StaticValidationAttributeHolderClassFQN}.{staticValidationAttributeInstance.FieldName});");
+                OutLn($"validationAttributes.Add({_staticValidationAttributeHolderClassFQN}.{staticValidationAttributeInstance.FieldName});");
             }
 
-            OutLn($"if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.{vm.Name}!, context, validationResults, validationAttributes))");
+            OutLn($"if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.{vm.Name}{_TryGetValueNullableAnnotation}, context, validationResults, validationAttributes))");
             OutOpenBrace();
-            OutLn($"builder.AddResults(validationResults);");
+            OutLn($"(builder ??= new()).AddResults(validationResults);");
             OutCloseBrace();
         }
 
@@ -266,7 +316,7 @@ namespace Microsoft.Extensions.Options.Generators
                 attrInstantiationStatementLines.Add("}");
             }
 
-            var instantiationStatement = string.Join(Environment.NewLine, attrInstantiationStatementLines);
+            var instantiationStatement = string.Join("\n", attrInstantiationStatementLines);
 
             if (!staticValidationAttributesDict.TryGetValue(instantiationStatement, out var staticValidationAttributeInstance))
             {
@@ -283,7 +333,7 @@ namespace Microsoft.Extensions.Options.Generators
             return staticValidationAttributeInstance;
         }
 
-        private void GenTransitiveValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
+        private void GenTransitiveValidation(ValidatedMember vm, string modelName, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
         {
             string callSequence;
             if (vm.TransValidateTypeIsSynthetic)
@@ -294,25 +344,27 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 var staticValidatorInstance = GetOrAddStaticValidator(ref staticValidatorsDict, vm.TransValidatorType!);
 
-                callSequence = $"{StaticValidatorHolderClassFQN}.{staticValidatorInstance.FieldName}";
+                callSequence = $"{_staticValidatorHolderClassFQN}.{staticValidatorInstance.FieldName}";
             }
 
             var valueAccess = (vm.IsNullable && vm.IsValueType) ? ".Value" : string.Empty;
+
+            var baseName = $"string.IsNullOrEmpty(name) ? \"{modelName}.{vm.Name}\" : $\"{{name}}.{vm.Name}\"";
 
             if (vm.IsNullable)
             {
                 OutLn($"if (options.{vm.Name} is not null)");
                 OutOpenBrace();
-                OutLn($"builder.AddResult({callSequence}.Validate(baseName + \"{vm.Name}\", options.{vm.Name}{valueAccess}));");
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess}));");
                 OutCloseBrace();
             }
             else
             {
-                OutLn($"builder.AddResult({callSequence}.Validate(baseName + \"{vm.Name}\", options.{vm.Name}{valueAccess}));");
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess}));");
             }
         }
 
-        private void GenEnumerationValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
+        private void GenEnumerationValidation(ValidatedMember vm, string modelName, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
         {
             var valueAccess = (vm.IsValueType && vm.IsNullable) ? ".Value" : string.Empty;
             var enumeratedValueAccess = (vm.EnumeratedIsNullable && vm.EnumeratedIsValueType) ? ".Value" : string.Empty;
@@ -325,7 +377,7 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 var staticValidatorInstance = GetOrAddStaticValidator(ref staticValidatorsDict, vm.EnumerationValidatorType!);
 
-                callSequence = $"{StaticValidatorHolderClassFQN}.{staticValidatorInstance.FieldName}";
+                callSequence = $"{_staticValidatorHolderClassFQN}.{staticValidatorInstance.FieldName}";
             }
 
             if (vm.IsNullable)
@@ -343,14 +395,16 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 OutLn($"if (o is not null)");
                 OutOpenBrace();
-                OutLn($"builder.AddResult({callSequence}.Validate(baseName + $\"{vm.Name}[{{count}}]\", o{enumeratedValueAccess}));");
+                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count}}]\" : $\"{{name}}.{vm.Name}[{{count}}]\"";
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
                 OutCloseBrace();
 
                 if (!vm.EnumeratedMayBeNull)
                 {
                     OutLn($"else");
                     OutOpenBrace();
-                    OutLn($"builder.AddError(baseName + $\"{vm.Name}[{{count}}] is null\");");
+                    var error = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count}}] is null\" : $\"{{name}}.{vm.Name}[{{count}}] is null\"";
+                    OutLn($"(builder ??= new()).AddError({error});");
                     OutCloseBrace();
                 }
 
@@ -358,7 +412,8 @@ namespace Microsoft.Extensions.Options.Generators
             }
             else
             {
-                OutLn($"builder.AddResult({callSequence}.Validate(baseName + $\"{vm.Name}[{{count++}}]\", o{enumeratedValueAccess}));");
+                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count++}}] is null\" : $\"{{name}}.{vm.Name}[{{count++}}] is null\"";
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
             }
 
             OutCloseBrace();
@@ -382,6 +437,20 @@ namespace Microsoft.Extensions.Options.Generators
             }
 
             return staticValidatorInstance;
+        }
+
+        /// <summary>
+        /// Returns a non-randomized hash code for the given string.
+        /// We always return a positive value.
+        /// </summary>
+        internal static int GetNonRandomizedHashCode(string s)
+        {
+            uint result = 2166136261u;
+            foreach (char c in s)
+            {
+                result = (c ^ result) * 16777619;
+            }
+            return Math.Abs((int)result);
         }
     }
 }

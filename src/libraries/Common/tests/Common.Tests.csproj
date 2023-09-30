@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx</TargetFrameworks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs"
@@ -18,6 +17,8 @@
              Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\os-release\Interop.OSReleaseFile.cs"
              Link="Common\Interop\Linux\os-release\Interop.OSReleaseFile.cs" />
+    <Compile Include="$(CommonPath)SourceGenerators\SourceWriter.cs"
+             Link="Common\SourceGenerators\SourceWriter.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
@@ -81,6 +82,7 @@
     <Compile Include="Tests\Interop\cgroupsTests.cs" />
     <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\Interop\OSReleaseTests.cs" />
+    <Compile Include="Tests\SourceGenerators\SourceWriterTests.cs" />
     <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="Tests\System\IO\StringParserTests.cs" />
     <Compile Include="Tests\System\Net\HttpDateParserTests.cs" />
@@ -154,6 +156,9 @@
     <Folder Include="Common\System\Security\Cryptography\" />
     <Folder Include="System\Net\Sockets\" />
     <Folder Include="System\Net\VirtualNetwork\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />

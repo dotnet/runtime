@@ -76,10 +76,9 @@ try {
     console.log("smoke: HttpClientThread(blurst.txt) done " + t4);
 
     console.log("smoke: running WsClientMain");
-    let w0 = await exports.Sample.Test.WsClientMain("wss://socketsbay.com/wss/v2/1/demo/");
+    let w0 = await exports.Sample.Test.WsClientMain("wss://corefx-net-http11.azurewebsites.net/WebSocket/EchoWebSocket.ashx");
     console.log("smoke: WsClientMain done " + w0);
 
-    /* ActiveIssue https://github.com/dotnet/runtime/issues/88057
     console.log("smoke: running FetchBackground(blurst.txt)");
     let s = await exports.Sample.Test.FetchBackground(resolveUrl("./blurst.txt"));
     console.log("smoke: FetchBackground(blurst.txt) done");
@@ -96,7 +95,7 @@ try {
         const msg = `Unexpected FetchBackground(missing) result ${s}`;
         document.getElementById("out").innerHTML = msg;
         throw new Error(msg);
-    }*/
+    }
 
     console.log("smoke: running TaskRunCompute");
     const r1 = await exports.Sample.Test.RunBackgroundTaskRunCompute();
@@ -110,6 +109,7 @@ try {
     console.log("smoke: running StartAllocatorFromWorker");
     exports.Sample.Test.StartAllocatorFromWorker();
 
+    /* ActiveIssue https://github.com/dotnet/runtime/issues/88663
     await delay(5000);
 
     console.log("smoke: running GCCollect");
@@ -119,6 +119,8 @@ try {
 
     console.log("smoke: running GCCollect");
     exports.Sample.Test.GCCollect();
+    console.log("smoke: running GCCollect done");
+    */
 
     console.log("smoke: running StopTimerFromWorker");
     exports.Sample.Test.StopTimerFromWorker();

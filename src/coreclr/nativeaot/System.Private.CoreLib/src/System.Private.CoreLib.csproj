@@ -1,10 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- AD0001 : https://github.com/dotnet/runtime/issues/90356 -->
+    <NoWarn>$(NoWarn);AD0001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
+    <ILLinkLinkAttributesXmls Include="ILLink\ILLink.LinkAttributes.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.Unix.xml" />
@@ -108,7 +111,6 @@
     <Compile Include="Internal\Runtime\MethodTable.Runtime.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
-    <Compile Include="Internal\Runtime\CompilerServices\FixupRuntimeTypeHandle.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\GenericMethodDescriptor.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\RuntimeFieldHandleInfo.cs" />
@@ -136,6 +138,7 @@
     <Compile Include="System\Reflection\Attribute.NativeAot.cs" />
     <Compile Include="System\Reflection\Assembly.NativeAot.cs" />
     <Compile Include="System\Reflection\BinderBundle.cs" />
+    <Compile Include="System\Reflection\ConstructorInvoker.cs" />
     <Compile Include="System\Reflection\DynamicInvokeInfo.cs" />
     <Compile Include="System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\CustomAttributeBuilder.cs" />
@@ -149,6 +152,7 @@
     <Compile Include="System\Reflection\MethodBase.NativeAot.cs" />
     <Compile Include="System\Reflection\Metadata\AssemblyExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataUpdater.cs" />
+    <Compile Include="System\Reflection\MethodInvoker.cs" />
     <Compile Include="System\Reflection\ModifiedType.NativeAot.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.UnificationKey.cs" />
@@ -196,6 +200,7 @@
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
+    <Compile Include="System\Runtime\ThunkPool.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
@@ -207,6 +212,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\TrackerObjectManager.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />    
     <Compile Include="System\Runtime\InteropServices\ObjectiveCMarshal.NativeAot.cs" Condition="'$(FeatureObjCMarshal)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\Intrinsics\X86\X86Base.NativeAot.cs" Condition="'$(SupportsX86Intrinsics)' == 'true'" />
@@ -234,7 +240,6 @@
     <Compile Include="System\Threading\SyncTable.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.cs" />
     <Compile Include="System\Type.NativeAot.cs" />
-    <Compile Include="System\Type.Internal.cs" />
     <Compile Include="System\TypedReference.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
     <Compile Include="System\TypeLoadException.NativeAot.cs" />
@@ -270,6 +275,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetApartmentType.cs">
       <Link>Interop\Windows\Ole32\Interop.CoGetApartmentType.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetContextToken.cs">
+      <Link>Interop\Windows\Ole32\Interop.CoGetContextToken.cs</Link>
+    </Compile>    
     <Compile Include="$(CommonPath)\Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
@@ -337,6 +345,9 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\CanonTypeKind.cs">
       <Link>Internal\Runtime\CanonTypeKind.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\System\Runtime\RhFailFastReason.cs">
+      <Link>System\Runtime\RhFailFastReason.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\Internal\Runtime\MethodTable.cs">
       <Link>Internal\Runtime\MethodTable.cs</Link>
@@ -485,7 +496,7 @@
     <Compile Include="Internal\Reflection\Core\Execution\ExecutionDomain.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ExecutionEnvironment.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\FieldAccessor.cs" />
-    <Compile Include="Internal\Reflection\Core\Execution\MethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\MethodBaseInvoker.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ReflectionCoreExecution.cs" />
   </ItemGroup>
   <!-- For now, link Runtime.Base into System.Private.CoreLib until there is proper multifile build -->
@@ -528,9 +539,6 @@
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\StackFrameIterator.cs">
       <Link>Runtime.Base\src\System\Runtime\StackFrameIterator.cs</Link>
-    </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\ThunkPool.cs">
-      <Link>Runtime.Base\src\System\Runtime\ThunkPool.cs</Link>
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\TypeCast.cs">
       <Link>Runtime.Base\src\System\Runtime\TypeCast.cs</Link>

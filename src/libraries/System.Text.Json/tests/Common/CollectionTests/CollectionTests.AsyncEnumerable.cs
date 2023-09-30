@@ -94,7 +94,7 @@ namespace System.Text.Json.Serialization.Tests
             using var cts = new CancellationTokenSource();
 
             IAsyncEnumerable<int> value = CreateEnumerable();
-            await JsonSerializer.SerializeAsync(utf8Stream, value, cancellationToken: cts.Token);
+            await JsonSerializer.SerializeAsync(utf8Stream, value, Serializer.DefaultOptions, cancellationToken: cts.Token);
             Assert.Equal("[1,2]", utf8Stream.AsString());
 
             async IAsyncEnumerable<int> CreateEnumerable([EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -113,6 +113,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(5000, 1000, false)]
         [InlineData(1000, 10_000, true)]
         [InlineData(1000, 10_000, false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80020", TestRuntimes.Mono)]
         public async Task WriteAsyncEnumerable_LongRunningEnumeration_Cancellation(
             int cancellationTokenSourceDelayMilliseconds,
             int enumeratorDelayMilliseconds,
@@ -127,7 +128,7 @@ namespace System.Text.Json.Serialization.Tests
             using var utf8Stream = new Utf8MemoryStream();
             using var cts = new CancellationTokenSource(delay: TimeSpan.FromMilliseconds(cancellationTokenSourceDelayMilliseconds));
             await Assert.ThrowsAsync<TaskCanceledException>(async () =>
-                await JsonSerializer.SerializeAsync(utf8Stream, longRunningEnumerable, cancellationToken: cts.Token));
+                await JsonSerializer.SerializeAsync(utf8Stream, longRunningEnumerable, Serializer.DefaultOptions, cancellationToken: cts.Token));
 
             Assert.Equal(1, longRunningEnumerable.TotalCreatedEnumerators);
             Assert.Equal(1, longRunningEnumerable.TotalDisposedEnumerators);
@@ -212,16 +213,16 @@ namespace System.Text.Json.Serialization.Tests
         public void WriteRootLevelAsyncEnumerableSync_ThrowsNotSupportedException()
         {
             IAsyncEnumerable<int> asyncEnumerable = new MockedAsyncEnumerable<int>(Enumerable.Range(1, 10));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(asyncEnumerable));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new MemoryStream(), asyncEnumerable));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(asyncEnumerable, Serializer.DefaultOptions));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new MemoryStream(), asyncEnumerable, Serializer.DefaultOptions));
         }
 
         [Fact]
         public void WriteNestedAsyncEnumerableSync_ThrowsNotSupportedException()
         {
             IAsyncEnumerable<int> asyncEnumerable = new MockedAsyncEnumerable<int>(Enumerable.Range(1, 10));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new { Data = asyncEnumerable }));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new MemoryStream(), new { Data = asyncEnumerable }));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new AsyncEnumerableDto<int> { Data = asyncEnumerable }, Serializer.DefaultOptions));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new MemoryStream(), new AsyncEnumerableDto<int> { Data = asyncEnumerable }, Serializer.DefaultOptions));
         }
 
         [Fact]
@@ -330,7 +331,7 @@ namespace System.Text.Json.Serialization.Tests
             // Regression test for https://github.com/dotnet/runtime/issues/57360
             using var stream = new Utf8MemoryStream();
             using var cts = new CancellationTokenSource(millisecondsDelay: 1000);
-            await Assert.ThrowsAsync<TaskCanceledException>(async () => await JsonSerializer.SerializeAsync(stream, GetNumbersAsync(), cancellationToken: cts.Token));
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await JsonSerializer.SerializeAsync(stream, GetNumbersAsync(), Serializer.DefaultOptions, cancellationToken: cts.Token));
 
             static async IAsyncEnumerable<int> GetNumbersAsync()
             {

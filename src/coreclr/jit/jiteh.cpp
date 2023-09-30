@@ -347,6 +347,28 @@ bool Compiler::bbInFilterILRange(BasicBlock* blk)
     return HBtab->InFilterRegionILRange(blk);
 }
 
+//------------------------------------------------------------------------
+// bbInFilterBBRange:
+//     Check if this block is part of a filter.
+//
+// Arguments:
+//    blk - The block
+//
+// Return Value:
+//    True if the block is part of a filter clause. Otherwise false.
+//
+bool Compiler::bbInFilterBBRange(BasicBlock* blk)
+{
+    EHblkDsc* HBtab = ehGetBlockHndDsc(blk);
+
+    if (HBtab == nullptr)
+    {
+        return false;
+    }
+
+    return HBtab->InFilterRegionBBRange(blk);
+}
+
 // Given a handler region, find the innermost try region that contains it.
 // NOTE: handlerIndex is 1-based (0 means no handler).
 unsigned short Compiler::bbFindInnermostTryRegionContainingHandlerRegion(unsigned handlerIndex)
@@ -434,7 +456,7 @@ bool Compiler::bbInTryRegions(unsigned regionIndex, BasicBlock* blk)
 // Notes:
 //    For this check, a funclet is considered to be in the region it was
 //    extracted from.
-
+//
 bool Compiler::bbInExnFlowRegions(unsigned regionIndex, BasicBlock* blk)
 {
     assert(regionIndex < EHblkDsc::NO_ENCLOSING_INDEX);
@@ -2357,7 +2379,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
-            arg->gtFlags |= GTF_ORDER_SIDEEFF;
+            arg->SetHasOrderingSideEffect();
             unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));
             lvaTable[tempNum].lvType = TYP_REF;
             GenTree* argStore        = gtNewTempStore(tempNum, arg);

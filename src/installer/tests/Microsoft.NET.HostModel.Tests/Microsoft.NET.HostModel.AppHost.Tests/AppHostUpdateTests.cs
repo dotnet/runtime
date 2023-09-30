@@ -11,6 +11,7 @@ using Xunit;
 using Microsoft.NET.HostModel.AppHost;
 using Microsoft.DotNet.CoreSetup.Test;
 using System.Diagnostics;
+using System.Reflection.PortableExecutable;
 
 namespace Microsoft.NET.HostModel.Tests
 {
@@ -111,7 +112,9 @@ namespace Microsoft.NET.HostModel.Tests
                 BitConverter
                     .ToUInt16(File.ReadAllBytes(destinationFilePath), SubsystemOffset)
                     .Should()
-                    .Be(2);
+                    .Be((ushort)Subsystem.WindowsGui);
+
+                Assert.Equal((ushort)Subsystem.WindowsGui, PEUtils.GetWindowsGraphicalUserInterfaceBit(destinationFilePath));
             }
         }
 
@@ -153,6 +156,7 @@ namespace Microsoft.NET.HostModel.Tests
                 string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
+                Assert.Equal(42, PEUtils.GetWindowsGraphicalUserInterfaceBit(sourceAppHostMock));
                 Assert.Throws<AppHostNotCUIException>(() =>
                     HostWriter.CreateAppHost(
                         sourceAppHostMock,

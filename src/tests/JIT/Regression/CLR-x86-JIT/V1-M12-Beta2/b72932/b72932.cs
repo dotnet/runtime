@@ -11,7 +11,7 @@ public unsafe class testout1
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         VT vt = new VT();
         vt.a1 = 500L;
@@ -20,6 +20,5 @@ public unsafe class testout1
         *a0 = -6L;
         Console.WriteLine("Should be 500");
         Console.WriteLine((long)(vt.a1));
-        return 100;
     }
 }

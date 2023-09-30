@@ -90,6 +90,15 @@
 #define PATH_MAX    4096
 #endif
 
+#if defined(TARGET_WINDOWS)
+    #define HOST_RID_PLATFORM "win"
+#elif defined(TARGET_OSX)
+    #define HOST_RID_PLATFORM "osx"
+#elif defined(TARGET_ANDROID)
+    #define HOST_RID_PLATFORM "linux-bionic"
+#else
+    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
+#endif
 
 namespace pal
 {

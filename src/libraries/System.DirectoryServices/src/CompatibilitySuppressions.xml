@@ -1,11 +1,51 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- The DirectoryEntryConverter type used in the TypeConverterAttribute was mistakenly put in the System.DirectoryServices namespace
-       which was fixed during .NET 8: https://github.com/dotnet/runtime/commit/c89b7c777d50c549780ff857f9a8b1d616e31a7b. -->
+  <Suppression>
+    <DiagnosticId>CP0003</DiagnosticId>
+    <Target>System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>lib/net6.0/System.DirectoryServices.dll</Left>
+    <Right>lib/netstandard2.0/System.DirectoryServices.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0003</DiagnosticId>
+    <Target>System.DirectoryServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>lib/net7.0/System.DirectoryServices.dll</Left>
+    <Right>lib/netstandard2.0/System.DirectoryServices.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>T:System.DirectoryServices.DirectoryEntry:[T:System.ComponentModel.TypeConverterAttribute]</Target>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.ComponentModel.Primitives, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>lib/net6.0/System.DirectoryServices.dll</Left>
+    <Right>lib/netstandard2.0/System.DirectoryServices.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>lib/net6.0/System.DirectoryServices.dll</Left>
+    <Right>lib/netstandard2.0/System.DirectoryServices.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.ComponentModel.Primitives, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>lib/net7.0/System.DirectoryServices.dll</Left>
+    <Right>lib/netstandard2.0/System.DirectoryServices.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP1002</DiagnosticId>
+    <Target>System.Runtime, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
+    <Left>lib/net7.0/System.DirectoryServices.dll</Left>
+    <Right>lib/netstandard2.0/System.DirectoryServices.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
 </Suppressions>

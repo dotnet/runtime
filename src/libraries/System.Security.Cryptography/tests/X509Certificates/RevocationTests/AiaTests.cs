@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
     [SkipOnPlatform(TestPlatforms.Android, "Android does not support AIA fetching")]
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class AiaTests
@@ -33,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             using (endEntity)
             using (X509Certificate2 intermediate2Cert = intermediate2.CloneIssuerCert())
             {
-                responder.RespondEmpty = true;
+                responder.RespondKind = RespondKind.Empty;
 
                 RetryHelper.Execute(() => {
                     using (ChainHolder holder = new ChainHolder())

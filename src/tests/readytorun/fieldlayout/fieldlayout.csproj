@@ -2,7 +2,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>

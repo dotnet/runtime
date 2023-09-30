@@ -12,11 +12,9 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
-    <ServerGarbageCollection>true</ServerGarbageCollection>
-    <TieredCompilation>false</TieredCompilation>
-    <EventSourceSupport>true</EventSourceSupport>
-    <OptimizationPreference>Speed</OptimizationPreference>
   </PropertyGroup>
+
+  <Import Project="../AotCompilerCommon.props" />
 
   <PropertyGroup>
     <SelfContained>true</SelfContained>

@@ -145,6 +145,7 @@ bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumbe
 
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
+static bool IsBitwiseInstruction(instruction ins);
 
 #ifdef TARGET_64BIT
 bool AreUpperBitsZero(regNumber reg, emitAttr size);

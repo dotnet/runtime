@@ -611,8 +611,7 @@ namespace System.Dynamic
                                     Expression.Call(
                                         String_Format_String_ObjectArray,
                                         Expression.Constant(convertFailed),
-                                        Expression.NewArrayInit(
-                                            typeof(object),
+                                        Expression.NewObjectArrayInit(
                                             new TrueReadOnlyCollection<Expression>(
                                                 Expression.Condition(
                                                     Expression.Equal(resultMO.Expression, AstUtils.Null),
@@ -645,7 +644,7 @@ namespace System.Dynamic
                     Expression.Block(
                         new TrueReadOnlyCollection<ParameterExpression>(result, callArgs),
                         new TrueReadOnlyCollection<Expression>(
-                            method != DynamicObject_TryBinaryOperation ? Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)) : Expression.Assign(callArgs, callArgsValue[0]),
+                            method != DynamicObject_TryBinaryOperation ? Expression.Assign(callArgs, Expression.NewObjectArrayInit(callArgsValue)) : Expression.Assign(callArgs, callArgsValue[0]),
                             Expression.Condition(
                                 Expression.Call(
                                     GetLimitedSelf(),
@@ -705,7 +704,7 @@ namespace System.Dynamic
                     Expression.Block(
                         new TrueReadOnlyCollection<ParameterExpression>(result, callArgs),
                         new TrueReadOnlyCollection<Expression>(
-                            Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)),
+                            Expression.Assign(callArgs, Expression.NewObjectArrayInit(callArgsValue)),
                             Expression.Condition(
                                 Expression.Call(
                                     GetLimitedSelf(),
@@ -768,7 +767,7 @@ namespace System.Dynamic
                     Expression.Block(
                         new TrueReadOnlyCollection<ParameterExpression>(callArgs),
                         new TrueReadOnlyCollection<Expression>(
-                            Expression.Assign(callArgs, Expression.NewArrayInit(typeof(object), callArgsValue)),
+                            Expression.Assign(callArgs, Expression.NewObjectArrayInit(callArgsValue)),
                             Expression.Condition(
                                 Expression.Call(
                                     GetLimitedSelf(),

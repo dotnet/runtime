@@ -4,12 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
+using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.Configuration.Test;
 using Xunit;
 
@@ -19,7 +21,17 @@ namespace Microsoft.Extensions
 #endif
     .Configuration.Binder.Tests
 {
-    public partial class ConfigurationBinderTests
+    public abstract class ConfigurationBinderTestsBase
+    {
+        public ConfigurationBinderTestsBase()
+        {
+#if LAUNCH_DEBUGGER
+if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launch(); }
+#endif
+        }
+    }
+
+    public partial class ConfigurationBinderTests : ConfigurationBinderTestsBase
     {
         [Fact]
         public void BindWithNestedTypesWithReadOnlyProperties()
@@ -207,7 +219,7 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
-        public void GetScalar()
+        public void Get_Scalar()
         {
             var dic = new Dictionary<string, string>
             {
@@ -229,7 +241,7 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
-        public void GetScalarNullable()
+        public void Get_ScalarNullable()
         {
             var dic = new Dictionary<string, string>
             {
@@ -248,6 +260,50 @@ namespace Microsoft.Extensions
             Assert.True((bool)config.GetValue(typeof(bool?), "Boolean"));
             Assert.Equal(-2, (int)config.GetValue(typeof(int?), "Integer"));
             Assert.Equal(11, (int)config.GetValue(typeof(int?), "Nested:Integer"));
+        }
+
+        [Fact]
+        public void GetValue_Scalar()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            Assert.True(config.GetSection("Boolean").Get<bool>());
+            Assert.Equal(-2, config.GetSection("Integer").Get<int>());
+            Assert.Equal(11, config.GetSection("Nested:Integer").Get<int>());
+
+            Assert.True((bool)config.GetSection("Boolean").Get(typeof(bool)));
+            Assert.Equal(-2, (int)config.GetSection("Integer").Get(typeof(int)));
+            Assert.Equal(11, (int)config.GetSection("Nested:Integer").Get(typeof(int)));
+        }
+
+        [Fact]
+        public void GetValue_ScalarNullable()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            Assert.True(config.GetSection("Boolean").Get<bool?>());
+            Assert.Equal(-2, config.GetSection("Integer").Get<int?>());
+            Assert.Equal(11, config.GetSection("Nested:Integer").Get<int?>());
+
+            Assert.True(config.GetSection("Boolean").Get(typeof(bool?)) is true);
+            Assert.Equal(-2, (int)config.GetSection("Integer").Get(typeof(int?)));
+            Assert.Equal(11, (int)config.GetSection("Nested:Integer").Get(typeof(int?)));
         }
 
         [Fact]
@@ -486,10 +542,12 @@ namespace Microsoft.Extensions
             var expectedValue = TypeDescriptor.GetConverter(type).ConvertFromInvariantString(value);
 
             // act
+#pragma warning disable SYSLIB1104
             config.Bind(options);
             var optionsValue = options.GetType().GetProperty("Value").GetValue(options);
             var getValueValue = config.GetValue(type, "Value");
             var getValue = config.GetSection("Value").Get(type);
+#pragma warning restore SYSLIB1104
 
             // assert
             Assert.Equal(expectedValue, optionsValue);
@@ -533,6 +591,7 @@ namespace Microsoft.Extensions
             var options = Activator.CreateInstance(optionsType);
 
             // act
+#pragma warning disable SYSLIB1104
             var exception = Assert.Throws<InvalidOperationException>(
                 () => config.Bind(options));
 
@@ -541,6 +600,7 @@ namespace Microsoft.Extensions
 
             var getException = Assert.Throws<InvalidOperationException>(
                 () => config.GetSection("Value").Get(type));
+#pragma warning restore SYSLIB1104
 
             // assert
             Assert.NotNull(exception.InnerException);
@@ -898,8 +958,7 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(input);
             var config = configurationBuilder.Build();
 
-            var exception = Assert.Throws<InvalidOperationException>(
-                () => config.Bind(new TestOptions()));
+            var exception = Assert.Throws<InvalidOperationException>(() => config.Bind(new TestOptions()));
             Assert.Equal(
                 SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ISomeInterface)),
                 exception.Message);
@@ -1348,18 +1407,35 @@ namespace Microsoft.Extensions
         [Fact]
         public void CanBindRecordStructOptions()
         {
-            var dic = new Dictionary<string, string>
-            {
-                {"Length", "42"},
-                {"Color", "Green"},
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
+            IConfiguration config = GetConfiguration("Length", "Color");
+            Validate(config.Get<RecordStructTypeOptions>());
+            Validate(config.Get<RecordStructTypeOptions?>().Value);
 
-            var options = config.Get<RecordStructTypeOptions>();
-            Assert.Equal(42, options.Length);
-            Assert.Equal("Green", options.Color);
+            config = GetConfiguration("Options.Length", "Options.Color");
+            // GetValue works for only primitives.
+            //Reflection impl handles them by honoring `TypeConverter` only.
+            // Source-gen supports based on an allow-list.
+            Assert.Equal(default(RecordStructTypeOptions), config.GetValue<RecordStructTypeOptions>("Options"));
+            Assert.False(config.GetValue<RecordStructTypeOptions?>("Options").HasValue);
+
+            static void Validate(RecordStructTypeOptions options)
+            {
+                Assert.Equal(42, options.Length);
+                Assert.Equal("Green", options.Color);
+            }
+
+            static IConfiguration GetConfiguration(string key1, string key2)
+            {
+                var dic = new Dictionary<string, string>
+                {
+                    { key1, "42" },
+                    { key2, "Green" },
+                };
+
+                var configurationBuilder = new ConfigurationBuilder();
+                configurationBuilder.AddInMemoryCollection(dic);
+                return configurationBuilder.Build();
+            }
         }
 
         [Fact]
@@ -1506,6 +1582,53 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
+        public void CanBindNestedStructProperties_SetterCalledWithMissingConfigEntry()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "dmy", "dmy" },
+            });
+
+            IConfiguration config = configurationBuilder.Build();
+
+            var bound = config.Get<StructWithNestedStructAndSetterLogic>();
+            Assert.Null(bound.String);
+            Assert.Null(bound.NestedStruct.String);
+            Assert.Equal(42, bound.Int32);
+            Assert.Equal(0, bound.NestedStruct.Int32);
+        }
+
+        [Fact]
+        public void CanBindNestedStructProperties_SetterNotCalledWithMissingConfigSection()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                // An empty value will not trigger defaulting.
+            });
+
+            IConfiguration config = configurationBuilder.Build();
+
+            var bound = config.Get<StructWithNestedStructAndSetterLogic>();
+            Assert.Null(bound.String);
+            Assert.Null(bound.NestedStruct.String);
+            Assert.Equal(0, bound.Int32);
+            Assert.Equal(0, bound.NestedStruct.Int32);
+        }
+
+        [Fact]
+        public void CanBindNestedStructProperties_SetterCalledWithMissingConfig_Array()
+        {
+            var config = TestHelpers.GetConfigurationFromJsonString(
+                """{"value": [{ }]}""");
+
+            var bound = config.GetSection("value").Get<StructWithNestedStructAndSetterLogic[]>();
+            Assert.Null(bound[0].String);
+            Assert.Equal(0, bound[0].Int32);
+        }
+
+        [Fact]
         public void IgnoresReadOnlyNestedStructProperties()
         {
             ConfigurationBuilder configurationBuilder = new();
@@ -1637,13 +1760,29 @@ namespace Microsoft.Extensions
             Assert.Equal(2, options.ParsedBlacklist.Count); // should be initialized when calling the options.Blacklist setter.
 
             Assert.Equal(401, options.HttpStatusCode); // exists in configuration and properly sets the property
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            // Setter not called if there's no matching configuration value.
-            Assert.Equal(0, options.OtherCode);
-#else
-            // doesn't exist in configuration. the setter sets default value '2'
+
+            // This doesn't exist in configuration but the setter should be called which defaults the to '2' from input of '0'.
             Assert.Equal(2, options.OtherCode);
-#endif
+
+            // These don't exist in configuration and setters are not called since they are nullable.
+            Assert.Equal(0, options.OtherCodeNullable);
+            Assert.Equal("default", options.OtherCodeString);
+            Assert.Null(options.OtherCodeNull);
+            Assert.Null(options.OtherCodeUri);
+        }
+
+        [Fact]
+        public void EnsureNotCallingSettersWhenGivenExistingInstanceNotInConfig()
+        {
+            var builder = new ConfigurationBuilder();
+            builder.AddInMemoryCollection(new KeyValuePair<string, string?>[] { });
+            var config = builder.Build();
+
+            ClassThatThrowsOnSetters instance = new();
+
+            // The setter for MyIntProperty throws, so this verifies that the setter is not called.
+            config.GetSection("Dmy").Bind(instance);
+            Assert.Equal(42, instance.MyIntProperty);
         }
 
         [Fact]
@@ -1865,10 +2004,439 @@ namespace Microsoft.Extensions
                 }
                 """);
 
+#pragma warning disable SYSLIB1103
             StructWithNestedStructs.DeeplyNested obj = new();
             configuration.Bind(obj);
             Assert.Equal(0, obj.Int32);
             Assert.False(obj.Boolean);
+
+            StructWithNestedStructs.DeeplyNested? nullableObj = new();
+            configuration.Bind(nullableObj);
+            Assert.Equal(0, obj.Int32);
+            Assert.False(obj.Boolean);
+#pragma warning restore SYSLIB1103
+        }
+
+        [Fact]
+        public void AllowsCaseInsensitiveMatch()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "vaLue": "MyString",
+                }
+                """);
+
+            GenericOptions<string> obj = new();
+            configuration.Bind(obj);
+            Assert.Equal("MyString", obj.Value);
+
+            GenericOptionsRecord<string> obj1 = configuration.Get<GenericOptionsRecord<string>>();
+            Assert.Equal("MyString", obj1.Value);
+
+            GenericOptionsWithParamCtor<string> obj2 = configuration.Get<GenericOptionsWithParamCtor<string>>();
+            Assert.Equal("MyString", obj2.Value);
+        }
+
+        [Fact]
+        public void ObjWith_TypeConverter()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "Location":
+                    {
+                        "Latitude": 3,
+                        "Longitude": 4,
+                    }
+                }
+                """);
+
+            // TypeConverter impl is not honored (https://github.com/dotnet/runtime/issues/83599).
+
+            GeolocationWrapper obj = configuration.Get<GeolocationWrapper>();
+            ValidateGeolocation(obj.Location);
+
+            configuration = TestHelpers.GetConfigurationFromJsonString(""" { "Geolocation": "3, 4", } """);
+            obj = configuration.Get<GeolocationWrapper>();
+            Assert.Equal(Geolocation.Zero, obj.Location);
+        }
+
+        [Fact]
+        public void ComplexObj_As_Dictionary_Element()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "First":
+                    {
+                        "Latitude": 3,
+                        "Longitude": 4,
+                    }
+                }
+                """);
+
+            Geolocation obj = configuration.Get<IDictionary<string, Geolocation>>()["First"];
+            ValidateGeolocation(obj);
+            obj = configuration.Get<IReadOnlyDictionary<string, Geolocation>>()["First"];
+            ValidateGeolocation(obj);
+
+            GeolocationClass obj1 = configuration.Get<IDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj1);
+            obj1 = configuration.Get<IReadOnlyDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj1);
+
+            GeolocationRecord obj2 = configuration.Get<IDictionary<string, GeolocationRecord>>()["First"];
+            ValidateGeolocation(obj2);
+            obj1 = configuration.Get<IReadOnlyDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj2);
+        }
+
+        [Fact]
+        public void ComplexObj_As_Enumerable_Element()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""{ "Enumerable": [{ "Latitude": 3, "Longitude": 4 }] }""")
+                .GetSection("Enumerable");
+
+            Geolocation obj = configuration.Get<IList<Geolocation>>()[0];
+            ValidateGeolocation(obj);
+
+            obj = configuration.Get<Geolocation[]>()[0];
+            ValidateGeolocation(obj);
+
+            obj = configuration.Get<IReadOnlyList<Geolocation>>()[0];
+            ValidateGeolocation(obj);
+        }
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void TraceSwitchTest()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"TraceSwitch:Level", "Info"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            TraceSwitch ts = new(displayName: "TraceSwitch", description: "This switch is set via config.");
+            ConfigurationBinder.Bind(config, "TraceSwitch", ts);
+            Assert.Equal(TraceLevel.Info, ts.Level);
+#if NETCOREAPP
+            // Value property is not publicly exposed in .NET Framework.
+            Assert.Equal("Info", ts.Value);
+#endif // NETCOREAPP
+        }
+#endif
+
+        private void ValidateGeolocation(IGeolocation location)
+        {
+            Assert.Equal(3, location.Latitude);
+            Assert.Equal(4, location.Longitude);
+        }
+
+        [Fact]
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Investigate Build browser-wasm linux Release LibraryTests_EAT CI failure for reflection impl", TestPlatforms.Browser)]
+#endif
+        public void TestGraphWithUnsupportedMember()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""{ "WriterOptions": { "Indented": "true" } }""");
+            var obj = new GraphWithUnsupportedMember();
+            configuration.Bind(obj);
+            Assert.True(obj.WriterOptions.Indented);
+
+            // Encoder prop not supported; throw if there's config data.
+            configuration = TestHelpers.GetConfigurationFromJsonString("""{ "WriterOptions": { "Indented": "true", "Encoder": { "Random": "" } } }""");
+            Assert.Throws<InvalidOperationException>(() => configuration.Bind(obj));
+        }
+
+        [Fact]
+        public void CanBindToObjectMembers()
+        {
+            var config = TestHelpers.GetConfigurationFromJsonString("""{ "Local": { "Authority": "Auth1" } }""");
+
+            // Regression tests for https://github.com/dotnet/runtime/issues/89273 and https://github.com/dotnet/runtime/issues/89732.
+            TestBind(options => config.Bind("Local", options.GenericProp), obj => obj.GenericProp);
+            TestBind(options => config.GetSection("Local").Bind(options.NonGenericProp), obj => obj.NonGenericProp);
+            TestBind(options => config.GetSection("Local").Bind(options._genericField, _ => { }), obj => obj._genericField);
+            TestBind(options => config.Bind("Local", options._nonGenericField), obj => obj._nonGenericField);
+
+            // Check statics.
+            TestBind(options => config.GetSection("Local").Bind(RemoteAuthenticationOptions<OidcProviderOptions>.StaticGenericProp), obj => RemoteAuthenticationOptions<OidcProviderOptions>.StaticGenericProp);
+            TestBind(options => config.GetSection("Local").Bind(RemoteAuthenticationOptions<OidcProviderOptions>.StaticNonGenericProp, _ => { }), obj => RemoteAuthenticationOptions<OidcProviderOptions>.StaticNonGenericProp);
+            TestBind(options => config.Bind("Local", RemoteAuthenticationOptions<OidcProviderOptions>.s_GenericField), obj => RemoteAuthenticationOptions<OidcProviderOptions>.s_GenericField);
+            TestBind(options => config.GetSection("Local").Bind(RemoteAuthenticationOptions<OidcProviderOptions>.s_NonGenericField), obj => RemoteAuthenticationOptions<OidcProviderOptions>.s_NonGenericField);
+
+            // No null refs.
+            config.GetSection("Local").Bind(new RemoteAuthenticationOptions<OidcProviderOptions>().NullGenericProp);
+            config.GetSection("Local").Bind(RemoteAuthenticationOptions<OidcProviderOptions>.s_NullNonGenericField);
+
+            static void TestBind(Action<RemoteAuthenticationOptions<OidcProviderOptions>> configure, Func<RemoteAuthenticationOptions<OidcProviderOptions>, OidcProviderOptions> getBindedProp)
+            {
+                var obj = new RemoteAuthenticationOptions<OidcProviderOptions>();
+                configure(obj);
+                Assert.Equal("Auth1", getBindedProp(obj).Authority);
+            }
+        }
+
+        [Fact]
+        public void BinderSupportsObjCreationInput()
+        {
+            var configuration = new ConfigurationBuilder().Build();
+            // No diagnostic warning SYSLIB1104.
+            configuration.Bind(new GraphWithUnsupportedMember());
+        }
+
+        [Fact]
+        public void TestNullHandling_Get()
+        {
+            // Null configuration.
+            IConfiguration? configuration = null;
+
+            Assert.Throws<ArgumentNullException>(() => configuration.Get<GeolocationClass>());
+            Assert.Throws<ArgumentNullException>(() => configuration.Get<GeolocationClass>(_ => { }));
+            Assert.Throws<ArgumentNullException>(() => configuration.Get<Geolocation>());
+            Assert.Throws<ArgumentNullException>(() => configuration.Get<Geolocation>(_ => { }));
+
+            // Null Type.
+            configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Longitude"":1,""Latitude"":2}");
+#pragma warning disable SYSLIB1104 // The target type for a binder call could not be determined
+            Assert.Throws<ArgumentNullException>(() => configuration.Get(type: null));
+            Assert.Throws<ArgumentNullException>(() => configuration.Get(type: null, _ => { }));
+#pragma warning restore SYSLIB1104 // The target type for a binder call could not be determined
+        }
+
+        [Fact]
+        public void TestNullHandling_GetValue()
+        {
+            string key = "Longitude";
+
+            // Null configuration.
+            Test(configuration: null, key);
+
+            // Null type.
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Longitude"":1,""Latitude"":2}");
+#pragma warning disable SYSLIB1104 // The target type for a binder call could not be determined
+            Assert.Throws<ArgumentNullException>(() => configuration.GetValue(type: null, key));
+            Assert.Throws<ArgumentNullException>(() => configuration.GetValue(type: null, key, defaultValue: null));
+#pragma warning restore SYSLIB1104 // The target type for a binder call could not be determined
+
+            // Null key.
+            Test(configuration: configuration, key: null);
+
+            void Test(IConfiguration? configuration, string? key)
+            {
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue<GeolocationClass>(key));
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue<GeolocationClass>(key, defaultValue: null));
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue<Geolocation>(key));
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue<Geolocation>(key, defaultValue: default));
+                TestUntypedOverloads(configuration: null, key);
+            }
+
+            void TestUntypedOverloads(IConfiguration? configuration, string? key)
+            {
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(GeolocationClass), key));
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(GeolocationClass), key, defaultValue: null));
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(GeolocationClass), key, new GeolocationClass()));
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key));
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key, defaultValue: null));
+                Assert.Throws<ArgumentNullException>(() => configuration.GetValue(typeof(Geolocation), key, default(Geolocation)));
+            }
+        }
+
+        [Fact]
+        public void TestNullHandling_Bind()
+        {
+            // Null configuration.
+            IConfiguration? configuration = null;
+            GeolocationClass? location = new();
+            Assert.Throws<ArgumentNullException>(() => configuration.Bind(location));
+            Assert.Throws<ArgumentNullException>(() => configuration.Bind(location, _ => { }));
+            Assert.Throws<ArgumentNullException>(() => configuration.Bind("", location));
+
+            // Null object.
+            configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Longitude"":1,""Latitude"":2}");
+            location = null;
+            // Expect no exceptions.
+            configuration.Bind(location);
+            configuration.Bind(location, _ => { });
+            configuration.Bind("", location);
+        }
+
+        [Fact]
+        public void TestAbstractTypeAsNestedMemberForBinding()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/91324.
+
+            IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(
+                new KeyValuePair<string, string?>[]
+                {
+                     new KeyValuePair<string, string?>("ConfigBindRepro:EndPoints:0", "localhost"),
+                     new KeyValuePair<string, string?>("ConfigBindRepro:Property", "true")
+                })
+                .Build();
+
+            AClass settings = new();
+            configuration.GetSection("ConfigBindRepro").Bind(settings);
+
+            Assert.Empty(settings.EndPoints); // Need custom binding feature to map "localhost" string into Endpoint instance.
+            Assert.True(settings.Property);
+        }
+
+        [Fact]
+        public static void TestGettingAbstractType()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Value"":1}");
+            Assert.Throws<InvalidOperationException>(() => configuration.Get<AbstractBase>());
+        }
+
+        [Fact]
+        public static void TestBindingAbstractInstance()
+        {
+            // Regression tests for https://github.com/dotnet/runtime/issues/90974.
+            // We only bind members on the declared binding type, i.e. AbstractBase, even
+            // though the actual instances are derived types that may have their own properties.
+
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{""Value"":1,""Value2"":2}");
+
+            AbstractBase d = new Derived();
+            configuration.Bind(d);
+            Assert.Equal(1, d.Value);
+
+            d = new DerivedWithAnotherProp();
+            configuration.Bind(d);
+            Assert.Equal(1, d.Value);
+
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // Divergence from reflection impl: reflection binds using instance type,
+            // while src-gen can only use declared type (everything has to be known AOT).
+            // This could change if we add an explicit API to indicate the expected runtime type(s).
+            Assert.Equal(0, ((DerivedWithAnotherProp)d).Value2);
+#else
+            Assert.Equal(2, ((DerivedWithAnotherProp)d).Value2);
+#endif
+        }
+
+        [Fact]
+        public static void TestBindingAbstractMember_AsCtorParam()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{ ""AbstractProp"": {""Value"":1} }");
+            Assert.Throws<InvalidOperationException>(configuration.Get<ClassWithAbstractCtorParam>);
+            Assert.Throws<InvalidOperationException>(configuration.Get<ClassWithOptionalAbstractCtorParam>);
+        }
+
+        [Fact]
+        public void GetIConfigurationSection()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "vaLue": "MyString",
+                }
+                """);
+
+            var obj = configuration.GetSection("value").Get<IConfigurationSection>();
+            Assert.Equal("MyString", obj.Value);
+
+            configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "vaLue": [ "MyString", { "nested": "value" } ],
+                }
+                """);
+
+            var list = configuration.GetSection("value").Get<List<IConfigurationSection>>();
+            ValidateList(list);
+
+            var dict = configuration.Get<Dictionary<string, List<IConfigurationSection>>>();
+            Assert.Equal(1, dict.Count);
+            ValidateList(dict["vaLue"]);
+
+            static void ValidateList(List<IConfigurationSection> list)
+            {
+                Assert.Equal(2, list.Count);
+                Assert.Equal("0", list[0].Key);
+                Assert.Equal("MyString", list[0].Value);
+
+                Assert.Equal("1", list[1].Key);
+                var nestedSection = Assert.IsAssignableFrom<IConfigurationSection>(list[1].GetSection("nested"));
+                Assert.Equal("value", nestedSection.Value);
+            }
+        }
+
+        [Fact]
+        public void NullableDictKeys()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""{ "1": "MyString" }""");
+            var dict = configuration.Get<Dictionary<int?, string>>();
+            Assert.Empty(dict);
+        }
+
+        [Fact]
+        public void IConfigurationSectionAsCtorParam()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "MySection": "MySection",
+                    "MyObject": "MyObject",
+                    "MyString": "MyString",
+                }
+                """);
+
+            var obj = configuration.Get<ClassWith_DirectlyAssignable_CtorParams>();
+            Assert.Equal("MySection", obj.MySection.Value);
+            Assert.Equal("MyObject", obj.MyObject);
+            Assert.Equal("MyString", obj.MyString);
+        }
+
+        [Fact]
+        public void SharedChildInstance()
+        {
+            var builder = new ConfigurationBuilder();
+            builder.AddInMemoryCollection(new KeyValuePair<string, string?>[]
+            {
+                new("A:B:ConnectionString", "localhost"),
+            });
+
+            var config = builder.Build();
+
+            SharedChildInstance_Class instance = new();
+            config.GetSection("A:B").Bind(instance);
+            Assert.Equal("localhost", instance.ConnectionString);
+
+            // Binding to a new section should not set the value to null.
+            config.GetSection("A").Bind(instance);
+            Assert.Equal("localhost", instance.ConnectionString);
+        }
+
+        [Fact]
+        public void CanBindToMockConfigurationSection()
+        {
+            const string expectedA = "hello";
+
+            var configSource = new MemoryConfigurationSource()
+            {
+                InitialData = new Dictionary<string, string?>()
+                {
+                    [$":{nameof(SimplePoco.A)}"] = expectedA,
+                }
+            };
+            var configRoot = new MockConfigurationRoot(new[] { configSource.Build(null) });
+            var configSection = new ConfigurationSection(configRoot, string.Empty);
+
+            SimplePoco result = new();
+            configSection.Bind(result);
+
+            Assert.Equal(expectedA, result.A);
+            Assert.Equal(default(string), result.B);
+        }
+
+        // a mock configuration root that will return null for undefined Sections,
+        // as is common when Configuration interfaces are mocked
+        class MockConfigurationRoot : ConfigurationRoot, IConfigurationRoot
+        {
+            public MockConfigurationRoot(IList<IConfigurationProvider> providers) : base(providers)
+            { }
+
+            IConfigurationSection IConfiguration.GetSection(string key) => 
+                this[key] is null ? null : new ConfigurationSection(this, key); 
         }
     }
 }

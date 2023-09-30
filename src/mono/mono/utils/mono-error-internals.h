@@ -313,6 +313,9 @@ mono_error_set_from_boxed (MonoError *error, const MonoErrorBoxed *from);
 const char*
 mono_error_get_exception_name (MonoError *oerror);
 
+const char*
+mono_error_get_exception_name_space (MonoError *oerror);
+
 void
 mono_error_set_specific (MonoError *error, int error_code, const char *missing_method);
 

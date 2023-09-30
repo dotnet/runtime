@@ -35,7 +35,13 @@ internal class BrowserRunner : IAsyncDisposable
     public BrowserRunner(ITestOutputHelper testOutput) => _testOutput = testOutput;
 
     // FIXME: options
-    public async Task<IPage> RunAsync(ToolCommand cmd, string args, bool headless = true, Action<IConsoleMessage>? onConsoleMessage = null)
+    public async Task<IPage> RunAsync(
+        ToolCommand cmd,
+        string args,
+        bool headless = true,
+        Action<IConsoleMessage>? onConsoleMessage = null,
+        Action<string>? onError = null,
+        Func<string, string>? modifyBrowserUrl = null)
     {
         TaskCompletionSource<string> urlAvailable = new();
         Action<string?> outputHandler = msg =>
@@ -89,10 +95,23 @@ internal class BrowserRunner : IAsyncDisposable
             Args = chromeArgs
         });
 
+        string browserUrl = urlAvailable.Task.Result;
+        if (modifyBrowserUrl != null)
+            browserUrl = modifyBrowserUrl(browserUrl);
+
         IPage page = await Browser.NewPageAsync();
         if (onConsoleMessage is not null)
             page.Console += (_, msg) => onConsoleMessage(msg);
-        await page.GotoAsync(urlAvailable.Task.Result);
+
+        onError ??= _testOutput.WriteLine;
+        if (onError is not null)
+        {
+            page.PageError += (_, msg) => onError($"PageError: {msg}");
+            page.Crash += (_, msg) => onError($"Crash: {msg}");
+            page.FrameDetached += (_, msg) => onError($"FrameDetached: {msg}");
+        }
+
+        await page.GotoAsync(browserUrl);
         RunTask = runTask;
         return page;
     }

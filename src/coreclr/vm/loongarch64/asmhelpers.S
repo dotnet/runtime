@@ -47,7 +47,7 @@ LEAF_END GetCurrentSP, _TEXT
 //
 WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 
-    // $a0-$a7 will contain intended new state
+    // $a0-$a7,$t3 will contain intended new state
     // $t0 will preserve skipEphemeralCheck
     // $t2 will be used for pointers
 
@@ -62,33 +62,36 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     ld.d  $a1, $a1, 0
 #endif
 
-#ifdef WRITE_BARRIER_CHECK
-    la.local  $a2, g_GCShadow
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    la.local  $a2, g_sw_ww_table
     ld.d  $a2, $a2, 0
 #endif
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    la.local  $a3, g_sw_ww_table
+    la.local  $a3, g_ephemeral_low
     ld.d  $a3, $a3, 0
-#endif
 
-    la.local  $a4, g_ephemeral_low
+    la.local  $a4, g_ephemeral_high
     ld.d  $a4, $a4, 0
-
-    la.local  $a5, g_ephemeral_high
-    ld.d  $a5, $a5, 0
 
     beq  $t0, $zero, LOCAL_LABEL(EphemeralCheckEnabled)
 
-    ori  $a4, $zero, 0
-    addi.d  $a5, $zero, -1
+    ori  $a3, $zero, 0
+    addi.d  $a4, $zero, -1
 LOCAL_LABEL(EphemeralCheckEnabled):
 
-    la.local  $a6, g_lowest_address
+    la.local  $a5, g_lowest_address
+    ld.d  $a5, $a5, 0
+
+    la.local  $a6, g_highest_address
     ld.d  $a6, $a6, 0
 
-    la.local  $a7, g_highest_address
+#ifdef WRITE_BARRIER_CHECK
+    la.local  $a7, g_GCShadow
     ld.d  $a7, $a7, 0
+
+    la.local  $t3, g_GCShadowEnd
+    ld.d  $t3, $t3, 0
+#endif
 
     // Update wbs state
     la.local  $t2, JIT_WriteBarrier_Table_Loc
@@ -103,6 +106,7 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     st.d  $a5, $t2, 40
     st.d  $a6, $t2, 48
     st.d  $a7, $t2, 56
+    st.d  $t3, $t2, 64
 
     EPILOG_RETURN
 
@@ -159,16 +163,20 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //   $t0  : trashed
 //   $t3  : trashed
 //   $t4  : trashed
-//   t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
+//   $t6  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
 
-    la.local  $t3, wbs_lowest_address
-    ld.d  $t3, $t3, 0
+    // load the address wbs_card_table to $t3
+.Ltmp0:
+    pcaddi $t3, 0
+    .reloc .Ltmp0, R_LARCH_PCREL20_S2, wbs_card_table
+    // wbs_highest_address = wbs_card_table + 48
+    ld.d  $t1, $t3, 48
+    // wbs_lowest_address  = wbs_card_table + 40
+    ld.d  $t3, $t3, 40
     slt  $t4, $t6, $t3
 
-    la.local  $t1, wbs_highest_address
-    ld.d  $t1, $t1, 0
     slt  $t0, $t1, $t6
     or  $t4, $t0, $t4
     beq  $t4, $zero, C_FUNC(JIT_WriteBarrier)
@@ -197,28 +205,35 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 
     st.d  $t7, $t6, 0
 
+    // load the address wbs_card_table to the $t3
+    // and will cache the wbs_card_table by $t3 within the JIT_WriteBarrier.
+    // So please DONT'T overwrite the $t3 within the JIT_WriteBarrier !!!
+.Ltmp1:
+    pcaddi $t3, 0
+    .reloc .Ltmp1, R_LARCH_PCREL20_S2, wbs_card_table
+
 #ifdef WRITE_BARRIER_CHECK
     // Update GC Shadow Heap
 
-    // Do not perform the work if g_GCShadow is 0
-    la.local $t1, wbs_GCShadow
-    ld.d $t1, $t1, 0
+    // the wbs_GCShadow = $t3 + 56
+    ld.d $t1, $t3, 56
 
+    // Do not perform the work if g_GCShadow is 0
     beq  $t1, $zero, 22f //LOCAL_LABEL(ShadowUpdateDisabled)
 
     // Compute address of shadow heap location:
     //   pShadow = g_GCShadow + ($t6 - g_lowest_address)
-    la.local  $t3, wbs_lowest_address
-    ld.d $t3, $t3, 0
+    // the wbs_lowest_address = $t3 + 40
+    ld.d $t0, $t3, 40
 
-    sub.d  $t3, $t6, $t3
-    add.d  $t0, $t3, $t1
+    sub.d  $t0, $t6, $t0
+    add.d  $t0, $t0, $t1
 
-    // if (pShadow >= g_GCShadowEnd) goto end
-    la.local $t3, g_GCShadowEnd
-    ld.d  $t3, $t3, 0
+    // if (pShadow >= g_GCShadowEnd) goto end.
+    // load the wbs_GCShadowEnd = $t3 + 64
+    ld.d $t1, $t3, 64
 
-    slt  $t4, $t0, $t3
+    slt  $t4, $t0, $t1
     beq  $t4, $zero, 22f //LOCAL_LABEL(ShadowUpdateEnd)
 
     // *pShadow = $t7
@@ -229,14 +244,14 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     dbar 0
 
     // if (*$t6 == $t7) goto end
-    ld.d  $t3, $t6, 0
-    beq  $t3, $t7, 22f //LOCAL_LABEL(ShadowUpdateEnd)
+    ld.d  $t1, $t6, 0
+    beq  $t1, $t7, 22f //LOCAL_LABEL(ShadowUpdateEnd)
 
     // *pShadow = INVALIDGCVALUE (0xcccccccd)
-    //lu12i.w  $t3, 0xccccc
-    lu12i.w  $t3, -209716
-    ori  $t3, $t3, 0xccd
-    st.d $t3, $t0, 0
+    //lu12i.w  $t1, 0xccccc
+    lu12i.w  $t1, -209716
+    ori  $t1, $t1, 0xccd
+    st.d $t1, $t0, 0
 22:
 //LOCAL_LABEL(ShadowUpdateEnd):
 //LOCAL_LABEL(ShadowUpdateDisabled):
@@ -245,38 +260,37 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     // Update the write watch table if necessary
 
-    la.local  $t3, wbs_sw_ww_table
-    ld.d  $t3, $t3, 0
-    beq  $t3, $zero, 1f //LOCAL_LABEL(CheckCardTable)
+    // the wbs_sw_ww_table = $t3 + 16
+    ld.d  $t4, $t3, 16
+    beq  $t4, $zero, 1f //LOCAL_LABEL(CheckCardTable)
 
-    srli.d  $t4, $t6, 0xc
-    add.d  $t3, $t3, $t4  // SoftwareWriteWatch::AddressToTableByteIndexShift
-    ld.b  $t4, $t3, 0
-    bne  $t4, $zero, 1f //LOCAL_LABEL(CheckCardTable)
+    srli.d  $t0, $t6, 0xc
+    add.d  $t4, $t4, $t0  // SoftwareWriteWatch::AddressToTableByteIndexShift
+    ld.b  $t0, $t4, 0
+    bne  $t0, $zero, 1f //LOCAL_LABEL(CheckCardTable)
 
-    ori  $t4, $zero, 0xFF
-    st.b  $t4, $t3, 0
+    ori  $t0, $zero, 0xFF
+    st.b  $t0, $t4, 0
 1:
 //LOCAL_LABEL(CheckCardTable):
 #endif
     // Branch to Exit if the reference is not in the Gen0 heap
-    la.local  $t3, wbs_ephemeral_low
-    ld.d  $t3, $t3, 0
-    beq  $t3, $zero, 2f //LOCAL_LABEL(SkipEphemeralCheck)
+    // the wbs_ephemeral_low = $t3 + 24
+    ld.d  $t0, $t3, 24
+    beq  $t0, $zero, LOCAL_LABEL(SkipEphemeralCheck)
 
-    slt  $t4, $t7, $t3
-    la.local  $t3, wbs_ephemeral_high
-    ld.d  $t3, $t3, 0
-    slt  $t1, $t3, $t7
-    or  $t4, $t1, $t4
+    slt  $t4, $t7, $t0
+    // the wbs_ephemeral_high = $t3 + 32
+    ld.d  $t1, $t3, 32
+    slt  $t0, $t1, $t7
+    or  $t4, $t0, $t4
     bne  $t4, $zero, LOCAL_LABEL(Exit)
-2:
-//LOCAL_LABEL(SkipEphemeralCheck):
+LOCAL_LABEL(SkipEphemeralCheck):
     // Check if we need to update the card table
-    la.local  $t3, wbs_card_table
-    ld.d  $t3, $t3, 0
+    // the wbs_card_table = $t3
+    ld.d  $t0, $t3, 0
     srli.d  $t4, $t6, 11
-    add.d  $t7, $t3, $t4
+    add.d  $t7, $t0, $t4
     ld.bu  $t1, $t7, 0
     ori  $t4, $zero, 0xFF
     beq  $t1, $t4, LOCAL_LABEL(Exit)
@@ -285,14 +299,14 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     // Check if we need to update the card bundle table
-    la.local  $t3, wbs_card_bundle_table
-    ld.d  $t3, $t3, 0
+    // the wbs_card_bundle_table = $t3 + 8
+    ld.d  $t0, $t3, 8
     srli.d  $t4, $t6, 21
-    add.d  $t7, $t3, $t4
+    add.d  $t7, $t0, $t4
 
-    ld.bu  $t3, $t7, 0
+    ld.bu  $t1, $t7, 0
     ori  $t4, $zero, 0xFF
-    beq  $t3, $t4, LOCAL_LABEL(Exit)
+    beq  $t1, $t4, LOCAL_LABEL(Exit)
 
     st.b  $t4, $t7, 0
 #endif
@@ -305,22 +319,23 @@ WRITE_BARRIER_END JIT_WriteBarrier
 // Begin patchable literal pool
     .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
 WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
-wbs_begin:
 wbs_card_table:
     .quad 0
-wbs_card_bundle_table:
+//wbs_card_bundle_table: =wbs_card_table+8
     .quad 0
-wbs_GCShadow:
+//wbs_sw_ww_table:       =wbs_card_table+16
     .quad 0
-wbs_sw_ww_table:
+//wbs_ephemeral_low:     =wbs_card_table+24
     .quad 0
-wbs_ephemeral_low:
+//wbs_ephemeral_high:    =wbs_card_table+32
     .quad 0
-wbs_ephemeral_high:
+//wbs_lowest_address:    =wbs_card_table+40
     .quad 0
-wbs_lowest_address:
+//wbs_highest_address:   =wbs_card_table+48
     .quad 0
-wbs_highest_address:
+//wbs_GCShadow:          =wbs_card_table+56
+    .quad 0
+//wbs_GCShadowEnd:       =wbs_card_table+64
     .quad 0
 WRITE_BARRIER_END JIT_WriteBarrier_Table
 
@@ -382,8 +397,7 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  $t4
 NESTED_END ThePreStub, _TEXT
 
-// ------------------------------------------------------------------\
-
+// ------------------------------------------------------------------
 // EXTERN_C int __fastcall HelperMethodFrameRestoreState(
 // INDEBUG_COMMA(HelperMethodFrame *pFrame)
 // MachState *pState
@@ -412,7 +426,7 @@ LOCAL_LABEL(Done):
     // Its imperative that the return value of HelperMethodFrameRestoreState is zero
     // as it is used in the state machine to loop until it becomes zero.
     // Refer to HELPER_METHOD_FRAME_END macro for details.
-    ori  $v0, $zero, 0
+    ori  $a0, $zero, 0
     jirl  $r0, $ra, 0
 LEAF_END HelperMethodFrameRestoreState, _TEXT
 
@@ -508,7 +522,7 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     bl VirtualMethodFixupWorker
     ori  $t4,$a0,0
 
-    // On return, v0 contains the target to tailcall to
+    // On return, a0 contains the target to tailcall to
 
     // pop the stack and restore original register state
     RESTORE_FLOAT_ARGUMENT_REGISTERS  $sp, 96
@@ -608,7 +622,7 @@ LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
     andi  $t8, $a2, 1
     beq  $t8, $zero, 1f //LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper)
 
-    ld.d  $v0, $a0, DomainLocalModule__m_pGCStatics
+    ld.d  $a0, $a0, DomainLocalModule__m_pGCStatics
     jirl  $r0, $ra, 0
 
 1:
@@ -616,6 +630,46 @@ LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
     // Tail call JIT_GetSharedGCStaticBase_Helper
     bl  JIT_GetSharedGCStaticBase_Helper
 LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
+
+// Make sure the `FaultingExceptionFrame_StackAlloc` is 16-byte aligned.
+#define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame + 0x8)
+#define FaultingExceptionFrame_FrameOffset SIZEOF__GSCookie
+
+.macro GenerateRedirectedStubWithFrame stub, target
+
+    //
+    // This is the primary function to which execution will be redirected to.
+    //
+    NESTED_ENTRY \stub, _TEXT, NoHandler
+
+        //
+        // IN: ra: original IP before redirect
+        //
+
+        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 16
+
+        // alloc stack for FaultingExceptionFrame.
+        addi.d  $sp, $sp, -FaultingExceptionFrame_StackAlloc
+
+        // stack must be 16 bytes aligned
+        CHECK_STACK_ALIGNMENT
+
+        // Save pointer to FEF for GetFrameFromRedirectedStubStackFrame
+        addi.d  $a0, $sp, FaultingExceptionFrame_FrameOffset
+
+        // Prepare to initialize to NULL
+        st.d    $r0, $a0, 0  // Initialize vtbl (it is not strictly necessary)
+        st.d    $r0, $a0, FaultingExceptionFrame__m_fFilterExecuted  // Initialize BOOL for personality routine
+
+        bl   C_FUNC(\target)
+        // Target should not return.
+        EMIT_BREAKPOINT
+
+    NESTED_END \stub, _TEXT
+
+.endm
+
+GenerateRedirectedStubWithFrame RedirectForThreadAbort, ThrowControlForThread
 
 // ------------------------------------------------------------------
 // ResolveWorkerChainLookupAsmStub
@@ -771,8 +825,8 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     PROLOG_SAVE_REG 31, 80
 
     // save any integral return value(s)
-    st.d  $v0, $sp, 96
-    st.d  $v1, $sp, 104
+    st.d  $a0, $sp, 96
+    st.d  $a1, $sp, 104
 
     // save any FP/HFA return value(s)
     fst.d  $f0, $sp, 112
@@ -784,8 +838,8 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     // restore callee saved registers
 
     // restore any integral return value(s)
-    ld.d  $v0, $sp, 96
-    ld.d  $v1, $sp, 104
+    ld.d  $a0, $sp, 96
+    ld.d  $a1, $sp, 104
 
     // restore any FP/HFA return value(s)
     fst.d  $f0, $sp, 112
@@ -987,9 +1041,9 @@ DelayLoad_Helper\suffix:
     addi.d  $a0, $sp, __PWTB_TransitionBlock        // pTransitionBlock
     bl  DynamicHelperWorker
 
-    bne $v0, $r0, LOCAL_LABEL(FakeProlog\suffix\()_0)
+    bne $a0, $r0, LOCAL_LABEL(FakeProlog\suffix\()_0)
 
-    ld.d  $v0, $sp, __PWTB_ArgumentRegisters
+    ld.d  $a0, $sp, __PWTB_ArgumentRegisters
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 LOCAL_LABEL(FakeProlog\suffix\()_0):
     ori  $t4,$a0,0
@@ -1013,12 +1067,6 @@ LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
 // ------------------------------------------------------------------
-#define PROFILE_ENTER    1
-#define PROFILE_LEAVE    2
-#define PROFILE_TAILCALL 4
-#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 272
-
-// ------------------------------------------------------------------
 .macro GenerateProfileHelper helper, flags
 NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // On entry:
@@ -1030,27 +1078,27 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     //   Values of $a0-$a7, $fa0-$fa7, $fp are preserved.
     //   Values of other volatile registers are not preserved.
 
-    //                           $fp,$ra
+    //                          $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Allocate space and save Fp, Pc.
-    SAVE_ARGUMENT_REGISTERS $sp, 16          // Save $t0 and argument registers ($a0-$a7).
-    st.d     $zero, $sp, 88                   // Clear functionId.
-    SAVE_FLOAT_ARGUMENT_REGISTERS $sp, 96    // Save floating-point/SIMD registers ($fa0-$fa7).
-    addi.d     $t3, $fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
-    st.d     $t3, $sp, 224             // Save probeSp.
-    st.d     $t2, $sp, 232             // Save profiledSp.
 
-    st.d    $zero, $sp, 240            // Clear hiddenArg.
-    addi.d  $t3, $zero, \flags
-    st.w    $t3, $sp, 248              // Save flags.
-    st.d    $zero, $sp, 256            // clear unused field.
+    SAVE_ARGUMENT_REGISTERS       $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
+    SAVE_FLOAT_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
+    st.d    $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__functionId
+    addi.d  $t3, $sp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
+    st.d    $t3, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp
+    st.d    $t2, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp
 
-    ori     $a1, $t1, 0
-    ori     $a2, $sp, 0
+    st.d    $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg
+    addi.w  $t3, $zero, \flags
+    st.w    $t3, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__flags
+
+    ori     $a0, $t1, 0
+    ori     $a1, $sp, 0
     bl      C_FUNC(\helper)
 
-    RESTORE_ARGUMENT_REGISTERS $sp, 16       // Restore $t0 and argument registers.
-    RESTORE_FLOAT_ARGUMENT_REGISTERS $sp, 96 // Restore floating-point/SIMD registers.
-    //                              $fp, $ra
+    RESTORE_ARGUMENT_REGISTERS       $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
+    RESTORE_FLOAT_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
+    //                             $fp, $ra
     EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA
     EPILOG_RETURN
 
@@ -1079,3 +1127,17 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+// ------------------------------------------------------------------
+// size_t GetThreadStaticsVariableOffset()
+
+// Helper to calculate the offset of native thread local variable `t_ThreadStatics` in TCB. The offset has to be found at runtime
+// once linker does its relocation and fixup of thread locals. The offset, after calculation is returned in `$a0` register.
+
+LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
+        PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
+        la.tls.ie   $a0, t_ThreadStatics
+        EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 16
+        EPILOG_RETURN
+LEAF_END GetThreadStaticsVariableOffset, _TEXT
+// ------------------------------------------------------------------

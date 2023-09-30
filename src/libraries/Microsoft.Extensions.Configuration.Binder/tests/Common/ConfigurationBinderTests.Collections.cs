@@ -15,7 +15,7 @@ namespace Microsoft.Extensions
 #endif
     .Configuration.Binder.Tests
 {
-    public partial class ConfigurationBinderCollectionTests
+    public sealed partial class ConfigurationBinderCollectionTests : ConfigurationBinderTestsBase
     {
         [Fact]
         public void GetList()
@@ -286,7 +286,9 @@ namespace Microsoft.Extensions
             var config = configurationBuilder.Build();
 
             var options = new Dictionary<T, string>();
+#pragma warning disable SYSLIB1104 
             config.GetSection("IntegerKeyDictionary").Bind(options);
+#pragma warning restore SYSLIB1104
 
             Assert.Equal(3, options.Count);
 

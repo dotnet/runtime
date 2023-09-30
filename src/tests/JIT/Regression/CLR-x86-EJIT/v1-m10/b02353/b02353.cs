@@ -137,10 +137,9 @@ namespace DefaultNamespace
                                                                              {"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."}};
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             new Bug();
-            return 100;
         }
     }
 

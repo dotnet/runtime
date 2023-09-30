@@ -94,7 +94,6 @@ DEFINE_DACVAR(PTR_StubLinkStubManager, StubLinkStubManager__g_pManager, StubLink
 DEFINE_DACVAR(PTR_ThunkHeapStubManager, ThunkHeapStubManager__g_pManager, ThunkHeapStubManager::g_pManager)
 DEFINE_DACVAR(PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, JumpStubStubManager::g_pManager)
 DEFINE_DACVAR(PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
-DEFINE_DACVAR(PTR_DelegateInvokeStubManager, DelegateInvokeStubManager__g_pManager, DelegateInvokeStubManager::g_pManager)
 DEFINE_DACVAR(PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
 DEFINE_DACVAR(PTR_CallCountingStubManager, CallCountingStubManager__g_pManager, CallCountingStubManager::g_pManager)
 
@@ -113,6 +112,11 @@ DEFINE_DACVAR(PTR_SystemDomain, SystemDomain__m_pSystemDomain, SystemDomain::m_p
 DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
 DEFINE_DACVAR(DWORD, dac__g_TlsIndex, g_TlsIndex)
+
+#ifdef FEATURE_EH_FUNCLETS
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)
+DEFINE_DACVAR(BOOL, dac__g_isNewExceptionHandlingEnabled, ::g_isNewExceptionHandlingEnabled)
+#endif
 
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
 
@@ -228,7 +232,7 @@ DEFINE_DACVAR(TADDR, dac__g_MiniMetaDataBuffAddress, ::g_MiniMetaDataBuffAddress
 
 DEFINE_DACVAR(SIZE_T, dac__g_clrNotificationArguments, ::g_clrNotificationArguments)
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 DEFINE_DACVAR(bool, dac__g_metadataUpdatesApplied, ::g_metadataUpdatesApplied)
 #endif
 

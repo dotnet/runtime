@@ -967,6 +967,31 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
         CONSISTENCY_CHECK(hr == S_OK);
     }
+    else if (pMT->GetClass()->IsInlineArray())
+    {
+        // If the type is an inline array, we need to calculate the size based on the number of elements.
+        const void* pVal;                  // The custom value.
+        ULONG       cbVal;                 // Size of the custom value.
+        HRESULT hr = pMT->GetCustomAttribute(
+            WellKnownAttribute::InlineArrayAttribute,
+            &pVal, &cbVal);
+
+        if (hr != S_FALSE)
+        {
+            // Validity of the InlineArray attribute is checked at type-load time,
+            // so we only assert here as we should have already checked this and failed
+            // type load if this condition is false.
+            _ASSERTE(cbVal >= (sizeof(INT32) + 2));
+            if (cbVal >= (sizeof(INT32) + 2))
+            {
+                INT32 repeat = GET_UNALIGNED_VAL32((byte*)pVal + 2);
+                if (repeat > 0)
+                {
+                    classSizeInMetadata = repeat * pInfoArray[0].m_nfd.NativeSize();
+                }
+            }
+        }
+    }
 
     BYTE parentAlignmentRequirement = 0;
     if (fParentHasLayout)
@@ -1061,7 +1086,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
         {
             for (UINT i = 0; i < cInstanceFields; i++)
             {
-                _ASSERTE(pNativeFieldDescriptors[i].GetExternalOffset() == pNativeFieldDescriptors[i].GetFieldDesc()->GetOffset_NoLogging());
+                _ASSERTE(pNativeFieldDescriptors[i].GetExternalOffset() == pNativeFieldDescriptors[i].GetFieldDesc()->GetOffset());
                 _ASSERTE(pNativeFieldDescriptors[i].NativeSize() == pNativeFieldDescriptors[i].GetFieldDesc()->GetSize());
             }
             _ASSERTE(pNativeLayoutInfo->GetSize() == pEEClassLayoutInfo->GetManagedSize());

@@ -7,8 +7,6 @@
     <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <DefaultReferenceExclusion Include="System.Diagnostics.Debug" />
-    <DefaultReferenceExclusion Include="System.Runtime.Extensions" />
     <DefaultReferenceExclusion Include="System.Collections" />
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />

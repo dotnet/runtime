@@ -28,7 +28,7 @@
   <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>Mono.LLVM</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(MonoBundleLLVMOptimizer)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+  <PropertyGroup Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
   <PropertyGroup Condition="'$(MonoWasmBuildVariant)' != ''">
@@ -66,8 +66,13 @@
 
   <!-- Mobile and NativeAOT use a different hosting model, so we don't include the .NET host components. -->
   <ItemGroup Condition="'$(TargetsMobile)' != 'true' and '$(BuildNativeAOTRuntimePack)' != 'true'">
-    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostpolicy$(LibSuffix)" />
-    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(LibSuffix)" PackOnly="true" />
+    <_HostFiles Include="$(DotNetHostBinDir)/$(LibPrefix)hostpolicy$(LibSuffix)" />
+    <_HostFiles Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(LibSuffix)" PackOnly="true" />
+    <NativeRuntimeAsset Include="@(_HostFiles)" />
+
+    <_HostSymbolFiles Include="@(_HostFiles->'%(RootDir)%(Directory)PDB/%(Filename)$(SymbolsSuffix)')" Condition="'$(TargetOS)' == 'windows'" />
+    <_HostSymbolFiles Include="@(_HostFiles->'%(RootDir)%(Directory)%(Filename)%(Extension)$(SymbolsSuffix)')" Condition="'$(TargetOS)' != 'windows'" />
+    <_SymbolFilesToPackage Include="@(_HostSymbolFiles->Exists())" IsNative="true" />
   </ItemGroup>
 
   <Target Name="AddRuntimeFilesToPackage" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
@@ -81,26 +86,22 @@
         <TargetPath>tools</TargetPath>
       </RuntimeFiles>
 
-      <RuntimeFiles
-        Include="@(MonoIncludeFiles)"
-        ExcludeFromDataFiles="true">
-        <TargetPath>runtimes/$(RuntimeIdentifier)/native/include/%(RecursiveDir)</TargetPath>
-      </RuntimeFiles>
-
-      <RuntimeFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'"
-        Include="@(FrameworkReleaseFiles)"
-        ExcludeFromDataFiles="true">
+      <RuntimeFiles Include="@(MonoFrameworkReleaseFiles)"
+                    ExcludeFromDataFiles="true">
         <TargetPath>runtimes/$(RuntimeIdentifier)/native/Mono.release.framework/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
 
-      <RuntimeFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'"
-        Include="@(FrameworkDebugFiles)"
-        ExcludeFromDataFiles="true">
+      <RuntimeFiles Include="@(MonoFrameworkDebugFiles)"
+                    ExcludeFromDataFiles="true">
         <TargetPath>runtimes/$(RuntimeIdentifier)/native/Mono.debug.framework/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
 
-      <RuntimeFiles Condition="'$(RuntimeFlavor)' == 'Mono'"
-                    Include="$(MonoArtifactsPath)\build\**\*.*"
+      <RuntimeFiles Include="@(MonoIncludeFiles)"
+                    ExcludeFromDataFiles="true">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/include/%(RecursiveDir)</TargetPath>
+      </RuntimeFiles>
+
+      <RuntimeFiles Include="@(MonoBuildFiles)"
                     ExcludeFromDataFiles="true">
         <TargetPath>runtimes/$(RuntimeIdentifier)/build/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
@@ -118,7 +119,7 @@
       <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
       </CoreCLRCrossTargetFiles>
-      <CoreCLROptimizationFiles Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc" 
+      <CoreCLROptimizationFiles Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"
                                 Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')">
         <TargetPath>tools</TargetPath>
       </CoreCLROptimizationFiles>

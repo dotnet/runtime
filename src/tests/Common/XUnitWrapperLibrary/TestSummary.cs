@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Xml;
+
 namespace XUnitWrapperLibrary;
 
 public class TestSummary
@@ -43,8 +44,14 @@ public class TestSummary
             testResultSb.Append($@"<test name=""{Name}"" type=""{ContainingTypeName}"""
                               + $@" method=""{MethodName}"" time=""{Duration.TotalSeconds:F6}""");
 
+            // GH dotnet/runtime issue #92092: It is possible for tests to have
+            // illegal XML characters in their output. So, we have to sanitize said
+            // output before writing it down to the XML log because otherwise, the
+            // python XML parser crashes. The way we clean it is by replacing said
+            // characters with their hexadecimal notation in SanitizeOutput().
+
             string outputElement = !string.IsNullOrWhiteSpace(Output)
-                                 ? $"<output><![CDATA[{XmlConvert.EncodeName(Output)}]]></output>"
+                                 ? $"<output><![CDATA[{SanitizeOutput(Output)}]]></output>"
                                  : string.Empty;
 
             if (Exception is not null)
@@ -95,12 +102,36 @@ public class TestSummary
 
             return testResultSb.ToString();
         }
+
+        private string SanitizeOutput(string output)
+        {
+            StringBuilder sanitizedOutput = new StringBuilder();
+
+            // Check each character in the given test's output:
+            //   * If it's a legal XML character, then write it as is.
+            //   * Otherwise, write it in its hexadecimal notation.
+
+            foreach (char ch in output)
+            {
+                if (XmlConvert.IsXmlChar(ch))
+                {
+                    sanitizedOutput.Append(ch);
+                }
+                else
+                {
+                    int charCode = Convert.ToInt32(ch);
+                    sanitizedOutput.AppendFormat("_0x{0}_", charCode.ToString("X"));
+                }
+            }
+
+            return sanitizedOutput.ToString();
+        }
     }
 
-    public int PassedTests { get; private set; }
-    public int FailedTests { get; private set; }
-    public int SkippedTests { get; private set; }
-    public int TotalTests { get; private set; }
+    public int PassedTests { get; private set; } = 0;
+    public int FailedTests { get; private set; } = 0;
+    public int SkippedTests { get; private set; } = 0;
+    public int TotalTests { get; private set; } = 0;
 
     private readonly List<TestResult> _testResults = new();
     private DateTime _testRunStart = DateTime.Now;
@@ -120,11 +151,18 @@ public class TestSummary
         tempLogSw.WriteLine("</assembly>");
     }
 
+    public void ReportStartingTest(string name, TextWriter outTw)
+    {
+        outTw.WriteLine("{0:HH:mm:ss.fff} Running test: {1}", System.DateTime.Now, name);
+        outTw.Flush();
+    }
+
     public void ReportPassedTest(string name,
                                  string containingTypeName,
                                  string methodName,
                                  TimeSpan duration,
                                  string output,
+                                 TextWriter outTw,
                                  StreamWriter tempLogSw,
                                  StreamWriter statsCsvSw)
     {
@@ -133,8 +171,10 @@ public class TestSummary
         var result = new TestResult(name, containingTypeName, methodName, duration, null, null, output);
         _testResults.Add(result);
 
+        outTw.WriteLine("{0:HH:mm:ss.fff} Passed test: {1}", System.DateTime.Now, name);
         statsCsvSw.WriteLine($"{TotalTests},{PassedTests},{FailedTests},{SkippedTests}");
         tempLogSw.WriteLine(result.ToXmlString());
+        outTw.Flush();
         statsCsvSw.Flush();
         tempLogSw.Flush();
     }
@@ -145,6 +185,7 @@ public class TestSummary
                                  TimeSpan duration,
                                  Exception ex,
                                  string output,
+                                 TextWriter outTw,
                                  StreamWriter tempLogSw,
                                  StreamWriter statsCsvSw)
     {
@@ -153,8 +194,11 @@ public class TestSummary
         var result = new TestResult(name, containingTypeName, methodName, duration, ex, null, output);
         _testResults.Add(result);
 
+        outTw.WriteLine(ex);
+        outTw.WriteLine("{0:HH:mm:ss.fff} Failed test: {1}", System.DateTime.Now, name);
         statsCsvSw.WriteLine($"{TotalTests},{PassedTests},{FailedTests},{SkippedTests}");
         tempLogSw.WriteLine(result.ToXmlString());
+        outTw.Flush();
         statsCsvSw.Flush();
         tempLogSw.Flush();
     }

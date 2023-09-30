@@ -34,12 +34,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Attributes
 		}
 
 		[Fact]
-		public Task ComAttributesAreRemovedWhenFeatureExcluded ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task ContextStaticIsPreservedOnField ()
 		{
 			return RunTest (allowMissingWarnings: true);

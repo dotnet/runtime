@@ -102,6 +102,7 @@ namespace Microsoft.Extensions.Hosting
         Microsoft.Extensions.Configuration.IConfigurationManager Configuration { get; }
         Microsoft.Extensions.Hosting.IHostEnvironment Environment { get; }
         Microsoft.Extensions.Logging.ILoggingBuilder Logging { get; }
+        Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder Metrics { get; }
         System.Collections.Generic.IDictionary<object, object> Properties { get; }
         Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
         void ConfigureContainer<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory, System.Action<TContainerBuilder>? configure = null) where TContainerBuilder : notnull;

@@ -186,14 +186,14 @@ namespace System
             TryFormatCore(destination, fieldCount, out charsWritten);
 
         /// <summary>Tries to format this version instance into a span of bytes.</summary>
-        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF8 bytes.</param>
+        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF-8 bytes.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
         /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>
             TryFormatCore(utf8Destination, DefaultFormatFieldCount, out bytesWritten);
 
         /// <summary>Tries to format this version instance into a span of bytes.</summary>
-        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF8 bytes.</param>
+        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF-8 bytes.</param>
         /// <param name="fieldCount">The number of components to return. This value ranges from 0 to 4.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
         /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>

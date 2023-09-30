@@ -11,24 +11,30 @@ namespace System.Net
 {
     internal static class SocketAddressPal
     {
-        public static readonly int IPv6AddressSize = GetIPv6AddressSize();
-        public static readonly int IPv4AddressSize = GetIPv4AddressSize();
+        public static readonly int IPv4AddressSize;
+        public static readonly int IPv6AddressSize;
+        public static readonly int UdsAddressSize;
+        public static readonly int MaxAddressSize;
 
-        private static unsafe int GetIPv6AddressSize()
+#pragma warning disable CA1810
+        static unsafe SocketAddressPal()
         {
-            int ipv6AddressSize, unused;
-            Interop.Error err = Interop.Sys.GetIPSocketAddressSizes(&unused, &ipv6AddressSize);
+            int ipv4 = 0;
+            int ipv6 = 0;
+            int uds = 0;
+            int max = 0;
+            Interop.Error err = Interop.Sys.GetSocketAddressSizes(&ipv4, &ipv6, &uds, &max);
             Debug.Assert(err == Interop.Error.SUCCESS, $"Unexpected err: {err}");
-            return ipv6AddressSize;
+            Debug.Assert(ipv4 > 0);
+            Debug.Assert(ipv6 > 0);
+            Debug.Assert(uds > 0);
+            Debug.Assert(max >= ipv4 && max >= ipv6 && max >= uds);
+            IPv4AddressSize = ipv4;
+            IPv6AddressSize = ipv6;
+            UdsAddressSize = uds;
+            MaxAddressSize = max;
         }
-
-        private static unsafe int GetIPv4AddressSize()
-        {
-            int ipv4AddressSize, unused;
-            Interop.Error err = Interop.Sys.GetIPSocketAddressSizes(&ipv4AddressSize, &unused);
-            Debug.Assert(err == Interop.Error.SUCCESS, $"Unexpected err: {err}");
-            return ipv4AddressSize;
-        }
+#pragma warning restore CA1810
 
         private static void ThrowOnFailure(Interop.Error err)
         {
@@ -64,7 +70,7 @@ namespace System.Net
             return family;
         }
 
-        public static unsafe void SetAddressFamily(byte[] buffer, AddressFamily family)
+        public static unsafe void SetAddressFamily(Span<byte> buffer, AddressFamily family)
         {
             Interop.Error err;
 
@@ -92,7 +98,7 @@ namespace System.Net
             return port;
         }
 
-        public static unsafe void SetPort(byte[] buffer, ushort port)
+        public static unsafe void SetPort(Span<byte> buffer, ushort port)
         {
             Interop.Error err;
             fixed (byte* rawAddress = buffer)
@@ -130,7 +136,7 @@ namespace System.Net
             scope = localScope;
         }
 
-        public static unsafe void SetIPv4Address(byte[] buffer, uint address)
+        public static unsafe void SetIPv4Address(Span<byte> buffer, uint address)
         {
             Interop.Error err;
             fixed (byte* rawAddress = buffer)
@@ -141,21 +147,22 @@ namespace System.Net
             ThrowOnFailure(err);
         }
 
-        public static unsafe void SetIPv4Address(byte[] buffer, byte* address)
+        public static unsafe void SetIPv4Address(Span<byte> buffer, byte* address)
         {
             uint addr = (uint)System.Runtime.InteropServices.Marshal.ReadInt32((IntPtr)address);
             SetIPv4Address(buffer, addr);
         }
 
-        public static unsafe void SetIPv6Address(byte[] buffer, Span<byte> address, uint scope)
+        public static unsafe void SetIPv6Address(Span<byte> buffer, Span<byte> address, uint scope)
         {
+
             fixed (byte* rawInput = &MemoryMarshal.GetReference(address))
             {
                 SetIPv6Address(buffer, rawInput, address.Length, scope);
             }
         }
 
-        public static unsafe void SetIPv6Address(byte[] buffer, byte* address, int addressLength, uint scope)
+        public static unsafe void SetIPv6Address(Span<byte> buffer, byte* address, int addressLength, uint scope)
         {
             Interop.Error err;
             fixed (byte* rawAddress = buffer)
@@ -164,6 +171,15 @@ namespace System.Net
             }
 
             ThrowOnFailure(err);
+        }
+
+        public static unsafe void Clear(Span<byte> buffer)
+        {
+            AddressFamily family = GetAddressFamily(buffer);
+            buffer.Clear();
+            // platforms where this matters (OSXLike & BSD) use uint8 for SA length
+            buffer[0] = (byte)Math.Min(buffer.Length, 255);
+            SetAddressFamily(buffer, family);
         }
     }
 }

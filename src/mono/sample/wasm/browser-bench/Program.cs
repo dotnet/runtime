@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -29,13 +30,13 @@ namespace Sample
             new JSInteropTask(),
             new WebSocketTask(),
         };
-        static Test instance = new Test();
+        public static Test Instance = new Test();
         Formatter formatter = new HTMLFormatter();
 
         [JSExport]
         public static Task<string> RunBenchmark()
         {
-            return instance.RunTasks();
+            return Instance.RunTasks();
         }
 
         // the constructors of the task we care about are already used when createing tasks field
@@ -73,13 +74,13 @@ namespace Sample
                 tasksList.Add(task);
             }
 
-            instance.tasks = tasksList;
+            Instance.tasks = tasksList;
         }
 
         [JSExport]
         public static string GetFullJsonResults()
         {
-            return instance.GetJsonResults();
+            return Instance.GetJsonResults();
         }
 
         int taskCounter = 0;
@@ -95,7 +96,7 @@ namespace Sample
         Dictionary<string, double> minTimes = new();
         bool resultsReturned;
 
-        bool NextTask()
+        async Task<bool> NextTask()
         {
             bool hasMeasurement;
             do
@@ -105,7 +106,7 @@ namespace Sample
 
                 Task = tasks[taskCounter];
                 measurementIdx = -1;
-                hasMeasurement = NextMeasurement();
+                hasMeasurement = await NextMeasurement();
 
                 if (hasMeasurement)
                     task.Initialize();
@@ -116,13 +117,16 @@ namespace Sample
             return true;
         }
 
-        bool NextMeasurement()
+        async Task<bool> NextMeasurement()
         {
             runIdx = 0;
 
             while (measurementIdx < Task.Measurements.Length - 1)
             {
                 measurementIdx++;
+
+                if (!await Task.Measurements[measurementIdx].IsEnabled())
+                    continue;
 
                 if (Task.pattern == null || Task.pattern.IsMatch(Task.Measurements[measurementIdx].Name))
                     return true;
@@ -140,14 +144,14 @@ namespace Sample
 
             if (taskCounter == 0)
             {
-                NextTask();
+                await NextTask();
                 return $"Benchmark started{formatter.NewLine}";
             }
 
             if (measurementIdx == -1)
                 return ResultsSummary();
 
-            if (runIdx >= Task.Measurements[measurementIdx].NumberOfRuns && !NextMeasurement() && !NextTask())
+            if (runIdx >= Task.Measurements[measurementIdx].NumberOfRuns && !await NextMeasurement() && !await NextTask())
                 return ResultsSummary();
 
             runIdx++;
@@ -209,11 +213,14 @@ namespace Sample
             public DateTime timeStamp;
         }
 
+        [JsonSourceGenerationOptions(IncludeFields = true, WriteIndented = true)]
+        [JsonSerializable(typeof(JsonResultsData))]
+        partial class ResultsSerializerContext : JsonSerializerContext { }
+
         string GetJsonResults()
         {
-            var options = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
             var jsonObject = new JsonResultsData { results = results, minTimes = minTimes, timeStamp = DateTime.UtcNow };
-            return JsonSerializer.Serialize(jsonObject, options);
+            return JsonSerializer.Serialize(jsonObject, ResultsSerializerContext.Default.JsonResultsData);
         }
 
         private void PrintJsonResults()

@@ -764,7 +764,11 @@ handle_signal_exception (gpointer obj)
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
+	MONO_ENTER_GC_UNSAFE_UNBALANCED;
+
 	mono_handle_exception (&ctx, (MonoObject *)obj);
+
+	MONO_EXIT_GC_UNSAFE_UNBALANCED;
 
 	mono_restore_context (&ctx);
 }
@@ -832,9 +836,7 @@ gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
 #if defined(MONO_ARCH_USE_SIGACTION)
-	ucontext_t *ctx = (ucontext_t*)sigctx;
-
-	return (gpointer)UCONTEXT_REG_RIP (ctx);
+	return (gpointer)UCONTEXT_REG_RIP ((ucontext_t*)sigctx);
 #elif defined(HOST_WIN32)
 	return (gpointer)(((CONTEXT*)sigctx)->Rip);
 #else
@@ -904,7 +906,7 @@ altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, guint32 flags)
 void
 mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer fault_addr, gboolean stack_ovf)
 {
-#if defined(MONO_ARCH_USE_SIGACTION)
+#if defined(MONO_ARCH_USE_SIGACTION) && !defined(MONO_CROSS_COMPILE)
 	MonoException *exc = NULL;
 	gpointer *sp;
 	MonoJitTlsData *jit_tls = NULL;

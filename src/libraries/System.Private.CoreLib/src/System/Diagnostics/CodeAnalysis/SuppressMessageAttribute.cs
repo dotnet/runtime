@@ -1,24 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**  An attribute to suppress violation messages/warnings
-**  by static code analysis tools.
-**
-**
-===========================================================*/
-
 namespace System.Diagnostics.CodeAnalysis
 {
-    [AttributeUsage(
-     AttributeTargets.All,
-     Inherited = false,
-     AllowMultiple = true
-     )
-    ]
+    /// <summary>
+    /// Suppresses reporting of a specific code analysis rule violation, allowing multiple suppressions on a single code artifact. Does not apply to compiler diagnostics.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.All, Inherited = false, AllowMultiple = true)]
     [Conditional("CODE_ANALYSIS")]
     public sealed class SuppressMessageAttribute : Attribute
     {

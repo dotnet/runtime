@@ -3,8 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Net;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -34,6 +38,15 @@ namespace Microsoft.Extensions
         public class GenericOptions<T>
         {
             public T Value { get; set; }
+        }
+
+        public record GenericOptionsRecord<T>(T Value);
+
+        public class GenericOptionsWithParamCtor<T>
+        {
+            public GenericOptionsWithParamCtor(T value) => Value = value;
+
+            public T Value { get; }
         }
 
         public class OptionsWithNesting
@@ -430,6 +443,10 @@ namespace Microsoft.Extensions
         public class OptionWithCollectionProperties
         {
             private int _otherCode;
+            private int _otherCodeNullable;
+            private string _otherCodeString = "default";
+            private object _otherCodeNull;
+            private Uri _otherCodeUri;
             private ICollection<string> blacklist = new HashSet<string>();
 
             public ICollection<string> Blacklist
@@ -447,11 +464,36 @@ namespace Microsoft.Extensions
             // ParsedBlacklist initialized using the setter of Blacklist.
             public ICollection<string> ParsedBlacklist { get; private set; } = new HashSet<string>();
 
-            // This property not having any match in the configuration. Still the setter need to be called during the binding.
+            // This does not have a match in the configuration, however the setter should be called during the binding:
             public int OtherCode
             {
                 get => _otherCode;
                 set => _otherCode = value == 0 ? 2 : value;
+            }
+
+            // These do not have any match in the configuration, and the setters should not be called during the binding:
+            public int? OtherCodeNullable
+            {
+                get => _otherCodeNullable;
+                set => _otherCodeNullable = !value.HasValue ? 3 : value.Value;
+            }
+
+            public string OtherCodeString
+            {
+                get => _otherCodeString;
+                set => _otherCodeString = value;
+            }
+
+            public object? OtherCodeNull
+            {
+                get => _otherCodeNull;
+                set => _otherCodeNull = value is null ? 4 : value;
+            }
+
+            public Uri OtherCodeUri
+            {
+                get => _otherCodeUri;
+                set => _otherCodeUri = value is null ? new Uri("hello") : value;
             }
         }
 
@@ -532,6 +574,47 @@ namespace Microsoft.Extensions
             }
         }
 
+        public struct StructWithNestedStructAndSetterLogic
+        {
+            private string _string;
+            private int _int32;
+
+            public string String
+            {
+                get => _string;
+                // Setter should not be called for missing values.
+                set { _string = string.IsNullOrEmpty(value) ? "Hello" : value; }
+            }
+
+            public int Int32
+            {
+                get => _int32;
+                set { _int32 = value == 0 ? 42 : value; }
+            }
+
+            public Nested NestedStruct;
+            public Nested[] NestedStructs;
+
+            public struct Nested
+            {
+                private string _string;
+                private int _int32;
+
+                public string String
+                {
+                    get => _string;
+                    // Setter should not be called for missing values.
+                    set { _string = string.IsNullOrEmpty(value) ? "Hello2" : value; }
+                }
+
+                public int Int32
+                {
+                    get => _int32;
+                    set { _int32 = value == 0 ? 43 : value; }
+                }
+            }
+        }
+
         public class BaseClassWithVirtualProperty
         {
             private string? PrivateProperty { get; set; }
@@ -594,7 +677,7 @@ namespace Microsoft.Extensions
         {
             public string Namespace { get; set; }
 
-            public Dictionary<string, QueueProperties> Queues { get; set; } = new();
+            public Dictionary<string, QueueProperties>? Queues { get; set; } = new();
         }
 
         public class QueueProperties
@@ -655,5 +738,161 @@ namespace Microsoft.Extensions
 
             public int MyInt { get; }
         }
+
+        [TypeConverter(typeof(GeolocationTypeConverter))]
+        public struct Geolocation : IGeolocation
+        {
+            public static readonly Geolocation Zero = new(0, 0);
+
+            public Geolocation(double latitude, double longitude)
+            {
+                Latitude = latitude;
+                Longitude = longitude;
+            }
+
+            public double Latitude { get; set; }
+
+            public double Longitude { get; set; }
+
+            private sealed class GeolocationTypeConverter : TypeConverter
+            {
+                public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+                    throw new NotImplementedException();
+
+                public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                    throw new NotImplementedException();
+            }
+        }
+
+        public sealed class GeolocationClass : IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
+
+        public class GeolocationWrapper
+        {
+            public Geolocation Location { get; set; }
+        }
+
+        public class GraphWithUnsupportedMember
+        {
+            public JsonWriterOptions WriterOptions { get; set; }
+        }
+
+        public record RemoteAuthenticationOptions<TRemoteAuthenticationProviderOptions> where TRemoteAuthenticationProviderOptions : new()
+        {
+            public TRemoteAuthenticationProviderOptions GenericProp { get; } = new();
+            public OidcProviderOptions NonGenericProp { get; } = new();
+
+            public TRemoteAuthenticationProviderOptions _genericField { get; } = new();
+            public OidcProviderOptions _nonGenericField { get; } = new();
+
+            public static TRemoteAuthenticationProviderOptions StaticGenericProp { get; } = new();
+            public static OidcProviderOptions StaticNonGenericProp { get; } = new();
+
+            public static TRemoteAuthenticationProviderOptions s_GenericField = new();
+            public static OidcProviderOptions s_NonGenericField = new();
+
+            public TRemoteAuthenticationProviderOptions? NullGenericProp { get; }
+            public static OidcProviderOptions? s_NullNonGenericField;
+        }
+
+        public record OidcProviderOptions
+        {
+            public string? Authority { get; set; }
+        }
+
+        public class AClass
+        {
+            public EndPointCollection EndPoints { get; init; } = new EndPointCollection();
+
+            public bool Property { get; set; } = false;
+        }
+
+        public sealed class EndPointCollection : Collection<EndPoint>, IEnumerable<EndPoint>
+        {
+            public EndPointCollection() { }
+
+            public void Add(string hostAndPort)
+            {
+                EndPoint? endpoint;
+
+                if (IPAddress.TryParse(hostAndPort, out IPAddress? address))
+                {
+                    endpoint = new IPEndPoint(address, 0);
+                }
+                else
+                {
+                    endpoint = new DnsEndPoint(hostAndPort, 0);
+                }
+
+                Add(endpoint);
+            }
+        }
+
+        internal abstract class AbstractBase
+        {
+            public int Value { get; set; }
+        }
+
+        internal sealed class Derived : AbstractBase { }
+
+        internal sealed class DerivedWithAnotherProp : AbstractBase
+        {
+            public int Value2 { get; set; }
+        }
+
+        internal class ClassWithAbstractCtorParam
+        {
+            public AbstractBase AbstractProp { get; }
+
+            public ClassWithAbstractCtorParam(AbstractBase abstractProp) => AbstractProp = abstractProp;
+        }
+
+        internal class ClassWithOptionalAbstractCtorParam
+        {
+            public AbstractBase AbstractProp { get; }
+
+            public ClassWithOptionalAbstractCtorParam(AbstractBase? abstractProp = null) => AbstractProp = abstractProp;
+        }
+
+        internal class ClassWith_DirectlyAssignable_CtorParams
+        {
+            public IConfigurationSection MySection { get; }
+            public object MyObject { get; }
+            public string MyString { get; }
+
+            public ClassWith_DirectlyAssignable_CtorParams(IConfigurationSection mySection, object myObject, string myString) =>
+                (MySection, MyObject, MyString) = (mySection, myObject, myString);
+        }
+
+        public class SharedChildInstance_Class
+        {
+            public string? ConnectionString { get; set; }
+        }
+
+        public class ClassThatThrowsOnSetters
+        {
+            private int _myIntProperty;
+
+            public ClassThatThrowsOnSetters()
+            {
+                _myIntProperty = 42;
+            }
+
+            public int MyIntProperty
+            {
+                get => _myIntProperty;
+                set => throw new InvalidOperationException("Not expected");
+            }
+        }
+
+        public class SimplePoco
+        {
+            public string A { get; set; }
+            public string B { get; set; }
+        }
+
     }
 }

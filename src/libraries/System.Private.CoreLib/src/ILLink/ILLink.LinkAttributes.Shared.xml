@@ -320,6 +320,9 @@
     <type fullname="System.Runtime.CompilerServices.ScopedRefAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.CompilerServices.RefSafetyRulesAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
 
     <!-- Microsoft.CodeAnalysis -->
     <type fullname="Microsoft.CodeAnalysis.EmbeddedAttribute">
@@ -338,13 +341,6 @@
       <attribute internal="RemoveAttributeInstances">
         <argument type="System.Object">
           <argument>PreferInbox</argument>
-        </argument>
-      </attribute>
-    </type>
-    <type fullname="System.Reflection.AssemblyMetadataAttribute">
-      <attribute internal="RemoveAttributeInstances">
-        <argument type="System.Object">
-          <argument>.NETFrameworkAssembly</argument>
         </argument>
       </attribute>
     </type>

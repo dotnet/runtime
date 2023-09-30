@@ -15,6 +15,7 @@ namespace System.Reflection.Emit
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
         private readonly string? _namespace;
+        private string? _strFullName;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private readonly TypeBuilderImpl? _declaringType;
@@ -22,6 +23,7 @@ namespace System.Reflection.Emit
         private TypeAttributes _attributes;
         private PackingSize _packingSize;
         private int _typeSize;
+        private Type? _enumUnderlyingType;
 
         internal readonly TypeDefinitionHandle _handle;
         internal readonly List<MethodBuilderImpl> _methodDefinitions = new();
@@ -73,14 +75,24 @@ namespace System.Reflection.Emit
             _interfaces.Add(interfaceType);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2083:DynamicallyAccessedMembers", Justification = "Not sure how to handle")]
         [return: DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))]
-        protected override TypeInfo CreateTypeInfoCore() => throw new NotImplementedException();
+        protected override TypeInfo CreateTypeInfoCore() => this;
         protected override ConstructorBuilder DefineConstructorCore(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers) => throw new NotImplementedException();
         protected override ConstructorBuilder DefineDefaultConstructorCore(MethodAttributes attributes) => throw new NotImplementedException();
         protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype) => throw new NotImplementedException();
 
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
+            if (_enumUnderlyingType == null && IsEnum)
+            {
+                if ((attributes & FieldAttributes.Static) == 0)
+                {
+                    // remember the underlying type for enum type
+                    _enumUnderlyingType = type;
+                }
+            }
+
             var field = new FieldBuilderImpl(this, fieldName, type, attributes);
             _fieldDefinitions.Add(field);
             return field;
@@ -154,6 +166,11 @@ namespace System.Reflection.Emit
 
             _customAttributes ??= new List<CustomAttributeWrapper>();
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
+
+        internal void SetCustomAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
+        {
+            SetCustomAttributeCore(con, binaryAttribute);
         }
 
         private void ParseStructLayoutAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
@@ -249,11 +266,27 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();
         public override Type GetElementType() => throw new NotSupportedException();
         public override string? AssemblyQualifiedName => throw new NotSupportedException();
-        public override string? FullName => throw new NotSupportedException();
+        public override string? FullName => _strFullName ??= TypeNameBuilder.ToString(this, TypeNameBuilder.Format.FullName);
         public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
         public override Module Module => _module;
-        public override Type UnderlyingSystemType => this;
+        public override Type UnderlyingSystemType
+        {
+            get
+            {
+                if (IsEnum)
+                {
+                    if (_enumUnderlyingType == null)
+                        throw new InvalidOperationException(SR.InvalidOperation_NoUnderlyingTypeOnEnum);
+
+                    return _enumUnderlyingType;
+                }
+                else
+                {
+                    return this;
+                }
+            }
+        }
         public override Guid GUID => throw new NotSupportedException();
         public override Type? BaseType => _typeParent;
         public override int MetadataToken => MetadataTokens.GetToken(_handle);

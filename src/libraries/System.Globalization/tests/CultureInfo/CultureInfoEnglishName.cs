@@ -15,7 +15,7 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.EnglishName };
 
-            if (SupportFullGlobalizationData)
+            if (SupportFullGlobalizationData || PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 yield return new object[] { "en-US", "English (United States)" };
                 yield return new object[] { "fr-FR", "French (France)" };

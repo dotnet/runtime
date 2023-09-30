@@ -5,15 +5,6 @@
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
 // ===================================================================================================
 
-/*============================================================
-**
-**
-**
-** Purpose: Some floating-point math operations
-**
-**
-===========================================================*/
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -25,6 +16,9 @@ using System.Runtime.Versioning;
 
 namespace System
 {
+    /// <summary>
+    /// Provides constants and static methods for trigonometric, logarithmic, and other common mathematical functions.
+    /// </summary>
     public static partial class Math
     {
         public const double E = 2.7182818284590452354;
@@ -1039,7 +1033,7 @@ namespace System
             //
             // It propagates NaN inputs back to the caller and
             // otherwise returns the lesser of the inputs. It
-            // treats +0 as lesser than -0 as per the specification.
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -1097,7 +1091,7 @@ namespace System
             //
             // It propagates NaN inputs back to the caller and
             // otherwise returns the lesser of the inputs. It
-            // treats +0 as lesser than -0 as per the specification.
+            // treats +0 as greater than -0 as per the specification.
 
             if (val1 != val2)
             {
@@ -1151,7 +1145,7 @@ namespace System
             //
             // It propagates NaN inputs back to the caller and
             // otherwise returns the input with a lesser magnitude.
-            // It treats +0 as lesser than -0 as per the specification.
+            // It treats +0 as greater than -0 as per the specification.
 
             double ax = Abs(x);
             double ay = Abs(y);

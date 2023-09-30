@@ -3,10 +3,10 @@
 
 namespace System
 {
-    /// <summary>Provides functionality to format the string representation of an object into a span as UTF8.</summary>
+    /// <summary>Provides functionality to format the string representation of an object into a span as UTF-8.</summary>
     public interface IUtf8SpanFormattable
     {
-        /// <summary>Tries to format the value of the current instance as UTF8 into the provided span of bytes.</summary>
+        /// <summary>Tries to format the value of the current instance as UTF-8 into the provided span of bytes.</summary>
         /// <param name="utf8Destination">When this method returns, this instance's value formatted as a span of bytes.</param>
         /// <param name="bytesWritten">When this method returns, the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
         /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for <paramref name="utf8Destination"/>.</param>

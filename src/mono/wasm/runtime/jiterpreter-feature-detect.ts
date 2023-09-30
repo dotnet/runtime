@@ -1,8 +1,8 @@
 import {
-    WasmOpcode, WasmSimdOpcode
+    WasmValtype, WasmOpcode, WasmSimdOpcode
 } from "./jiterpreter-opcodes";
 import {
-    WasmValtype, WasmBuilder,
+    WasmBuilder,
 } from "./jiterpreter-support";
 
 export function compileDoJitCall () : WebAssembly.Module {

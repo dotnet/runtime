@@ -14,9 +14,9 @@
 //  a1: Exception*
 //
 LEAF_ENTRY RtlRestoreContext, _TEXT
-#ifdef HAS_ASAN
+#ifdef HAS_ADDRESS_SANITIZER
     ld.w  $r21, $a0, CONTEXT_ContextFlags
-    ext $r21, $r21, CONTEXT_FLOATING_POINT_BIT, 1
+    andi $r21, $r21, (1 << CONTEXT_CONTROL_BIT)
     beq $r21, $r0, LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT)
 
     addi.d  $sp, $sp, -16
@@ -33,53 +33,68 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
 #endif
 
     ori $t4, $a0, 0
-    ld.w  $r21, $t4, CONTEXT_ContextFlags
-    bstrpick.w $t1, $r21, CONTEXT_FLOATING_POINT_BIT, CONTEXT_FLOATING_POINT_BIT
-    beq $t1, $r0, LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT)
+    ld.w  $r21, $a0, CONTEXT_ContextFlags
+    andi $t1, $r21, (1 << CONTEXT_FLOATING_POINT_BIT)
+    beqz $t1, LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT)
 
-    //64-bits FPR.
-    addi.d $t0, $t4,   CONTEXT_FPU_OFFSET
+    // 256-bits SIMD:LASX.
+    xvld  $xr0, $a0, CONTEXT_FPU_OFFSET + 0
+    xvld  $xr1, $a0, CONTEXT_FPU_OFFSET + 32*1
+    xvld  $xr2, $a0, CONTEXT_FPU_OFFSET + 32*2
+    xvld  $xr3, $a0, CONTEXT_FPU_OFFSET + 32*3
+    xvld  $xr4, $a0, CONTEXT_FPU_OFFSET + 32*4
+    xvld  $xr5, $a0, CONTEXT_FPU_OFFSET + 32*5
+    xvld  $xr6, $a0, CONTEXT_FPU_OFFSET + 32*6
+    xvld  $xr7, $a0, CONTEXT_FPU_OFFSET + 32*7
+    xvld  $xr8, $a0, CONTEXT_FPU_OFFSET + 32*8
+    xvld  $xr9, $a0, CONTEXT_FPU_OFFSET + 32*9
+    xvld  $xr10, $a0, CONTEXT_FPU_OFFSET + 32*10
+    xvld  $xr11, $a0, CONTEXT_FPU_OFFSET + 32*11
+    xvld  $xr12, $a0, CONTEXT_FPU_OFFSET + 32*12
+    xvld  $xr13, $a0, CONTEXT_FPU_OFFSET + 32*13
+    xvld  $xr14, $a0, CONTEXT_FPU_OFFSET + 32*14
+    xvld  $xr15, $a0, CONTEXT_FPU_OFFSET + 32*15
+    xvld  $xr16, $a0, CONTEXT_FPU_OFFSET + 32*16
+    xvld  $xr17, $a0, CONTEXT_FPU_OFFSET + 32*17
+    xvld  $xr18, $a0, CONTEXT_FPU_OFFSET + 32*18
+    xvld  $xr19, $a0, CONTEXT_FPU_OFFSET + 32*19
+    xvld  $xr20, $a0, CONTEXT_FPU_OFFSET + 32*20
+    xvld  $xr21, $a0, CONTEXT_FPU_OFFSET + 32*21
+    xvld  $xr22, $a0, CONTEXT_FPU_OFFSET + 32*22
+    xvld  $xr23, $a0, CONTEXT_FPU_OFFSET + 32*23
+    xvld  $xr24, $a0, CONTEXT_FPU_OFFSET + 32*24
+    xvld  $xr25, $a0, CONTEXT_FPU_OFFSET + 32*25
+    xvld  $xr26, $a0, CONTEXT_FPU_OFFSET + 32*26
+    xvld  $xr27, $a0, CONTEXT_FPU_OFFSET + 32*27
+    xvld  $xr28, $a0, CONTEXT_FPU_OFFSET + 32*28
+    xvld  $xr29, $a0, CONTEXT_FPU_OFFSET + 32*29
+    xvld  $xr30, $a0, CONTEXT_FPU_OFFSET + 32*30
+    xvld  $xr31, $a0, CONTEXT_FPU_OFFSET + 32*31
 
-    fld.d  $f0, $t0, CONTEXT_F0
-    fld.d  $f1, $t0, CONTEXT_F1
-    fld.d  $f2, $t0, CONTEXT_F2
-    fld.d  $f3, $t0, CONTEXT_F3
-    fld.d  $f4, $t0, CONTEXT_F4
-    fld.d  $f5, $t0, CONTEXT_F5
-    fld.d  $f6, $t0, CONTEXT_F6
-    fld.d  $f7, $t0, CONTEXT_F7
-    fld.d  $f8, $t0, CONTEXT_F8
-    fld.d  $f9, $t0, CONTEXT_F9
-    fld.d  $f10, $t0, CONTEXT_F10
-    fld.d  $f11, $t0, CONTEXT_F11
-    fld.d  $f12, $t0, CONTEXT_F12
-    fld.d  $f13, $t0, CONTEXT_F13
-    fld.d  $f14, $t0, CONTEXT_F14
-    fld.d  $f15, $t0, CONTEXT_F15
-    fld.d  $f16, $t0, CONTEXT_F16
-    fld.d  $f17, $t0, CONTEXT_F17
-    fld.d  $f18, $t0, CONTEXT_F18
-    fld.d  $f19, $t0, CONTEXT_F19
-    fld.d  $f20, $t0, CONTEXT_F20
-    fld.d  $f21, $t0, CONTEXT_F21
-    fld.d  $f22, $t0, CONTEXT_F22
-    fld.d  $f23, $t0, CONTEXT_F23
-    fld.d  $f24, $t0, CONTEXT_F24
-    fld.d  $f25, $t0, CONTEXT_F25
-    fld.d  $f26, $t0, CONTEXT_F26
-    fld.d  $f27, $t0, CONTEXT_F27
-    fld.d  $f28, $t0, CONTEXT_F28
-    fld.d  $f29, $t0, CONTEXT_F29
-    fld.d  $f30, $t0, CONTEXT_F30
-    fld.d  $f31, $t0, CONTEXT_F31
+    ld.d  $t1, $a0, CONTEXT_FLOAT_CONTROL_OFFSET
+    movgr2cf  $fcc0, $t1
+    srli.d  $t1, $t1, 8
+    movgr2cf  $fcc1, $t1
+    srli.d  $t1, $t1, 8
+    movgr2cf  $fcc2, $t1
+    srli.d  $t1, $t1, 8
+    movgr2cf  $fcc3, $t1
+    srli.d  $t1, $t1, 8
+    movgr2cf  $fcc4, $t1
+    srli.d  $t1, $t1, 8
+    movgr2cf  $fcc5, $t1
+    srli.d  $t1, $t1, 8
+    movgr2cf  $fcc6, $t1
+    srli.d  $t1, $t1, 8
+    movgr2cf  $fcc7, $t1
 
-    ld.w $t1, $t0, CONTEXT_FLOAT_CONTROL_OFFSET
+    ld.w $t1, $a0, CONTEXT_FLOAT_CONTROL_OFFSET + 8
     movgr2fcsr  $fcsr0, $t1
 
 LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
 
-    bstrpick.w  $t1, $r21, CONTEXT_INTEGER_BIT, CONTEXT_INTEGER_BIT
-    beq $t1, $r0, LOCAL_LABEL(No_Restore_CONTEXT_INTEGER)
+    andi  $t1, $r21, (1 << CONTEXT_INTEGER_BIT)
+    beqz  $t1, LOCAL_LABEL(No_Restore_CONTEXT_INTEGER)
 
     ld.d  $tp, $a0, CONTEXT_Tp
     ld.d  $a1, $a0, CONTEXT_A1
@@ -112,8 +127,7 @@ LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT):
 
 LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
 
-    ld.w  $r21, $t4, CONTEXT_ContextFlags
-    bstrpick.w  $r21, $r21, CONTEXT_CONTROL_BIT, CONTEXT_CONTROL_BIT
+    andi  $r21, $r21, (1 << CONTEXT_CONTROL_BIT)
     beq  $r21, $r0, LOCAL_LABEL(No_Restore_CONTEXT_CONTROL)
 
     ld.d  $ra, $t4, CONTEXT_Ra
@@ -146,17 +160,16 @@ LEAF_END RtlCaptureContext, _TEXT
 //  a0: Context*
 //
 LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
-    PROLOG_STACK_ALLOC 24
+    PROLOG_STACK_ALLOC 32
     st.d  $t0, $sp, 0
     st.d  $t1, $sp, 8
     st.d  $t3, $sp, 16
 
     ld.w  $t1, $a0, CONTEXT_ContextFlags
-    li.w  $t0, CONTEXT_CONTROL
-    and  $t3, $t1, $t0
-    bne $t3, $t0, LOCAL_LABEL(Done_CONTEXT_CONTROL)
+    andi  $t3, $t1, (1 << CONTEXT_CONTROL_BIT)
+    beqz $t3, LOCAL_LABEL(Done_CONTEXT_CONTROL)
 
-    addi.d  $t0, $sp, 24
+    addi.d  $t0, $sp, 32
     st.d  $fp, $a0, CONTEXT_Fp
     st.d  $t0, $a0, CONTEXT_Sp
     st.d  $ra, $a0, CONTEXT_Ra
@@ -164,9 +177,8 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
 
 LOCAL_LABEL(Done_CONTEXT_CONTROL):
 
-    li.w  $t0, CONTEXT_INTEGER
-    and  $t3, $t1, $t0
-    bne  $t3, $t0, LOCAL_LABEL(Done_CONTEXT_INTEGER)
+    andi  $t3, $t1, (1 << CONTEXT_INTEGER_BIT)
+    beqz  $t3, LOCAL_LABEL(Done_CONTEXT_INTEGER)
 
     ld.d  $t0, $sp, 0
     ld.d  $t1, $sp, 8
@@ -204,49 +216,66 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
 LOCAL_LABEL(Done_CONTEXT_INTEGER):
     ld.w  $t1, $a0, CONTEXT_ContextFlags
 
-    li.w  $t0, CONTEXT_FLOATING_POINT
-    and  $t3, $t1, $t0
-    bne  $t3, $t0, LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT)
+    andi  $t3, $t1, (1 << CONTEXT_FLOATING_POINT_BIT)
+    beqz  $t3, LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT)
 
-    addi.d  $a0, $a0, CONTEXT_FPU_OFFSET
+    // 256-bits SIMD:LASX.
+    xvst  $xr0 , $a0, CONTEXT_FPU_OFFSET + 32*0
+    xvst  $xr1 , $a0, CONTEXT_FPU_OFFSET + 32*1
+    xvst  $xr2 , $a0, CONTEXT_FPU_OFFSET + 32*2
+    xvst  $xr3 , $a0, CONTEXT_FPU_OFFSET + 32*3
+    xvst  $xr4 , $a0, CONTEXT_FPU_OFFSET + 32*4
+    xvst  $xr5 , $a0, CONTEXT_FPU_OFFSET + 32*5
+    xvst  $xr6 , $a0, CONTEXT_FPU_OFFSET + 32*6
+    xvst  $xr7 , $a0, CONTEXT_FPU_OFFSET + 32*7
+    xvst  $xr8 , $a0, CONTEXT_FPU_OFFSET + 32*8
+    xvst  $xr9 , $a0, CONTEXT_FPU_OFFSET + 32*9
+    xvst  $xr10, $a0, CONTEXT_FPU_OFFSET + 32*10
+    xvst  $xr11, $a0, CONTEXT_FPU_OFFSET + 32*11
+    xvst  $xr12, $a0, CONTEXT_FPU_OFFSET + 32*12
+    xvst  $xr13, $a0, CONTEXT_FPU_OFFSET + 32*13
+    xvst  $xr14, $a0, CONTEXT_FPU_OFFSET + 32*14
+    xvst  $xr15, $a0, CONTEXT_FPU_OFFSET + 32*15
+    xvst  $xr16, $a0, CONTEXT_FPU_OFFSET + 32*16
+    xvst  $xr17, $a0, CONTEXT_FPU_OFFSET + 32*17
+    xvst  $xr18, $a0, CONTEXT_FPU_OFFSET + 32*18
+    xvst  $xr19, $a0, CONTEXT_FPU_OFFSET + 32*19
+    xvst  $xr20, $a0, CONTEXT_FPU_OFFSET + 32*20
+    xvst  $xr21, $a0, CONTEXT_FPU_OFFSET + 32*21
+    xvst  $xr22, $a0, CONTEXT_FPU_OFFSET + 32*22
+    xvst  $xr23, $a0, CONTEXT_FPU_OFFSET + 32*23
+    xvst  $xr24, $a0, CONTEXT_FPU_OFFSET + 32*24
+    xvst  $xr25, $a0, CONTEXT_FPU_OFFSET + 32*25
+    xvst  $xr26, $a0, CONTEXT_FPU_OFFSET + 32*26
+    xvst  $xr27, $a0, CONTEXT_FPU_OFFSET + 32*27
+    xvst  $xr28, $a0, CONTEXT_FPU_OFFSET + 32*28
+    xvst  $xr29, $a0, CONTEXT_FPU_OFFSET + 32*29
+    xvst  $xr30, $a0, CONTEXT_FPU_OFFSET + 32*30
+    xvst  $xr31, $a0, CONTEXT_FPU_OFFSET + 32*31
 
-    fst.d  $f0 , $a0, CONTEXT_F0
-    fst.d  $f1 , $a0, CONTEXT_F1
-    fst.d  $f2 , $a0, CONTEXT_F2
-    fst.d  $f3 , $a0, CONTEXT_F3
-    fst.d  $f4 , $a0, CONTEXT_F4
-    fst.d  $f5 , $a0, CONTEXT_F5
-    fst.d  $f6 , $a0, CONTEXT_F6
-    fst.d  $f7 , $a0, CONTEXT_F7
-    fst.d  $f8 , $a0, CONTEXT_F8
-    fst.d  $f9 , $a0, CONTEXT_F9
-    fst.d  $f10, $a0, CONTEXT_F10
-    fst.d  $f11, $a0, CONTEXT_F11
-    fst.d  $f12, $a0, CONTEXT_F12
-    fst.d  $f13, $a0, CONTEXT_F13
-    fst.d  $f14, $a0, CONTEXT_F14
-    fst.d  $f15, $a0, CONTEXT_F15
-    fst.d  $f16, $a0, CONTEXT_F16
-    fst.d  $f17, $a0, CONTEXT_F17
-    fst.d  $f18, $a0, CONTEXT_F18
-    fst.d  $f19, $a0, CONTEXT_F19
-    fst.d  $f20, $a0, CONTEXT_F20
-    fst.d  $f21, $a0, CONTEXT_F21
-    fst.d  $f22, $a0, CONTEXT_F22
-    fst.d  $f23, $a0, CONTEXT_F23
-    fst.d  $f24, $a0, CONTEXT_F24
-    fst.d  $f25, $a0, CONTEXT_F25
-    fst.d  $f26, $a0, CONTEXT_F26
-    fst.d  $f27, $a0, CONTEXT_F27
-    fst.d  $f28, $a0, CONTEXT_F28
-    fst.d  $f29, $a0, CONTEXT_F29
-    fst.d  $f30, $a0, CONTEXT_F30
-    fst.d  $f31, $a0, CONTEXT_F31
+    ori $t0, $r0, 0
+    movcf2gr  $t0, $fcc0
+    st.b  $t0, $a0, CONTEXT_FLOAT_CONTROL_OFFSET
+    movcf2gr  $t0, $fcc1
+    st.b  $t0, $a0, CONTEXT_FLOAT_CONTROL_OFFSET + 1
+    movcf2gr  $t0, $fcc2
+    st.b  $t0, $a0, CONTEXT_FLOAT_CONTROL_OFFSET + 2
+    movcf2gr  $t0, $fcc3
+    st.b  $t0, $a0, CONTEXT_FLOAT_CONTROL_OFFSET + 3
+    movcf2gr  $t0, $fcc4
+    st.b  $t0, $a0, CONTEXT_FLOAT_CONTROL_OFFSET + 4
+    movcf2gr  $t0, $fcc5
+    st.b  $t0, $a0, CONTEXT_FLOAT_CONTROL_OFFSET + 5
+    movcf2gr  $t0, $fcc6
+    st.b  $t0, $a0, CONTEXT_FLOAT_CONTROL_OFFSET + 6
+    movcf2gr  $t0, $fcc7
+    st.b  $t0, $a0, CONTEXT_FLOAT_CONTROL_OFFSET + 7
+
     movfcsr2gr  $t0, $fcsr0
-    st.d  $t0, $a0, CONTEXT_FLOAT_CONTROL_OFFSET
+    st.w  $t0, $a0, CONTEXT_FLOAT_CONTROL_OFFSET + 8
 
 LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
 
-    EPILOG_STACK_FREE 24
+    EPILOG_STACK_FREE 32
     jirl  $r0, $ra, 0
 LEAF_END CONTEXT_CaptureContext, _TEXT

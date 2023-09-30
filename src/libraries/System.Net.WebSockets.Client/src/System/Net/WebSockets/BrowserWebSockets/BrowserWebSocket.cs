@@ -580,10 +580,10 @@ namespace System.Net.WebSockets
             }
             try
             {
-                using (var receiveRegistration = cancellationToken.Register(() =>
+                using (var receiveRegistration = cancellationToken.Register(static s =>
                 {
-                    CancelablePromise.CancelPromise(jsTask);
-                }))
+                    CancelablePromise.CancelPromise((Task)s!);
+                }, jsTask))
                 {
                     await jsTask.ConfigureAwait(true);
                     return;
@@ -601,7 +601,7 @@ namespace System.Net.WebSockets
                     FastState = WebSocketState.Aborted;
                     throw new OperationCanceledException(cancellationToken);
                 }
-                if (ex.Message == "OperationCanceledException")
+                if (ex.Message == "Error: OperationCanceledException")
                 {
                     FastState = WebSocketState.Aborted;
                     throw new OperationCanceledException("The operation was cancelled.", ex, cancellationToken);

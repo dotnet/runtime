@@ -9,6 +9,10 @@ using System.Threading;
 using System.Runtime.Versioning;
 using System.Text;
 
+// We need to target netstandard2.0, so keep using ref for MemoryMarshal.Write
+// CS9191: The 'ref' modifier for argument 2 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
+#pragma warning disable CS9191
+
 namespace WbemClient_v1 { }
 namespace WbemUtilities_v1 { }
 

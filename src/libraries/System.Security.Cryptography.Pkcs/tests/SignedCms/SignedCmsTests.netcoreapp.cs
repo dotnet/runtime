@@ -823,6 +823,20 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
+        [Fact]
+        public static void ExistingDocument_Ecdsa_Sha256_FromNetFX()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.Ecdsa_Sha256_FromNetFX_SignedDocument);
+
+            cms.CheckSignature(true); // Assert.NoThrow
+            Assert.Single(cms.SignerInfos);
+
+            SignerInfo signerInfo = cms.SignerInfos[0];
+            Assert.Equal(Oids.Sha256, signerInfo.DigestAlgorithm.Value);
+            Assert.Equal(Oids.EcPublicKey, signerInfo.SignatureAlgorithm.Value);
+        }
+
         private static void VerifyWithExplicitPrivateKey(X509Certificate2 cert, AsymmetricAlgorithm key)
         {
             using (var pubCert = new X509Certificate2(cert.RawData))

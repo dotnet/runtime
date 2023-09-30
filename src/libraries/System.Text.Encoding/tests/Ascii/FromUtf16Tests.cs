@@ -19,15 +19,15 @@ namespace System.Text.Tests
         [Fact]
         public static void AllAsciiInput()
         {
-            using BoundedMemory<char> utf16Mem = BoundedMemory.Allocate<char>(128);
-            using BoundedMemory<byte> asciiMem = BoundedMemory.Allocate<byte>(128);
+            using BoundedMemory<char> utf16Mem = BoundedMemory.Allocate<char>(256);
+            using BoundedMemory<byte> asciiMem = BoundedMemory.Allocate<byte>(256);
 
             // Fill source with 00 .. 7F.
 
             Span<char> utf16Span = utf16Mem.Span;
             for (int i = 0; i < utf16Span.Length; i++)
             {
-                utf16Span[i] = (char)i;
+                utf16Span[i] = (char)(i % 128);
             }
             utf16Mem.MakeReadonly();
 
@@ -42,11 +42,11 @@ namespace System.Text.Tests
 
                 // First, validate that the workhorse saw the incoming data as all-ASCII.
                 Assert.Equal(OperationStatus.Done, Ascii.FromUtf16(utf16Span.Slice(i), asciiSpan.Slice(i), out int bytesWritten));
-                Assert.Equal(128 - i, bytesWritten);
+                Assert.Equal(256 - i, bytesWritten);
 
                 // Then, validate that the data was transcoded properly.
 
-                for (int j = i; j < 128; j++)
+                for (int j = i; j < 256; j++)
                 {
                     Assert.Equal((ushort)utf16Span[i], (ushort)asciiSpan[i]);
                 }
@@ -56,15 +56,15 @@ namespace System.Text.Tests
         [Fact]
         public static void SomeNonAsciiInput()
         {
-            using BoundedMemory<char> utf16Mem = BoundedMemory.Allocate<char>(128);
-            using BoundedMemory<byte> asciiMem = BoundedMemory.Allocate<byte>(128);
+            using BoundedMemory<char> utf16Mem = BoundedMemory.Allocate<char>(256);
+            using BoundedMemory<byte> asciiMem = BoundedMemory.Allocate<byte>(256);
 
             // Fill source with 00 .. 7F.
 
             Span<char> utf16Span = utf16Mem.Span;
             for (int i = 0; i < utf16Span.Length; i++)
             {
-                utf16Span[i] = (char)i;
+                utf16Span[i] = (char)(i % 128);
             }
 
             // We'll write to the ASCII span.

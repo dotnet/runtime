@@ -8,6 +8,7 @@
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
     <_BuildNativeOutConfig>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</_BuildNativeOutConfig>
     <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(_BuildNativeOutConfig) -os $(_BuildNativeTargetOS)</_BuildNativeArgs>
+    <_BuildNativeArgs Condition="'$(EnableNativeSanitizers)' != ''">$(_BuildNativeArgs) -fsanitize=$(EnableNativeSanitizers)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
 
     <_RuntimeVariant />

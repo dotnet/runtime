@@ -63,23 +63,24 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public void EmptySource_ProducedFrozenSetEmpty()
         {
-            Assert.Same(FrozenSet<T>.Empty, new List<T>().ToFrozenSet());
-            Assert.Same(FrozenSet<T>.Empty, Enumerable.Empty<T>().ToFrozenSet());
-            Assert.Same(FrozenSet<T>.Empty, Array.Empty<T>().ToFrozenSet());
-            Assert.Same(FrozenSet<T>.Empty, new List<T>().ToFrozenSet());
-
-            foreach (IEqualityComparer<T> comparer in new IEqualityComparer<T>[] { null, EqualityComparer<T>.Default })
+            IEnumerable<T>[] sources = new[]
             {
-                Assert.Same(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(comparer));
-                Assert.Same(FrozenSet<T>.Empty, Enumerable.Empty<T>().ToFrozenSet(comparer));
-                Assert.Same(FrozenSet<T>.Empty, Array.Empty<T>().ToFrozenSet(comparer));
-                Assert.Same(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(comparer));
-            }
+                new List<T>(),
+                Enumerable.Empty<T>(),
+                Array.Empty<T>(),
+            };
 
-            Assert.NotSame(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance));
-            Assert.NotSame(FrozenSet<T>.Empty, Enumerable.Empty<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance));
-            Assert.NotSame(FrozenSet<T>.Empty, Array.Empty<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance));
-            Assert.NotSame(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance));
+            foreach (IEnumerable<T> source in sources)
+            {
+                Assert.Same(FrozenSet<T>.Empty, source.ToFrozenSet());
+
+                foreach (IEqualityComparer<T> comparer in new IEqualityComparer<T>[] { null, EqualityComparer<T>.Default })
+                {
+                    Assert.Same(FrozenSet<T>.Empty, source.ToFrozenSet(comparer));
+                }
+
+                Assert.NotSame(FrozenSet<T>.Empty, source.ToFrozenSet(NonDefaultEqualityComparer<T>.Instance));
+            }
         }
 
         [Fact]

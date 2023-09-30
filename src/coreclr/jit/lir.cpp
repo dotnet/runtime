@@ -1438,7 +1438,7 @@ public:
 
             if (nodeInfo.IsLclVarWrite())
             {
-                // If this node is a lclVar write, it must be not alias a lclVar with an outstanding read
+                // If this node is a lclVar write, it must not alias a lclVar with an outstanding read
                 SmallHashTable<GenTree*, GenTree*>* reads;
                 if (unusedLclVarReads.TryGetValue(nodeInfo.LclNum(), &reads))
                 {

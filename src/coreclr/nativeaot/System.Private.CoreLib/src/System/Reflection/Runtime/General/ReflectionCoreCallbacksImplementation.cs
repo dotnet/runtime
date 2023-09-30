@@ -304,7 +304,7 @@ namespace System.Reflection.Runtime.General
                 bindingFlags |= BindingFlags.IgnoreCase;
             }
             RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
-            ParameterInfo[] parameters = invokeMethod.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = invokeMethod.GetParametersAsSpan();
             int numParameters = parameters.Length;
             Type[] parameterTypes = new Type[numParameters];
             for (int i = 0; i < numParameters; i++)
@@ -431,7 +431,7 @@ namespace System.Reflection.Runtime.General
 
             RuntimeMethodInfo invokeMethod = runtimeType.GetInvokeMethod();
 
-            MethodInvoker methodInvoker = invokeMethod.MethodInvoker;
+            MethodBaseInvoker methodInvoker = invokeMethod.MethodInvoker;
             IntPtr invokeThunk = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetDynamicInvokeThunk(methodInvoker);
 
             info = new DynamicInvokeInfo(invokeMethod, invokeThunk);

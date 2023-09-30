@@ -10,7 +10,7 @@ import { setI32, setI32_unchecked, receiveWorkerHeapViews } from "./memory";
 import { monoStringToString, stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
-import { INTERNAL, Module, runtimeHelpers } from "./globals";
+import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
@@ -19,7 +19,7 @@ import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
 import { assert_synchronization_context } from "./pthreads/shared";
 
-const fn_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, we never free bound functions
+export const fn_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
 export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_name: MonoStringRef, signature: JSFunctionSignature, function_js_handle: Int32Ptr, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     assert_bindings();
@@ -73,7 +73,8 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
             arg_marshalers,
             res_converter,
             has_cleanup,
-            arg_cleanup
+            arg_cleanup,
+            isDisposed: false,
         };
         let bound_fn: Function;
         if (args_count == 0 && !res_converter) {
@@ -104,7 +105,7 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
             }
         }
 
-        (<any>bound_fn)[imported_js_function_symbol] = true;
+        (<any>bound_fn)[imported_js_function_symbol] = closure;
         const fn_handle = fn_wrapper_by_fn_handle.length;
         fn_wrapper_by_fn_handle.push(bound_fn);
         setI32(function_js_handle, <any>fn_handle);
@@ -123,10 +124,11 @@ export function mono_wasm_bind_js_function(function_name: MonoStringRef, module_
 function bind_fn_0V(closure: BindingClosure) {
     const fn = closure.fn;
     const fqn = closure.fqn;
-    (<any>closure) = null;
+    if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_0V(args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
+            mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
             // call user function
             fn();
         } catch (ex) {
@@ -142,10 +144,11 @@ function bind_fn_1V(closure: BindingClosure) {
     const fn = closure.fn;
     const marshaler1 = closure.arg_marshalers[0]!;
     const fqn = closure.fqn;
-    (<any>closure) = null;
+    if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_1V(args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
+            mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
             const arg1 = marshaler1(args);
             // call user function
             fn(arg1);
@@ -163,10 +166,11 @@ function bind_fn_1R(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
-    (<any>closure) = null;
+    if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_1R(args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
+            mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
             const arg1 = marshaler1(args);
             // call user function
             const js_result = fn(arg1);
@@ -186,10 +190,11 @@ function bind_fn_2R(closure: BindingClosure) {
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
-    (<any>closure) = null;
+    if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_2R(args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
+            mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
             const arg1 = marshaler1(args);
             const arg2 = marshaler2(args);
             // call user function
@@ -212,10 +217,11 @@ function bind_fn(closure: BindingClosure) {
     const has_cleanup = closure.has_cleanup;
     const fn = closure.fn;
     const fqn = closure.fqn;
-    (<any>closure) = null;
+    if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn(args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
+            mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
             const js_args = new Array(args_count);
             for (let index = 0; index < args_count; index++) {
                 const marshaler = arg_marshalers[index]!;
@@ -250,6 +256,7 @@ function bind_fn(closure: BindingClosure) {
 type BindingClosure = {
     fn: Function,
     fqn: string,
+    isDisposed: boolean,
     args_count: number,
     arg_marshalers: (BoundMarshalerToJs)[],
     res_converter: BoundMarshalerToCs | undefined,
@@ -309,22 +316,22 @@ function mono_wasm_lookup_function(function_name: string, js_module_name: string
 }
 
 export function set_property(self: any, name: string, value: any): void {
-    mono_assert(self, "Null reference");
+    mono_check(self, "Null reference");
     self[name] = value;
 }
 
 export function get_property(self: any, name: string): any {
-    mono_assert(self, "Null reference");
+    mono_check(self, "Null reference");
     return self[name];
 }
 
 export function has_property(self: any, name: string): boolean {
-    mono_assert(self, "Null reference");
+    mono_check(self, "Null reference");
     return name in self;
 }
 
 export function get_typeof_property(self: any, name: string): string {
-    mono_assert(self, "Null reference");
+    mono_check(self, "Null reference");
     return typeof self[name];
 }
 
@@ -336,8 +343,8 @@ export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
 
 export function dynamic_import(module_name: string, module_url: string): Promise<any> {
-    mono_assert(module_name, "Invalid module_name");
-    mono_assert(module_url, "Invalid module_name");
+    mono_assert(module_name && typeof module_name === "string", "module_name must be string");
+    mono_assert(module_url && typeof module_url === "string", "module_url must be string");
     assert_synchronization_context();
     let promise = importedModulesPromises.get(module_name);
     const newPromise = !promise;
@@ -397,6 +404,7 @@ export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmR
 }
 
 export function assert_bindings(): void {
+    loaderHelpers.assert_runtime_running();
     if (MonoWasmThreads) {
         mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
     } else {

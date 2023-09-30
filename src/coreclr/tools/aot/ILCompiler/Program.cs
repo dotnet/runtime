@@ -13,12 +13,14 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Xml;
 
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Dataflow;
+using ILCompiler.DependencyAnalysis;
 using ILLink.Shared;
 
 using Debug = System.Diagnostics.Debug;
@@ -65,6 +67,17 @@ namespace ILCompiler
             if (outputFilePath == null)
                 throw new CommandLineException("Output filename must be specified (/out <file>)");
 
+            var suppressedWarningCategories = new List<string>();
+            if (Get(_command.NoTrimWarn))
+                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
+            if (Get(_command.NoAotWarn))
+                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+
+            ILProvider ilProvider = new NativeAotILProvider();
+
+            var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
+                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
+
             // NativeAOT is full AOT and its pre-compiled methods can not be
             // thrown away at runtime if they mismatch in required ISAs or
             // computed layouts of structs. The worst case scenario is simply
@@ -76,7 +89,8 @@ namespace ILCompiler
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
-                "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}");
+                "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
+                optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize);
 
             string systemModuleName = Get(_command.SystemModuleName);
             string reflectionData = Get(_command.ReflectionData);
@@ -129,6 +143,11 @@ namespace ILCompiler
 
             if (typeSystemContext.InputFilePaths.Count == 0)
                 throw new CommandLineException("No input files specified");
+
+            ilProvider = new HardwareIntrinsicILProvider(
+                instructionSetSupport,
+                new ExternSymbolMappedField(typeSystemContext.GetWellKnownType(WellKnownType.Int32), "g_cpuFeatures"),
+                ilProvider);
 
             SecurityMitigationOptions securityMitigationOptions = 0;
             string guard = Get(_command.Guard);
@@ -237,6 +256,13 @@ namespace ILCompiler
                     }
                 }
 
+                string win32resourcesModule = Get(_command.Win32ResourceModuleName);
+                if (typeSystemContext.Target.IsWindows && !string.IsNullOrEmpty(win32resourcesModule))
+                {
+                    EcmaModule module = typeSystemContext.GetModuleForSimpleName(win32resourcesModule);
+                    compilationRoots.Add(new Win32ResourcesRootProvider(module));
+                }
+
                 foreach (var unmanagedEntryPointsAssembly in Get(_command.UnmanagedEntryPointsAssemblies))
                 {
                     if (typeSystemContext.InputFilePaths.ContainsKey(unmanagedEntryPointsAssembly))
@@ -316,28 +342,32 @@ namespace ILCompiler
             PInvokeILEmitterConfiguration pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target,
                 Get(_command.DirectPInvokes), Get(_command.DirectPInvokeLists));
 
-            ILProvider ilProvider = new NativeAotILProvider();
-
-            var suppressedWarningCategories = new List<string>();
-            if (Get(_command.NoTrimWarn))
-                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
-            if (Get(_command.NoAotWarn))
-                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
-
-            var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
-                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
-
-            List<KeyValuePair<string, bool>> featureSwitches = new List<KeyValuePair<string, bool>>();
+            var featureSwitches = new Dictionary<string, bool>();
             foreach (var switchPair in Get(_command.FeatureSwitches))
             {
                 string[] switchAndValue = switchPair.Split('=');
                 if (switchAndValue.Length != 2
                     || !bool.TryParse(switchAndValue[1], out bool switchValue))
                     throw new CommandLineException($"Unexpected feature switch pair '{switchPair}'");
-                featureSwitches.Add(new KeyValuePair<string, bool>(switchAndValue[0], switchValue));
+                featureSwitches[switchAndValue[0]] = switchValue;
             }
 
-            ilProvider = new FeatureSwitchManager(ilProvider, logger, featureSwitches);
+            BodyAndFieldSubstitutions substitutions = default;
+            IReadOnlyDictionary<ModuleDesc, IReadOnlySet<string>> resourceBlocks = default;
+            foreach (string substitutionFilePath in Get(_command.SubstitutionFilePaths))
+            {
+                using FileStream fs = File.OpenRead(substitutionFilePath);
+                substitutions.AppendFrom(BodySubstitutionsParser.GetSubstitutions(
+                    logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
+
+                fs.Seek(0, SeekOrigin.Begin);
+
+                resourceBlocks = ManifestResourceBlockingPolicy.UnionBlockings(resourceBlocks,
+                    ManifestResourceBlockingPolicy.SubstitutionsReader.GetSubstitutions(
+                        logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
+            }
+
+            ilProvider = new FeatureSwitchManager(ilProvider, logger, featureSwitches, substitutions);
 
             CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
@@ -351,7 +381,7 @@ namespace ILCompiler
             {
                 mdBlockingPolicy = new NoMetadataBlockingPolicy();
 
-                resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches);
+                resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches, resourceBlocks);
 
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
                 if (Get(_command.CompleteTypesMetadata))

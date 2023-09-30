@@ -116,6 +116,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
     private bool TrimMethods(ITaskItem assemblyItem)
     {
+        string assemblyFilePathArg = assemblyItem.ItemSpec;
         string methodTokenFile = assemblyItem.GetMetadata("MethodTokenFile");
         if (string.IsNullOrEmpty(methodTokenFile))
         {
@@ -165,7 +166,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         if (isTrimmed)
         {
-            AddItemToTrimmedList(assemblyFilePath, trimmedAssemblyFilePath);
+            AddItemToTrimmedList(assemblyFilePathArg, trimmedAssemblyFilePath);
         }
 
         return true;
@@ -252,6 +253,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                     int methodSize = ComputeMethodSize(peReader, rva);
                     int actualLoc = ComputeMethodHash(peReader, rva);
                     int headerSize = ComputeMethodHeaderSize(memStream, actualLoc);
+                    if (headerSize == 1) //Set code size to zero for TinyFormat
+                        SetCodeSizeToZeroForTiny(ref memStream, actualLoc);
                     ZeroOutMethodBody(ref memStream, methodSize, actualLoc, headerSize);
                 }
                 else if (count < 0)
@@ -280,6 +283,13 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         int firstbyte = memStream.ReadByte();
         int headerFlag = firstbyte & 0b11;
         return (headerFlag == 2 ? 1 : 4);
+    }
+
+    private static void SetCodeSizeToZeroForTiny(ref MemoryStream memStream, int actualLoc)
+    {
+        memStream.Position = actualLoc;
+        byte[] header = {0b10};
+        memStream.Write(header, 0, 1);
     }
 
     private static void ZeroOutMethodBody(ref MemoryStream memStream, int methodSize, int actualLoc, int headerSize)

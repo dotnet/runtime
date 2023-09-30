@@ -12,7 +12,7 @@ public class FirstModel
 {
     [Required]
     [MinLength(5)]
-    public string P1 = string.Empty;
+    public string P1 { get; set; } = string.Empty;
 }
 
 [OptionsValidator]

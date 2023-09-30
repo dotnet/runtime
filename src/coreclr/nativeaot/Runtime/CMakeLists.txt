@@ -23,7 +23,6 @@ set(COMMON_RUNTIME_SOURCES
     TypeManager.cpp
     ObjectLayout.cpp
     portable.cpp
-    profheapwalkhelper.cpp
     RestrictedCallouts.cpp
     RhConfig.cpp
     RuntimeInstance.cpp
@@ -50,6 +49,8 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/handletablescan.cpp
     ${GC_DIR}/objecthandle.cpp
     ${GC_DIR}/softwarewritewatch.cpp
+
+    ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
 )
 
 set(SERVER_GC_SOURCES
@@ -67,6 +68,7 @@ include_directories(inc)
 include_directories(.)
 include_directories(${GC_DIR})
 include_directories(${GC_DIR}/env)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/eventpipe/inc)
 
 if (WIN32)
   set(GC_HEADERS
@@ -116,10 +118,6 @@ if (WIN32)
   list(APPEND FULL_RUNTIME_SOURCES windows/CoffNativeCodeManager.cpp)
 
   set(ASM_SUFFIX asm)
-
-  if (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_AMD64)
-    set(RUNTIME_SOURCES_ARCH_ASM ${ARCH_SOURCES_DIR}/GC.${ASM_SUFFIX})
-  endif()
 else()
 
   include_directories(unix)
@@ -145,6 +143,7 @@ else()
 
   list(APPEND COMMON_RUNTIME_SOURCES
     unix/PalRedhawkUnix.cpp
+    unix/PalCreateDump.cpp
     ${GC_DIR}/unix/gcenv.unix.cpp
     ${GC_DIR}/unix/numasupport.cpp
     ${GC_DIR}/unix/events.cpp
@@ -220,18 +219,6 @@ endif()
 
 if(FEATURE_EVENT_TRACE)
   add_definitions(-DFEATURE_EVENT_TRACE)
-  list(APPEND COMMON_RUNTIME_SOURCES
-    eventtrace.cpp
-  )
-  # These are carry-overs from .NET Native and only included on Windows currently
-  #   bulktype : directly emits via ETW with EventWrite
-  #   gcheap : GCHeapDump, GCHeapSurvivalAndMovement - not prioritizing for nativeaot yet
-  if (WIN32)
-    list(APPEND COMMON_RUNTIME_SOURCES
-      eventtrace_bulktype.cpp
-      eventtrace_gcheap.cpp
-    )
-  endif()
 endif()
 
 add_definitions(-DFEATURE_BASICFREEZE)
@@ -252,6 +239,7 @@ add_definitions(-D_LIB)
 # add_definitions(-DSTRESS_HEAP)
 
 if(WIN32)
+  set(FEATURE_ETW 1)
   add_definitions(-DFEATURE_ETW)
   add_definitions(-DFEATURE_SUSPEND_REDIRECTION)
   add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)
@@ -259,8 +247,8 @@ else()
   if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     add_definitions(-DFEATURE_READONLY_GS_COOKIE)
   endif()
-  add_definitions(-DNO_UI_ASSERT)
   include(unix/configure.cmake)
+  include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 

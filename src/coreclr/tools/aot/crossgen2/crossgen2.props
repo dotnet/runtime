@@ -3,7 +3,6 @@
     <AssemblyName>crossgen2</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <NoWarn>8002,NU1701</NoWarn>
     <Platforms>x64;x86;arm64;arm;loongarch64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -13,11 +12,10 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
-    <ServerGarbageCollection>true</ServerGarbageCollection>
-    <EventSourceSupport>true</EventSourceSupport>
-    <OptimizationPreference>Speed</OptimizationPreference>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
+
+  <Import Project="../AotCompilerCommon.props" />
 
   <ItemGroup Label="Embedded Resources">
     <EmbeddedResource Include="Properties\Resources.resx">
