@@ -20,16 +20,13 @@
       <PublishReadyToRunUseCrossgen2>true</PublishReadyToRunUseCrossgen2>
       <PublishReadyToRunCrossgen2ExtraArgs>@(PublishReadyToRunCrossgen2ExtraArgsList)</PublishReadyToRunCrossgen2ExtraArgs>
       <PublishReadyToRunPerfmapFormatVersion Condition="'$(PublishReadyToRunPerfmapFormatVersion)' == ''">1</PublishReadyToRunPerfmapFormatVersion>
-
-      <ScriptExt>.sh</ScriptExt>
-      <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     </PropertyGroup>
 
     <ItemGroup>
       <Crossgen2Tool Include="$(Crossgen2Dll)"
                      TargetArch="$(TargetArchitecture)"
                      TargetOS="$(TargetOS)"
-                     DotNetHostPath="$(RepoRoot)/dotnet$(ScriptExt)"
+                     DotNetHostPath="$(DotNetTool)"
                      PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
     </ItemGroup>
   </Target>
