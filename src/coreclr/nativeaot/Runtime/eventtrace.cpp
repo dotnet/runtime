@@ -231,3 +231,15 @@ void EventPipeEtwCallbackDotNETRuntime(
 {
     EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, /*isEventPipeCallback*/ true);
 }
+
+VOID EventPipeEtwCallbackDotNETRuntimePrivate(
+    _In_ GUID * SourceId,
+    _In_ ULONG ControlCode,
+    _In_ unsigned char Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ EventFilterDescriptor* FilterData,
+    _Inout_opt_ PVOID CallbackContext)
+{
+    EtwCallbackCommon(DotNETRuntimePrivate, ControlCode, Level, MatchAnyKeyword, FilterData, true);
+}
