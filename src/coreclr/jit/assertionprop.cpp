@@ -171,6 +171,7 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_IND:
         {
             GenTree* const addr = node->AsIndir()->Addr();
+
             if (node->TypeIs(TYP_INT) && addr->OperIs(GT_ADD) && addr->gtGetOp1()->OperIs(GT_LCL_VAR) &&
                 addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length))
             {

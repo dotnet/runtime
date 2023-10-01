@@ -1319,12 +1319,6 @@ private:
         {
             LclVarDsc* varDsc = m_compiler->lvaGetDesc(addr->AsLclVarCommon());
 
-            // addr is a span field so this lclVar must be a span
-            if (isSpanLength)
-            {
-                varDsc->SetIsSpan(true);
-            }
-
             if (varDsc->lvPromoted)
             {
                 unsigned fieldLclNum = m_compiler->lvaGetFieldLocal(varDsc, offset);
