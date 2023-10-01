@@ -64,7 +64,7 @@ namespace System.Security.Cryptography
             impl.Initialize();
             if (buffer != null)
             {
-                impl.HashCore(buffer.GetBuffer(), 0, (int)buffer.Length);
+                impl.HashCore(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
             }
             impl.HashFinal().CopyTo(destination);
 
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography
         private abstract class SHAManagedImplementationBase
         {
             public abstract void Initialize();
-            public abstract void HashCore(byte[] partIn, int ibStart, int cbSize);
+            public abstract void HashCore(ReadOnlySpan<byte> partIn);
             public abstract byte[] HashFinal();
         }
 
@@ -102,9 +102,9 @@ namespace System.Security.Cryptography
                 _state = new();
             }
 
-            public override void HashCore(byte[] partIn, int ibStart, int cbSize)
+            public override void HashCore(ReadOnlySpan<byte> partIn)
             {
-                _state.Append(partIn.AsSpan(ibStart, cbSize));
+                _state.Append(partIn);
             }
 
             public override byte[] HashFinal()
@@ -157,35 +157,28 @@ namespace System.Security.Cryptography
             operation, processing another message block, and updating the
             context.
             */
-            public override unsafe void HashCore(byte[] partIn, int ibStart, int cbSize)
+            public override unsafe void HashCore(ReadOnlySpan<byte> partIn)
             {
-                int bufferLen;
-                int partInLen = cbSize;
-                int partInBase = ibStart;
-
                 /* Compute length of buffer */
-                bufferLen = (int)(_count & 0x3f);
+                int bufferLen = (int)(_count & 0x3f);
 
                 /* Update number of bytes */
-                _count += partInLen;
+                _count += partIn.Length;
 
-                if ((bufferLen > 0) && (bufferLen + partInLen >= 64))
+                if ((bufferLen > 0) && (bufferLen + partIn.Length >= 64))
                 {
-                    partIn.AsSpan(partInBase, 64 - bufferLen).CopyTo(_buffer.AsSpan(bufferLen));
-                    partInBase += (64 - bufferLen);
-                    partInLen -= (64 - bufferLen);
+                    partIn[..64 - bufferLen].CopyTo(_buffer.AsSpan(bufferLen));
                     SHATransform(ref _W, ref _stateSHA256, _buffer);
                     bufferLen = 0;
                 }
 
-                while (partInLen >= 64)
+                while (partIn.Length >= 64)
                 {
-                    SHATransform(ref _W, ref _stateSHA256, partIn.AsSpan(partInBase));
-                    partInBase += 64;
-                    partInLen -= 64;
+                    SHATransform(ref _W, ref _stateSHA256, partIn);
+                    partIn = partIn[64..];
                 }
 
-                partIn.AsSpan(partInBase, partInLen).CopyTo(_buffer.AsSpan(bufferLen));
+                partIn.CopyTo(_buffer.AsSpan(bufferLen));
             }
 
             /* SHA256 finalization. Ends an SHA256 message-digest operation, writing
@@ -221,7 +214,7 @@ namespace System.Security.Cryptography
                 pad[padLen - 1] = (byte)((bitCount >> 0) & 0xff);
 
                 /* Digest padding */
-                HashCore(pad, 0, pad.Length);
+                HashCore(pad);
 
                 /* Store digest */
                 SHAUtils.DWORDToBigEndian(hash, _stateSHA256[..8]);
@@ -408,35 +401,28 @@ namespace System.Security.Cryptography
             operation, processing another message block, and updating the
             context.
             */
-            public override unsafe void HashCore(byte[] partIn, int ibStart, int cbSize)
+            public override unsafe void HashCore(ReadOnlySpan<byte> partIn)
             {
-                int bufferLen;
-                int partInLen = cbSize;
-                int partInBase = ibStart;
-
                 /* Compute length of buffer */
-                bufferLen = (int)(_count & 0x7f);
+                int bufferLen = (int)(_count & 0x7f);
 
                 /* Update number of bytes */
-                _count += (ulong)partInLen;
+                _count += (ulong)partIn.Length;
 
-                if ((bufferLen > 0) && (bufferLen + partInLen >= 128))
+                if ((bufferLen > 0) && (bufferLen + partIn.Length >= 128))
                 {
-                    partIn.AsSpan(partInBase, 128 - bufferLen).CopyTo(_buffer.AsSpan(bufferLen));
-                    partInBase += (128 - bufferLen);
-                    partInLen -= (128 - bufferLen);
+                    partIn[..128 - bufferLen].CopyTo(_buffer.AsSpan(bufferLen));
                     SHATransform(ref _W, ref _stateSHA384, _buffer);
                     bufferLen = 0;
                 }
 
-                while (partInLen >= 128)
+                while (partIn.Length >= 128)
                 {
-                    SHATransform(ref _W, ref _stateSHA384, partIn.AsSpan(partInBase));
-                    partInBase += 128;
-                    partInLen -= 128;
+                    SHATransform(ref _W, ref _stateSHA384, partIn);
+                    partIn = partIn[128..];
                 }
 
-                partIn.AsSpan(partInBase, partInLen).CopyTo(_buffer.AsSpan(bufferLen));
+                partIn.CopyTo(_buffer.AsSpan(bufferLen));
             }
 
             /* SHA384 finalization. Ends an SHA384 message-digest operation, writing
@@ -483,7 +469,7 @@ namespace System.Security.Cryptography
                 pad[padLen - 1] = (byte)((bitCount >> 0) & 0xff);
 
                 /* Digest padding */
-                HashCore(pad, 0, pad.Length);
+                HashCore(pad);
 
                 /* Store digest */
                 SHAUtils.QuadWordToBigEndian(hash, _stateSHA384[..6]);
@@ -679,35 +665,28 @@ namespace System.Security.Cryptography
             operation, processing another message block, and updating the
             context.
             */
-            public override unsafe void HashCore(byte[] partIn, int ibStart, int cbSize)
+            public override unsafe void HashCore(ReadOnlySpan<byte> partIn)
             {
-                int bufferLen;
-                int partInLen = cbSize;
-                int partInBase = ibStart;
-
                 /* Compute length of buffer */
-                bufferLen = (int)(_count & 0x7f);
+                int bufferLen = (int)(_count & 0x7f);
 
                 /* Update number of bytes */
-                _count += (ulong)partInLen;
+                _count += (ulong)partIn.Length;
 
-                if ((bufferLen > 0) && (bufferLen + partInLen >= 128))
+                if ((bufferLen > 0) && (bufferLen + partIn.Length >= 128))
                 {
-                    partIn.AsSpan(partInBase, 128 - bufferLen).CopyTo(_buffer.AsSpan(bufferLen));
-                    partInBase += (128 - bufferLen);
-                    partInLen -= (128 - bufferLen);
+                    partIn[..128 - bufferLen].CopyTo(_buffer.AsSpan(bufferLen));
                     SHATransform(ref _W, ref _stateSHA512, _buffer);
                     bufferLen = 0;
                 }
 
-                while (partInLen >= 128)
+                while (partIn.Length >= 128)
                 {
-                    SHATransform(ref _W, ref _stateSHA512, partIn.AsSpan(partInBase));
-                    partInBase += 128;
-                    partInLen -= 128;
+                    SHATransform(ref _W, ref _stateSHA512, partIn);
+                    partIn = partIn[128..];
                 }
 
-                partIn.AsSpan(partInBase, partInLen).CopyTo(_buffer.AsSpan(bufferLen));
+                partIn.CopyTo(_buffer.AsSpan(bufferLen));
             }
 
             /* SHA512 finalization. Ends an SHA512 message-digest operation, writing
@@ -755,7 +734,7 @@ namespace System.Security.Cryptography
                 pad[padLen - 1] = (byte)((bitCount >> 0) & 0xff);
 
                 /* Digest padding */
-                HashCore(pad, 0, pad.Length);
+                HashCore(pad);
 
                 /* Store digest */
                 SHAUtils.QuadWordToBigEndian(hash, _stateSHA512[..8]);
