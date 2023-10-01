@@ -8,7 +8,11 @@
 
 Commonly Used Types:
 System.IO.Hashing.Crc32
-System.IO.Hashing.XxHash32</PackageDescription>
+System.IO.Hashing.Crc64
+System.IO.Hashing.XxHash128
+System.IO.Hashing.XxHash3
+System.IO.Hashing.XxHash32
+System.IO.Hashing.XxHash64</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
