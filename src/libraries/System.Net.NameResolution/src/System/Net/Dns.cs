@@ -641,9 +641,7 @@ namespace System.Net
         /// Since this is doing synchronous work on a thread pool thread, we want to limit how many threads end up being
         /// blocked.  We could employ a semaphore to limit overall usage, but a common case is that DNS requests are made
         /// for only a handful of endpoints, and a reasonable compromise is to ensure that requests for a given host are
-        /// serialized.  Once the data for that host is cached locally by the OS, the subsequent requests should all complete
-        /// very quickly, and if the head-of-line request is taking a long time due to the connection to the server, we won't
-        /// block lots of threads all getting data for that one host.  We also still want to issue the request to the OS, rather
+        /// serialized. We also still want to issue the request to the OS, rather
         /// than having all concurrent requests for the same host share the exact same task, so that any shuffling of the results
         /// by the OS to enable round robin is still perceived.
         /// </remarks>
@@ -668,6 +666,8 @@ namespace System.Net
                     {
                         using (cancellationToken.UnsafeRegister(static s =>
                         {
+                            // In case a request is cancelled, make sure we start queue for this key.
+                            // This helps avoiding congestion on stalled or long running requests.
                             lock (s_tasks)
                             {
                                 s_tasks.Remove(s!);
@@ -691,16 +691,17 @@ namespace System.Net
                 }, key, cancellationToken, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
 
                 // If it's possible the task may end up getting canceled, it won't have a chance to remove itself from
-                // the dictionary if it is canceled, so use a separate continuation to do so.
+                // the dictionary and report AfterResolution() if it is canceled, so use a separate continuation to do so.
                 if (cancellationToken.CanBeCanceled)
                 {
-                    task.ContinueWith((task, key) =>
+                    task.ContinueWith(delegate
                     {
+                        NameResolutionTelemetry.Log.AfterResolution(key, startingTimestamp, false);
                         lock (s_tasks)
                         {
                             ((ICollection<KeyValuePair<object, Task>>)s_tasks).Remove(new KeyValuePair<object, Task>(key!, task));
                         }
-                    }, key, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    }, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 }
 
                 // Finally, store the task into the dictionary as the current task for this key.
