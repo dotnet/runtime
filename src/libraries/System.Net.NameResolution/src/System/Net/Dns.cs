@@ -659,13 +659,17 @@ namespace System.Net
             {
                 Task<TResult> task = _previousTask.ContinueWith(_ =>
                 {
-                    TResult result;
-                    using (cancellationToken.UnsafeRegister(s => ((DnsRequestWaiter)s!).Complete(), this))
+                    try
                     {
-                        result = func(_key, _start);
+                        using (cancellationToken.UnsafeRegister(s => ((DnsRequestWaiter)s!).Complete(), this))
+                        {
+                            return func(_key, _start);
+                        }
                     }
-                    Complete();
-                    return result;
+                    finally
+                    {
+                        Complete();
+                    }
                 }, cancellationToken, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
 
                 _previousTask.ContinueWith(_ =>

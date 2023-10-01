@@ -84,7 +84,7 @@ namespace System.Net
         public void AfterResolution(object hostNameOrAddress, long? startingTimestamp, bool successful)
         {
             Debug.Assert(startingTimestamp.HasValue);
-            if (startingTimestamp == 0 || !IsEnabled() || !NameResolutionMetrics.IsEnabled())
+            if (startingTimestamp == 0 || !IsEnabled() && !NameResolutionMetrics.IsEnabled())
             {
                 return;
             }
