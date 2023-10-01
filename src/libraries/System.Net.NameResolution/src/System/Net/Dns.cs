@@ -639,6 +639,8 @@ namespace System.Net
             private Task _previousTask;
             public DnsRequestWaiter? Next;
             private object _key;
+            private CancellationToken _cancellationToken;
+            private object? _func;
 
             public DnsRequestWaiter(object key, long start, DnsRequestWaiter? previous)
             {
@@ -657,26 +659,33 @@ namespace System.Net
 
             public Task<TResult> Run<TResult>(Func<object, long, TResult> func, CancellationToken cancellationToken)
             {
-                Task<TResult> task = _previousTask.ContinueWith(_ =>
+                _cancellationToken = cancellationToken;
+                _func = func;
+                Task<TResult> task = _previousTask.ContinueWith(static (_, s) =>
                 {
+                    DnsRequestWaiter self = (DnsRequestWaiter)s!;
+                    Debug.Assert(self._func is not null);
+                    Func<object, long, TResult> func = (Func<object, long, TResult>)self._func;
+
                     try
                     {
-                        using (cancellationToken.UnsafeRegister(s => ((DnsRequestWaiter)s!).Complete(), this))
+                        using (self._cancellationToken.UnsafeRegister(s => ((DnsRequestWaiter)s!).Complete(), self))
                         {
-                            return func(_key, _start);
+                            return func(self._key, self._start);
                         }
                     }
                     finally
                     {
-                        Complete();
+                        self.Complete();
                     }
-                }, cancellationToken, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+                }, this, cancellationToken, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
 
-                _previousTask.ContinueWith(_ =>
+                _previousTask.ContinueWith(static (_, s) =>
                 {
-                    Complete();
-                    NameResolutionTelemetry.Log.AfterResolution(_key, _start, false);
-                }, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    DnsRequestWaiter self = (DnsRequestWaiter)s!;
+                    self.Complete();
+                    NameResolutionTelemetry.Log.AfterResolution(self._key, self._start, false);
+                }, this, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
                 return task;
             }
