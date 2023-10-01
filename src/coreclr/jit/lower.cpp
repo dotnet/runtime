@@ -7989,21 +7989,26 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
         return;
     }
 
-    // This check is not really needed, just for better throughput.
-    // We only support these types for the initial version.
-    if (!ind->TypeIs(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT))
+    do
     {
-        return;
-    }
+        // This check is not really needed, just for better throughput.
+        // We only support these types for the initial version.
+        if (!ind->TypeIs(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT))
+        {
+            return;
+        }
 
-    StoreCoalescingData currData;
-    StoreCoalescingData prevData;
-    GenTreeStoreInd*    prevInd;
-    GenTree*            prevTree;
+        StoreCoalescingData currData;
+        StoreCoalescingData prevData;
+        GenTreeStoreInd*    prevInd;
+        GenTree*            prevTree;
 
-    // Get coalescing data for the current STOREIND
-    if (GetStoreCoalescingData(ind, &currData, &prevTree))
-    {
+        // Get coalescing data for the current STOREIND
+        if (!GetStoreCoalescingData(ind, &currData, &prevTree))
+        {
+            return;
+        }
+
         // Now we need to find the previous STOREIND,
         // we can ignore any NOPs or IL_OFFSETs in-between
         while (prevTree != nullptr && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
@@ -8019,102 +8024,106 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
         prevInd = prevTree->AsStoreInd();
 
         // Get coalescing data for the previous STOREIND
-        if (GetStoreCoalescingData(prevInd->AsStoreInd(), &prevData, &prevTree) && (prevTree != nullptr))
+        if (!GetStoreCoalescingData(prevInd->AsStoreInd(), &prevData, &prevTree) || (prevTree == nullptr))
         {
-            LIR::Use use;
-            if (BlockRange().TryGetUse(ind, &use) || BlockRange().TryGetUse(prevInd, &use))
-            {
-                // Both should be unused
-                return;
-            }
+            return;
+        }
 
-            // Check whether we can coalesce the two stores
-            if (CanBeCoalesced(&prevData, &currData))
-            {
-                var_types oldType = ind->TypeGet();
-                var_types newType;
-                switch (oldType)
-                {
-                    case TYP_BYTE:
-                    case TYP_UBYTE:
-                        newType = TYP_USHORT;
-                        break;
+        LIR::Use use;
+        if (BlockRange().TryGetUse(ind, &use) || BlockRange().TryGetUse(prevInd, &use))
+        {
+            // Both should be unused
+            return;
+        }
 
-                    case TYP_SHORT:
-                    case TYP_USHORT:
-                        newType = TYP_INT;
-                        break;
+        // Check whether we can coalesce the two stores
+        if (!CanBeCoalesced(&prevData, &currData))
+        {
+            return;
+        }
+
+        var_types oldType = ind->TypeGet();
+        var_types newType;
+        switch (oldType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                newType = TYP_USHORT;
+                break;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                newType = TYP_INT;
+                break;
 
 #ifdef TARGET_64BIT
-                    case TYP_INT:
-                        newType = TYP_LONG;
-                        break;
+            case TYP_INT:
+                newType = TYP_LONG;
+                break;
 #endif
 
-                    // TODO: SIMD
+            // TODO: SIMD
 
-                    default:
-                        return;
-                }
-
-                // Delete previous STOREIND
-                BlockRange().Remove(prevTree->gtNext, prevInd);
-
-                // We know it's always LEA for now
-                GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
-
-                // Take the smallest offset
-                addr->SetOffset(min(prevData.offset, currData.offset));
-
-                // Make type twice bigger
-                ind->gtType = newType;
-
-                // We currently only support constants for val
-                assert(prevData.val->IsCnsIntOrI() && currData.val->IsCnsIntOrI());
-
-                size_t lowerCns = (size_t)prevData.val->AsIntCon()->IconValue();
-                size_t upperCns = (size_t)currData.val->AsIntCon()->IconValue();
-
-                ind->Data()->gtType = newType;
-
-                // TP: if both are zero - we're done.
-                if ((lowerCns | upperCns) == 0)
-                {
-                    JITDUMP("Coalesced two stores into a single store with value 0\n");
-                }
-                else
-                {
-                    // if the previous store was at a higher address, swap the constants
-                    if (prevData.offset > currData.offset)
-                    {
-                        std::swap(lowerCns, upperCns);
-                    }
-
-                    // Trim the constants to the size of the type, e.g. for TYP_SHORT and TYP_USHORT
-                    // the mask will be 0xFFFF, for TYP_INT - 0xFFFFFFFF.
-                    size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_IN_BYTE;
-                    lowerCns &= mask;
-                    upperCns &= mask;
-
-                    size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_IN_BYTE)));
-                    JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
-
-                    // It's not expected to be contained yet, but just in case...
-                    ind->Data()->ClearContained();
-                    ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
-                }
-
-                // Now check whether we can coalesce the new store with the previous one, e.g. we had:
-                //
-                //   STOREIND(int)
-                //   STOREIND(short)
-                //   STOREIND(short)
-                //
-                // so we can coalesce the whole thing into a single store of 8 bytes.
-                // LowerCoalescingWithPreviousInd(ind);
-            }
+            default:
+                return;
         }
-    }
+
+        // Delete previous STOREIND
+        BlockRange().Remove(prevTree->gtNext, prevInd);
+
+        // We know it's always LEA for now
+        GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
+
+        // Take the smallest offset
+        addr->SetOffset(min(prevData.offset, currData.offset));
+
+        // Make type twice bigger
+        ind->gtType = newType;
+
+        // We currently only support constants for val
+        assert(prevData.val->IsCnsIntOrI() && currData.val->IsCnsIntOrI());
+
+        size_t lowerCns = (size_t)prevData.val->AsIntCon()->IconValue();
+        size_t upperCns = (size_t)currData.val->AsIntCon()->IconValue();
+
+        ind->Data()->gtType = newType;
+
+        // TP: if both are zero - we're done.
+        if ((lowerCns | upperCns) == 0)
+        {
+            JITDUMP("Coalesced two stores into a single store with value 0\n");
+        }
+        else
+        {
+            // if the previous store was at a higher address, swap the constants
+            if (prevData.offset > currData.offset)
+            {
+                std::swap(lowerCns, upperCns);
+            }
+
+            // Trim the constants to the size of the type, e.g. for TYP_SHORT and TYP_USHORT
+            // the mask will be 0xFFFF, for TYP_INT - 0xFFFFFFFF.
+            size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_IN_BYTE;
+            lowerCns &= mask;
+            upperCns &= mask;
+
+            size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_IN_BYTE)));
+            JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
+
+            // It's not expected to be contained yet, but just in case...
+            ind->Data()->ClearContained();
+            ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
+        }
+
+        // Now check whether we can coalesce the new store with the previous one, e.g. we had:
+        //
+        //   STOREIND(int)
+        //   STOREIND(short)
+        //   STOREIND(short)
+        //
+        // so we can coalesce the whole thing into a single store of 8 bytes.
+        // LowerCoalescingWithPreviousInd(ind);
+    } while (true);
 }
 
 //------------------------------------------------------------------------
