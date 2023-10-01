@@ -2196,12 +2196,6 @@ namespace Internal.JitInterface
                 return 1;
             }
 
-            if (!type.IsInterface)
-            {
-                // TODO: handle classes
-                return 0;
-            }
-
             TypeDesc[] implClasses = _compilation.GetImplementingClasses(type);
             if (implClasses == null || implClasses.Length > maxExactClasses)
             {

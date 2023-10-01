@@ -193,7 +193,7 @@ private:
 
     // Normalizes the string representation to unicode.  This can be used to
     // make basic read-only operations non-failing.
-    void Normalize() const;
+    void Normalize();
 
     // Return the number of characters in the string (excluding the terminating NULL).
     COUNT_T GetCount() const;
@@ -302,10 +302,10 @@ private:
     void Replace(const Iterator &i, COUNT_T length, const SString &s);
 
     // Make sure that string buffer has room to grow
-    void Preallocate(COUNT_T characters) const;
+    void Preallocate(COUNT_T characters);
 
     // Shrink buffer size as much as possible (reallocate if necessary.)
-    void Trim() const;
+    void Trim();
 
     // ------------------------------------------------------------------
     // Iterators:
@@ -593,11 +593,9 @@ public:
 
     operator const WCHAR * () const { WRAPPER_NO_CONTRACT; return GetUnicode(); }
 
-    WCHAR operator[](int index) { WRAPPER_NO_CONTRACT; return Begin()[index]; }
     WCHAR operator[](int index) const { WRAPPER_NO_CONTRACT; return Begin()[index]; }
 
     SString &operator= (const SString &s) { WRAPPER_NO_CONTRACT; Set(s); return *this; }
-    SString &operator+= (const SString &s) { WRAPPER_NO_CONTRACT; Append(s); return *this; }
 
     // -------------------------------------------------------------------
     // Check functions

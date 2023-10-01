@@ -274,7 +274,12 @@ namespace Microsoft.Interop
             }
 
             // Create the stub.
-            var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, virtualMethodIndexData, virtualMethodIndexAttr), environment, typeof(VtableIndexStubGenerator).Assembly);
+            var signatureContext = SignatureContext.Create(
+                symbol,
+                DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, virtualMethodIndexData, virtualMethodIndexAttr),
+                environment,
+                new CodeEmitOptions(SkipInit: true),
+                typeof(VtableIndexStubGenerator).Assembly);
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 

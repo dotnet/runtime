@@ -5,16 +5,19 @@
     -->
     <ChromeChannel>stable</ChromeChannel>
 
-    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('windows'))">win</ChromeOSIdentifier>
-    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('linux'))">linux</ChromeOSIdentifier>
+    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('windows'))">Windows</ChromeOSIdentifier>
+    <ChromeOSIdentifier Condition="$([MSBuild]::IsOSPlatform('linux'))">Linux</ChromeOSIdentifier>
     <ChromeOSIdentifier Condition="'$(ChromeOSIdentifier)' == ''">unsupported-platform</ChromeOSIdentifier>
 
     <!-- disable by default on unsupported platforms -->
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(ChromeOSIdentifier)' == ''">false</InstallChromeForTests>
+    <InstallV8ForTests Condition="'$(InstallV8ForTests)' == ''">false</InstallV8ForTests>
 
     <FirefoxDir>$(ArtifactsBinDir)firefox\</FirefoxDir>
     <FirefoxStampFile>$([MSBuild]::NormalizePath($(FirefoxDir), '.install-firefox-$(FirefoxRevision).stamp'))</FirefoxStampFile>
     <_BrowserStampDir>$(ArtifactsBinDir)\</_BrowserStampDir>
+
+    <WasmProvisionAfterTarget Condition="'$(WasmProvisionAfterTarget)' == ''">Build</WasmProvisionAfterTarget>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)ChromeVersions.props" />
@@ -25,7 +28,7 @@
     <FirefoxBinaryName>firefox</FirefoxBinaryName>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'linux'">
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('linux'))">
     <ChromeDirName>chrome-linux</ChromeDirName>
     <ChromeDriverDirName>chromedriver_linux64</ChromeDriverDirName>
     <ChromeBinaryName>chrome</ChromeBinaryName>
@@ -38,9 +41,14 @@
 
     <ChromeUrl>$(linux_ChromeBaseSnapshotUrl)/chrome-linux.zip</ChromeUrl>
     <ChromeDriverUrl>$(linux_ChromeBaseSnapshotUrl)/chromedriver_linux64.zip</ChromeDriverUrl>
+
+    <V8Version>$(linux_V8Version)</V8Version>
+    <V8DirName>v8-$(linux_V8Version)</V8DirName>
+    <V8BinaryName>$(V8DirName).sh</V8BinaryName>
+    <_V8PlatformId>linux64</_V8PlatformId>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ChromeOSIdentifier)' == 'win'">
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('windows'))">
     <ChromeDirName>chrome-win</ChromeDirName>
     <ChromeDriverDirName>chromedriver_win32</ChromeDriverDirName>
     <ChromeBinaryName>chrome.exe</ChromeBinaryName>
@@ -53,6 +61,11 @@
 
     <ChromeUrl>$(win_ChromeBaseSnapshotUrl)/chrome-win.zip</ChromeUrl>
     <ChromeDriverUrl>$(win_ChromeBaseSnapshotUrl)/chromedriver_win32.zip</ChromeDriverUrl>
+
+    <V8Version>$(win_V8Version)</V8Version>
+    <V8DirName>v8-$(win_V8Version)</V8DirName>
+    <V8BinaryName>$(V8DirName).cmd</V8BinaryName>
+    <_V8PlatformId>win32</_V8PlatformId>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(ChromeVersion)' != ''">
@@ -65,6 +78,12 @@
     <ChromeDriverBinaryPath>$([MSBuild]::NormalizePath($(ChromeDriverDir), $(ChromeDriverDirName), $(ChromeDriverBinaryName)))</ChromeDriverBinaryPath>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(V8Version)' != ''">
+    <V8Dir>$(ArtifactsBinDir)$(V8DirName)\</V8Dir>
+    <V8StampFile>$([MSBuild]::NormalizePath('$(V8Dir)', '.install-$(V8Version).stamp'))</V8StampFile>
+    <V8BinaryPath>$([MSBuild]::NormalizePath($(V8Dir), $(V8BinaryName)))</V8BinaryPath>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
     <FirefoxRevision>108.0.1</FirefoxRevision>
     <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/linux-x86_64/en-US/firefox-$(FirefoxRevision).tar.bz2</FirefoxUrl>
@@ -72,9 +91,11 @@
   </PropertyGroup>
 
   <Target Name="DownloadAndInstallChrome"
-          AfterTargets="Build"
+          AfterTargets="$(WasmProvisionAfterTarget)"
           Condition="(!Exists($(ChromeStampFile)) or !Exists($(ChromeBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
 
+    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows'))"
+           Text="Chrome provisioning only supported on Linux, and windows." />
     <Error Condition="'$(ChromeVersion)' == ''"
            Text="No %24(ChromeVersion) set. This can be set in eng/testing/ChromeVersions.props" />
 
@@ -87,6 +108,7 @@
       <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
     </DownloadFile>
     <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDir)" />
+    <Delete Files="$(_DownloadedFile)" />
 
     <Error Text="Cannot find chrome at $(ChromeBinaryPath) in the downloaded copy"
            Condition="!Exists($(ChromeBinaryPath))" />
@@ -97,9 +119,11 @@
   </Target>
 
   <Target Name="DownloadAndInstallChromeDriver"
-          AfterTargets="Build"
+          AfterTargets="$(WasmProvisionAfterTarget)"
           Condition="(!Exists($(ChromeDriverStampFile)) or !Exists($(ChromeDriverBinaryPath))) and '$(InstallChromeForTests)' == 'true'">
 
+    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows'))"
+           Text="ChromeDriver provisioning only supported on Linux, and windows." />
     <Error Condition="'$(ChromeVersion)' == ''"
            Text="No %24(ChromeVersion) set. This can be set in eng/testing/ChromeVersions.props" />
 
@@ -121,8 +145,41 @@
     <Touch Files="$(ChromeDriverStampFile)" AlwaysCreate="true" />
   </Target>
 
+  <Target Name="DownloadAndInstallV8"
+          AfterTargets="$(WasmProvisionAfterTarget)"
+          Condition="(!Exists($(V8StampFile)) or !Exists($(V8BinaryPath))) and '$(InstallV8ForTests)' == 'true'">
+
+    <Error Condition="!$([MSBuild]::IsOSPlatform('linux')) and !$([MSBuild]::IsOSPlatform('windows'))"
+           Text="V8 provisioning only supported on Linux, and windows." />
+    <Error Condition="'$(V8Version)' == ''" Text="%24(V8Version) not set" />
+    <Error Condition="'$(_V8PlatformId)' == ''" Text="%24(_V8PlatformId) not set, needed for constructing the snapshot url." />
+
+    <PropertyGroup>
+      <_V8SnapshotUrl>https://storage.googleapis.com/chromium-v8/official/canary/v8-$(_V8PlatformId)-rel-$(V8Version).zip</_V8SnapshotUrl>
+
+      <_V8Script Condition="$([MSBuild]::IsOSPlatform('linux'))">#!/usr/bin/env bash
+export __SCRIPT_DIR=%24( cd -- "%24( dirname -- "%24{BASH_SOURCE[0]}" )" &amp;> /dev/null &amp;&amp; pwd )
+"$__SCRIPT_DIR/d8" --snapshot_blob="$__SCRIPT_DIR/snapshot_blob.bin" "$@"
+      </_V8Script>
+      <_V8Script Condition="$([MSBuild]::IsOSPlatform('windows'))">@echo off
+"%~dp0\d8.exe --snapshot_blob="%~dp0\snapshot_blob.bin" %*
+      </_V8Script>
+    </PropertyGroup>
+
+    <DownloadFile SourceUrl="$(_V8SnapshotUrl)" DestinationFolder="$(V8Dir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+
+    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(V8Dir)" />
+
+    <WriteLinesToFile Lines="$(_V8Script)" File="$(V8BinaryPath)" Overwrite="true" />
+    <Exec Command="chmod +x $(V8BinaryPath) $(V8Dir)/d8" Condition="$([MSBuild]::IsOSPlatform('linux'))" />
+
+    <Touch Files="$(V8StampFile)" AlwaysCreate="true" />
+  </Target>
+
   <Target Name="DownloadAndInstallFirefox"
-          AfterTargets="Build"
+          AfterTargets="$(WasmProvisionAfterTarget)"
           Condition="!Exists($(FirefoxStampFile)) and '$(InstallFirefoxForTests)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))">
     <ItemGroup>
       <_StampFile Include="$(_BrowserStampDir).install-firefox*.stamp" />

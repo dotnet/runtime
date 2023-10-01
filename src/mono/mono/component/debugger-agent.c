@@ -85,17 +85,17 @@
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
-#include <mono/utils/mono-poll.h>
 
 #include <mono/component/debugger-state-machine.h>
-#include "debugger-agent.h"
-#include "debugger-networking.h"
+#include <mono/component/debugger-agent.h>
+#include <mono/component/debugger-networking.h>
+#include <mono/component/debugger-poll.h>
 #include <mono/mini/mini.h>
 #include <mono/mini/seq-points.h>
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/interp/interp.h>
-#include "debugger-engine.h"
+#include <mono/component/debugger-engine.h>
 #include <mono/metadata/debug-mono-ppdb.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/components.h>
@@ -173,7 +173,6 @@ typedef struct {
 	gboolean onuncaught;
 	GSList *onthrow;
 	int timeout;
-	char *launch;
 	gboolean embedding;
 	gboolean defer;
 	int keepalive;
@@ -661,7 +660,7 @@ debugger_agent_parse_options (char *options)
 		} else if (strncmp (arg, "timeout=", 8) == 0) {
 			agent_config.timeout = atoi (arg + 8);
 		} else if (strncmp (arg, "launch=", 7) == 0) {
-			agent_config.launch = g_strdup (arg + 7);
+			// no longer supported
 		} else if (strncmp (arg, "embedding=", 10) == 0) {
 			agent_config.embedding = atoi (arg + 10) == 1;
 		} else if (strncmp (arg, "keepalive=", 10) == 0) {
@@ -856,30 +855,6 @@ finish_agent_init (gboolean on_startup)
 	if (mono_atomic_cas_i32 (&agent_inited, 1, 0) == 1)
 		return;
 
-	if (agent_config.launch) {
-
-		// FIXME: Generated address
-		// FIXME: Races with transport_connect ()
-
-#ifdef G_OS_WIN32
-		// Nothing. FIXME? g_spawn_async_with_pipes is easy enough to provide for Windows if needed.
-#elif !HAVE_G_SPAWN
-		PRINT_ERROR_MSG ("g_spawn_async_with_pipes not supported on this platform\n");
-		exit (1);
-#else
-		char *argv [ ] = {
-			agent_config.launch,
-			agent_config.transport,
-			agent_config.address,
-			NULL
-		};
-		int res = g_spawn_async_with_pipes (NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-		if (!res) {
-			PRINT_ERROR_MSG ("Failed to execute '%s'.\n", agent_config.launch);
-			exit (1);
-		}
-#endif
-	}
 #ifndef HOST_WASI
 	transport_connect (agent_config.address);
 #else
@@ -5512,7 +5487,9 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_FNPTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE) &&
-		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT)) {
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_SZARRAY) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_ARRAY)) {
 		char *name = mono_type_full_name (t);
 		PRINT_DEBUG_MSG (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer) (gsize) mono_native_thread_id_get (), name, type);
 		g_free (name);
@@ -5580,7 +5557,7 @@ decode_value_compute_size (MonoType *t, int type, MonoDomain *domain, guint8 *bu
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
-			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING || type == MONO_TYPE_ARRAY || type == MONO_TYPE_SZARRAY) {
 				ret += sizeof(MonoObject*);
 				decode_objid (buf, &buf, limit);
 			} else if (type == VALUE_TYPE_ID_NULL) {
@@ -5635,7 +5612,9 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 		!(t->type == MONO_TYPE_PTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_FNPTR && type == MONO_TYPE_I8) &&
 		!(t->type == MONO_TYPE_GENERICINST && type == MONO_TYPE_VALUETYPE) &&
-		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT)) {
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_OBJECT) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_SZARRAY) &&
+		!(t->type == MONO_TYPE_VALUETYPE && type == MONO_TYPE_ARRAY)) {
 		char *name = mono_type_full_name (t);
 		PRINT_DEBUG_MSG (1, "[%p] Expected value of type %s, got 0x%0x.\n", (gpointer) (gsize) mono_native_thread_id_get (), name, type);
 		g_free (name);
@@ -5728,7 +5707,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 	handle_ref:
 	default:
 		if (MONO_TYPE_IS_REFERENCE (t)) {
-			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING) {
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_OBJECT || type == MONO_TYPE_STRING || type == MONO_TYPE_ARRAY || type == MONO_TYPE_SZARRAY) {
 				int objid = decode_objid (buf, &buf, limit);
 				MonoObject *obj;
 

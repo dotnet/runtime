@@ -523,6 +523,53 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task RequestStreamingResponseFinishes_ClientFinishes()
+        {
+            byte[] data = Encoding.UTF8.GetBytes(new string('a', 1024));
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                HttpRequestData request = await stream.ReadRequestDataAsync(false);
+                var body = await stream.ReadRequestBodyAsync(data.Length);
+                await stream.SendResponseHeadersAsync();
+                await stream.SendResponseBodyAsync(body);
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                StreamingHttpContent requestContent = new StreamingHttpContent();
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = requestContent
+                };
+
+                var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+                var requestStream = await requestContent.GetStreamAsync();
+                await requestStream.FlushAsync();
+                await requestStream.WriteAsync(data);
+
+                var response = await responseTask;
+                response.EnsureSuccessStatusCode();
+                var body = await response.Content.ReadAsStringAsync();
+
+                await serverTask;
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+
+        [Fact]
         public async Task RequestSendingResponseDisposed_ThrowsOnServer()
         {
             byte[] data = Encoding.UTF8.GetBytes(new string('a', 1024));

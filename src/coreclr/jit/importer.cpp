@@ -1966,7 +1966,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 
     /* Mark the node as having a side-effect - i.e. cannot be
      * moved around since it is tied to a fixed location (EAX) */
-    arg->gtFlags |= GTF_ORDER_SIDEEFF;
+    arg->SetHasOrderingSideEffect();
 
 #if defined(JIT32_GCENCODER)
     const bool forceInsertNewBlock = isSingleBlockFilter || compStressCompile(STRESS_CATCH_ARG, 5);
@@ -9260,7 +9260,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 /* V4.0 allows assignment of i4 constant values to i8 type vars when IL verifier is bypassed (full
-                trust apps). The reason this works is that JIT stores an i4 constant in Gentree union during
+                trust apps). The reason this works is that JIT stores an i4 constant in GenTree union during
                 importation and reads from the union as if it were a long during code generation. Though this
                 can potentially read garbage, one can get lucky to have this working correctly.
 
@@ -9823,8 +9823,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 // byref is literally 0, and since the byref
                                 // leaks out here, we need to ensure it is
                                 // nullchecked.
-                                nullcheck->gtFlags |= GTF_ORDER_SIDEEFF;
-                                boxPayloadAddress->gtFlags |= GTF_ORDER_SIDEEFF;
+                                nullcheck->SetHasOrderingSideEffect();
+                                boxPayloadAddress->SetHasOrderingSideEffect();
                                 GenTree* result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
                                 impPushOnStack(result, tiRetVal);
                                 break;
@@ -11044,20 +11044,6 @@ inline void Compiler::impReimportMarkBlock(BasicBlock* block)
 }
 
 /*****************************************************************************
- *  Mark the successors of the given block as unimported.
- *  Note that the caller is responsible for calling impImportBlockPending()
- *  for all the successors, with the appropriate stack-state.
- */
-
-void Compiler::impReimportMarkSuccessors(BasicBlock* block)
-{
-    for (BasicBlock* const succBlock : block->Succs())
-    {
-        impReimportMarkBlock(succBlock);
-    }
-}
-
-/*****************************************************************************
  *
  *  Filter wrapper to handle only passed in exception code
  *  from it).
@@ -11379,38 +11365,35 @@ SPILLSTACK:
             baseTmp = impGetSpillTmpBase(block);
         }
 
-        /* Spill all stack entries into temps */
-        unsigned level, tempNum;
+        // Spill all stack entries into temps
 
         JITDUMP("\nSpilling stack entries into temps\n");
-        for (level = 0, tempNum = baseTmp; level < verCurrentState.esStackDepth; level++, tempNum++)
+        for (unsigned level = 0, tempNum = baseTmp; level < verCurrentState.esStackDepth; level++, tempNum++)
         {
             GenTree* tree = verCurrentState.esStack[level].val;
 
-            /* VC generates code where it pushes a byref from one branch, and an int (ldc.i4 0) from
-               the other. This should merge to a byref in unverifiable code.
-               However, if the branch which leaves the TYP_I_IMPL on the stack is imported first, the
-               successor would be imported assuming there was a TYP_I_IMPL on
-               the stack. Thus the value would not get GC-tracked. Hence,
-               change the temp to TYP_BYREF and reimport the successors.
-               Note: We should only allow this in unverifiable code.
-            */
-            if (tree->gtType == TYP_BYREF && lvaTable[tempNum].lvType == TYP_I_IMPL)
+            // VC generates code where it pushes a byref from one branch, and an int (ldc.i4 0) from
+            // the other. This should merge to a byref in unverifiable code.
+            // However, if the branch which leaves the TYP_I_IMPL on the stack is imported first, the
+            // successor would be imported assuming there was a TYP_I_IMPL on
+            // the stack. Thus the value would not get GC-tracked. Hence,
+            // change the temp to TYP_BYREF and reimport the clique.
+            LclVarDsc* tempDsc = lvaGetDesc(tempNum);
+            if (tree->TypeIs(TYP_BYREF) && (tempDsc->TypeGet() == TYP_I_IMPL))
             {
-                lvaTable[tempNum].lvType = TYP_BYREF;
-                impReimportMarkSuccessors(block);
-                markImport = true;
+                tempDsc->lvType     = TYP_BYREF;
+                reimportSpillClique = true;
             }
 
 #ifdef TARGET_64BIT
-            if (genActualType(tree->gtType) == TYP_I_IMPL && lvaTable[tempNum].lvType == TYP_INT)
+            if ((genActualType(tree) == TYP_I_IMPL) && (tempDsc->TypeGet() == TYP_INT))
             {
                 // Some other block in the spill clique set this to "int", but now we have "native int".
                 // Change the type and go back to re-import any blocks that used the wrong type.
-                lvaTable[tempNum].lvType = TYP_I_IMPL;
-                reimportSpillClique      = true;
+                tempDsc->lvType     = TYP_I_IMPL;
+                reimportSpillClique = true;
             }
-            else if (genActualType(tree->gtType) == TYP_INT && lvaTable[tempNum].lvType == TYP_I_IMPL)
+            else if ((genActualType(tree) == TYP_INT) && (tempDsc->TypeGet() == TYP_I_IMPL))
             {
                 // Spill clique has decided this should be "native int", but this block only pushes an "int".
                 // Insert a sign-extension to "native int" so we match the clique.
@@ -11425,14 +11408,14 @@ SPILLSTACK:
             // imported already, we need to change the type of the local and reimport the spill clique.
             // If the 'byref' side has imported, we insert a cast from int to 'native int' to match
             // the 'byref' size.
-            if (genActualType(tree->gtType) == TYP_BYREF && lvaTable[tempNum].lvType == TYP_INT)
+            if ((genActualType(tree) == TYP_BYREF) && (tempDsc->TypeGet() == TYP_INT))
             {
                 // Some other block in the spill clique set this to "int", but now we have "byref".
                 // Change the type and go back to re-import any blocks that used the wrong type.
-                lvaTable[tempNum].lvType = TYP_BYREF;
-                reimportSpillClique      = true;
+                tempDsc->lvType     = TYP_BYREF;
+                reimportSpillClique = true;
             }
-            else if (genActualType(tree->gtType) == TYP_INT && lvaTable[tempNum].lvType == TYP_BYREF)
+            else if ((genActualType(tree) == TYP_INT) && (tempDsc->TypeGet() == TYP_BYREF))
             {
                 // Spill clique has decided this should be "byref", but this block only pushes an "int".
                 // Insert a sign-extension to "native int" so we match the clique size.
@@ -11441,14 +11424,14 @@ SPILLSTACK:
 
 #endif // TARGET_64BIT
 
-            if (tree->gtType == TYP_DOUBLE && lvaTable[tempNum].lvType == TYP_FLOAT)
+            if (tree->TypeIs(TYP_DOUBLE) && (tempDsc->lvType == TYP_FLOAT))
             {
                 // Some other block in the spill clique set this to "float", but now we have "double".
                 // Change the type and go back to re-import any blocks that used the wrong type.
-                lvaTable[tempNum].lvType = TYP_DOUBLE;
-                reimportSpillClique      = true;
+                tempDsc->lvType     = TYP_DOUBLE;
+                reimportSpillClique = true;
             }
-            else if (tree->gtType == TYP_FLOAT && lvaTable[tempNum].lvType == TYP_DOUBLE)
+            else if (tree->TypeIs(TYP_FLOAT) && (tempDsc->TypeGet() == TYP_DOUBLE))
             {
                 // Spill clique has decided this should be "double", but this block only pushes a "float".
                 // Insert a cast to "double" so we match the clique.
@@ -11459,11 +11442,11 @@ SPILLSTACK:
                are spilling to the temps already used by a previous block),
                we need to spill addStmt */
 
-            if (addStmt != nullptr && !newTemps && gtHasRef(addStmt->GetRootNode(), tempNum))
+            if ((addStmt != nullptr) && !newTemps && gtHasRef(addStmt->GetRootNode(), tempNum))
             {
                 GenTree* addTree = addStmt->GetRootNode();
 
-                if (addTree->gtOper == GT_JTRUE)
+                if (addTree->OperIs(GT_JTRUE))
                 {
                     GenTree* relOp = addTree->AsOp()->gtOp1;
                     assert(relOp->OperIsCompare());
@@ -11488,7 +11471,7 @@ SPILLSTACK:
                 }
                 else
                 {
-                    assert(addTree->gtOper == GT_SWITCH && genActualTypeIsIntOrI(addTree->AsOp()->gtOp1->TypeGet()));
+                    assert(addTree->OperIs(GT_SWITCH) && genActualTypeIsIntOrI(addTree->AsOp()->gtOp1->TypeGet()));
 
                     unsigned temp = lvaGrabTemp(true DEBUGARG("spill addStmt SWITCH"));
                     impStoreTemp(temp, addTree->AsOp()->gtOp1, level);

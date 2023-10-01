@@ -5350,11 +5350,8 @@ PhaseStatus Compiler::optOptimizeFlow()
     noway_assert(opts.OptimizationEnabled());
     noway_assert(fgModified == false);
 
-    bool madeChanges = false;
-
-    madeChanges |= fgUpdateFlowGraph(/* allowTailDuplication */ true);
-    madeChanges |= fgReorderBlocks(/* useProfileData */ false);
-    madeChanges |= fgUpdateFlowGraph();
+    fgUpdateFlowGraph(/* doTailDuplication */ true);
+    fgReorderBlocks(/* useProfile */ false);
 
     // fgReorderBlocks can cause IR changes even if it does not modify
     // the flow graph. It calls gtPrepareCost which can cause operand swapping.
@@ -5363,9 +5360,7 @@ PhaseStatus Compiler::optOptimizeFlow()
     // Note phase status only impacts dumping and checking done post-phase,
     // it has no impact on a release build.
     //
-    madeChanges = true;
-
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //-----------------------------------------------------------------------------
@@ -5381,11 +5376,9 @@ PhaseStatus Compiler::optOptimizeLayout()
 {
     noway_assert(opts.OptimizationEnabled());
 
-    bool madeChanges = false;
-
-    madeChanges |= fgUpdateFlowGraph(/* allowTailDuplication */ false);
-    madeChanges |= fgReorderBlocks(/* useProfile */ true);
-    madeChanges |= fgUpdateFlowGraph();
+    fgUpdateFlowGraph(/* doTailDuplication */ false);
+    fgReorderBlocks(/* useProfile */ true);
+    fgUpdateFlowGraph();
 
     // fgReorderBlocks can cause IR changes even if it does not modify
     // the flow graph. It calls gtPrepareCost which can cause operand swapping.
@@ -5394,9 +5387,7 @@ PhaseStatus Compiler::optOptimizeLayout()
     // Note phase status only impacts dumping and checking done post-phase,
     // it has no impact on a release build.
     //
-    madeChanges = true;
-
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
@@ -8888,9 +8879,15 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
     }
 #endif
 
-    // Extract side effects
+    // TODO-Bug: We really should be extracting all side effects from the
+    // length and index here, but the length typically involves a GT_ARR_LENGTH
+    // that we would preserve. Usually, as part of proving that the range check
+    // passes, we have also proven that the ARR_LENGTH is non-faulting. We need
+    // a good way to communicate to this function that it is ok to ignore side
+    // effects of the ARR_LENGTH.
     GenTree* sideEffList = nullptr;
-    gtExtractSideEffList(check, &sideEffList, GTF_ASG);
+    gtExtractSideEffList(check->GetArrayLength(), &sideEffList, GTF_ASG);
+    gtExtractSideEffList(check->GetIndex(), &sideEffList);
 
     if (sideEffList != nullptr)
     {

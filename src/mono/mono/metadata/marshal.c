@@ -5573,7 +5573,7 @@ mono_get_addr_compiled_method (gpointer arg, MonoDelegate *del)
 	if (m_type_is_byref (invoke_sig->params [0])) {
 		arg_class = mono_class_from_mono_type_internal (invoke_sig->params [0]);
 	} else {
-		MonoObject *object = (MonoObject*)arg;
+		MonoObject *object = *(MonoObject**)arg;
 		arg_class = object->vtable->klass;
 	}
 

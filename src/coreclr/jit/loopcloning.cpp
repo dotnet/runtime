@@ -47,7 +47,7 @@ void ArrIndex::PrintBoundsCheckNodes(unsigned dim /* = -1 */)
 #endif // DEBUG
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert an arrLen operation into a gentree node.
+// ToGenTree - Convert an arrLen operation into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
@@ -111,7 +111,7 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
 }
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert an "identifier" into a gentree node.
+// ToGenTree - Convert an "identifier" into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
@@ -170,7 +170,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
 }
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert an "expression" into a gentree node.
+// ToGenTree - Convert an "expression" into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
@@ -195,7 +195,7 @@ GenTree* LC_Expr::ToGenTree(Compiler* comp, BasicBlock* bb)
 }
 
 //--------------------------------------------------------------------------------------------------
-// ToGenTree - Convert a "condition" into a gentree node.
+// ToGenTree - Convert a "condition" into a GenTree node.
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
@@ -1705,7 +1705,8 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
                 JITDUMP("Updating flags on GDV guard inside hot loop. Before:\n");
                 DISPSTMT(stmt);
 
-                indir->gtFlags |= GTF_ORDER_SIDEEFF | GTF_IND_NONFAULTING;
+                indir->gtFlags |= GTF_IND_NONFAULTING;
+                indir->SetHasOrderingSideEffect();
                 indir->gtFlags &= ~GTF_EXCEPT;
                 assert(fgNodeThreading == NodeThreading::None);
                 gtUpdateStmtSideEffects(stmt);
