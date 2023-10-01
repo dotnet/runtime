@@ -97,7 +97,7 @@ namespace System.Net.Sockets
 
             saea.RemoteEndPoint = remoteEP;
 
-            ValueTask connectTask = saea.ConnectAsync(this);
+            ValueTask connectTask = saea.ConnectAsync(this, saeaCancelable: cancellationToken.CanBeCanceled);
             if (connectTask.IsCompleted || !cancellationToken.CanBeCanceled)
             {
                 // Avoid async invocation overhead
@@ -1202,11 +1202,11 @@ namespace System.Net.Sockets
                     ValueTask.FromException<int>(CreateException(error));
             }
 
-            public ValueTask ConnectAsync(Socket socket)
+            public ValueTask ConnectAsync(Socket socket, bool saeaCancelable)
             {
                 try
                 {
-                    if (socket.ConnectAsync(this, userSocket: true, saeaCancelable: false))
+                    if (socket.ConnectAsync(this, userSocket: true, saeaCancelable: saeaCancelable))
                     {
                         return new ValueTask(this, _mrvtsc.Version);
                     }
