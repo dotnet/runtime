@@ -7804,12 +7804,12 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 
 struct StoreCoalescingData
 {
-    var_types            type;
-    GenTreeLclVarCommon* base;
-    GenTreeLclVarCommon* index;
-    uint32_t             scale;
-    int                  offset;
-    GenTree*             val;
+    var_types targetType;
+    GenTree*  baseAddr;
+    GenTree*  index;
+    GenTree*  value;
+    uint32_t  scale;
+    int       offset;
 };
 
 //------------------------------------------------------------------------
@@ -7845,27 +7845,27 @@ static bool GetStoreCoalescingData(GenTreeStoreInd* ind, StoreCoalescingData* da
     GenTree*  trees[MaxTrees] = {ind->Data(), ind->Addr(), nullptr, nullptr};
     int       treesCount      = 2;
 
-    data->type = ind->TypeGet();
-    data->val  = ind->Data();
+    data->targetType = ind->TypeGet();
+    data->value      = ind->Data();
     if (ind->Addr()->OperIs(GT_LEA))
     {
         GenTree* base  = ind->Addr()->AsAddrMode()->Base();
         GenTree* index = ind->Addr()->AsAddrMode()->Index();
-        if ((base == nullptr) || !base->IsLocal())
+        if ((base == nullptr) || !base->OperIs(GT_LCL_VAR))
         {
             // Base must be a local. It's possible for it to be nullptr when index is not null,
             // but let's ignore such cases.
             return false;
         }
-        if ((index != nullptr) && !index->IsLocal())
+        if ((index != nullptr) && !index->OperIs(GT_LCL_VAR))
         {
             // Index is either nullptr or a local.
             return false;
         }
-        data->base   = base == nullptr ? nullptr : base->AsLclVarCommon();
-        data->index  = index == nullptr ? nullptr : index->AsLclVarCommon();
-        data->scale  = ind->Addr()->AsAddrMode()->GetScale();
-        data->offset = ind->Addr()->AsAddrMode()->Offset();
+        data->baseAddr = base == nullptr ? nullptr : base;
+        data->index    = index == nullptr ? nullptr : index;
+        data->scale    = ind->Addr()->AsAddrMode()->GetScale();
+        data->offset   = ind->Addr()->AsAddrMode()->Offset();
 
         // Add index and base to the list of trees.
         trees[treesCount++] = base;
@@ -7874,13 +7874,13 @@ static bool GetStoreCoalescingData(GenTreeStoreInd* ind, StoreCoalescingData* da
             trees[treesCount++] = index;
         }
     }
-    else if (ind->Addr()->OperIsLocal())
+    else if (ind->Addr()->OperIs(GT_LCL_VAR))
     {
         // Address is just a local, no offset, scale is 1
-        data->base   = ind->Addr()->AsLclVarCommon();
-        data->index  = nullptr;
-        data->scale  = 1;
-        data->offset = 0;
+        data->baseAddr = ind->Addr();
+        data->index    = nullptr;
+        data->scale    = 1;
+        data->offset   = 0;
     }
     else
     {
@@ -8001,9 +8001,9 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         {
             return;
         }
-        GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
 
         // Get coalescing data for the previous STOREIND
+        GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
         if (!GetStoreCoalescingData(prevInd->AsStoreInd(), &prevData, &prevTree) || (prevTree == nullptr))
         {
             return;
@@ -8016,15 +8016,16 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             return;
         }
 
-        // Base, Index, Scale and Type all have to match.
-        if ((prevData.scale != currData.scale) || (prevData.type != currData.type) ||
-            !GenTree::Compare(prevData.base, currData.base) || !GenTree::Compare(prevData.index, currData.index))
+        // BaseAddr, Index, Scale and Type all have to match.
+        if ((prevData.scale != currData.scale) || (prevData.targetType != currData.targetType) ||
+            !GenTree::Compare(prevData.baseAddr, currData.baseAddr) ||
+            !GenTree::Compare(prevData.index, currData.index))
         {
             return;
         }
 
         // Offset has to match the size of the type. We don't support the same or overlapping offsets.
-        if (abs(prevData.offset - currData.offset) != (int)genTypeSize(prevData.type))
+        if (abs(prevData.offset - currData.offset) != (int)genTypeSize(prevData.targetType))
         {
             return;
         }
@@ -8079,10 +8080,10 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // We currently only support these constants for val
         // Will be extended to GT_CNS_VEC in future.
-        assert(prevData.val->IsCnsIntOrI() && currData.val->IsCnsIntOrI());
+        assert(prevData.value->IsCnsIntOrI() && currData.value->IsCnsIntOrI());
 
-        size_t lowerCns = (size_t)prevData.val->AsIntCon()->IconValue();
-        size_t upperCns = (size_t)currData.val->AsIntCon()->IconValue();
+        size_t lowerCns = (size_t)prevData.value->AsIntCon()->IconValue();
+        size_t upperCns = (size_t)currData.value->AsIntCon()->IconValue();
 
         // if the previous store was at a higher address, swap the constants
         if (prevData.offset > currData.offset)
