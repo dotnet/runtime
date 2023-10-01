@@ -7833,7 +7833,7 @@ static bool GetStoreCoalescingData(GenTreeStoreInd* ind, StoreCoalescingData* da
         return false;
     }
 
-    // Data has to be constant. We might allow locals in the future.
+    // Data has to be INT_CNS, can be also VEC_CNS in future.
     if (!ind->Data()->IsCnsIntOrI())
     {
         return false;
@@ -7849,12 +7849,6 @@ static bool GetStoreCoalescingData(GenTreeStoreInd* ind, StoreCoalescingData* da
     data->val  = ind->Data();
     if (ind->Addr()->OperIs(GT_LEA))
     {
-        if (ind->Addr()->AsAddrMode()->GetScale() > 1)
-        {
-            // Scaled LEAs aren't yet supported.
-            return false;
-        }
-
         GenTree* base  = ind->Addr()->AsAddrMode()->Base();
         GenTree* index = ind->Addr()->AsAddrMode()->Index();
         if ((base == nullptr) || !base->IsLocal())
@@ -7925,42 +7919,8 @@ static bool GetStoreCoalescingData(GenTreeStoreInd* ind, StoreCoalescingData* da
 }
 
 //------------------------------------------------------------------------
-// CanBeCoalesced: given two store coalescing data,
-//    determine whether they can be coalesced.
-//
-// Arguments:
-//    data1 - the first store coalescing data
-//    data2 - the second store coalescing data (order is not important)
-//
-// Return Value:
-//    true if the data can be coalesced, false otherwise.
-//
-static bool CanBeCoalesced(StoreCoalescingData* data1, StoreCoalescingData* data2)
-{
-    // base, index, scale and type all have to be the same
-    if ((data1->scale != data2->scale) || (data1->type != data2->type) || !GenTree::Compare(data1->base, data2->base) ||
-        !GenTree::Compare(data1->index, data2->index))
-    {
-        return false;
-    }
-
-    // val has to be a constant
-    if (!data1->val->OperIsConst() && !data2->val->OperIsConst())
-    {
-        return false;
-    }
-
-    // Offset has to match the size of the type
-    // We don't support the same or overlapping offsets.
-    if (abs(data1->offset - data2->offset) != (int)genTypeSize(data1->type))
-    {
-        return false;
-    }
-    return true;
-}
-
-//------------------------------------------------------------------------
-// LowerStoreIndirCoalescing: Try to coalesce a STOREIND with previous STOREINDs. Example:
+// LowerStoreIndirCoalescing: If the given STOREIND node is followed by a similar
+//    STOREIND node, try to merge them into a single store of a twice wider type. Example:
 //
 //    *  STOREIND  int
 //    +--*  LCL_VAR   byref  V00
@@ -7991,10 +7951,10 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         return;
     }
 
+    // For now, we require the current STOREIND to have LEA (previous store may not have it)
+    // So we can easily adjust the offset, consider making it more flexible in future.
     if (!ind->Addr()->OperIs(GT_LEA))
     {
-        // For now, we require the current STOREIND to have LEA (previous store may not have it)
-        // So we can easily adjust the offset, consider making it more flexible in future.
         return;
     }
 
@@ -8021,7 +7981,6 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         StoreCoalescingData currData;
         StoreCoalescingData prevData;
-        GenTreeStoreInd*    prevInd;
         GenTree*            prevTree;
 
         // Get coalescing data for the current STOREIND
@@ -8032,7 +7991,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // Now we need to find the previous STOREIND,
         // we can ignore any NOPs or IL_OFFSETs in-between
-        while (prevTree != nullptr && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
+        while ((prevTree != nullptr) && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
         {
             prevTree = prevTree->gtPrev;
         }
@@ -8042,7 +8001,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         {
             return;
         }
-        prevInd = prevTree->AsStoreInd();
+        GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
 
         // Get coalescing data for the previous STOREIND
         if (!GetStoreCoalescingData(prevInd->AsStoreInd(), &prevData, &prevTree) || (prevTree == nullptr))
@@ -8057,8 +8016,15 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             return;
         }
 
-        // Check whether we can coalesce the two stores
-        if (!CanBeCoalesced(&prevData, &currData))
+        // Base, Index, Scale and Type all have to match.
+        if ((prevData.scale != currData.scale) || (prevData.type != currData.type) ||
+            !GenTree::Compare(prevData.base, currData.base) || !GenTree::Compare(prevData.index, currData.index))
+        {
+            return;
+        }
+
+        // Offset has to match the size of the type. We don't support the same or overlapping offsets.
+        if (abs(prevData.offset - currData.offset) != (int)genTypeSize(prevData.type))
         {
             return;
         }
