@@ -633,8 +633,75 @@ namespace System.Net
             return false;
         }
 
+        private class DnsRequestWaiter : TaskCompletionSource
+        {
+            private long _start;
+            private Task _previousTask;
+            public DnsRequestWaiter? Next;
+            private object _key;
+
+            public DnsRequestWaiter(object key, long start, DnsRequestWaiter? previous)
+            {
+                _key = key;
+                _start = start;
+                if (previous != null)
+                {
+                    _previousTask = previous.Task;
+                    previous.Next = this;
+                }
+                else
+                {
+                    _previousTask = Task.CompletedTask;
+                }
+            }
+
+            public Task<TResult> Run<TResult>(Func<object, long, TResult> func, CancellationToken cancellationToken)
+            {
+                Task<TResult> task = _previousTask.ContinueWith(_ =>
+                {
+                    TResult result;
+                    using (cancellationToken.UnsafeRegister(s => ((DnsRequestWaiter)s!).Complete(), this))
+                    {
+                        result = func(_key, _start);
+                    }
+                    Complete();
+                    return result;
+                }, cancellationToken, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+
+                _previousTask.ContinueWith(_ =>
+                {
+                    Complete();
+                    NameResolutionTelemetry.Log.AfterResolution(_key, _start, false);
+                }, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+                return task;
+            }
+
+            internal void Complete()
+            {
+                if (TrySetResult())
+                {
+                    lock (s_tasks)
+                    {
+                        if (Next != null)
+                        {
+                            s_tasks[_key] = Next;
+                        }
+                        else
+                        {
+                            s_tasks.Remove(_key);
+                        }
+                    }
+                }
+            }
+
+            public TimeSpan Elapsed => Stopwatch.GetElapsedTime(_start);
+        }
+
+        private static readonly TimeSpan s_maxWait = TimeSpan.FromSeconds(1);
+
         /// <summary>Mapping from key to current task in flight for that key.</summary>
-        private static readonly Dictionary<object, Task> s_tasks = new Dictionary<object, Task>();
+        private static readonly Dictionary<object, DnsRequestWaiter> s_tasks = new();
 
         /// <summary>Queue the function to be invoked asynchronously.</summary>
         /// <remarks>
@@ -649,56 +716,45 @@ namespace System.Net
         /// </remarks>
         private static Task<TResult> RunAsync<TResult>(Func<object, long, TResult> func, object key, CancellationToken cancellationToken)
         {
-            long startingTimestamp = NameResolutionTelemetry.Log.BeforeResolution(key);
+            long start = Stopwatch.GetTimestamp();
+            NameResolutionTelemetry.Log.BeforeResolution(key);
 
-            Task<TResult>? task = null;
-
+            DnsRequestWaiter current;
             lock (s_tasks)
             {
                 // Get the previous task for this key, if there is one.
-                s_tasks.TryGetValue(key, out Task? prevTask);
-                prevTask ??= Task.CompletedTask;
-
-                // Invoke the function in a queued work item when the previous task completes. Note that some callers expect the
-                // returned task to have the key as the task's AsyncState.
-                task = prevTask.ContinueWith(delegate
+                if (s_tasks.TryGetValue(key, out DnsRequestWaiter? head))
                 {
-                    Debug.Assert(!Monitor.IsEntered(s_tasks));
-                    try
-                    {
-                        return func(key, startingTimestamp);
-                    }
-                    finally
-                    {
-                        // When the work is done, remove this key/task pair from the dictionary if this is still the current task.
-                        // Because the work item is created and stored into both the local and the dictionary while the lock is
-                        // held, and since we take the same lock here, inside this lock it's guaranteed to see the changes
-                        // made by the call site.
-                        lock (s_tasks)
-                        {
-                            ((ICollection<KeyValuePair<object, Task>>)s_tasks).Remove(new KeyValuePair<object, Task>(key!, task!));
-                        }
-                    }
-                }, key, cancellationToken, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
+                    DnsRequestWaiter? last = null;
+                    DnsRequestWaiter? next = head;
 
-                // If it's possible the task may end up getting canceled, it won't have a chance to remove itself from
-                // the dictionary if it is canceled, so use a separate continuation to do so.
-                if (cancellationToken.CanBeCanceled)
-                {
-                    task.ContinueWith((task, key) =>
+                    while (next != null)
                     {
-                        lock (s_tasks)
+                        // FF timed out requests
+                        if (next.Elapsed > s_maxWait)
                         {
-                            ((ICollection<KeyValuePair<object, Task>>)s_tasks).Remove(new KeyValuePair<object, Task>(key!, task));
+                            next.Complete();
                         }
-                    }, key, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                        last = next;
+                        next = next.Next;
+                    }
+                    Debug.Assert(last is not null);
+                    current = new DnsRequestWaiter(key, start, last);
+                    if (!s_tasks.ContainsKey(key))
+                    {
+                        // Timed out the head
+                        s_tasks[key] = current;
+                    }
+                }
+                else
+                {
+                    current = new DnsRequestWaiter(key, start, null);
+                    s_tasks[key] = current;
                 }
 
-                // Finally, store the task into the dictionary as the current task for this key.
-                s_tasks[key] = task;
             }
 
-            return task;
+            return current.Run(func, cancellationToken);
         }
 
         private static SocketException CreateException(SocketError error, int nativeError) =>
