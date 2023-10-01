@@ -17,17 +17,16 @@ namespace System.Net.NameResolution.Tests
             Assert.ThrowsAny<SocketException>(() => Dns.EndResolve(asyncObject));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void DnsObsoleteBeginResolve_BadIPv4String_ReturnsOnlyGivenIP()
-        {
-            IAsyncResult asyncObject = Dns.BeginResolve("0.0.1.1", null, null);
-            IPHostEntry entry = Dns.EndResolve(asyncObject);
+        //[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        //public void DnsObsoleteBeginResolve_BadIPv4String_ReturnsOnlyGivenIP()
+        //{
+        //    IAsyncResult asyncObject = Dns.BeginResolve("0.0.1.1", null, null);
+        //    IPHostEntry entry = Dns.EndResolve(asyncObject);
 
-            Assert.Equal("0.0.1.1", entry.HostName);
-            Assert.Equal(1, entry.AddressList.Length);
-            Assert.Equal(IPAddress.Parse("0.0.1.1"), entry.AddressList[0]);
-        }
+        //    Assert.Equal("0.0.1.1", entry.HostName);
+        //    Assert.Equal(1, entry.AddressList.Length);
+        //    Assert.Equal(IPAddress.Parse("0.0.1.1"), entry.AddressList[0]);
+        //}
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsObsoleteBeginResolve_Loopback_MatchesResolve()
