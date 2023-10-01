@@ -666,7 +666,16 @@ namespace System.Net
                     Debug.Assert(!Monitor.IsEntered(s_tasks));
                     try
                     {
-                        return func(key, startingTimestamp);
+                        using (cancellationToken.UnsafeRegister(static s =>
+                        {
+                            lock (s_tasks)
+                            {
+                                s_tasks.Remove(s!);
+                            }
+                        }, key))
+                        {
+                            return func(key, startingTimestamp);
+                        }
                     }
                     finally
                     {
