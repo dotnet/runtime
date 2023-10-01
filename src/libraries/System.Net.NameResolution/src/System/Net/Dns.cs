@@ -666,8 +666,8 @@ namespace System.Net
                     {
                         using (cancellationToken.UnsafeRegister(static s =>
                         {
-                            // In case a request is cancelled, make sure we start queue for this key.
-                            // This helps avoiding congestion on stalled or long running requests.
+                            // In case a request is cancelled, start a new queue for this key.
+                            // This helps avoiding congestion when a getaddrinfo call runs for too long.
                             lock (s_tasks)
                             {
                                 s_tasks.Remove(s!);
