@@ -1830,10 +1830,8 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
 }
 
 //------------------------------------------------------------------------
-//  BuildConsecutiveRegistersForDef: Build ref position(s) for `treeNode` that has a
-//  requirement of allocating consecutive registers. It will create the RefTypeUse
-//  RefPositions for as many consecutive registers are needed for `treeNode` and in
-//  between, it might contain RefTypeUpperVectorRestore RefPositions.
+//  BuildConsecutiveRegistersForDef: Build RefTypeDef ref position(s) for
+//  `treeNode` that produces `fieldCount` consecutive registers.
 //
 //  For the first RefPosition of the series, it sets the `regCount` field equal to
 //  the number of subsequent RefPositions (including the first one) involved for this
@@ -1847,35 +1845,32 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
 //
 // Arguments:
 //    treeNode       - The GT_HWINTRINSIC node of interest
-//    rmwNode        - Read-modify-write node.
+//    registerCount  - Number of registers the treeNode produces
 //
-// Return Value:
-//    The number of sources consumed by this node.
-//
-int LinearScan::BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCount)
+void LinearScan::BuildConsecutiveRegistersForDef(GenTree* treeNode, int registerCount)
 {
-    assert(fieldCount > 1);
+    assert(registerCount > 1);
     assert(compiler->info.compNeedsConsecutiveRegisters);
 
     RefPosition* currRefPos = nullptr;
     RefPosition* lastRefPos = nullptr;
 
     NextConsecutiveRefPositionsMap* refPositionMap = getNextConsecutiveRefPositionsMap();
-    for (int fieldIdx = 0; fieldIdx < fieldCount; fieldIdx++)
+    for (int fieldIdx = 0; fieldIdx < registerCount; fieldIdx++)
     {
         currRefPos                   = BuildDef(treeNode, RBM_NONE, fieldIdx);
         currRefPos->needsConsecutive = true;
         currRefPos->regCount         = 0;
 #ifdef DEBUG
         // Set the minimum register candidates needed for stress to work.
-        currRefPos->minRegCandidateCount = fieldCount;
+        currRefPos->minRegCandidateCount = registerCount;
 #endif
         if (fieldIdx == 0)
         {
             // Set `regCount` to actual consecutive registers count for first ref-position.
             // For others, set 0 so we can identify that this is non-first RefPosition.
 
-            currRefPos->regCount = fieldCount;
+            currRefPos->regCount = registerCount;
         }
 
         refPositionMap->Set(lastRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
@@ -1883,7 +1878,6 @@ int LinearScan::BuildConsecutiveRegistersForDef(GenTree* treeNode, int fieldCoun
 
         lastRefPos = currRefPos;
     }
-    return 0;
 }
 
 #ifdef DEBUG
