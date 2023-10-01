@@ -188,7 +188,6 @@ namespace System.Security.Cryptography
             {
                 byte[] pad;
                 int padLen;
-                long bitCount;
                 byte[] hash = new byte[32]; // HashSizeValue = 256
 
                 /* Compute padding: 80 00 00 ... 00 00 <bit count>
@@ -202,16 +201,9 @@ namespace System.Security.Cryptography
                 pad[0] = 0x80;
 
                 //  Convert count to bit count
-                bitCount = _count * 8;
+                ulong bitCount = _count * 8;
 
-                pad[padLen - 8] = (byte)((bitCount >> 56) & 0xff);
-                pad[padLen - 7] = (byte)((bitCount >> 48) & 0xff);
-                pad[padLen - 6] = (byte)((bitCount >> 40) & 0xff);
-                pad[padLen - 5] = (byte)((bitCount >> 32) & 0xff);
-                pad[padLen - 4] = (byte)((bitCount >> 24) & 0xff);
-                pad[padLen - 3] = (byte)((bitCount >> 16) & 0xff);
-                pad[padLen - 2] = (byte)((bitCount >> 8) & 0xff);
-                pad[padLen - 1] = (byte)((bitCount >> 0) & 0xff);
+                BinaryPrimitives.WriteUInt64BigEndian(pad[..^sizeof(ulong)], bitCount);
 
                 /* Digest padding */
                 HashCore(pad);
@@ -432,7 +424,6 @@ namespace System.Security.Cryptography
             {
                 byte[] pad;
                 int padLen;
-                ulong bitCount;
                 byte[] hash = new byte[48]; // HashSizeValue = 384
 
                 /* Compute padding: 80 00 00 ... 00 00 <bit count>
@@ -446,27 +437,9 @@ namespace System.Security.Cryptography
                 pad[0] = 0x80;
 
                 //  Convert count to bit count
-                bitCount = _count * 8;
+                ulong bitCount = _count * 8;
 
-                // bitCount is at most 8 * 128 = 1024. Its representation as a 128-bit number has all bits set to zero
-                // except eventually the 11 lower bits
-
-                //pad[padLen-16] = (byte) ((bitCount >> 120) & 0xff);
-                //pad[padLen-15] = (byte) ((bitCount >> 112) & 0xff);
-                //pad[padLen-14] = (byte) ((bitCount >> 104) & 0xff);
-                //pad[padLen-13] = (byte) ((bitCount >> 96) & 0xff);
-                //pad[padLen-12] = (byte) ((bitCount >> 88) & 0xff);
-                //pad[padLen-11] = (byte) ((bitCount >> 80) & 0xff);
-                //pad[padLen-10] = (byte) ((bitCount >> 72) & 0xff);
-                //pad[padLen-9] = (byte) ((bitCount >> 64) & 0xff);
-                pad[padLen - 8] = (byte)((bitCount >> 56) & 0xff);
-                pad[padLen - 7] = (byte)((bitCount >> 48) & 0xff);
-                pad[padLen - 6] = (byte)((bitCount >> 40) & 0xff);
-                pad[padLen - 5] = (byte)((bitCount >> 32) & 0xff);
-                pad[padLen - 4] = (byte)((bitCount >> 24) & 0xff);
-                pad[padLen - 3] = (byte)((bitCount >> 16) & 0xff);
-                pad[padLen - 2] = (byte)((bitCount >> 8) & 0xff);
-                pad[padLen - 1] = (byte)((bitCount >> 0) & 0xff);
+                BinaryPrimitives.WriteUInt64BigEndian(pad[..^sizeof(ulong)], bitCount);
 
                 /* Digest padding */
                 HashCore(pad);
@@ -691,7 +664,6 @@ namespace System.Security.Cryptography
             {
                 byte[] pad;
                 int padLen;
-                ulong bitCount;
                 byte[] hash = new byte[64]; // HashSizeValue = 512
 
                 /* Compute padding: 80 00 00 ... 00 00 <bit count>
@@ -705,28 +677,9 @@ namespace System.Security.Cryptography
                 pad[0] = 0x80;
 
                 //  Convert count to bit count
-                bitCount = _count * 8;
+                ulong bitCount = _count * 8;
 
-                // If we ever have UInt128 for bitCount, then these need to be uncommented.
-                // Note that C# only looks at the low 6 bits of the shift value for ulongs,
-                // so >>0 and >>64 are equal!
-
-                //pad[padLen-16] = (byte) ((bitCount >> 120) & 0xff);
-                //pad[padLen-15] = (byte) ((bitCount >> 112) & 0xff);
-                //pad[padLen-14] = (byte) ((bitCount >> 104) & 0xff);
-                //pad[padLen-13] = (byte) ((bitCount >> 96) & 0xff);
-                //pad[padLen-12] = (byte) ((bitCount >> 88) & 0xff);
-                //pad[padLen-11] = (byte) ((bitCount >> 80) & 0xff);
-                //pad[padLen-10] = (byte) ((bitCount >> 72) & 0xff);
-                //pad[padLen-9] = (byte) ((bitCount >> 64) & 0xff);
-                pad[padLen - 8] = (byte)((bitCount >> 56) & 0xff);
-                pad[padLen - 7] = (byte)((bitCount >> 48) & 0xff);
-                pad[padLen - 6] = (byte)((bitCount >> 40) & 0xff);
-                pad[padLen - 5] = (byte)((bitCount >> 32) & 0xff);
-                pad[padLen - 4] = (byte)((bitCount >> 24) & 0xff);
-                pad[padLen - 3] = (byte)((bitCount >> 16) & 0xff);
-                pad[padLen - 2] = (byte)((bitCount >> 8) & 0xff);
-                pad[padLen - 1] = (byte)((bitCount >> 0) & 0xff);
+                BinaryPrimitives.WriteUInt64BigEndian(pad[..^sizeof(ulong)], bitCount);
 
                 /* Digest padding */
                 HashCore(pad);
