@@ -133,7 +133,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public override TypeAttributes Attributes => TypeAttributes.Public;
         protected override int InternalGetHashCode() => _key.GetHashCode();
-        internal override Type InternalDeclaringType => null;
+        internal override RuntimeTypeInfo InternalDeclaringType => null;
         public override string Name => string.Empty;
         internal override string InternalFullNameOfAssembly => string.Empty;
         internal override RuntimeTypeHandle InternalTypeHandleIfAvailable => _key.TypeHandle;

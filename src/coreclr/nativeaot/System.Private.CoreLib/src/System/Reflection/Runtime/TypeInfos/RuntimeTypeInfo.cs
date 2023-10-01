@@ -418,8 +418,9 @@ namespace System.Reflection.Runtime.TypeInfos
             throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
         }
 
+#if false // TODO!
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public Type MakeArrayType()
+        public RuntimeTypeInfo MakeArrayType()
         {
             // Do not implement this as a call to MakeArrayType(1) - they are not interchangeable. MakeArrayType() returns a
             // vector type ("SZArray") while MakeArrayType(1) returns a multidim array of rank 1. These are distinct types
@@ -428,14 +429,19 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public Type MakeArrayType(int rank)
+        public RuntimeTypeInfo MakeArrayType(int rank)
         {
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
             return this.GetMultiDimArrayTypeWithTypeHandle(rank).ToType();
         }
 
-        public Type MakeByRefType()
+        public Type MakePointerType()
+        {
+            return this.GetPointerType().ToType();
+        }
+
+        public RuntimeTypeInfo MakeByRefType()
         {
             return this.GetByRefType().ToType();
         }
@@ -491,13 +497,9 @@ namespace System.Reflection.Runtime.TypeInfos
 
             return this.GetConstructedGenericTypeWithTypeHandle(runtimeTypeArguments!).ToType();
         }
+#endif
 
-        public Type MakePointerType()
-        {
-            return this.GetPointerType().ToType();
-        }
-
-        public Type DeclaringType
+        public RuntimeTypeInfo DeclaringType
         {
             get
             {
@@ -505,7 +507,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public Type ReflectedType
+        public RuntimeTypeInfo ReflectedType
         {
             get
             {
@@ -596,7 +598,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal abstract Type InternalDeclaringType { get; }
+        internal abstract RuntimeTypeInfo InternalDeclaringType { get; }
 
         //
         // Return the full name of the "defining assembly" for the purpose of computing TypeInfo.AssemblyQualifiedName;

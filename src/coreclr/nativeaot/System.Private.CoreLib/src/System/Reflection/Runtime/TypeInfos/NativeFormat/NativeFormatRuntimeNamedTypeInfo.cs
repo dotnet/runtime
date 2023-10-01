@@ -159,7 +159,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             return _typeDefinitionHandle.GetHashCode();
         }
 
-        internal sealed override Type InternalDeclaringType
+        internal sealed override RuntimeTypeInfo InternalDeclaringType
         {
             get
             {
@@ -169,7 +169,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 {
                     declaringType = enclosingTypeDefHandle.ResolveTypeDefinition(_reader);
                 }
-                return declaringType.ToType();
+                return declaringType;
             }
         }
 

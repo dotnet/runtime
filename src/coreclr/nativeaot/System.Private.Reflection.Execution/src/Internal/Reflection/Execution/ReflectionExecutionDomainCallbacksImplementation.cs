@@ -32,45 +32,6 @@ namespace Internal.Reflection.Execution
         }
 
         //=======================================================================================
-        // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
-        // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.
-        //=======================================================================================
-        public sealed override Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle)
-        {
-            return _executionDomain.GetNamedTypeForHandle(typeHandle);
-        }
-
-        public sealed override Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle)
-        {
-            return _executionDomain.GetArrayTypeForHandle(typeHandle);
-        }
-
-        public sealed override Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
-        {
-            return _executionDomain.GetMdArrayTypeForHandle(typeHandle, rank);
-        }
-
-        public sealed override Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
-        {
-            return _executionDomain.GetPointerTypeForHandle(typeHandle);
-        }
-
-        public sealed override Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle)
-        {
-            return _executionDomain.GetFunctionPointerTypeForHandle(typeHandle);
-        }
-
-        public sealed override Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
-        {
-            return _executionDomain.GetByRefTypeForHandle(typeHandle);
-        }
-
-        public sealed override Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle)
-        {
-            return _executionDomain.GetConstructedGenericTypeForHandle(typeHandle);
-        }
-
-        //=======================================================================================
         // Missing metadata exception support.
         //=======================================================================================
         public sealed override Exception CreateMissingMetadataException(Type pertainant)

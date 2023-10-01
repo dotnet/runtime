@@ -154,7 +154,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return _key.ElementType.GetHashCode();
         }
 
-        internal sealed override Type InternalDeclaringType
+        internal sealed override RuntimeTypeInfo InternalDeclaringType
         {
             get
             {

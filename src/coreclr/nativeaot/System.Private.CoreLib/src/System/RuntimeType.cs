@@ -1,11 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
+using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.CompilerServices;
+using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
+using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -13,6 +17,7 @@ namespace System
     public sealed unsafe class RuntimeType : TypeInfo, ICloneable
     {
         private MethodTable* _pUnderlyingEEType;
+        private RuntimeTypeInfo? _runtimeTypeInfo;
 
         internal RuntimeType(MethodTable* pUnderlyingEEType)
         {
@@ -20,6 +25,55 @@ namespace System
         }
 
         internal EETypePtr ToEETypePtr() => new EETypePtr(_pUnderlyingEEType);
+
+        internal RuntimeTypeInfo GetRuntimeTypeInfo() => _runtimeTypeInfo ?? CreateRuntimeTypeInfo();
+
+        private RuntimeTypeInfo CreateRuntimeTypeInfo()
+        {
+            EETypePtr eeType = ToEETypePtr();
+
+            RuntimeTypeHandle runtimeTypeHandle = new RuntimeTypeHandle(eeType);
+
+            RuntimeTypeInfo runtimeTypeInfo;
+
+            if (eeType.IsDefType)
+            {
+                if (eeType.IsGeneric)
+                {
+                    runtimeTypeInfo = ExecutionDomain.GetConstructedGenericTypeForHandle(runtimeTypeHandle);
+                }
+                else
+                {
+                    runtimeTypeInfo = ReflectionCoreExecution.ExecutionDomain.GetNamedTypeForHandle(runtimeTypeHandle);
+                }
+            }
+            else if (eeType.IsArray)
+            {
+                if (!eeType.IsSzArray)
+                    runtimeTypeInfo = ExecutionDomain.GetMdArrayTypeForHandle(runtimeTypeHandle, eeType.ArrayRank);
+                else
+                    runtimeTypeInfo = ExecutionDomain.GetArrayTypeForHandle(runtimeTypeHandle);
+            }
+            else if (eeType.IsPointer)
+            {
+                runtimeTypeInfo = ExecutionDomain.GetPointerTypeForHandle(runtimeTypeHandle);
+            }
+            else if (eeType.IsFunctionPointer)
+            {
+                runtimeTypeInfo = ExecutionDomain.GetFunctionPointerTypeForHandle(runtimeTypeHandle);
+            }
+            else if (eeType.IsByRef)
+            {
+                runtimeTypeInfo = ExecutionDomain.GetByRefTypeForHandle(runtimeTypeHandle);
+            }
+            else
+            {
+                Debug.Fail("Invalid RuntimeTypeHandle");
+                throw new ArgumentException(SR.Arg_InvalidHandle);
+            }
+
+            return (_runtimeTypeInfo = runtimeTypeInfo);
+        }
 
         public override string? GetEnumName(object value)
         {
@@ -136,6 +190,8 @@ namespace System
         public override bool IsSecuritySafeCritical => false;
         public override bool IsSecurityTransparent => false;
 
+        public override Type UnderlyingSystemType => this;
+
         public override RuntimeTypeHandle TypeHandle
             => new RuntimeTypeHandle(_pUnderlyingEEType);
 
@@ -168,6 +224,8 @@ namespace System
 
         public override Type? GetElementType()
             => _pUnderlyingEEType->IsParameterizedType ? GetTypeFromMethodTable(_pUnderlyingEEType->RelatedParameterType) : null;
+
+        public override Type? BaseType => throw new NotImplementedException();
 
         protected override TypeAttributes GetAttributeFlagsImpl() => throw new NotImplementedException();
         protected override bool IsCOMObjectImpl() => false;
@@ -225,22 +283,18 @@ namespace System
         public override object[] GetCustomAttributes(bool inherit) => throw new NotImplementedException();
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();
 
-        public override string? Namespace => throw new NotImplementedException();
+        public override string? Namespace => GetRuntimeTypeInfo().Namespace;
 
-        public override string? AssemblyQualifiedName => throw new NotImplementedException();
+        public override string? AssemblyQualifiedName => GetRuntimeTypeInfo().AssemblyQualifiedName;
 
-        public override string? FullName => throw new NotImplementedException();
+        public override string? FullName => GetRuntimeTypeInfo().FullName;
 
-        public override Assembly Assembly => throw new NotImplementedException();
+        public override Assembly Assembly => GetRuntimeTypeInfo().Assembly;
 
-        public override Module Module => throw new NotImplementedException();
+        public override Module Module => GetRuntimeTypeInfo().Module;
 
-        public override Type UnderlyingSystemType => throw new NotImplementedException();
+        public override Guid GUID => GetRuntimeTypeInfo().GUID;
 
-        public override Guid GUID => throw new NotImplementedException();
-
-        public override Type? BaseType => throw new NotImplementedException();
-
-        public override string Name => throw new NotImplementedException();
+        public override string Name => GetRuntimeTypeInfo().Name;
     }
 }

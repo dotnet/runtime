@@ -18,6 +18,7 @@
 
 using System;
 using System.Reflection;
+using System.Reflection.Runtime.TypeInfos;
 
 namespace Internal.Runtime.Augments
 {
@@ -25,18 +26,6 @@ namespace Internal.Runtime.Augments
     public abstract class ReflectionExecutionDomainCallbacks
     {
         public abstract IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle);
-
-        //=======================================================================================
-        // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
-        // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.
-        //=======================================================================================
-        public abstract Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle);
-        public abstract Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle);
-        public abstract Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank);
-        public abstract Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle);
-        public abstract Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle);
-        public abstract Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle);
-        public abstract Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle);
 
         // Flotsam and jetsam.
         public abstract Exception CreateMissingMetadataException(Type typeWithMissingMetadata);

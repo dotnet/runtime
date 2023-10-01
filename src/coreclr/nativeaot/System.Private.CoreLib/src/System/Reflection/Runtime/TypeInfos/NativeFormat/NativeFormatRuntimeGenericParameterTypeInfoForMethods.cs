@@ -62,11 +62,11 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        internal sealed override Type InternalDeclaringType
+        internal sealed override RuntimeTypeInfo InternalDeclaringType
         {
             get
             {
-                return _declaringRuntimeNamedMethodInfo.DeclaringType;
+                return _declaringRuntimeNamedMethodInfo.DeclaringType.ToRuntimeTypeInfo();
             }
         }
 
@@ -74,7 +74,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                TypeContext typeContext = this.DeclaringType.ToRuntimeTypeInfo().TypeContext;
+                TypeContext typeContext = this.DeclaringType.TypeContext;
                 return new TypeContext(typeContext.GenericTypeArguments, _declaringRuntimeNamedMethodInfo.RuntimeGenericArgumentsOrParameters);
             }
         }

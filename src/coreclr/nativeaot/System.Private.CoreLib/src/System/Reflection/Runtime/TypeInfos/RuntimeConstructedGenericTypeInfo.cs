@@ -214,7 +214,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override Type InternalDeclaringType
+        internal sealed override RuntimeTypeInfo InternalDeclaringType
         {
             get
             {
