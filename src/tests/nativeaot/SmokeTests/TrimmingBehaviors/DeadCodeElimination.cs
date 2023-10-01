@@ -21,6 +21,8 @@ class DeadCodeElimination
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeEquals.Run();
         TestBranchesInGenericCodeRemoval.Run();
+        TestUnmodifiableStaticFieldOptimization.Run();
+        TestUnmodifiableInstanceFieldOptimization.Run();
 
         return 100;
     }
@@ -375,6 +377,96 @@ class DeadCodeElimination
 
             ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UnusedFromVirtual));
             ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UsedFromVirtual));
+        }
+    }
+
+    class TestUnmodifiableStaticFieldOptimization
+    {
+        static class ClassWithNotReadOnlyField
+        {
+            public static int SomeValue = 42;
+        }
+
+        class Unimportant
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public int GrabNotReadOnlyField() => ClassWithNotReadOnlyField.SomeValue;
+        }
+
+        class ClassThatShouldBePreinited
+        {
+            public static int Value = new Unimportant().GrabNotReadOnlyField();
+        }
+
+        public static void Run()
+        {
+            // This test is using a pretty roundabout way to test the following thing:
+            // * The compiler should be able to figure out ClassWithNotReadOnlyField.SomeValue
+            //   is effectively readonly (even though it wasn't annotated as such in source code).
+            // * Therefore, it should be able to preinitialize ClassThatShouldBePreinited.
+            // * Because ClassThatShouldBePreinited was preinitialized at compile time, we don't
+            //   actually have a MethodTable for it in the program.
+            // * It is therefore not reflection visible.
+            // We're testing the optimizations mentioned above work by inspecting the side effect
+            // (that is only visible to trim-unsafe code).
+            Console.WriteLine($"Testing we were able to make non-readonly field read-only: {ClassThatShouldBePreinited.Value}");
+            ThrowIfPresentWithUsableMethodTable(typeof(TestUnmodifiableStaticFieldOptimization), nameof(Unimportant));
+        }
+    }
+
+    class TestUnmodifiableInstanceFieldOptimization
+    {
+        class Canary1
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Make() { }
+        }
+
+        class Canary2
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Make() { }
+        }
+
+        class Canary3
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Make() { }
+        }
+
+        class CanBeMadeReadOnly
+        {
+            public object Field;
+            public static CanBeMadeReadOnly Instance = new CanBeMadeReadOnly();
+            static CanBeMadeReadOnly() => new Canary1().Make();
+        }
+
+        class IsReflectedOn
+        {
+            public object Field;
+            public static IsReflectedOn Instance = new IsReflectedOn();
+            static IsReflectedOn() => new Canary2().Make();
+        }
+
+        class IsModified
+        {
+            public object Field;
+            public static IsModified Instance = new IsModified();
+            static IsModified() => new Canary3().Make();
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine(CanBeMadeReadOnly.Instance);
+            Console.WriteLine(IsReflectedOn.Instance);
+            Console.WriteLine(IsModified.Instance);
+
+            IsModified.Instance.Field = new object();
+            typeof(IsReflectedOn).GetFields();
+
+            ThrowIfPresentWithUsableMethodTable(typeof(TestUnmodifiableInstanceFieldOptimization), nameof(Canary1));
+            ThrowIfNotPresent(typeof(TestUnmodifiableInstanceFieldOptimization), nameof(Canary2));
+            ThrowIfNotPresent(typeof(TestUnmodifiableInstanceFieldOptimization), nameof(Canary3));
         }
     }
 

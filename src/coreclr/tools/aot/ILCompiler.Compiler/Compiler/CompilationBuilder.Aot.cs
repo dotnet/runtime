@@ -125,7 +125,7 @@ namespace ILCompiler
         protected PreinitializationManager GetPreinitializationManager()
         {
             if (_preinitializationManager == null)
-                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), new TypePreinit.DisabledPreinitializationPolicy());
+                return new PreinitializationManager(_context, _compilationGroup, GetILProvider(), new TypePreinit.DisabledPreinitializationPolicy(), new ReadOnlyFieldPolicy());
             return _preinitializationManager;
         }
 
