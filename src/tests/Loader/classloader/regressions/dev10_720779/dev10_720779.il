@@ -59,7 +59,7 @@ where MyClosedDel is:
   .method public hidebysig newslot virtual instance string Invoke() runtime managed {}
   .method public hidebysig newslot virtual instance string EndInvoke(class [mscorlib]System.IAsyncResult result) runtime managed {}
 }
-.class private auto ansi beforefieldinit Framework {
+.class public auto ansi beforefieldinit Framework {
 	.method public hidebysig static string DelCall0(object inst, class [mscorlib]System.Type t, string mName) cil managed {
 	
 		//CS:

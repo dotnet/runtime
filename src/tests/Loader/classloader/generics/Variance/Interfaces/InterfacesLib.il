@@ -10,7 +10,7 @@
            CD A1 2A A0 )                                     // ..*.
   .ver 2:0:3600:0
 }
-.assembly Lib
+.assembly InterfacesLib
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -21,7 +21,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Lib.dll
+
 // MVID: {A0B2C024-0046-46A4-83FE-8A184FC49D0D}
 .imagebase 0x00400000
 .file alignment 0x00000200

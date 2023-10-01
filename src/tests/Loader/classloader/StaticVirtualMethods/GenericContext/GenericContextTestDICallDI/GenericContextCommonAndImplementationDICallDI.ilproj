@@ -2,7 +2,10 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
   </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Lib.il" />
+    <Compile Include="GenericContextCommonAndImplementationDICallDI.il" />
   </ItemGroup>
 </Project>

@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="SpanAccessor.csproj" />
-    <Compile Include="Unloaded.cs" />
+    <ProjectReference Include="Accessor.csproj" />
+    <Compile Include="StaticsUnloaded.cs" />
   </ItemGroup>
 </Project>

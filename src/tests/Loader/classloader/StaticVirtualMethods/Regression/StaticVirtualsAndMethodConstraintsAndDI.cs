@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace StaticVirtualsAndMethodConstraintsAndDefaultImplementation
 {
@@ -30,13 +31,14 @@ namespace StaticVirtualsAndMethodConstraintsAndDefaultImplementation
     {
     }
 
-    internal class Program
+    public class Program
     {
         public static int Invoke<T, TRequest>(TRequest request)
             where T : class
             where TRequest : IStaticInterfaceBase<T, TRequest> =>
             TRequest.TryInvoke((ITestItem<T>) null!, request);
 
-        public static int Main(string[] args) => Invoke<object, Request>(new Request());
+        [Fact]
+        public static int TestEntryPoint() => Invoke<object, Request>(new Request());
     }
 }

@@ -7,7 +7,7 @@
 .assembly extern mscorlib {}
 .assembly extern System.Runtime {}
 .assembly extern GenericContextCommonCs {}
-.assembly GenericContextCommonAndImplementation {}
+.assembly GenericContextCommonAndImplementationDefaultImp {}
 .class interface public abstract auto ansi IFaceNonGeneric
 {
     .method public newslot virtual abstract static void NormalMethod() {}
@@ -123,7 +123,7 @@
   }
   .method public static void 'IFaceNonGenericDefaultImp.NormalMethod'() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementation]IFaceNonGenericDefaultImp::NormalMethod()
+    .override method void [GenericContextCommonAndImplementationDefaultImp]IFaceNonGenericDefaultImp::NormalMethod()
     ldtoken class NonGenericClass
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGenericDefaultImp.NormalMethod'"
@@ -133,7 +133,7 @@
   } // end of method 'IFaceNonGenericDefaultImp.NormalMethod'
   .method public static void 'IFaceNonGenericDefaultImp.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementation]IFaceNonGenericDefaultImp::GenericMethod<[1]>()
+    .override method void [GenericContextCommonAndImplementationDefaultImp]IFaceNonGenericDefaultImp::GenericMethod<[1]>()
     ldtoken class NonGenericClass
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGenericDefaultImp.GenericMethod'"
@@ -148,7 +148,7 @@
   } // end of method 'IFaceNonGenericDefaultImp.GenericMethod'<U>
   .method public static void 'IFaceGenericDefaultImp`1<string>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<string>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<string>::NormalMethod()
     ldtoken class NonGenericClass
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<string>.NormalMethod'"
@@ -158,7 +158,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<string>.NormalMethod'
   .method public static void 'IFaceGenericDefaultImp`1<string>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<string>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<string>::GenericMethod<[1]>()
     ldtoken class NonGenericClass
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<string>.GenericMethod'"
@@ -173,7 +173,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<string>.GenericMethod'<U>
   .method public static void 'IFaceGenericDefaultImp`1<object>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<object>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<object>::NormalMethod()
     ldtoken class NonGenericClass
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<object>.NormalMethod'"
@@ -183,7 +183,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<object>.NormalMethod'
   .method public static void 'IFaceGenericDefaultImp`1<object>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<object>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<object>::GenericMethod<[1]>()
     ldtoken class NonGenericClass
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<object>.GenericMethod'"
@@ -198,7 +198,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<object>.GenericMethod'<U>
   .method public static void 'IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>::NormalMethod()
     ldtoken class NonGenericClass
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.NormalMethod'"
@@ -208,7 +208,7 @@
   } // end of method 'IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.NormalMethod'
   .method public static void 'IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>::GenericMethod<[1]>()
     ldtoken class NonGenericClass
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGenericDefaultImp`1<class NonGenericClass>.GenericMethod'"
@@ -232,7 +232,7 @@
 {
   .method public static void 'IFaceNonGenericDefaultImp.NormalMethod'() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementation]IFaceNonGenericDefaultImp::NormalMethod()
+    .override method void [GenericContextCommonAndImplementationDefaultImp]IFaceNonGenericDefaultImp::NormalMethod()
     ldtoken valuetype NonGenericValuetype
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGenericDefaultImp.NormalMethod'"
@@ -242,7 +242,7 @@
   } // end of method 'IFaceNonGenericDefaultImp.NormalMethod'
   .method public static void 'IFaceNonGenericDefaultImp.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementation]IFaceNonGenericDefaultImp::GenericMethod<[1]>()
+    .override method void [GenericContextCommonAndImplementationDefaultImp]IFaceNonGenericDefaultImp::GenericMethod<[1]>()
     ldtoken valuetype NonGenericValuetype
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGenericDefaultImp.GenericMethod'"
@@ -257,7 +257,7 @@
   } // end of method 'IFaceNonGenericDefaultImp.GenericMethod'<U>
   .method public static void 'IFaceGenericDefaultImp`1<string>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<string>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<string>::NormalMethod()
     ldtoken valuetype NonGenericValuetype
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<string>.NormalMethod'"
@@ -267,7 +267,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<string>.NormalMethod'
   .method public static void 'IFaceGenericDefaultImp`1<string>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<string>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<string>::GenericMethod<[1]>()
     ldtoken valuetype NonGenericValuetype
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<string>.GenericMethod'"
@@ -282,7 +282,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<string>.GenericMethod'<U>
   .method public static void 'IFaceGenericDefaultImp`1<object>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<object>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<object>::NormalMethod()
     ldtoken valuetype NonGenericValuetype
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<object>.NormalMethod'"
@@ -292,7 +292,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<object>.NormalMethod'
   .method public static void 'IFaceGenericDefaultImp`1<object>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<object>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<object>::GenericMethod<[1]>()
     ldtoken valuetype NonGenericValuetype
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<object>.GenericMethod'"
@@ -307,7 +307,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<object>.GenericMethod'<U>
   .method public static void 'IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>::NormalMethod()
     ldtoken valuetype NonGenericValuetype
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.NormalMethod'"
@@ -317,7 +317,7 @@
   } // end of method 'IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.NormalMethod'
   .method public static void 'IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>::GenericMethod<[1]>()
     ldtoken valuetype NonGenericValuetype
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype NonGenericValuetype>.GenericMethod'"
@@ -349,7 +349,7 @@
   }
   .method public static void 'IFaceNonGenericDefaultImp.NormalMethod'() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementation]IFaceNonGenericDefaultImp::NormalMethod()
+    .override method void [GenericContextCommonAndImplementationDefaultImp]IFaceNonGenericDefaultImp::NormalMethod()
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGenericDefaultImp.NormalMethod'"
@@ -359,7 +359,7 @@
   } // end of method 'IFaceNonGenericDefaultImp.NormalMethod'
   .method public static void 'IFaceNonGenericDefaultImp.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementation]IFaceNonGenericDefaultImp::GenericMethod<[1]>()
+    .override method void [GenericContextCommonAndImplementationDefaultImp]IFaceNonGenericDefaultImp::GenericMethod<[1]>()
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGenericDefaultImp.GenericMethod'"
@@ -374,7 +374,7 @@
   } // end of method 'IFaceNonGenericDefaultImp.GenericMethod'<U>
   .method public static void 'IFaceGenericDefaultImp`1<string>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<string>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<string>::NormalMethod()
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<string>.NormalMethod'"
@@ -384,7 +384,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<string>.NormalMethod'
   .method public static void 'IFaceGenericDefaultImp`1<string>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<string>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<string>::GenericMethod<[1]>()
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<string>.GenericMethod'"
@@ -399,7 +399,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<string>.GenericMethod'<U>
   .method public static void 'IFaceGenericDefaultImp`1<object>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<object>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<object>::NormalMethod()
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<object>.NormalMethod'"
@@ -409,7 +409,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<object>.NormalMethod'
   .method public static void 'IFaceGenericDefaultImp`1<object>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<object>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<object>::GenericMethod<[1]>()
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<object>.GenericMethod'"
@@ -424,7 +424,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<object>.GenericMethod'<U>
   .method public static void 'IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<!0>>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<!0>>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<!0>>::NormalMethod()
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<!0>>.NormalMethod'"
@@ -438,7 +438,7 @@
   } // end of method 'IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<!0>>.NormalMethod'
   .method public static void 'IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<!0>>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<!0>>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<!0>>::GenericMethod<[1]>()
     ldtoken class GenericClass`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGenericDefaultImp`1<class GenericClass`1<!0>>.GenericMethod'"
@@ -466,7 +466,7 @@
 {
   .method public static void 'IFaceNonGenericDefaultImp.NormalMethod'() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementation]IFaceNonGenericDefaultImp::NormalMethod()
+    .override method void [GenericContextCommonAndImplementationDefaultImp]IFaceNonGenericDefaultImp::NormalMethod()
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGenericDefaultImp.NormalMethod'"
@@ -476,7 +476,7 @@
   } // end of method 'IFaceNonGenericDefaultImp.NormalMethod'
   .method public static void 'IFaceNonGenericDefaultImp.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void [GenericContextCommonAndImplementation]IFaceNonGenericDefaultImp::GenericMethod<[1]>()
+    .override method void [GenericContextCommonAndImplementationDefaultImp]IFaceNonGenericDefaultImp::GenericMethod<[1]>()
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceNonGenericDefaultImp.GenericMethod'"
@@ -491,7 +491,7 @@
   } // end of method 'IFaceNonGenericDefaultImp.GenericMethod'<U>
   .method public static void 'IFaceGenericDefaultImp`1<string>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<string>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<string>::NormalMethod()
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<string>.NormalMethod'"
@@ -501,7 +501,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<string>.NormalMethod'
   .method public static void 'IFaceGenericDefaultImp`1<string>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<string>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<string>::GenericMethod<[1]>()
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<string>.GenericMethod'"
@@ -516,7 +516,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<string>.GenericMethod'<U>
   .method public static void 'IFaceGenericDefaultImp`1<object>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<object>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<object>::NormalMethod()
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<object>.NormalMethod'"
@@ -526,7 +526,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<object>.NormalMethod'
   .method public static void 'IFaceGenericDefaultImp`1<object>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceGenericDefaultImp`1<object>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceGenericDefaultImp`1<object>::GenericMethod<[1]>()
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceGenericDefaultImp`1<object>.GenericMethod'"
@@ -541,7 +541,7 @@
   } // end of method 'IFaceGenericDefaultImp`1<object>.GenericMethod'<U>
   .method public static void 'IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<!0>>.NormalMethod'() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<!0>>::NormalMethod()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<!0>>::NormalMethod()
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<!0>>.NormalMethod'"
@@ -555,7 +555,7 @@
   } // end of method 'IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<!0>>.NormalMethod'
   .method public static void 'IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<!0>>.GenericMethod'<U>() cil managed noinlining
   {
-    .override method void class [GenericContextCommonAndImplementation]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<!0>>::GenericMethod<[1]>()
+    .override method void class [GenericContextCommonAndImplementationDefaultImp]IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<!0>>::GenericMethod<[1]>()
     ldtoken valuetype GenericValuetype`1<!0>
     call string [GenericContextCommonCs]Statics::MakeName(valuetype [System.Runtime]System.RuntimeTypeHandle)
     ldstr "'IFaceCuriouslyRecurringGenericDefaultImp`1<valuetype GenericValuetype`1<!0>>.GenericMethod'"
