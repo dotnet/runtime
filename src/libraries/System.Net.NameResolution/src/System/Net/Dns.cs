@@ -633,9 +633,69 @@ namespace System.Net
             return false;
         }
 
+        /// <summary>Mapping from key to the head of the request queue for that key.</summary>
+        private static readonly Dictionary<object, DnsRequestWaiter> s_requestQueues = new();
+
+        /// <summary>
+        /// The maximum time a request can block subsequent requests in the queue.
+        /// </summary>
+        private static readonly TimeSpan s_maximumWaitTime = TimeSpan.FromSeconds(1);
+
+        /// <summary>Queue the function to be invoked asynchronously.</summary>
+        /// <remarks>
+        /// Since this is doing synchronous work on a thread pool thread, we want to limit how many threads end up being
+        /// blocked.  We could employ a semaphore to limit overall usage, but a common case is that DNS requests are made
+        /// for only a handful of endpoints, and a reasonable compromise is to ensure that requests for a given host are
+        /// serialized. We also still want to issue the request to the OS, rather
+        /// than having all concurrent requests for the same host share the exact same task, so that any shuffling of the results
+        /// by the OS to enable round robin is still perceived.
+        /// </remarks>
+        private static Task<TResult> RunAsync<TResult>(Func<object, long, TResult> func, object key, CancellationToken cancellationToken)
+        {
+            long startTimestamp = Stopwatch.GetTimestamp();
+            NameResolutionTelemetry.Log.BeforeResolution(key);
+
+            DnsRequestWaiter current;
+            lock (s_requestQueues)
+            {
+                // Get the queue head for this key, if there are requests in flight.
+                if (s_requestQueues.TryGetValue(key, out DnsRequestWaiter? head))
+                {
+                    DnsRequestWaiter? last = null;
+                    DnsRequestWaiter? next = head;
+
+                    while (next != null)
+                    {
+                        // Remove long-running requests from the queue and forward the head.
+                        if (next.Elapsed(startTimestamp) > s_maximumWaitTime)
+                        {
+                            next.Complete();
+                        }
+                        last = next;
+                        next = next.Next;
+                    }
+                    Debug.Assert(last is not null);
+                    current = new DnsRequestWaiter(key, startTimestamp, last);
+
+                    // If Complete() has cleared the head, make 'current' the new head.
+                    if (!s_requestQueues.ContainsKey(key))
+                    {
+                        s_requestQueues[key] = current;
+                    }
+                }
+                else
+                {
+                    current = new DnsRequestWaiter(key, startTimestamp, null);
+                    s_requestQueues[key] = current;
+                }
+            }
+
+            return current.Run(func, cancellationToken);
+        }
+
         private sealed class DnsRequestWaiter : TaskCompletionSource
         {
-            private long _start;
+            private long _startTimestamp;
             private Task _previousTask;
             public DnsRequestWaiter? Next;
             private object _key;
@@ -645,7 +705,7 @@ namespace System.Net
             public DnsRequestWaiter(object key, long start, DnsRequestWaiter? previous)
             {
                 _key = key;
-                _start = start;
+                _startTimestamp = start;
                 if (previous != null)
                 {
                     _previousTask = previous.Task;
@@ -671,7 +731,7 @@ namespace System.Net
                     {
                         using (self._cancellationToken.UnsafeRegister(s => ((DnsRequestWaiter)s!).Complete(), self))
                         {
-                            return func(self._key, self._start);
+                            return func(self._key, self._startTimestamp);
                         }
                     }
                     finally
@@ -680,12 +740,17 @@ namespace System.Net
                     }
                 }, this, cancellationToken, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default);
 
-                _previousTask.ContinueWith(static (_, s) =>
+                // If it's possible the task may end up getting canceled, it won't have a chance to call Complete() and AfterResolution()
+                // if it is canceled, so use a separate continuation to do so.
+                if (cancellationToken.CanBeCanceled)
                 {
-                    DnsRequestWaiter self = (DnsRequestWaiter)s!;
-                    self.Complete();
-                    NameResolutionTelemetry.Log.AfterResolution(self._key, self._start, false);
-                }, this, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                    _previousTask.ContinueWith(static (_, s) =>
+                    {
+                        DnsRequestWaiter self = (DnsRequestWaiter)s!;
+                        self.Complete();
+                        NameResolutionTelemetry.Log.AfterResolution(self._key, self._startTimestamp, false);
+                    }, this, CancellationToken.None, TaskContinuationOptions.OnlyOnCanceled | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                }
 
                 return task;
             }
@@ -694,80 +759,23 @@ namespace System.Net
             {
                 if (TrySetResult())
                 {
-                    lock (s_tasks)
+                    lock (s_requestQueues)
                     {
                         if (Next != null)
                         {
-                            s_tasks[_key] = Next;
+                            // Forward the head for this key to the next request.
+                            s_requestQueues[_key] = Next;
                         }
                         else
                         {
-                            s_tasks.Remove(_key);
+                            // No more requests in flight, remove the key from s_requestQueues.
+                            s_requestQueues.Remove(_key);
                         }
                     }
                 }
             }
 
-            public TimeSpan Elapsed => Stopwatch.GetElapsedTime(_start);
-        }
-
-        private static readonly TimeSpan s_maxWait = TimeSpan.FromSeconds(1);
-
-        /// <summary>Mapping from key to current task in flight for that key.</summary>
-        private static readonly Dictionary<object, DnsRequestWaiter> s_tasks = new();
-
-        /// <summary>Queue the function to be invoked asynchronously.</summary>
-        /// <remarks>
-        /// Since this is doing synchronous work on a thread pool thread, we want to limit how many threads end up being
-        /// blocked.  We could employ a semaphore to limit overall usage, but a common case is that DNS requests are made
-        /// for only a handful of endpoints, and a reasonable compromise is to ensure that requests for a given host are
-        /// serialized.  Once the data for that host is cached locally by the OS, the subsequent requests should all complete
-        /// very quickly, and if the head-of-line request is taking a long time due to the connection to the server, we won't
-        /// block lots of threads all getting data for that one host.  We also still want to issue the request to the OS, rather
-        /// than having all concurrent requests for the same host share the exact same task, so that any shuffling of the results
-        /// by the OS to enable round robin is still perceived.
-        /// </remarks>
-        private static Task<TResult> RunAsync<TResult>(Func<object, long, TResult> func, object key, CancellationToken cancellationToken)
-        {
-            long start = Stopwatch.GetTimestamp();
-            NameResolutionTelemetry.Log.BeforeResolution(key);
-
-            DnsRequestWaiter current;
-            lock (s_tasks)
-            {
-                // Get the previous task for this key, if there is one.
-                if (s_tasks.TryGetValue(key, out DnsRequestWaiter? head))
-                {
-                    DnsRequestWaiter? last = null;
-                    DnsRequestWaiter? next = head;
-
-                    while (next != null)
-                    {
-                        // FF timed out requests
-                        if (next.Elapsed > s_maxWait)
-                        {
-                            next.Complete();
-                        }
-                        last = next;
-                        next = next.Next;
-                    }
-                    Debug.Assert(last is not null);
-                    current = new DnsRequestWaiter(key, start, last);
-                    if (!s_tasks.ContainsKey(key))
-                    {
-                        // Timed out the head
-                        s_tasks[key] = current;
-                    }
-                }
-                else
-                {
-                    current = new DnsRequestWaiter(key, start, null);
-                    s_tasks[key] = current;
-                }
-
-            }
-
-            return current.Run(func, cancellationToken);
+            public TimeSpan Elapsed(long currentTimestamp) => Stopwatch.GetElapsedTime(_startTimestamp, currentTimestamp);
         }
 
         private static SocketException CreateException(SocketError error, int nativeError) =>
