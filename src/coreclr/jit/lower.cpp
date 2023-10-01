@@ -8092,7 +8092,7 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
 
                     // Trim the constants to the size of the type, e.g. for TYP_SHORT and TYP_USHORT
                     // the mask will be 0xFFFF, for TYP_INT - 0xFFFFFFFF.
-                    size_t mask = ~0UL >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_IN_BYTE;
+                    size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_IN_BYTE;
                     lowerCns &= mask;
                     upperCns &= mask;
 
@@ -8111,7 +8111,7 @@ void Lowering::LowerCoalescingWithPreviousInd(GenTreeStoreInd* ind)
                 //   STOREIND(short)
                 //
                 // so we can coalesce the whole thing into a single store of 8 bytes.
-                LowerCoalescingWithPreviousInd(ind);
+                // LowerCoalescingWithPreviousInd(ind);
             }
         }
     }
