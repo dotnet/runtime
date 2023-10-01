@@ -1,8 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
+using System.Buffers.Binary;
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.CompilerServices;
 using Internal.Cryptography;
 
 using static System.Numerics.BitOperations;
@@ -118,14 +120,12 @@ namespace System.Security.Cryptography
         {
             private byte[] _buffer;
             private long _count; // Number of bytes in the hashed message
-            private uint[] _stateSHA256;
-            private uint[] _W;
+            private HashState<uint> _stateSHA256;
+            private ExpandedBuffer<uint> _W;
 
             public SHA256ManagedImplementation()
             {
-                _stateSHA256 = new uint[8];
                 _buffer = new byte[64];
-                _W = new uint[64];
 
                 InitializeState();
             }
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography
 
                 // Zeroize potentially sensitive information.
                 Array.Clear(_buffer, 0, _buffer.Length);
-                Array.Clear(_W, 0, _W.Length);
+                _W = default;
             }
 
             private void InitializeState()
@@ -169,37 +169,23 @@ namespace System.Security.Cryptography
                 /* Update number of bytes */
                 _count += partInLen;
 
-                fixed (uint* stateSHA256 = _stateSHA256)
+                if ((bufferLen > 0) && (bufferLen + partInLen >= 64))
                 {
-                    fixed (byte* buffer = _buffer)
-                    {
-                        fixed (uint* expandedBuffer = _W)
-                        {
-                            if ((bufferLen > 0) && (bufferLen + partInLen >= 64))
-                            {
-                                Buffer.BlockCopy(partIn, partInBase, _buffer, bufferLen, 64 - bufferLen);
-                                partInBase += (64 - bufferLen);
-                                partInLen -= (64 - bufferLen);
-                                SHATransform(expandedBuffer, stateSHA256, buffer);
-                                bufferLen = 0;
-                            }
-
-                            /* Copy input to temporary buffer and hash */
-                            while (partInLen >= 64)
-                            {
-                                Buffer.BlockCopy(partIn, partInBase, _buffer, 0, 64);
-                                partInBase += 64;
-                                partInLen -= 64;
-                                SHATransform(expandedBuffer, stateSHA256, buffer);
-                            }
-
-                            if (partInLen > 0)
-                            {
-                                Buffer.BlockCopy(partIn, partInBase, _buffer, bufferLen, partInLen);
-                            }
-                        }
-                    }
+                    partIn.AsSpan(partInBase, 64 - bufferLen).CopyTo(_buffer.AsSpan(bufferLen));
+                    partInBase += (64 - bufferLen);
+                    partInLen -= (64 - bufferLen);
+                    SHATransform(ref _W, ref _stateSHA256, _buffer);
+                    bufferLen = 0;
                 }
+
+                while (partInLen >= 64)
+                {
+                    SHATransform(ref _W, ref _stateSHA256, partIn.AsSpan(partInBase));
+                    partInBase += 64;
+                    partInLen -= 64;
+                }
+
+                partIn.AsSpan(partInBase, partInLen).CopyTo(_buffer.AsSpan(bufferLen));
             }
 
             /* SHA256 finalization. Ends an SHA256 message-digest operation, writing
@@ -238,7 +224,7 @@ namespace System.Security.Cryptography
                 HashCore(pad, 0, pad.Length);
 
                 /* Store digest */
-                SHAUtils.DWORDToBigEndian(hash, _stateSHA256, 8);
+                SHAUtils.DWORDToBigEndian(hash, _stateSHA256[..8]);
 
                 return hash;
             }
@@ -262,7 +248,7 @@ namespace System.Security.Cryptography
                 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
             };
 
-            private static unsafe void SHATransform(uint* expandedBuffer, uint* state, byte* block)
+            private static unsafe void SHATransform(ref ExpandedBuffer<uint> expandedBuffer, ref HashState<uint> state, ReadOnlySpan<byte> block)
             {
                 uint a, b, c, d, e, f, h, g;
                 uint aa, bb, cc, dd, ee, ff, hh, gg;
@@ -278,7 +264,7 @@ namespace System.Security.Cryptography
                 h = state[7];
 
                 // fill in the first 16 bytes of W.
-                SHAUtils.DWORDFromBigEndian(expandedBuffer, 16, block);
+                SHAUtils.DWORDFromBigEndian(expandedBuffer[..16], block);
                 SHA256Expand(expandedBuffer);
 
                 /* Apply the SHA256 compression function */
@@ -371,7 +357,7 @@ namespace System.Security.Cryptography
             /* This function creates W_16,...,W_63 according to the formula
             W_j <- sigma_1(W_{j-2}) + W_{j-7} + sigma_0(W_{j-15}) + W_{j-16};
             */
-            private static unsafe void SHA256Expand(uint* x)
+            private static unsafe void SHA256Expand(ref ExpandedBuffer<uint> x)
             {
                 for (int i = 16; i < 64; i++)
                 {
@@ -385,14 +371,12 @@ namespace System.Security.Cryptography
         {
             private byte[] _buffer;
             private ulong _count; // Number of bytes in the hashed message
-            private ulong[] _stateSHA384;
-            private ulong[] _W;
+            private HashState<ulong> _stateSHA384;
+            private ExpandedBuffer<ulong> _W;
 
             public SHA384ManagedImplementation()
             {
-                _stateSHA384 = new ulong[8];
                 _buffer = new byte[128];
-                _W = new ulong[80];
 
                 InitializeState();
             }
@@ -403,7 +387,7 @@ namespace System.Security.Cryptography
 
                 // Zeroize potentially sensitive information.
                 Array.Clear(_buffer, 0, _buffer.Length);
-                Array.Clear(_W, 0, _W.Length);
+                _W = default;
             }
 
             private void InitializeState()
@@ -436,37 +420,23 @@ namespace System.Security.Cryptography
                 /* Update number of bytes */
                 _count += (ulong)partInLen;
 
-                fixed (ulong* stateSHA384 = _stateSHA384)
+                if ((bufferLen > 0) && (bufferLen + partInLen >= 128))
                 {
-                    fixed (byte* buffer = _buffer)
-                    {
-                        fixed (ulong* expandedBuffer = _W)
-                        {
-                            if ((bufferLen > 0) && (bufferLen + partInLen >= 128))
-                            {
-                                Buffer.BlockCopy(partIn, partInBase, _buffer, bufferLen, 128 - bufferLen);
-                                partInBase += (128 - bufferLen);
-                                partInLen -= (128 - bufferLen);
-                                SHATransform(expandedBuffer, stateSHA384, buffer);
-                                bufferLen = 0;
-                            }
-
-                            /* Copy input to temporary buffer and hash */
-                            while (partInLen >= 128)
-                            {
-                                Buffer.BlockCopy(partIn, partInBase, _buffer, 0, 128);
-                                partInBase += 128;
-                                partInLen -= 128;
-                                SHATransform(expandedBuffer, stateSHA384, buffer);
-                            }
-
-                            if (partInLen > 0)
-                            {
-                                Buffer.BlockCopy(partIn, partInBase, _buffer, bufferLen, partInLen);
-                            }
-                        }
-                    }
+                    partIn.AsSpan(partInBase, 128 - bufferLen).CopyTo(_buffer.AsSpan(bufferLen));
+                    partInBase += (128 - bufferLen);
+                    partInLen -= (128 - bufferLen);
+                    SHATransform(ref _W, ref _stateSHA384, _buffer);
+                    bufferLen = 0;
                 }
+
+                while (partInLen >= 128)
+                {
+                    SHATransform(ref _W, ref _stateSHA384, partIn.AsSpan(partInBase));
+                    partInBase += 128;
+                    partInLen -= 128;
+                }
+
+                partIn.AsSpan(partInBase, partInLen).CopyTo(_buffer.AsSpan(bufferLen));
             }
 
             /* SHA384 finalization. Ends an SHA384 message-digest operation, writing
@@ -516,7 +486,7 @@ namespace System.Security.Cryptography
                 HashCore(pad, 0, pad.Length);
 
                 /* Store digest */
-                SHAUtils.QuadWordToBigEndian(hash, _stateSHA384, 6);
+                SHAUtils.QuadWordToBigEndian(hash, _stateSHA384[..6]);
 
                 return hash;
             }
@@ -544,7 +514,7 @@ namespace System.Security.Cryptography
                 0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817,
             };
 
-            private static unsafe void SHATransform(ulong* expandedBuffer, ulong* state, byte* block)
+            private static unsafe void SHATransform(ref ExpandedBuffer<ulong> expandedBuffer, ref HashState<ulong> state, ReadOnlySpan<byte> block)
             {
                 ulong a, b, c, d, e, f, g, h;
                 ulong aa, bb, cc, dd, ee, ff, hh, gg;
@@ -560,7 +530,7 @@ namespace System.Security.Cryptography
                 h = state[7];
 
                 // fill in the first 16 blocks of W.
-                SHAUtils.QuadWordFromBigEndian(expandedBuffer, 16, block);
+                SHAUtils.QuadWordFromBigEndian(expandedBuffer[..16], block);
                 SHA384Expand(expandedBuffer);
 
                 /* Apply the SHA384 compression function */
@@ -658,7 +628,7 @@ namespace System.Security.Cryptography
             /* This function creates W_16,...,W_79 according to the formula
             W_j <- sigma_1(W_{j-2}) + W_{j-7} + sigma_0(W_{j-15}) + W_{j-16};
             */
-            private static unsafe void SHA384Expand(ulong* x)
+            private static unsafe void SHA384Expand(ref ExpandedBuffer<ulong> x)
             {
                 for (int i = 16; i < 80; i++)
                 {
@@ -672,14 +642,12 @@ namespace System.Security.Cryptography
         {
             private byte[] _buffer;
             private ulong _count; // Number of bytes in the hashed message
-            private ulong[] _stateSHA512;
-            private ulong[] _W;
+            private HashState<ulong> _stateSHA512;
+            private ExpandedBuffer<ulong> _W;
 
             public SHA512ManagedImplementation()
             {
-                _stateSHA512 = new ulong[8];
                 _buffer = new byte[128];
-                _W = new ulong[80];
 
                 InitializeState();
             }
@@ -690,7 +658,7 @@ namespace System.Security.Cryptography
 
                 // Zeroize potentially sensitive information.
                 Array.Clear(_buffer, 0, _buffer.Length);
-                Array.Clear(_W, 0, _W.Length);
+                _W = default;
             }
 
             private void InitializeState()
@@ -723,37 +691,23 @@ namespace System.Security.Cryptography
                 /* Update number of bytes */
                 _count += (ulong)partInLen;
 
-                fixed (ulong* stateSHA512 = _stateSHA512)
+                if ((bufferLen > 0) && (bufferLen + partInLen >= 128))
                 {
-                    fixed (byte* buffer = _buffer)
-                    {
-                        fixed (ulong* expandedBuffer = _W)
-                        {
-                            if ((bufferLen > 0) && (bufferLen + partInLen >= 128))
-                            {
-                                Buffer.BlockCopy(partIn, partInBase, _buffer, bufferLen, 128 - bufferLen);
-                                partInBase += (128 - bufferLen);
-                                partInLen -= (128 - bufferLen);
-                                SHATransform(expandedBuffer, stateSHA512, buffer);
-                                bufferLen = 0;
-                            }
-
-                            /* Copy input to temporary buffer and hash */
-                            while (partInLen >= 128)
-                            {
-                                Buffer.BlockCopy(partIn, partInBase, _buffer, 0, 128);
-                                partInBase += 128;
-                                partInLen -= 128;
-                                SHATransform(expandedBuffer, stateSHA512, buffer);
-                            }
-
-                            if (partInLen > 0)
-                            {
-                                Buffer.BlockCopy(partIn, partInBase, _buffer, bufferLen, partInLen);
-                            }
-                        }
-                    }
+                    partIn.AsSpan(partInBase, 128 - bufferLen).CopyTo(_buffer.AsSpan(bufferLen));
+                    partInBase += (128 - bufferLen);
+                    partInLen -= (128 - bufferLen);
+                    SHATransform(ref _W, ref _stateSHA512, _buffer);
+                    bufferLen = 0;
                 }
+
+                while (partInLen >= 128)
+                {
+                    SHATransform(ref _W, ref _stateSHA512, partIn.AsSpan(partInBase));
+                    partInBase += 128;
+                    partInLen -= 128;
+                }
+
+                partIn.AsSpan(partInBase, partInLen).CopyTo(_buffer.AsSpan(bufferLen));
             }
 
             /* SHA512 finalization. Ends an SHA512 message-digest operation, writing
@@ -804,7 +758,7 @@ namespace System.Security.Cryptography
                 HashCore(pad, 0, pad.Length);
 
                 /* Store digest */
-                SHAUtils.QuadWordToBigEndian(hash, _stateSHA512, 8);
+                SHAUtils.QuadWordToBigEndian(hash, _stateSHA512[..8]);
 
                 return hash;
             }
@@ -832,7 +786,7 @@ namespace System.Security.Cryptography
                 0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817,
             };
 
-            private static unsafe void SHATransform(ulong* expandedBuffer, ulong* state, byte* block)
+            private static unsafe void SHATransform(ref ExpandedBuffer<ulong> expandedBuffer, ref HashState<ulong> state, ReadOnlySpan<byte> block)
             {
                 ulong a, b, c, d, e, f, g, h;
                 ulong aa, bb, cc, dd, ee, ff, hh, gg;
@@ -848,7 +802,7 @@ namespace System.Security.Cryptography
                 h = state[7];
 
                 // fill in the first 16 blocks of W.
-                SHAUtils.QuadWordFromBigEndian(expandedBuffer, 16, block);
+                SHAUtils.QuadWordFromBigEndian(expandedBuffer[..16], block);
                 SHA512Expand(expandedBuffer);
 
                 /* Apply the SHA512 compression function */
@@ -941,7 +895,7 @@ namespace System.Security.Cryptography
             /* This function creates W_16,...,W_79 according to the formula
             W_j <- sigma_1(W_{j-2}) + W_{j-7} + sigma_0(W_{j-15}) + W_{j-16};
             */
-            private static unsafe void SHA512Expand(ulong* x)
+            private static unsafe void SHA512Expand(ref ExpandedBuffer<ulong> x)
             {
                 for (int i = 16; i < 80; i++)
                 {
@@ -950,67 +904,52 @@ namespace System.Security.Cryptography
             }
         }
 
+        [InlineArray(8)]
+        private struct HashState<T>
+        {
+            public T Data;
+        }
+
+        [InlineArray(80)]
+        private struct ExpandedBuffer<T>
+        {
+            public T Data;
+        }
+
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/utils.cs
         private static class SHAUtils
         {
-            // digits == number of DWORDs
-            public static unsafe void DWORDFromBigEndian(uint* x, int digits, byte* block)
+            public static unsafe void DWORDFromBigEndian(Span<uint> x, ReadOnlySpan<byte> block)
             {
-                int i;
-                int j;
-
-                for (i = 0, j = 0; i < digits; i++, j += 4)
-                    x[i] = (uint)((block[j] << 24) | (block[j + 1] << 16) | (block[j + 2] << 8) | block[j + 3]);
-            }
-
-            // encodes x (DWORD) into block (unsigned char), most significant byte first.
-            // digits == number of DWORDs
-            public static void DWORDToBigEndian(byte[] block, uint[] x, int digits)
-            {
-                int i;
-                int j;
-
-                for (i = 0, j = 0; i < digits; i++, j += 4)
+                for (int i = 0; i < x.Length; i++)
                 {
-                    block[j] = (byte)((x[i] >> 24) & 0xff);
-                    block[j + 1] = (byte)((x[i] >> 16) & 0xff);
-                    block[j + 2] = (byte)((x[i] >> 8) & 0xff);
-                    block[j + 3] = (byte)(x[i] & 0xff);
+                    x[i] = BinaryPrimitives.ReadUInt64BigEndian(block[i * sizeof(uint)..]);
                 }
             }
 
-            // digits == number of QWORDs
-            public static unsafe void QuadWordFromBigEndian(ulong* x, int digits, byte* block)
+            // encodes x (DWORD) into block (unsigned char), most significant byte first.
+            public static void DWORDToBigEndian(Span<byte> block, ReadOnlySpan<uint> x)
             {
-                int i;
-                int j;
+                for (int i = 0; i < x.Length; i++)
+                {
+                    BinaryPrimitives.WriteUInt32BigEndian(block[i * sizeof(uint)..], x[i]);
+                }
+            }
 
-                for (i = 0, j = 0; i < digits; i++, j += 8)
-                    x[i] = (
-                            (((ulong)block[j]) << 56) | (((ulong)block[j + 1]) << 48) |
-                            (((ulong)block[j + 2]) << 40) | (((ulong)block[j + 3]) << 32) |
-                            (((ulong)block[j + 4]) << 24) | (((ulong)block[j + 5]) << 16) |
-                            (((ulong)block[j + 6]) << 8) | ((ulong)block[j + 7])
-                            );
+            public static unsafe void QuadWordFromBigEndian(Span<ulong> x, ReadOnlySpan<byte> block)
+            {
+                for (int i = 0; i < x.Length; i++)
+                {
+                    x[i] = BinaryPrimitives.ReadUInt64BigEndian(block[i * sizeof(ulong)..]);
+                }
             }
 
             // encodes x (DWORD) into block (unsigned char), most significant byte first.
-            // digits = number of QWORDS
-            public static void QuadWordToBigEndian(byte[] block, ulong[] x, int digits)
+            public static void QuadWordToBigEndian(Span<byte> block, ReadOnlySpan<ulong> x)
             {
-                int i;
-                int j;
-
-                for (i = 0, j = 0; i < digits; i++, j += 8)
+                for (int i = 0; i < x.Length; i++)
                 {
-                    block[j] = (byte)((x[i] >> 56) & 0xff);
-                    block[j + 1] = (byte)((x[i] >> 48) & 0xff);
-                    block[j + 2] = (byte)((x[i] >> 40) & 0xff);
-                    block[j + 3] = (byte)((x[i] >> 32) & 0xff);
-                    block[j + 4] = (byte)((x[i] >> 24) & 0xff);
-                    block[j + 5] = (byte)((x[i] >> 16) & 0xff);
-                    block[j + 6] = (byte)((x[i] >> 8) & 0xff);
-                    block[j + 7] = (byte)(x[i] & 0xff);
+                    BinaryPrimitives.WriteUInt64BigEndian(block[i * sizeof(ulong)..], x[i]);
                 }
             }
         }
