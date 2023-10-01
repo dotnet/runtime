@@ -576,11 +576,6 @@ namespace System.Security.Cryptography
                 state[7] += h;
             }
 
-            private static ulong RotateRight(ulong x, int n)
-            {
-                return (((x) >> (n)) | ((x) << (64 - (n))));
-            }
-
             private static ulong Ch(ulong x, ulong y, ulong z)
             {
                 return ((x & y) ^ ((x ^ 0xffffffffffffffff) & z));
