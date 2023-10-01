@@ -7849,6 +7849,12 @@ static bool GetStoreCoalescingData(GenTreeStoreInd* ind, StoreCoalescingData* da
     data->val  = ind->Data();
     if (ind->Addr()->OperIs(GT_LEA))
     {
+        if (ind->Addr()->AsAddrMode()->GetScale() > 1)
+        {
+            // Scaled LEAs aren't yet supported.
+            return false;
+        }
+
         GenTree* base  = ind->Addr()->AsAddrMode()->Base();
         GenTree* index = ind->Addr()->AsAddrMode()->Index();
         if ((base == nullptr) || !base->IsLocal())
@@ -8076,20 +8082,18 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             case TYP_INT:
                 newType = TYP_LONG;
                 break;
-#endif
+#endif // TARGET_64BIT
 
             // TYP_FLOAT and TYP_DOUBLE aren't needed here - they're expected to
             // be converted to TYP_INT/TYP_LONG for constant value.
-
+            //
             // TODO-CQ:
-            //   2 x LONG      -> SIMD16
+            //   2 x LONG/REF  -> SIMD16
             //   2 x SIMD16    -> SIMD32
             //   2 x SIMD32    -> SIMD64
-            //   2 x REF(null) -> SIMD16
             //
-            // Where it's legal to use SIMD, e.g. we can't use SIMD16 for REF
-            // on x64 since it's not atomic.
-
+            // where it's legal (e.g. SIMD is not atomic on x64)
+            //
             default:
                 return;
         }
@@ -8135,7 +8139,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         ind->gtFlags |= GTF_IND_UNALIGNED;
 
     } while (true);
-#endif
+#endif // TARGET_XARCH || TARGET_ARM64
 }
 
 //------------------------------------------------------------------------
