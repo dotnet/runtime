@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::impInit()
 {
-    impLastStmt = impStmtList = nullptr;
+    impStmtList = impLastStmt = nullptr;
 #ifdef DEBUG
     impInlinedCodeSize = 0;
 #endif // DEBUG
