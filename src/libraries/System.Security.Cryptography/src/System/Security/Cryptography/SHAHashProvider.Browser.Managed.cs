@@ -186,27 +186,26 @@ namespace System.Security.Cryptography
             */
             public override byte[] HashFinal()
             {
-                byte[] pad;
-                int padLen;
                 byte[] hash = new byte[32]; // HashSizeValue = 256
 
                 /* Compute padding: 80 00 00 ... 00 00 <bit count>
                 */
 
-                padLen = 64 - (int)(_count & 0x3f);
+                int padLen = 64 - (int)(_count & 0x3f);
                 if (padLen <= 8)
                     padLen += 64;
 
-                pad = new byte[padLen];
+                Span<byte> pad = stackalloc byte[64 + 16];
                 pad[0] = 0x80;
+                pad[1..padLen - 1].Clear();
 
                 //  Convert count to bit count
                 ulong bitCount = _count * 8;
 
-                BinaryPrimitives.WriteUInt64BigEndian(pad[..^sizeof(ulong)], bitCount);
+                BinaryPrimitives.WriteUInt64BigEndian(pad[..padLen - sizeof(ulong)], bitCount);
 
                 /* Digest padding */
-                HashCore(pad);
+                HashCore(pad[..padLen]);
 
                 /* Store digest */
                 SHAUtils.DWORDToBigEndian(hash, _stateSHA256[..8]);
@@ -422,27 +421,26 @@ namespace System.Security.Cryptography
             */
             public override byte[] HashFinal()
             {
-                byte[] pad;
-                int padLen;
                 byte[] hash = new byte[48]; // HashSizeValue = 384
 
                 /* Compute padding: 80 00 00 ... 00 00 <bit count>
                 */
 
-                padLen = 128 - (int)(_count & 0x7f);
+                int padLen = 128 - (int)(_count & 0x7f);
                 if (padLen <= 16)
                     padLen += 128;
 
-                pad = new byte[padLen];
+                Span<byte> pad = stackalloc byte[128 + 16];
                 pad[0] = 0x80;
+                pad[1..padLen - 1].Clear();
 
                 //  Convert count to bit count
                 ulong bitCount = _count * 8;
 
-                BinaryPrimitives.WriteUInt64BigEndian(pad[..^sizeof(ulong)], bitCount);
+                BinaryPrimitives.WriteUInt64BigEndian(pad[..padLen - sizeof(ulong)], bitCount);
 
                 /* Digest padding */
-                HashCore(pad);
+                HashCore(pad[..padLen]);
 
                 /* Store digest */
                 SHAUtils.QuadWordToBigEndian(hash, _stateSHA384[..6]);
@@ -662,27 +660,26 @@ namespace System.Security.Cryptography
             */
             public override byte[] HashFinal()
             {
-                byte[] pad;
-                int padLen;
                 byte[] hash = new byte[64]; // HashSizeValue = 512
 
                 /* Compute padding: 80 00 00 ... 00 00 <bit count>
                 */
 
-                padLen = 128 - (int)(_count & 0x7f);
+                int padLen = 128 - (int)(_count & 0x7f);
                 if (padLen <= 16)
                     padLen += 128;
 
-                pad = new byte[padLen];
+                Span<byte> pad = stackalloc byte[128 + 16];
                 pad[0] = 0x80;
+                pad[1..padLen - 1].Clear();
 
                 //  Convert count to bit count
                 ulong bitCount = _count * 8;
 
-                BinaryPrimitives.WriteUInt64BigEndian(pad[..^sizeof(ulong)], bitCount);
+                BinaryPrimitives.WriteUInt64BigEndian(pad[..padLen - sizeof(ulong)], bitCount);
 
                 /* Digest padding */
-                HashCore(pad);
+                HashCore(pad[..padLen]);
 
                 /* Store digest */
                 SHAUtils.QuadWordToBigEndian(hash, _stateSHA512[..8]);
