@@ -43,6 +43,7 @@ internal class Program
         TestInitFromOtherClassDouble.Run();
         TestDelegateToOtherClass.Run();
         TestLotsOfBackwardsBranches.Run();
+        TestSwitch.Run();
         TestDrawCircle.Run();
         TestValueTypeDup.Run();
         TestFunctionPointers.Run();
@@ -56,6 +57,7 @@ internal class Program
         TestStaticInterfaceMethod.Run();
         TestConstrainedCall.Run();
         TestTypeHandles.Run();
+        TestIsValueType.Run();
         TestIndirectLoads.Run();
         TestInitBlock.Run();
 #else
@@ -806,6 +808,41 @@ class TestLotsOfBackwardsBranches
     }
 }
 
+class TestSwitch
+{
+    class Switcher
+    {
+        public static int CaseMinus1 = Switch(-1);
+        public static int Case0 = Switch(0);
+        public static int Case6 = Switch(6);
+        public static int Case100 = Switch(100);
+
+        private static int Switch(int x)
+        {
+            switch (x)
+            {
+                case 0: return 100;
+                case 1: return 200;
+                case 2: return 300;
+                case 3: return 400;
+                case 4: return 500;
+                case 5: return 600;
+                case 6: return 700;
+                default: return 100000;
+            }
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(Switcher));
+        Assert.AreEqual(Switcher.CaseMinus1, 100000);
+        Assert.AreEqual(Switcher.Case0, 100);
+        Assert.AreEqual(Switcher.Case6, 700);
+        Assert.AreEqual(Switcher.Case100, 100000);
+    }
+}
+
 class TestDrawCircle
 {
     static class CircleHolder
@@ -1270,6 +1307,24 @@ class TestTypeHandles
         Assert.IsLazyInitialized(typeof(CharHolder));
         Assert.IsLazyInitialized(typeof(IsChar));
         Assert.True(IsChar.Is);
+    }
+}
+
+class TestIsValueType
+{
+    class IsValueTypeTests
+    {
+        public static bool IntIsValueType = typeof(int).IsValueType;
+        public static bool CharStarIsValueType = typeof(char*).IsValueType;
+        public static bool ObjectIsValueType = typeof(object).IsValueType;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(IsValueTypeTests));
+        Assert.AreEqual(true, IsValueTypeTests.IntIsValueType);
+        Assert.AreEqual(false, IsValueTypeTests.CharStarIsValueType);
+        Assert.AreEqual(false, IsValueTypeTests.ObjectIsValueType);
     }
 }
 
