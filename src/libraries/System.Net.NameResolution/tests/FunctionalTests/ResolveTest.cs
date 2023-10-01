@@ -17,6 +17,7 @@ namespace System.Net.NameResolution.Tests
             Assert.ThrowsAny<SocketException>(() => Dns.EndResolve(asyncObject));
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void DnsObsoleteBeginResolve_BadIPv4String_ReturnsOnlyGivenIP()
         {
