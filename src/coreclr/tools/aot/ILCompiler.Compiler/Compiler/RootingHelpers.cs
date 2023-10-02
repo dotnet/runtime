@@ -11,11 +11,11 @@ namespace ILCompiler
 {
     public class RootingHelpers
     {
-        public static bool TryRootType(IRootingServiceProvider rootProvider, TypeDesc type, string reason)
+        public static bool TryRootType(IRootingServiceProvider rootProvider, TypeDesc type, bool rootBaseTypes, string reason)
         {
             try
             {
-                RootType(rootProvider, type, reason);
+                RootType(rootProvider, type, rootBaseTypes, reason);
                 return true;
             }
             catch (TypeSystemException)
@@ -24,7 +24,7 @@ namespace ILCompiler
             }
         }
 
-        public static void RootType(IRootingServiceProvider rootProvider, TypeDesc type, string reason)
+        public static void RootType(IRootingServiceProvider rootProvider, TypeDesc type, bool rootBaseTypes, string reason)
         {
             rootProvider.AddReflectionRoot(type, reason);
 
@@ -38,6 +38,15 @@ namespace ILCompiler
                 type = ((MetadataType)type).MakeInstantiatedType(inst);
 
                 rootProvider.AddReflectionRoot(type, reason);
+            }
+
+            if (rootBaseTypes)
+            {
+                TypeDesc baseType = type.BaseType;
+                if (baseType != null)
+                {
+                    RootType(rootProvider, baseType.NormalizeInstantiation(), rootBaseTypes, reason);
+                }
             }
 
             if (type.IsDefType)
