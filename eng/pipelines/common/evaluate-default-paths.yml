@@ -273,6 +273,10 @@ jobs:
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - ${{ parameters._const_paths._always_exclude }}
 
+    - subset: wasm_chrome
+      include:
+      - ${{ parameters._const_paths._wasm_chrome }}
+
     # anything other than mono, or wasm specific paths
     - subset: non_mono_and_wasm
       exclude:

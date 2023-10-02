@@ -7,6 +7,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 #pragma warning disable 618
 [StructLayout(LayoutKind.Explicit)]
@@ -26,7 +27,8 @@ public class Test_explicitStruct_oddSize
         s.b = true;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {
