@@ -26,7 +26,7 @@ parameters:
   javascriptEngine: 'NoJS'
   helixTypeSuffix: ''             # optional -- appends to HelixType
   collectHelixLogsScript: ''      # optional -- script to collect the logs, and artifacts helpful for debugging failures
-  additionalSetupParameters: ''   # optional -- additional setup parameters that are job-specific
+  additionalSetupParameters: ''   # optional -- additional setup parameters that are job-specific -dummy
 
 jobs:
 - template: xplat-pipeline-job.yml
