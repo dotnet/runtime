@@ -58,7 +58,7 @@ extends:
             sourceIndexBuildCommand: build.cmd -subset libs.sfx+libs.oob -binarylog -os linux -ci /p:SkipLibrariesNativeRuntimePackages=true
 
       #
-      # Build CoreCLR
+      # Build CoreCLR runtime packs
       # Windows x64/arm64
       # Sign diagnostic files after native build
       #
@@ -92,7 +92,7 @@ extends:
 
 
       #
-      # Build CoreCLR
+      # Build CoreCLR runtime packs
       # Windows x86
       # No NativeAOT as NativeAOT is not supported on x86
       # Sign diagnostic files after native build
@@ -124,7 +124,7 @@ extends:
               parameters:
                 name: $(osGroup)$(osSubgroup)_$(archType)
       #
-      # Build CoreCLR
+      # Build CoreCLR runtime packs
       # Mac x64/arm64
       # Sign and entitle createdump and corerun after native build.
       #
@@ -171,7 +171,7 @@ extends:
                   name: $(osGroup)$(osSubgroup)_$(archType)
 
       #
-      # Build CoreCLR
+      # Build CoreCLR runtime packs
       # Linux and Linux_musl
       # CoreCLR runtime for CrossDac packaging
       # Create Linux installers
