@@ -62,8 +62,13 @@ namespace System.Reflection.Emit.Tests
             saveMethod.Invoke(assemblyBuilder, new object[] { stream });
         }
 
-        internal static AssemblyBuilder PopulateAssemblyBuilderAndSaveMethod(out MethodInfo saveMethod) =>
-            PopulateAssemblyBuilderAndSaveMethod(s_assemblyName, null, typeof(string), out saveMethod);
+        internal static AssemblyBuilder PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder typeBuilder, out MethodInfo saveMethod)
+        {
+            AssemblyBuilder ab = PopulateAssemblyBuilderAndSaveMethod(s_assemblyName, null, typeof(string), out saveMethod);
+            typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public);
+            return ab;
+        }
+            
 
         internal static AssemblyBuilder PopulateAssemblyBuilderAndSaveMethod(AssemblyName assemblyName,
             List<CustomAttributeBuilder>? assemblyAttributes, Type parameterType, out MethodInfo saveMethod)
