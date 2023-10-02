@@ -7973,7 +7973,6 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
     do
     {
         // This check is not really needed, just for better throughput.
-        // We only support these types for the initial version.
         if (!ind->TypeIs(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT))
         {
             return;
@@ -8079,7 +8078,6 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         ind->Data()->gtType = newType;
 
         // We currently only support these constants for val
-        // Will be extended to GT_CNS_VEC in future.
         assert(prevData.value->IsCnsIntOrI() && currData.value->IsCnsIntOrI());
 
         size_t lowerCns = (size_t)prevData.value->AsIntCon()->IconValue();
