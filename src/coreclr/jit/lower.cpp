@@ -7817,6 +7817,7 @@ struct StoreCoalescingData
 //    store coalescing including pointer to the previous node.
 //
 // Arguments:
+//    comp     - the compiler instance
 //    ind      - the STOREIND node
 //    data     - [OUT] the data needed for store coalescing
 //    prevTree - [OUT] the pointer to the previous node
@@ -7825,7 +7826,7 @@ struct StoreCoalescingData
 //    true if the data was successfully retrieved, false otherwise.
 //    Basically, false means that we definitely can't do store coalescing.
 //
-static bool GetStoreCoalescingData(GenTreeStoreInd* ind, StoreCoalescingData* data, GenTree** prevTree)
+static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCoalescingData* data, GenTree** prevTree)
 {
     // Don't merge volatile stores.
     if (ind->IsVolatile())
@@ -7876,6 +7877,11 @@ static bool GetStoreCoalescingData(GenTreeStoreInd* ind, StoreCoalescingData* da
     }
     else if (ind->Addr()->OperIs(GT_LCL_VAR))
     {
+        if (comp->lvaGetDesc(ind->Addr()->AsLclVarCommon())->IsAddressExposed())
+        {
+            return false;
+        }
+
         // Address is just a local, no offset, scale is 1
         data->baseAddr = ind->Addr();
         data->index    = nullptr;
@@ -7983,7 +7989,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         GenTree*            prevTree;
 
         // Get coalescing data for the current STOREIND
-        if (!GetStoreCoalescingData(ind, &currData, &prevTree))
+        if (!GetStoreCoalescingData(comp, ind, &currData, &prevTree))
         {
             return;
         }
@@ -8003,17 +8009,14 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // Get coalescing data for the previous STOREIND
         GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
-        if (!GetStoreCoalescingData(prevInd->AsStoreInd(), &prevData, &prevTree) || (prevTree == nullptr))
+        if (!GetStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData, &prevTree) || (prevTree == nullptr))
         {
             return;
         }
 
-        // Both should be unused
+        // STOREIND aren't value nodes.
         LIR::Use use;
-        if (BlockRange().TryGetUse(ind, &use) || BlockRange().TryGetUse(prevInd, &use))
-        {
-            return;
-        }
+        assert(!BlockRange().TryGetUse(prevInd, &use) && !BlockRange().TryGetUse(ind, &use));
 
         // BaseAddr, Index, Scale and Type all have to match.
         if ((prevData.scale != currData.scale) || (prevData.targetType != currData.targetType) ||
