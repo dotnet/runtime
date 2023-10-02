@@ -891,9 +891,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // afterDefaultCondBlock is now the switch, and all the switch targets have it as a predecessor.
     // originalSwitchBB is now a BBJ_NONE, and there is a predecessor edge in afterDefaultCondBlock
     // representing the fall-through flow from originalSwitchBB.
-    assert(originalSwitchBB->getBBJumpKind() == BBJ_NONE);
+    assert(originalSwitchBB->KindIs(BBJ_NONE));
     assert(originalSwitchBB->bbNext == afterDefaultCondBlock);
-    assert(afterDefaultCondBlock->getBBJumpKind() == BBJ_SWITCH);
+    assert(afterDefaultCondBlock->KindIs(BBJ_SWITCH));
     assert(afterDefaultCondBlock->bbJumpSwt->bbsHasDefault);
     assert(afterDefaultCondBlock->isEmpty()); // Nothing here yet.
 
@@ -1074,7 +1074,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // so fgRemoveBlock() doesn't complain.
             JITDUMP("Lowering switch " FMT_BB ": all switch cases were fall-through\n", originalSwitchBB->bbNum);
             assert(currentBlock == afterDefaultCondBlock);
-            assert(currentBlock->getBBJumpKind() == BBJ_SWITCH);
+            assert(currentBlock->KindIs(BBJ_SWITCH));
             currentBlock->setBBJumpKind(BBJ_NONE DEBUG_ARG(comp));
             currentBlock->bbFlags &= ~BBF_DONT_REMOVE;
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
@@ -1159,7 +1159,7 @@ bool Lowering::TryLowerSwitchToBitTest(
 {
     assert(jumpCount >= 2);
     assert(targetCount >= 2);
-    assert(bbSwitch->getBBJumpKind() == BBJ_SWITCH);
+    assert(bbSwitch->KindIs(BBJ_SWITCH));
     assert(switchValue->OperIs(GT_LCL_VAR));
 
     //
@@ -5296,7 +5296,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     JITDUMP("======= Inserting PInvoke method epilog\n");
 
     // Method doing PInvoke calls has exactly one return block unless it has "jmp" or tail calls.
-    assert(((returnBB == comp->genReturnBB) && (returnBB->getBBJumpKind() == BBJ_RETURN)) ||
+    assert(((returnBB == comp->genReturnBB) && (returnBB->KindIs(BBJ_RETURN))) ||
            returnBB->endsWithTailCallOrJmp(comp));
 
     LIR::Range& returnBlockRange = LIR::AsRange(returnBB);

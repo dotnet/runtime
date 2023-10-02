@@ -100,7 +100,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         }
 
         // If the finally's block jumps back to itself, then it is not empty.
-        if ((firstBlock->getBBJumpKind() == BBJ_ALWAYS) && firstBlock->bbJumpDest == firstBlock)
+        if (firstBlock->KindIs(BBJ_ALWAYS) && firstBlock->bbJumpDest == firstBlock)
         {
             JITDUMP("EH#%u finally has basic block that jumps to itself; skipping.\n", XTnum);
             XTnum++;
@@ -142,7 +142,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         {
             BasicBlock* nextBlock = currentBlock->bbNext;
 
-            if ((currentBlock->getBBJumpKind() == BBJ_CALLFINALLY) && (currentBlock->bbJumpDest == firstBlock))
+            if (currentBlock->KindIs(BBJ_CALLFINALLY) && (currentBlock->bbJumpDest == firstBlock))
             {
                 // Retarget the call finally to jump to the return
                 // point.
@@ -160,7 +160,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 JITDUMP("so that " FMT_BB " jumps to " FMT_BB "; then remove " FMT_BB "\n", currentBlock->bbNum,
                         postTryFinallyBlock->bbNum, leaveBlock->bbNum);
 
-                noway_assert(leaveBlock->getBBJumpKind() == BBJ_ALWAYS);
+                noway_assert(leaveBlock->KindIs(BBJ_ALWAYS));
 
                 currentBlock->bbJumpDest = postTryFinallyBlock;
                 currentBlock->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
@@ -373,7 +373,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
         // Look for blocks that are always jumps to a call finally
         // pair that targets the finally
-        if (firstTryBlock->getBBJumpKind() != BBJ_ALWAYS)
+        if (!firstTryBlock->KindIs(BBJ_ALWAYS))
         {
             JITDUMP("EH#%u first try block " FMT_BB " not jump to a callfinally; skipping.\n", XTnum,
                     firstTryBlock->bbNum);
@@ -437,7 +437,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
         for (BasicBlock* block = firstCallFinallyRangeBlock; block != endCallFinallyRangeBlock; block = block->bbNext)
         {
-            if ((block->getBBJumpKind() == BBJ_CALLFINALLY) && (block->bbJumpDest == firstHandlerBlock))
+            if (block->KindIs(BBJ_CALLFINALLY) && (block->bbJumpDest == firstHandlerBlock))
             {
                 assert(block->isBBCallAlwaysPair());
 
@@ -536,7 +536,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     block->clearHndIndex();
                 }
 
-                if (block->getBBJumpKind() == BBJ_EHFINALLYRET)
+                if (block->KindIs(BBJ_EHFINALLYRET))
                 {
                     Statement* finallyRet     = block->lastStmt();
                     GenTree*   finallyRetExpr = finallyRet->GetRootNode();
@@ -738,7 +738,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
         for (const BasicBlock* block = firstBlock; block != nextBlock; block = block->bbNext)
         {
-            if (block->getBBJumpKind() == BBJ_SWITCH)
+            if (block->KindIs(BBJ_SWITCH))
             {
                 hasSwitch = true;
                 break;
@@ -753,7 +753,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 regionStmtCount++;
             }
 
-            hasFinallyRet = hasFinallyRet || (block->getBBJumpKind() == BBJ_EHFINALLYRET);
+            hasFinallyRet = hasFinallyRet || (block->KindIs(BBJ_EHFINALLYRET));
             isAllRare     = isAllRare && block->isRunRarely();
         }
 
@@ -821,11 +821,11 @@ PhaseStatus Compiler::fgCloneFinally()
             // through to a callfinally.
             BasicBlock* jumpDest = nullptr;
 
-            if ((block->getBBJumpKind() == BBJ_NONE) && (block == lastTryBlock))
+            if ((block->KindIs(BBJ_NONE)) && (block == lastTryBlock))
             {
                 jumpDest = block->bbNext;
             }
-            else if (block->getBBJumpKind() == BBJ_ALWAYS)
+            else if (block->KindIs(BBJ_ALWAYS))
             {
                 jumpDest = block->bbJumpDest;
             }
@@ -989,8 +989,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 BasicBlock* const placeToMoveAfter = firstCallFinallyBlock->bbPrev;
 
-                if ((placeToMoveAfter->getBBJumpKind() == BBJ_ALWAYS) &&
-                    (placeToMoveAfter->bbJumpDest == normalCallFinallyBlock))
+                if (placeToMoveAfter->KindIs(BBJ_ALWAYS) && (placeToMoveAfter->bbJumpDest == normalCallFinallyBlock))
                 {
                     JITDUMP("Moving callfinally " FMT_BB " to be first in line, before " FMT_BB "\n",
                             normalCallFinallyBlock->bbNum, firstCallFinallyBlock->bbNum);
@@ -1050,8 +1049,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             // Avoid asserts when `fgNewBBinRegion` verifies the handler table, by mapping any cloned finally
             // return blocks to BBJ_ALWAYS (which we would do below if we didn't do it here).
-            BBjumpKinds bbNewJumpKind =
-                (block->getBBJumpKind() == BBJ_EHFINALLYRET) ? BBJ_ALWAYS : block->getBBJumpKind();
+            BBjumpKinds bbNewJumpKind = (block->KindIs(BBJ_EHFINALLYRET)) ? BBJ_ALWAYS : block->getBBJumpKind();
 
             if (block == firstBlock)
             {
@@ -1133,13 +1131,13 @@ PhaseStatus Compiler::fgCloneFinally()
         {
             BasicBlock* newBlock = blockMap[block];
 
-            if (block->getBBJumpKind() == BBJ_EHFINALLYRET)
+            if (block->KindIs(BBJ_EHFINALLYRET))
             {
                 Statement* finallyRet     = newBlock->lastStmt();
                 GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                 assert(finallyRetExpr->gtOper == GT_RETFILT);
                 fgRemoveStmt(newBlock, finallyRet);
-                assert(newBlock->getBBJumpKind() == BBJ_ALWAYS); // we mapped this above already
+                assert(newBlock->KindIs(BBJ_ALWAYS)); // we mapped this above already
                 newBlock->bbJumpDest = normalCallFinallyReturn;
 
                 fgAddRefPred(normalCallFinallyReturn, newBlock);
@@ -1196,7 +1194,7 @@ PhaseStatus Compiler::fgCloneFinally()
                         // All preds should be BBJ_EHFINALLYRETs from the finally.
                         for (BasicBlock* const leavePred : leaveBlock->PredBlocks())
                         {
-                            assert(leavePred->getBBJumpKind() == BBJ_EHFINALLYRET);
+                            assert(leavePred->KindIs(BBJ_EHFINALLYRET));
                             assert(leavePred->getHndIndex() == XTnum);
                         }
 
@@ -1242,7 +1240,7 @@ PhaseStatus Compiler::fgCloneFinally()
             BasicBlock* const hndEndIter = HBtab->ebdHndLast->bbNext;
             for (BasicBlock* block = hndBegIter; block != hndEndIter; block = block->bbNext)
             {
-                if (block->getBBJumpKind() == BBJ_EHFINALLYRET)
+                if (block->KindIs(BBJ_EHFINALLYRET))
                 {
                     block->setBBJumpKind(BBJ_EHFAULTRET DEBUG_ARG(this));
                 }
@@ -1408,7 +1406,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
                 // logically "belong" to a child region and the exit
                 // path validity will be checked when looking at the
                 // try blocks in that region.
-                if (block->getBBJumpKind() == BBJ_CALLFINALLY)
+                if (block->KindIs(BBJ_CALLFINALLY))
                 {
                     continue;
                 }
@@ -1434,13 +1432,13 @@ void Compiler::fgDebugCheckTryFinallyExits()
                 bool isCallToFinally = false;
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
-                if (succBlock->getBBJumpKind() == BBJ_CALLFINALLY)
+                if (succBlock->KindIs(BBJ_CALLFINALLY))
                 {
                     // case (a1)
                     isCallToFinally = isFinally && (succBlock->bbJumpDest == finallyBlock);
                 }
 #else
-                if (block->getBBJumpKind() == BBJ_CALLFINALLY)
+                if (block->KindIs(BBJ_CALLFINALLY))
                 {
                     // case (a2)
                     isCallToFinally = isFinally && (block->bbJumpDest == finallyBlock);
@@ -1454,7 +1452,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
                     // case (b)
                     isJumpToClonedFinally = true;
                 }
-                else if (succBlock->getBBJumpKind() == BBJ_ALWAYS)
+                else if (succBlock->KindIs(BBJ_ALWAYS))
                 {
                     if (succBlock->isEmpty())
                     {
@@ -1467,7 +1465,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
                         }
                     }
                 }
-                else if (succBlock->getBBJumpKind() == BBJ_NONE)
+                else if (succBlock->KindIs(BBJ_NONE))
                 {
                     if (succBlock->isEmpty())
                     {
@@ -1900,7 +1898,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
 {
     // We expect callfinallys to be invoked by a BBJ_ALWAYS at this
     // stage in compilation.
-    if (block->getBBJumpKind() != BBJ_ALWAYS)
+    if (!block->KindIs(BBJ_ALWAYS))
     {
         // Possible paranoia assert here -- no flow successor of
         // this block should be a callfinally for this try.

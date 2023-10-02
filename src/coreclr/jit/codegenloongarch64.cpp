@@ -1217,7 +1217,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     {
         SetHasTailCalls(true);
 
-        noway_assert(block->getBBJumpKind() == BBJ_RETURN);
+        noway_assert(block->KindIs(BBJ_RETURN));
         noway_assert(block->GetFirstLIRNode() != nullptr);
 
         /* figure out what jump we have */
@@ -2928,7 +2928,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->getBBJumpKind() == BBJ_SWITCH);
+    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
     unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
@@ -4136,7 +4136,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 // A GT_JCMP node is created for an integer-comparison's conditional branch.
 void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 {
-    assert(compiler->compCurBB->getBBJumpKind() == BBJ_COND);
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
 
     assert(tree->OperIs(GT_JCMP));
     assert(!varTypeIsFloating(tree));

@@ -1499,9 +1499,9 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 bool BasicBlock::isBBCallAlwaysPair() const
 {
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (this->getBBJumpKind() == BBJ_CALLFINALLY)
+    if (this->KindIs(BBJ_CALLFINALLY))
 #else
-    if ((this->getBBJumpKind() == BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
+    if (this->KindIs(BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
 #endif
     {
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -1510,7 +1510,7 @@ bool BasicBlock::isBBCallAlwaysPair() const
 #endif
         // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
         assert(this->bbNext != nullptr);
-        assert(this->bbNext->getBBJumpKind() == BBJ_ALWAYS);
+        assert(this->bbNext->KindIs(BBJ_ALWAYS));
         assert(this->bbNext->bbFlags & BBF_KEEP_BBJ_ALWAYS);
         assert(this->bbNext->isEmpty());
 

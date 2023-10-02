@@ -330,7 +330,7 @@ void CodeGen::genCodeForBBlist()
         //
         // Note: We need to have set compCurBB before calling emitAddLabel
         //
-        if ((block->bbPrev != nullptr) && (block->bbPrev->getBBJumpKind() == BBJ_COND) &&
+        if ((block->bbPrev != nullptr) && block->bbPrev->KindIs(BBJ_COND) &&
             (block->bbWeight != block->bbPrev->bbWeight))
         {
             JITDUMP("Adding label due to BB weight difference: BBJ_COND " FMT_BB " with weight " FMT_WT
@@ -812,10 +812,10 @@ void CodeGen::genCodeForBBlist()
             assert(ShouldAlignLoops());
             assert(!block->isBBCallAlwaysPairTail());
 #if FEATURE_EH_CALLFINALLY_THUNKS
-            assert(block->getBBJumpKind() != BBJ_CALLFINALLY);
+            assert(!block->KindIs(BBJ_CALLFINALLY));
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->getBBJumpKind() == BBJ_ALWAYS));
+            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS)));
         }
 
         if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
@@ -2615,7 +2615,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 //
 void CodeGen::genCodeForJcc(GenTreeCC* jcc)
 {
-    assert(compiler->compCurBB->getBBJumpKind() == BBJ_COND);
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
     assert(jcc->OperIs(GT_JCC));
 
     inst_JCC(jcc->gtCondition, compiler->compCurBB->bbJumpDest);

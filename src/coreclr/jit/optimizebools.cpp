@@ -881,14 +881,14 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 #ifdef DEBUG
         m_b1->bbJumpSwt = m_b2->bbJumpSwt;
 #endif
-        assert(m_b2->getBBJumpKind() == BBJ_RETURN);
+        assert(m_b2->KindIs(BBJ_RETURN));
         assert(m_b1->bbNext == m_b2);
         assert(m_b3 != nullptr);
     }
     else
     {
-        assert(m_b1->getBBJumpKind() == BBJ_COND);
-        assert(m_b2->getBBJumpKind() == BBJ_COND);
+        assert(m_b1->KindIs(BBJ_COND));
+        assert(m_b2->KindIs(BBJ_COND));
         assert(m_b1->bbJumpDest == m_b2->bbJumpDest);
         assert(m_b1->bbNext == m_b2);
         assert(m_b2->bbNext != nullptr);
@@ -1180,7 +1180,7 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
         return;
     }
 
-    assert(m_b1->getBBJumpKind() == BBJ_COND);
+    assert(m_b1->KindIs(BBJ_COND));
     Statement* const stmt = m_b1->lastStmt();
     GenTree* const   cond = stmt->GetRootNode();
 
@@ -1469,7 +1469,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             // We're only interested in conditional jumps here
 
-            if (b1->getBBJumpKind() != BBJ_COND)
+            if (!b1->KindIs(BBJ_COND))
             {
                 continue;
             }
@@ -1492,7 +1492,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             // The next block needs to be a condition or return block.
 
-            if (b2->getBBJumpKind() == BBJ_COND)
+            if (b2->KindIs(BBJ_COND))
             {
                 if ((b1->bbJumpDest != b2->bbJumpDest) && (b1->bbJumpDest != b2->bbNext))
                 {
@@ -1517,7 +1517,7 @@ PhaseStatus Compiler::optOptimizeBools()
                 }
 #endif
             }
-            else if (b2->getBBJumpKind() == BBJ_RETURN)
+            else if (b2->KindIs(BBJ_RETURN))
             {
                 // Set b3 to b1 jump destination
                 BasicBlock* b3 = b1->bbJumpDest;
@@ -1531,7 +1531,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
                 // b3 must be RETURN type
 
-                if (b3->getBBJumpKind() != BBJ_RETURN)
+                if (!b3->KindIs(BBJ_RETURN))
                 {
                     continue;
                 }

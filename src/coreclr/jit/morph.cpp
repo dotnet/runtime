@@ -6126,7 +6126,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     {
         // No unique successor. compCurBB should be a return.
         //
-        assert(compCurBB->getBBJumpKind() == BBJ_RETURN);
+        assert(compCurBB->KindIs(BBJ_RETURN));
     }
     else
     {
@@ -6329,7 +6329,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
         // Fast tail call: in case of fast tail calls, we need a jmp epilog and
         // hence mark it as BBJ_RETURN with BBF_JMP flag set.
-        noway_assert(compCurBB->getBBJumpKind() == BBJ_RETURN);
+        noway_assert(compCurBB->KindIs(BBJ_RETURN));
         if (canFastTailCall)
         {
             compCurBB->bbFlags |= BBF_HAS_JMP;
@@ -8032,7 +8032,7 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
     // of CORINFO_HELP_STRCNS and go to cache first giving reasonable perf.
 
     bool useLazyStrCns = false;
-    if (compCurBB->getBBJumpKind() == BBJ_THROW)
+    if (compCurBB->KindIs(BBJ_THROW))
     {
         useLazyStrCns = true;
     }
@@ -13120,7 +13120,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
         return result;
     }
 
-    if (block->getBBJumpKind() == BBJ_COND)
+    if (block->KindIs(BBJ_COND))
     {
         noway_assert(block->bbStmtList != nullptr && block->bbStmtList->GetPrevStmt() != nullptr);
 
@@ -13293,9 +13293,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             if (verbose)
             {
                 printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a %s", block->bbNum,
-                       block->getBBJumpKind() == BBJ_ALWAYS ? "BBJ_ALWAYS" : "BBJ_NONE");
-                if (block->getBBJumpKind() == BBJ_ALWAYS)
+                printf(FMT_BB " becomes a %s", block->bbNum, block->KindIs(BBJ_ALWAYS) ? "BBJ_ALWAYS" : "BBJ_NONE");
+                if (block->KindIs(BBJ_ALWAYS))
                 {
                     printf(" to " FMT_BB, block->bbJumpDest->bbNum);
                 }
@@ -13356,7 +13355,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             }
         }
     }
-    else if (block->getBBJumpKind() == BBJ_SWITCH)
+    else if (block->KindIs(BBJ_SWITCH))
     {
         noway_assert(block->bbStmtList != nullptr && block->bbStmtList->GetPrevStmt() != nullptr);
 
@@ -13452,9 +13451,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             if (verbose)
             {
                 printf("\nConditional folded at " FMT_BB "\n", block->bbNum);
-                printf(FMT_BB " becomes a %s", block->bbNum,
-                       block->getBBJumpKind() == BBJ_ALWAYS ? "BBJ_ALWAYS" : "BBJ_NONE");
-                if (block->getBBJumpKind() == BBJ_ALWAYS)
+                printf(FMT_BB " becomes a %s", block->bbNum, block->KindIs(BBJ_ALWAYS) ? "BBJ_ALWAYS" : "BBJ_NONE");
+                if (block->KindIs(BBJ_ALWAYS))
                 {
                     printf(" to " FMT_BB, block->bbJumpDest->bbNum);
                 }
@@ -13727,10 +13725,10 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             //   - a tail call dispatched via runtime help (IL stubs), in which
             //   case there will not be any tailcall and the block will be ending
             //   with BBJ_RETURN (as normal control flow)
-            noway_assert((call->IsFastTailCall() && (compCurBB->getBBJumpKind() == BBJ_RETURN) &&
+            noway_assert((call->IsFastTailCall() && (compCurBB->KindIs(BBJ_RETURN)) &&
                           ((compCurBB->bbFlags & BBF_HAS_JMP)) != 0) ||
-                         (call->IsTailCallViaJitHelper() && (compCurBB->getBBJumpKind() == BBJ_THROW)) ||
-                         (!call->IsTailCall() && (compCurBB->getBBJumpKind() == BBJ_RETURN)));
+                         (call->IsTailCallViaJitHelper() && (compCurBB->KindIs(BBJ_THROW))) ||
+                         (!call->IsTailCall() && (compCurBB->KindIs(BBJ_RETURN))));
         }
 
 #ifdef DEBUG
@@ -13806,7 +13804,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 
     if (fgRemoveRestOfBlock)
     {
-        if ((block->getBBJumpKind() == BBJ_COND) || (block->getBBJumpKind() == BBJ_SWITCH))
+        if (block->KindIs(BBJ_COND, BBJ_SWITCH))
         {
             Statement* first = block->firstStmt();
             noway_assert(first);
@@ -13814,8 +13812,8 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             noway_assert(lastStmt && lastStmt->GetNextStmt() == nullptr);
             GenTree* last = lastStmt->GetRootNode();
 
-            if (((block->getBBJumpKind() == BBJ_COND) && (last->gtOper == GT_JTRUE)) ||
-                ((block->getBBJumpKind() == BBJ_SWITCH) && (last->gtOper == GT_SWITCH)))
+            if ((block->KindIs(BBJ_COND) && (last->gtOper == GT_JTRUE)) ||
+                (block->KindIs(BBJ_SWITCH) && (last->gtOper == GT_SWITCH)))
             {
                 GenTree* op1 = last->AsOp()->gtOp1;
 
@@ -13923,7 +13921,7 @@ void Compiler::fgMorphBlocks()
         fgMorphStmts(block);
 
         // Do we need to merge the result of this block into a single return block?
-        if ((block->getBBJumpKind() == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+        if ((block->KindIs(BBJ_RETURN)) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {
             if ((genReturnBB != nullptr) && (genReturnBB != block))
             {
@@ -13979,7 +13977,7 @@ void Compiler::fgMorphBlocks()
 //
 void Compiler::fgMergeBlockReturn(BasicBlock* block)
 {
-    assert((block->getBBJumpKind() == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0));
+    assert((block->KindIs(BBJ_RETURN)) && ((block->bbFlags & BBF_HAS_JMP) == 0));
     assert((genReturnBB != nullptr) && (genReturnBB != block));
 
     // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.

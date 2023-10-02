@@ -354,7 +354,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
                 bNext = block->bbNext;
 
                 /* bNext is an unreachable BBJ_ALWAYS block */
-                noway_assert(bNext->getBBJumpKind() == BBJ_ALWAYS);
+                noway_assert(bNext->KindIs(BBJ_ALWAYS));
 
                 while (bNext->countOfInEdges() > 0)
                 {
@@ -403,7 +403,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
                 for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
                 {
-                    if ((bcall->bbFlags & BBF_REMOVED) || bcall->getBBJumpKind() != BBJ_CALLFINALLY ||
+                    if ((bcall->bbFlags & BBF_REMOVED) || !bcall->KindIs(BBJ_CALLFINALLY) ||
                         bcall->bbJumpDest != finBeg)
                     {
                         continue;
@@ -470,7 +470,7 @@ void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock*
 
     for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
     {
-        if (bcall->getBBJumpKind() != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
+        if (!bcall->KindIs(BBJ_CALLFINALLY) || bcall->bbJumpDest != finBeg)
         {
             continue;
         }
@@ -491,7 +491,7 @@ void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock*
 
 Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
 {
-    assert(switchBlk->getBBJumpKind() == BBJ_SWITCH);
+    assert(switchBlk->KindIs(BBJ_SWITCH));
     BlockToSwitchDescMap* switchMap = GetSwitchDescMap();
     SwitchUniqueSuccSet   res;
     if (switchMap->Lookup(switchBlk, &res))
@@ -546,7 +546,7 @@ void Compiler::SwitchUniqueSuccSet::UpdateTarget(CompAllocator alloc,
                                                  BasicBlock*   from,
                                                  BasicBlock*   to)
 {
-    assert(switchBlk->getBBJumpKind() == BBJ_SWITCH); // Precondition.
+    assert(switchBlk->KindIs(BBJ_SWITCH)); // Precondition.
 
     // Is "from" still in the switch table (because it had more than one entry before?)
     bool fromStillPresent = false;

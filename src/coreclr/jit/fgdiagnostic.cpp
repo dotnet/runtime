@@ -143,13 +143,13 @@ void Compiler::fgDebugCheckUpdate()
         // Check for an unnecessary jumps to the next block
         bool doAssertOnJumpToNextBlock = false; // unless we have a BBJ_COND or BBJ_ALWAYS we can not assert
 
-        if (block->getBBJumpKind() == BBJ_COND)
+        if (block->KindIs(BBJ_COND))
         {
             // A conditional branch should never jump to the next block
             // as it can be folded into a BBJ_NONE;
             doAssertOnJumpToNextBlock = true;
         }
-        else if (block->getBBJumpKind() == BBJ_ALWAYS)
+        else if (block->KindIs(BBJ_ALWAYS))
         {
             // Generally we will want to assert if a BBJ_ALWAYS branches to the next block
             doAssertOnJumpToNextBlock = true;
@@ -184,7 +184,7 @@ void Compiler::fgDebugCheckUpdate()
 
         /* Make sure BBF_KEEP_BBJ_ALWAYS is set correctly */
 
-        if ((block->getBBJumpKind() == BBJ_ALWAYS) && prevIsCallAlwaysPair)
+        if (block->KindIs(BBJ_ALWAYS) && prevIsCallAlwaysPair)
         {
             noway_assert(block->bbFlags & BBF_KEEP_BBJ_ALWAYS);
         }
@@ -192,7 +192,7 @@ void Compiler::fgDebugCheckUpdate()
         /* For a BBJ_CALLFINALLY block we make sure that we are followed by */
         /* an BBJ_ALWAYS block with BBF_INTERNAL set */
         /* or that it's a BBF_RETLESS_CALL */
-        if (block->getBBJumpKind() == BBJ_CALLFINALLY)
+        if (block->KindIs(BBJ_CALLFINALLY) == BBJ_CALLFINALLY)
         {
             assert((block->bbFlags & BBF_RETLESS_CALL) || block->isBBCallAlwaysPair());
         }
@@ -984,7 +984,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 }
             }
 
-            if (block->getBBJumpKind() == BBJ_COND)
+            if (block->KindIs(BBJ_COND))
             {
                 fprintf(fgxFile, "\\n");
 
@@ -1015,11 +1015,11 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, ", shape = \"house\"");
             }
-            else if (block->getBBJumpKind() == BBJ_RETURN)
+            else if (block->KindIs(BBJ_RETURN))
             {
                 fprintf(fgxFile, ", shape = \"invhouse\"");
             }
-            else if (block->getBBJumpKind() == BBJ_THROW)
+            else if (block->KindIs(BBJ_THROW))
             {
                 fprintf(fgxFile, ", shape = \"trapezium\"");
             }
@@ -1152,7 +1152,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     fprintf(fgxFile, "\n            id=\"%d\"", edgeNum);
                     fprintf(fgxFile, "\n            source=\"%d\"", bSource->bbNum);
                     fprintf(fgxFile, "\n            target=\"%d\"", bTarget->bbNum);
-                    if (bSource->getBBJumpKind() == BBJ_SWITCH)
+                    if (bSource->KindIs(BBJ_SWITCH))
                     {
                         if (edge->getDupCount() >= 2)
                         {
@@ -2606,8 +2606,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     // block that does a local call to the finally. This BBJ_ALWAYS is within
     // the try region protected by the finally (for x86, ARM), but that's ok.
     BasicBlock* prevBlock = block->bbPrev;
-    if (prevBlock->getBBJumpKind() == BBJ_CALLFINALLY && block->getBBJumpKind() == BBJ_ALWAYS &&
-        blockPred->getBBJumpKind() == BBJ_EHFINALLYRET)
+    if (prevBlock->KindIs(BBJ_CALLFINALLY) && block->KindIs(BBJ_ALWAYS) && blockPred->KindIs(BBJ_EHFINALLYRET))
     {
         return true;
     }
@@ -2634,7 +2633,7 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     }
 
     // Our try block can call our finally block
-    if ((block->bbCatchTyp == BBCT_FINALLY) && (blockPred->getBBJumpKind() == BBJ_CALLFINALLY) &&
+    if ((block->bbCatchTyp == BBCT_FINALLY) && blockPred->KindIs(BBJ_CALLFINALLY) &&
         comp->ehCallFinallyInCorrectRegion(blockPred, block->getHndIndex()))
     {
         return true;
@@ -2734,7 +2733,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
     for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
     {
-        if (bcall->getBBJumpKind() != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
+        if (!bcall->KindIs(BBJ_CALLFINALLY) || bcall->bbJumpDest != finBeg)
         {
             continue;
         }
@@ -2756,7 +2755,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
         for (BasicBlock* const bcall : comp->Blocks(comp->fgFirstFuncletBB))
         {
-            if (bcall->getBBJumpKind() != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
+            if (!bcall->KindIs(BBJ_CALLFINALLY) || bcall->bbJumpDest != finBeg)
             {
                 continue;
             }
@@ -2878,12 +2877,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         //
         if (compPostImportationCleanupDone || ((block->bbFlags & BBF_IMPORTED) != 0))
         {
-            if (block->getBBJumpKind() == BBJ_COND)
+            if (block->KindIs(BBJ_COND))
             {
                 assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
                        block->lastNode()->OperIsConditionalJump());
             }
-            else if (block->getBBJumpKind() == BBJ_SWITCH)
+            else if (block->KindIs(BBJ_SWITCH))
             {
                 assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
                        (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
@@ -2987,7 +2986,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // Don't depend on predecessors list for the check.
         for (BasicBlock* const succBlock : block->Succs())
         {
-            if (succBlock->getBBJumpKind() == BBJ_CALLFINALLY)
+            if (succBlock->KindIs(BBJ_CALLFINALLY))
             {
                 BasicBlock* finallyBlock = succBlock->bbJumpDest;
                 assert(finallyBlock->hasHndIndex());
@@ -3729,7 +3728,7 @@ void Compiler::fgDebugCheckBlockLinks()
         // If this is a switch, check that the tables are consistent.
         // Note that we don't call GetSwitchDescMap(), because it has the side-effect
         // of allocating it if it is not present.
-        if (block->getBBJumpKind() == BBJ_SWITCH && m_switchDescMap != nullptr)
+        if (block->KindIs(BBJ_SWITCH) && m_switchDescMap != nullptr)
         {
             SwitchUniqueSuccSet uniqueSuccSet;
             if (m_switchDescMap->Lookup(block, &uniqueSuccSet))
@@ -4792,13 +4791,13 @@ void Compiler::fgDebugCheckLoopTable()
 
             // The pre-header can only be BBJ_ALWAYS or BBJ_NONE and must enter the loop.
             BasicBlock* e = loop.lpEntry;
-            if (h->getBBJumpKind() == BBJ_ALWAYS)
+            if (h->KindIs(BBJ_ALWAYS))
             {
                 assert(h->bbJumpDest == e);
             }
             else
             {
-                assert(h->getBBJumpKind() == BBJ_NONE);
+                assert(h->KindIs(BBJ_NONE));
                 assert(h->bbNext == e);
                 assert(loop.lpTop == e);
                 assert(loop.lpIsTopEntry());
@@ -4907,7 +4906,7 @@ void Compiler::fgDebugCheckLoopTable()
             // TODO: We might want the following assert, but there are cases where we don't move all
             //       return blocks out of the loop.
             // Return blocks are not allowed inside a loop; they should have been moved elsewhere.
-            // assert(block->getBBJumpKind() != BBJ_RETURN);
+            // assert(!block->KindIs(BBJ_RETURN));
         }
         else
         {

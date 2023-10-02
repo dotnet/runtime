@@ -1073,7 +1073,7 @@ private:
             //
             BasicBlock* const coldBlock = checkBlock->bbPrev;
 
-            if (coldBlock->getBBJumpKind() != BBJ_NONE)
+            if (!coldBlock->KindIs(BBJ_NONE))
             {
                 JITDUMP("Unexpected flow from cold path " FMT_BB "\n", coldBlock->bbNum);
                 return;
@@ -1081,7 +1081,7 @@ private:
 
             BasicBlock* const hotBlock = coldBlock->bbPrev;
 
-            if ((hotBlock->getBBJumpKind() != BBJ_ALWAYS) || (hotBlock->bbJumpDest != checkBlock))
+            if (!hotBlock->KindIs(BBJ_ALWAYS) || (hotBlock->bbJumpDest != checkBlock))
             {
                 JITDUMP("Unexpected flow from hot path " FMT_BB "\n", hotBlock->bbNum);
                 return;

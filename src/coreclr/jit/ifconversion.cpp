@@ -83,7 +83,7 @@ public:
 bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
 {
     // Block should have a single successor or be a return.
-    if (!(block->GetUniqueSucc() != nullptr || (m_doElseConversion && (block->getBBJumpKind() == BBJ_RETURN))))
+    if (!(block->GetUniqueSucc() != nullptr || (m_doElseConversion && (block->KindIs(BBJ_RETURN)))))
     {
         return false;
     }
@@ -137,7 +137,7 @@ bool OptIfConversionDsc::IfConvertCheckThenFlow()
         {
             // All the Then blocks up to m_finalBlock are in a valid flow.
             m_flowFound = true;
-            if (thenBlock->getBBJumpKind() == BBJ_RETURN)
+            if (thenBlock->KindIs(BBJ_RETURN))
             {
                 assert(m_finalBlock == nullptr);
                 m_mainOper = GT_RETURN;
@@ -553,7 +553,7 @@ void OptIfConversionDsc::IfConvertDump()
 bool OptIfConversionDsc::optIfConvert()
 {
     // Does the block end by branching via a JTRUE after a compare?
-    if (m_startBlock->getBBJumpKind() != BBJ_COND || m_startBlock->NumSucc() != 2)
+    if (!m_startBlock->KindIs(BBJ_COND) || m_startBlock->NumSucc() != 2)
     {
         return false;
     }

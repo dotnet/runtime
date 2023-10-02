@@ -332,8 +332,8 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 
     // THROW heuristic
     //
-    bool const isJumpThrow = (jump->getBBJumpKind() == BBJ_THROW);
-    bool const isNextThrow = (next->getBBJumpKind() == BBJ_THROW);
+    bool const isJumpThrow = (jump->KindIs(BBJ_THROW));
+    bool const isNextThrow = (next->KindIs(BBJ_THROW));
 
     if (isJumpThrow != isNextThrow)
     {
@@ -402,8 +402,8 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 
     // RETURN heuristic
     //
-    bool const isJumpReturn = (jump->getBBJumpKind() == BBJ_RETURN);
-    bool const isNextReturn = (next->getBBJumpKind() == BBJ_RETURN);
+    bool const isJumpReturn = (jump->KindIs(BBJ_RETURN));
+    bool const isNextReturn = (next->KindIs(BBJ_RETURN));
 
     if (isJumpReturn != isNextReturn)
     {
@@ -551,7 +551,7 @@ void ProfileSynthesis::RepairLikelihoods()
                 }
                 JITDUMP("\n");
 
-                if (block->getBBJumpKind() == BBJ_COND)
+                if (block->KindIs(BBJ_COND))
                 {
                     AssignLikelihoodCond(block);
                 }
@@ -627,7 +627,7 @@ void ProfileSynthesis::BlendLikelihoods()
                 bool const     consistent = Compiler::fgProfileWeightsEqual(sum, 1.0, epsilon);
                 bool const     zero       = Compiler::fgProfileWeightsEqual(block->bbWeight, 0.0, epsilon);
 
-                if (block->getBBJumpKind() == BBJ_COND)
+                if (block->KindIs(BBJ_COND))
                 {
                     AssignLikelihoodCond(block);
                 }
@@ -1214,8 +1214,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
                 //
                 // Currently we don't know which edges do this.
                 //
-                if ((exitBlock->getBBJumpKind() == BBJ_COND) &&
-                    (exitBlockWeight > (missingExitWeight + currentExitWeight)))
+                if ((exitBlock->KindIs(BBJ_COND)) && (exitBlockWeight > (missingExitWeight + currentExitWeight)))
                 {
                     JITDUMP("Will adjust likelihood of the exit edge from loop exit block " FMT_BB
                             " to reflect capping; current likelihood is " FMT_WT "\n",

@@ -635,7 +635,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 
             for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
             {
-                if ((bcall->getBBJumpKind() != BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
                 {
                     continue;
                 }
@@ -649,7 +649,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 
             for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
             {
-                if ((bcall->getBBJumpKind() != BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
                 {
                     continue;
                 }
@@ -769,7 +769,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 
             for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
             {
-                if ((bcall->getBBJumpKind() != BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
                 {
                     continue;
                 }
@@ -3125,7 +3125,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
-    if (!(block->bbFlags & BBF_INTERNAL) || block->getBBJumpKind() != BBJ_THROW)
+    if (!(block->bbFlags & BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
     {
         return false;
     }
@@ -3236,7 +3236,7 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     if (isCallAlwaysPair)
     {
         BasicBlock* leaveBlk = block->bbNext;
-        noway_assert(leaveBlk->getBBJumpKind() == BBJ_ALWAYS);
+        noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
 
         // leaveBlk is now unreachable, so scrub the pred lists.
         leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;

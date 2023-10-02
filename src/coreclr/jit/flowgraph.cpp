@@ -254,7 +254,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         BasicBlock*   topFallThrough     = nullptr;
         unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
 
-        if (top->getBBJumpKind() == BBJ_COND)
+        if (top->KindIs(BBJ_COND))
         {
             topFallThrough     = top->bbNext;
             lpIndexFallThrough = topFallThrough->bbNatLoopNum;
@@ -1728,7 +1728,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     // non-exceptional cases
     for (BasicBlock* const block : Blocks())
     {
-        if (block->getBBJumpKind() == BBJ_RETURN)
+        if (block->KindIs(BBJ_RETURN))
         {
             fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, block, false /*exit*/);
         }
@@ -1772,7 +1772,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     }
 #endif
 
-    if (block->getBBJumpKind() == BBJ_RETURN && block->lastStmt()->GetRootNode()->gtOper == GT_RETURN)
+    if (block->KindIs(BBJ_RETURN) && block->lastStmt()->GetRootNode()->gtOper == GT_RETURN)
     {
         GenTreeUnOp* retNode = block->lastStmt()->GetRootNode()->AsUnOp();
         GenTree*     retExpr = retNode->gtOp1;
@@ -1821,7 +1821,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(genReturnBB != nullptr);
     assert(genReturnBB != block);
     assert(fgReturnCount <= 1); // We have a single return for synchronized methods
-    assert(block->getBBJumpKind() == BBJ_RETURN);
+    assert(block->KindIs(BBJ_RETURN));
     assert((block->bbFlags & BBF_HAS_JMP) == 0);
     assert(block->hasTryIndex());
     assert(!block->hasHndIndex());
@@ -1949,7 +1949,7 @@ bool Compiler::fgMoreThanOneReturnBlock()
 
     for (BasicBlock* const block : Blocks())
     {
-        if (block->getBBJumpKind() == BBJ_RETURN)
+        if (block->KindIs(BBJ_RETURN))
         {
             retCnt++;
             if (retCnt > 1)
@@ -2596,7 +2596,7 @@ PhaseStatus Compiler::fgAddInternal()
 
     for (BasicBlock* block = fgFirstBB; block != lastBlockBeforeGenReturns->bbNext; block = block->bbNext)
     {
-        if ((block->getBBJumpKind() == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+        if ((block->KindIs(BBJ_RETURN)) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {
             merger.Record(block);
         }
@@ -3451,7 +3451,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // so the code size for block needs be large
                     // enough to make it worth our while
                     //
-                    if ((lblk == nullptr) || (lblk->getBBJumpKind() != BBJ_COND) || (fgGetCodeEstimate(block) >= 8))
+                    if ((lblk == nullptr) || !lblk->KindIs(BBJ_COND) || (fgGetCodeEstimate(block) >= 8))
                     {
                         // This block is now a candidate for first cold block
                         // Also remember the predecessor to this block
@@ -3523,7 +3523,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // This is a slightly more complicated case, because we will
                     // probably need to insert a block to jump to the cold section.
                     //
-                    if (firstColdBlock->isEmpty() && (firstColdBlock->getBBJumpKind() == BBJ_ALWAYS))
+                    if (firstColdBlock->isEmpty() && (firstColdBlock->KindIs(BBJ_ALWAYS)))
                     {
                         // We can just use this block as the transitionBlock
                         firstColdBlock = firstColdBlock->bbNext;

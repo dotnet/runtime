@@ -1766,7 +1766,7 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     unsigned loopRetCount = 0;
     for (BasicBlock* const blk : loop.LoopBlocks())
     {
-        if (blk->getBBJumpKind() == BBJ_RETURN)
+        if (blk->KindIs(BBJ_RETURN))
         {
             loopRetCount++;
         }
@@ -1855,7 +1855,7 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     BasicBlock* top    = loop.lpTop;
     BasicBlock* bottom = loop.lpBottom;
 
-    if (bottom->getBBJumpKind() != BBJ_COND)
+    if (!bottom->KindIs(BBJ_COND))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Couldn't find termination test.\n", loopInd);
         return false;
@@ -1945,7 +1945,7 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
     JITDUMP("Inserting loop " FMT_LP " loop choice conditions\n", loopNum);
     assert(context->HasBlockConditions(loopNum));
     assert(slowHead != nullptr);
-    assert(insertAfter->getBBJumpKind() == BBJ_NONE);
+    assert(insertAfter->KindIs(BBJ_NONE));
 
     if (context->HasBlockConditions(loopNum))
     {
@@ -2043,9 +2043,9 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     h2->bbNatLoopNum = ambientLoop;
     h2->bbFlags |= BBF_LOOP_PREHEADER;
 
-    if (h->getBBJumpKind() != BBJ_NONE)
+    if (!h->KindIs(BBJ_NONE))
     {
-        assert(h->getBBJumpKind() == BBJ_ALWAYS);
+        assert(h->KindIs(BBJ_ALWAYS));
         assert(h->bbJumpDest == loop.lpEntry);
         h2->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
         h2->bbJumpDest = loop.lpEntry;
@@ -2069,9 +2069,9 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // "newPred" will be the predecessor of the blocks of the cloned loop.
     BasicBlock* b       = loop.lpBottom;
     BasicBlock* newPred = b;
-    if (b->getBBJumpKind() != BBJ_ALWAYS)
+    if (!b->KindIs(BBJ_ALWAYS))
     {
-        assert(b->getBBJumpKind() == BBJ_COND);
+        assert(b->KindIs(BBJ_COND));
 
         BasicBlock* x = b->bbNext;
         if (x != nullptr)
@@ -2175,7 +2175,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         bool        b      = blockMap->Lookup(blk, &newblk);
         assert(b && newblk != nullptr);
 
-        assert(blk->getBBJumpKind() == newblk->getBBJumpKind());
+        assert(blk->KindIs(newblk->getBBJumpKind()));
 
         // First copy the jump destination(s) from "blk".
         optCopyBlkDest(blk, newblk);
@@ -2243,7 +2243,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // We should always have block conditions.
 
     assert(context->HasBlockConditions(loopInd));
-    assert(h->getBBJumpKind() == BBJ_NONE);
+    assert(h->KindIs(BBJ_NONE));
     assert(h->bbNext == h2);
 
     // If any condition is false, go to slowHead (which branches or falls through to e2).
@@ -2254,7 +2254,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     if (slowHead->bbNext != e2)
     {
         // We can't just fall through to the slow path entry, so make it an unconditional branch.
-        assert(slowHead->getBBJumpKind() == BBJ_NONE); // This is how we created it above.
+        assert(slowHead->KindIs(BBJ_NONE)); // This is how we created it above.
         slowHead->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
         slowHead->bbJumpDest = e2;
     }
@@ -2266,7 +2266,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     // Add the fall-through path pred (either to T/E for fall-through from conditions to fast path,
     // or H2 if branch to E of fast path).
-    assert(condLast->getBBJumpKind() == BBJ_COND);
+    assert(condLast->KindIs(BBJ_COND));
     JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->bbNext->bbNum);
     fgAddRefPred(condLast->bbNext, condLast);
 

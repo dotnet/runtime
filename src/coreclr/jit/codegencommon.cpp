@@ -2256,7 +2256,7 @@ void CodeGen::genReportEH()
         {
             for (BasicBlock* const block : compiler->Blocks())
             {
-                if (block->getBBJumpKind() == BBJ_CALLFINALLY)
+                if (block->KindIs(BBJ_CALLFINALLY))
                 {
                     ++clonedFinallyCount;
                 }
@@ -2582,7 +2582,7 @@ void CodeGen::genReportEH()
         unsigned reportedClonedFinallyCount = 0;
         for (BasicBlock* const block : compiler->Blocks())
         {
-            if (block->getBBJumpKind() == BBJ_CALLFINALLY)
+            if (block->KindIs(BBJ_CALLFINALLY))
             {
                 UNATIVE_OFFSET hndBeg, hndEnd;
 

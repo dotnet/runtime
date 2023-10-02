@@ -44,7 +44,7 @@ PhaseStatus Compiler::optRedundantBranches()
 
             // We currently can optimize some BBJ_CONDs.
             //
-            if (block->getBBJumpKind() == BBJ_COND)
+            if (block->KindIs(BBJ_COND))
             {
                 bool madeChangesThisBlock = m_compiler->optRedundantRelop(block);
 
@@ -57,7 +57,7 @@ PhaseStatus Compiler::optRedundantBranches()
                 // a BBJ_COND, retry; perhaps one of the later optimizations
                 // we can do has enabled one of the earlier optimizations.
                 //
-                if (madeChangesThisBlock && (block->getBBJumpKind() == BBJ_COND))
+                if (madeChangesThisBlock && block->KindIs(BBJ_COND))
                 {
                     JITDUMP("Will retry RBO in " FMT_BB " after partial optimization\n", block->bbNum);
                     madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
@@ -508,7 +508,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
         // Check the current dominator
         //
-        if (domBlock->getBBJumpKind() == BBJ_COND)
+        if (domBlock->KindIs(BBJ_COND))
         {
             Statement* const domJumpStmt = domBlock->lastStmt();
             GenTree* const   domJumpTree = domJumpStmt->GetRootNode();
@@ -971,8 +971,8 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
 //
 bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop)
 {
-    assert(block->getBBJumpKind() == BBJ_COND);
-    assert(domBlock->getBBJumpKind() == BBJ_COND);
+    assert(block->KindIs(BBJ_COND));
+    assert(domBlock->KindIs(BBJ_COND));
 
     // If the dominating block is not the immediate dominator
     // we might need to duplicate a lot of code to thread
@@ -990,7 +990,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
         BasicBlock* idomBlock = block->bbIDom;
         while ((idomBlock != nullptr) && (idomBlock != domBlock))
         {
-            if (idomBlock->getBBJumpKind() == BBJ_COND)
+            if (idomBlock->KindIs(BBJ_COND))
             {
                 JITDUMP(" -- " FMT_BB " not closest branching dom, so no threading\n", idomBlock->bbNum);
                 return false;
@@ -1082,7 +1082,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
 
         // Treat switch preds as ambiguous for now.
         //
-        if (predBlock->getBBJumpKind() == BBJ_SWITCH)
+        if (predBlock->KindIs(BBJ_SWITCH))
         {
             JITDUMP(FMT_BB " is a switch pred\n", predBlock->bbNum);
             BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
@@ -1450,9 +1450,8 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         //
         const bool fallThroughIsTruePred = BlockSetOps::IsMember(this, jti.m_truePreds, jti.m_fallThroughPred->bbNum);
 
-        if ((jti.m_fallThroughPred->getBBJumpKind() == BBJ_NONE) &&
-            ((fallThroughIsTruePred && (jti.m_numFalsePreds == 0)) ||
-             (!fallThroughIsTruePred && (jti.m_numTruePreds == 0))))
+        if ((jti.m_fallThroughPred->KindIs(BBJ_NONE)) && ((fallThroughIsTruePred && (jti.m_numFalsePreds == 0)) ||
+                                                          (!fallThroughIsTruePred && (jti.m_numTruePreds == 0))))
         {
             JITDUMP(FMT_BB " has ambiguous preds and a (%s) fall through pred and no (%s) preds.\n"
                            "Converting fall through pred " FMT_BB " to BBJ_ALWAYS\n",
@@ -1624,8 +1623,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     // surviving ssa input, and update all the value numbers...)
     //
     BasicBlock* const ambBlock = jti.m_ambiguousVNBlock;
-    if ((ambBlock != nullptr) && (jti.m_block->getBBJumpKind() == BBJ_COND) &&
-        (jti.m_block->GetUniquePred(this) == ambBlock))
+    if ((ambBlock != nullptr) && (jti.m_block->KindIs(BBJ_COND)) && (jti.m_block->GetUniquePred(this) == ambBlock))
     {
         JITDUMP(FMT_BB " has just one remaining predcessor " FMT_BB "\n", jti.m_block->bbNum, ambBlock->bbNum);
 
