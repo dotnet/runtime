@@ -12,6 +12,24 @@
 #include "holder.h"
 #include "RhConfig.h"
 
+enum GC_LOAD_STATUS {
+    GC_LOAD_STATUS_BEFORE_START,
+    GC_LOAD_STATUS_START,
+    GC_LOAD_STATUS_DONE_LOAD,
+    GC_LOAD_STATUS_GET_VERSIONINFO,
+    GC_LOAD_STATUS_CALL_VERSIONINFO,
+    GC_LOAD_STATUS_DONE_VERSION_CHECK,
+    GC_LOAD_STATUS_GET_INITIALIZE,
+    GC_LOAD_STATUS_LOAD_COMPLETE
+};
+
+// Load status of the GC. If GC loading fails, the value of this
+// global indicates where the failure occurred.
+GC_LOAD_STATUS g_gc_load_status = GC_LOAD_STATUS_BEFORE_START;
+
+// The version of the GC that we have loaded.
+VersionInfo g_gc_version_info;
+
 class MyGCToEEInterface : public IGCToCLR {
 public:
     MyGCToEEInterface() = default;
