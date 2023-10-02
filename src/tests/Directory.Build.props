@@ -206,7 +206,7 @@
     <ImportProjectExtensionTargets>false</ImportProjectExtensionTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(RuntimeVariant)' == 'llvmfullaot'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">
     <EnableAggressiveTrimming Condition="'$(OutputType)' == 'Exe'">true</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(OutputType)' == 'Exe'">true</PublishTrimmed>
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
