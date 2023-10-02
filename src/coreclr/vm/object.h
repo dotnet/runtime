@@ -1443,9 +1443,12 @@ NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembl
 // managed Internal.Runtime.Binder.AssemblyBinder
 class AssemblyBinderObject : public Object
 {
+    OBJECTREF m_appContext;
+    OBJECTREF m_assemblySimpleNameMvidCheckHash;
+    OBJECTREF m_loadedAssemblies;
 public:
-    INT_PTR m_managedALC;
     CLR_BOOL m_isDefault;
+    INT_PTR m_managedALC;
 };
 
 #ifdef USE_CHECKED_OBJECTREFS
