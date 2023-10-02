@@ -308,6 +308,8 @@ static const Entry s_QCall[] =
     DllImportEntry(OpenMutexW)
     DllImportEntry(OpenSemaphoreW)
     DllImportEntry(OutputDebugStringW)
+    DllImportEntry(PAL_CreateMutexW)
+    DllImportEntry(PAL_OpenMutexW)
     DllImportEntry(ReleaseMutex)
     DllImportEntry(ReleaseSemaphore)
     DllImportEntry(ResetEvent)

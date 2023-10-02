@@ -47,5 +47,6 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+            testBuildArgs: /p:InstallV8ForTests=false
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

@@ -327,31 +327,20 @@ namespace System.Runtime.InteropServices.JavaScript
             ThreadJsOwnedObjects.Clear();
         }
 
-        private static FieldInfo? thread_id_Field;
-        private static FieldInfo? external_eventloop_Field;
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]
+        private static extern ref bool GetThreadExternalEventloop(Thread @this);
 
-        // FIXME: after https://github.com/dotnet/runtime/issues/86040 replace with
-        // [UnsafeAccessor(UnsafeAccessorKind.Field, Name="external_eventloop")]
-        // static extern ref bool ThreadExternalEventloop(Thread @this);
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Threading.Thread", "System.Private.CoreLib")]
         public static void SetHasExternalEventLoop(Thread thread)
         {
-            if (external_eventloop_Field == null)
-            {
-                external_eventloop_Field = typeof(Thread).GetField("external_eventloop", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            }
-            external_eventloop_Field.SetValue(thread, true);
+            GetThreadExternalEventloop(thread) = true;
         }
 
-        // FIXME: after https://github.com/dotnet/runtime/issues/86040
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, "System.Threading.Thread", "System.Private.CoreLib")]
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "thread_id")]
+        private static extern ref long GetThreadNativeThreadId(Thread @this);
+
         public static IntPtr GetNativeThreadId()
         {
-            if (thread_id_Field == null)
-            {
-                thread_id_Field = typeof(Thread).GetField("thread_id", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            }
-            return (int)(long)thread_id_Field.GetValue(Thread.CurrentThread)!;
+            return (int)GetThreadNativeThreadId(Thread.CurrentThread);
         }
 
 #endif

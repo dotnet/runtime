@@ -255,6 +255,12 @@ namespace ILCompiler
                         stack.Push(stack.Peek());
                         break;
 
+                    case ILOpcode.pop:
+                        {
+                            stack.Pop();
+                            break;
+                        }
+
                     case ILOpcode.ldstr:
                         {
                             string s = (string)methodIL.GetObject(reader.ReadILToken());
@@ -1180,6 +1186,28 @@ namespace ILCompiler
                         }
                         break;
 
+                    case ILOpcode.switch_:
+                        {
+                            StackEntry val = stack.Pop();
+                            if (val.ValueKind is not StackValueKind.Int32)
+                                ThrowHelper.ThrowInvalidProgramException();
+
+                            uint target = (uint)val.Value.AsInt32();
+
+                            uint count = reader.ReadILUInt32();
+                            int nextInstruction = reader.Offset + (int)(4 * count);
+                            if (target > count)
+                            {
+                                reader.Seek(nextInstruction);
+                            }
+                            else
+                            {
+                                reader.Seek(reader.Offset + (int)(4 * target));
+                                reader.Seek(nextInstruction + (int)reader.ReadILUInt32());
+                            }
+                        }
+                        break;
+
                     case ILOpcode.leave:
                     case ILOpcode.leave_s:
                         {
@@ -1834,6 +1862,14 @@ namespace ILCompiler
                             _internedTypes.Add(typeHandle.Type, runtimeType = new RuntimeTypeValue(typeHandle.Type));
                         }
                         retVal = runtimeType;
+                        return true;
+                    }
+                case "get_IsValueType" when method.OwningType is MetadataType typeType
+                        && typeType.Name == "Type" && typeType.Namespace == "System"
+                        && typeType.Module == typeType.Context.SystemModule
+                        && parameters[0] is RuntimeTypeValue typeToCheckForValueType:
+                    {
+                        retVal = ValueTypeValue.FromSByte(typeToCheckForValueType.TypeRepresented.IsValueType ? (sbyte)1 : (sbyte)0);
                         return true;
                     }
                 case "op_Equality" when method.OwningType is MetadataType typeType
