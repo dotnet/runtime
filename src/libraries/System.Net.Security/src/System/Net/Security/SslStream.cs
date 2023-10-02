@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -748,6 +750,20 @@ namespace System.Net.Security
             return bytesRead == 1 ? oneByte[0] : -1;
         }
 
+        public override unsafe int Read(Span<byte> buffer)
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+
+            fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
+            {
+                using var memoryManager = new PointerMemoryManager<byte>(ptr, buffer.Length);
+
+                ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
+                Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                return vt.GetAwaiter().GetResult();
+            }
+        }
+
         public override int Read(byte[] buffer, int offset, int count)
         {
             ThrowIfExceptionalOrNotAuthenticated();
@@ -755,6 +771,20 @@ namespace System.Net.Security
             ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), default(CancellationToken));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             return vt.GetAwaiter().GetResult();
+        }
+
+        public override unsafe void Write(ReadOnlySpan<byte> buffer)
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+
+            fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
+            {
+                using var memoryManager = new PointerMemoryManager<byte>(ptr, buffer.Length);
+
+                ValueTask vt = WriteAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
+                Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                vt.GetAwaiter().GetResult();
+            }
         }
 
         public void Write(byte[] buffer) => Write(buffer, 0, buffer.Length);
