@@ -18,6 +18,11 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteSingle(float value)
         {
+            if (float.IsNaN(value))
+            {
+                value = BitConverter.Int32BitsToSingle(0x7fc00000); // canonical NaN as per RFC 7049
+            }
+
             if (!CborConformanceModeHelpers.RequiresPreservingFloatPrecision(ConformanceMode) &&
                  TryConvertSingleToHalf(value, out var half))
             {
@@ -38,6 +43,11 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteDouble(double value)
         {
+            if (double.IsNaN(value))
+            {
+                value = BitConverter.Int64BitsToDouble(0x7ff8000000000000); // canonical NaN as per RFC 7049
+            }
+
             if (!CborConformanceModeHelpers.RequiresPreservingFloatPrecision(ConformanceMode) &&
                  TryConvertDoubleToSingle(value, out float single))
             {
