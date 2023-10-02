@@ -1124,6 +1124,7 @@ public:
     bool IsJitOptimizationDisabled();
     bool IsJitOptimizationDisabledForAllMethodsInChunk();
     bool IsJitOptimizationDisabledForSpecificMethod();
+    bool IsJitOptimizationLevelRequested();
 
 private:
     // This function is not intended to be called in most places, and is named as such to discourage calling it accidentally
@@ -1682,7 +1683,7 @@ public:
         m_wFlags |= mdcHasNativeCodeSlot;
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     inline BOOL IsEnCAddedMethod()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1700,7 +1701,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return FALSE;
     }
-#endif // !EnC_SUPPORTED
+#endif // !FEATURE_METADATA_UPDATER
 
     inline BOOL IsIntrinsic()
     {
@@ -1819,7 +1820,7 @@ private:
     PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
     PCODE JitCompileCode(PrepareCodeConfig* pConfig);
     PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
-    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
+    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
 
 public:
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);

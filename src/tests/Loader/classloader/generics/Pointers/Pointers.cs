@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-unsafe class Pointers
+public unsafe class Pointers
 {
     private struct Struct { public int Num; }
 

@@ -22,9 +22,10 @@
   <Import Project="$(MSBuildThisFileDirectory)AppleBuild.props" />
 
   <PropertyGroup>
-    <_NetCoreAppCurrent>net8.0</_NetCoreAppCurrent>
+    <!-- Keep these underscored targets in sync with the root Directory.Build.props -->
+    <_NetCoreAppCurrent>net9.0</_NetCoreAppCurrent>
     <TargetFramework>$(_NetCoreAppCurrent)</TargetFramework>
-    <_NetCoreAppToolCurrent>$(_NetCoreAppCurrent)</_NetCoreAppToolCurrent>
+    <_NetCoreAppToolCurrent>net8.0</_NetCoreAppToolCurrent>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
   </PropertyGroup>
 
@@ -65,7 +66,7 @@
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackLibDir)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
     <ILLinkTargetsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', 'build', 'Microsoft.NET.ILLink.targets'))</ILLinkTargetsPath>
-    <ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', 'tools', '$(_NetCoreAppCurrent)', 'ILLink.Tasks.dll'))</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', 'tools', '$(_NetCoreAppToolCurrent)', 'ILLink.Tasks.dll'))</ILLinkTasksAssembly>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>

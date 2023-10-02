@@ -50,6 +50,7 @@ namespace Mono.Linker
 		public virtual MarkingHelpers CreateMarkingHelpers (LinkContext context) => new MarkingHelpers (context);
 		public virtual Tracer CreateTracer (LinkContext context) => new Tracer (context);
 		public virtual EmbeddedXmlInfo CreateEmbeddedXmlInfo () => new ();
+		public virtual AssemblyResolver CreateResolver (LinkContext context) => new AssemblyResolver (context, new ReaderParameters ());
 	}
 
 	public static class TargetRuntimeVersion
@@ -107,9 +108,9 @@ namespace Mono.Linker
 
 		public bool LinkSymbols { get; set; }
 
-		public readonly bool KeepMembersForDebugger = true;
+		public bool KeepMembersForDebugger { get; set; } = true;
 
-		public bool IgnoreUnresolved { get; set; }
+		public bool IgnoreUnresolved { get; set; } = true;
 
 		public bool EnableReducedTracing { get; set; }
 
@@ -194,11 +195,16 @@ namespace Mono.Linker
 		public SerializationMarker SerializationMarker { get; }
 
 		public LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory)
+			: this(pipeline, logger, outputDirectory, new UnintializedContextFactory ())
+		{
+		}
+
+		protected LinkContext (Pipeline pipeline, ILogger logger, string outputDirectory, UnintializedContextFactory factory)
 		{
 			_pipeline = pipeline;
 			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
 
-			_resolver = new AssemblyResolver (this);
+			_resolver = factory.CreateResolver (this);
 			_typeNameResolver = new TypeNameResolver (this);
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
@@ -211,7 +217,6 @@ namespace Mono.Linker
 
 			SymbolReaderProvider = new DefaultSymbolReaderProvider (false);
 
-			var factory = new UnintializedContextFactory ();
 			_annotations = factory.CreateAnnotationStore (this);
 			MarkingHelpers = factory.CreateMarkingHelpers (this);
 			SerializationMarker = new SerializationMarker (this);
@@ -686,6 +691,33 @@ namespace Mono.Linker
 		{
 			var error = MessageContainer.CreateErrorMessage (origin, id, args);
 			LogMessage (error);
+		}
+
+		/// <summary>
+		/// Throws a LinkerFatalErrorException
+		/// </summary>
+		/// <param name="text">Humanly readable message describing the error</param>
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
+		/// for the list of errors and possibly add a new one</param>
+		/// <param name="subcategory">Optionally, further categorize this error</param>
+		/// <param name="origin">Filename, line, and column where the error was found</param>
+		public static void FatalError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
+		{
+			throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (text, code, subcategory, origin));
+		}
+
+		/// <summary>
+		/// Throws a LinkerFatalErrorException
+		/// </summary>
+		/// <param name="text">Humanly readable message describing the error</param>
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
+		/// for the list of errors and possibly add a new one</param>
+		/// <param name="subcategory">Optionally, further categorize this error</param>
+		/// <param name="origin">Filename, line, and column where the error was found</param>
+		/// <param name="innerException">Optional, an inner exception</param>
+		public static void FatalError (string text, int code, Exception innerException, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
+		{
+			throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (text, code, subcategory, origin), innerException);
 		}
 
 		public void FlushCachedWarnings ()

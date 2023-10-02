@@ -11,6 +11,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -59,12 +60,7 @@ namespace System.Text.Json.SourceGeneration
                     location = _contextClassLocation;
                 }
 
-                Diagnostics.Add(new DiagnosticInfo
-                {
-                    Descriptor = descriptor,
-                    Location = location.GetTrimmedLocation(),
-                    MessageArgs = messageArgs ?? Array.Empty<object?>(),
-                });
+                Diagnostics.Add(DiagnosticInfo.Create(descriptor, location, messageArgs));
             }
 
             public Parser(KnownTypeSymbols knownSymbols)
@@ -1609,9 +1605,12 @@ namespace System.Text.Json.SourceGeneration
 
                 sb.Append(name);
 
-                foreach (ITypeSymbol genericArg in namedType.GetAllTypeArgumentsInScope())
+                if (namedType.GetAllTypeArgumentsInScope() is List<ITypeSymbol> typeArgsInScope)
                 {
-                    sb.Append(GetTypeInfoPropertyName(genericArg));
+                    foreach (ITypeSymbol genericArg in typeArgsInScope)
+                    {
+                        sb.Append(GetTypeInfoPropertyName(genericArg));
+                    }
                 }
 
                 return sb.ToString();

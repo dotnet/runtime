@@ -208,7 +208,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1089`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
 |  __`SYSLIB1090`__ | Invalid 'GeneratedComInterfaceAttribute' usage |
 |  __`SYSLIB1091`__ | Method is declared in different partial declaration than the 'GeneratedComInterface' attribute. |
-|  __`SYSLIB1092`__ | 'GenerateComInterfaceAttribute' usage not recommended. See aka.ms/GeneratedComInterfaceUsage for recommended usage. |
+|  __`SYSLIB1092`__ | Usage of '[LibraryImport|GeneratedComInterface]' does not follow recommendation. See aka.ms/[LibraryImport|GeneratedComInterface]Usage for best practices. |
 |  __`SYSLIB1093`__ | Analysis for COM interface generation has failed |
 |  __`SYSLIB1094`__ | The base COM interface failed to generate source. Code will not be generated for this interface. |
 |  __`SYSLIB1095`__ | Invalid 'GeneratedComClassAttribute' usage |
@@ -270,3 +270,5 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 | Suppression ID           | Suppressed Diagnostic ID | Description |
 | :----------------------- | :----------------------- | :---------- |
 | __`SYSLIBSUPPRESS0001`__ | CA1822                   | Do not offer to make methods static when the methods need to be instance methods for a custom marshaller shape. |
+| __`SYSLIBSUPPRESS0002`__ | IL2026                   | ConfigurationBindingGenerator: suppress RequiresUnreferencedCode diagnostic for binding call that has been intercepted by a generated static variant. |
+| __`SYSLIBSUPPRESS0003`__ | IL3050                   | ConfigurationBindingGenerator: suppress RequiresDynamicCode diagnostic for binding call that has been intercepted by a generated static variant. |

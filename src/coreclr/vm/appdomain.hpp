@@ -1066,12 +1066,6 @@ public:
     }
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
-    OBJECTHANDLE CreateVariableHandle(OBJECTREF object, UINT type)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ::CreateVariableHandle(m_handleStore, object, type);
-    }
-
     OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
     {
         WRAPPER_NO_CONTRACT;
@@ -2451,12 +2445,24 @@ public:
     }
     static FrozenObjectHeapManager* GetFrozenObjectHeapManager()
     {
-        WRAPPER_NO_CONTRACT;
-        if (m_FrozenObjectHeapManager == NULL)
+        CONTRACTL
+        {
+            THROWS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        if (VolatileLoad(&m_FrozenObjectHeapManager) == nullptr)
         {
             LazyInitFrozenObjectsHeap();
         }
-        return m_FrozenObjectHeapManager;
+        return VolatileLoad(&m_FrozenObjectHeapManager);
+    }
+    static FrozenObjectHeapManager* GetFrozenObjectHeapManagerNoThrow()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return VolatileLoad(&m_FrozenObjectHeapManager);
     }
 #endif // DACCESS_COMPILE
 

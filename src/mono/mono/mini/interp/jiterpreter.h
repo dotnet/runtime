@@ -172,6 +172,11 @@ mono_jiterp_do_jit_call_indirect (
 
 #ifdef __MONO_MINI_INTERPRETER_INTERNALS_H__
 
+extern void
+mono_jiterp_free_method_data_js (
+	MonoMethod *method, InterpMethod *imethod, int trace_index
+);
+
 typedef struct {
 	InterpMethod *rmethod;
 	ThreadContext *context;
@@ -231,8 +236,14 @@ mono_jiterp_placeholder_trace (void *frame, void *pLocals, JiterpreterCallInfo *
 void
 mono_jiterp_placeholder_jit_call (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
 
+void
+mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod);
+
 void *
 mono_jiterp_get_interp_entry_func (int table);
+
+void
+mono_jiterp_tlqueue_purge_all (gpointer item);
 
 #endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
 

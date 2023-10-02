@@ -155,9 +155,6 @@
     <PlatformManifestFileEntry Include="mono-aot-cross" IsNative="true" />
     <PlatformManifestFileEntry Include="mono-aot-cross.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="opt" IsNative="true" />
-    <PlatformManifestFileEntry Include="dbgshim.dll" IsNative="true" />
-    <PlatformManifestFileEntry Include="libdbgshim.so" IsNative="true" />
-    <PlatformManifestFileEntry Include="libdbgshim.dylib" IsNative="true" />
     <!-- libc++ for C++17 support on older distributions -->
     <PlatformManifestFileEntry Include="libc++.so.1" IsNative="true" />
     <PlatformManifestFileEntry Include="libc++abi.so.1" IsNative="true" />

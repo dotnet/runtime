@@ -58,7 +58,8 @@
       <_XHarnessAppleCustomCommand Condition="'$(NeedsiOSSDK)' == 'true'">
         source build-apple-app.sh
       </_XHarnessAppleCustomCommand>
-      <ILLinkDir>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.net.illink.tasks', '$(MicrosoftNETILLinkTasksVersion)'))</ILLinkDir>
+      <!-- Use ILLink.Tasks version matching the SDK used to build. See comment about _RequiresILLinkPack in eng/illink.targets -->
+      <ILLinkDir>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.net.illink.tasks', '$(BundledNETCoreAppPackageVersion)'))</ILLinkDir>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">

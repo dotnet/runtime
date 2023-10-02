@@ -123,8 +123,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionMessage">
-        <source>The options validation source generator is not available in C# '{0}'. Please use language version '{1}' or greater.</source>
-        <target state="new">The options validation source generator is not available in C# '{0}'. Please use language version '{1}' or greater.</target>
+        <source>The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="new">The options validation source generator is not available in C# {0}. Please use language version {1} or greater.</target>
         <note />
       </trans-unit>
       <trans-unit id="OptionsUnsupportedLanguageVersionTitle">

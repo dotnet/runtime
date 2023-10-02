@@ -9,6 +9,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using Microsoft.Playwright;
+using System.Runtime.InteropServices;
 
 #nullable enable
 
@@ -37,16 +38,33 @@ public class BuildPublishTests : BlazorWasmTestBase
         await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
     }
 
-    [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void DefaultTemplate_NoAOT_WithWorkload(string config)
+
+    public static TheoryData<string, bool> TestDataForDefaultTemplate_WithWorkload(bool isAot)
     {
-        // disable relinking tests for Unicode: github.com/emscripten-core/emscripten/issues/17817
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
-        string id = config == "Release" ?
-            $"blz_no_aot_{config}_{GetRandomId()}" :
-            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}";
+        var data = new TheoryData<string, bool>();
+        data.Add("Debug", false);
+        data.Add("Release", false); // Release relinks by default
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
+        if (!isAot || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            data.Add("Debug", true); // for aot:true on Windows, it fails
+        }
+
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            data.Add("Release", true);
+        }
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { false })]
+    public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testUnicode)
+    {
+        string id = testUnicode ?
+            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_no_aot_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
@@ -59,6 +77,19 @@ public class BuildPublishTests : BlazorWasmTestBase
         {
             BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true));
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
+    public void DefaultTemplate_AOT_WithWorkload(string config, bool testUnicode)
+    {
+        string id = testUnicode ?
+            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_no_aot_{config}_{GetRandomId()}";
+        CreateBlazorWasmTemplateProject(id);
+
+        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT), "-p:RunAOTCompilation=true");
     }
 
     [Theory]

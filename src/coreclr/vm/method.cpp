@@ -3038,8 +3038,8 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functional requirement - These methods have no IL that could be optimized
         !IsWrapperStub() &&
 
-        // Policy - Generating optimized code is not disabled
-        !IsJitOptimizationDisabledForSpecificMethod())
+        // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
+        !IsJitOptimizationLevelRequested())
     {
         m_wFlags3AndTokenRemainder |= enum_flag3_IsEligibleForTieredCompilation;
         _ASSERTE(IsVersionable());
@@ -3063,6 +3063,17 @@ bool MethodDesc::IsJitOptimizationDisabled()
 bool MethodDesc::IsJitOptimizationDisabledForSpecificMethod()
 {
     return (!IsNoMetadata() && IsMiNoOptimization(GetImplAttrs()));
+}
+
+bool MethodDesc::IsJitOptimizationLevelRequested()
+{
+    if (IsNoMetadata())
+    {
+        return false;
+    }
+
+    const DWORD attrs = GetImplAttrs();
+    return IsMiNoOptimization(attrs) || IsMiAggressiveOptimization(attrs);
 }
 
 bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()

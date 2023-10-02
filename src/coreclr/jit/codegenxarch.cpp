@@ -205,6 +205,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
+    BasicBlock* const nextBlock = block->bbNext;
+
 #if defined(FEATURE_EH_FUNCLETS)
     // Generate a call to the finally, like this:
     //      mov         rcx,qword ptr [rbp + 20H]       // Load rcx with PSPSym
@@ -235,7 +237,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // block), then we need to generate a breakpoint here (since it will never
         // get executed) to get proper unwind behavior.
 
-        if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
+        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
             instGen(INS_BREAKPOINT); // This should never get executed
         }
@@ -251,8 +253,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         GetEmitter()->emitDisableGC();
 #endif // JIT32_GCENCODER
 
+        BasicBlock* const jumpDest = nextBlock->bbJumpDest;
+
         // Now go to where the finally funclet needs to return to.
-        if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
+        if ((jumpDest == nextBlock->bbNext) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
         {
             // Fall-through.
             // TODO-XArch-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -262,7 +266,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-            inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
+            inst_JMP(EJ_jmp, jumpDest);
         }
 
 #ifndef JIT32_GCENCODER
@@ -312,7 +316,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        GetEmitter()->emitIns_J(INS_push_hide, block->bbNext->bbJumpDest);
+        GetEmitter()->emitIns_J(INS_push_hide, nextBlock->bbJumpDest);
     }
     else
     {
@@ -332,7 +336,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        block = block->bbNext;
+        block = nextBlock;
     }
     return block;
 }
@@ -6664,17 +6668,17 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     emitAttr size = emitTypeSize(lea);
     genConsumeOperands(lea);
 
-    if (lea->Base() && lea->Index())
+    if (lea->HasBase() && lea->HasIndex())
     {
         regNumber baseReg  = lea->Base()->GetRegNum();
         regNumber indexReg = lea->Index()->GetRegNum();
         GetEmitter()->emitIns_R_ARX(INS_lea, size, lea->GetRegNum(), baseReg, indexReg, lea->gtScale, lea->Offset());
     }
-    else if (lea->Base())
+    else if (lea->HasBase())
     {
         GetEmitter()->emitIns_R_AR(INS_lea, size, lea->GetRegNum(), lea->Base()->GetRegNum(), lea->Offset());
     }
-    else if (lea->Index())
+    else if (lea->HasIndex())
     {
         GetEmitter()->emitIns_R_ARX(INS_lea, size, lea->GetRegNum(), REG_NA, lea->Index()->GetRegNum(), lea->gtScale,
                                     lea->Offset());
@@ -6735,7 +6739,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
         if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
         {
             instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
-            targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
+            targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
         }
     }
     GetEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
@@ -6906,7 +6910,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
             if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
             {
                 instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
-                targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
+                targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
             }
         }
 
@@ -10894,9 +10898,12 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         assert((blkSize + alignmentHiBlkSize) == (untrLclHi - untrLclLo));
 #endif // !defined(TARGET_AMD64)
 
+        const int maxSimdSize = (int)compiler->roundDownSIMDSize(blkSize);
+        assert((maxSimdSize >= XMM_REGSIZE_BYTES) && (maxSimdSize <= ZMM_REGSIZE_BYTES));
+
         // The loop is unrolled 3 times so we do not move to the loop block until it
         // will loop at least once so the threshold is 6.
-        if (blkSize < (6 * XMM_REGSIZE_BYTES))
+        if (blkSize < (6 * maxSimdSize))
         {
             // Generate the following code:
             //
@@ -10905,10 +10912,22 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             //   ...
             //   movups  xmmword ptr [ebp/esp-OFFS], xmm4
             //   mov      qword ptr [ebp/esp-OFFS], rax
-
+            //
+            // NOTE: it implicitly zeroes YMM4 and ZMM4 as well.
             emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg, zeroSIMDReg);
 
             int i = 0;
+            if (maxSimdSize > XMM_REGSIZE_BYTES)
+            {
+                for (; i <= blkSize - maxSimdSize; i += maxSimdSize)
+                {
+                    // We previously aligned data to 16 bytes which might not be aligned to maxSimdSize
+                    emit->emitIns_AR_R(simdUnalignedMovIns(), EA_ATTR(maxSimdSize), zeroSIMDReg, frameReg,
+                                       alignedLclLo + i);
+                }
+                // Remainder will be handled by the xmm loop below
+            }
+
             for (; i < blkSize; i += XMM_REGSIZE_BYTES)
             {
                 emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo + i);

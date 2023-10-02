@@ -9,7 +9,7 @@ using InvalidCSharp;
 
 using Xunit;
 
-class Validate
+public class Validate
 {
     [StructLayout(LayoutKind.Explicit)]
     private ref struct Explicit

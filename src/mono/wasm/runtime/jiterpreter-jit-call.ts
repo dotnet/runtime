@@ -16,7 +16,7 @@ import {
     getCounter, modifyCounter,
     jiterpreter_allocate_tables
 } from "./jiterpreter-support";
-import { JiterpreterTable, JiterpCounter } from "./jiterpreter-enums";
+import { JiterpreterTable, JiterpCounter, JitQueue } from "./jiterpreter-enums";
 import {
     compileDoJitCall
 } from "./jiterpreter-feature-detect";
@@ -69,7 +69,7 @@ let wasmEhSupported: boolean | undefined = undefined;
 let nextDisambiguateIndex = 0;
 const fnCache: Array<Function | undefined> = [];
 const targetCache: { [target: number]: TrampolineInfo } = {};
-const jitQueue: TrampolineInfo[] = [];
+const infosByMethod: { [method: number]: TrampolineInfo[] } = {};
 
 class TrampolineInfo {
     method: MonoMethod;
@@ -195,6 +195,21 @@ export function mono_interp_invoke_wasm_jit_call_trampoline(
     }
 }
 
+// If a method is freed we need to remove its info (just in case another one gets
+//  allocated at that exact memory offset later) and more importantly, ensure it is
+//  not waiting in the jit queue
+export function mono_jiterp_free_method_data_jit_call(method: MonoMethod) {
+    // FIXME
+    const infoArray = infosByMethod[<any>method];
+    if (!infoArray)
+        return;
+
+    for (let i = 0; i < infoArray.length; i++)
+        delete targetCache[infoArray[i].addr];
+
+    delete infosByMethod[<any>method];
+}
+
 export function mono_interp_jit_wasm_jit_call_trampoline(
     method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
     arg_offsets: VoidPtr, catch_exceptions: number
@@ -227,12 +242,17 @@ export function mono_interp_jit_wasm_jit_call_trampoline(
         arg_offsets, catch_exceptions !== 0
     );
     targetCache[cacheKey] = info;
-    jitQueue.push(info);
+    const jitQueueLength = cwraps.mono_jiterp_tlqueue_add(JitQueue.JitCall, <any>method);
+
+    let ibm = infosByMethod[<any>method];
+    if (!ibm)
+        ibm = infosByMethod[<any>method] = [];
+    ibm.push(info);
 
     // we don't want the queue to get too long, both because jitting too many trampolines
     //  at once can hit the 4kb limit and because it makes it more likely that we will
     //  fail to jit them early enough
-    if (jitQueue.length >= maxJitQueueLength)
+    if (jitQueueLength >= maxJitQueueLength)
         mono_interp_flush_jitcall_queue();
 }
 
@@ -328,7 +348,21 @@ export function mono_jiterp_do_jit_call_indirect(
 }
 
 export function mono_interp_flush_jitcall_queue(): void {
-    if (jitQueue.length === 0)
+    const jitQueue : TrampolineInfo[] = [];
+    let methodPtr = <MonoMethod><any>0;
+    while ((methodPtr = <any>cwraps.mono_jiterp_tlqueue_next(JitQueue.JitCall)) != 0) {
+        const infos = infosByMethod[<any>methodPtr];
+        if (!infos) {
+            mono_log_info(`Failed to find corresponding info list for method ptr ${methodPtr} from jit queue!`);
+            continue;
+        }
+
+        for (let i = 0; i < infos.length; i++)
+            if (infos[i].result === 0)
+                jitQueue.push(infos[i]);
+    }
+
+    if (!jitQueue.length)
         return;
 
     let builder = trampBuilder;
@@ -348,7 +382,7 @@ export function mono_interp_flush_jitcall_queue(): void {
         builder.clear(0);
 
     if (builder.options.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated)) {
-        jitQueue.length = 0;
+        cwraps.mono_jiterp_tlqueue_clear(JitQueue.JitCall);
         return;
     }
 
@@ -377,7 +411,6 @@ export function mono_interp_flush_jitcall_queue(): void {
 
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
-
             const sig: any = {};
 
             if (info.enableDirect) {
@@ -552,8 +585,6 @@ export function mono_interp_flush_jitcall_queue(): void {
         } else if (rejected && !threw) {
             mono_log_error("failed to generate trampoline for unknown reason");
         }
-
-        jitQueue.length = 0;
     }
 }
 

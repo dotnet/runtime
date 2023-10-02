@@ -15,20 +15,17 @@ public class Test_b119294
     public static int m_coSourceLength = 100;
     public static int m_coDestLength = 100;
     [Fact]
-    static public int TestEntryPoint()
+    static public void TestEntryPoint()
     {
         String testenv = Environment.GetEnvironmentVariable("URTBUILDENV");
         if ((testenv == null) || (testenv.ToUpper() != "FRE"))
         {
             Console.WriteLine("Skip the test since %URTBUILDENV% NEQ 'FRE'");
-            return 100;
         }
 
         Test_b119294 t = new Test_b119294();
 
         t.EstablishIdentityTransform();
-
-        return 100;
     }
 
     internal void EstablishIdentityTransform()

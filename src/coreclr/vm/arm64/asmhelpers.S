@@ -174,26 +174,6 @@ C_FUNC(ThePreStubPatchLabel):
     ret lr
 LEAF_END ThePreStubPatch, _TEXT
 
-
-//-----------------------------------------------------------------------------
-// The following Macros help in WRITE_BARRIER Implementations
-// WRITE_BARRIER_ENTRY
-//
-// Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
-// to declare a write barrier function.
-//
-.macro WRITE_BARRIER_ENTRY name
-    LEAF_ENTRY \name, _TEXT
-.endm
-
-// WRITE_BARRIER_END
-//
-// The partner to WRITE_BARRIER_ENTRY, used like NESTED_END.
-//
-.macro WRITE_BARRIER_END name
-    LEAF_END_MARKED \name, _TEXT
-.endm
-
 // void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset)
 //
 // Update shadow copies of the various state info required for barrier
@@ -205,10 +185,10 @@ LEAF_END ThePreStubPatch, _TEXT
 // Align and group state info together so it fits in a single cache line
 // and each entry can be written atomically
 //
-WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
+LEAF_ENTRY JIT_UpdateWriteBarrierState, _TEXT
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -16
 
-    // x0-x7 will contain intended new state
+    // x0-x7, x10 will contain intended new state
     // x8 will preserve skipEphemeralCheck
     // x12 will be used for pointers
 
@@ -223,32 +203,35 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     ldr  x1, [x12]
 #endif
 
-#ifdef WRITE_BARRIER_CHECK
-    PREPARE_EXTERNAL_VAR g_GCShadow, x12
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    PREPARE_EXTERNAL_VAR g_sw_ww_table, x12
     ldr  x2, [x12]
 #endif
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    PREPARE_EXTERNAL_VAR g_sw_ww_table, x12
-    ldr  x3, [x12]
-#endif
-
     PREPARE_EXTERNAL_VAR g_ephemeral_low, x12
-    ldr  x4, [x12]
+    ldr  x3, [x12]
 
     PREPARE_EXTERNAL_VAR g_ephemeral_high, x12
-    ldr  x5, [x12]
+    ldr  x4, [x12]
 
     cbz  x8, LOCAL_LABEL(EphemeralCheckEnabled)
-    movz x4, #0
-    movn x5, #0
+    movz x3, #0
+    movn x4, #0
 LOCAL_LABEL(EphemeralCheckEnabled):
 
     PREPARE_EXTERNAL_VAR g_lowest_address, x12
-    ldr  x6, [x12]
+    ldr  x5, [x12]
 
     PREPARE_EXTERNAL_VAR g_highest_address, x12
+    ldr  x6, [x12]
+
+#ifdef WRITE_BARRIER_CHECK
+    PREPARE_EXTERNAL_VAR g_GCShadow, x12
     ldr  x7, [x12]
+
+    PREPARE_EXTERNAL_VAR g_GCShadowEnd, x12
+    ldr  x10, [x12]
+#endif
 
     // Update wbs state
     PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Table_Loc, x12
@@ -258,11 +241,15 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     stp  x0, x1, [x12], 16
     stp  x2, x3, [x12], 16
     stp  x4, x5, [x12], 16
-    stp  x6, x7, [x12], 16
+    str  x6, [x12], 8
+#ifdef WRITE_BARRIER_CHECK
+    stp  x7, x10, [x12], 16
+#endif
+
 
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
     EPILOG_RETURN
-WRITE_BARRIER_END JIT_UpdateWriteBarrierState
+LEAF_END JIT_UpdateWriteBarrierState
 
 // ------------------------// ------------------------------------------------------------------
 // __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
@@ -277,209 +264,6 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
     ldr     x17, [x17]
     br      x17
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
-
-.balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
-//------------------------------------------
-// Start of the writeable code region
-LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
-    ret  lr
-LEAF_END JIT_PatchedCodeStart, _TEXT
-
-// void JIT_ByRefWriteBarrier
-// On entry:
-//   x13  : the source address (points to object reference to write)
-//   x14  : the destination address (object reference written here)
-//
-// On exit:
-//   x12  : trashed
-//   x13  : incremented by 8
-//   x14  : incremented by 8
-//   x15  : trashed
-//   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-//
-WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
-
-    ldr  x15, [x13], 8
-    b C_FUNC(JIT_CheckedWriteBarrier)
-
-WRITE_BARRIER_END JIT_ByRefWriteBarrier
-
-//-----------------------------------------------------------------------------
-// Simple WriteBarriers
-// void JIT_CheckedWriteBarrier(Object** dst, Object* src)
-// On entry:
-//   x14  : the destination address (LHS of the assignment)
-//   x15  : the object reference (RHS of the assignment)
-//
-// On exit:
-//   x12  : trashed
-//   x14  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
-//   x15  : trashed
-//   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-//
-WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
-    ldr  x12,  LOCAL_LABEL(wbs_lowest_address)
-    cmp  x14,  x12
-
-    ldr  x12, LOCAL_LABEL(wbs_highest_address)
-
-    // Compare against the upper bound if the previous comparison indicated
-    // that the destination address is greater than or equal to the lower
-    // bound. Otherwise, set the C flag (specified by the 0x2) so that the
-    // branch below is not taken.
-    ccmp x14, x12, #0x2, hs
-
-    blo  C_FUNC(JIT_WriteBarrier)
-
-LOCAL_LABEL(NotInHeap):
-    str  x15, [x14], 8
-    ret  lr
-WRITE_BARRIER_END JIT_CheckedWriteBarrier
-
-// void JIT_WriteBarrier(Object** dst, Object* src)
-// On entry:
-//   x14  : the destination address (LHS of the assignment)
-//   x15  : the object reference (RHS of the assignment)
-//
-// On exit:
-//   x12  : trashed
-//   x14  : trashed (incremented by 8 to implement JIT_ByRefWriteBarrier contract)
-//   x15  : trashed
-//   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-//
-WRITE_BARRIER_ENTRY JIT_WriteBarrier
-    stlr  x15, [x14]
-
-#ifdef WRITE_BARRIER_CHECK
-    // Update GC Shadow Heap
-
-    // Do not perform the work if g_GCShadow is 0
-    ldr  x12, LOCAL_LABEL(wbs_GCShadow)
-    cbz  x12, LOCAL_LABEL(ShadowUpdateDisabled)
-
-    // need temporary register. Save before using.
-    str  x13, [sp, #-16]!
-
-    // Compute address of shadow heap location:
-    //   pShadow = g_GCShadow + (x14 - g_lowest_address)
-    ldr  x13, LOCAL_LABEL(wbs_lowest_address)
-    sub  x13, x14, x13
-    add  x12, x13, x12
-
-    // if (pShadow >= g_GCShadowEnd) goto end
-    PREPARE_EXTERNAL_VAR g_GCShadowEnd, x13
-    ldr  x13, [x13]
-    cmp  x12, x13
-    bhs  LOCAL_LABEL(ShadowUpdateEnd)
-
-    // *pShadow = x15
-    str  x15, [x12]
-
-    // Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
-    // conditions are caught by INVALIDGCVALUE.
-    dmb  ish
-
-    // if ([x14] == x15) goto end
-    ldr  x13, [x14]
-    cmp  x13, x15
-    beq LOCAL_LABEL(ShadowUpdateEnd)
-
-    // *pShadow = INVALIDGCVALUE (0xcccccccd)
-    movz x13, #0xcccd
-    movk x13, #0xcccc, LSL #16
-    str  x13, [x12]
-
-LOCAL_LABEL(ShadowUpdateEnd):
-    ldr  x13, [sp], #16
-LOCAL_LABEL(ShadowUpdateDisabled):
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    // Update the write watch table if necessary
-    ldr  x12, LOCAL_LABEL(wbs_sw_ww_table)
-    cbz  x12, LOCAL_LABEL(CheckCardTable)
-    add  x12, x12, x14, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
-    ldrb w17, [x12]
-    cbnz x17, LOCAL_LABEL(CheckCardTable)
-    mov  w17, #0xFF
-    strb w17, [x12]
-#endif
-
-LOCAL_LABEL(CheckCardTable):
-    // Branch to Exit if the reference is not in the Gen0 heap
-    //
-    ldr  x12, LOCAL_LABEL(wbs_ephemeral_low)
-    cbz  x12, LOCAL_LABEL(SkipEphemeralCheck)
-    cmp  x15,  x12
-
-    ldr  x12, LOCAL_LABEL(wbs_ephemeral_high)
-
-    // Compare against the upper bound if the previous comparison indicated
-    // that the destination address is greater than or equal to the lower
-    // bound. Otherwise, set the C flag (specified by the 0x2) so that the
-    // branch to exit is taken.
-    ccmp x15, x12, #0x2, hs
-
-    bhs  LOCAL_LABEL(Exit)
-
-LOCAL_LABEL(SkipEphemeralCheck):
-    // Check if we need to update the card table
-    ldr  x12, LOCAL_LABEL(wbs_card_table)
-    add  x15, x12, x14, lsr #11
-    ldrb w12, [x15]
-    cmp  x12, 0xFF
-    beq  LOCAL_LABEL(Exit)
-
-LOCAL_LABEL(UpdateCardTable):
-    mov  x12, 0xFF
-    strb w12, [x15]
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    // Check if we need to update the card bundle table
-    ldr  x12, LOCAL_LABEL(wbs_card_bundle_table)
-    add  x15, x12, x14, lsr #21
-    ldrb w12, [x15]
-    cmp  x12, 0xFF
-    beq  LOCAL_LABEL(Exit)
-
-LOCAL_LABEL(UpdateCardBundle):
-    mov  x12, 0xFF
-    strb w12, [x15]
-#endif
-
-LOCAL_LABEL(Exit):
-    add  x14, x14, 8
-    ret  lr
-WRITE_BARRIER_END JIT_WriteBarrier
-
-    // Begin patchable literal pool
-    .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
-WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
-LOCAL_LABEL(wbs_begin):
-LOCAL_LABEL(wbs_card_table):
-    .quad 0
-LOCAL_LABEL(wbs_card_bundle_table):
-    .quad 0
-LOCAL_LABEL(wbs_GCShadow):
-    .quad 0
-LOCAL_LABEL(wbs_sw_ww_table):
-    .quad 0
-LOCAL_LABEL(wbs_ephemeral_low):
-    .quad 0
-LOCAL_LABEL(wbs_ephemeral_high):
-    .quad 0
-LOCAL_LABEL(wbs_lowest_address):
-    .quad 0
-LOCAL_LABEL(wbs_highest_address):
-    .quad 0
-WRITE_BARRIER_END JIT_WriteBarrier_Table
-
-
-// ------------------------------------------------------------------
-// End of the writeable code region
-LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
-    ret  lr
-LEAF_END JIT_PatchedCodeLast, _TEXT
 
 // void SinglecastDelegateInvokeStub(Delegate *pThis)
 LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
@@ -929,12 +713,6 @@ LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
 // ------------------------------------------------------------------
-#define PROFILE_ENTER    1
-#define PROFILE_LEAVE    2
-#define PROFILE_TAILCALL 4
-#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 320
-
-// ------------------------------------------------------------------
 .macro GenerateProfileHelper helper, flags
 NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // On entry:
@@ -947,21 +725,21 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     //   Values of other volatile registers are not preserved.
 
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Allocate space and save Fp, Pc.
-    SAVE_ARGUMENT_REGISTERS sp, 16          // Save x8 and argument registers (x0-x7).
-    str     xzr, [sp, 88]                   // Clear functionId.
-    SAVE_FLOAT_ARGUMENT_REGISTERS sp, 96    // Save floating-point/SIMD registers (q0-q7).
-    add     x12, fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
-    stp     x12, x11, [sp, 224]             // Save probeSp, profiledSp.
-    str     xzr, [sp, 240]                  // Clear hiddenArg.
+    SAVE_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__x8  // Save x8 and argument registers (x0-x7).
+    str     xzr, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__functionId]  // Clear functionId.
+    SAVE_FLOAT_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
+    add     x12, fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA  // Compute probeSp - initial value of Sp on entry to the helper.
+    stp     x12, x11, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp]  // Save probeSp, profiledSp.
+    str     xzr, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg]  // Clear hiddenArg.
     mov     w12, \flags
-    stp     w12, wzr, [sp, 248]             // Save flags and clear unused field.
+    stp     w12, wzr, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__flags]  // Save flags and clear unused field.
 
     mov     x0, x10
     mov     x1, sp
     bl      C_FUNC(\helper)
 
-    RESTORE_ARGUMENT_REGISTERS sp, 16       // Restore x8 and argument registers.
-    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, 96 // Restore floating-point/SIMD registers.
+    RESTORE_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__x8  // Restore x8 and argument registers.
+    RESTORE_FLOAT_ARGUMENT_REGISTERS sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters  // Restore floating-point/SIMD registers.
 
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA
     EPILOG_RETURN

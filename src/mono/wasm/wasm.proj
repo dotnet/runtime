@@ -409,6 +409,8 @@
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
+      <_CmakeEnvironmentVariable Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
+      <_CmakeEnvironmentVariable Include="RUN_AOT_COMPILATION=0" Condition="'$(RunAOTCompilation)' != 'true'" />
     </ItemGroup>
 
     <Copy SourceFiles="$(PInvokeTableFile)"
@@ -450,7 +452,7 @@
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
-    <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)" 
+    <Exec Command="$(CMakeBuildRuntimeConfigureCmd)" WorkingDirectory="$(NativeBinDir)"
           EnvironmentVariables="@(_CmakeEnvironmentVariable)" />
     <Exec Command="$(CMakeBuildRuntimeCmd)"  WorkingDirectory="$(NativeBinDir)"
           EnvironmentVariables="@(_CmakeEnvironmentVariable)" />

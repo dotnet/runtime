@@ -1634,6 +1634,13 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
     {
         return false;
     }
+
+    if (IsVNHandle(vn))
+    {
+        assert(CoercedConstantValue<size_t>(vn) != 0);
+        return true;
+    }
+
     VNFuncApp funcAttr;
     return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0;
 }
@@ -1885,7 +1892,6 @@ ValueNum ValueNumStore::VNForGenericCon(var_types typ, uint8_t* cnsVal)
     typ val = {};                                                                                                      \
     memcpy(&val, cnsVal, sizeof(typ));
 
-        case TYP_BOOL:
         case TYP_UBYTE:
         {
             READ_VALUE(uint8_t);
@@ -2045,7 +2051,6 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
 {
     switch (typ)
     {
-        case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
@@ -2116,7 +2121,6 @@ ValueNum ValueNumStore::VNOneForType(var_types typ)
 {
     switch (typ)
     {
-        case TYP_BOOL:
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_SHORT:
@@ -3862,7 +3866,6 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                 case TYP_BYTE:
                     assert(typ == TYP_INT);
                     return VNForIntCon(INT8(arg0Val));
-                case TYP_BOOL:
                 case TYP_UBYTE:
                     assert(typ == TYP_INT);
                     return VNForIntCon(UINT8(arg0Val));
@@ -3945,7 +3948,6 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                         case TYP_BYTE:
                             assert(typ == TYP_INT);
                             return VNForIntCon(INT8(arg0Val));
-                        case TYP_BOOL:
                         case TYP_UBYTE:
                             assert(typ == TYP_INT);
                             return VNForIntCon(UINT8(arg0Val));
@@ -4002,7 +4004,6 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                 case TYP_BYTE:
                     assert(typ == TYP_INT);
                     return VNForIntCon(INT8(arg0Val));
-                case TYP_BOOL:
                 case TYP_UBYTE:
                     assert(typ == TYP_INT);
                     return VNForIntCon(UINT8(arg0Val));
@@ -4044,7 +4045,6 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                 case TYP_BYTE:
                     assert(typ == TYP_INT);
                     return VNForIntCon(INT8(arg0Val));
-                case TYP_BOOL:
                 case TYP_UBYTE:
                     assert(typ == TYP_INT);
                     return VNForIntCon(UINT8(arg0Val));
@@ -4153,7 +4153,6 @@ ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum a
 
     switch (dstType)
     {
-        case TYP_BOOL:
         case TYP_UBYTE:
             memcpy(&int32, bytes, sizeof(int32));
             return VNForIntCon(static_cast<uint8_t>(int32));
@@ -7440,6 +7439,26 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_ShiftLeftLogical:
 #endif
             {
+#ifdef TARGET_XARCH
+                if (TypeOfVN(arg1VN) == TYP_SIMD16)
+                {
+                    // The xarch shift instructions support taking the shift amount as
+                    // a simd16, in which case they take the shift amount from the lower
+                    // 64-bits.
+
+                    uint64_t shiftAmount = GetConstantSimd16(arg1VN).u64[0];
+
+                    if (genTypeSize(baseType) != 8)
+                    {
+                        arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
+                    }
+                    else
+                    {
+                        arg1VN = VNForLongCon(static_cast<int64_t>(shiftAmount));
+                    }
+                }
+#endif // TARGET_XARCH
+
                 return EvaluateBinarySimd(this, GT_LSH, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
@@ -7453,6 +7472,26 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_ShiftRightArithmetic:
 #endif
             {
+#ifdef TARGET_XARCH
+                if (TypeOfVN(arg1VN) == TYP_SIMD16)
+                {
+                    // The xarch shift instructions support taking the shift amount as
+                    // a simd16, in which case they take the shift amount from the lower
+                    // 64-bits.
+
+                    uint64_t shiftAmount = GetConstantSimd16(arg1VN).u64[0];
+
+                    if (genTypeSize(baseType) != 8)
+                    {
+                        arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
+                    }
+                    else
+                    {
+                        arg1VN = VNForLongCon(static_cast<int64_t>(shiftAmount));
+                    }
+                }
+#endif // TARGET_XARCH
+
                 return EvaluateBinarySimd(this, GT_RSH, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
@@ -7465,6 +7504,26 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_ShiftRightLogical:
 #endif
             {
+#ifdef TARGET_XARCH
+                if (TypeOfVN(arg1VN) == TYP_SIMD16)
+                {
+                    // The xarch shift instructions support taking the shift amount as
+                    // a simd16, in which case they take the shift amount from the lower
+                    // 64-bits.
+
+                    uint64_t shiftAmount = GetConstantSimd16(arg1VN).u64[0];
+
+                    if (genTypeSize(baseType) != 8)
+                    {
+                        arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
+                    }
+                    else
+                    {
+                        arg1VN = VNForLongCon(static_cast<int64_t>(shiftAmount));
+                    }
+                }
+#endif // TARGET_XARCH
+
                 return EvaluateBinarySimd(this, GT_RSZ, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
@@ -7891,7 +7950,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 #endif
             {
                 // Handle `x ^ x == 0`
-                return arg0VN;
+                return VNZeroForType(type);
             }
 
             default:
@@ -8758,7 +8817,6 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
         var_types vnt = TypeOfVN(vn);
         switch (vnt)
         {
-            case TYP_BOOL:
             case TYP_BYTE:
             case TYP_UBYTE:
             case TYP_SHORT:
@@ -10355,7 +10413,6 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         case TYP_SHORT:
         case TYP_BYTE:
         case TYP_UBYTE:
-        case TYP_BOOL:
             if (tree->IsIconHandle())
             {
                 const GenTreeIntCon* cns         = tree->AsIntCon();
@@ -10375,13 +10432,11 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 tree->gtVNPair.SetBoth(vnStore->VNForIntCon(int(tree->AsIntConCommon()->IconValue())));
             }
 
-            if (tree->IsCnsIntOrI() && (tree->AsIntCon()->gtFieldSeq != nullptr) &&
-                (tree->AsIntCon()->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+            if (tree->IsCnsIntOrI())
             {
-                // For now we're interested only in SimpleStaticKnownAddress
-                vnStore->AddToFieldAddressToFieldSeqMap(tree->AsIntCon()->gtVNPair.GetLiberal(),
-                                                        tree->AsIntCon()->gtFieldSeq);
+                fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
             }
+
             break;
 
 #ifdef FEATURE_SIMD
@@ -10456,6 +10511,8 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 assert(doesMethodHaveFrozenObjects());
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+
+                fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
             }
             break;
 
@@ -10472,6 +10529,8 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 {
                     tree->gtVNPair.SetBoth(
                         vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+
+                    fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
                 }
                 else
                 {
@@ -10483,6 +10542,29 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         default:
             unreached();
     }
+}
+
+//------------------------------------------------------------------------
+// fgValueNumberRegisterConstFieldSeq: If a VN'd integer constant has a
+// field sequence we want to keep track of, then register it in the side table.
+//
+// Arguments:
+//   tree - the integer constant
+//
+void Compiler::fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree)
+{
+    if (tree->gtFieldSeq == nullptr)
+    {
+        return;
+    }
+
+    if (tree->gtFieldSeq->GetKind() != FieldSeq::FieldKind::SimpleStaticKnownAddress)
+    {
+        return;
+    }
+
+    // For now we're interested only in SimpleStaticKnownAddress
+    vnStore->AddToFieldAddressToFieldSeqMap(tree->gtVNPair.GetLiberal(), tree->gtFieldSeq);
 }
 
 //------------------------------------------------------------------------

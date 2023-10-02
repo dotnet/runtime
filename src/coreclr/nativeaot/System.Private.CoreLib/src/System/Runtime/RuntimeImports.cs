@@ -343,6 +343,38 @@ namespace System.Runtime
         internal static extern void RhHandleSetDependentSecondary(IntPtr handle, object secondary);
 
         //
+        // calls to runtime for thunk pool
+        //
+
+        [RuntimeImport(RuntimeLibrary, "RhpGetNumThunkBlocksPerMapping")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int RhpGetNumThunkBlocksPerMapping();
+
+        [RuntimeImport(RuntimeLibrary, "RhpGetNumThunksPerBlock")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int RhpGetNumThunksPerBlock();
+
+        [RuntimeImport(RuntimeLibrary, "RhpGetThunkSize")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int RhpGetThunkSize();
+
+        [RuntimeImport(RuntimeLibrary, "RhpGetThunkDataBlockAddress")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr RhpGetThunkDataBlockAddress(IntPtr thunkStubAddress);
+
+        [RuntimeImport(RuntimeLibrary, "RhpGetThunkStubsBlockAddress")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr RhpGetThunkStubsBlockAddress(IntPtr thunkDataAddress);
+
+        [RuntimeImport(RuntimeLibrary, "RhpGetThunkBlockSize")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int RhpGetThunkBlockSize();
+
+        [LibraryImport(RuntimeLibrary, EntryPoint = "RhAllocateThunksMapping")]
+        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static partial IntPtr RhAllocateThunksMapping();
+
+        //
         // calls to runtime for type equality checks
         //
 
@@ -466,30 +498,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpResolveInterfaceMethod")]
         internal static extern IntPtr RhpResolveInterfaceMethod(object pObject, IntPtr pCell);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCreateThunksHeap")]
-        internal static extern object RhCreateThunksHeap(IntPtr commonStubAddress);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhAllocateThunk")]
-        internal static extern IntPtr RhAllocateThunk(object thunksHeap);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhFreeThunk")]
-        internal static extern void RhFreeThunk(object thunksHeap, IntPtr thunkAddress);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhSetThunkData")]
-        internal static extern void RhSetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTryGetThunkData")]
-        internal static extern bool RhTryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetThunkSize")]
-        internal static extern int RhGetThunkSize();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatchOnType")]

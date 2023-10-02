@@ -144,6 +144,9 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_interp_entry_func", "number", ["number"]],
     [true, "mono_jiterp_get_counter", "number", ["number"]],
     [true, "mono_jiterp_modify_counter", "number", ["number", "number"]],
+    [true, "mono_jiterp_tlqueue_next", "number", ["number"]],
+    [true, "mono_jiterp_tlqueue_add", "number", ["number", "number"]],
+    [true, "mono_jiterp_tlqueue_clear", "void", ["number"]],
 
     ...diagnostics_cwraps,
     ...legacy_interop_cwraps
@@ -283,6 +286,11 @@ export interface t_Cwraps {
     mono_jiterp_get_interp_entry_func(type: number): number;
     mono_jiterp_get_counter(counter: number): number;
     mono_jiterp_modify_counter(counter: number, delta: number): number;
+    // returns value or, if queue is empty, VoidPtrNull
+    mono_jiterp_tlqueue_next(queue: number): VoidPtr;
+    // returns new size of queue after add
+    mono_jiterp_tlqueue_add(queue: number, value: VoidPtr): number;
+    mono_jiterp_tlqueue_clear(queue: number): void;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

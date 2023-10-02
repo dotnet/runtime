@@ -2,15 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 
 #pragma warning disable 0414
 
 namespace System.Reflection.Tests
 {
-    public class ConstructorInfoTests
+    /// <summary>
+    /// These tests use the shared tests from the base class with ConstructorInfo.Invoke.
+    /// </summary>
+    public sealed class ConstructorInfoTests : ConstructorCommonTests
     {
+        public override object Invoke(ConstructorInfo constructorInfo, object?[]? parameters)
+        {
+            return constructorInfo.Invoke(parameters);
+        }
+
+        public override object? Invoke(ConstructorInfo constructorInfo, object obj, object?[]? parameters)
+        {
+            return constructorInfo.Invoke(obj, parameters);
+        }
+
+        protected override bool IsExceptionWrapped => true;
+
         [Fact]
         public void ConstructorName()
         {
@@ -50,15 +64,6 @@ namespace System.Reflection.Tests
             }
         }
 
-        [Fact]
-        public void Invoke()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            Assert.Equal(3, constructors.Length);
-            ClassWith3Constructors obj = (ClassWith3Constructors)constructors[0].Invoke(null);
-            Assert.NotNull(obj);
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInvokingStaticConstructorsSupported))]
         public void Invoke_StaticConstructor_NullObject_NullParameters()
         {
@@ -89,44 +94,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15024", TestRuntimes.Mono)]
-        public void Invoke_StaticConstructor_ThrowsMemberAccessException()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructor));
-            Assert.Equal(1, constructors.Length);
-            Assert.Throws<MemberAccessException>(() => constructors[0].Invoke(new object[0]));
-        }
-
-        [Fact]
-        public void Invoke_OneDimensionalArray()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(object[]));
-            int[] arraylength = { 1, 2, 99, 65535 };
-
-            // Try to invoke Array ctors with different lengths
-            foreach (int length in arraylength)
-            {
-                // Create big Array with elements
-                object[] arr = (object[])constructors[0].Invoke(new object[] { length });
-                Assert.Equal(arr.Length, length);
-            }
-        }
-
-        [Fact]
-        public void Invoke_OneDimensionalArray_NegativeLengths_ThrowsOverflowException()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(object[]));
-            int[] arraylength = new int[] { -1, -2, -99 };
-            // Try to invoke Array ctors with different lengths
-            foreach (int length in arraylength)
-            {
-                // Create big Array with elements
-                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[0].Invoke(new object[] { length }));
-                Assert.IsType<OverflowException>(ex.InnerException);
-            }
-        }
-
-        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoDimensionalArray_CustomBinder_IncorrectTypeArguments()
         {
@@ -136,23 +103,6 @@ namespace System.Reflection.Tests
             Assert.Equal(2, arr.Length);
             Assert.True(args[0] is int);
             Assert.True(args[1] is int);
-        }
-
-        [Fact]
-        public void Invoke_OneParameter()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            ClassWith3Constructors obj = (ClassWith3Constructors)constructors[1].Invoke(new object[] { 100 });
-            Assert.Equal(100, obj.intValue);
-        }
-
-        [Fact]
-        public void Invoke_TwoParameters()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            ClassWith3Constructors obj = (ClassWith3Constructors)constructors[2].Invoke(new object[] { 101, "hello" });
-            Assert.Equal(101, obj.intValue);
-            Assert.Equal("hello", obj.stringValue);
         }
 
         [Fact]
@@ -170,66 +120,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void Invoke_NoParameters_ThowsTargetParameterCountException()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            Assert.Throws<TargetParameterCountException>(() => constructors[2].Invoke(new object[0]));
-        }
-
-        [Fact]
-        public void Invoke_ParameterMismatch_ThrowsTargetParameterCountException()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            Assert.Throws<TargetParameterCountException>(() => (ClassWith3Constructors)constructors[2].Invoke(new object[] { 121 }));
-        }
-
-        [Fact]
-        public void Invoke_ParameterWrongType_ThrowsArgumentException()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            AssertExtensions.Throws<ArgumentException>(null, () => (ClassWith3Constructors)constructors[1].Invoke(new object[] { "hello" }));
-        }
-
-        [Fact]
-        public void Invoke_ExistingInstance()
-        {
-            // Should not produce a second object.
-            ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            ClassWith3Constructors obj1 = new ClassWith3Constructors(100, "hello");
-            ClassWith3Constructors obj2 = (ClassWith3Constructors)constructors[2].Invoke(obj1, new object[] { 999, "initialized" });
-            Assert.Null(obj2);
-            Assert.Equal(999, obj1.intValue);
-            Assert.Equal("initialized", obj1.stringValue);
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15026", TestRuntimes.Mono)]
-        public void Invoke_AbstractClass_ThrowsMemberAccessException()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(ConstructorInfoAbstractBase));
-            Assert.Throws<MemberAccessException>(() => (ConstructorInfoAbstractBase)constructors[0].Invoke(new object[0]));
-        }
-
-        [Fact]
-        public void Invoke_SubClass()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(ConstructorInfoDerived));
-            ConstructorInfoDerived obj = null;
-            obj = (ConstructorInfoDerived)constructors[0].Invoke(new object[] { });
-            Assert.NotNull(obj);
-        }
-
-        [Fact]
-        public void Invoke_Struct()
-        {
-            ConstructorInfo[] constructors = GetConstructors(typeof(StructWith1Constructor));
-            StructWith1Constructor obj;
-            obj = (StructWith1Constructor)constructors[0].Invoke(new object[] { 1, 2 });
-            Assert.Equal(1, obj.x);
-            Assert.Equal(2, obj.y);
-        }
-
-        [Fact]
         public void IsConstructor_ReturnsTrue()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
@@ -243,9 +133,18 @@ namespace System.Reflection.Tests
             Assert.True(constructors[0].IsPublic);
         }
 
-        public static ConstructorInfo[] GetConstructors(Type type)
+        // Use this class only from the Invoke_StaticConstructorMultipleTimes method
+        public static class ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection
         {
-            return type.GetTypeInfo().DeclaredConstructors.ToArray();
+            public static class VisibleStatics
+            {
+                public static int s_cctorCallCount;
+            }
+
+            static ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection()
+            {
+                VisibleStatics.s_cctorCallCount++;
+            }
         }
     }
 
@@ -279,20 +178,6 @@ namespace System.Reflection.Tests
     public static class ClassWithStaticConstructor
     {
         static ClassWithStaticConstructor() { }
-    }
-
-    // Use this class only from the Invoke_StaticConstructorMultipleTimes method
-    public static class ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection
-    {
-        public static class VisibleStatics
-        {
-            public static int s_cctorCallCount;
-        }
-
-        static ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection()
-        {
-            VisibleStatics.s_cctorCallCount++;
-        }
     }
 
     public struct StructWith1Constructor

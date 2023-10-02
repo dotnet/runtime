@@ -722,6 +722,11 @@ struct BasicBlock : private LIR::Range
         return KindIs(kind) || KindIs(rest...);
     }
 
+    bool HasTerminator()
+    {
+        return KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_COND, BBJ_SWITCH, BBJ_RETURN);
+    }
+
     // NumSucc() gives the number of successors, and GetSucc() returns a given numbered successor.
     //
     // There are two versions of these functions: ones that take a Compiler* and ones that don't. You must
@@ -1122,6 +1127,7 @@ struct BasicBlock : private LIR::Range
 
     Statement* firstStmt() const;
     Statement* lastStmt() const;
+    bool       hasSingleStmt() const;
 
     // Statements: convenience method for enabling range-based `for` iteration over the statement list, e.g.:
     //    for (Statement* const stmt : block->Statements())
@@ -1226,6 +1232,9 @@ struct BasicBlock : private LIR::Range
 
     template <typename TFunc>
     BasicBlockVisit VisitAllSuccs(Compiler* comp, TFunc func);
+
+    template <typename TFunc>
+    BasicBlockVisit VisitRegularSuccs(Compiler* comp, TFunc func);
 
     bool HasPotentialEHSuccs(Compiler* comp);
 

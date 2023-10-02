@@ -13,7 +13,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace Microsoft.Extensions.Options.Generators
 {
     [Generator]
-    public class Generator : IIncrementalGenerator
+    public class OptionsValidatorGenerator : IIncrementalGenerator
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
