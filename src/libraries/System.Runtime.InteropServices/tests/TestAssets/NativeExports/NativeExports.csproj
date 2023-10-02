@@ -26,9 +26,8 @@
   <!-- Until we use the live app host, use a prebuilt from the SDK.
        Issue: https://github.com/dotnet/runtime/issues/58109. -->
   <ItemGroup Condition="'$(UseLocalAppHostPack)' != 'true' and '$(NetCoreAppToolCurrent)' != '$(NetCoreAppCurrent)'">
-    <KnownAppHostPack Include="@(KnownAppHostPack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))">
-      <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    </KnownAppHostPack>
+    <KnownAppHostPack Include="@(KnownAppHostPack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))"
+                      TargetFramework="$(NetCoreAppCurrent)" />
   </ItemGroup>
 
   <ItemGroup>
