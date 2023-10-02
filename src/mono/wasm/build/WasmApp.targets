@@ -486,7 +486,7 @@
       <FileWrites Include="$(WasmRunV8ScriptPath)" />
     </ItemGroup>
 
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunV8ScriptPath)" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x '$(WasmRunV8ScriptPath)'" />
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">
