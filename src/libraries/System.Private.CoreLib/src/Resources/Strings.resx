@@ -3635,6 +3635,9 @@
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error "{0}".</value>
   </data>
+  <data name="Unix_SystemCallErrors" xml:space="preserve">
+    <value>One or more system calls failed: {0}</value>
+  </data>
   <data name="Verification_Exception" xml:space="preserve">
     <value>Operation could destabilize the runtime.</value>
   </data>

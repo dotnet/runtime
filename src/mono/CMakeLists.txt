@@ -16,6 +16,18 @@ if (MSVC)
   if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
     add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif()
+
+  # FIXME This is all questionable but the logs are flooded and nothing else is fixing them.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4090>) # W1: const problem
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4100>) # W4: unreferenced formal parameter
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4152>) # W4: nonstandard extension, function/data pointer conversion in expression
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4201>) # W4: nonstandard extension used: nameless struct/union
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4210>) # W4: nonstandard extension used: function given file scope
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # W4: signed/unsigned mismatch
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4389>) # W4: signed/unsigned mismatch
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4505>) # W4: unreferenced function with internal linkage has been removed
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4702>) # W4: unreachable code
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4706>) # W4: assignment within conditional expression
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
@@ -76,7 +88,6 @@ if(ENABLE_MINIMAL)
 endif()
 
 set(DISABLE_COM 1)
-set(DISABLE_DLLMAP 1)
 
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
@@ -102,7 +113,6 @@ if(GCC)
   set(USE_GCC_ATOMIC_OPS 1)
 endif()
 
-set(HAVE_CLASSIC_WINAPI_SUPPORT 1)
 set(HAVE_MOVING_COLLECTOR 1)
 set(HAVE_CONC_GC_AS_DEFAULT 1)
 set(MONO_INSIDE_RUNTIME 1)
@@ -599,9 +609,7 @@ if(LLVM_PREFIX)
 
   # llvm-config --libs analysis core bitwriter mcjit orcjit
   set(MONO_llvm_core_libs "LLVMOrcJIT" "LLVMPasses" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMScalarOpts" "LLVMLinker" "LLVMIRReader" "LLVMAsmParser" "LLVMInstCombine" "LLVMFrontendOpenMP" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
-  if(${llvm_api_version} LESS 1200)
-    set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMOrcError" "LLVMDebugInfoMSF")
-  elseif(${llvm_api_version} LESS 1600)
+  if(${llvm_api_version} LESS 1600)
     set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMObjCARCOpts" "LLVMMCDisassembler" "LLVMOrcTargetProcess" "LLVMOrcShared" "LLVMDebugInfoDWARF")
   else()
     set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMIRPrinter" "LLVMCodeGen" "LLVMObjCARCOpts" "LLVMMCDisassembler" "LLVMWindowsDriver" "LLVMOption" "LLVMOrcTargetProcess" "LLVMOrcShared"  "LLVMSymbolize" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMTargetParser")
@@ -798,7 +806,6 @@ if(HOST_WIN32)
   set(EGLIB_PATHSEP "\\\\")
   set(EGLIB_SEARCHSEP ";")
   set(EGLIB_OS "WIN32")
-  set(EGLIB_PIDTYPE "void *")
   if(HOST_AMD64 OR HOST_ARM64)
     set(EGLIB_GSIZE_FORMAT "\"Iu\"")
   else()
@@ -816,7 +823,6 @@ else()
   set(EGLIB_PATHSEP "/")
   set(EGLIB_SEARCHSEP ":")
   set(EGLIB_OS "UNIX")
-  set(EGLIB_PIDTYPE "int")
   set(EGLIB_GSIZE_FORMAT "\"zu\"")
 endif()
 

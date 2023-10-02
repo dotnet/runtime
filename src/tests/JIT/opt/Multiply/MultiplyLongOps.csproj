@@ -14,5 +14,6 @@
 
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_EnableHWIntrinsic" Value="1" />
   </ItemGroup>
 </Project>

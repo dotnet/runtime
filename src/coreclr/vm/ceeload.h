@@ -79,21 +79,6 @@ class EnCEEClassData;
 #define METHOD_STUBS_HASH_BUCKETS 11
 #define GUID_TO_TYPE_HASH_BUCKETS 16
 
-// The native symbol reader dll name
-#if defined(HOST_AMD64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.amd64.dll")
-#elif defined(HOST_X86)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.x86.dll")
-#elif defined(HOST_ARM)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
-#elif defined(HOST_ARM64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
-#elif defined(HOST_LOONGARCH64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.loongarch64.dll")
-#elif defined(HOST_RISCV64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.riscv64.dll")
-#endif
-
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
 //

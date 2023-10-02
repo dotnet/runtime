@@ -49,7 +49,7 @@
 #define TARGET_WIN32_MSVC
 #endif
 
-#if LLVM_API_VERSION < 1100
+#if LLVM_API_VERSION < 1400
 #error "The version of the mono llvm repository is too old."
 #endif
 
@@ -7812,10 +7812,10 @@ MONO_RESTORE_WARNING
 				LLVMTypeRef etype = type_to_llvm_type (ctx, t);
 
 				if (!addresses [ins->sreg1]) {
-					addresses [ins->sreg1] = create_address (ctx->module, build_named_alloca (ctx, t, "llvm_outarg_vt"), etype);
+					g_assert (!addresses [ins->dreg]);
+					addresses [ins->dreg] = create_address (ctx->module, build_named_alloca (ctx, t, "llvm_outarg_vt"), etype);
 					g_assert (values [ins->sreg1]);
-					LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], etype), addresses [ins->sreg1]->value);
-					addresses [ins->dreg] = addresses [ins->sreg1];
+					LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], etype), addresses [ins->dreg]->value);
 				} else if (ainfo->storage == LLVMArgVtypeAddr || values [ins->sreg1] == addresses [ins->sreg1]->value) {
 					/* LLVMArgVtypeByRef/LLVMArgVtypeAddr, have to make a copy */
 					addresses [ins->dreg] = build_alloca_address (ctx, t);
@@ -7866,11 +7866,7 @@ MONO_RESTORE_WARNING
 
 				indexes [0] = const_int32 (0);
 				indexes [1] = const_int32 (0);
-#if LLVM_API_VERSION >= 1400
 				LLVMSetInitializer (ref_var, LLVMConstGEP2 (name_var_type, name_var, indexes, 2));
-#else
-				LLVMSetInitializer (ref_var, LLVMConstGEP (name_var, indexes, 2));
-#endif
 				LLVMSetLinkage (ref_var, LLVMPrivateLinkage);
 				LLVMSetExternallyInitialized (ref_var, TRUE);
 				LLVMSetSection (ref_var, "__DATA, __objc_selrefs, literal_pointers, no_dead_strip");
@@ -13505,11 +13501,7 @@ add_types (MonoLLVMModule *module)
 void
 mono_llvm_init (gboolean enable_jit)
 {
-#if LLVM_API_VERSION >= 1400
 	ptr_t = mono_llvm_get_ptr_type ();
-#else
-	ptr_t = NULL;
-#endif
 
 	intrin_types [0][0] = i1_t = LLVMInt8Type ();
 	intrin_types [0][1] = i2_t = LLVMInt16Type ();

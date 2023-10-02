@@ -1966,7 +1966,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 
     /* Mark the node as having a side-effect - i.e. cannot be
      * moved around since it is tied to a fixed location (EAX) */
-    arg->gtFlags |= GTF_ORDER_SIDEEFF;
+    arg->SetHasOrderingSideEffect();
 
 #if defined(JIT32_GCENCODER)
     const bool forceInsertNewBlock = isSingleBlockFilter || compStressCompile(STRESS_CATCH_ARG, 5);
@@ -9260,7 +9260,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 /* V4.0 allows assignment of i4 constant values to i8 type vars when IL verifier is bypassed (full
-                trust apps). The reason this works is that JIT stores an i4 constant in Gentree union during
+                trust apps). The reason this works is that JIT stores an i4 constant in GenTree union during
                 importation and reads from the union as if it were a long during code generation. Though this
                 can potentially read garbage, one can get lucky to have this working correctly.
 
@@ -9823,8 +9823,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 // byref is literally 0, and since the byref
                                 // leaks out here, we need to ensure it is
                                 // nullchecked.
-                                nullcheck->gtFlags |= GTF_ORDER_SIDEEFF;
-                                boxPayloadAddress->gtFlags |= GTF_ORDER_SIDEEFF;
+                                nullcheck->SetHasOrderingSideEffect();
+                                boxPayloadAddress->SetHasOrderingSideEffect();
                                 GenTree* result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
                                 impPushOnStack(result, tiRetVal);
                                 break;

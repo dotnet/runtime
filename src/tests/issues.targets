@@ -2387,15 +2387,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case9/**">
             <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case04/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case05/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/RefFields/Validate/**">
             <Issue>expected failure: unsupported type with ref field fails at AOT compile time, not runtime</Issue>
         </ExcludeList>
@@ -3739,7 +3730,7 @@
             <FilteredExcludeList
                 Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)').Replace('\', '/'))"
                 Condition="'%(ExcludeList.Extension)' == '.dll'" />
-            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.RootDir)%(ExcludeList.Directory)%(ExcludeList.FileName)'))', '.cmd').Replace('\', '/'))"
+            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.Identity)'))', '.cmd').Replace('\', '/'))"
                 Condition="'%(ExcludeList.Extension)' == '.OutOfProcessTest'" />
       </ItemGroup>
     </Target>

@@ -224,13 +224,12 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 
 // g_coreclr_embedded indicates that coreclr is linked directly into the program
 // g_hostpolicy_embedded indicates that the hostpolicy library is linked directly into the executable
-// Note: that it can happen that the hostpolicy is embedded but coreclr isn't (on Windows singlefilehost is built that way)
 #ifdef CORECLR_EMBEDDED
 bool g_coreclr_embedded = true;
 bool g_hostpolicy_embedded = true; // We always embed hostpolicy if coreclr is also embedded
 #else
 bool g_coreclr_embedded = false;
-bool g_hostpolicy_embedded = false; // In this case the value may come from a runtime property and may change
+bool g_hostpolicy_embedded = false;
 #endif
 
 // Remember how the last startup of EE went.

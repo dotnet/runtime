@@ -1120,7 +1120,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 if (sizeVal != 0)
                 {
                     // Compute the amount of memory to properly STACK_ALIGN.
-                    // Note: The Gentree node is not updated here as it is cheap to recompute stack aligned size.
+                    // Note: The GenTree node is not updated here as it is cheap to recompute stack aligned size.
                     // This should also help in debugging as we can examine the original size specified with
                     // localloc.
                     sizeVal = AlignUp(sizeVal, STACK_ALIGN);
@@ -1548,25 +1548,41 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
     else if (HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id))
     {
-        if ((intrin.id == NI_AdvSimd_VectorTableLookup) || (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup))
+        switch (intrin.id)
         {
-            assert(intrin.op2 != nullptr);
-            srcCount += BuildOperandUses(intrin.op2);
+            case NI_AdvSimd_VectorTableLookup:
+            case NI_AdvSimd_Arm64_VectorTableLookup:
+                assert(intrin.op2 != nullptr);
+                srcCount += BuildOperandUses(intrin.op2);
+                assert(dstCount == 1);
+                buildInternalRegisterUses();
+                BuildDef(intrinsicTree);
+                *pDstCount = 1;
+                break;
+
+            case NI_AdvSimd_VectorTableLookupExtension:
+            case NI_AdvSimd_Arm64_VectorTableLookupExtension:
+                assert(intrin.op2 != nullptr);
+                assert(intrin.op3 != nullptr);
+                assert(isRMW);
+                srcCount += BuildConsecutiveRegistersForUse(intrin.op2, intrin.op1);
+                srcCount += BuildDelayFreeUses(intrin.op3, intrin.op1);
+                assert(dstCount == 1);
+                buildInternalRegisterUses();
+                BuildDef(intrinsicTree);
+                *pDstCount = 1;
+                break;
+            case NI_AdvSimd_StoreVector64x2:
+            case NI_AdvSimd_Arm64_StoreVector128x2:
+                assert(intrin.op1 != nullptr);
+                srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
+                assert(dstCount == 0);
+                buildInternalRegisterUses();
+                *pDstCount = 0;
+                break;
+            default:
+                noway_assert(!"Not a supported as multiple consecutive register intrinsic");
         }
-        else
-        {
-            assert(intrin.op2 != nullptr);
-            assert(intrin.op3 != nullptr);
-            assert((intrin.id == NI_AdvSimd_VectorTableLookupExtension) ||
-                   (intrin.id == NI_AdvSimd_Arm64_VectorTableLookupExtension));
-            assert(isRMW);
-            srcCount += BuildConsecutiveRegistersForUse(intrin.op2, intrin.op1);
-            srcCount += BuildDelayFreeUses(intrin.op3, intrin.op1);
-        }
-        assert(dstCount == 1);
-        buildInternalRegisterUses();
-        BuildDef(intrinsicTree);
-        *pDstCount = 1;
         return srcCount;
     }
     else if (intrin.op2 != nullptr)
