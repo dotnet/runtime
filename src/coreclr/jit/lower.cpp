@@ -7859,12 +7859,13 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
             return false;
         }
 
-        if (((index != nullptr) && !index->OperIs(GT_LCL_VAR)) ||
-            comp->lvaVarAddrExposed(index->AsLclVar()->GetLclNum()))
+        if ((index != nullptr) &&
+            (!index->OperIs(GT_LCL_VAR) || comp->lvaVarAddrExposed(index->AsLclVar()->GetLclNum())))
         {
             // Index should be either nullptr or a local.
             return false;
         }
+
         data->baseAddr = base == nullptr ? nullptr : base;
         data->index    = index == nullptr ? nullptr : index;
         data->scale    = ind->Addr()->AsAddrMode()->GetScale();
