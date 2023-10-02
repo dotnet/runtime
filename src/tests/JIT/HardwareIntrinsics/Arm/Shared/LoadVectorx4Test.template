@@ -22,7 +22,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [Fact]
         public static void {TestName}()
         {
-            var test = new LoadVector{Op1VectorType}x4Test__{Op1BaseType}();
+            var test = new {TestName}Test();
             if (test.IsSupported)
             {
                 // Validates basic functionality works
@@ -53,7 +53,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class LoadVector{Op1VectorType}x4Test__{Op1BaseType}
+    public sealed unsafe class {TestName}Test
     {
         private struct DataTable
         {
@@ -134,7 +134,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return new TestStruct();
             }
 
-            public void RunStructFldScenario(LoadVector{Op1VectorType}x4Test__{Op1BaseType} testClass)
+            public void RunStructFldScenario({TestName}Test testClass)
             {
                 (_fld1, _fld2, _fld3, _fld4) = {Isa}.{Method}(({Op1BaseType}*)testClass._dataTable.inArrayPtr);
 
@@ -156,7 +156,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        public LoadVector{Op1VectorType}x4Test__{Op1BaseType}()
+        public {TestName}Test()
         {
             Succeeded = true;
             for (var i = 0; i < OpElementCount; i++) { _data[i] = {NextValueOp2}; }
