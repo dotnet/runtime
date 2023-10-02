@@ -175,6 +175,9 @@ namespace System.Net.Security
         private int _nestedWrite;
         private int _nestedRead;
 
+        private PoolingPointerMemoryManager? _readPointerMemoryManager;
+        private PoolingPointerMemoryManager? _writePointerMemoryManager;
+
         public SslStream(Stream innerStream)
                 : this(innerStream, false, null, null)
         {
@@ -714,6 +717,15 @@ namespace System.Net.Security
             }
         }
 
+        private static unsafe PoolingPointerMemoryManager RentPointerMemoryManager(ref PoolingPointerMemoryManager? field, void* pointer, int length)
+        {
+            // we get null when called for the first-time, or concurrent read or write operation
+            var manager = Interlocked.Exchange(ref field, null) ?? new PoolingPointerMemoryManager();
+
+            manager.Reset(pointer, length);
+            return manager;
+        }
+
         public override int ReadByte()
         {
             ThrowIfExceptionalOrNotAuthenticated();
@@ -756,11 +768,18 @@ namespace System.Net.Security
 
             fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
             {
-                using var memoryManager = new PointerMemoryManager<byte>(ptr, buffer.Length);
+                var memoryManager = RentPointerMemoryManager(ref _readPointerMemoryManager, ptr, buffer.Length);
 
-                ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
-                Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
-                return vt.GetAwaiter().GetResult();
+                try
+                {
+                    ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
+                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                    return vt.GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    _readPointerMemoryManager = memoryManager;
+                }
             }
         }
 
@@ -779,11 +798,18 @@ namespace System.Net.Security
 
             fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
             {
-                using var memoryManager = new PointerMemoryManager<byte>(ptr, buffer.Length);
+                var memoryManager = RentPointerMemoryManager(ref _writePointerMemoryManager, ptr, buffer.Length);
 
-                ValueTask vt = WriteAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
-                Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
-                vt.GetAwaiter().GetResult();
+                try
+                {
+                    ValueTask vt = WriteAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
+                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                    vt.GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    _writePointerMemoryManager = memoryManager;
+                }
             }
         }
 
@@ -917,6 +943,36 @@ namespace System.Net.Security
         private static void ThrowNotAuthenticated()
         {
             throw new InvalidOperationException(SR.net_auth_noauth);
+        }
+
+        internal sealed unsafe class PoolingPointerMemoryManager : MemoryManager<byte>
+        {
+            private void* _pointer;
+            private int _length;
+
+            protected override void Dispose(bool disposing)
+            {
+            }
+
+            public void Reset(void* pointer, int length)
+            {
+                _pointer = pointer;
+                _length = length;
+            }
+
+            public override Span<byte> GetSpan()
+            {
+                return new Span<byte>(_pointer, _length);
+            }
+
+            public override MemoryHandle Pin(int elementIndex = 0)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Unpin()
+            {
+            }
         }
     }
 }

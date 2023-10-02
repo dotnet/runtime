@@ -95,8 +95,6 @@
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
              Link="Common\System\Net\SecurityProtocol.cs" />
     <!-- Common -->
-    <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
-             Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs"
