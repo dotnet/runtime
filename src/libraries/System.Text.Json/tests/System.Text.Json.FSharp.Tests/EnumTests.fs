@@ -15,13 +15,6 @@ type BadEnum =
 let badEnum = BadEnum.``There's a comma, in my name`` ||| BadEnum.``There's a comma, even here``
 let badEnumJsonStr = $"\"{badEnum}\""
 
-type NumericLabelEnum =
-  | ``1`` = 1
-  | ``2`` = 2
-  | ``3`` = 4
-  
-let enumWithNonMatchedUnderlyingNumericValueJsonStr = "\"3\""
-
 let badEnumWithGoodValue = BadEnum.ThisisagoodEnumValue
 let badEnumWithGoodValueJsonStr = $"\"{badEnumWithGoodValue}\""
 
@@ -69,6 +62,11 @@ let ``Fail Serialize Good Value Of Bad Enum Type`` () =
     Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
     Assert.Equal("Enum type 'BadEnum' uses unsupported identifer name 'There's a comma, in my name'.", ex.InnerException.Message)
 
+type NumericLabelEnum =
+  | ``1`` = 1
+  | ``2`` = 2
+  | ``3`` = 4
+
 [<Theory>]
 [<InlineData("\"1\"")>]
 [<InlineData("\"2\"")>]
@@ -92,6 +90,6 @@ let ``Successful Deserialize Numeric label Of Enum When Allowing Integer Values`
     
 [<Fact>]
 let ``Successful Deserialize Numeric label Of Enum But as Underlying value When Allowing Integer Values`` () =
-    let actual = JsonSerializer.Deserialize<NumericLabelEnum>(enumWithNonMatchedUnderlyingNumericValueJsonStr, options)
+    let actual = JsonSerializer.Deserialize<NumericLabelEnum>("\"3\"", options)
     Assert.NotEqual(NumericLabelEnum.``3``, actual)
     Assert.Equal(LanguagePrimitives.EnumOfValue 3, actual)
