@@ -227,7 +227,7 @@ namespace LibObjectFile.Elf
                     diagnostics.Error(DiagnosticId.ELF_ERR_InvalidSymbolEntrySectionParent, $"Invalid section for the symbol entry #{i} in the {nameof(ElfSymbolTable)} section [{Index}]. The section of the entry `{entry}` must the same than this symbol table section");
                 }
 
-                stringTable.GetOrCreateIndex(entry.Name);
+                stringTable.ReserveString(entry.Name);
 
                 // Update the last local index
                 if (entry.Bind == ElfSymbolBind.Local)

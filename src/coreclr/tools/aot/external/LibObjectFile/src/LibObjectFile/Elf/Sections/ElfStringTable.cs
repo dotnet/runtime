@@ -17,6 +17,7 @@ namespace LibObjectFile.Elf
     public class ElfStringTable : ElfSection
     {
         private readonly MemoryStream _table;
+        private readonly List<string> _reservedStrings;
         private readonly Dictionary<string, uint> _mapStringToIndex;
         private readonly Dictionary<uint, string> _mapIndexToString;
 
@@ -35,8 +36,9 @@ namespace LibObjectFile.Elf
             _table = new MemoryStream(capacityInBytes);
             _mapStringToIndex = new Dictionary<string, uint>();
             _mapIndexToString = new Dictionary<uint, string>();
+            _reservedStrings = new List<string>();
             // Always create an empty string
-            GetOrCreateIndex(string.Empty);
+            CreateIndex(string.Empty);
         }
 
         public override ElfSectionType Type
@@ -55,6 +57,7 @@ namespace LibObjectFile.Elf
         public override void UpdateLayout(DiagnosticBag diagnostics)
         {
             if (diagnostics == null) throw new ArgumentNullException(nameof(diagnostics));
+            if (_reservedStrings.Count > 0) FlushReservedStrings();
             Size = (ulong)_table.Length;
         }
 
@@ -73,21 +76,136 @@ namespace LibObjectFile.Elf
             writer.Stream.Write(_table.GetBuffer(), 0, (int)_table.Length);
         }
 
-        public uint GetOrCreateIndex(string text)
+        internal void ReserveString(string text)
         {
-            // Same as empty string
-            if (text == null) return 0;
-
-            if (_mapStringToIndex.TryGetValue(text, out uint index))
+            if (text is object && !_mapStringToIndex.ContainsKey(text))
             {
-                return index;
+                _reservedStrings.Add(text);
+            }
+        }
+
+        internal void FlushReservedStrings()
+        {
+            // TODO: Use CollectionsMarshal.AsSpan
+            string[] reservedStrings = _reservedStrings.ToArray();
+
+            // Pre-sort the string based on their matching suffix
+            MultiKeySort(reservedStrings, 0);
+
+            // Add the strings to string table
+            string lastText = null;
+            for (int i = 0; i < reservedStrings.Length; i++)
+            {
+                var text = reservedStrings[i];
+                uint index;
+                if (lastText != null && lastText.EndsWith(text, StringComparison.Ordinal))
+                {
+                    // Suffix matches the last symbol
+                    index = (uint)(_table.Length - Encoding.UTF8.GetByteCount(text) - 1);
+                    _mapIndexToString.Add(index, text);
+                    _mapStringToIndex.Add(text, index);
+                }
+                else
+                {
+                    lastText = text;
+                    CreateIndex(text);
+                }
             }
 
-            index = (uint) _table.Length;
+            _reservedStrings.Clear();
+
+            static char TailCharacter(string str, int pos)
+            {
+                int index = str.Length - pos - 1;
+                if ((uint)index < str.Length)
+                    return str[index];
+                return '\0';
+            }
+
+            static void MultiKeySort(Span<string> input, int pos)
+            {
+                if (!MultiKeySortSmallInput(input, pos))
+                {
+                    MultiKeySortLargeInput(input, pos);
+                }
+            }
+
+            static void MultiKeySortLargeInput(Span<string> input, int pos)
+            {
+            tailcall:
+                char pivot = TailCharacter(input[0], pos);
+                int l = 0, h = input.Length;
+                for (int i = 1; i < h;)
+                {
+                    char c = TailCharacter(input[i], pos);
+                    if (c > pivot)
+                    {
+                        (input[l], input[i]) = (input[i], input[l]);
+                        l++; i++;
+                    }
+                    else if (c < pivot)
+                    {
+                        h--;
+                        (input[h], input[i]) = (input[i], input[h]);
+                    }
+                    else
+                    {
+                        i++;
+                    }
+                }
+
+                MultiKeySort(input.Slice(0, l), pos);
+                MultiKeySort(input.Slice(h), pos);
+                if (pivot != '\0')
+                {
+                    // Use a loop as a poor man's tailcall
+                    // MultiKeySort(input.Slice(l, h - l), pos + 1);
+                    pos++;
+                    input = input.Slice(l, h - l);
+                    if (!MultiKeySortSmallInput(input, pos))
+                    {
+                        goto tailcall;
+                    }
+                }
+            }
+
+            static bool MultiKeySortSmallInput(Span<string> input, int pos)
+            {
+                if (input.Length <= 1)
+                    return true;
+
+                // Optimize comparing two strings
+                if (input.Length == 2)
+                {
+                    while (true)
+                    {
+                        char c0 = TailCharacter(input[0], pos);
+                        char c1 = TailCharacter(input[1], pos);
+                        if (c0 < c1)
+                        {
+                            (input[0], input[1]) = (input[1], input[0]);
+                            break;
+                        }
+                        else if (c0 > c1 || c0 == (char)0)
+                        {
+                            break;
+                        }
+                        pos++;
+                    }
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        private uint CreateIndex(string text)
+        {
+            uint index = (uint) _table.Length;
             _mapIndexToString.Add(index, text);
             _mapStringToIndex.Add(text, index);
 
-            if (text.Length == 0)
+            if (index == 0)
             {
                 Debug.Assert(index == 0);
                 _table.WriteByte(0);
@@ -105,23 +223,24 @@ namespace LibObjectFile.Elf
                 }
                 _table.Write(span);
                 ArrayPool<byte>.Shared.Return(buffer);
-                
-                // Register all subsequent strings
-                while (text.Length > 0)
-                {
-                    text = text.Substring(1);
-                    if (_mapStringToIndex.ContainsKey(text))
-                    {
-                        break;
-                    }
-                    var offset = reservedBytes - Encoding.UTF8.GetByteCount(text) - 1;
-                    var subIndex = index + (uint) offset;
-                    _mapStringToIndex.Add(text, subIndex);
-                    _mapIndexToString.Add(subIndex, text);
-                }
             }
 
             return index;
+        }
+
+        public uint GetOrCreateIndex(string text)
+        {
+            // Same as empty string
+            if (text == null) return 0;
+
+            if (_reservedStrings.Count > 0) FlushReservedStrings();
+
+            if (_mapStringToIndex.TryGetValue(text, out uint index))
+            {
+                return index;
+            }
+
+            return CreateIndex(text);
         }
 
         public bool TryResolve(ElfString inStr, out ElfString outStr)
@@ -152,6 +271,8 @@ namespace LibObjectFile.Elf
                 text = string.Empty;
                 return true;
             }
+
+            if (_reservedStrings.Count > 0) FlushReservedStrings();
 
             if (_mapIndexToString.TryGetValue(index, out text))
             {
@@ -191,9 +312,10 @@ namespace LibObjectFile.Elf
             _table.SetLength(0);
             _mapStringToIndex.Clear();
             _mapIndexToString.Clear();
+            _reservedStrings.Clear();
 
             // Always create an empty string
-            GetOrCreateIndex(string.Empty);
+            CreateIndex(string.Empty);
         }
     }
 }
