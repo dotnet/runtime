@@ -215,7 +215,7 @@ jobs:
       nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
       runtimeVariant: llvmfullaot
       buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-      timeoutInMinutes: 360
+      timeoutInMinutes: 300
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
