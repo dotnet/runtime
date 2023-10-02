@@ -7852,15 +7852,17 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
     {
         GenTree* base  = ind->Addr()->AsAddrMode()->Base();
         GenTree* index = ind->Addr()->AsAddrMode()->Index();
-        if ((base == nullptr) || !base->OperIs(GT_LCL_VAR))
+        if ((base == nullptr) || !base->OperIs(GT_LCL_VAR) || comp->lvaVarAddrExposed(base->AsLclVar()->GetLclNum()))
         {
             // Base must be a local. It's possible for it to be nullptr when index is not null,
             // but let's ignore such cases.
             return false;
         }
-        if ((index != nullptr) && !index->OperIs(GT_LCL_VAR))
+
+        if (((index != nullptr) && !index->OperIs(GT_LCL_VAR)) ||
+            comp->lvaVarAddrExposed(index->AsLclVar()->GetLclNum()))
         {
-            // Index is either nullptr or a local.
+            // Index should be either nullptr or a local.
             return false;
         }
         data->baseAddr = base == nullptr ? nullptr : base;
@@ -7875,13 +7877,8 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
             trees[treesCount++] = index;
         }
     }
-    else if (ind->Addr()->OperIs(GT_LCL_VAR))
+    else if (ind->Addr()->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(ind->Addr()->AsLclVar()->GetLclNum()))
     {
-        if (comp->lvaGetDesc(ind->Addr()->AsLclVarCommon())->IsAddressExposed())
-        {
-            return false;
-        }
-
         // Address is just a local, no offset, scale is 1
         data->baseAddr = ind->Addr();
         data->index    = nullptr;
