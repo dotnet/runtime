@@ -232,7 +232,7 @@ void EventPipeEtwCallbackDotNETRuntime(
     EtwCallbackCommon(DotNETRuntime, ControlCode, Level, MatchAnyKeyword, FilterData, /*isEventPipeCallback*/ true);
 }
 
-VOID EventPipeEtwCallbackDotNETRuntimePrivate(
+void EventPipeEtwCallbackDotNETRuntimePrivate(
     _In_ GUID * SourceId,
     _In_ ULONG ControlCode,
     _In_ unsigned char Level,

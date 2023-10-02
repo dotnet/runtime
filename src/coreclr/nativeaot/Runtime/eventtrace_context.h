@@ -44,7 +44,7 @@ void EventPipeEtwCallbackDotNETRuntime(
     _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext);
 
-VOID EventPipeEtwCallbackDotNETRuntimePrivate(
+void EventPipeEtwCallbackDotNETRuntimePrivate(
     _In_ GUID * SourceId,
     _In_ ULONG ControlCode,
     _In_ unsigned char Level,
