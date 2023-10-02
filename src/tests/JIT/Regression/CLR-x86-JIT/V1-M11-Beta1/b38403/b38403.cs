@@ -27,14 +27,13 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             CC local5 = new CC();
             do
             {
                 Static1(0.0f, CC.m_axStatic4[2]);
             } while (AA.m_bStatic1);
-            return 100;
         }
     }
 }

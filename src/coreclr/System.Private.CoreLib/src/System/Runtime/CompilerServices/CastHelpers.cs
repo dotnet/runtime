@@ -333,6 +333,8 @@ namespace System.Runtime.CompilerServices
             return ChkCastClassSpecial(toTypeHnd, obj);
         }
 
+        // Optimized helper for classes. Assumes that the trivial cases
+        // has been taken care of by the inlined check
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
@@ -409,7 +411,6 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static ref object? LdelemaRef(Array array, nint index, void* type)
         {
             // this will throw appropriate exceptions if array is null or access is out of range.
@@ -425,7 +426,6 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static void StelemRef(Array array, nint index, object? obj)
         {
             // this will throw appropriate exceptions if array is null or access is out of range.

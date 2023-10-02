@@ -228,6 +228,24 @@ namespace System.Text.Json
             }
         }
 
+        internal static async Task<JsonDocument> ParseAsyncCoreUnrented(
+            Stream utf8Json,
+            JsonDocumentOptions options = default,
+            CancellationToken cancellationToken = default)
+        {
+            ArraySegment<byte> drained = await ReadToEndAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+            Debug.Assert(drained.Array != null);
+
+            byte[] owned = new byte[drained.Count];
+            Buffer.BlockCopy(drained.Array, 0, owned, 0, drained.Count);
+
+            // Holds document content, clear it before returning it.
+            drained.AsSpan().Clear();
+            ArrayPool<byte>.Shared.Return(drained.Array);
+
+            return ParseUnrented(owned.AsMemory(), options.GetReaderOptions());
+        }
+
         /// <summary>
         ///   Parses text representing a single JSON value into a JsonDocument.
         /// </summary>

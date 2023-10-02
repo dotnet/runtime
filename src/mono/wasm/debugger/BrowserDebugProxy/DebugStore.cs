@@ -358,6 +358,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int KickOffMethod { get; }
         internal bool IsCompilerGenerated { get; }
         private AsyncScopeDebugInformation[] _asyncScopes { get; set; }
+        private static SignatureTypeProvider _signatureTypeProvider = new();
 
         public MethodInfo(AssemblyInfo assembly, string methodName, int methodToken, TypeInfo type, MethodAttributes attrs)
         {
@@ -436,28 +437,44 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (_parametersInfo != null)
                 return _parametersInfo;
 
+            var signature = methodDef.Signature;
+            var sigReader = Assembly.asmMetadataReader.GetBlobReader(signature);
+            var decoder = new SignatureDecoder<ElementType, object>(_signatureTypeProvider, Assembly.asmMetadataReader, genericContext: null);
+            MethodSignature<ElementType> methodSignature = decoder.DecodeMethodSignature(ref sigReader);
+
             var paramsHandles = methodDef.GetParameters().ToArray();
             var paramsCnt = paramsHandles.Length;
             var paramsInfo = new ParameterInfo[paramsCnt];
 
-            for (int i = 0; i < paramsCnt; i++)
+            int paramInx = 0;
+            foreach (var paramHandle in paramsHandles)
             {
-                var parameter = Assembly.asmMetadataReader.GetParameter(paramsHandles[i]);
+                var parameter = Assembly.asmMetadataReader.GetParameter(paramHandle);
                 var paramName = Assembly.EnCGetString(parameter.Name);
-                var isOptional = parameter.Attributes.HasFlag(ParameterAttributes.Optional) && parameter.Attributes.HasFlag(ParameterAttributes.HasDefault);
-                if (!isOptional)
+                if (string.IsNullOrEmpty(paramName))
                 {
-                    paramsInfo[i] = new ParameterInfo(paramName);
                     continue;
                 }
-                var constantHandle = parameter.GetDefaultValue();
-                var blobHandle = Assembly.asmMetadataReader.GetConstant(constantHandle);
-                var paramBytes = Assembly.asmMetadataReader.GetBlobBytes(blobHandle.Value);
-                paramsInfo[i] = new ParameterInfo(
-                    paramName,
-                    blobHandle.TypeCode,
-                    paramBytes
-                );
+                var isOptional = parameter.Attributes.HasFlag(ParameterAttributes.Optional) && parameter.Attributes.HasFlag(ParameterAttributes.HasDefault);
+                if (isOptional)
+                {
+                    var constantHandle = parameter.GetDefaultValue();
+                    var blobHandle = Assembly.asmMetadataReader.GetConstant(constantHandle);
+                    var paramBytes = Assembly.asmMetadataReader.GetBlobBytes(blobHandle.Value);
+                    paramsInfo[paramInx] = new ParameterInfo(
+                        paramName,
+                        blobHandle.TypeCode,
+                        paramBytes
+                    );
+                }
+                else
+                {
+                    paramsInfo[paramInx] = new ParameterInfo(
+                        paramName,
+                        methodSignature.ParameterTypes[paramInx]
+                    );
+                }
+                paramInx++;
             }
             _parametersInfo = paramsInfo;
             return paramsInfo;
@@ -653,7 +670,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         public ElementType? TypeCode { get; init; }
 
         public object Value { get; init; }
-
+        public ParameterInfo(string name, ElementType type)
+        {
+            Name = name;
+            TypeCode = type;
+        }
         public ParameterInfo(string name, ConstantTypeCode? typeCode = null, byte[] value = null)
         {
             Name = name;
@@ -670,11 +691,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     TypeCode = ElementType.Char;
                     break;
                 case ConstantTypeCode.Byte:
-                    Value = (int)value[0];
+                    Value = (uint)value[0];
                     TypeCode = ElementType.U1;
                     break;
                 case ConstantTypeCode.SByte:
-                    Value = (uint)value[0];
+                    Value = (int)value[0];
                     TypeCode = ElementType.I1;
                     break;
                 case ConstantTypeCode.Int16:

@@ -41,7 +41,6 @@ extern HMODULE coree_module_handle;
 HMODULE WINAPI MonoLoadImage(LPCWSTR FileName);
 STDAPI MonoFixupExe(HMODULE ModuleHandle);
 
-gchar* mono_get_module_file_name (HMODULE module_handle);
 void mono_load_coree (const char* file_name);
 void mono_fixup_exe_image (MonoImage* image);
 

@@ -48,9 +48,8 @@ namespace System.Net.Primitives.Functional.Tests
         {
             SocketAddress sa = new SocketAddress(AddressFamily.InterNetwork);
             Assert.Throws<ArgumentOutOfRangeException>(() => sa.Size = sa.Size + 1);
-
-            sa.Size = 4;
-            Assert.Equal(4, sa.Buffer.Length);
+            sa.Size = 0;
+            Assert.Throws<ArgumentOutOfRangeException>(() => sa.Size = - 1);
         }
 
         [Fact]

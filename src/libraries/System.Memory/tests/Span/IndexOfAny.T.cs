@@ -1005,7 +1005,7 @@ namespace System.SpanTests
             Assert.Equal(index >= 0, span.Contains(value));
             Assert.Equal(index >= 0, ((ReadOnlySpan<T>)span).Contains(value));
 
-            AssertSearchValues(span, new ReadOnlySpan<T>(value), index);
+            AssertSearchValues(span, new ReadOnlySpan<T>(in value), index);
             return index;
         }
 

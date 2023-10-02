@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Net.Internals;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,13 +23,13 @@ namespace System.Net
             {
                 name = NameResolutionPal.GetHostName();
             }
-            catch when (LogFailure(startingTimestamp))
+            catch when (LogFailure(string.Empty, startingTimestamp))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(startingTimestamp, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(string.Empty, startingTimestamp, successful: true);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, name);
             return name;
@@ -395,13 +394,13 @@ namespace System.Net
                         Aliases = aliases
                     };
             }
-            catch when (LogFailure(startingTimestamp))
+            catch when (LogFailure(hostName, startingTimestamp))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(startingTimestamp, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(hostName, startingTimestamp, successful: true);
 
             return result;
         }
@@ -435,13 +434,13 @@ namespace System.Net
                 }
                 Debug.Assert(name != null);
             }
-            catch when (LogFailure(startingTimestamp))
+            catch when (LogFailure(address, startingTimestamp))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(startingTimestamp, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(address, startingTimestamp, successful: true);
 
             // Do the forward lookup to get the IPs for that host name
             startingTimestamp = NameResolutionTelemetry.Log.BeforeResolution(name);
@@ -465,13 +464,13 @@ namespace System.Net
                         AddressList = addresses
                     };
             }
-            catch when (LogFailure(startingTimestamp))
+            catch when (LogFailure(name, startingTimestamp))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(startingTimestamp, successful: true);
+            NameResolutionTelemetry.Log.AfterResolution(name, startingTimestamp, successful: true);
 
             // One of three things happened:
             // 1. Success.
@@ -603,7 +602,7 @@ namespace System.Net
                 }
                 finally
                 {
-                    NameResolutionTelemetry.Log.AfterResolution(startingTimestamp, successful: result is not null);
+                    NameResolutionTelemetry.Log.AfterResolution(hostName, startingTimestamp, successful: result is not null);
                 }
             }
         }
@@ -628,9 +627,9 @@ namespace System.Net
             }
         }
 
-        private static bool LogFailure(long? startingTimestamp)
+        private static bool LogFailure(object hostNameOrAddress, long? startingTimestamp)
         {
-            NameResolutionTelemetry.Log.AfterResolution(startingTimestamp, successful: false);
+            NameResolutionTelemetry.Log.AfterResolution(hostNameOrAddress, startingTimestamp, successful: false);
             return false;
         }
 

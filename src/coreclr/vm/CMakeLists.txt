@@ -71,6 +71,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     eetwain.cpp
     encee.cpp
     excep.cpp
+    exinfo.cpp
     exstate.cpp
     field.cpp
     formattype.cpp
@@ -168,6 +169,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     eehash.inl
     encee.h
     excep.h
+    exinfo.h
     exstate.h
     field.h
     fptrstubs.h
@@ -650,6 +652,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetThread.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_SingleAppDomain.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
+        ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
         ${ARCH_SOURCES_DIR}/ThePreStubAMD64.asm
@@ -681,6 +684,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         ${ARCH_SOURCES_DIR}/AsmHelpers.asm
         ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
         ${ARCH_SOURCES_DIR}/CrtHelpers.asm
+        ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
     )
@@ -703,9 +707,12 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/jithelpers_fastwritebarriers.S
             ${ARCH_SOURCES_DIR}/jithelpers_singleappdomain.S
             ${ARCH_SOURCES_DIR}/jithelpers_slow.S
+            ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
+            ${ARCH_SOURCES_DIR}/redirectedhandledjitcase.S
             ${ARCH_SOURCES_DIR}/theprestubamd64.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
+            ${ARCH_SOURCES_DIR}/Context.S
             ${ARCH_SOURCES_DIR}/unixasmhelpers.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
@@ -734,6 +741,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/calldescrworkerarm64.S
             ${ARCH_SOURCES_DIR}/crthelpers.S
+            ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
         )
@@ -787,7 +795,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     )
 elseif(CLR_CMAKE_TARGET_ARCH_I386)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
-        exinfo.cpp
         ${ARCH_SOURCES_DIR}/cgenx86.cpp
         ${ARCH_SOURCES_DIR}/excepx86.cpp
         ${ARCH_SOURCES_DIR}/gmsx86.cpp
@@ -795,7 +802,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
     )
 
     set(VM_HEADERS_DAC_AND_WKS_ARCH
-        exinfo.h
         ${ARCH_SOURCES_DIR}/cgencpu.h
         ${ARCH_SOURCES_DIR}/excepcpu.h
         ${ARCH_SOURCES_DIR}/gmscpu.h

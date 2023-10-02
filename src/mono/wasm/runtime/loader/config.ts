@@ -6,9 +6,11 @@ import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
 import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_error, mono_log_debug } from "./logging";
-import { invokeLibraryInitializers } from "./libraryInitializers";
+import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
 import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
+import { appendUniqueQuery } from "./assets";
+import { mono_assert } from "./globals";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
@@ -180,6 +182,10 @@ export function normalizeConfig() {
         config.debugLevel = -1;
     }
 
+    if (config.cachedResourcesPurgeDelay === undefined) {
+        config.cachedResourcesPurgeDelay = 10000;
+    }
+
     // Default values (when WasmDebugLevel is not set)
     // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1
     // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
@@ -215,19 +221,18 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         await loaderHelpers.afterConfigLoaded.promise;
         return;
     }
-    configLoaded = true;
-    if (!configFilePath) {
-        normalizeConfig();
-        loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
-        return;
-    }
-    mono_log_debug("mono_wasm_load_config");
     try {
-        await loadBootConfig(module);
+        configLoaded = true;
+        if (configFilePath) {
+            mono_log_debug("mono_wasm_load_config");
+            await loadBootConfig(module);
+        }
 
         normalizeConfig();
 
-        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config], "modulesAfterConfigLoaded");
+        // scripts need to be loaded before onConfigLoaded because Blazor calls `beforeStart` export in onConfigLoaded
+        await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
+        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
 
         if (module.onConfigLoaded) {
             try {
@@ -239,7 +244,15 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
                 throw err;
             }
         }
+
+        normalizeConfig();
+
+        mono_assert(!loaderHelpers.config.startupMemoryCache || !module.instantiateWasm, "startupMemoryCache is not supported with Module.instantiateWasm");
+
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
+        if (!loaderHelpers.config.startupMemoryCache) {
+            loaderHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
+        }
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
         loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, { message: errMessage, error: err, isError: true });
@@ -268,7 +281,7 @@ async function loadBootConfig(module: DotnetModuleInternal): Promise<void> {
     let loadConfigResponse: Response;
 
     if (!loaderResponse) {
-        loadConfigResponse = await defaultLoadBootConfig(defaultConfigSrc);
+        loadConfigResponse = await defaultLoadBootConfig(appendUniqueQuery(defaultConfigSrc, "manifest"));
     } else if (typeof loaderResponse === "string") {
         loadConfigResponse = await defaultLoadBootConfig(makeURLAbsoluteWithApplicationBase(loaderResponse));
     } else {

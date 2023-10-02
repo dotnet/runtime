@@ -3,23 +3,23 @@
   <PropertyGroup>
     <EnableLibraryImportGenerator Condition="'$(EnableLibraryImportGenerator)' == '' and
                                              '$(MSBuildProjectName)' == 'System.Private.CoreLib'">true</EnableLibraryImportGenerator>
-    <!-- Disable the library import generator when the project requires polyfill source files but doesn't have nullable reference types enabled. -->
-    <EnableLibraryImportGenerator Condition="'$(EnableLibraryImportGenerator)' == '' and
-                                             !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) and
-                                             ('$(Nullable)' == 'disable' or '$(Nullable)' == '')">false</EnableLibraryImportGenerator>
   </PropertyGroup>
 
   <ItemGroup>
     <EnabledGenerators Include="LibraryImportGenerator" Condition="'$(EnableLibraryImportGenerator)' == 'true'" />
     <!-- If the current project is not System.Private.CoreLib, we enable the LibraryImportGenerator source generator
-         when the project is a C# source project that:
+         when the project is a C# source or test project that:
          - doesn't target the a TFM that includes LibraryImportGenerator or
          - doesn't reference the live targeting pack (i.e. when inbox) and
            - references System.Private.CoreLib, or
            - references System.Runtime.InteropServices -->
     <EnabledGenerators Include="LibraryImportGenerator"
                        Condition="'$(EnableLibraryImportGenerator)' == '' and
-                                  '$(IsSourceProject)' == 'true' and
+                                  (
+                                    '$(IsSourceProject)' == 'true' or
+                                    '$(IsTestProject)' == 'true' or
+                                    '$(IsTestSupportProject)' == 'true'
+                                  ) and
                                   '$(MSBuildProjectExtension)' == '.csproj' and
                                   (
                                     !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) or

@@ -21,7 +21,7 @@ namespace Wasm.Build.Tests;
 // For projects using WasmAppBuilder
 public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string? _projectDir)
 {
-    public const string WebcilInWasmExtension = ".wasm";
+    public static string WasmAssemblyExtension = BuildTestBase.s_buildEnv.UseWebcil ? ".wasm" : ".dll";
     protected const string s_dotnetVersionHashRegex = @"\.(?<version>[0-9]+\.[0-9]+\.[a-zA-Z0-9\.-]+)\.(?<hash>[a-zA-Z0-9]+)\.";
 
     private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
@@ -55,8 +55,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         // icu
         if (assertOptions.AssertIcuAssets)
         {
-            _testOutput.WriteLine("Skipping asserting icu assets");
             AssertIcuAssets(assertOptions);
+        }
+        else
+        {
+            _testOutput.WriteLine("Skipping asserting icu assets");
         }
 
         // symbols
@@ -390,6 +393,15 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
 
         BootJsonData bootJson = ParseBootData(bootJsonPath);
+        string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
+        string? spcActualFilename = bootJson.resources.assembly.Keys
+                                        .Where(a => Path.GetFileNameWithoutExtension(a) == "System.Private.CoreLib")
+                                        .SingleOrDefault();
+        if (spcActualFilename is null)
+            throw new XunitException($"Could not find an assembly named System.Private.CoreLib.* in {bootJsonPath}");
+        if (spcExpectedFilename != spcActualFilename)
+            throw new XunitException($"Expected to find {spcExpectedFilename} but found {spcActualFilename} in {bootJsonPath}");
+
         var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
             .Union(bootJson.resources.jsModuleRuntime.Keys)
             .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
@@ -458,9 +470,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         expected = expected.Order().Select(f => Path.GetFileName(f)).Distinct();
         var actualFileNames = actual.Order().Select(f => Path.GetFileName(f));
-        Assert.True(expected.Count() == actualFileNames.Count(),
+        if (expected.Count() != actualFileNames.Count())
+        {
+            throw new XunitException(
                     $"Expected: {string.Join(", ", expected)}{Environment.NewLine}" +
                     $"Actual:   {string.Join(", ", actualFileNames)}");
+        }
 
         Assert.Equal(expected, actualFileNames);
     }

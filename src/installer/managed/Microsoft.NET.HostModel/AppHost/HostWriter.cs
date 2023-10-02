@@ -15,7 +15,7 @@ namespace Microsoft.NET.HostModel.AppHost
     /// Embeds the App Name into the AppHost.exe
     /// If an apphost is a single-file bundle, updates the location of the bundle headers.
     /// </summary>
-    public static class HostWriter
+    public static partial class HostWriter
     {
         /// <summary>
         /// hash value embedded in default apphost executable in a place where the path to the app binary should be stored.
@@ -66,24 +66,6 @@ namespace Microsoft.NET.HostModel.AppHost
                 }
             }
 
-            void UpdateResources()
-            {
-                if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
-                {
-                    if (ResourceUpdater.IsSupportedOS())
-                    {
-                        // Copy resources from managed dll to the apphost
-                        new ResourceUpdater(appHostDestinationFilePath)
-                            .AddResourcesFromPEImage(assemblyToCopyResourcesFrom)
-                            .Update();
-                    }
-                    else
-                    {
-                        throw new AppHostCustomizationUnsupportedOSException();
-                    }
-                }
-            }
-
             try
             {
                 RetryUtil.RetryOnIOError(() =>
@@ -115,6 +97,13 @@ namespace Microsoft.NET.HostModel.AppHost
                             {
                                 MachOUtils.RemoveSignature(fileStream);
                             }
+
+                            if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
+                            {
+                                using var updater = new ResourceUpdater(fileStream, true);
+                                updater.AddResourcesFromPEImage(assemblyToCopyResourcesFrom);
+                                updater.Update();
+                            }
                         }
                     }
                     finally
@@ -124,8 +113,6 @@ namespace Microsoft.NET.HostModel.AppHost
                         appHostSourceStream?.Dispose();
                     }
                 });
-
-                RetryUtil.RetryOnWin32Error(UpdateResources);
 
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
@@ -245,7 +232,7 @@ namespace Microsoft.NET.HostModel.AppHost
             return headerOffset != 0;
         }
 
-        [DllImport("libc", SetLastError = true)]
-        private static extern int chmod(string pathname, int mode);
+        [LibraryImport("libc", SetLastError = true)]
+        private static partial int chmod([MarshalAs(UnmanagedType.LPStr)] string pathname, int mode);
     }
 }

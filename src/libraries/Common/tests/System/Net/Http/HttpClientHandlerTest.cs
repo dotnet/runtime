@@ -18,6 +18,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
 #if WINHTTPHANDLER_TEST
     using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
@@ -168,7 +170,7 @@ namespace System.Net.Http.Functional.Tests
             using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             using HttpClient client = CreateHttpClient(handler);
 
-            var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress() };
+            var options = new GenericLoopbackOptions { Address = Configuration.Sockets.LinkLocalAddress };
             if (options.Address == null)
             {
                 throw new SkipTestException("Unable to find valid IPv6 LL address.");
@@ -1884,13 +1886,27 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure, bool enableWasmStreaming)
         {
             if (UseVersion == HttpVersion30)
             {
                 // TODO: Make this version-indepdendent
+                return;
+            }
+
+            if (enableWasmStreaming && !PlatformDetection.IsBrowser)
+            {
+                // enableWasmStreaming makes only sense on Browser platform
+                return;
+            }
+
+            if (enableWasmStreaming && PlatformDetection.IsBrowser && UseVersion < HttpVersion20.Value)
+            {
+                // Browser request streaming is only supported on HTTP/2 or higher
                 return;
             }
 
@@ -1912,8 +1928,20 @@ namespace System.Net.Http.Functional.Tests
                         canReadFunc: () => true,
                         readFunc: (buffer, offset, count) => throw error,
                         readAsyncFunc: (buffer, offset, count, cancellationToken) => syncFailure ? throw error : Task.Delay(1).ContinueWith<int>(_ => throw error)));
+                    var request = new HttpRequestMessage(HttpMethod.Post, uri);
+                    request.Content = content;
 
-                    Assert.Same(error, await Assert.ThrowsAsync<FormatException>(() => client.PostAsync(uri, content)));
+                    if (PlatformDetection.IsBrowser)
+                    {
+                        if (enableWasmStreaming)
+                        {
+#if !NETFRAMEWORK
+                            request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest"), true);
+#endif
+                        }
+                    }
+
+                    Assert.Same(error, await Assert.ThrowsAsync<FormatException>(() => client.SendAsync(request)));
                 }
             });
         }

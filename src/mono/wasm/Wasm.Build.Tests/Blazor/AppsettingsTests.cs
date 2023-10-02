@@ -21,7 +21,7 @@ public class AppsettingsTests : BlazorWasmTestBase
     [Fact]
     public async Task FileInVfs()
     {
-        string id = $"blazor_{Path.GetRandomFileName()}";
+        string id = $"blazor_{GetRandomId()}";
         string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
 
         string projectDirectory = Path.GetDirectoryName(projectFile)!;

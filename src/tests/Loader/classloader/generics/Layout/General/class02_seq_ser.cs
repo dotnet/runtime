@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public struct ValX1<T> {}
 public struct ValX2<T,U> {}
@@ -82,7 +83,8 @@ public class Test_class02_seq_ser
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		new Gen<int,int>().VerifyLayout();
 		new Gen<int,double>().VerifyLayout();

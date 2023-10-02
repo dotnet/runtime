@@ -1,6 +1,20 @@
 {
   "architectures": [
     {
+      "lead": "",
+      "owners": [
+        ""
+      ],
+      "label": "arch-mips64"
+    },
+    {
+      "lead": "",
+      "owners": [
+        ""
+      ],
+      "label": "arch-s390x"
+    },
+    {
       "lead": "lewing",
       "owners": [
         "BrzVlad",
@@ -278,13 +292,12 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-extensions-configuration"
       ],
@@ -345,13 +358,12 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-extensions-logging"
       ],
@@ -359,13 +371,12 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-extensions-options"
       ],
@@ -373,13 +384,12 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-extensions-primitives"
       ],
@@ -632,14 +642,13 @@
     },
     {
       "lead": "jeffhandley",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "GrabYourPitchforks",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-system-collections"
       ],
@@ -671,13 +680,12 @@
     },
     {
       "lead": "jeffhandley",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-system-componentmodel-dataannotations"
       ],
@@ -756,13 +764,12 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-system-datetime"
       ],
@@ -792,13 +799,12 @@
     },
     {
       "lead": "tommcdon",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "tommcdon",
         "dotnet/area-system-diagnostics-activity"
@@ -942,13 +948,12 @@
     },
     {
       "lead": "ericstj",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-system-globalization"
       ],
@@ -1000,13 +1005,12 @@
     },
     {
       "lead": "jeffhandley",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-system-io-ports"
       ],
@@ -1014,13 +1018,12 @@
     },
     {
       "lead": "jeffhandley",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-system-linq"
       ],
@@ -1343,14 +1346,13 @@
     },
     {
       "lead": "jeffhandley",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "GrabYourPitchforks",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-system-text-encoding"
       ],
@@ -1358,14 +1360,13 @@
     },
     {
       "lead": "jeffhandley",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "GrabYourPitchforks",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-system-text-encodings-web"
       ],
@@ -1373,13 +1374,12 @@
     },
     {
       "lead": "jeffhandley",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "steveharter",
         "tarekgh",
         "dotnet/area-system-text-json"
@@ -1448,13 +1448,12 @@
     },
     {
       "lead": "jeffhandley",
-      "pod": "eirik-krzysztof-layomi-tarek",
+      "pod": "eirik-krzysztof-tarek",
       "owners": [
         "eiriktsarpalis",
         "ericstj",
         "jeffhandley",
         "krwq",
-        "layomia",
         "tarekgh",
         "dotnet/area-system-xml"
       ],

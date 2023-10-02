@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         /// <summary>
         /// Type of service being cached
         /// </summary>
-        public ServiceIdentifier? ServiceIdentifier { get; }
+        public ServiceIdentifier ServiceIdentifier { get; }
 
         /// <summary>
         /// Reverse index of the service when resolved in <c>IEnumerable&lt;Type&gt;</c> where default instance gets slot 0.
@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Slot = slot;
         }
 
-        public ServiceCacheKey(ServiceIdentifier? type, int slot)
+        public ServiceCacheKey(ServiceIdentifier type, int slot)
         {
             ServiceIdentifier = type;
             Slot = slot;
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             unchecked
             {
-                return ((ServiceIdentifier?.GetHashCode() ?? 23) * 397) ^ Slot;
+                return (ServiceIdentifier.GetHashCode() * 397) ^ Slot;
             }
         }
     }

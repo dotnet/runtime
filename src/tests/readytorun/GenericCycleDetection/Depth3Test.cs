@@ -23,7 +23,6 @@ internal class Program
             if (result < count) result = Depth1<Depth2<T>>.TypeNestedFactorial(count - 1);
             if (result < count) result = Depth1<Depth3<T>>.TypeNestedFactorial(count - 1);
             if (result < count) result = Depth1<Depth4<T>>.TypeNestedFactorial(count - 1);
-            if (result < count) result = Depth1<Depth5<T>>.TypeNestedFactorial(count - 1);
             return count * result;
         }
     }
@@ -31,7 +30,6 @@ internal class Program
     private struct Depth2<T> {}
     private struct Depth3<T> {}
     private struct Depth4<T> {}
-    private struct Depth5<T> {}
     
     [Fact]
     public static int DepthTest()

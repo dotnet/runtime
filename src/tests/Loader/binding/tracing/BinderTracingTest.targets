@@ -1,6 +1,9 @@
 <Project>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- Requires explicit Main as it implements command-line parameters for local testing purposes. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.cs" />

@@ -327,19 +327,38 @@ bool CodeGen::genInstrWithConstant(instruction ins,
             break;
 
         case INS_strb:
+            assert(size == EA_1BYTE);
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_1BYTE);
+            break;
+
         case INS_strh:
+            assert(size == EA_2BYTE);
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_2BYTE);
+            break;
+
         case INS_str:
             // reg1 is a source register for store instructions
             assert(tmpReg != reg1); // regTmp can not match any source register
             immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
             break;
 
-        case INS_ldrsb:
-        case INS_ldrsh:
-        case INS_ldrsw:
         case INS_ldrb:
+        case INS_ldrsb:
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_1BYTE);
+            break;
+
         case INS_ldrh:
+        case INS_ldrsh:
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_2BYTE);
+            break;
+
+        case INS_ldrsw:
+            assert(size == EA_4BYTE);
+            immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, EA_4BYTE);
+            break;
+
         case INS_ldr:
+            assert((size == EA_4BYTE) || (size == EA_8BYTE) || (size == EA_16BYTE));
             immFitsInIns = emitter::emitIns_valid_imm_for_ldst_offset(imm, size);
             break;
 
@@ -2141,6 +2160,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
     GetEmitter()->emitIns_J(INS_bl_local, block->bbJumpDest);
 
+    BasicBlock* const nextBlock = block->bbNext;
+
     if (block->bbFlags & BBF_RETLESS_CALL)
     {
         // We have a retless call, and the last instruction generated was a call.
@@ -2148,7 +2169,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // block), then we need to generate a breakpoint here (since it will never
         // get executed) to get proper unwind behavior.
 
-        if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
+        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
             instGen(INS_BREAKPOINT); // This should never get executed
         }
@@ -2160,8 +2181,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
+        BasicBlock* const jumpDest = nextBlock->bbJumpDest;
+
         // Now go to where the finally funclet needs to return to.
-        if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
+        if ((jumpDest == nextBlock->bbNext) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
         {
             // Fall-through.
             // TODO-ARM64-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -2171,7 +2194,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-            inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
+            inst_JMP(EJ_jmp, jumpDest);
         }
 
         GetEmitter()->emitEnableGC();
@@ -2184,7 +2207,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        block = block->bbNext;
+        block = nextBlock;
     }
     return block;
 }
@@ -4207,22 +4230,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
         if (tree->IsVolatile())
         {
-            bool addrIsInReg   = addr->isUsedFromReg();
-            bool addrIsAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
+            bool needsBarrier = true;
+            ins               = genGetVolatileLdStIns(ins, dataReg, tree, &needsBarrier);
 
-            if ((ins == INS_strb) && addrIsInReg)
-            {
-                ins = INS_stlrb;
-            }
-            else if ((ins == INS_strh) && addrIsInReg && addrIsAligned)
-            {
-                ins = INS_stlrh;
-            }
-            else if ((ins == INS_str) && genIsValidIntReg(dataReg) && addrIsInReg && addrIsAligned)
-            {
-                ins = INS_stlr;
-            }
-            else
+            if (needsBarrier)
             {
                 // issue a full memory barrier before a volatile StInd
                 // Note: We cannot issue store barrier ishst because it is a weaker barrier.

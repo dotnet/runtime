@@ -61,4 +61,6 @@
     </RuntimeHostConfigurationOption>
   </ItemGroup>
 
+  <Import Project="..\Trimming.Tests.Shared\Trimming.Tests.Shared.projitems" Label="Shared" />
+
 </Project>

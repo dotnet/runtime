@@ -628,8 +628,8 @@ protected:
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
-        static_assert_no_msg(INS_count <= 512);
-        instruction _idIns : 9;
+        static_assert_no_msg(INS_count <= 1024);
+        instruction _idIns : 10;
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
         static_assert_no_msg(INS_count <= 512);
@@ -712,7 +712,7 @@ protected:
         // x86:         17 bits
         // amd64:       17 bits
         // arm:         16 bits
-        // arm64:       17 bits
+        // arm64:       18 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
 
@@ -754,7 +754,7 @@ protected:
         // x86:         38 bits
         // amd64:       38 bits
         // arm:         32 bits
-        // arm64:       31 bits
+        // arm64:       32 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
 
@@ -763,10 +763,12 @@ protected:
         unsigned _idLargeDsp : 1;  // does a large displacement follow?
         unsigned _idLargeCall : 1; // large call descriptor used
 
-        unsigned _idBound : 1;      // jump target / frame offset bound
+        unsigned _idBound : 1; // jump target / frame offset bound
+#ifndef TARGET_ARMARCH
         unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
-        unsigned _idCallAddr : 1;   // IL indirect calls: can make a direct call to iiaAddr
-        unsigned _idNoGC : 1;       // Some helpers don't get recorded in GC tables
+#endif
+        unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
+        unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
         unsigned _idEvexbContext : 1; // does EVEX.b need to be set.
 #endif                                //  TARGET_XARCH
@@ -1509,6 +1511,7 @@ protected:
             _idBound = 1;
         }
 
+#ifndef TARGET_ARMARCH
         bool idIsCallRegPtr() const
         {
             return _idCallRegPtr != 0;
@@ -1517,6 +1520,7 @@ protected:
         {
             _idCallRegPtr = 1;
         }
+#endif
 
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
@@ -2054,6 +2058,7 @@ protected:
     unsigned emitGetInsCIargs(instrDesc* id);
 
     inline emitAttr emitGetMemOpSize(instrDesc* id) const;
+    inline emitAttr emitGetBaseMemOpSize(instrDesc*) const;
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -2107,6 +2112,7 @@ protected:
     void emitDispInsAddr(BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
+    void emitDispEmbBroadcastCount(instrDesc* id);
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -3748,21 +3754,15 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //-----------------------------------------------------------------------------
 // emitGetMemOpSize: Get the memory operand size of instrDesc.
 //
-// Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
-// vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
-// and a 128-bit input (register or memory).
-// Similarly, vextractf64x4 has a 256-bit output and 128-bit input and vinsertf64x4 the inverse
-// This method is mainly used for such instructions to return the appropriate memory operand
-// size, otherwise returns the regular operand size of the instruction.
+//  Note: there are cases when embedded broadcast is enabled, so the memory operand
+//  size is different from the intrinsic simd size, we will check here if emitter is
+//  emiting a embedded broadcast enabled instruction.
 
 //  Arguments:
 //       id - Instruction descriptor
 //
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
-
-    emitAttr    defaultSize = id->idOpSize();
-    instruction ins         = id->idIns();
     if (id->idIsEvexbContext())
     {
         // should have the assumption that Evex.b now stands for the embedded broadcast context.
@@ -3779,6 +3779,31 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
                 unreached();
         }
     }
+    else
+    {
+        return emitGetBaseMemOpSize(id);
+    }
+}
+
+//-----------------------------------------------------------------------------
+// emitGetMemOpSize: Get the memory operand size of instrDesc.
+//
+// Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
+// vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
+// and a 128-bit input (register or memory).
+// Similarly, vextractf64x4 has a 256-bit output and 128-bit input and vinsertf64x4 the inverse
+// This method is mainly used for such instructions to return the appropriate memory operand
+// size, otherwise returns the regular operand size of the instruction.
+
+//  Arguments:
+//       id - Instruction descriptor
+//
+emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
+{
+
+    emitAttr    defaultSize = id->idOpSize();
+    instruction ins         = id->idIns();
+
     switch (ins)
     {
         case INS_pextrb:
@@ -3903,6 +3928,19 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
                 assert(defaultSize == 16);
                 return EA_8BYTE;
             }
+        }
+
+        case INS_psrlw:
+        case INS_psrld:
+        case INS_psrlq:
+        case INS_psraw:
+        case INS_psrad:
+        case INS_psllw:
+        case INS_pslld:
+        case INS_psllq:
+        {
+            // These always have 16-byte memory loads
+            return EA_16BYTE;
         }
 
         case INS_vpmovdb:

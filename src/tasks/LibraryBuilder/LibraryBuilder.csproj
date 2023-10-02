@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
+    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -23,13 +23,16 @@
     <Compile Include="..\Common\Builders\CompiledAssembly.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
     <Compile Include="..\AppleAppBuilder\TargetOS.cs" />
-    <Compile Include="..\AppleAppBuilder\Xcode.cs" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
-                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+      <_PublishFramework Remove="@(_PublishFramework)" />
+      <_PublishFramework Include="$(TargetFrameworks)" />
+
+      <!-- Copies every assembly that is in the artifacts/bin/MonoTargetsTasks/ subfolders.  Be careful not to include too much. -->
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\*.pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
     </ItemGroup>
   </Target>
 

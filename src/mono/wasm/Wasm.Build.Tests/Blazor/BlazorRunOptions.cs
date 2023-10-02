@@ -17,7 +17,8 @@ public record BlazorRunOptions
     Action<IConsoleMessage>? OnConsoleMessage = null,
     Action<string>? OnErrorMessage = null,
     string Config = "Debug",
-    string? ExtraArgs = null
+    string? ExtraArgs = null,
+    string QueryString = ""
 );
 
 public enum BlazorRunHost { DotnetRun, WebServer };

@@ -215,6 +215,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public IList<JsonPropertyInfo> Properties => PropertyList;
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonPropertyInfoList PropertyList
         {
             get
@@ -350,6 +351,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Return the JsonTypeInfo for the element type, or null if the type is not an enumerable or dictionary.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonTypeInfo? ElementTypeInfo
         {
             get
@@ -375,6 +377,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Return the JsonTypeInfo for the key type, or null if the type is not a dictionary.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonTypeInfo? KeyTypeInfo
         {
             get
@@ -708,6 +711,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// a type discriminator for the current type. Consulted
         /// when serializing polymorphic values as objects.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonTypeInfo? AncestorPolymorphicType
         {
             get
@@ -1260,6 +1264,7 @@ namespace System.Text.Json.Serialization.Metadata
 #endif
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal bool SupportsPolymorphicDeserialization
         {
             get

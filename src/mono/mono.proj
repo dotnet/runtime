@@ -181,7 +181,7 @@
       <WasiSdkVersion>%(_VersionLines.Identity)</WasiSdkVersion>
       <WasiSdkUrl>https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-linux.tar.gz</WasiSdkUrl>
       <WasiSdkUrl Condition="'$(HostOS)' == 'osx'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-macos.tar.gz</WasiSdkUrl>
-      <WasiSdkUrl Condition="'$(HostOS)' == 'windows'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-mingw.tar.gz</WasiSdkUrl>
+      <WasiSdkUrl Condition="'$(HostOS)' == 'windows'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0.m-mingw.tar.gz</WasiSdkUrl>
     </PropertyGroup>
 
     <RemoveDir Directories="$(WASI_SDK_PATH)" />
@@ -810,6 +810,16 @@
       <MonoAotCrossOffsetsToolParams Condition="'$(TargetsWasi)' == 'true'" Include="--wasi-sdk=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)'))&quot;" />
     </ItemGroup>
 
+    <!--
+    When cross-building, this PropertyGroup sets the MonoCrossDir to use the ROOTFS_HOST_DIR.
+    This is specifically for linux_arm64 image that has both x64 and arm64 rootfs.
+    The runtime is built using the 'ROOTFS_DIR' which points to '/crossrootfs/arm64'.
+    The 'mono-aot-cross' is built using the 'ROOTFS_HOST_DIR' which points to '/crossrootfs/x64'.
+    -->
+    <PropertyGroup Condition="'$(CrossBuild)' == 'true' and '$(ROOTFS_HOST_DIR)' != '' and $(ROOTFS_HOST_DIR.Contains('$(AotHostArchitecture)'))">
+        <MonoCrossDir>$(ROOTFS_HOST_DIR)</MonoCrossDir>
+    </PropertyGroup>
+
     <!-- AOT compiler cross-build options  -->
     <ItemGroup Condition="'$(MonoCrossDir)' != ''">
       <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
@@ -859,7 +869,7 @@
       <_MonoSkipInitCompiler Condition="'$(CrossBuild)' == 'true'">false</_MonoSkipInitCompiler>
       <_MonoAotCrossOffsetsCommand Condition="'$(MonoUseCrossTool)' == 'true'">$(PythonCmd) $(MonoProjectRoot)mono/tools/offsets-tool/offsets-tool.py @(MonoAotCrossOffsetsToolParams, ' ')</_MonoAotCrossOffsetsCommand>
       <_MonoAotCMakeConfigureCommand>cmake @(MonoAOTCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoAotCMakeConfigureCommand>
-      <_MonoAotCMakeConfigureCommand Condition="'$(_MonoSkipInitCompiler)' != 'true' and '$(HostOS)' != 'windows'">sh -c 'build_arch=&quot;$(_CompilerTargetArch)&quot; compiler=&quot;$(MonoCCompiler)&quot; . &quot;$(RepositoryEngineeringCommonDir)native/init-compiler.sh&quot; &amp;&amp; @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)'</_MonoAotCMakeConfigureCommand>
+      <_MonoAotCMakeConfigureCommand Condition="'$(_MonoSkipInitCompiler)' != 'true' and '$(HostOS)' != 'windows'">sh -c 'build_arch=&quot;$(_CompilerTargetArch)&quot; ROOTFS_DIR=&quot;$(MonoCrossDir)&quot; compiler=&quot;$(MonoCCompiler)&quot; . &quot;$(RepositoryEngineeringCommonDir)native/init-compiler.sh&quot; &amp;&amp; @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)'</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeConfigureCommand Condition="'$(_MonoSkipInitCompiler)' == 'true' and '$(HostOS)' != 'windows'">$(_MonoAOTCCOption) $(_MonoAOTCXXOption) @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeConfigureCommand Condition="'$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjCrossDir)&quot; &amp;&amp; @(_MonoAotBuildEnv, ' ') $(_MonoAotCMakeConfigureCommand)</_MonoAotCMakeConfigureCommand>
       <_MonoAotCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoAotCMakeBuildCommand>
@@ -971,16 +981,16 @@
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\$(MonoAotCrossFileName)</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++.so.1">
+      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ('$(MonoBundleLLVMOptimizer)' == 'true' or '$(MonoEnableLLVM)' == 'true') and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++.so.1">
         <Destination>$(RuntimeBinDir)libc++.so.1</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++abi.so.1">
+      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ('$(MonoBundleLLVMOptimizer)' == 'true' or '$(MonoEnableLLVM)' == 'true') and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++abi.so.1">
         <Destination>$(RuntimeBinDir)libc++abi.so.1</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and (('$(MonoAOTEnableLLVM)' == 'true' and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++.so.1">
+      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ((('$(MonoAOTBundleLLVMOptimizer)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true') and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++.so.1">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++.so.1</Destination>
       </_MonoRuntimeArtifacts>
-      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and (('$(MonoAOTEnableLLVM)' == 'true' and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++abi.so.1">
+      <_MonoRuntimeArtifacts Condition="'$(HostOS)' == 'Linux' and ((('$(MonoAOTBundleLLVMOptimizer)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true') and '$(MonoUseLibCxx)' == 'true') or '$(TargetArchitecture)' == 'wasm')" Include="$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib\libc++abi.so.1">
         <Destination>$(RuntimeBinDir)cross\$(OutputRID)\libc++abi.so.1</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossPdbFilePath)" Condition="Exists('$(_MonoAotCrossPdbFilePath)')">
@@ -1060,6 +1070,12 @@
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-eh-wasm.a">
         <Destination>$(RuntimeBinDir)libmono-wasm-eh-wasm.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-simd.a">
+        <Destination>$(RuntimeBinDir)libmono-wasm-simd.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-nosimd.a">
+        <Destination>$(RuntimeBinDir)libmono-wasm-nosimd.a</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibSuffix)">
         <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(LibSuffix)</Destination>

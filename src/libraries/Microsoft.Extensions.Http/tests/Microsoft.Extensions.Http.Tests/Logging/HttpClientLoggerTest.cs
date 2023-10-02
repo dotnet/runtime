@@ -371,6 +371,89 @@ namespace Microsoft.Extensions.Http.Logging
             Assert.Equal(4, innerLogger.RequestFailedLogCount);
         }
 
+        [Fact]
+        public async Task LoggerFactoryWithHttpClientFactory_NoCircularDependency_PublicLogging()
+        {
+            var sink = new TestSink();
+            var services = new ServiceCollection();
+            services.AddTransient<TestMessageHandler>();
+            services.AddSingleton<TestSink>(sink);
+            services.AddSingleton<TestLoggerProvider>();
+
+            services.AddLogging(b => b.SetMinimumLevel(LogLevel.Trace));
+            services.AddSingleton<ILoggerProvider>(sp => sp.GetRequiredService<TestLoggerProvider>());
+            services.AddHttpClient("TestLoggerProvider")
+                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
+                .RemoveAllLoggers();
+
+            services.AddHttpClient("Production")
+                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>();
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+            Assert.NotNull(loggerFactory);
+
+            var prodClient = serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("Production");
+
+            _ = await prodClient.GetAsync(Url);
+
+            Assert.Equal(DefaultLoggerEventsPerRequest, sink.Writes.Count(w => w.LoggerName.StartsWith("System.Net.Http.HttpClient.Production")));
+            Assert.Equal(0, sink.Writes.Count(w => w.LoggerName.StartsWith("System.Net.Http.HttpClient.TestLoggerProvider")));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsPreciseGcSupported))]
+        public async Task LoggerFactoryWithHttpClientFactory_NoCircularDependency_DebugLogging()
+        {
+            var sink = new TestSink();
+            var services = new ServiceCollection();
+            services.AddTransient<TestMessageHandler>();
+            services.AddSingleton<TestSink>(sink);
+            services.AddSingleton<TestLoggerProvider>();
+
+            services.AddLogging(b => b.SetMinimumLevel(LogLevel.Trace));
+            services.AddSingleton<ILoggerProvider>(sp => sp.GetRequiredService<TestLoggerProvider>());
+            services.AddHttpClient("TestLoggerProvider")
+                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
+                .RemoveAllLoggers();
+
+            services.AddHttpClient("Production")
+                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>();
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            var httpClientFactory = (DefaultHttpClientFactory)serviceProvider.GetRequiredService<IHttpClientFactory>();
+            var prodClient = httpClientFactory.CreateClient("Production");
+
+            _ = await prodClient.GetAsync(Url);
+
+            httpClientFactory.StartCleanupTimer(); // we need to create a timer instance before triggering cleanup; normally it happens after the first expiry
+            httpClientFactory.CleanupTimer_Tick(); // trigger cleanup to write debug logs
+
+            Assert.Equal(2, sink.Writes.Count(w => w.LoggerName == typeof(DefaultHttpClientFactory).FullName));
+        }
+
+        private sealed class TestLoggerProvider : ILoggerProvider
+        {
+            private readonly HttpClient _httpClient;
+            private readonly TestSink _testSink;
+
+            public TestLoggerProvider(IHttpClientFactory httpClientFactory, TestSink testSink)
+            {
+                _httpClient = httpClientFactory.CreateClient("TestLoggerProvider");
+                _testSink = testSink;
+                _testSink.MessageLogged += _ => _httpClient.GetAsync(Url).GetAwaiter().GetResult(); // simulating sending logs on the wire
+            }
+
+            public ILogger CreateLogger(string categoryName)
+            {
+                var logger = new TestLogger(categoryName, _testSink, enabled: true);
+                return logger;
+            }
+
+            public void Dispose() => _httpClient.Dispose();
+        }
+
         private class TestCountingLogger : IHttpClientLogger
         {
             public int RequestStartLogCount { get; private set; }

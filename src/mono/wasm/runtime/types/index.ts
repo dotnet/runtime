@@ -64,6 +64,18 @@ export type MonoConfig = {
      */
     cacheBootResources?: boolean,
     /**
+     * Delay of the purge of the cached resources in milliseconds. Default is 10000 (10 seconds).
+     */
+    cachedResourcesPurgeDelay?: number,
+    /**
+     * Configures use of the `integrity` directive for fetching assets
+     */
+    disableIntegrityCheck?: boolean,
+    /**
+     * Configures use of the `no-cache` directive for fetching assets
+     */
+    disableNoCacheFetch?: boolean,
+    /**
     * Enables diagnostic log messages during startup
     */
     diagnosticTracing?: boolean
@@ -105,6 +117,17 @@ export type MonoConfig = {
      * config extensions declared in MSBuild items @(WasmBootConfigExtension)
      */
     extensions?: { [name: string]: any };
+
+    /**
+     * This is initial working directory for the runtime on the virtual file system. Default is "/".
+     */
+    virtualWorkingDirectory?: string;
+
+    /**
+     * This is the arguments to the Main() method of the program when called with dotnet.run() Default is [].
+     * Note: RuntimeAPI.runMain() and RuntimeAPI.runMainAndExit() will replace this value, if they provide it.
+     */
+    applicationArguments?: string[];
 };
 
 export type ResourceExtensions = { [extensionName: string]: ResourceList };
@@ -149,13 +172,6 @@ export type ResourceList = { [name: string]: string | null | "" };
  */
 export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string, behavior: AssetBehaviors) => string | Promise<Response> | null | undefined;
 
-export interface ResourceRequest {
-    name: string, // the name of the asset, including extension.
-    behavior: AssetBehaviors, // determines how the asset will be handled once loaded
-    resolvedUrl?: string; // this should be absolute url to the asset
-    hash?: string | null | ""; // the integrity hash of the asset (if any)
-}
-
 export interface LoadingResource {
     name: string;
     url: string;
@@ -163,7 +179,23 @@ export interface LoadingResource {
 }
 
 // Types of assets that can be in the _framework/blazor.boot.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
-export interface AssetEntry extends ResourceRequest {
+export interface AssetEntry {
+    /**
+     * the name of the asset, including extension.
+     */
+    name: string,
+    /**
+     * determines how the asset will be handled once loaded
+     */
+    behavior: AssetBehaviors,
+    /**
+     * this should be absolute url to the asset
+     */
+    resolvedUrl?: string;
+    /**
+     * the integrity hash of the asset (if any)
+     */
+    hash?: string | null | ""; // 
     /**
      * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
      */
@@ -184,7 +216,14 @@ export interface AssetEntry extends ResourceRequest {
      * If provided, runtime doesn't have to fetch the data. 
      * Runtime would set the buffer to null after instantiation to free the memory.
      */
-    buffer?: ArrayBuffer
+    buffer?: ArrayBuffer | Promise<ArrayBuffer>,
+
+    /**
+     * If provided, runtime doesn't have to import it's JavaScript modules.
+     * This will not work for multi-threaded runtime.
+     */
+    moduleExports?: any | Promise<any>,
+
     /**
      * It's metadata + fetch-like Promise<Response>
      * If provided, the runtime doesn't have to initiate the download. It would just await the response.
@@ -289,8 +328,8 @@ export type DotnetModuleConfig = {
 } & Partial<EmscriptenModule>
 
 export type APIType = {
-    runMain: (mainAssemblyName: string, args: string[]) => Promise<number>,
-    runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<number>,
+    runMain: (mainAssemblyName: string, args?: string[]) => Promise<number>,
+    runMainAndExit: (mainAssemblyName: string, args?: string[]) => Promise<number>,
     setEnvironmentVariable: (name: string, value: string) => void,
     getAssemblyExports(assemblyName: string): Promise<any>,
     setModuleImports(moduleName: string, moduleImports: any): void,

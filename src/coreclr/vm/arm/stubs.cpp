@@ -671,6 +671,16 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         pRD->pCurrentContext->R10 = (DWORD)(pUnwoundState->captureR4_R11[6]);
         pRD->pCurrentContext->R11 = (DWORD)(pUnwoundState->captureR4_R11[7]);
 
+        pRD->pCurrentContextPointers->R4 = &pRD->pCurrentContext->R4;
+        pRD->pCurrentContextPointers->R5 = &pRD->pCurrentContext->R5;
+        pRD->pCurrentContextPointers->R6 = &pRD->pCurrentContext->R6;
+        pRD->pCurrentContextPointers->R7 = &pRD->pCurrentContext->R7;
+        pRD->pCurrentContextPointers->R8 = &pRD->pCurrentContext->R8;
+        pRD->pCurrentContextPointers->R9 = &pRD->pCurrentContext->R9;
+        pRD->pCurrentContextPointers->R10 = &pRD->pCurrentContext->R10;
+        pRD->pCurrentContextPointers->R11 = &pRD->pCurrentContext->R11;
+        pRD->pCurrentContextPointers->Lr = &pRD->pCurrentContext->Lr;
+
         return;
     }
 #endif // DACCESS_COMPILE
@@ -1575,6 +1585,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pContext = NULL;
 
     *(pRD->pPC) = m_pCallerReturnAddress;
+    pRD->ControlPC = m_pCallerReturnAddress;
     pRD->SP = (DWORD) dac_cast<TADDR>(m_pCallSiteSP);
 
     pRD->IsCallerContextValid = FALSE;

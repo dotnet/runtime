@@ -81,7 +81,6 @@ bool IntegralRange::Contains(int64_t value) const
 {
     switch (type)
     {
-        case TYP_BOOL:
         case TYP_UBYTE:
         case TYP_USHORT:
             return SymbolicIntegerValue::Zero;
@@ -113,7 +112,6 @@ bool IntegralRange::Contains(int64_t value) const
     {
         case TYP_BYTE:
             return SymbolicIntegerValue::ByteMax;
-        case TYP_BOOL:
         case TYP_UBYTE:
             return SymbolicIntegerValue::UByteMax;
         case TYP_SHORT:
@@ -890,7 +888,6 @@ ssize_t Compiler::optCastConstantSmall(ssize_t iconVal, var_types smallType)
         case TYP_USHORT:
             return uint16_t(iconVal);
 
-        case TYP_BOOL:
         case TYP_UBYTE:
             return uint8_t(iconVal);
 
@@ -2708,7 +2705,6 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                         unreached();
                         break;
 
-                    case TYP_BOOL:
                     case TYP_BYTE:
                     case TYP_UBYTE:
                     case TYP_SHORT:
@@ -4454,7 +4450,7 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
         indir->gtFlags |= GTF_IND_NONFAULTING;
 
         // Set this flag to prevent reordering
-        indir->gtFlags |= GTF_ORDER_SIDEEFF;
+        indir->SetHasOrderingSideEffect();
 
         return true;
     }

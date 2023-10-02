@@ -37,6 +37,8 @@ namespace System.IO
         public Action<byte[], int, int> WriteFunc { get; set; }
         public Func<byte[], int, int, CancellationToken, Task> WriteAsyncArrayFunc { get; set; }
         public Func<ReadOnlyMemory<byte>, CancellationToken, ValueTask> WriteAsyncMemoryFunc { get; set; }
+        public Action<Stream, int> CopyToFunc { get; set; }
+        public Func<Stream, int, CancellationToken, Task> CopyToAsyncFunc { get; set; }
         public Action<bool> DisposeFunc { get; set; }
         public Func<ValueTask> DisposeAsyncFunc { get; set; }
 
@@ -61,6 +63,9 @@ namespace System.IO
         public override void Write(byte[] buffer, int offset, int count) { if (WriteFunc != null) WriteFunc(buffer, offset, count); else base.Write(buffer, offset, count); }
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => WriteAsyncArrayFunc != null ? WriteAsyncArrayFunc(buffer, offset, count, cancellationToken) : base.WriteAsync(buffer, offset, count, cancellationToken);
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => WriteAsyncMemoryFunc != null ? WriteAsyncMemoryFunc(buffer, cancellationToken) : base.WriteAsync(buffer, cancellationToken);
+
+        public override void CopyTo(Stream destination, int bufferSize) { if (CopyToFunc != null) CopyToFunc(destination, bufferSize); else base.CopyTo(destination, bufferSize); }
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) => CopyToAsyncFunc != null ? CopyToAsyncFunc(destination, bufferSize, cancellationToken) : base.CopyToAsync(destination, bufferSize, cancellationToken);
 
         protected override void Dispose(bool disposing) { if (DisposeFunc != null) DisposeFunc(disposing); else base.Dispose(disposing); }
         public override ValueTask DisposeAsync() => DisposeAsyncFunc != null ? DisposeAsyncFunc() : base.DisposeAsync();

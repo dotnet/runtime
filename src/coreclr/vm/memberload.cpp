@@ -693,7 +693,7 @@ FieldDesc* MemberLoader::GetFieldDescFromFieldDef(Module *pModule,
 
     pFD->GetApproxEnclosingMethodTable()->CheckRestore();
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (pModule->IsEditAndContinueEnabled() && pFD->IsEnCNew())
     {
         EnCFieldDesc *pEnCFD = (EnCFieldDesc*)pFD;
@@ -705,7 +705,7 @@ FieldDesc* MemberLoader::GetFieldDescFromFieldDef(Module *pModule,
             pEnCFD->Fixup(fieldDef);
         }
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     return pFD;
 }
@@ -1167,7 +1167,7 @@ MemberLoader::FindMethod(
         }
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // In the event the method wasn't found and the current module has
     // EnC enabled, try the slow path and go through all available methods.
     if (md == NULL
@@ -1202,7 +1202,7 @@ MemberLoader::FindMethod(
             }
         }
     }
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     RETURN md;
 }
@@ -1566,7 +1566,7 @@ MemberLoader::FindField(MethodTable* pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSign
         return pFD;
     }
 
-#if defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if defined(FEATURE_METADATA_UPDATER) && !defined(DACCESS_COMPILE)
     if (pModule != NULL
         && pModule->IsFullModule()
         && ((Module*)pModule)->IsEditAndContinueEnabled())
@@ -1611,7 +1611,7 @@ MemberLoader::FindField(MethodTable* pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSign
             return pCurrentFD;
         }
     }
-#endif // defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
+#endif // defined(FEATURE_METADATA_UPDATER) && !defined(DACCESS_COMPILE)
 
     return NULL;
 }

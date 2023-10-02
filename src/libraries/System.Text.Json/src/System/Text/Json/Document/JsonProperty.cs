@@ -117,7 +117,15 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
-            writer.WritePropertyName(Name);
+            if (_name is null)
+            {
+                Value.WritePropertyNameTo(writer);
+            }
+            else
+            {
+                writer.WritePropertyName(_name);
+            }
+
             Value.WriteTo(writer);
         }
 
@@ -135,6 +143,7 @@ namespace System.Text.Json
             return Value.GetPropertyRawText();
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay
             => Value.ValueKind == JsonValueKind.Undefined ? "<Undefined>" : $"\"{ToString()}\"";
     }

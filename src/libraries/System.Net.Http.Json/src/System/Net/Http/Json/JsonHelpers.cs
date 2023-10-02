@@ -23,9 +23,7 @@ namespace System.Net.Http.Json
             // Resolves JsonTypeInfo metadata using the appropriate JsonSerializerOptions configuration,
             // following the semantics of the JsonSerializer reflection methods.
             options ??= s_defaultSerializerOptions;
-            options.TypeInfoResolver ??= JsonSerializerOptions.Default.TypeInfoResolver;
-            options.MakeReadOnly();
-
+            options.MakeReadOnly(populateMissingResolver: true);
             return options.GetTypeInfo(type);
         }
 

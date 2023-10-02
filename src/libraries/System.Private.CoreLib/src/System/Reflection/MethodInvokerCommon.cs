@@ -18,13 +18,14 @@ namespace System.Reflection
         {
             if (LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke)
             {
-                // Always use the native invoke; useful for testing.
-                strategy = InvokerStrategy.StrategyDetermined_Obj4Args | InvokerStrategy.StrategyDetermined_ObjSpanArgs | InvokerStrategy.StrategyDetermined_RefArgs;
+                // Always use the native interpreted invoke.
+                // Useful for testing, to avoid startup overhead of emit, or for calling a ctor on already initialized object.
+                strategy = GetStrategyForUsingInterpreted();
             }
             else if (LocalAppContextSwitches.ForceEmitInvoke && !LocalAppContextSwitches.ForceInterpretedInvoke)
             {
                 // Always use emit invoke (if IsDynamicCodeSupported == true); useful for testing.
-                strategy = InvokerStrategy.HasBeenInvoked_Obj4Args | InvokerStrategy.HasBeenInvoked_ObjSpanArgs | InvokerStrategy.HasBeenInvoked_RefArgs;
+                strategy = GetStrategyForUsingEmit();
             }
             else
             {
@@ -57,7 +58,7 @@ namespace System.Reflection
                 {
                     invokerFlags[i] |= InvokerArgFlags.IsValueType;
                 }
-                else if (RuntimeTypeHandle.IsValueType(type))
+                else if (type.IsActualValueType)
                 {
                     invokerFlags[i] |= InvokerArgFlags.IsValueType | InvokerArgFlags.IsValueType_ByRef_Or_Pointer;
 
@@ -67,6 +68,18 @@ namespace System.Reflection
                     }
                 }
             }
+        }
+
+        internal static InvokerStrategy GetStrategyForUsingInterpreted()
+        {
+            // This causes the default strategy, which is interpreted, to always be used.
+            return InvokerStrategy.StrategyDetermined_Obj4Args | InvokerStrategy.StrategyDetermined_ObjSpanArgs | InvokerStrategy.StrategyDetermined_RefArgs;
+        }
+
+        private static InvokerStrategy GetStrategyForUsingEmit()
+        {
+            // This causes the emit strategy, if supported, to be used on the first call as well as subsequent calls.
+            return InvokerStrategy.HasBeenInvoked_Obj4Args | InvokerStrategy.HasBeenInvoked_ObjSpanArgs | InvokerStrategy.HasBeenInvoked_RefArgs;
         }
 
         /// <summary>

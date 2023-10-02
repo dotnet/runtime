@@ -665,7 +665,7 @@ disable_helper (EventPipeSessionID id)
 		ep_provider_callback_data_queue_fini (provider_callback_data_queue);
 
 #ifdef EP_CHECKED_BUILD
-		if (ep_volatile_load_number_of_sessions () == 0)
+		if (ep_volatile_load_number_of_sessions () == 0 && ep_volatile_load_eventpipe_state () != EP_STATE_SHUTTING_DOWN)
 			EP_ASSERT (ep_rt_providers_validate_all_disabled ());
 #endif
 
@@ -1432,7 +1432,9 @@ ep_shutdown (void)
 
 	for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
 		EventPipeSession *session = ep_volatile_load_session (i);
-		if (session)
+		// Do not shut down listener sessions on shutdown, the processing thread will
+		// still be trying to process events in the background until the process is torn down
+		if (session && session->session_type != EP_SESSION_TYPE_LISTENER)
 			ep_disable ((EventPipeSessionID)session);
 	}
 

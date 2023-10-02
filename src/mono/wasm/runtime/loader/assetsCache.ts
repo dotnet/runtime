@@ -1,18 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviors, MonoConfig, ResourceRequest } from "../types";
-import { loaderHelpers } from "./globals";
+import type { MonoConfig } from "../types";
+import type { AssetEntryInternal } from "../types/internal";
+import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 
-const cacheSkipAssetBehaviors: AssetBehaviors[] = ["vfs"]; // Previously only configuration
 const usedCacheKeys: { [key: string]: boolean } = {};
 const networkLoads: { [name: string]: LoadLogEntry } = {};
 const cacheLoads: { [name: string]: LoadLogEntry } = {};
 let cacheIfUsed: Cache | null;
-
-export function isCacheAvailable(): boolean {
-    return !!cacheIfUsed;
-}
 
 export function logDownloadStatsToConsole(): void {
     const cacheLoadsEntries = Object.values(cacheLoads);
@@ -24,10 +20,14 @@ export function logDownloadStatsToConsole(): void {
         // We have no perf stats to display, likely because caching is not in use.
         return;
     }
-
-    const linkerDisabledWarning = loaderHelpers.config.linkerEnabled ? "%c" : "\n%cThis application was built with linking (tree shaking) disabled. Published applications will be significantly smaller if you install wasm-tools workload. See also https://aka.ms/dotnet-wasm-features";
+    const useStyle = ENVIRONMENT_IS_WEB ? "%c" : "";
+    const style = ENVIRONMENT_IS_WEB ? ["background: purple; color: white; padding: 1px 3px; border-radius: 3px;",
+        "font-weight: bold;",
+        "font-weight: normal;",
+    ] : [];
+    const linkerDisabledWarning = !loaderHelpers.config.linkerEnabled ? "\nThis application was built with linking (tree shaking) disabled. \nPublished applications will be significantly smaller if you install wasm-tools workload. \nSee also https://aka.ms/dotnet-wasm-features" : "";
     // eslint-disable-next-line no-console
-    console.groupCollapsed(`%cdotnet%c Loaded ${toDataSizeString(totalResponseBytes)} resources${linkerDisabledWarning}`, "background: purple; color: white; padding: 1px 3px; border-radius: 3px;", "font-weight: bold;", "font-weight: normal;");
+    console.groupCollapsed(`${useStyle}dotnet${useStyle} Loaded ${toDataSizeString(totalResponseBytes)} resources${useStyle}${linkerDisabledWarning}`, ...style);
 
     if (cacheLoadsEntries.length) {
         // eslint-disable-next-line no-console
@@ -67,13 +67,13 @@ export async function purgeUnusedCacheEntriesAsync(): Promise<void> {
     }
 }
 
-export async function findCachedResponse(request: ResourceRequest): Promise<Response | undefined> {
+export async function findCachedResponse(asset: AssetEntryInternal): Promise<Response | undefined> {
     const cache = cacheIfUsed;
-    if (!cache || cacheSkipAssetBehaviors.includes(request.behavior) || !request.hash || request.hash.length === 0) {
+    if (!cache || asset.noCache || !asset.hash || asset.hash.length === 0) {
         return undefined;
     }
 
-    const cacheKey = getCacheKey(request);
+    const cacheKey = getCacheKey(asset);
     usedCacheKeys[cacheKey] = true;
 
     let cachedResponse: Response | undefined;
@@ -90,34 +90,38 @@ export async function findCachedResponse(request: ResourceRequest): Promise<Resp
 
     // It's in the cache.
     const responseBytes = parseInt(cachedResponse.headers.get("content-length") || "0");
-    cacheLoads[request.name] = { responseBytes };
+    cacheLoads[asset.name] = { responseBytes };
     return cachedResponse;
 }
 
-export function addCachedReponse(request: ResourceRequest, networkResponse: Response): void {
+export function addCachedReponse(asset: AssetEntryInternal, networkResponse: Response): void {
     const cache = cacheIfUsed;
-    if (!cache || cacheSkipAssetBehaviors.includes(request.behavior) || !request.hash || request.hash.length === 0) {
+    if (!cache || asset.noCache || !asset.hash || asset.hash.length === 0) {
         return;
     }
+    const clonedResponse = networkResponse.clone();
 
-    const cacheKey = getCacheKey(request);
-    addToCacheAsync(cache, request.name, cacheKey, networkResponse); // Don't await - add to cache in background
+    // postpone adding to cache until after we load the assembly, so that we could do the dotnet loading of the asset first
+    setTimeout(() => {
+        const cacheKey = getCacheKey(asset);
+        addToCacheAsync(cache, asset.name, cacheKey, clonedResponse); // Don't await - add to cache in background
+    }, 0);
 }
 
-function getCacheKey(request: ResourceRequest) {
-    return `${request.resolvedUrl}.${request.hash}`;
+function getCacheKey(asset: AssetEntryInternal) {
+    return `${asset.resolvedUrl}.${asset.hash}`;
 }
 
-async function addToCacheAsync(cache: Cache, name: string, cacheKey: string, response: Response) {
+async function addToCacheAsync(cache: Cache, name: string, cacheKey: string, clonedResponse: Response) {
     // We have to clone in order to put this in the cache *and* not prevent other code from
     // reading the original response stream.
-    const responseData = await response.clone().arrayBuffer();
+    const responseData = await clonedResponse.arrayBuffer();
 
     // Now is an ideal moment to capture the performance stats for the request, since it
     // only just completed and is most likely to still be in the buffer. However this is
     // only done on a 'best effort' basis. Even if we do receive an entry, some of its
     // properties may be blanked out if it was a CORS request.
-    const performanceEntry = getPerformanceEntry(response.url);
+    const performanceEntry = getPerformanceEntry(clonedResponse.url);
     const responseBytes = (performanceEntry && performanceEntry.encodedBodySize) || undefined;
     networkLoads[name] = { responseBytes };
 
@@ -125,8 +129,8 @@ async function addToCacheAsync(cache: Cache, name: string, cacheKey: string, res
     // We can't rely on the server sending content-length (ASP.NET Core doesn't by default)
     const responseToCache = new Response(responseData, {
         headers: {
-            "content-type": response.headers.get("content-type") || "",
-            "content-length": (responseBytes || response.headers.get("content-length") || "").toString(),
+            "content-type": clonedResponse.headers.get("content-type") || "",
+            "content-length": (responseBytes || clonedResponse.headers.get("content-length") || "").toString(),
         },
     });
 
@@ -150,7 +154,7 @@ async function getCacheToUseIfEnabled(config: MonoConfig): Promise<Cache | null>
 
     // cache integrity is compromised if the first request has been served over http (except localhost)
     // in this case, we want to disable caching and integrity validation
-    if (window.isSecureContext === false) {
+    if (globalThis.isSecureContext === false) {
         return null;
     }
 

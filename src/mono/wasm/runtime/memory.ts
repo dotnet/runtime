@@ -394,7 +394,7 @@ export function localHeapViewF64(): Float64Array {
 // on non-MT build, this will be a no-op trimmed by rollup
 export function receiveWorkerHeapViews() {
     if (!MonoWasmThreads) return;
-    if (Module.wasmMemory!.buffer != Module.HEAPU8.buffer) {
+    if (Module.getMemory()!.buffer != Module.HEAPU8.buffer) {
         runtimeHelpers.updateMemoryViews();
     }
 }

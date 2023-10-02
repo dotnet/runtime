@@ -27,10 +27,12 @@ class FrozenObjectHeapManager
 {
 public:
     FrozenObjectHeapManager();
-    Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize, bool publish = true);
+    Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize,
+        void(*initFunc)(Object*,void*) = nullptr, void* pParam = nullptr);
 
 private:
     Crst m_Crst;
+    Crst m_SegmentRegistrationCrst;
     SArray<FrozenObjectSegment*> m_FrozenSegments;
     FrozenObjectSegment* m_CurrentSegment;
 
@@ -43,10 +45,7 @@ class FrozenObjectSegment
 public:
     FrozenObjectSegment(size_t sizeHint);
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
-    size_t GetSize() const
-    {
-        return m_Size;
-    }
+    void RegisterOrUpdate(uint8_t* current, size_t sizeCommited);
 
 private:
     Object* GetFirstObject() const;
@@ -55,11 +54,19 @@ private:
     // Start of the reserved memory, the first object starts at "m_pStart + sizeof(ObjHeader)" (its pMT)
     uint8_t* m_pStart;
 
+    // NOTE: To handle potential race conditions, only m_[x]Registered fields should be accessed
+    // externally as they guarantee that GC is aware of the current state of the segment.
+
     // Pointer to the end of the current segment, ready to be used as a pMT for a new object
     // meaning that "m_pCurrent - sizeof(ObjHeader)" is the actual start of the new object (header).
     //
     // m_pCurrent <= m_SizeCommitted
     uint8_t* m_pCurrent;
+
+    // Last known value of m_pCurrent that GC is aware of.
+    //
+    // m_pCurrentRegistered <= m_pCurrent
+    uint8_t* m_pCurrentRegistered;
 
     // Memory committed in the current segment
     //
@@ -70,10 +77,10 @@ private:
     size_t m_Size;
 
     segment_handle m_SegmentHandle;
-    INDEBUG(size_t m_ObjectsCount);
 
     friend class ProfilerObjectEnum;
     friend class ProfToEEInterfaceImpl;
+    friend class FrozenObjectHeapManager;
 };
 
 #endif // _FROZENOBJECTHEAP_H

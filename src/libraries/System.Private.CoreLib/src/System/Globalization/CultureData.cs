@@ -811,11 +811,18 @@ namespace System.Globalization
             culture._sRealName = cultureName;
             culture._bUseOverridesUserSetting = useUserOverride;
 
-            // Ask native code if that one's real
+            // Ask native code if that one's real, populate _sWindowsName
             if (!culture.InitCultureDataCore() && !culture.InitCompatibilityCultureData())
             {
                 return null;
             }
+#if TARGET_BROWSER
+            // populate fields for which ICU does not provide data in Hybrid mode
+            if (GlobalizationMode.Hybrid && !string.IsNullOrEmpty(culture._sName))
+            {
+                culture = JSLoadCultureInfoFromBrowser(culture._sName, culture);
+            }
+#endif
 
             // We need _sWindowsName to be initialized to know if we're using overrides.
             culture.InitUserOverride(useUserOverride);
@@ -1553,6 +1560,16 @@ namespace System.Globalization
                 {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                     _iFirstDayOfWeek = GlobalizationMode.Hybrid ? GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek) : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+#elif TARGET_BROWSER
+                    if (GlobalizationMode.Hybrid)
+                    {
+                        Debug.Assert(_sName != null, "[FirstDayOfWeek] Expected _sName to be populated already");
+                        _iFirstDayOfWeek = GetFirstDayOfWeek(_sName);
+                    }
+                    else
+                    {
+                        _iFirstDayOfWeek = IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+                    }
 #else
                     _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
 #endif
@@ -1571,7 +1588,19 @@ namespace System.Globalization
             {
                 if (_iFirstWeekOfYear == undef)
                 {
+#if TARGET_BROWSER
+                    if (GlobalizationMode.Hybrid)
+                    {
+                        Debug.Assert(_sName != null, "[CalendarWeekRule] Expected _sName to be populated already");
+                        _iFirstWeekOfYear = GetFirstWeekOfYear(_sName);
+                    }
+                    else
+                    {
+                        _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
+                    }
+#else
                     _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
+#endif
                 }
                 return _iFirstWeekOfYear;
             }

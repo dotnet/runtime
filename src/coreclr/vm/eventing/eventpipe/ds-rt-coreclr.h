@@ -151,7 +151,11 @@ bool
 ds_rt_config_value_get_enable (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_EnableDiagnostics) != 0;
+	if (CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
+	{
+		return false;
+	}
+    return CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_EnableDiagnostics_IPC) != 0;
 }
 
 static
@@ -162,7 +166,7 @@ ds_rt_config_value_get_ports (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_DOTNET_DiagnosticPorts));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()), -1);
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
 }
 
 static

@@ -115,16 +115,28 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
                 IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
+#if defined(FEATURE_CONSERVATIVE_GC) || defined(USE_FEF)
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
-    if ((pTopFrame != ((Frame*)-1))
-        && (pTopFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())) {
-        // It is an InlinedCallFrame. Get SP from it.
+    if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
+    {
+        // It is an InlinedCallFrame with active call. Get SP from it.
         InlinedCallFrame* pInlinedFrame = (InlinedCallFrame*)pTopFrame;
         topStack = (Object **)pInlinedFrame->GetCallSiteSP();
     }
+#endif // FEATURE_CONSERVATIVE_GC || USE_FEF
 
+#ifdef USE_FEF
+    // We only set the stack_limit when FEF (FaultingExceptionFrame) is enabled, because without the
+    // FEF, the code above would have to check if hardware exception is being handled and get the limit
+    // from the exception frame. Since the stack_limit is strictly necessary only on Unix and FEF is
+    // not enabled on Window x86 only, it is sufficient to keep the stack_limit set to 0 in this case.
+    // See the comment on the stack_limit usage in the PromoteCarefully function for more details.
     sc->stack_limit = (uintptr_t)topStack;
+#else // USE_FEF
+    // It should be set to 0 in the ScanContext constructor
+    _ASSERTE(sc->stack_limit == 0);
+#endif // USE_FEF
 
 #ifdef FEATURE_CONSERVATIVE_GC
     if (g_pConfig->GetGCConservative())
