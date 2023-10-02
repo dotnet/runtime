@@ -1460,7 +1460,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 
             // Possibly defer this until after early out below.
             //
-            jti.m_fallThroughPred->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+            jti.m_fallThroughPred->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
             jti.m_fallThroughPred->bbJumpDest = jti.m_block;
             modifiedFlow                      = true;
         }
@@ -1532,7 +1532,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         fgRemoveStmt(jti.m_block, lastStmt);
         JITDUMP("  repurposing " FMT_BB " to always jump to " FMT_BB "\n", jti.m_block->bbNum, jti.m_trueTarget->bbNum);
         fgRemoveRefPred(jti.m_falseTarget, jti.m_block);
-        jti.m_block->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+        jti.m_block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
     }
     else if (falsePredsWillReuseBlock)
     {
@@ -1541,7 +1541,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         JITDUMP("  repurposing " FMT_BB " to always fall through to " FMT_BB "\n", jti.m_block->bbNum,
                 jti.m_falseTarget->bbNum);
         fgRemoveRefPred(jti.m_trueTarget, jti.m_block);
-        jti.m_block->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+        jti.m_block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
     }
 
     // Now reroute the flow from the predecessors.

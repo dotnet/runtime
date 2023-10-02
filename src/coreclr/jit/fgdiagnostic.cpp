@@ -101,7 +101,7 @@ void Compiler::fgDebugCheckUpdate()
 
         if (block->isEmpty() && !(block->bbFlags & BBF_DONT_REMOVE))
         {
-            switch (block->getBBJumpKind())
+            switch (block->GetBBJumpKind())
             {
                 case BBJ_CALLFINALLY:
                 case BBJ_EHFINALLYRET:
@@ -1035,7 +1035,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             fprintf(fgxFile, "\n        <block");
             fprintf(fgxFile, "\n            id=\"%d\"", block->bbNum);
             fprintf(fgxFile, "\n            ordinal=\"%d\"", blockOrdinal);
-            fprintf(fgxFile, "\n            jumpKind=\"%s\"", kindImage[block->getBBJumpKind()]);
+            fprintf(fgxFile, "\n            jumpKind=\"%s\"", kindImage[block->GetBBJumpKind()]);
             if (block->hasTryIndex())
             {
                 fprintf(fgxFile, "\n            inTry=\"%s\"", "true");
@@ -2004,7 +2004,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     }
     else
     {
-        switch (block->getBBJumpKind())
+        switch (block->GetBBJumpKind())
         {
             case BBJ_COND:
                 printf("-> " FMT_BB "%*s ( cond )", block->bbJumpDest->bbNum,
@@ -2659,7 +2659,7 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
 
 bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
 {
-    switch (blockPred->getBBJumpKind())
+    switch (blockPred->GetBBJumpKind())
     {
         case BBJ_COND:
             assert(blockPred->bbNext == block || blockPred->bbJumpDest == block);

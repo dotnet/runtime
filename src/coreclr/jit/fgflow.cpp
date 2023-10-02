@@ -343,7 +343,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
     BasicBlock* bNext;
 
-    switch (block->getBBJumpKind())
+    switch (block->GetBBJumpKind())
     {
         case BBJ_CALLFINALLY:
             if (!(block->bbFlags & BBF_RETLESS_CALL))

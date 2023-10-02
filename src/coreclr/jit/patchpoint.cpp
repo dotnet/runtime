@@ -145,7 +145,7 @@ private:
         BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_NONE, block);
 
         // Update flow and flags
-        block->setBBJumpKind(BBJ_COND DEBUG_ARG(compiler));
+        block->SetBBJumpKind(BBJ_COND DEBUG_ARG(compiler));
         block->bbJumpDest = remainderBlock;
         block->bbFlags |= BBF_INTERNAL;
 
@@ -233,7 +233,7 @@ private:
         }
 
         // Update flow
-        block->setBBJumpKind(BBJ_THROW DEBUG_ARG(compiler));
+        block->SetBBJumpKind(BBJ_THROW DEBUG_ARG(compiler));
         block->bbJumpDest = nullptr;
 
         // Add helper call

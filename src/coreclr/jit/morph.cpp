@@ -6190,7 +6190,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // Many tailcalls will have call and ret in the same block, and thus be
         // BBJ_RETURN, but if the call falls through to a ret, and we are doing a
         // tailcall, change it here.
-        compCurBB->setBBJumpKind(BBJ_RETURN DEBUG_ARG(this));
+        compCurBB->SetBBJumpKind(BBJ_RETURN DEBUG_ARG(this));
     }
 
     GenTree* stmtExpr = fgMorphStmt->GetRootNode();
@@ -6338,7 +6338,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         {
             // We call CORINFO_HELP_TAILCALL which does not return, so we will
             // not need epilogue.
-            compCurBB->setBBJumpKind(BBJ_THROW DEBUG_ARG(this));
+            compCurBB->SetBBJumpKind(BBJ_THROW DEBUG_ARG(this));
         }
 
         if (isRootReplaced)
@@ -7490,7 +7490,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     }
 
     // Finish hooking things up.
-    block->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+    block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
     fgAddRefPred(block->bbJumpDest, block);
     block->bbFlags &= ~BBF_HAS_JMP;
 }
@@ -13183,7 +13183,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             if (cond->AsIntCon()->gtIconVal != 0)
             {
                 /* JTRUE 1 - transform the basic block into a BBJ_ALWAYS */
-                block->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+                block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                 bTaken    = block->bbJumpDest;
                 bNotTaken = block->bbNext;
             }
@@ -13199,7 +13199,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 }
 
                 /* JTRUE 0 - transform the basic block into a BBJ_NONE   */
-                block->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                 bTaken    = block->bbNext;
                 bNotTaken = block->bbJumpDest;
             }
@@ -13254,7 +13254,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                     FlowEdge* edge;
                     // Now fix the weights of the edges out of 'bUpdated'
-                    switch (bUpdated->getBBJumpKind())
+                    switch (bUpdated->GetBBJumpKind())
                     {
                         case BBJ_NONE:
                             edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
@@ -13428,13 +13428,13 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     if (curJump != block->bbNext)
                     {
                         // transform the basic block into a BBJ_ALWAYS
-                        block->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+                        block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                         block->bbJumpDest = curJump;
                     }
                     else
                     {
                         // transform the basic block into a BBJ_NONE
-                        block->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                        block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                     }
                     foundVal = true;
                 }
@@ -14002,7 +14002,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         else
 #endif // !TARGET_X86
         {
-            block->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+            block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
             block->bbJumpDest = genReturnBB;
             fgAddRefPred(genReturnBB, block);
             fgReturnCount--;

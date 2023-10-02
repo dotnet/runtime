@@ -3224,7 +3224,7 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     fgRemoveBlockAsPred(block);
 
     // Update jump kind after the scrub.
-    block->setBBJumpKind(BBJ_THROW DEBUG_ARG(this));
+    block->SetBBJumpKind(BBJ_THROW DEBUG_ARG(this));
 
     // Any block with a throw is rare
     block->bbSetRunRarely();

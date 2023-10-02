@@ -501,7 +501,7 @@ void BlockCountInstrumentor::RelocateProbes()
                 //
                 if (pred->KindIs(BBJ_NONE))
                 {
-                    pred->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
+                    pred->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
                     pred->bbJumpDest = block;
                 }
                 assert(pred->KindIs(BBJ_ALWAYS));
@@ -945,7 +945,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
         visitor->VisitBlock(block);
         nBlocks++;
 
-        switch (block->getBBJumpKind())
+        switch (block->GetBBJumpKind())
         {
             case BBJ_CALLFINALLY:
             {
@@ -1554,7 +1554,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                         //
                         if (block->KindIs(BBJ_NONE))
                         {
-                            block->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
+                            block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
                             block->bbJumpDest = target;
                         }
 
@@ -1697,7 +1697,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
                 //
                 if (pred->KindIs(BBJ_NONE))
                 {
-                    pred->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
+                    pred->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
                     pred->bbJumpDest = block;
                 }
                 assert(pred->KindIs(BBJ_ALWAYS));
@@ -3922,7 +3922,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 //
 void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, BlockInfo* info)
 {
-    switch (block->getBBJumpKind())
+    switch (block->GetBBJumpKind())
     {
         case BBJ_SWITCH:
             MarkInterestingSwitches(block, info);
@@ -4687,7 +4687,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
             }
 
             slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-            switch (bSrc->getBBJumpKind())
+            switch (bSrc->GetBBJumpKind())
             {
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:

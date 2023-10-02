@@ -378,7 +378,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             block->bbMemoryLiveIn  = fullMemoryKindSet;
             block->bbMemoryLiveOut = fullMemoryKindSet;
 
-            switch (block->getBBJumpKind())
+            switch (block->GetBBJumpKind())
             {
                 case BBJ_EHFINALLYRET:
                 case BBJ_EHFAULTRET:
@@ -886,7 +886,7 @@ void Compiler::fgExtendDbgLifetimes()
     {
         VarSetOps::ClearD(this, initVars);
 
-        switch (block->getBBJumpKind())
+        switch (block->GetBBJumpKind())
         {
             case BBJ_NONE:
                 PREFIX_ASSUME(block->bbNext != nullptr);

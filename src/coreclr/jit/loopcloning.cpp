@@ -2047,7 +2047,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     {
         assert(h->KindIs(BBJ_ALWAYS));
         assert(h->bbJumpDest == loop.lpEntry);
-        h2->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+        h2->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
         h2->bbJumpDest = loop.lpEntry;
     }
 
@@ -2062,7 +2062,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // Make 'h' fall through to 'h2' (if it didn't already).
     // Don't add the h->h2 edge because we're going to insert the cloning conditions between 'h' and 'h2', and
     // optInsertLoopChoiceConditions() will add the edge.
-    h->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+    h->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
     h->bbJumpDest = nullptr;
 
     // Make X2 after B, if necessary.  (Not necessary if B is a BBJ_ALWAYS.)
@@ -2116,7 +2116,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
     for (BasicBlock* const blk : loop.LoopBlocks())
     {
-        BasicBlock* newBlk = fgNewBBafter(blk->getBBJumpKind(), newPred, /*extendRegion*/ true);
+        BasicBlock* newBlk = fgNewBBafter(blk->GetBBJumpKind(), newPred, /*extendRegion*/ true);
         JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum, newPred->bbNum);
 
         // Call CloneBlockState to make a copy of the block's statements (and attributes), and assert that it
@@ -2175,7 +2175,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         bool        b      = blockMap->Lookup(blk, &newblk);
         assert(b && newblk != nullptr);
 
-        assert(blk->KindIs(newblk->getBBJumpKind()));
+        assert(blk->KindIs(newblk->GetBBJumpKind()));
 
         // First copy the jump destination(s) from "blk".
         optCopyBlkDest(blk, newblk);
@@ -2184,7 +2184,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         optRedirectBlock(newblk, blockMap);
 
         // Add predecessor edges for the new successors, as well as the fall-through paths.
-        switch (newblk->getBBJumpKind())
+        switch (newblk->GetBBJumpKind())
         {
             case BBJ_NONE:
                 fgAddRefPred(newblk->bbNext, newblk);
@@ -2255,7 +2255,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     {
         // We can't just fall through to the slow path entry, so make it an unconditional branch.
         assert(slowHead->KindIs(BBJ_NONE)); // This is how we created it above.
-        slowHead->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+        slowHead->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
         slowHead->bbJumpDest = e2;
     }
 

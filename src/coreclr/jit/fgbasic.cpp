@@ -537,7 +537,7 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, Bas
     assert(block != nullptr);
     assert(fgPredsComputed);
 
-    switch (block->getBBJumpKind())
+    switch (block->GetBBJumpKind())
     {
         case BBJ_CALLFINALLY:
         case BBJ_COND:
@@ -2771,7 +2771,7 @@ void Compiler::fgLinkBasicBlocks()
 
     for (BasicBlock* const curBBdesc : Blocks())
     {
-        switch (curBBdesc->getBBJumpKind())
+        switch (curBBdesc->GetBBJumpKind())
         {
             case BBJ_COND:
             case BBJ_ALWAYS:
@@ -3808,7 +3808,7 @@ void Compiler::fgFindBasicBlocks()
                 // BBJ_EHFINALLYRET that were imported to BBJ_EHFAULTRET.
                 if ((hndBegBB->bbCatchTyp == BBCT_FAULT) && block->KindIs(BBJ_EHFINALLYRET))
                 {
-                    block->setBBJumpKind(BBJ_EHFAULTRET DEBUG_ARG(this));
+                    block->SetBBJumpKind(BBJ_EHFAULTRET DEBUG_ARG(this));
                 }
             }
 
@@ -4017,7 +4017,7 @@ void Compiler::fgFixEntryFlowForOSR()
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->KindIs(BBJ_NONE));
     fgRemoveRefPred(fgFirstBB->bbNext, fgFirstBB);
-    fgFirstBB->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+    fgFirstBB->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
     fgFirstBB->bbJumpDest = fgOSREntryBB;
     FlowEdge* const edge  = fgAddRefPred(fgOSREntryBB, fgFirstBB);
     edge->setLikelihood(1.0);
@@ -4057,7 +4057,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
             continue;
         }
 
-        switch (blk->getBBJumpKind())
+        switch (blk->GetBBJumpKind())
         {
             case BBJ_NONE: // block flows into the next one (no jump)
 
@@ -4560,7 +4560,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
 {
     // We'd like to use fgNewBBafter(), but we need to update the preds list before linking in the new block.
     // (We need the successors of 'curr' to be correct when we do this.)
-    BasicBlock* newBlock = bbNewBasicBlock(curr->getBBJumpKind());
+    BasicBlock* newBlock = bbNewBasicBlock(curr->GetBBJumpKind());
 
     // Start the new block with no refs. When we set the preds below, this will get updated correctly.
     newBlock->bbRefs = 0;
@@ -4628,7 +4628,7 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     curr->bbFlags &= ~(BBF_HAS_JMP | BBF_RETLESS_CALL);
 
     // Default to fallthru, and add the arc for that.
-    curr->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+    curr->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
     fgAddRefPred(newBlock, curr);
 
     return newBlock;
@@ -5071,7 +5071,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             // Note that we don't do it if bPrev follows a BBJ_CALLFINALLY block (BBF_KEEP_BBJ_ALWAYS),
             // because that would violate our invariant that BBJ_CALLFINALLY blocks are followed by
             // BBJ_ALWAYS blocks.
-            bPrev->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+            bPrev->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
         }
 
         // If this is the first Cold basic block update fgFirstColdBlock
@@ -5129,7 +5129,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 #ifdef DEBUG
         /* Some extra checks for the empty case */
 
-        switch (block->getBBJumpKind())
+        switch (block->GetBBJumpKind())
         {
             case BBJ_NONE:
                 break;
@@ -5246,7 +5246,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             }
 
             /* change all jumps to the removed block */
-            switch (predBlock->getBBJumpKind())
+            switch (predBlock->GetBBJumpKind())
             {
                 default:
                     noway_assert(!"Unexpected bbJumpKind in fgRemoveBlock()");
@@ -5260,7 +5260,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     if (block->KindIs(BBJ_ALWAYS))
                     {
                         /* bPrev now becomes a BBJ_ALWAYS */
-                        bPrev->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+                        bPrev->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                         bPrev->bbJumpDest = succBlock;
                     }
                     break;
@@ -5313,7 +5313,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     if (bPrev != nullptr)
     {
-        switch (bPrev->getBBJumpKind())
+        switch (bPrev->GetBBJumpKind())
         {
             case BBJ_CALLFINALLY:
                 // If prev is a BBJ_CALLFINALLY it better be marked as RETLESS
@@ -5333,7 +5333,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     if ((bPrev == fgFirstBB) || !bPrev->isBBCallAlwaysPairTail())
                     {
                         // It's safe to change the jump type
-                        bPrev->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                        bPrev->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                     }
                 }
                 break;
@@ -5378,11 +5378,11 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
 
         if (bSrc->bbFallsThrough() && (bSrc->bbNext != bDst))
         {
-            switch (bSrc->getBBJumpKind())
+            switch (bSrc->GetBBJumpKind())
             {
 
                 case BBJ_NONE:
-                    bSrc->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+                    bSrc->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                     bSrc->bbJumpDest = bDst;
                     JITDUMP("Block " FMT_BB " ended with a BBJ_NONE, Changed to an unconditional jump to " FMT_BB "\n",
                             bSrc->bbNum, bSrc->bbJumpDest->bbNum);
@@ -5462,7 +5462,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
             if (bSrc->KindIs(BBJ_ALWAYS) && !(bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) &&
                 (bSrc->bbJumpDest == bSrc->bbNext))
             {
-                bSrc->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                bSrc->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                 JITDUMP("Changed an unconditional jump from " FMT_BB " to the next block " FMT_BB
                         " into a BBJ_NONE block\n",
                         bSrc->bbNum, bSrc->bbNext->bbNum);

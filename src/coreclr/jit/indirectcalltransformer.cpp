@@ -573,7 +573,7 @@ private:
                 // There's no need for a new block here. We can just append to currBlock.
                 //
                 checkBlock = currBlock;
-                checkBlock->setBBJumpKind(BBJ_COND DEBUG_ARG(compiler));
+                checkBlock->SetBBJumpKind(BBJ_COND DEBUG_ARG(compiler));
             }
             else
             {
@@ -652,7 +652,7 @@ private:
             if (isLastCheck && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) != 0))
             {
                 checkBlock->bbJumpDest = nullptr;
-                checkBlock->setBBJumpKind(BBJ_NONE DEBUG_ARG(compiler));
+                checkBlock->SetBBJumpKind(BBJ_NONE DEBUG_ARG(compiler));
                 return;
             }
 
@@ -1126,7 +1126,7 @@ private:
             // not fall through to the check block.
             //
             compiler->fgRemoveRefPred(checkBlock, coldBlock);
-            coldBlock->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(compiler));
+            coldBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(compiler));
             coldBlock->bbJumpDest = elseBlock;
             compiler->fgAddRefPred(elseBlock, coldBlock);
         }

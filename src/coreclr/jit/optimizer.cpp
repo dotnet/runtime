@@ -1385,7 +1385,7 @@ void Compiler::optCheckPreds()
                 }
             }
             noway_assert(bb);
-            switch (bb->getBBJumpKind())
+            switch (bb->GetBBJumpKind())
             {
                 case BBJ_COND:
                     if (bb->bbJumpDest == block)
@@ -2398,7 +2398,7 @@ private:
     {
         BasicBlock* exitPoint;
 
-        switch (block->getBBJumpKind())
+        switch (block->GetBBJumpKind())
         {
             case BBJ_COND:
             case BBJ_CALLFINALLY:
@@ -2738,7 +2738,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
 
     BasicBlock* newJumpDest = nullptr;
 
-    switch (blk->getBBJumpKind())
+    switch (blk->GetBBJumpKind())
     {
         case BBJ_NONE:
         case BBJ_THROW:
@@ -2818,10 +2818,10 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
 // TODO-Cleanup: This should be a static member of the BasicBlock class.
 void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
 {
-    assert(from->KindIs(to->getBBJumpKind())); // Precondition.
+    assert(from->KindIs(to->GetBBJumpKind())); // Precondition.
 
     // copy the jump destination(s) from "from" to "to".
-    switch (to->getBBJumpKind())
+    switch (to->GetBBJumpKind())
     {
         case BBJ_ALWAYS:
         case BBJ_LEAVE:
@@ -4361,7 +4361,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 for (BasicBlock* block = loop.lpTop; block != loop.lpBottom->bbNext; block = block->bbNext)
                 {
                     BasicBlock* newBlock = insertAfter =
-                        fgNewBBafter(block->getBBJumpKind(), insertAfter, /*extendRegion*/ true);
+                        fgNewBBafter(block->GetBBJumpKind(), insertAfter, /*extendRegion*/ true);
                     blockMap.Set(block, newBlock, BlockToBlockMap::Overwrite);
 
                     if (!BasicBlock::CloneBlockState(this, newBlock, block, lvar, lval))
@@ -4415,7 +4415,7 @@ PhaseStatus Compiler::optUnrollLoops()
                         {
                             testCopyStmt->SetRootNode(sideEffList);
                         }
-                        newBlock->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                        newBlock->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                     }
                 }
 
@@ -4486,7 +4486,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     fgRemoveAllRefPreds(succ, block);
                 }
 
-                block->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                 block->bbStmtList   = nullptr;
                 block->bbJumpDest   = nullptr;
                 block->bbNatLoopNum = newLoopNum;
@@ -4531,7 +4531,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 noway_assert(initBlockBranchStmt->GetRootNode()->OperIs(GT_JTRUE));
                 fgRemoveStmt(initBlock, initBlockBranchStmt);
                 fgRemoveRefPred(initBlock->bbJumpDest, initBlock);
-                initBlock->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                initBlock->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
             }
             else
             {
@@ -5077,7 +5077,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     bool foundCondTree = false;
 
     // Create a new block after `block` to put the copied condition code.
-    block->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+    block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
     block->bbJumpDest    = nullptr;
     BasicBlock* bNewCond = fgNewBBafter(BBJ_COND, block, /*extendRegion*/ true);
 
@@ -8306,7 +8306,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             continue;
         }
 
-        switch (predBlock->getBBJumpKind())
+        switch (predBlock->GetBBJumpKind())
         {
             case BBJ_NONE:
                 // This 'entry' predecessor that isn't dominated by 'entry' must be outside the loop,

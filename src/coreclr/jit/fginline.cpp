@@ -675,12 +675,12 @@ private:
 
                 if (!condTree->IsIntegralConst(0))
                 {
-                    block->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_compiler));
+                    block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_compiler));
                     m_compiler->fgRemoveRefPred(block->bbNext, block);
                 }
                 else
                 {
-                    block->setBBJumpKind(BBJ_NONE DEBUG_ARG(m_compiler));
+                    block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(m_compiler));
                     m_compiler->fgRemoveRefPred(block->bbJumpDest, block);
                 }
             }
@@ -1530,13 +1530,13 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 {
                     JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
                             block->bbNum, bottomBlock->bbNum);
-                    block->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+                    block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                     block->bbJumpDest = bottomBlock;
                 }
                 else
                 {
                     JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                    block->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                    block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                 }
 
                 fgAddRefPred(bottomBlock, block);

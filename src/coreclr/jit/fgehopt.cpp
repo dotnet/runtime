@@ -163,7 +163,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 noway_assert(leaveBlock->KindIs(BBJ_ALWAYS));
 
                 currentBlock->bbJumpDest = postTryFinallyBlock;
-                currentBlock->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+                currentBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
 
                 // Ref count updates.
                 fgAddRefPred(postTryFinallyBlock, currentBlock);
@@ -463,7 +463,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // Time to optimize.
         //
         // (1) Convert the callfinally to a normal jump to the handler
-        callFinally->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+        callFinally->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
 
         // Identify the leave block and the continuation
         BasicBlock* const leave        = callFinally->bbNext;
@@ -542,7 +542,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                     assert(finallyRetExpr->gtOper == GT_RETFILT);
                     fgRemoveStmt(block, finallyRet);
-                    block->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+                    block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                     block->bbJumpDest = continuation;
                     fgAddRefPred(continuation, block);
                     fgRemoveRefPred(leave, block);
@@ -1049,7 +1049,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             // Avoid asserts when `fgNewBBinRegion` verifies the handler table, by mapping any cloned finally
             // return blocks to BBJ_ALWAYS (which we would do below if we didn't do it here).
-            BBjumpKinds bbNewJumpKind = (block->KindIs(BBJ_EHFINALLYRET)) ? BBJ_ALWAYS : block->getBBJumpKind();
+            BBjumpKinds bbNewJumpKind = (block->KindIs(BBJ_EHFINALLYRET)) ? BBJ_ALWAYS : block->GetBBJumpKind();
 
             if (block == firstBlock)
             {
@@ -1180,7 +1180,7 @@ PhaseStatus Compiler::fgCloneFinally()
                         // This call returns to the expected spot, so
                         // retarget it to branch to the clone.
                         currentBlock->bbJumpDest = firstCloneBlock;
-                        currentBlock->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+                        currentBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
 
                         // Ref count updates.
                         fgAddRefPred(firstCloneBlock, currentBlock);
@@ -1242,7 +1242,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 if (block->KindIs(BBJ_EHFINALLYRET))
                 {
-                    block->setBBJumpKind(BBJ_EHFAULTRET DEBUG_ARG(this));
+                    block->SetBBJumpKind(BBJ_EHFAULTRET DEBUG_ARG(this));
                 }
             }
         }
@@ -2194,7 +2194,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
             BasicBlock* const predBlock = predEdge->getSourceBlock();
             nextPredEdge                = predEdge->getNextPredEdge();
 
-            switch (predBlock->getBBJumpKind())
+            switch (predBlock->GetBBJumpKind())
             {
                 case BBJ_NONE:
                 {

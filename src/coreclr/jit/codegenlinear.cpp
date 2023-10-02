@@ -619,7 +619,7 @@ void CodeGen::genCodeForBBlist()
             {
                 // We only need the NOP if we're not going to generate any more code as part of the block end.
 
-                switch (block->getBBJumpKind())
+                switch (block->GetBBJumpKind())
                 {
                     case BBJ_ALWAYS:
                     case BBJ_THROW:
@@ -662,7 +662,7 @@ void CodeGen::genCodeForBBlist()
 
         /* Do we need to generate a jump or return? */
 
-        switch (block->getBBJumpKind())
+        switch (block->GetBBJumpKind())
         {
             case BBJ_RETURN:
                 genExitCode(block);

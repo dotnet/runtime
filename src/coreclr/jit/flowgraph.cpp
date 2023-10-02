@@ -120,7 +120,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
-        else if (BBJ_SWITCH == block->getBBJumpKind())
+        else if (BBJ_SWITCH == block->GetBBJumpKind())
         {
             // We don't want to deal with all the outgoing edges of a switch block.
             //
@@ -261,8 +261,8 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 
         BasicBlock* poll          = fgNewBBafter(BBJ_NONE, top, true);
-        bottom                    = fgNewBBafter(top->getBBJumpKind(), poll, true);
-        BBjumpKinds   oldJumpKind = top->getBBJumpKind();
+        bottom                    = fgNewBBafter(top->GetBBJumpKind(), poll, true);
+        BBjumpKinds   oldJumpKind = top->GetBBJumpKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
 
         // Update block flags
@@ -372,7 +372,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 #endif
 
         top->bbJumpDest = bottom;
-        top->setBBJumpKind(BBJ_COND DEBUG_ARG(this));
+        top->SetBBJumpKind(BBJ_COND DEBUG_ARG(this));
 
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
@@ -1287,7 +1287,7 @@ void Compiler::fgLoopCallMark()
 
     for (BasicBlock* const block : Blocks())
     {
-        switch (block->getBBJumpKind())
+        switch (block->GetBBJumpKind())
         {
             case BBJ_COND:
             case BBJ_CALLFINALLY:
@@ -1837,7 +1837,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
-    block->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+    block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
     block->bbJumpDest = genReturnBB;
     fgAddRefPred(genReturnBB, block);
 
@@ -2309,7 +2309,7 @@ private:
 
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
-                    returnBlock->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
+                    returnBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
                     returnBlock->bbJumpDest = constReturnBlock;
                     comp->fgAddRefPred(constReturnBlock, returnBlock);
 
@@ -3125,7 +3125,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
             // It's a jump from outside the handler; add it to the newHead preds list and remove
             // it from the block preds list.
 
-            switch (predBlock->getBBJumpKind())
+            switch (predBlock->GetBBJumpKind())
             {
                 case BBJ_CALLFINALLY:
                     noway_assert(predBlock->bbJumpDest == block);
@@ -3503,7 +3503,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         //
         if (prevToFirstColdBlock->bbFallsThrough())
         {
-            switch (prevToFirstColdBlock->getBBJumpKind())
+            switch (prevToFirstColdBlock->GetBBJumpKind())
             {
                 default:
                     noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
@@ -3548,7 +3548,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // convert it to BBJ_ALWAYS to force an explicit jump.
 
                     prevToFirstColdBlock->bbJumpDest = firstColdBlock;
-                    prevToFirstColdBlock->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+                    prevToFirstColdBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                     break;
             }
         }
@@ -3981,7 +3981,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
     (((src)->bbNum < (dst)->bbNum) || (((src)->bbFlags | (dst)->bbFlags) & BBF_GC_SAFE_POINT))
 
             bool partiallyInterruptible = true;
-            switch (block->getBBJumpKind())
+            switch (block->GetBBJumpKind())
             {
                 case BBJ_COND:
                 case BBJ_ALWAYS:

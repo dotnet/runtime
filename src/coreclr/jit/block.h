@@ -706,12 +706,12 @@ private:
     BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
 
 public:
-    BBjumpKinds getBBJumpKind() const
+    BBjumpKinds GetBBJumpKind() const
     {
         return bbJumpKind;
     }
 
-    void setBBJumpKind(BBjumpKinds kind DEBUG_ARG(Compiler* comp))
+    void SetBBJumpKind(BBjumpKinds kind DEBUG_ARG(Compiler* comp))
     {
 #ifdef DEBUG
         // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
@@ -1574,7 +1574,7 @@ inline BBArrayIterator BBSwitchTargetList::end() const
 inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
-    switch (block->getBBJumpKind())
+    switch (block->GetBBJumpKind())
     {
         case BBJ_THROW:
         case BBJ_RETURN:

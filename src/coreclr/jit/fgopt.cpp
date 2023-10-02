@@ -466,7 +466,7 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 
             block->bbFlags &= ~(BBF_REMOVED | BBF_INTERNAL);
             block->bbFlags |= BBF_IMPORTED;
-            block->setBBJumpKind(BBJ_THROW DEBUG_ARG(this));
+            block->SetBBJumpKind(BBJ_THROW DEBUG_ARG(this));
             block->bbSetRunRarely();
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -1650,7 +1650,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         // plausible flow target. Simplest is to just mark it as a throw.
                         if (bbIsHandlerBeg(newTryEntry->bbNext))
                         {
-                            newTryEntry->setBBJumpKind(BBJ_THROW DEBUG_ARG(this));
+                            newTryEntry->SetBBJumpKind(BBJ_THROW DEBUG_ARG(this));
                         }
                         else
                         {
@@ -1787,7 +1787,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     GenTree* const jumpIfEntryStateZero = gtNewOperNode(GT_JTRUE, TYP_VOID, compareEntryStateToZero);
                     fgNewStmtAtBeg(fromBlock, jumpIfEntryStateZero);
 
-                    fromBlock->setBBJumpKind(BBJ_COND DEBUG_ARG(this));
+                    fromBlock->SetBBJumpKind(BBJ_COND DEBUG_ARG(this));
                     fromBlock->bbJumpDest = toBlock;
                     fgAddRefPred(toBlock, fromBlock);
                     newBlock->inheritWeight(fromBlock);
@@ -2268,7 +2268,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     /* set the right links */
 
-    block->setBBJumpKind(bNext->getBBJumpKind() DEBUG_ARG(this));
+    block->SetBBJumpKind(bNext->GetBBJumpKind() DEBUG_ARG(this));
     VarSetOps::AssignAllowUninitRhs(this, block->bbLiveOut, bNext->bbLiveOut);
 
     // Update the beginning and ending IL offsets (bbCodeOffs and bbCodeOffsEnd).
@@ -2328,7 +2328,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     /* Set the jump targets */
 
-    switch (bNext->getBBJumpKind())
+    switch (bNext->GetBBJumpKind())
     {
         case BBJ_CALLFINALLY:
             // Propagate RETLESS property
@@ -2634,7 +2634,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     noway_assert(flow->getDupCount() == 2);
 
     // Change the BBJ_COND to BBJ_NONE, and adjust the refCount and dupCount.
-    block->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+    block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
     --block->bbNext->bbRefs;
     flow->decrementDupCount();
 
@@ -2886,7 +2886,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
     bool        madeChanges = false;
     BasicBlock* bPrev       = block->bbPrev;
 
-    switch (block->getBBJumpKind())
+    switch (block->GetBBJumpKind())
     {
         case BBJ_COND:
         case BBJ_SWITCH:
@@ -3312,7 +3312,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         // Change the switch jump into a BBJ_ALWAYS
         block->bbJumpDest = block->bbJumpSwt->bbsDstTab[0];
-        block->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+        block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
         if (jmpCnt > 1)
         {
             for (unsigned i = 1; i < jmpCnt; ++i)
@@ -3377,7 +3377,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         }
 
         block->bbJumpDest = block->bbJumpSwt->bbsDstTab[0];
-        block->setBBJumpKind(BBJ_COND DEBUG_ARG(this));
+        block->SetBBJumpKind(BBJ_COND DEBUG_ARG(this));
 
         JITDUMP("After:\n");
         DISPNODE(switchTree);
@@ -3788,7 +3788,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 
     // Fix up block's flow
     //
-    block->setBBJumpKind(BBJ_COND DEBUG_ARG(this));
+    block->SetBBJumpKind(BBJ_COND DEBUG_ARG(this));
     block->bbJumpDest = target->bbJumpDest;
     fgAddRefPred(block->bbJumpDest, block);
     fgRemoveRefPred(target, block);
@@ -3841,7 +3841,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
                 if (!block->isBBCallAlwaysPairTail())
                 {
                     /* the unconditional jump is to the next BB  */
-                    block->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                    block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
 #ifdef DEBUG
                     if (verbose)
                     {
@@ -3967,7 +3967,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 
         /* Conditional is gone - simply fall into the next block */
 
-        block->setBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+        block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
 
         /* Update bbRefs and bbNum - Conditional predecessors to the same
          * block are counted twice so we have to remove one of them */
@@ -4232,7 +4232,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->bbFlags |= bDest->bbFlags & BBF_COPY_PROPAGATE;
 
-    bJump->setBBJumpKind(BBJ_COND DEBUG_ARG(this));
+    bJump->SetBBJumpKind(BBJ_COND DEBUG_ARG(this));
     bJump->bbJumpDest = bDest->bbNext;
 
     /* Update bbRefs and bbPreds */
@@ -4393,7 +4393,7 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Wire up the new control flow.
         //
-        block->setBBJumpKind(BBJ_COND DEBUG_ARG(this));
+        block->SetBBJumpKind(BBJ_COND DEBUG_ARG(this));
         block->bbJumpDest                   = dominantTarget;
         FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
         FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
@@ -4610,7 +4610,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
 
         const char* reason = nullptr;
 
-        switch (bPrev->getBBJumpKind())
+        switch (bPrev->GetBBJumpKind())
         {
             case BBJ_ALWAYS:
 
@@ -6454,7 +6454,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             }
             else if (block->countOfInEdges() == 1)
             {
-                switch (block->getBBJumpKind())
+                switch (block->GetBBJumpKind())
                 {
                     case BBJ_COND:
                     case BBJ_ALWAYS:
@@ -6551,7 +6551,7 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
 {
     unsigned costSz = 0; // estimate of block's code size cost
 
-    switch (block->getBBJumpKind())
+    switch (block->GetBBJumpKind())
     {
         case BBJ_NONE:
             costSz = 0;
@@ -6976,7 +6976,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Fix up the flow.
                 //
-                predBlock->setBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+                predBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                 predBlock->bbJumpDest = crossJumpTarget;
 
                 fgRemoveRefPred(block, predBlock);
