@@ -40,7 +40,7 @@ include(../component/CMakeLists.txt)
 
 if(HOST_WIN32)
   # /OPT:ICF merges idential functions breaking mono_lookup_icall_symbol ()
-  add_link_options("LINKER:/OPT:NOICF")
+  add_link_options(/OPT:NOICF)
 endif()
 
 # ICU

@@ -66,10 +66,10 @@ if (MSVC)
   set_property(GLOBAL PROPERTY CLR_EH_OPTION /EHsc)
 
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
-  add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>LINKER:/guard:cf>)
+  add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
   # Load all imported DLLs from the System32 directory.
-  add_link_options("LINKER:/DEPENDENTLOADFLAG:0x800")
+  add_link_options(/DEPENDENTLOADFLAG:0x800)
 
   # Linker flags
   #
@@ -274,7 +274,7 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
   else()
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
-    add_link_options("LINKER:${CLR_CMAKE_LINK_SANITIZE_OPTIONS}")
+    add_link_options("${CLR_CMAKE_LINK_SANITIZE_OPTIONS}")
   endif()
 endif()
 
@@ -286,7 +286,7 @@ endif()
 #
 if(CLR_CMAKE_HOST_UNIX)
   foreach(ADDTL_LINKER_FLAG ${CLR_ADDITIONAL_LINKER_FLAGS})
-    add_link_options(LINKER:${ADDTL_LINKER_FLAG})
+    add_link_options(${ADDTL_LINKER_FLAG})
   endforeach()
 endif(CLR_CMAKE_HOST_UNIX)
 
@@ -296,7 +296,7 @@ if(CLR_CMAKE_HOST_LINUX)
   add_link_options("LINKER:-z,relro,-z,now")
 elseif(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options("LINKER:--build-id=sha1")
+  add_link_options("LINKER--build-id=sha1")
 elseif(CLR_CMAKE_HOST_SUNOS)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
@@ -875,7 +875,7 @@ if (MSVC)
     set_property(GLOBAL PROPERTY CLR_EH_CONTINUATION ON)
 
     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX,ASM_MASM>,$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>>:/guard:ehcont>)
-    add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>:LINKER:/guard:ehcont>)
+    add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>:/guard:ehcont>)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT")
   endif (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
 
@@ -928,7 +928,7 @@ if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
     add_compile_options(-fprofile-arcs)
     add_compile_options(-ftest-coverage)
-    add_link_options("LINKER:--coverage")
+    add_link_options(--coverage)
   else()
     message(FATAL_ERROR "Code coverage builds not supported on current platform")
   endif(CLR_CMAKE_HOST_UNIX)
