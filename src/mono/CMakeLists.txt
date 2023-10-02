@@ -14,7 +14,7 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
 
   if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
-    add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+    add_link_options("LINKER:/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif()
 
   # FIXME This is all questionable but the logs are flooded and nothing else is fixing them.
@@ -229,8 +229,8 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "linux")
   add_definitions(-D_THREAD_SAFE)
   set(HAVE_CGROUP_SUPPORT 1)
   # Enable the "full RELRO" options (RELRO & BIND_NOW) at link time
-  add_link_options(-Wl,-z,relro)
-  add_link_options(-Wl,-z,now)
+  add_link_options("LINKER:-z,relro")
+  add_link_options("LINKER:-z,now")
 elseif(CLR_CMAKE_HOST_OS STREQUAL "android")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
@@ -286,16 +286,16 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
   add_compile_options(/EHsc) # set exception handling behavior
   add_compile_options(/FC)   # use full pathnames in diagnostics
-  add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)
+  add_link_options("LINKER:/STACK:0x800000")  # set stack size to 8MB (default is 1MB)
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(/Oi)   # enable intrinsics
     add_compile_options(/GF)   # enable string pooling
     add_compile_options(/Zi)   # enable debugging information
     add_compile_options(/GL)   # whole program optimization
-    add_link_options(/LTCG)    # link-time code generation
-    add_link_options(/DEBUG)   # enable debugging information
-    add_link_options(/OPT:REF) # optimize: remove unreferenced functions & data
-    add_link_options(/OPT:ICF) # optimize: enable COMDAT folding
+    add_link_options("LINKER:/LTCG")    # link-time code generation
+    add_link_options("LINKER:/DEBUG")   # enable debugging information
+    add_link_options("LINKER:/OPT:REF") # optimize: remove unreferenced functions & data
+    add_link_options("LINKER:/OPT:ICF") # optimize: enable COMDAT folding
     # the combination of /Zi compiler flag and /DEBUG /OPT:REF /OPT:ICF
     # linker flags is needed to create .pdb output on release builds
   endif()

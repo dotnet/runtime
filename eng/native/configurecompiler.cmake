@@ -66,10 +66,10 @@ if (MSVC)
   set_property(GLOBAL PROPERTY CLR_EH_OPTION /EHsc)
 
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
-  add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
+  add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>LINKER:/guard:cf>)
 
   # Load all imported DLLs from the System32 directory.
-  add_link_options(/DEPENDENTLOADFLAG:0x800)
+  add_link_options("LINKER:/DEPENDENTLOADFLAG:0x800")
 
   # Linker flags
   #
@@ -117,27 +117,27 @@ if (MSVC)
     # Debug build specific flags
     # The Ninja generator doesn't appear to have the default `/INCREMENTAL:ON` that
     # the Visual Studio generator has. Therefore we will override the default for Visual Studio only.
-    add_link_options(/INCREMENTAL:NO DEBUG)
-    add_link_options(/OPT:REF DEBUG)
-    add_link_options(/OPT:NOICF DEBUG)
+    add_link_options($<$<CONFIG:DEBUG>:LINKER:/INCREMENTAL:NO>)
+    add_link_options($<$<CONFIG:DEBUG>:LINKER:/OPT:REF>)
+    add_link_options($<$<CONFIG:DEBUG>:LINKER:/OPT:NOICF>)
   endif (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
 
   # Checked build specific flags
-  add_link_options(/INCREMENTAL:NO CHECKED) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
-  add_link_options(/OPT:REF CHECKED)
-  add_link_options(/OPT:NOICF CHECKED)
+  add_link_options($<$<CONFIG:CHECKED>:LINKER:/INCREMENTAL:NO>) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
+  add_link_options($<$<CONFIG:CHECKED>:LINKER:/OPT:REF>)
+  add_link_options($<$<CONFIG:CHECKED>:LINKER:/OPT:NOICF>)
 
   # Release build specific flags
-  add_link_options(/LTCG RELEASE)
-  add_link_options(/OPT:REF RELEASE)
-  add_link_options(/OPT:ICF RELEASE)
-  add_link_options(/INCREMENTAL:NO RELEASE)
+  add_link_options($<$<CONFIG:RELEASE>:LINKER:/LTCG>)
+  add_link_options($<$<CONFIG:RELEASE>:LINKER:/OPT:REF>)
+  add_link_options($<$<CONFIG:RELEASE>:LINKER:/OPT:ICF>)
+  add_link_options($<$<CONFIG:RELEASE>:LINKER:/INCREMENTAL:NO>)
   set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
 
   # ReleaseWithDebugInfo build specific flags
-  add_link_options(/LTCG RELWITHDEBINFO)
-  add_link_options(/OPT:REF RELWITHDEBINFO)
-  add_link_options(/OPT:ICF RELWITHDEBINFO)
+  add_link_options($<$<CONFIG:RELWITHDEBINFO>:LINKER:/LTCG>)
+  add_link_options($<$<CONFIG:RELWITHDEBINFO>:LINKER:/OPT:REF>)
+  add_link_options($<$<CONFIG:RELWITHDEBINFO>:LINKER:/OPT:ICF>)
   set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
 
 elseif (CLR_CMAKE_HOST_UNIX)
@@ -274,7 +274,7 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
   else()
     add_compile_options("$<$<COMPILE_LANGUAGE:C,CXX>:${CLR_CMAKE_BUILD_SANITIZE_OPTIONS}>")
-    add_link_options("${CLR_CMAKE_LINK_SANITIZE_OPTIONS}")
+    add_link_options("LINKER:${CLR_CMAKE_LINK_SANITIZE_OPTIONS}")
   endif()
 endif()
 
@@ -286,17 +286,17 @@ endif()
 #
 if(CLR_CMAKE_HOST_UNIX)
   foreach(ADDTL_LINKER_FLAG ${CLR_ADDITIONAL_LINKER_FLAGS})
-    add_link_options(${ADDTL_LINKER_FLAG})
+    add_link_options(LINKER:${ADDTL_LINKER_FLAG})
   endforeach()
 endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_HOST_LINUX)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options(-Wl,--build-id=sha1)
-  add_link_options(-Wl,-z,relro,-z,now)
+  add_link_options("LINKER:--build-id=sha1")
+  add_link_options("LINKER:-z,relro,-z,now")
 elseif(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options("-Wl,--build-id=sha1")
+  add_link_options("LINKER:--build-id=sha1")
 elseif(CLR_CMAKE_HOST_SUNOS)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
@@ -304,10 +304,10 @@ elseif(CLR_CMAKE_HOST_SUNOS)
   add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
 elseif(CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_definitions(-D_XOPEN_SOURCE)
-  add_link_options("-Wl,-bind_at_load")
+  add_link_options("LINKER:-bind_at_load")
 elseif(CLR_CMAKE_HOST_HAIKU)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options("-Wl,--no-undefined")
+  add_link_options("LINKER:--no-undefined")
 endif()
 
 #------------------------------------
@@ -875,7 +875,7 @@ if (MSVC)
     set_property(GLOBAL PROPERTY CLR_EH_CONTINUATION ON)
 
     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX,ASM_MASM>,$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>>:/guard:ehcont>)
-    add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>:/guard:ehcont>)
+    add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>:LINKER:/guard:ehcont>)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT")
   endif (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
 
@@ -892,8 +892,8 @@ if (MSVC)
     # We won't do this for sanitized builds as the dynamic CRT is not compatible with the static sanitizer runtime and
     # the dynamic sanitizer runtime is not redistributable. Sanitized runtime builds are not production-time scenarios
     # so we don't get the benefits of a dynamic CRT for sanitized runtime builds.
-    add_link_options(/NODEFAULTLIB:libucrt.lib RELEASE)
-    add_link_options(/DEFAULTLIB:ucrt.lib RELEASE)
+    add_link_options($<$<CONFIG:RELEASE>:LINKER:/NODEFAULTLIB:libucrt.lib>)
+    add_link_options($<$<CONFIG:RELEASE>:LINKER:/DEFAULTLIB:ucrt.lib>)
   endif()
 
   add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/ZH:SHA_256>)
@@ -928,7 +928,7 @@ if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
 
     add_compile_options(-fprofile-arcs)
     add_compile_options(-ftest-coverage)
-    add_link_options(--coverage)
+    add_link_options("LINKER:--coverage")
   else()
     message(FATAL_ERROR "Code coverage builds not supported on current platform")
   endif(CLR_CMAKE_HOST_UNIX)
