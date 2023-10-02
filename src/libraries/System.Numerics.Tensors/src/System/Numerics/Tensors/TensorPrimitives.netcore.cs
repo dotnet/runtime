@@ -2668,11 +2668,41 @@ namespace System.Numerics.Tensors
                                      + ((Vector128.Create(C3) * r + Vector128.Create(C2)) * r2
                                       + (Vector128.Create(C1) * r + Vector128.Create(C0))));
 
-                return Vector128.ConditionalSelect(
-                    Vector128.GreaterThanOrEqual(x.AsUInt32() - Vector128.Create(V_MIN), Vector128.Create(V_MAX - V_MIN)).AsSingle(),
-                    x,
-                    n + poly
-                );
+                Vector128<float> result = n + poly;
+
+                // x < 1.1754944E-38 or x = INF or x = NAN
+                if (Vector128.GreaterThanOrEqualAny(x.AsUInt32() - Vector128.Create(V_MIN), Vector128.Create(V_MAX - V_MIN)))
+                {
+                    // log2(+0.0) == log2(-0.0) == -Infinity
+                    result = Vector128.ConditionalSelect(
+                        Vector128.Equals(Vector128.ShiftLeft(x.AsUInt32(), 1), Vector128<uint>.Zero).AsSingle(),
+                        Vector128.Create(float.NegativeInfinity),
+                        result
+                    );
+
+                    // log2(NaN) == NaN
+                    result = Vector128.ConditionalSelect(
+                        Vector128.Equals(x, x),
+                        result,
+                        x
+                    );
+
+                    // log2(-x) == NaN
+                    result = Vector128.ConditionalSelect(
+                        Vector128.LessThan(x.AsInt32(), Vector128<int>.Zero).AsSingle(),
+                        Vector128.Create(float.NaN),
+                        result
+                    );
+
+                    // log2(+Infinity) == log2(-Infinity) == +Infinity
+                    result = Vector128.ConditionalSelect(
+                        Vector128.Equals(x.AsUInt32() & Vector128.Create(V_MAX), Vector128.Create(V_MAX)).AsSingle(),
+                        Vector128.Create(float.PositiveInfinity),
+                        result
+                    );
+                }
+
+                return result;
             }
 
             public static Vector256<float> Invoke(Vector256<float> x)
@@ -2694,11 +2724,41 @@ namespace System.Numerics.Tensors
                                      + ((Vector256.Create(C3) * r + Vector256.Create(C2)) * r2
                                       + (Vector256.Create(C1) * r + Vector256.Create(C0))));
 
-                return Vector256.ConditionalSelect(
-                    Vector256.GreaterThanOrEqual(x.AsUInt32() - Vector256.Create(V_MIN), Vector256.Create(V_MAX - V_MIN)).AsSingle(),
-                    x,
-                    n + poly
-                );
+                Vector256<float> result = n + poly;
+
+                // x < 1.1754944E-38 or x = INF or x = NAN
+                if (Vector256.GreaterThanOrEqualAny(x.AsUInt32() - Vector256.Create(V_MIN), Vector256.Create(V_MAX - V_MIN)))
+                {
+                    // log2(+0.0) == log2(-0.0) == -Infinity
+                    result = Vector256.ConditionalSelect(
+                        Vector256.Equals(Vector256.ShiftLeft(x.AsUInt32(), 1), Vector256<uint>.Zero).AsSingle(),
+                        Vector256.Create(float.NegativeInfinity),
+                        result
+                    );
+
+                    // log2(NaN) == NaN
+                    result = Vector256.ConditionalSelect(
+                        Vector256.Equals(x, x),
+                        result,
+                        x
+                    );
+
+                    // log2(-x) == NaN
+                    result = Vector256.ConditionalSelect(
+                        Vector256.LessThan(x.AsInt32(), Vector256<int>.Zero).AsSingle(),
+                        Vector256.Create(float.NaN),
+                        result
+                    );
+
+                    // log2(+Infinity) == log2(-Infinity) == +Infinity
+                    result = Vector256.ConditionalSelect(
+                        Vector256.Equals(x.AsUInt32() & Vector256.Create(V_MAX), Vector256.Create(V_MAX)).AsSingle(),
+                        Vector256.Create(float.PositiveInfinity),
+                        result
+                    );
+                }
+
+                return result;
             }
 
 #if NET8_0_OR_GREATER
@@ -2721,11 +2781,41 @@ namespace System.Numerics.Tensors
                                      + ((Vector512.Create(C3) * r + Vector512.Create(C2)) * r2
                                       + (Vector512.Create(C1) * r + Vector512.Create(C0))));
 
-                return Vector512.ConditionalSelect(
-                    Vector512.GreaterThanOrEqual(x.AsUInt32() - Vector512.Create(V_MIN), Vector512.Create(V_MAX - V_MIN)).AsSingle(),
-                    x,
-                    n + poly
-                );
+                Vector512<float> result = n + poly;
+
+                // x < 1.1754944E-38 or x = INF or x = NAN
+                if (Vector512.GreaterThanOrEqualAny(x.AsUInt32() - Vector512.Create(V_MIN), Vector512.Create(V_MAX - V_MIN)))
+                {
+                    // log2(+0.0) == log2(-0.0) == -Infinity
+                    result = Vector512.ConditionalSelect(
+                        Vector512.Equals(Vector512.ShiftLeft(x.AsUInt32(), 1), Vector512<uint>.Zero).AsSingle(),
+                        Vector512.Create(float.NegativeInfinity),
+                        result
+                    );
+
+                    // log2(NaN) == NaN
+                    result = Vector512.ConditionalSelect(
+                        Vector512.Equals(x, x),
+                        result,
+                        x
+                    );
+
+                    // log2(-x) == NaN
+                    result = Vector512.ConditionalSelect(
+                        Vector512.LessThan(x.AsInt32(), Vector512<int>.Zero).AsSingle(),
+                        Vector512.Create(float.NaN),
+                        result
+                    );
+
+                    // log2(+Infinity) == log2(-Infinity) == +Infinity
+                    result = Vector512.ConditionalSelect(
+                        Vector512.Equals(x.AsUInt32() & Vector512.Create(V_MAX), Vector512.Create(V_MAX)).AsSingle(),
+                        Vector512.Create(float.PositiveInfinity),
+                        result
+                    );
+                }
+
+                return result;
             }
 #endif
         }
