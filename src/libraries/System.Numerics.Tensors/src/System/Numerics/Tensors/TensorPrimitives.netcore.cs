@@ -2579,6 +2579,157 @@ namespace System.Numerics.Tensors
 #endif
         }
 
+        private readonly struct Log2Operator : IUnaryOperator
+        {
+            // This code is based on `vrs4_log2f` from amd/aocl-libm-ose
+            // Copyright (C) 2021-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Spec:
+            //   log2f(x)
+            //          = log2f(x)          if x ∈ F and x > 0
+            //          = x                 if x = qNaN
+            //          = 0                 if x = 1
+            //          = -inf              if x = (-0, 0}
+            //          = NaN               otherwise
+            //
+            // Assumptions/Expectations
+            //      - Maximum ULP is observed to be at 4
+            //      - Some FPU Exceptions may not be available
+            //      - Performance is at least 3x
+            //
+            // Implementation Notes:
+            //  1. Range Reduction:
+            //      x = 2^n*(1+f)                                          .... (1)
+            //         where n is exponent and is an integer
+            //             (1+f) is mantissa ∈ [1,2). i.e., 1 ≤ 1+f < 2    .... (2)
+            //
+            //    From (1), taking log on both sides
+            //      log2(x) = log2(2^n * (1+f))
+            //             = n + log2(1+f)                           .... (3)
+            //
+            //      let z = 1 + f
+            //             log2(z) = log2(k) + log2(z) - log2(k)
+            //             log2(z) = log2(kz) - log2(k)
+            //
+            //    From (2), range of z is [1, 2)
+            //       by simply dividing range by 'k', z is in [1/k, 2/k)  .... (4)
+            //       Best choice of k is the one which gives equal and opposite values
+            //       at extrema        +-      -+
+            //              1          | 2      |
+            //             --- - 1 = - |--- - 1 |
+            //              k          | k      |                         .... (5)
+            //                         +-      -+
+            //
+            //       Solving for k, k = 3/2,
+            //    From (4), using 'k' value, range is therefore [-0.3333, 0.3333]
+            //
+            //  2. Polynomial Approximation:
+            //     More information refer to tools/sollya/vrs4_logf.sollya
+            //
+            //     7th Deg -   Error abs: 0x1.04c4ac98p-22   rel: 0x1.2216e6f8p-19
+
+            private const uint V_MIN = 0x00800000;
+            private const uint V_MAX = 0x7F800000;
+            private const uint V_MASK = 0x007FFFFF;
+            private const uint V_OFF = 0x3F2AAAAB;
+
+            private const float C0 = 0.0f;
+            private const float C1 = 1.4426951f;
+            private const float C2 = -0.72134554f;
+            private const float C3 = 0.48089063f;
+            private const float C4 = -0.36084408f;
+            private const float C5 = 0.2888971f;
+            private const float C6 = -0.23594281f;
+            private const float C7 = 0.19948183f;
+            private const float C8 = -0.22616665f;
+            private const float C9 = 0.21228963f;
+
+            public static float Invoke(float x) => MathF.Log2(x);
+
+            public static Vector128<float> Invoke(Vector128<float> x)
+            {
+                Vector128<uint> vx = x.AsUInt32() - Vector128.Create(V_OFF);
+                Vector128<float> n = (vx >> 23).AsSingle();
+
+                vx = (vx & Vector128.Create(V_MASK)) + Vector128.Create(V_OFF);
+
+                Vector128<float> r = vx.AsSingle() - Vector128<float>.One;
+
+                Vector128<float> r2 = r * r;
+                Vector128<float> r4 = r2 * r2;
+                Vector128<float> r8 = r4 * r4;
+
+                Vector128<float> poly = (Vector128.Create(C9) * r + Vector128.Create(C8)) * r8
+                                    + (((Vector128.Create(C7) * r + Vector128.Create(C6)) * r2
+                                      + (Vector128.Create(C5) * r + Vector128.Create(C4))) * r4
+                                     + ((Vector128.Create(C3) * r + Vector128.Create(C2)) * r2
+                                      + (Vector128.Create(C1) * r + Vector128.Create(C0))));
+
+                return Vector128.ConditionalSelect(
+                    Vector128.GreaterThanOrEqual(x.AsUInt32() - Vector128.Create(V_MIN), Vector128.Create(V_MAX - V_MIN)).AsSingle(),
+                    x,
+                    n + poly
+                );
+            }
+
+            public static Vector256<float> Invoke(Vector256<float> x)
+            {
+                Vector256<uint> vx = x.AsUInt32() - Vector256.Create(V_OFF);
+                Vector256<float> n = (vx >> 23).AsSingle();
+
+                vx = (vx & Vector256.Create(V_MASK)) + Vector256.Create(V_OFF);
+
+                Vector256<float> r = vx.AsSingle() - Vector256<float>.One;
+
+                Vector256<float> r2 = r * r;
+                Vector256<float> r4 = r2 * r2;
+                Vector256<float> r8 = r4 * r4;
+
+                Vector256<float> poly = (Vector256.Create(C9) * r + Vector256.Create(C8)) * r8
+                                    + (((Vector256.Create(C7) * r + Vector256.Create(C6)) * r2
+                                      + (Vector256.Create(C5) * r + Vector256.Create(C4))) * r4
+                                     + ((Vector256.Create(C3) * r + Vector256.Create(C2)) * r2
+                                      + (Vector256.Create(C1) * r + Vector256.Create(C0))));
+
+                return Vector256.ConditionalSelect(
+                    Vector256.GreaterThanOrEqual(x.AsUInt32() - Vector256.Create(V_MIN), Vector256.Create(V_MAX - V_MIN)).AsSingle(),
+                    x,
+                    n + poly
+                );
+            }
+
+#if NET8_0_OR_GREATER
+            public static Vector512<float> Invoke(Vector512<float> x)
+            {
+                Vector512<uint> vx = x.AsUInt32() - Vector512.Create(V_OFF);
+                Vector512<float> n = (vx >> 23).AsSingle();
+
+                vx = (vx & Vector512.Create(V_MASK)) + Vector512.Create(V_OFF);
+
+                Vector512<float> r = vx.AsSingle() - Vector512<float>.One;
+
+                Vector512<float> r2 = r * r;
+                Vector512<float> r4 = r2 * r2;
+                Vector512<float> r8 = r4 * r4;
+
+                Vector512<float> poly = (Vector512.Create(C9) * r + Vector512.Create(C8)) * r8
+                                    + (((Vector512.Create(C7) * r + Vector512.Create(C6)) * r2
+                                      + (Vector512.Create(C5) * r + Vector512.Create(C4))) * r4
+                                     + ((Vector512.Create(C3) * r + Vector512.Create(C2)) * r2
+                                      + (Vector512.Create(C1) * r + Vector512.Create(C0))));
+
+                return Vector512.ConditionalSelect(
+                    Vector512.GreaterThanOrEqual(x.AsUInt32() - Vector512.Create(V_MIN), Vector512.Create(V_MAX - V_MIN)).AsSingle(),
+                    x,
+                    n + poly
+                );
+            }
+#endif
+        }
+
         private interface IUnaryOperator
         {
             static abstract float Invoke(float x);

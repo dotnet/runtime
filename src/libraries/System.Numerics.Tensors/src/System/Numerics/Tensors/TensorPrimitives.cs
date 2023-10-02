@@ -598,20 +598,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static void Log2(ReadOnlySpan<float> x, Span<float> destination)
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = Log2(x[i]);
-            }
-        }
+        public static void Log2(ReadOnlySpan<float> x, Span<float> destination) =>
+            InvokeSpanIntoSpan<Log2Operator>(x, destination);
 
         /// <summary>Searches for the largest single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
