@@ -22,10 +22,6 @@ namespace JIT.HardwareIntrinsics.Arm
         [Fact]
         public static void {TestName}()
         {
-            if (1 == 1)
-            {
-                throw new Exception("One or more scenarios did not complete as expected.");
-            }
             var test = new LoadVector{Op1VectorType}x2Test__{Op1BaseType}();
             if (test.IsSupported)
             {
