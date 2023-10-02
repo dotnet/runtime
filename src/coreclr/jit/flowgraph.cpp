@@ -2596,7 +2596,7 @@ PhaseStatus Compiler::fgAddInternal()
 
     for (BasicBlock* block = fgFirstBB; block != lastBlockBeforeGenReturns->bbNext; block = block->bbNext)
     {
-        if ((block->KindIs(BBJ_RETURN)) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+        if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {
             merger.Record(block);
         }
@@ -3523,7 +3523,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // This is a slightly more complicated case, because we will
                     // probably need to insert a block to jump to the cold section.
                     //
-                    if (firstColdBlock->isEmpty() && (firstColdBlock->KindIs(BBJ_ALWAYS)))
+                    if (firstColdBlock->isEmpty() && firstColdBlock->KindIs(BBJ_ALWAYS))
                     {
                         // We can just use this block as the transitionBlock
                         firstColdBlock = firstColdBlock->bbNext;

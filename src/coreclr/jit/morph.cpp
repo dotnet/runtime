@@ -13725,10 +13725,10 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             //   - a tail call dispatched via runtime help (IL stubs), in which
             //   case there will not be any tailcall and the block will be ending
             //   with BBJ_RETURN (as normal control flow)
-            noway_assert((call->IsFastTailCall() && (compCurBB->KindIs(BBJ_RETURN)) &&
+            noway_assert((call->IsFastTailCall() && compCurBB->KindIs(BBJ_RETURN) &&
                           ((compCurBB->bbFlags & BBF_HAS_JMP)) != 0) ||
-                         (call->IsTailCallViaJitHelper() && (compCurBB->KindIs(BBJ_THROW))) ||
-                         (!call->IsTailCall() && (compCurBB->KindIs(BBJ_RETURN))));
+                         (call->IsTailCallViaJitHelper() && compCurBB->KindIs(BBJ_THROW)) ||
+                         (!call->IsTailCall() && compCurBB->KindIs(BBJ_RETURN)));
         }
 
 #ifdef DEBUG
@@ -13921,7 +13921,7 @@ void Compiler::fgMorphBlocks()
         fgMorphStmts(block);
 
         // Do we need to merge the result of this block into a single return block?
-        if ((block->KindIs(BBJ_RETURN)) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+        if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {
             if ((genReturnBB != nullptr) && (genReturnBB != block))
             {
@@ -13977,7 +13977,7 @@ void Compiler::fgMorphBlocks()
 //
 void Compiler::fgMergeBlockReturn(BasicBlock* block)
 {
-    assert((block->KindIs(BBJ_RETURN)) && ((block->bbFlags & BBF_HAS_JMP) == 0));
+    assert(block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0));
     assert((genReturnBB != nullptr) && (genReturnBB != block));
 
     // TODO: Need to characterize the last top level stmt of a block ending with BBJ_RETURN.

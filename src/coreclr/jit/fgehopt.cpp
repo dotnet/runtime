@@ -821,7 +821,7 @@ PhaseStatus Compiler::fgCloneFinally()
             // through to a callfinally.
             BasicBlock* jumpDest = nullptr;
 
-            if ((block->KindIs(BBJ_NONE)) && (block == lastTryBlock))
+            if (block->KindIs(BBJ_NONE) && (block == lastTryBlock))
             {
                 jumpDest = block->bbNext;
             }

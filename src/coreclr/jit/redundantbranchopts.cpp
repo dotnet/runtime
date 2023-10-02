@@ -1450,8 +1450,8 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
         //
         const bool fallThroughIsTruePred = BlockSetOps::IsMember(this, jti.m_truePreds, jti.m_fallThroughPred->bbNum);
 
-        if ((jti.m_fallThroughPred->KindIs(BBJ_NONE)) && ((fallThroughIsTruePred && (jti.m_numFalsePreds == 0)) ||
-                                                          (!fallThroughIsTruePred && (jti.m_numTruePreds == 0))))
+        if (jti.m_fallThroughPred->KindIs(BBJ_NONE) && ((fallThroughIsTruePred && (jti.m_numFalsePreds == 0)) ||
+                                                        (!fallThroughIsTruePred && (jti.m_numTruePreds == 0))))
         {
             JITDUMP(FMT_BB " has ambiguous preds and a (%s) fall through pred and no (%s) preds.\n"
                            "Converting fall through pred " FMT_BB " to BBJ_ALWAYS\n",
@@ -1623,7 +1623,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     // surviving ssa input, and update all the value numbers...)
     //
     BasicBlock* const ambBlock = jti.m_ambiguousVNBlock;
-    if ((ambBlock != nullptr) && (jti.m_block->KindIs(BBJ_COND)) && (jti.m_block->GetUniquePred(this) == ambBlock))
+    if ((ambBlock != nullptr) && jti.m_block->KindIs(BBJ_COND) && (jti.m_block->GetUniquePred(this) == ambBlock))
     {
         JITDUMP(FMT_BB " has just one remaining predcessor " FMT_BB "\n", jti.m_block->bbNum, ambBlock->bbNum);
 

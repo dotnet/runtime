@@ -332,8 +332,8 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 
     // THROW heuristic
     //
-    bool const isJumpThrow = (jump->KindIs(BBJ_THROW));
-    bool const isNextThrow = (next->KindIs(BBJ_THROW));
+    bool const isJumpThrow = jump->KindIs(BBJ_THROW);
+    bool const isNextThrow = next->KindIs(BBJ_THROW);
 
     if (isJumpThrow != isNextThrow)
     {
@@ -402,8 +402,8 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 
     // RETURN heuristic
     //
-    bool const isJumpReturn = (jump->KindIs(BBJ_RETURN));
-    bool const isNextReturn = (next->KindIs(BBJ_RETURN));
+    bool const isJumpReturn = jump->KindIs(BBJ_RETURN);
+    bool const isNextReturn = next->KindIs(BBJ_RETURN);
 
     if (isJumpReturn != isNextReturn)
     {
@@ -1214,7 +1214,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
                 //
                 // Currently we don't know which edges do this.
                 //
-                if ((exitBlock->KindIs(BBJ_COND)) && (exitBlockWeight > (missingExitWeight + currentExitWeight)))
+                if (exitBlock->KindIs(BBJ_COND) && (exitBlockWeight > (missingExitWeight + currentExitWeight)))
                 {
                     JITDUMP("Will adjust likelihood of the exit edge from loop exit block " FMT_BB
                             " to reflect capping; current likelihood is " FMT_WT "\n",

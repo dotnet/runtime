@@ -8532,7 +8532,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         bool bbInALoop  = impBlockIsInALoop(block);
-                        bool bbIsReturn = (block->KindIs(BBJ_RETURN)) &&
+                        bool bbIsReturn = block->KindIs(BBJ_RETURN) &&
                                           (!compIsForInlining() || (impInlineInfo->iciBlock->KindIs(BBJ_RETURN)));
                         LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
                         if (fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
@@ -12121,7 +12121,7 @@ void Compiler::impImport()
         {
             entryBlock = entryBlock->bbNext;
         }
-        else if (opts.IsOSR() && (entryBlock->KindIs(BBJ_ALWAYS)))
+        else if (opts.IsOSR() && entryBlock->KindIs(BBJ_ALWAYS))
         {
             entryBlock = entryBlock->bbJumpDest;
         }

@@ -741,7 +741,7 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
             bool initBlockOk = (predBlock == initBlock);
             if (!initBlockOk)
             {
-                if ((predBlock->KindIs(BBJ_NONE)) && (predBlock->bbNext == optLoopTable[loopInd].lpEntry) &&
+                if (predBlock->KindIs(BBJ_NONE) && (predBlock->bbNext == optLoopTable[loopInd].lpEntry) &&
                     (predBlock->countOfInEdges() == 1) && (predBlock->firstStmt() == nullptr) &&
                     (predBlock->bbPrev != nullptr) && predBlock->bbPrev->bbFallsThrough())
                 {
@@ -1150,7 +1150,7 @@ bool Compiler::optExtractInitTestIncr(
         // If we are rebuilding the loop table, we would already have the pre-header block introduced
         // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
         // little harder for the possible loop initialization statement.
-        if ((initBlock->KindIs(BBJ_NONE)) && (initBlock->bbNext == top) && (initBlock->countOfInEdges() == 1) &&
+        if (initBlock->KindIs(BBJ_NONE) && (initBlock->bbNext == top) && (initBlock->countOfInEdges() == 1) &&
             (initBlock->bbPrev != nullptr) && initBlock->bbPrev->bbFallsThrough())
         {
             initBlock = initBlock->bbPrev;
@@ -2294,7 +2294,7 @@ private:
         {
             // Need to reconnect the flow from `block` to `oldNext`.
 
-            if ((block->KindIs(BBJ_COND)) && (block->bbJumpDest == newNext))
+            if (block->KindIs(BBJ_COND) && (block->bbJumpDest == newNext))
             {
                 // Reverse the jump condition
                 GenTree* test = block->lastNode();
@@ -3207,7 +3207,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     //
     assert(h->bbNext == t);
     assert(h->bbFallsThrough());
-    assert((h->KindIs(BBJ_NONE)) || (h->KindIs(BBJ_COND)));
+    assert(h->KindIs(BBJ_NONE, BBJ_COND));
     if (h->KindIs(BBJ_COND))
     {
         BasicBlock* const hj = h->bbJumpDest;
@@ -3360,7 +3360,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
              childLoop = optLoopTable[childLoop].lpSibling)
         {
             if ((optLoopTable[childLoop].lpEntry == origE) && (optLoopTable[childLoop].lpHead == h) &&
-                (newT->KindIs(BBJ_NONE)) && (newT->bbNext == origE))
+                newT->KindIs(BBJ_NONE) && (newT->bbNext == origE))
             {
                 optUpdateLoopHead(childLoop, h, newT);
 
@@ -8198,7 +8198,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
     // The preheader block is part of the containing loop (if any).
     preHead->bbNatLoopNum = loop.lpParent;
 
-    if (fgIsUsingProfileWeights() && (head->KindIs(BBJ_COND)))
+    if (fgIsUsingProfileWeights() && head->KindIs(BBJ_COND))
     {
         if ((head->bbWeight == BB_ZERO_WEIGHT) || (entry->bbWeight == BB_ZERO_WEIGHT))
         {
