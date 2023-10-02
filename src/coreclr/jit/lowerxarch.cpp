@@ -7656,10 +7656,12 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                    // We can only broadcast constants (we expand them in JIT) or memory loads
-                    const bool canBeBroadcasted = childNode->OperIsConst() || childNode->OperIs(GT_IND, GT_LCL_FLD);
+                    comp->gtDispTree(parentNode);
+
+                    // For broadcasts we can only optimize constants and memory operands
+                    const bool broadcastIsContainable = childNode->OperIsConst() || childNode->isMemoryOp();
                     supportsGeneralLoads =
-                        canBeBroadcasted && supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                        broadcastIsContainable && supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
                     break;
                 }
 
