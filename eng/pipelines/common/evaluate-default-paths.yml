@@ -241,6 +241,7 @@ jobs:
       - src/mono/tools/*
       - src/mono/wasi/*
       - src/mono/wasm/debugger/*
+      - src/mono/wasm/host/*
       - src/mono/wasm/Wasm.Build.Tests/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
