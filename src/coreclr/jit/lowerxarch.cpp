@@ -6504,7 +6504,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 case NI_AVX2_ConvertToUInt32:
                 {
                     // These intrinsics are "ins reg/mem, xmm"
-                    isContainable = varTypeIsIntegral(simdBaseType);
+                    isContainable = varTypeIsIntegral(simdBaseType) && (genTypeSize(src) == genTypeSize(node));
                     break;
                 }
 
@@ -6568,7 +6568,8 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     size_t   numArgs = hwintrinsic->GetOperandCount();
                     GenTree* lastOp  = hwintrinsic->Op(numArgs);
 
-                    isContainable = HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI();
+                    isContainable = HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI() &&
+                                    (genTypeSize(simdBaseType) == genTypeSize(node));
 
                     if (isContainable && (intrinsicId == NI_SSE2_Extract))
                     {

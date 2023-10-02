@@ -281,7 +281,7 @@ export function mono_jiterp_do_jit_call_indirect(
                     jit_call_cb: jitCallCb,
                 },
                 m: {
-                    h: (<any>Module).asm.memory
+                    h: (<any>Module).getMemory()
                 },
             });
             const impl = instance.exports.do_jit_call_indirect;
