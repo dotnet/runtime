@@ -55,7 +55,7 @@ steps:
 
     - ${{ if eq(parameters.archType, 'x64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} /p:RuntimeVariant=llvmfullaot -maxcpucount:1
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }} /p:RuntimeVariant=llvmfullaot
           displayName: "LLVM AOT compile CoreCLR tests"
           target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
       - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
