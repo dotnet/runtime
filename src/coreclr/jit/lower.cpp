@@ -7820,13 +7820,12 @@ struct StoreCoalescingData
 //    comp     - the compiler instance
 //    ind      - the STOREIND node
 //    data     - [OUT] the data needed for store coalescing
-//    prevTree - [OUT] the pointer to the previous node
 //
 // Return Value:
 //    true if the data was successfully retrieved, false otherwise.
 //    Basically, false means that we definitely can't do store coalescing.
 //
-static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCoalescingData* data, GenTree** prevTree)
+static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCoalescingData* data)
 {
     // Don't merge volatile stores.
     if (ind->IsVolatile())
@@ -7839,12 +7838,6 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
     {
         return false;
     }
-
-    // We will need to walk previous trees (up to 4 nodes in a store)
-    // We already know that we have value and addr nodes, LEA might add more.
-    const int MaxTrees        = 4;
-    GenTree*  trees[MaxTrees] = {ind->Data(), ind->Addr(), nullptr, nullptr};
-    int       treesCount      = 2;
 
     data->targetType = ind->TypeGet();
     data->value      = ind->Data();
@@ -7870,13 +7863,6 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
         data->index    = index == nullptr ? nullptr : index;
         data->scale    = ind->Addr()->AsAddrMode()->GetScale();
         data->offset   = ind->Addr()->AsAddrMode()->Offset();
-
-        // Add index and base to the list of trees.
-        trees[treesCount++] = base;
-        if (index != nullptr)
-        {
-            trees[treesCount++] = index;
-        }
     }
     else if (ind->Addr()->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(ind->Addr()->AsLclVar()->GetLclNum()))
     {
@@ -7891,34 +7877,6 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
         // Address is not LEA or local.
         return false;
     }
-
-    // We expect all the trees to be found in gtPrev (we don't care about the order, just make sure we don't have
-    // unexpected trees in-between)
-    GenTree* prev = ind->gtPrev;
-    for (int i = 0; i < treesCount; i++)
-    {
-        bool found = false;
-
-        // We don't need any O(1) lookups here, the array is too small
-        for (int j = 0; j < MaxTrees; j++)
-        {
-            if (trees[j] == prev)
-            {
-                trees[j] = nullptr;
-                found    = true;
-                break;
-            }
-        }
-
-        if (!found)
-        {
-            // Unexpected node in-between.
-            return false;
-        }
-        prev = prev->gtPrev;
-    }
-
-    *prevTree = prev;
     return true;
 }
 
@@ -7984,14 +7942,22 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         StoreCoalescingData currData;
         StoreCoalescingData prevData;
-        GenTree*            prevTree;
 
         // Get coalescing data for the current STOREIND
-        if (!GetStoreCoalescingData(comp, ind, &currData, &prevTree))
+        if (!GetStoreCoalescingData(comp, ind, &currData))
         {
             return;
         }
 
+        bool isClosedRange = false;
+        // Now we need to find the very first LIR node representing the current STOREIND
+        // and make sure that there are no other unexpected nodes in-between.
+        LIR::ReadOnlyRange currIndRange = BlockRange().GetTreeRange(ind, &isClosedRange);
+        if (!isClosedRange)
+        {
+            return;
+        }
+        GenTree* prevTree = currIndRange.FirstNode()->gtPrev;
         // Now we need to find the previous STOREIND,
         // we can ignore any NOPs or IL_OFFSETs in-between
         while ((prevTree != nullptr) && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
@@ -8007,7 +7973,14 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // Get coalescing data for the previous STOREIND
         GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
-        if (!GetStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData, &prevTree) || (prevTree == nullptr))
+        if (!GetStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData) || (prevTree == nullptr))
+        {
+            return;
+        }
+
+        // Same for the previous STOREIND, make sure there are no unexpected nodes around.
+        LIR::ReadOnlyRange prevIndRange = BlockRange().GetTreeRange(prevInd, &isClosedRange);
+        if (!isClosedRange)
         {
             return;
         }
@@ -8066,7 +8039,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         }
 
         // Delete previous STOREIND entirely
-        BlockRange().Remove(prevTree->gtNext, prevInd);
+        BlockRange().Remove(std::move(prevIndRange));
 
         // We know it's always LEA for now
         GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
