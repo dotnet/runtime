@@ -20,11 +20,7 @@ type NumericLabelEnum =
   | ``2`` = 2
   | ``3`` = 4
   
-let enumWithNumericValue = NumericLabelEnum.``1``
-let enumWithNumericValueJsonStr = $"\"{enumWithNumericValue}\""
-
-let enumWithNonMatchedUnderlyingNumericValue = NumericLabelEnum.``3``
-let enumWithNonMatchedUnderlyingNumericValueJsonStr = $"\"{enumWithNonMatchedUnderlyingNumericValue}\""
+let enumWithNonMatchedUnderlyingNumericValueJsonStr = "\"3\""
 
 let badEnumWithGoodValue = BadEnum.ThisisagoodEnumValue
 let badEnumWithGoodValueJsonStr = $"\"{badEnumWithGoodValue}\""
@@ -73,14 +69,26 @@ let ``Fail Serialize Good Value Of Bad Enum Type`` () =
     Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
     Assert.Equal("Enum type 'BadEnum' uses unsupported identifer name 'There's a comma, in my name'.", ex.InnerException.Message)
 
-[<Fact>]
-let ``Fail Deserialize Numeric label Of Enum When Disallow Integer Values`` () =
-    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<NumericLabelEnum>(enumWithNumericValueJsonStr, optionsDisableNumeric) |> ignore)
+[<Theory>]
+[<InlineData("\"1\"")>]
+[<InlineData("\"2\"")>]
+[<InlineData("\"3\"")>]
+[<InlineData("\"4\"")>]
+[<InlineData("\"5\"")>]
+[<InlineData("\"+1\"")>]
+[<InlineData("\"-1\"")>]
+[<InlineData("\"  1  \"")>]
+[<InlineData("\"  +1  \"")>]
+[<InlineData("\"  -1  \"")>]
+let ``Fail Deserialize Numeric label Of Enum When Disallow Integer Values`` (numericValueJsonStr: string) =
+    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<NumericLabelEnum>(numericValueJsonStr, optionsDisableNumeric) |> ignore)
     
-[<Fact>]
-let ``Successful Deserialize Numeric label Of Enum When Allowing Integer Values`` () =
-    let actual = JsonSerializer.Deserialize<NumericLabelEnum>(enumWithNumericValueJsonStr, options)
-    Assert.Equal(NumericLabelEnum.``1``, actual)
+[<Theory>]
+[<InlineData("\"1\"", NumericLabelEnum.``1``)>]
+[<InlineData("\"2\"", NumericLabelEnum.``2``)>]
+let ``Successful Deserialize Numeric label Of Enum When Allowing Integer Values`` (numericValueJsonStr: string, expectedEnumValue: NumericLabelEnum) =
+    let actual = JsonSerializer.Deserialize<NumericLabelEnum>(numericValueJsonStr, options)
+    Assert.Equal(expectedEnumValue, actual)
     
 [<Fact>]
 let ``Successful Deserialize Numeric label Of Enum But as Underlying value When Allowing Integer Values`` () =
