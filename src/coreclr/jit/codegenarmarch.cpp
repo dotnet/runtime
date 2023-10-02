@@ -1701,14 +1701,6 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
     }
 
-    if (!index->TypeIs(TYP_I_IMPL))
-    {
-        // Otherwise, grab a new temp register to widen the index.
-        const regNumber tmpReg2 = node->ExtractTempReg();
-        GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
-        indexReg = tmpReg2;
-    }
-
     // Can we use a ScaledAdd instruction?
     //
     if (isPow2(node->gtElemSize) && (node->gtElemSize <= 32768))
@@ -1716,11 +1708,39 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         DWORD scale;
         BitScanForward(&scale, node->gtElemSize);
 
-        // dest = base + index * scale
-        genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+        if (!index->TypeIs(TYP_I_IMPL))
+        {
+#if defined(TARGET_ARM64)
+            if (scale <= 4)
+            {
+                // target = base + index<<scale
+                GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(),
+                                              indexReg, scale, INS_OPTS_UXTW);
+            }
+            else
+#endif
+            {
+                GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
+                indexReg      = tmpReg;
+                emitter* emit = GetEmitter();
+                genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+            }
+        }
+        else
+        {
+            // dest = base + index * scale
+            genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+        }
     }
     else // we have to load the element size and use a MADD (multiply-add) instruction
     {
+        if (!index->TypeIs(TYP_I_IMPL))
+        {
+            const regNumber tmpReg2 = node->ExtractTempReg();
+            GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
+            indexReg = tmpReg2;
+        }
+
         // tmpReg = element size
         instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->gtElemSize);
 
