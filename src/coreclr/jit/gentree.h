@@ -1836,6 +1836,10 @@ public:
     // Sets the GTF flag equivalent for the regIndex'th register of a multi-reg node.
     void SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex);
 
+#ifdef TARGET_ARM64
+    bool NeedsConsecutiveRegisters() const;
+#endif
+
     // Last-use information for either GenTreeLclVar or GenTreeCopyOrReload nodes.
 private:
     GenTreeFlags GetLastUseBit(int regIndex) const;
@@ -5523,7 +5527,7 @@ struct GenTreeCall final : public GenTree
         bool mayUseDispatcher = true;
         // Branch predictors on ARM64 generally do not handle the dispatcher as
         // well as on x64 hardware, so only use the validator by default.
-        bool       shouldUseDispatcher = false;
+        bool shouldUseDispatcher = false;
 #else
         // Other platforms do not even support the dispatcher.
         bool mayUseDispatcher    = false;
@@ -6076,20 +6080,8 @@ private:
 struct GenTreeJitIntrinsic : public GenTreeMultiOp
 {
 protected:
-    GenTree* gtInlineOperands[2];
-#ifdef TARGET_ARM64
-    // For consecutive registers, store the consecutive registers as well.
-    // Even though storing the firstReg is enough, we need information of
-    // other registers in codegen when they are consumed while storing to
-    // the local. If we do not save consecutive registers here, we will have
-    // to add conditions for the "consecutive register" specific intrinsics
-    // to infer the subsequent registers which might impact the TP.
-    // By changing gtOtherReg to gtOtherReg[MAX_MULTIREG_COUNT - 1], we are
-    // increasing the size of GenTreeJitIntrinsic by 2 bytes.
-    regNumberSmall gtOtherReg[MAX_MULTIREG_COUNT - 1];
-#else
-    regNumberSmall gtOtherReg;
-#endif                                 // TARGET_ARM64
+    GenTree*           gtInlineOperands[2];
+    regNumberSmall     gtOtherReg;     // The second register for multi-reg intrinsics.
     MultiRegSpillFlags gtSpillFlags;   // Spill flags for multi-reg intrinsics.
     unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
     unsigned char  gtSimdBaseJitType;  // SIMD vector base JIT type
@@ -6110,18 +6102,21 @@ public:
     {
 #ifdef TARGET_ARM64
         assert(idx < MAX_MULTIREG_COUNT);
-        // assert(IsMultiRegNode());
 
         if (idx == 0)
         {
             return GetRegNum();
         }
-        return (regNumber)gtOtherReg[idx - 1];
-#else
+
+        if (NeedsConsecutiveRegisters())
+        {
+            assert(IsMultiRegNode());
+            return (regNumber)(GetRegNum() + idx);
+        }
+#endif
         // should only be used to get otherReg
         assert(idx == 1);
         return (regNumber)gtOtherReg;
-#endif
     }
 
     //-----------------------------------------------------------
@@ -6138,22 +6133,22 @@ public:
     {
 #ifdef TARGET_ARM64
         assert(idx < MAX_MULTIREG_COUNT);
-        // assert(IsMultiRegNode());
 
         if (idx == 0)
         {
             SetRegNum(reg);
+            return;
         }
-        else
+        if (NeedsConsecutiveRegisters())
         {
-            gtOtherReg[idx - 1] = (regNumberSmall)reg;
-            assert(gtOtherReg[idx - 1] == reg);
+            assert(IsMultiRegNode());
+            assert(reg == (regNumber)(GetRegNum() + idx));
+            return;
         }
-#else
+#endif
         // should only be used to get otherReg
         assert(idx == 1);
         gtOtherReg = (regNumberSmall)reg;
-#endif
     }
 
     GenTreeFlags GetRegSpillFlagByIdx(unsigned idx) const
@@ -6239,9 +6234,7 @@ public:
                         unsigned      simdSize,
                         Operands... operands)
         : GenTreeMultiOp(oper, type, allocator, gtInlineOperands DEBUGARG(false), operands...)
-#if !defined(TARGET_ARM64)
         , gtOtherReg(REG_NA)
-#endif
         , gtSpillFlags(0)
         , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)
@@ -6269,9 +6262,7 @@ protected:
                          nodeBuilder.GetBuiltOperands(),
                          nodeBuilder.GetOperandCount(),
                          gtInlineOperands DEBUGARG(false))
-#if !defined(TARGET_ARM64)
         , gtOtherReg(REG_NA)
-#endif
         , gtSpillFlags(0)
         , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)

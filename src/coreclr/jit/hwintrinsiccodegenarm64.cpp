@@ -1067,20 +1067,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                           (emitSize == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B);
                 break;
 
-            case NI_AdvSimd_LoadVector64x4:
-            case NI_AdvSimd_Arm64_LoadVector128x4:
-                assert(node->GetRegByIndex(3) == REG_NEXT(REG_NEXT(REG_NEXT(targetReg))));
-                FALLTHROUGH;
-            case NI_AdvSimd_LoadVector64x3:
-            case NI_AdvSimd_Arm64_LoadVector128x3:
-                assert(node->GetRegByIndex(2) == REG_NEXT(REG_NEXT(targetReg)));
-                FALLTHROUGH;
-            case NI_AdvSimd_LoadVector64x2:
-            case NI_AdvSimd_Arm64_LoadVector128x2:
-                assert(node->GetRegByIndex(1) == REG_NEXT(targetReg));
-                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
-                break;
-
             case NI_AdvSimd_VectorTableLookup:
             case NI_AdvSimd_Arm64_VectorTableLookup:
             {

@@ -260,9 +260,6 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_MOD]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_UMOD]          = TREE_NODE_SZ_LARGE;
 #endif
-#ifdef TARGET_ARM64
-    GenTree::s_gtNodeSizes[GT_HWINTRINSIC]   = TREE_NODE_SZ_LARGE;
-#endif
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
@@ -338,11 +335,7 @@ void GenTree::InitNodeSize()
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef FEATURE_HW_INTRINSICS
-#ifdef TARGET_ARM64
-    static_assert_no_msg(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_LARGE);
-#else
     static_assert_no_msg(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
-#endif
 #endif // FEATURE_HW_INTRINSICS
     // clang-format on
 }
@@ -1039,6 +1032,19 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
     assert(!"GetMultiRegCount called with non-multireg node");
     return 1;
 }
+
+#ifdef TARGET_ARM64
+//-----------------------------------------------------------------------------------
+// NeedsConsecutiveRegisters: Checks if this tree node needs consecutive registers
+//
+// Return Value:
+//     Returns if the tree needs consecutive registers.
+//
+bool GenTree::NeedsConsecutiveRegisters() const
+{
+    return HWIntrinsicInfo::NeedsConsecutiveRegisters(AsHWIntrinsic()->GetHWIntrinsicId());
+}
+#endif
 
 //---------------------------------------------------------------
 // gtGetContainedRegMask: Get the reg mask of the node including
