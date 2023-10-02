@@ -4610,7 +4610,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     //             addressing mode instruction.  Currently we're 'cheating' by producing one or more
     //             instructions to generate the addressing mode so we need to modify lowering to
     //             produce LEAs that are a 1:1 relationship to the ARM64 architecture.
-    if (lea->Base() && lea->Index())
+    if (lea->HasBase() && lea->HasIndex())
     {
         GenTree* memBase = lea->Base();
         GenTree* index   = lea->Index();
@@ -4687,7 +4687,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
         }
     }
-    else if (lea->Base())
+    else if (lea->HasBase())
     {
         GenTree* memBase = lea->Base();
 
@@ -4715,7 +4715,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             emit->emitIns_R_R_R(INS_add, size, lea->GetRegNum(), memBase->GetRegNum(), tmpReg);
         }
     }
-    else if (lea->Index())
+    else if (lea->HasIndex())
     {
         // If we encounter a GT_LEA node without a base it means it came out
         // when attempting to optimize an arbitrary arithmetic expression during lower.
