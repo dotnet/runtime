@@ -926,6 +926,7 @@ namespace System.Numerics.Tensors
         private readonly struct Log2Operator : IUnaryOperator
         {
             public bool CanVectorize => false;
+
             public float Invoke(float x) => Log2(x);
 
             public Vector<float> Invoke(Vector<float> x)
