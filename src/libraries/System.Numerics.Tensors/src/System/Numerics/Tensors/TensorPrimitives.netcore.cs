@@ -2652,7 +2652,7 @@ namespace System.Numerics.Tensors
             public static Vector128<float> Invoke(Vector128<float> x)
             {
                 Vector128<uint> vx = x.AsUInt32() - Vector128.Create(V_OFF);
-                Vector128<float> n = (vx >> 23).AsSingle();
+                Vector128<float> n = (vx.AsInt32() >> 23).AsSingle();
 
                 vx = (vx & Vector128.Create(V_MASK)) + Vector128.Create(V_OFF);
 
@@ -2678,7 +2678,7 @@ namespace System.Numerics.Tensors
             public static Vector256<float> Invoke(Vector256<float> x)
             {
                 Vector256<uint> vx = x.AsUInt32() - Vector256.Create(V_OFF);
-                Vector256<float> n = (vx >> 23).AsSingle();
+                Vector256<float> n = (vx.AsInt32() >> 23).AsSingle();
 
                 vx = (vx & Vector256.Create(V_MASK)) + Vector256.Create(V_OFF);
 
@@ -2705,7 +2705,7 @@ namespace System.Numerics.Tensors
             public static Vector512<float> Invoke(Vector512<float> x)
             {
                 Vector512<uint> vx = x.AsUInt32() - Vector512.Create(V_OFF);
-                Vector512<float> n = (vx >> 23).AsSingle();
+                Vector512<float> n = (vx.AsInt32() >> 23).AsSingle();
 
                 vx = (vx & Vector512.Create(V_MASK)) + Vector512.Create(V_OFF);
 
