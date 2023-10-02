@@ -147,7 +147,7 @@ eventpipe_collect_tracing_command_try_parse_rundown_requested (
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (rundown_requested != NULL);
 
-	return ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)rundown_requested, 1);
+	return ds_ipc_message_try_parse_bool (buffer, buffer_len, rundown_requested);
 }
 
 static
@@ -162,7 +162,7 @@ eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (stackwalk_requested != NULL);
 
-	return ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)stackwalk_requested, 1);
+	return ds_ipc_message_try_parse_bool (buffer, buffer_len, stackwalk_requested);
 }
 
 static
