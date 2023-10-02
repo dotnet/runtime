@@ -6146,7 +6146,7 @@ public:
             return;
         }
 #endif
-        // should only be used to get otherReg
+        // should only be used to set otherReg
         assert(idx == 1);
         gtOtherReg = (regNumberSmall)reg;
     }
