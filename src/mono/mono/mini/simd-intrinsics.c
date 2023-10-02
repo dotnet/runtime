@@ -2211,7 +2211,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #elif defined(TARGET_AMD64)
 		if (COMPILE_LLVM (cfg)) {
-			if (vector_size == 128 && (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1))
+			if (is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3) && vector_size == 128 && (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1))
 				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, args);
 		}
 		// There is no variable shuffle until avx512

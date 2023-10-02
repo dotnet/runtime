@@ -33,8 +33,10 @@
 #include "coree-internals.h"
 #include <mono/utils/w32subset.h>
 
-gchar*
-mono_get_module_file_name (HMODULE module_handle)
+#if HAVE_API_SUPPORT_WIN32_COREE
+
+static gchar*
+get_module_file_name (HMODULE module_handle)
 {
 	gunichar2* file_name;
 	gchar* file_name_utf8;
@@ -68,7 +70,6 @@ mono_get_module_file_name (HMODULE module_handle)
 HMODULE coree_module_handle = NULL;
 static gboolean init_from_coree = FALSE;
 
-#if HAVE_API_SUPPORT_WIN32_COREE
 #include <shellapi.h>
 
 /* Entry point called by LdrLoadDll of ntdll.dll after _CorValidateImage. */
@@ -85,7 +86,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 	case DLL_PROCESS_ATTACH:
 		DisableThreadLibraryCalls (hInst);
 
-		file_name = mono_get_module_file_name (hInst);
+		file_name = get_module_file_name (hInst);
 
 		if (mono_get_root_domain ()) {
 			image = mono_image_open_from_module_handle (alc, hInst, mono_path_resolve_symlinks (file_name), TRUE, NULL);
@@ -130,7 +131,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 		if (lpReserved != NULL)
 			/* The process is terminating. */
 			return TRUE;
-		file_name = mono_get_module_file_name (hInst);
+		file_name = get_module_file_name (hInst);
 		image = mono_image_loaded_internal (alc, file_name);
 		if (image)
 			mono_image_close (image);
@@ -158,7 +159,7 @@ __int32 STDMETHODCALLTYPE _CorExeMain(void)
 	gchar** argv;
 	int i;
 
-	file_name = mono_get_module_file_name (NULL);
+	file_name = get_module_file_name (NULL);
 	init_from_coree = TRUE;
 	domain = mono_runtime_load (file_name);
 

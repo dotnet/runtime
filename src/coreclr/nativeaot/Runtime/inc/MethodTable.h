@@ -131,22 +131,23 @@ private:
         // simplified version of MethodTable. See LimitedEEType definition below.
         EETypeKindMask = 0x00030000,
 
-        // Unused = 0x00040000,
+        // This type has optional fields present.
+        OptionalFieldsFlag      = 0x00040000,
+
+        // GC depends on this bit, this bit must be zero
+        CollectibleFlag         = 0x00200000,
 
         IsDynamicTypeFlag       = 0x00080000,
 
-        // This MethodTable represents a type which requires finalization
+        // GC depends on this bit, this type requires finalization
         HasFinalizerFlag        = 0x00100000,
 
-        // This type contain gc pointers
-        HasPointersFlag         = 0x00200000,
+        // GC depends on this bit, this type contain gc pointers
+        HasPointersFlag         = 0x01000000,
 
         // This type is generic and one or more of it's type parameters is co- or contra-variant. This only
         // applies to interface and delegate types.
         GenericVarianceFlag     = 0x00800000,
-
-        // This type has optional fields present.
-        OptionalFieldsFlag      = 0x01000000,
 
         // This type is generic.
         IsGenericFlag           = 0x02000000,
@@ -162,6 +163,7 @@ private:
     enum ExtendedFlags
     {
         HasEagerFinalizerFlag = 0x0001,
+        // GC depends on this bit, this type has a critical finalizer
         HasCriticalFinalizerFlag = 0x0002,
         IsTrackedReferenceWithFinalizerFlag = 0x0004,
     };
