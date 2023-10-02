@@ -409,7 +409,7 @@
       Condition="'$(EmccInitialHeapSize)' == ''"
       DependsOnTargets="_CheckEmccIsExpectedVersion">
     <ItemGroup>
-      <_AOTObjectFile Include="%(_BitcodeFile.ObjectFile)" />
+      <_AOTObjectFile Include="&quot;%(_BitcodeFile.ObjectFile)&quot;" />
     </ItemGroup>
 
     <!-- for AOT builds we use llvm-size tool to collect size of the DATA segment in each object file -->
