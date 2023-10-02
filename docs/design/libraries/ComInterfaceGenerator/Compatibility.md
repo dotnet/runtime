@@ -2,7 +2,7 @@
 
 Documentation on compatibility guidance and the current state. The version headings act as a rolling delta between the previous version.
 
-## .NET 8
+## .NET 5,6,7,8
 
 ### Interface base types
 
