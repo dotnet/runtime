@@ -27,5 +27,5 @@
   </ItemGroup>
 
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
-  <Import Project="$(RepositoryEngineeringDir)readytorun.targets" />
+  <Import Project="ReadyToRun.targets" />
 </Project>

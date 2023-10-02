@@ -37,6 +37,7 @@
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 
   <PropertyGroup Condition="'$(NativeAotSupported)' == 'true'">
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
