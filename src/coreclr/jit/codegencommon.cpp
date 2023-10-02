@@ -2008,6 +2008,11 @@ void CodeGen::genEmitMachineCode()
                codeSize, prologSize, compiler->info.compPerfScore, instrCount,
                GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize);
 
+        if (JitConfig.JitMetrics() > 0)
+        {
+            printf(", num cse %d", compiler->optCSEcount);
+        }
+
 #if TRACK_LSRA_STATS
         if (JitConfig.DisplayLsraStats() == 3)
         {

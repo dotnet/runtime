@@ -5221,10 +5221,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         char debugPart[128] = {0};
         INDEBUG(sprintf_s(debugPart, 128, ", hash=0x%08x%s", info.compMethodHash(), compGetStressMessage()));
 
+        char metricPart[128] = {0};
+        if (JitConfig.JitMetrics() > 0)
+        {
+            INDEBUG(sprintf_s(debugPart, 128, ", perfScore=%.2f, numCse=%u", info.compPerfScore, optCSEcount));
+        }
+
         const bool hasProf = fgHaveProfileData();
-        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s]\n", methodsCompiled, fullName,
+        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s,%s]\n", methodsCompiled, fullName,
                compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
-               info.compILCodeSize, *methodCodeSize, debugPart);
+               info.compILCodeSize, *methodCodeSize, debugPart, metricPart);
     }
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);

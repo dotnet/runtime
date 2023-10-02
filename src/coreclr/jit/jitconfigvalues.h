@@ -376,6 +376,13 @@ CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 #define CONST_CSE_ENABLE_ALL 3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
 
+// Allow fine-grained controls of CSEs done in a particular method
+CONFIG_INTEGER(JitCSEHash, W("JitCSEHash"), 0)
+CONFIG_INTEGER(JitCSEMask, W("JitCSEMask"), 0)
+
+// Enable metric output in jit disasm & elsewhere
+CONFIG_INTEGER(JitMetrics, W("JitMetrics"), 0)
+
 ///
 /// JIT
 ///

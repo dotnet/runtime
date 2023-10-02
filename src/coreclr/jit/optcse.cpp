@@ -2808,6 +2808,10 @@ public:
             cseSsaNum               = lclDsc->lvPerSsaData.AllocSsaNum(allocator);
             ssaVarDsc               = lclDsc->GetPerSsaData(cseSsaNum);
         }
+        else
+        {
+            INDEBUG(lclDsc->lvIsMultiDefCSE = 1);
+        }
 
         // Verify that all of the ValueNumbers in this list are correct as
         // Morph will change them when it performs a mutating operation.
@@ -2888,6 +2892,7 @@ public:
                 if (isDef)
                 {
                     lclDsc->incRefCnts(curWeight, m_pCompiler);
+                    INDEBUG(lclDsc->lvIsHoist |= ((lst->tslTree->gtFlags & GTF_MAKE_CSE) != 0));
                 }
             }
             lst = lst->tslNext;
@@ -3318,6 +3323,21 @@ public:
             bool doCSE = PromotionCheck(&candidate);
 
 #ifdef DEBUG
+
+            if (doCSE)
+            {
+                const int attempt = m_pCompiler->optCSEattempt++;
+
+                if (m_pCompiler->info.compMethodHash() == (unsigned)JitConfig.JitCSEHash())
+                {
+                    doCSE = ((1ULL << attempt) & ((unsigned long long)JitConfig.JitCSEMask())) != 0;
+
+                    JITDUMP("CSE " FMT_CSE " attempt %u %s by hash 0x%x mask 0x%0x: %s\n", candidate.CseIndex(),
+                            attempt, doCSE ? "allowed" : "disabled", JitConfig.JitCSEHash(), JitConfig.JitCSEMask(),
+                            m_pCompiler->info.compFullName);
+                }
+            }
+
             if (m_pCompiler->verbose)
             {
                 if (doCSE)
