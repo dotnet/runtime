@@ -72,12 +72,12 @@ namespace JIT.HardwareIntrinsics.Arm
                 int sizeOfInArray = inArray.Length * Unsafe.SizeOf<{Op1BaseType}>();
                 int sizeOfOutArray1 = outArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
                 int sizeOfOutArray2 = outArray2.Length * Unsafe.SizeOf<{Op1BaseType}>();
-                if ((alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfInArray || (alignment * 2) < sizeOfOutArray1)
+                if ((alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfInArray || (alignment * 2) < sizeOfOutArray1 || (alignment * 2) < sizeOfOutArray2)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }
 
-                this.inArray = new byte[alignment * 4];
+                this.inArray = new byte[alignment * 2];
                 this.outArray1 = new byte[alignment * 2];
                 this.outArray2 = new byte[alignment * 2];
 
