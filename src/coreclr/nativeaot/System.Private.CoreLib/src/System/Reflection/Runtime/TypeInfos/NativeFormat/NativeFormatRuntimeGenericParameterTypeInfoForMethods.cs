@@ -74,7 +74,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                TypeContext typeContext = this.DeclaringType.TypeContext;
+                TypeContext typeContext = this.InternalDeclaringType.TypeContext;
                 return new TypeContext(typeContext.GenericTypeArguments, _declaringRuntimeNamedMethodInfo.RuntimeGenericArgumentsOrParameters);
             }
         }

@@ -95,7 +95,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 string name = Name;
 
-                RuntimeTypeInfo? declaringType = this.DeclaringType;
+                RuntimeTypeInfo? declaringType = this.InternalDeclaringType;
                 if (declaringType is not null)
                 {
                     string? declaringTypeFullName = declaringType.FullName;

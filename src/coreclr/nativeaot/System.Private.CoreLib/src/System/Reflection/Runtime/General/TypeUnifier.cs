@@ -113,6 +113,7 @@ namespace System.Reflection.Runtime.General
 
         public static RuntimeTypeInfo GetTypeForRuntimeTypeHandle(this RuntimeTypeHandle typeHandle)
         {
+            // TODO: Avoid creating the type unless necessary?
             Type type = Type.GetTypeFromHandle(typeHandle)!;
             return type.ToRuntimeTypeInfo();
         }

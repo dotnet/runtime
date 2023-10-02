@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Reflection.Emit;
+using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
 using Internal.Reflection.Core.Execution;
@@ -192,6 +194,8 @@ namespace System
 
         public override Type UnderlyingSystemType => this;
 
+        public override Type? ReflectedType => DeclaringType;
+
         public override RuntimeTypeHandle TypeHandle
             => new RuntimeTypeHandle(_pUnderlyingEEType);
 
@@ -296,5 +300,24 @@ namespace System
         public override Guid GUID => GetRuntimeTypeInfo().GUID;
 
         public override string Name => GetRuntimeTypeInfo().Name;
+
+        public override Type MakePointerType()
+            => GetRuntimeTypeInfo().MakePointerType();
+
+        public override Type MakeByRefType()
+            => GetRuntimeTypeInfo().MakeByRefType();
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType()
+            => GetRuntimeTypeInfo().MakeArrayType();
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType(int rank)
+            => GetRuntimeTypeInfo().MakeArrayType(rank);
+
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        public override Type MakeGenericType(params Type[] instantiation)
+            => GetRuntimeTypeInfo().MakeGenericType(instantiation);
     }
 }

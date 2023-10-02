@@ -45,7 +45,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public abstract bool IsArray { get; }
         public abstract bool IsSZArray { get; }
         public abstract bool IsVariableBoundArray { get; }
-        public abstract bool IsByRef { get;  }
+        public abstract bool IsByRef { get; }
         public abstract bool IsPointer { get; }
         public abstract bool IsGenericParameter { get; }
         public abstract bool IsGenericTypeParameter { get; }
@@ -418,9 +418,7 @@ namespace System.Reflection.Runtime.TypeInfos
             throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
         }
 
-#if false // TODO!
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public RuntimeTypeInfo MakeArrayType()
+        public Type MakeArrayType()
         {
             // Do not implement this as a call to MakeArrayType(1) - they are not interchangeable. MakeArrayType() returns a
             // vector type ("SZArray") while MakeArrayType(1) returns a multidim array of rank 1. These are distinct types
@@ -428,8 +426,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return this.GetArrayTypeWithTypeHandle().ToType();
         }
 
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public RuntimeTypeInfo MakeArrayType(int rank)
+        public Type MakeArrayType(int rank)
         {
             if (rank <= 0)
                 throw new IndexOutOfRangeException();
@@ -441,14 +438,12 @@ namespace System.Reflection.Runtime.TypeInfos
             return this.GetPointerType().ToType();
         }
 
-        public RuntimeTypeInfo MakeByRefType()
+        public Type MakeByRefType()
         {
             return this.GetByRefType().ToType();
         }
 
-        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
-        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public Type MakeGenericType(params Type[] typeArguments)
+        public Type MakeGenericType(Type[] typeArguments)
         {
             ArgumentNullException.ThrowIfNull(typeArguments);
 
@@ -497,23 +492,12 @@ namespace System.Reflection.Runtime.TypeInfos
 
             return this.GetConstructedGenericTypeWithTypeHandle(runtimeTypeArguments!).ToType();
         }
-#endif
 
-        public RuntimeTypeInfo DeclaringType
+        public Type DeclaringType
         {
             get
             {
-                return this.InternalDeclaringType;
-            }
-        }
-
-        public RuntimeTypeInfo ReflectedType
-        {
-            get
-            {
-                // Desktop compat: For types, ReflectedType == DeclaringType. Nested types are always looked up as BindingFlags.DeclaredOnly was passed.
-                // For non-nested types, the concept of a ReflectedType doesn't even make sense.
-                return DeclaringType;
+                return this.InternalDeclaringType.ToType();
             }
         }
 

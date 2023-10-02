@@ -78,21 +78,22 @@ namespace System.Reflection.Runtime.General
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo ToRuntimeTypeInfo(this Type type)
         {
+            if (type is RuntimeType runtimeType)
+            {
+                return runtimeType.GetRuntimeTypeInfo();
+            }
             // TODO: !!!
             Debug.Assert(false);
             return null;
-            // Debug.Assert(type == null || type is RuntimeTypeInfo);
-            // return (RuntimeTypeInfo)type!;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TypeInfo ToType(this RuntimeTypeInfo typeInfo)
+        public static Type ToType(this RuntimeTypeInfo typeInfo)
         {
+            RuntimeTypeHandle runtimeTypeHandle = typeInfo.InternalTypeHandleIfAvailable;
             // TODO: !!!
-            Debug.Assert(false);
-            return null;
-            // Debug.Assert(typeInfo == null || typeInfo is TypeInfo);
-            // return (TypeInfo)typeInfo;
+            Debug.Assert(!runtimeTypeHandle.IsNull);
+            return Type.GetTypeFromHandle(runtimeTypeHandle);
         }
 #pragma warning restore IDE0060
 
