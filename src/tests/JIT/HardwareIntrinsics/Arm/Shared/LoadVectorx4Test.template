@@ -278,7 +278,7 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray1[0]), result1);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray2[0]), result2);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray3[0]), result3);
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray4[0]), result3);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray4[0]), result4);
 
             ValidateResult(inArray, outArray1, outArray2, outArray3, outArray4, method);
         }
