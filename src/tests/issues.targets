@@ -3730,7 +3730,7 @@
             <FilteredExcludeList
                 Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)').Replace('\', '/'))"
                 Condition="'%(ExcludeList.Extension)' == '.dll'" />
-            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.RootDir)%(ExcludeList.Directory)%(ExcludeList.FileName)'))', '.cmd').Replace('\', '/'))"
+            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.Identity)'))', '.cmd').Replace('\', '/'))"
                 Condition="'%(ExcludeList.Extension)' == '.OutOfProcessTest'" />
       </ItemGroup>
     </Target>
