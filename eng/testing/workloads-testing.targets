@@ -190,6 +190,7 @@
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
+                     SkipUpdateAppRefPack="true"
       />
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />

@@ -827,10 +827,6 @@ void CallArg::Dump(Compiler* comp)
     {
         printf(", wellKnown[%s]", getWellKnownArgName(m_wellKnownArg));
     }
-    if (AbiInfo.IsStruct)
-    {
-        printf(", isStruct");
-    }
     printf("]\n");
 }
 #endif
@@ -880,8 +876,6 @@ void CallArgs::SetTemp(CallArg* arg, unsigned tmpNum)
 //
 void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 {
-    bool hasStructRegArg = false;
-
     unsigned argCount = CountArgs();
 
     // Previous argument with GTF_EXCEPT
@@ -914,17 +908,9 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #if FEATURE_ARG_SPLIT
         else if (arg.AbiInfo.IsSplit())
         {
-            hasStructRegArg = true;
             assert(m_hasStackArgs);
         }
-#endif       // FEATURE_ARG_SPLIT
-        else // we have a register argument, next we look for a struct type.
-        {
-            if (varTypeIsStruct(argx) UNIX_AMD64_ABI_ONLY(|| arg.AbiInfo.IsStruct))
-            {
-                hasStructRegArg = true;
-            }
-        }
+#endif // FEATURE_ARG_SPLIT
 
         /* If the argument tree contains an assignment (GTF_ASG) then the argument and
            and every earlier argument (except constants) must be evaluated into temps
@@ -2793,9 +2779,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         }
 #endif // TARGET_ARM
 
-        arg.AbiInfo          = CallArgABIInformation();
-        arg.AbiInfo.ArgType  = argx->TypeGet();
-        arg.AbiInfo.IsStruct = isStructArg;
+        arg.AbiInfo         = CallArgABIInformation();
+        arg.AbiInfo.ArgType = argx->TypeGet();
 
         if (isRegArg)
         {
@@ -3014,7 +2999,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         arg.AbiInfo.SetMultiRegNums();
 
-        if (arg.AbiInfo.IsStruct)
+        if (varTypeIsStruct(arg.GetSignatureType()))
         {
             arg.AbiInfo.PassedByRef = passStructByRef;
             arg.AbiInfo.ArgType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
@@ -3202,10 +3187,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             argx->gtType = TYP_I_IMPL;
         }
 
-        // Struct arguments may be morphed into a node that is not a struct type.
-        // In such case the CallArgABIInformation keeps track of whether the original node (before morphing)
-        // was a struct and the struct classification.
-        bool     isStructArg    = arg.AbiInfo.IsStruct;
+        bool     isStructArg    = varTypeIsStruct(arg.GetSignatureType());
         GenTree* argObj         = argx->gtEffectiveVal(true /*commaOnly*/);
         bool     makeOutArgCopy = false;
 
@@ -4576,8 +4558,8 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // dependency, so make sure this dependency remains visible. Also, the
         // JIT is not allowed to create arbitrary byrefs, so we must make sure
         // the address is not reordered with the bounds check.
-        boundsCheck->gtFlags |= GTF_ORDER_SIDEEFF;
-        addr->gtFlags |= GTF_ORDER_SIDEEFF;
+        boundsCheck->SetHasOrderingSideEffect();
+        addr->SetHasOrderingSideEffect();
 
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), boundsCheck, tree);
         fgSetRngChkTarget(boundsCheck);
@@ -5134,7 +5116,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         GenTree* lclVar  = gtNewLclvNode(lclNum, objRefType);
         GenTree* nullchk = gtNewNullCheck(lclVar, compCurBB);
 
-        nullchk->gtFlags |= GTF_ORDER_SIDEEFF;
+        nullchk->SetHasOrderingSideEffect();
 
         if (store != nullptr)
         {
@@ -5147,10 +5129,6 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         }
 
         addr = gtNewLclvNode(lclNum, objRefType); // Use "tmpLcl" to create "addr" node.
-
-        // Ensure the creation of the byref does not get reordered with the
-        // null check, as that could otherwise create an illegal byref.
-        addr->gtFlags |= GTF_ORDER_SIDEEFF;
     }
     else
     {
@@ -8909,6 +8887,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             break;
 #endif
 
+        case GT_COMMA:
+            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
+            {
+                typ = tree->gtType = TYP_VOID;
+            }
+
+            break;
+
         default:
             break;
     }
@@ -10787,10 +10773,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
-
 #if defined(TARGET_XARCH)
-        case NI_AVX512F_Add:
-        case NI_AVX512BW_Add:
         case NI_AVX512F_And:
         case NI_AVX512DQ_And:
         case NI_AVX512F_AndNot:
@@ -10832,13 +10815,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             switch (intrinsicId)
             {
-                case NI_AVX512F_Add:
-                case NI_AVX512BW_Add:
-                {
-                    maskIntrinsicId = NI_AVX512F_AddMask;
-                    break;
-                }
-
                 case NI_AVX512F_And:
                 case NI_AVX512DQ_And:
                 {
@@ -10945,6 +10921,107 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         }
 #endif // TARGET_XARCH
 
+        default:
+        {
+            break;
+        }
+    }
+
+    // Transforms:
+    // 1.(~v1 & v2) to VectorXxx.AndNot(v1, v2)
+    // 2.(v1 & (~v2)) to VectorXxx.AndNot(v2, v1)
+    switch (node->HWOperGet())
+    {
+        case GT_AND:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+            GenTree* lhs = nullptr;
+            GenTree* rhs = nullptr;
+
+            if (op1->OperIsHWIntrinsic())
+            {
+                // Try handle: ~op1 & op2
+                GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
+                genTreeOps          hwOper = hw->HWOperGet();
+
+                if (hwOper == GT_NOT)
+                {
+                    lhs = op2;
+                    rhs = hw->Op(1);
+                }
+                else if (hwOper == GT_XOR)
+                {
+                    GenTree* hwOp1 = hw->Op(1);
+                    GenTree* hwOp2 = hw->Op(2);
+
+                    if (hwOp1->IsVectorAllBitsSet())
+                    {
+                        lhs = op2;
+                        rhs = hwOp2;
+                    }
+                    else if (hwOp2->IsVectorAllBitsSet())
+                    {
+                        lhs = op2;
+                        rhs = hwOp1;
+                    }
+                }
+            }
+
+            if ((lhs == nullptr) && op2->OperIsHWIntrinsic())
+            {
+                // Try handle: op1 & ~op2
+                GenTreeHWIntrinsic* hw     = op2->AsHWIntrinsic();
+                genTreeOps          hwOper = hw->HWOperGet();
+
+                if (hwOper == GT_NOT)
+                {
+                    lhs = op1;
+                    rhs = hw->Op(1);
+                }
+                else if (hwOper == GT_XOR)
+                {
+                    GenTree* hwOp1 = hw->Op(1);
+                    GenTree* hwOp2 = hw->Op(2);
+
+                    if (hwOp1->IsVectorAllBitsSet())
+                    {
+                        lhs = op1;
+                        rhs = hwOp2;
+                    }
+                    else if (hwOp2->IsVectorAllBitsSet())
+                    {
+                        lhs = op1;
+                        rhs = hwOp1;
+                    }
+                }
+            }
+
+            if ((lhs == nullptr) || (rhs == nullptr))
+            {
+                break;
+            }
+
+            // Filter out side effecting cases for several reasons:
+            // 1. gtNewSimdBinOpNode may swap operand order.
+            // 2. The code above will swap operand order.
+            // 3. The code above does not handle GTF_REVERSE_OPS.
+            if (((lhs->gtFlags | rhs->gtFlags) & GTF_ALL_EFFECT) != 0)
+            {
+                break;
+            }
+
+            var_types    simdType        = node->TypeGet();
+            CorInfoType  simdBaseJitType = node->GetSimdBaseJitType();
+            unsigned int simdSize        = node->GetSimdSize();
+
+            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, simdType, lhs, rhs, simdBaseJitType, simdSize);
+
+            DEBUG_DESTROY_NODE(node);
+            INDEBUG(andnNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return andnNode;
+        }
         default:
         {
             break;

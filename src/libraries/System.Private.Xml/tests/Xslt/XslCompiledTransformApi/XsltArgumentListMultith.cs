@@ -105,6 +105,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
         //[Variation("Multiple GetParam for same parameter name")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);
@@ -123,6 +124,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
         //[Variation("Multiple GetParam for different parameter name")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void proc2()
         {
             CThreads rThreads = new CThreads(_output);
@@ -190,6 +192,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
         //[Variation("Multiple GetExtensionObject for same namespace System.Xml.Tests")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);
@@ -208,6 +211,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
         //[Variation("Multiple GetExtensionObject for different namespace System.Xml.Tests")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void proc2()
         {
             CThreads rThreads = new CThreads(_output);
@@ -276,6 +280,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         ////////////////////////////////////////////////////////////////
         //[Variation("Multiple transforms using shared ArgumentList")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void proc1()
         {
             CThreads rThreads = new CThreads(_output);

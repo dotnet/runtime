@@ -1022,11 +1022,6 @@
         <target state="translated">이 형식의 마샬링을 활성화하려면 어셈블리에 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute'를 적용하여 이 프로젝트에서 런타임 마샬링을 비활성화해야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">'SafeHandle'에서 파생된 추상 형식은 참조로 마샬링할 수 없습니다. 제공된 형식은 구체적이어야 합니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
         <target state="translated">메서드를 호출할 때 호출 수신자로 마샬링되는 매개 변수 '{0}'의 크기를 정의해야 하지만 count 매개 변수 '{1}'은(는) 'out' 매개 변수입니다.</target>

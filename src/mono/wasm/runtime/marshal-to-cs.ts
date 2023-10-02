@@ -24,6 +24,7 @@ import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
 import { mono_log_warn } from "./logging";
 
+export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
 export function initialize_marshalers_to_cs(): void {
     if (js_to_cs_marshalers.size == 0) {
@@ -389,7 +390,7 @@ export function marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): v
     }
     else {
         // if value was ManagedObject, it would be double proxied, but the C# signature requires that
-        mono_check(value[js_owned_gc_handle_symbol] === undefined, "JSObject proxy of ManagedObject proxy is not supported");
+        mono_check(value[js_owned_gc_handle_symbol] === undefined, () => `JSObject proxy of ManagedObject proxy is not supported. ${jsinteropDoc}`);
         mono_check(typeof value === "function" || typeof value === "object", () => `JSObject proxy of ${typeof value} is not supported`);
 
         set_arg_type(arg, MarshalerType.JSObject);
@@ -474,7 +475,7 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
         else {
             assert_not_disposed(value);
             if (value instanceof ArraySegment) {
-                throw new Error("NotImplementedException: ArraySegment");
+                throw new Error("NotImplementedException: ArraySegment. " + jsinteropDoc);
             }
             else if (value instanceof ManagedError) {
                 set_arg_type(arg, MarshalerType.Exception);
@@ -484,7 +485,7 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
                 set_arg_type(arg, MarshalerType.Object);
                 set_gc_handle(arg, gc_handle);
             } else {
-                throw new Error("NotImplementedException " + js_type);
+                throw new Error("NotImplementedException " + js_type + ". " + jsinteropDoc);
             }
         }
     }

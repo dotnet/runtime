@@ -215,7 +215,7 @@ unsigned emitter::emitInt32CnsCnt;
 unsigned emitter::emitNegCnsCnt;
 unsigned emitter::emitPow2CnsCnt;
 
-void emitterStaticStats(FILE* fout)
+void emitterStaticStats()
 {
     // The IG buffer size depends on whether we are storing a debug info pointer or not. For our purposes
     // here, do not include that.
@@ -226,6 +226,8 @@ void emitterStaticStats(FILE* fout)
     // insGroup members
 
     insGroup* igDummy = nullptr;
+
+    FILE* fout = jitstdout();
 
     fprintf(fout, "\n");
     fprintf(fout, "insGroup:\n");
@@ -3143,7 +3145,7 @@ void emitter::emitSplit(emitLocation*         startLoc,
     } // end for loop
 
     splitIfNecessary();
-    assert(curSize < maxSplitSize);
+    assert(curSize < UW_MAX_FRAGMENT_SIZE_BYTES);
 }
 
 /*****************************************************************************
@@ -7560,7 +7562,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    // For LoongArch64 and Riscv64 `emitFwdJumps` is always false.
+                    // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7576,7 +7578,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    // For LoongArch64 and Riscv64 `emitFwdJumps` is always false.
+                    // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
 #else
 #error Unsupported or unset target architecture

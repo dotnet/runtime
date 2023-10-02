@@ -149,6 +149,14 @@ class MainApp {
         }
     }
 
+    async frameBlazorFirstUI(guid, base) {
+        try {
+            await this.waitFor('blazor: Rendered Index.razor', guid, base);
+        } finally {
+            this.removeFrame();
+        }
+    }
+
     framePage = 'appstart-frame.html';
 
     async setFramePage(page) {
@@ -187,6 +195,7 @@ class MainApp {
 
 try {
     globalThis.mainApp = new MainApp();
+    globalThis.mainApp.FrameBlazorFirstUI = globalThis.mainApp.frameBlazorFirstUI.bind(globalThis.mainApp);
     globalThis.mainApp.FrameReachedManaged = globalThis.mainApp.frameReachedManaged.bind(globalThis.mainApp);
     globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
     globalThis.mainApp.Origin = globalThis.mainApp.origin.bind(globalThis.mainApp);

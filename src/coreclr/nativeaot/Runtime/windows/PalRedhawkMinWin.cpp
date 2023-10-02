@@ -15,7 +15,6 @@
 #include <windows.h>
 #include <stdio.h>
 #include <errno.h>
-#include <evntprov.h>
 
 #include "holder.h"
 
@@ -625,26 +624,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ Backgro
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor)
-{
-    return !!EventEnabled(regHandle, eventDescriptor);
-}
-
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalEventRegister(const GUID * arg1, void * arg2, void * arg3, REGHANDLE * arg4)
-{
-    return EventRegister(arg1, reinterpret_cast<PENABLECALLBACK>(arg2), arg3, arg4);
-}
-
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalEventUnregister(REGHANDLE arg1)
-{
-    return EventUnregister(arg1);
-}
-
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4)
-{
-    return EventWrite(arg1, arg2, arg3, arg4);
-}
-
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(uint32_t arg2)
 {
     TerminateProcess(GetCurrentProcess(), arg2);
@@ -692,22 +671,15 @@ REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
     return converted;
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect)
+REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect)
 {
-    return VirtualAlloc(pAddress, size, allocationType, protect);
+    return VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, protect);
 }
 
-#pragma warning (push)
-#pragma warning (disable:28160) // warnings about invalid potential parameter combinations that would cause VirtualFree to fail - those are asserted for below
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size, uint32_t freeType)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size)
 {
-    assert(((freeType & MEM_RELEASE) != MEM_RELEASE) || size == 0);
-    assert((freeType & (MEM_RELEASE | MEM_DECOMMIT)) != (MEM_RELEASE | MEM_DECOMMIT));
-    assert(freeType != 0);
-
-    return VirtualFree(pAddress, size, freeType);
+    VirtualFree(pAddress, 0, MEM_RELEASE);
 }
-#pragma warning (pop)
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect)
 {

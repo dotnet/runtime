@@ -1239,7 +1239,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 	case MONO_PATCH_INFO_GSHARED_METHOD_INFO:
-		return hash | GPOINTER_TO_UINT (ji->data.target);
+		return hash | GCONSTPOINTER_TO_UINT (ji->data.target);
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return hash | GPOINTER_TO_UINT (ji->data.gsharedvt->method);
 	case MONO_PATCH_INFO_RGCTX_FETCH:
@@ -4469,7 +4469,7 @@ init_class (MonoClass *klass)
 
 	const char *name = m_class_get_name (klass);
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
+#if defined(TARGET_AMD64) || defined(TARGET_WASM)
 	/*
 	 * Some of the intrinsics used by the VectorX classes are only implemented on amd64.
 	 * The JIT can't handle SIMD types with != 16 size yet.
@@ -4477,6 +4477,14 @@ init_class (MonoClass *klass)
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
 		// FIXME: Support Vector2/Vector3
 		if (!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
+			mono_class_set_is_simd_type (klass, TRUE);
+	}
+#endif
+
+#ifdef TARGET_ARM64
+	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
+		// FIXME: Support Vector3 https://github.com/dotnet/runtime/issues/81501
+		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
 	}
 #endif
@@ -4725,7 +4733,6 @@ mini_init (const char *filename)
 #endif
 
 #ifdef ENSURE_PRIMARY_STACK_SIZE 
-	// TODO: https://github.com/dotnet/runtime/issues/72920
 	ensure_stack_size (5 * 1024 * 1024);
 #endif // ENSURE_PRIMARY_STACK_SIZE
 
@@ -5137,6 +5144,7 @@ register_icalls (void)
 	register_icall (mono_throw_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_platform_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_invalid_program, mono_icall_sig_void_ptr, FALSE);
+	register_icall (mono_throw_type_load, mono_icall_sig_void_ptr, FALSE);
 	register_icall_no_wrapper (mono_dummy_jit_icall, mono_icall_sig_void);
 	//register_icall_no_wrapper (mono_dummy_jit_icall_val, mono_icall_sig_void_ptr);
 	register_icall_no_wrapper (mini_init_method_rgctx, mono_icall_sig_void_ptr_ptr);

@@ -569,11 +569,6 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().HasCctor;
         }
 
-        public static RuntimeTypeHandle RuntimeTypeHandleOf<T>()
-        {
-            return new RuntimeTypeHandle(EETypePtr.EETypePtrOf<T>());
-        }
-
         public static IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
         {
             return RuntimeImports.RhResolveDispatchOnType(CreateEETypePtr(instanceType), CreateEETypePtr(interfaceType), checked((ushort)slot));
@@ -811,7 +806,7 @@ namespace Internal.Runtime.Augments
             if (ip == IntPtr.Zero)
                 return null;
 
-            return callbacks.TryGetMethodNameFromStartAddress(ip);
+            return callbacks.TryGetMethodNameFromStartAddress(ip, out _);
         }
 
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;

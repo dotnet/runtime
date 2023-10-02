@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -469,14 +470,36 @@ namespace Microsoft.Extensions.Options.Generators
                     var validationAttr = new ValidationAttributeInfo(attributeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
                     validationAttrs.Add(validationAttr);
 
-                    foreach (var constructorArgument in attribute.ConstructorArguments)
+                    ImmutableArray<IParameterSymbol> parameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
+                    bool lastParameterDeclaredWithParamsKeyword =  parameters.Length > 0 && parameters[parameters.Length - 1].IsParams;
+
+                    ImmutableArray<TypedConstant> arguments = attribute.ConstructorArguments;
+
+                    for (int i = 0; i < arguments.Length; i++)
                     {
-                        validationAttr.ConstructorArguments.Add(GetArgumentExpression(constructorArgument.Type!, constructorArgument.Value));
+                        TypedConstant argument = arguments[i];
+                        if (argument.Kind == TypedConstantKind.Array)
+                        {
+                            bool isParams = lastParameterDeclaredWithParamsKeyword && i == arguments.Length - 1;
+                            validationAttr.ConstructorArguments.Add(GetArrayArgumentExpression(argument.Values, isParams));
+                        }
+                        else
+                        {
+                            validationAttr.ConstructorArguments.Add(GetArgumentExpression(argument.Type!, argument.Value));
+                        }
                     }
 
                     foreach (var namedArgument in attribute.NamedArguments)
                     {
-                        validationAttr.Properties.Add(namedArgument.Key, GetArgumentExpression(namedArgument.Value.Type!, namedArgument.Value.Value));
+                        if (namedArgument.Value.Kind == TypedConstantKind.Array)
+                        {
+                            bool isParams = lastParameterDeclaredWithParamsKeyword && namedArgument.Key == parameters[parameters.Length - 1].Name;
+                            validationAttr.Properties.Add(namedArgument.Key, GetArrayArgumentExpression(namedArgument.Value.Values, isParams));
+                        }
+                        else
+                        {
+                            validationAttr.Properties.Add(namedArgument.Key, GetArgumentExpression(namedArgument.Value.Type!, namedArgument.Value.Value));
+                        }
                     }
                 }
             }
@@ -635,6 +658,32 @@ namespace Microsoft.Extensions.Options.Generators
             }
 
             return false;
+        }
+
+        private string GetArrayArgumentExpression(ImmutableArray<Microsoft.CodeAnalysis.TypedConstant> value, bool isParams)
+        {
+            var sb = new StringBuilder();
+            if (!isParams)
+            {
+                sb.Append("new[] { ");
+            }
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                sb.Append(GetArgumentExpression(value[i].Type!, value[i].Value));
+
+                if (i < value.Length - 1)
+                {
+                    sb.Append(", ");
+                }
+            }
+
+            if (!isParams)
+            {
+                sb.Append(" }");
+            }
+
+            return sb.ToString();
         }
 
         private string GetArgumentExpression(ITypeSymbol type, object? value)

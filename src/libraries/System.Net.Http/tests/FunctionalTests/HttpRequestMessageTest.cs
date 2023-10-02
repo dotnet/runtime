@@ -267,6 +267,33 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task HttpRequest_StringContent_WithoutMediaType()
+        {
+            using (HttpClient client = CreateHttpClient())
+            {
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Post, uri);
+                    request.Content = new StringContent("", null, ((MediaTypeHeaderValue)null)!);
+
+                    Task<HttpResponseMessage> requestTask = client.SendAsync(request);
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        var requestData = await connection.ReadRequestDataAsync().ConfigureAwait(false);
+#if TARGET_BROWSER
+                        requestData = await connection.HandleCORSPreFlight(requestData);
+#endif
+
+                        Assert.DoesNotContain(requestData.Headers, line => line.Name.StartsWith("Content-Type"));
+
+                        await connection.SendResponseAsync();
+                        await requestTask;
+                    });
+                });
+            }
+        }
+
+        [Fact]
         public async Task HttpRequest_BodylessMethod_LargeContentLength()
         {
             using (HttpClient client = CreateHttpClient())

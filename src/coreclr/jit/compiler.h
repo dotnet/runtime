@@ -42,7 +42,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitexpandarray.h"
 #include "tinyarray.h"
 #include "valuenum.h"
-#include "jittelemetry.h"
 #include "namedintrinsiclist.h"
 #ifdef LATE_DISASM
 #include "disasm.h"
@@ -4240,7 +4239,6 @@ private:
     void impImportBlockCode(BasicBlock* block);
 
     void impReimportMarkBlock(BasicBlock* block);
-    void impReimportMarkSuccessors(BasicBlock* block);
 
     void impVerifyEHBlock(BasicBlock* block, bool isTryStart);
 
@@ -5103,6 +5101,9 @@ public:
     // Assign the proper value number to the tree
     void fgValueNumberTreeConst(GenTree* tree);
 
+    // If the constant has a field sequence associated with it, then register 
+    void fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree);
+
     // If the VN store has been initialized, reassign the
     // proper value number to the constant tree.
     void fgUpdateConstTreeValueNumber(GenTree* tree);
@@ -5487,6 +5488,8 @@ public:
     bool fgCheckRemoveStmt(BasicBlock* block, Statement* stmt);
 
     bool fgCreateLoopPreHeader(unsigned lnum);
+
+    void fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top);
 
     void fgUnreachableBlock(BasicBlock* block);
 
@@ -6324,8 +6327,10 @@ private:
 
 public:
     PhaseStatus optOptimizeBools();
+    PhaseStatus optSwitchRecognition();
+    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, GenTree* nodeToTest);
+    bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
 
-public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
@@ -8725,6 +8730,7 @@ private:
     // Get preferred alignment of SIMD type.
     int getSIMDTypeAlignment(var_types simdType);
 
+public:
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
     uint32_t getVectorTByteLength()
@@ -8925,7 +8931,6 @@ private:
         return emitTypeSize(TYP_SIMD8);
     }
 
-public:
     // Returns the codegen type for a given SIMD size.
     static var_types getSIMDTypeForSize(unsigned size)
     {
@@ -9352,7 +9357,7 @@ public:
     // State information - which phases have completed?
     // These are kept together for easy discoverability
 
-    bool    bRangeAllowStress;
+    bool    compAllowStress;
     bool    compCodeGenDone;
     int64_t compNumStatementLinksTraversed; // # of links traversed while doing debug checks
     bool    fgNormalizeEHDone;              // Has the flowgraph EH normalization phase been done?
@@ -9892,6 +9897,7 @@ public:
         STRESS_MODE(NO_OLD_PROMOTION) /* Do not use old promotion */                            \
         STRESS_MODE(PHYSICAL_PROMOTION) /* Use physical promotion */                            \
         STRESS_MODE(PHYSICAL_PROMOTION_COST)                                                    \
+        STRESS_MODE(UNWIND) /* stress unwind info; e.g., create function fragments */           \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -10348,7 +10354,7 @@ public:
                   InlineInfo*           inlineInfo);
     void compDone();
 
-    static void compDisplayStaticSizes(FILE* fout);
+    static void compDisplayStaticSizes();
 
     //------------ Some utility functions --------------
 
@@ -10800,22 +10806,8 @@ public:
     void RecordNowayAssert(const char* filename, unsigned line, const char* condStr);
 #endif // MEASURE_NOWAY
 
-#ifndef FEATURE_TRACELOGGING
     // Should we actually fire the noway assert body and the exception handler?
     bool compShouldThrowOnNoway();
-#else  // FEATURE_TRACELOGGING
-    // Should we actually fire the noway assert body and the exception handler?
-    bool compShouldThrowOnNoway(const char* filename, unsigned line);
-
-    // Telemetry instance to use per method compilation.
-    JitTelemetry compJitTelemetry;
-
-    // Get common parameters that have to be logged with most telemetry data.
-    void compGetTelemetryDefaults(const char** assemblyName,
-                                  const char** scopeName,
-                                  const char** methodName,
-                                  unsigned*    methodHash);
-#endif // !FEATURE_TRACELOGGING
 
 #ifdef DEBUG
 private:

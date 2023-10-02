@@ -20,7 +20,7 @@
     <ILLinkSharedDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkSharedDirectory>
     <IsBigEndian Condition="'$(Platform)' == 's390x'">true</IsBigEndian>
     <Is64Bit Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64' or '$(Platform)' == 's390x' or '$(Platform)' == 'loongarch64' or '$(Platform)' == 'ppc64le' or '$(Platform)' == 'riscv64'">true</Is64Bit>
-    <UseMinimalGlobalizationData Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</UseMinimalGlobalizationData>
+    <UseMinimalGlobalizationData Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">true</UseMinimalGlobalizationData>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(IsBigEndian)' == 'true'">$(DefineConstants);BIGENDIAN</DefineConstants>
@@ -337,7 +337,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Browser.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Nls.cs" />
@@ -1306,7 +1306,7 @@
     <Compile Include="$(CommonPath)Interop\Browser\Interop.CompareInfo.cs" Condition="'$(TargetsBrowser)' == 'true'">
       <Link>Common\Interop\Interop.CompareInfo.cs</Link>
     </Compile>
-     <Compile Include="$(CommonPath)Interop\Browser\Interop.Calendar.cs" Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.Calendar.cs" Condition="'$(TargetsBrowser)' == 'true'">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Browser\Interop.Locale.cs" Condition="'$(TargetsBrowser)' == 'true'">
@@ -1362,6 +1362,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.cs" Condition="'$(UseMinimalGlobalizationData)' != 'true'">
       <Link>Common\Interop\Interop.TimeZoneInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.TimeZoneInfo.iOS.cs" Condition="'$(IsiOSLike)' == 'true'">
+      <Link>Common\Interop\Interop.TimeZoneInfo.iOS.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Utils.cs">
       <Link>Common\Interop\Interop.Utils.cs</Link>
@@ -2146,6 +2149,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.WindowsThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Windows.cs" />
@@ -2203,7 +2207,6 @@
       <Link>Common\System\Memory\FixedBufferExtensions.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Variables.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Semaphore.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
   </ItemGroup>

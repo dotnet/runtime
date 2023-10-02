@@ -26,6 +26,7 @@ namespace Sample
                 new ReachManagedCold(),
                 new BlazorPageShow(),
                 new BlazorReachManaged(),
+                new BlazorFirstUI(),
                 new BlazorReachManagedCold(),
             };
         }
@@ -73,7 +74,7 @@ namespace Sample
         abstract class BlazorAppStartMeasurement : BenchTask.Measurement
         {
             protected readonly string urlBase = "blazor-template/";
-            protected readonly string framePage = "index.html";
+            protected readonly string framePage = "";
 
             public override async Task<bool> IsEnabled()
             {
@@ -123,6 +124,18 @@ namespace Sample
             }
         }
 
+        class BlazorFirstUI : BlazorAppStartMeasurement
+        {
+            public override string Name => "Blazor First UI";
+            public override int InitialSamples => 3;
+            public override bool HasRunStepAsync => true;
+
+            public override async Task RunStepAsync()
+            {
+                await MainApp.FrameBlazorFirstUI(null, urlBase);
+            }
+        }
+
         class BlazorReachManagedCold : BlazorAppStartMeasurement
         {
             public override string Name => "Blazor Reach managed cold";
@@ -138,6 +151,8 @@ namespace Sample
 
         public partial class MainApp
         {
+            [JSImport("globalThis.mainApp.FrameBlazorFirstUI")]
+            public static partial Task FrameBlazorFirstUI(string guid, string urlBase);
             [JSImport("globalThis.mainApp.PageShow")]
             public static partial Task PageShow(string guid, string urlBase);
             [JSImport("globalThis.mainApp.FrameReachedManaged")]

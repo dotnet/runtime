@@ -225,7 +225,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <PropertyGroup>
       <ILLinkTreatWarningsAsErrors Condition=" '$(ILLinkTreatWarningsAsErrors)' == '' ">$(TreatWarningsAsErrors)</ILLinkTreatWarningsAsErrors>
-      <_ExtraTrimmerArgs>--skip-unresolved true $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
       <TrimmerSingleWarn Condition=" '$(TrimmerSingleWarn)' == '' ">true</TrimmerSingleWarn>
     </PropertyGroup>
 

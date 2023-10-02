@@ -1127,6 +1127,7 @@ struct BasicBlock : private LIR::Range
 
     Statement* firstStmt() const;
     Statement* lastStmt() const;
+    bool       hasSingleStmt() const;
 
     // Statements: convenience method for enabling range-based `for` iteration over the statement list, e.g.:
     //    for (Statement* const stmt : block->Statements())

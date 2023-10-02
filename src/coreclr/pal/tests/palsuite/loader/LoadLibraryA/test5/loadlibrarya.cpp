@@ -39,11 +39,11 @@ PALTEST(loader_LoadLibraryA_test5_paltest_loadlibrarya_test5, "loader/LoadLibrar
     /* load a module which does not have the file extension,
      * but has a trailing dot
     */
-    ModuleHandle = LoadLibraryA(ModuleName);
+    ModuleHandle = LoadLibraryExA(ModuleName, NULL, 0);
     if(NULL != ModuleHandle)
     {
-        Trace("Failed to call LoadLibraryA API for a negative test "
-            "call LoadLibraryA with module name which does not have "
+        Trace("Failed to call LoadLibraryExA API for a negative test "
+            "call LoadLibraryExA with module name which does not have "
             "extension except a trailing dot, a NULL module handle is"
             "expected, but no NULL module handle is returned, "
              "error code = %u\n", GetLastError());

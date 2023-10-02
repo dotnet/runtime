@@ -54,6 +54,11 @@
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'" >
+    <!-- https://github.com/dotnet/runtime/issues/91676 -->
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-minimal-config\Wasm.Browser.Config.Sample.csproj" />
+  </ItemGroup>
 
   <!-- wasm EAT/AOT -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(EnableAggressiveTrimming)' == 'true'">
@@ -238,13 +243,6 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT\Android.Device_Emulator.Aot.Test.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'android'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*/tests/**/*.Tests.csproj" />
-    <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/**/*.Test.csproj" />
-    <ProjectExclusions Include="$(RepoRoot)/src/mono/sample/Android/AndroidSampleApp.csproj" />
-    <ProjectExclusions Remove="$(RepoRoot)/src/tests/FunctionalTests/Android/Device_Emulator/AOT_PROFILED/Android.Device_Emulator.Aot_Profiled.Test.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(RunDisablediOSTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
   </ItemGroup>
@@ -343,7 +341,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.Platforms\tests\Microsoft.NETCore.Platforms.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
 
     <!-- This test is disabled via an assembly-level attribute in source. We exclude it here to avoid queuing/running a work item entirely.
@@ -373,6 +370,12 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates\tests\System.Security.Cryptography.X509Certificates.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Cose\tests\System.Security.Cryptography.Cose.Tests.csproj" />
+    <!-- https://github.com/dotnet/runtime/issues/91538 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj" />
+    <!-- https://github.com/dotnet/runtime/issues/91593 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels\tests\System.Threading.Channels.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread' and '$(RunDisabledWasmTests)' != 'true'">
@@ -414,10 +417,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' != 'true'">
-    <!-- https://github.com/dotnet/runtime/issues/83167 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors\tests\System.Numerics.Vectors.Tests.csproj"
-                       Condition="'$(TargetArchitecture)' == 'arm64'" />
-
     <!-- https://github.com/dotnet/runtime/issues/72908 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext\tests\System.Reflection.MetadataLoadContext.Tests.csproj" />
 
@@ -636,12 +635,6 @@
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
   </ItemGroup>
-
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'android'">
-    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT_PROFILED\**\*.Test.csproj"
-                    Exclude="@(ProjectExclusions)" />
-  </ItemGroup>
-
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos') and '$(UseNativeAOTRuntime)' == 'true'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj"

@@ -382,10 +382,7 @@ mono_ios_runtime_init (void)
     MonoDomain *domain = mono_jit_init_version ("dotnet.ios", "mobile");
     assert (domain);
 
-#if !FORCE_INTERPRETER && (!TARGET_OS_SIMULATOR || FORCE_AOT)
-    // device runtimes are configured to use lazy gc thread creation
     mono_gc_init_finalizer_thread ();
-#endif
 
     MonoAssembly *assembly = load_assembly (executable, NULL);
     assert (assembly);

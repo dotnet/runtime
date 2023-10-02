@@ -7612,9 +7612,6 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     if (mHandleMask & CorHandleStrongDependent)
         result |= (1 << HNDTYPE_DEPENDENT);
 
-    if (mHandleMask & CorHandleStrongAsyncPinned)
-        result |= (1 << HNDTYPE_ASYNCPINNED);
-
     if (mHandleMask & CorHandleStrongSizedByref)
         result |= (1 << HNDTYPE_SIZEDREF);
 
@@ -7754,10 +7751,6 @@ HRESULT DacHandleWalker::Next(ULONG count, DacGcReference roots[], ULONG *pFetch
                 roots[i].i64ExtraData = GetDependentHandleSecondary(CLRDATA_ADDRESS_TO_TADDR(handle.Handle)).GetAddr();
                 break;
 
-            case HNDTYPE_ASYNCPINNED:
-                roots[i].dwType = (DWORD)CorHandleStrongAsyncPinned;
-                break;
-
             case HNDTYPE_SIZEDREF:
                 roots[i].dwType = (DWORD)CorHandleStrongSizedByref;
                 break;
@@ -7788,8 +7781,9 @@ HRESULT DacStackReferenceWalker::Next(ULONG count, DacGcReference stackRefs[], U
         stackRefs[i].i64ExtraData = 0;
 
         const SOSStackRefData &sosStackRef = mList.Get(i);
-        if (sosStackRef.Flags & GC_CALL_INTERIOR)
+        if (sosStackRef.Flags & GC_CALL_INTERIOR || sosStackRef.Address == 0)
         {
+            // Direct pointer case - interior pointer, Frame ref, or enregistered var.
             stackRefs[i].pObject = CLRDATA_ADDRESS_TO_TADDR(sosStackRef.Object) | 1;
         }
         else
