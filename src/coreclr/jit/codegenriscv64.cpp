@@ -570,11 +570,11 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         // fiFrameType constraints:
         assert(frameSize < -2048);
 
-        offset       = -frameSize - genFuncletInfo.fiSP_to_FPRA_save_delta;
-        int SP_delta = roundUp((UINT)offset, STACK_ALIGN);
-        offset       = SP_delta - offset;
+        offset      = -frameSize - genFuncletInfo.fiSP_to_FPRA_save_delta;
+        int spDelta = roundUp((UINT)offset, STACK_ALIGN);
+        offset      = spDelta - offset;
 
-        genStackPointerAdjustment(-SP_delta, rsGetRsvdReg(), nullptr, /* reportUnwindData */ true);
+        genStackPointerAdjustment(-spDelta, rsGetRsvdReg(), nullptr, /* reportUnwindData */ true);
 
         GetEmitter()->emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, offset);
         compiler->unwindSaveReg(REG_FP, offset);
@@ -584,10 +584,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
         maskSaveRegsInt &= ~(RBM_RA | RBM_FP); // We've saved these now
 
-        offset = frameSize + SP_delta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
+        offset = frameSize + spDelta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
         genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, 0);
 
-        genStackPointerAdjustment(frameSize + SP_delta, rsGetRsvdReg(), nullptr,
+        genStackPointerAdjustment(frameSize + spDelta, rsGetRsvdReg(), nullptr,
                                   /* reportUnwindData */ true);
     }
     else
@@ -700,15 +700,15 @@ void CodeGen::genFuncletEpilog()
         // fiFrameType constraints:
         assert(frameSize < -2048);
 
-        int offset   = -frameSize - genFuncletInfo.fiSP_to_FPRA_save_delta;
-        int SP_delta = roundUp((UINT)offset, STACK_ALIGN);
-        offset       = SP_delta - offset;
+        int offset  = -frameSize - genFuncletInfo.fiSP_to_FPRA_save_delta;
+        int spDelta = roundUp((UINT)offset, STACK_ALIGN);
+        offset      = spDelta - offset;
 
         // first, generate daddiu SP,SP,imm
-        genStackPointerAdjustment(-frameSize - SP_delta, rsGetRsvdReg(), nullptr,
+        genStackPointerAdjustment(-frameSize - spDelta, rsGetRsvdReg(), nullptr,
                                   /* reportUnwindData */ true);
 
-        int offset2 = frameSize + SP_delta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
+        int offset2 = frameSize + spDelta + genFuncletInfo.fiSP_to_PSP_slot_delta + 8;
         assert(offset2 < 2040); // can amend.
 
         regsToRestoreMask &= ~(RBM_RA | RBM_FP); // We restore FP/RA at the end
@@ -721,7 +721,7 @@ void CodeGen::genFuncletEpilog()
         compiler->unwindSaveReg(REG_FP, offset);
 
         // second, generate daddiu SP,SP,imm for remaine space.
-        genStackPointerAdjustment(SP_delta, rsGetRsvdReg(), nullptr, /* reportUnwindData */ true);
+        genStackPointerAdjustment(spDelta, rsGetRsvdReg(), nullptr, /* reportUnwindData */ true);
     }
     else
     {
@@ -751,13 +751,13 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert((rsMaskSaveRegs & RBM_RA) != 0);
     assert((rsMaskSaveRegs & RBM_FP) != 0);
 
-    unsigned PSPSize = (compiler->lvaPSPSym != BAD_VAR_NUM) ? 8 : 0;
+    unsigned pspSize = (compiler->lvaPSPSym != BAD_VAR_NUM) ? 8 : 0;
 
     unsigned saveRegsCount = genCountBits(rsMaskSaveRegs);
     assert((saveRegsCount == compiler->compCalleeRegsPushed) || (saveRegsCount == compiler->compCalleeRegsPushed - 1));
 
     unsigned saveRegsPlusPSPSize =
-        roundUp((UINT)genTotalFrameSize(), STACK_ALIGN) - compiler->compLclFrameSize + PSPSize;
+        roundUp((UINT)genTotalFrameSize(), STACK_ALIGN) - compiler->compLclFrameSize + pspSize;
 
     unsigned saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
 
@@ -767,7 +767,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     unsigned maxFuncletFrameSizeAligned = saveRegsPlusPSPSizeAligned + outgoingArgSpaceAligned;
     assert((maxFuncletFrameSizeAligned % STACK_ALIGN) == 0);
 
-    int SP_to_FPRA_save_delta = compiler->lvaOutgoingArgSpaceSize;
+    int spToFpraSaveDelta = compiler->lvaOutgoingArgSpaceSize;
 
     unsigned funcletFrameSize        = saveRegsPlusPSPSize + compiler->lvaOutgoingArgSpaceSize;
     unsigned funcletFrameSizeAligned = roundUp(funcletFrameSize, STACK_ALIGN);
@@ -790,16 +790,16 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         saveRegsPlusPSPSize -= 2 * 8; // FP/RA
     }
 
-    int CallerSP_to_PSP_slot_delta = -(int)saveRegsPlusPSPSize;
-    genFuncletInfo.fiSpDelta1      = -(int)funcletFrameSizeAligned;
-    int SP_to_PSP_slot_delta       = funcletFrameSizeAligned - saveRegsPlusPSPSize;
+    int callerSpToPspSlotDelta = -(int)saveRegsPlusPSPSize;
+    genFuncletInfo.fiSpDelta1  = -(int)funcletFrameSizeAligned;
+    int spToPspSlotDelta       = funcletFrameSizeAligned - saveRegsPlusPSPSize;
 
     /* Now save it for future use */
     genFuncletInfo.fiSaveRegs              = rsMaskSaveRegs;
-    genFuncletInfo.fiSP_to_FPRA_save_delta = SP_to_FPRA_save_delta;
+    genFuncletInfo.fiSP_to_FPRA_save_delta = spToFpraSaveDelta;
 
-    genFuncletInfo.fiSP_to_PSP_slot_delta       = SP_to_PSP_slot_delta;
-    genFuncletInfo.fiCallerSP_to_PSP_slot_delta = CallerSP_to_PSP_slot_delta;
+    genFuncletInfo.fiSP_to_PSP_slot_delta       = spToPspSlotDelta;
+    genFuncletInfo.fiCallerSP_to_PSP_slot_delta = callerSpToPspSlotDelta;
 
 #ifdef DEBUG
     if (verbose)
@@ -816,8 +816,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
         if (compiler->lvaPSPSym != BAD_VAR_NUM)
         {
-            if (CallerSP_to_PSP_slot_delta != compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)) // for
-                                                                                                           // debugging
+            if (callerSpToPspSlotDelta != compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)) // for
+                                                                                                       // debugging
             {
                 printf("lvaGetCallerSPRelativeOffset(lvaPSPSym): %d\n",
                        compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym));
@@ -1008,14 +1008,14 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 
     noway_assert(isFramePointerUsed()); // We need an explicit frame pointer
 
-    int SPtoCallerSPdelta = -genCallerSPtoInitialSPdelta();
+    int spToCallerSpDelta = -genCallerSPtoInitialSPdelta();
 
     // We will just use the initReg since it is an available register
     // and we are probably done using it anyway...
     regNumber regTmp = initReg;
     *pInitRegZeroed  = false;
 
-    genInstrWithConstant(INS_addi, EA_PTRSIZE, regTmp, REG_SPBASE, SPtoCallerSPdelta, rsGetRsvdReg(), false);
+    genInstrWithConstant(INS_addi, EA_PTRSIZE, regTmp, REG_SPBASE, spToCallerSpDelta, rsGetRsvdReg(), false);
     GetEmitter()->emitIns_S_R(INS_sd, EA_PTRSIZE, regTmp, compiler->lvaPSPSym, 0);
 }
 
@@ -2093,14 +2093,14 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         else // the divisor is not the constant zero
         {
             GenTree* src1     = tree->gtOp1;
-            unsigned TypeSize = genTypeSize(genActualType(tree->TypeGet()));
-            emitAttr size     = EA_ATTR(TypeSize);
+            unsigned typeSize = genTypeSize(genActualType(tree->TypeGet()));
+            emitAttr size     = EA_ATTR(typeSize);
 
-            assert(TypeSize >= genTypeSize(genActualType(src1->TypeGet())) &&
-                   TypeSize >= genTypeSize(genActualType(divisorOp->TypeGet())));
+            assert(typeSize >= genTypeSize(genActualType(src1->TypeGet())) &&
+                   typeSize >= genTypeSize(genActualType(divisorOp->TypeGet())));
 
             // ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
-            regNumber   Reg1       = src1->GetRegNum();
+            regNumber   reg1       = src1->GetRegNum();
             regNumber   divisorReg = divisorOp->GetRegNum();
             instruction ins;
 
@@ -2122,8 +2122,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 {
                     assert(!divisorOp->isContainedIntOrIImmed());
                     ssize_t intConst = (int)(src1->AsIntCon()->gtIconVal);
-                    Reg1             = rsGetRsvdReg();
-                    emit->emitLoadImmediate(EA_PTRSIZE, Reg1, intConst);
+                    reg1             = rsGetRsvdReg();
+                    emit->emitLoadImmediate(EA_PTRSIZE, reg1, intConst);
                 }
             }
             else
@@ -2206,7 +2206,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     }
                 }
 
-                emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
+                emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), reg1, divisorReg);
             }
             else // if (tree->gtOper == GT_UDIV) GT_UMOD
             {
@@ -2236,7 +2236,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     }
 
                     // TODO-RISCV64: here is just for signed-extension ?
-                    emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, Reg1, Reg1, 0);
+                    emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, reg1, reg1, 0);
                     emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, divisorReg, divisorReg, 0);
                 }
                 else
@@ -2251,7 +2251,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     }
                 }
 
-                emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
+                emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), reg1, divisorReg);
             }
         }
     }
@@ -3242,10 +3242,10 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
     noway_assert((srcSize == EA_4BYTE) || (srcSize == EA_8BYTE));
 
-    bool        IsUnsigned = treeNode->gtFlags & GTF_UNSIGNED;
+    bool        isUnsigned = treeNode->gtFlags & GTF_UNSIGNED;
     instruction ins        = INS_invalid;
 
-    if (IsUnsigned)
+    if (isUnsigned)
     {
         if (dstType == TYP_DOUBLE)
         {
@@ -3344,10 +3344,10 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     emitAttr dstSize = EA_ATTR(genTypeSize(dstType));
     noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
 
-    bool        IsUnsigned = treeNode->gtFlags & GTF_UNSIGNED;
+    bool        isUnsigned = varTypeIsUnsigned(dstType);
     instruction ins        = INS_invalid;
 
-    if (IsUnsigned)
+    if (isUnsigned)
     {
         if (srcType == TYP_DOUBLE)
         {
@@ -3379,7 +3379,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 
     {
         emitAttr attr = emitActualTypeSize(dstType);
-        if (IsUnsigned)
+        if (isUnsigned)
         {
             GetEmitter()->emitIns_R_R_I(INS_slli, attr, treeNode->GetRegNum(), treeNode->GetRegNum(), 32);
             GetEmitter()->emitIns_R_R_I(INS_srli, attr, treeNode->GetRegNum(), treeNode->GetRegNum(), 32);
@@ -3573,7 +3573,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         assert(!op1->isContainedIntOrIImmed());
         assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
 
-        bool      IsUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
+        bool      isUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
         regNumber regOp1     = op1->GetRegNum();
 
         if (op2->isContainedIntOrIImmed())
@@ -3583,7 +3583,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             switch (cmpSize)
             {
                 case EA_4BYTE:
-                    if (IsUnsigned)
+                    if (isUnsigned)
                     {
                         imm = static_cast<uint32_t>(imm);
 
@@ -3607,44 +3607,44 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
             if (tree->OperIs(GT_LT))
             {
-                if (!IsUnsigned && emitter::isValidSimm12(imm))
+                if (!isUnsigned && emitter::isValidSimm12(imm))
                 {
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
                 }
-                else if (IsUnsigned && emitter::isValidUimm11(imm))
+                else if (isUnsigned && emitter::isValidUimm11(imm))
                 {
                     emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm);
                 }
                 else
                 {
                     emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
                 }
             }
             else if (tree->OperIs(GT_LE))
             {
-                if (!IsUnsigned && emitter::isValidSimm12(imm + 1))
+                if (!isUnsigned && emitter::isValidSimm12(imm + 1))
                 {
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                 }
-                else if (IsUnsigned && emitter::isValidUimm11(imm + 1))
+                else if (isUnsigned && emitter::isValidUimm11(imm + 1))
                 {
                     emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                 }
                 else
                 {
                     emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm + 1);
-                    emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
                 }
             }
             else if (tree->OperIs(GT_GT))
             {
-                if (!IsUnsigned && emitter::isValidSimm12(imm + 1))
+                if (!isUnsigned && emitter::isValidSimm12(imm + 1))
                 {
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
                 }
-                else if (IsUnsigned && emitter::isValidUimm11(imm + 1))
+                else if (isUnsigned && emitter::isValidUimm11(imm + 1))
                 {
                     emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
@@ -3652,23 +3652,23 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 else
                 {
                     emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, REG_RA, regOp1);
+                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, REG_RA, regOp1);
                 }
             }
             else if (tree->OperIs(GT_GE))
             {
-                if (!IsUnsigned && emitter::isValidSimm12(imm))
+                if (!isUnsigned && emitter::isValidSimm12(imm))
                 {
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
                 }
-                else if (IsUnsigned && emitter::isValidUimm11(imm))
+                else if (isUnsigned && emitter::isValidUimm11(imm))
                 {
                     emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm);
                 }
                 else
                 {
                     emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
                 }
                 emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
             }
@@ -3720,7 +3720,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 assert(regOp1 != tmpRegOp2);
                 assert(regOp2 != tmpRegOp2);
 
-                if (IsUnsigned)
+                if (isUnsigned)
                 {
                     emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
                     emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
@@ -3740,20 +3740,20 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
             if (tree->OperIs(GT_LT))
             {
-                emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp1, regOp2);
+                emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp1, regOp2);
             }
             else if (tree->OperIs(GT_LE))
             {
-                emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp2, regOp1);
+                emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp2, regOp1);
                 emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
             }
             else if (tree->OperIs(GT_GT))
             {
-                emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp2, regOp1);
+                emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp2, regOp1);
             }
             else if (tree->OperIs(GT_GE))
             {
-                emit->emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp1, regOp2);
+                emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp1, regOp2);
                 emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
             }
             else if (tree->OperIs(GT_NE))
@@ -7538,10 +7538,10 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         {
             if (compiler->compLocallocUsed)
             {
-                int SPtoFPdelta = genSPtoFPdelta();
+                int spToFpDelta = genSPtoFPdelta();
                 // Restore sp from fp
-                GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -SPtoFPdelta);
-                compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
+                GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -spToFpDelta);
+                compiler->unwindSetFrameReg(REG_FPBASE, spToFpDelta);
             }
 
             JITDUMP("Frame type 1(save FP/RA at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
