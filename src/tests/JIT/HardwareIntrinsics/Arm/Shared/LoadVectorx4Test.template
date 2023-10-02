@@ -145,7 +145,7 @@ namespace JIT.HardwareIntrinsics.Arm
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
         private static readonly int OpElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
-        private static readonly int DestElementCount = OpElementCount * 3;
+        private static readonly int DestElementCount = OpElementCount * 4;
 
         private static {Op1BaseType}[] _data = new {Op1BaseType}[DestElementCount];
 
@@ -257,7 +257,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1BaseType}[] outArray3 = new {Op1BaseType}[OpElementCount];
             {Op1BaseType}[] outArray4 = new {Op1BaseType}[OpElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(input), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() * 3);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(input), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() * 4);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray1[0]), ref Unsafe.AsRef<byte>(result1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray2[0]), ref Unsafe.AsRef<byte>(result2), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray3[0]), ref Unsafe.AsRef<byte>(result3), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
@@ -274,7 +274,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1BaseType}[] outArray3 = new {Op1BaseType}[OpElementCount];            
             {Op1BaseType}[] outArray4 = new {Op1BaseType}[OpElementCount];            
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(input), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() * 3);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(input), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() * 4);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray1[0]), result1);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray2[0]), result2);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref outArray3[0]), result3);
