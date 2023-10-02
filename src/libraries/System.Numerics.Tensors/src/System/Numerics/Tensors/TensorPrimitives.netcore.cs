@@ -2652,11 +2652,11 @@ namespace System.Numerics.Tensors
             public static Vector128<float> Invoke(Vector128<float> x)
             {
                 Vector128<uint> vx = x.AsUInt32() - Vector128.Create(V_OFF);
-                Vector128<float> n = (vx.AsInt32() >> 23).AsSingle();
+                Vector128<float> n = (Vector128.ShiftRightArithmetic(vx.AsInt32(), 23)).AsSingle();
 
                 vx = (vx & Vector128.Create(V_MASK)) + Vector128.Create(V_OFF);
 
-                Vector128<float> r = vx.AsSingle() - Vector128<float>.One;
+                Vector128<float> r = vx.AsSingle() - Vector128.Create(1.0f);
 
                 Vector128<float> r2 = r * r;
                 Vector128<float> r4 = r2 * r2;
@@ -2678,11 +2678,11 @@ namespace System.Numerics.Tensors
             public static Vector256<float> Invoke(Vector256<float> x)
             {
                 Vector256<uint> vx = x.AsUInt32() - Vector256.Create(V_OFF);
-                Vector256<float> n = (vx.AsInt32() >> 23).AsSingle();
+                Vector256<float> n = (Vector256.ShiftRightArithmetic(vx.AsInt32(), 23)).AsSingle();
 
                 vx = (vx & Vector256.Create(V_MASK)) + Vector256.Create(V_OFF);
 
-                Vector256<float> r = vx.AsSingle() - Vector256<float>.One;
+                Vector256<float> r = vx.AsSingle() - Vector256.Create(1.0f);
 
                 Vector256<float> r2 = r * r;
                 Vector256<float> r4 = r2 * r2;
@@ -2705,11 +2705,11 @@ namespace System.Numerics.Tensors
             public static Vector512<float> Invoke(Vector512<float> x)
             {
                 Vector512<uint> vx = x.AsUInt32() - Vector512.Create(V_OFF);
-                Vector512<float> n = (vx.AsInt32() >> 23).AsSingle();
+                Vector512<float> n = (Vector512.ShiftRightArithmetic(vx.AsInt32(), 23)).AsSingle();
 
                 vx = (vx & Vector512.Create(V_MASK)) + Vector512.Create(V_OFF);
 
-                Vector512<float> r = vx.AsSingle() - Vector512<float>.One;
+                Vector512<float> r = vx.AsSingle() - Vector512.Create(1.0f);
 
                 Vector512<float> r2 = r * r;
                 Vector512<float> r4 = r2 * r2;
