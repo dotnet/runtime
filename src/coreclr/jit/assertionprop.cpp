@@ -4450,7 +4450,7 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
         indir->gtFlags |= GTF_IND_NONFAULTING;
 
         // Set this flag to prevent reordering
-        indir->gtFlags |= GTF_ORDER_SIDEEFF;
+        indir->SetHasOrderingSideEffect();
 
         return true;
     }

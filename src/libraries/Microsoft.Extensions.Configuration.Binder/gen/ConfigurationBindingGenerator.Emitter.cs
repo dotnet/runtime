@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using SourceGenerators;
 
@@ -11,19 +10,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed partial class Emitter
         {
-            private readonly SourceProductionContext _context;
-            private readonly SourceGenerationSpec _sourceGenSpec;
+            private readonly InterceptorInfo _interceptorInfo;
+            private readonly BindingHelperInfo _bindingHelperInfo;
+            private readonly TypeIndex _typeIndex;
+
             private readonly SourceWriter _writer = new();
 
-            public Emitter(SourceProductionContext context, SourceGenerationSpec sourceGenSpec)
+            public Emitter(SourceGenerationSpec sourceGenSpec)
             {
-                _context = context;
-                _sourceGenSpec = sourceGenSpec;
+                _interceptorInfo = sourceGenSpec.InterceptorInfo;
+                _bindingHelperInfo = sourceGenSpec.BindingHelperInfo;
+                _typeIndex = new TypeIndex(sourceGenSpec.ConfigTypes);
             }
 
-            public void Emit()
+            public void Emit(SourceProductionContext context)
             {
-                if (!ShouldEmitBindingExtensions())
+                if (!ShouldEmitMethods(MethodsToGen.Any))
                 {
                     return;
                 }
@@ -52,7 +54,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitEndBlock(); // Binding namespace.
 
-                _context.AddSource($"{Identifier.BindingExtensions}.g.cs", _writer.ToSourceText());
+                context.AddSource($"{Identifier.BindingExtensions}.g.cs", _writer.ToSourceText());
             }
 
             private void EmitInterceptsLocationAttrDecl()
@@ -79,7 +81,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitUsingStatements()
             {
-                foreach (string @namespace in _sourceGenSpec.Namespaces.ToImmutableSortedSet())
+                foreach (string @namespace in _bindingHelperInfo.Namespaces)
                 {
                     _writer.WriteLine($"using {@namespace};");
                 }

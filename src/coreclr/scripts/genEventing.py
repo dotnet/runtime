@@ -437,13 +437,16 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
                 clrallEvents.append(" {return ")
                 clrallEvents.append("EventPipeEventEnabled" + eventName + "()")
 
-                # @TODO Need to add this to nativeaot after switching to using genEtwProvider.py where this fn will be implemented
-                if runtimeFlavor.coreclr or write_xplatheader:
+                if runtimeFlavor.coreclr or write_xplatheader or runtimeFlavor.nativeaot:
                     if os.name == 'posix':
-                        clrallEvents.append(" || (XplatEventLogger" +
-                        ("::" if target_cpp else "_") +
-                        "IsEventLoggingEnabled() && EventXplatEnabled" +
-                        eventName + "());}\n\n")
+                        # native AOT does not support non-windows eventing other than via event pipe
+                        if not runtimeFlavor.nativeaot:
+                            clrallEvents.append(" || (XplatEventLogger" +
+                            ("::" if target_cpp else "_") +
+                            "IsEventLoggingEnabled() && EventXplatEnabled" +
+                            eventName + "());}\n\n")
+                        else:
+                            clrallEvents.append(";}\n\n")
                     else:
                         clrallEvents.append(" || EventXplatEnabled" + eventName + "();}\n\n")
                 else:
@@ -782,7 +785,10 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             Clrallevents.write('#include <PalRedhawk.h>\n')
             Clrallevents.write('#include "clretwallmain.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
-            Clrallevents.write('#include "EtwEvents.h"\n\n')
+            Clrallevents.write('#ifdef FEATURE_ETW\n')
+            Clrallevents.write('#include "ClrEtwAll.h"\n')
+            Clrallevents.write('#endif\n')
+            Clrallevents.write('\n')
         elif generatedFileType == "source-impl-noop":
             Clrallevents.write('#include <CommonTypes.h>\n')
             Clrallevents.write('#include <CommonMacros.h>\n\n')

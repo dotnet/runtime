@@ -1308,10 +1308,13 @@ namespace System
             return res;
         }
 
+        // Returns true for actual value types only, ignoring generic parameter constraints.
+        internal bool IsActualValueType => RuntimeTypeHandle.IsValueType(this);
+
         // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
 
-        // Returns true for actual enum types only.
+        // Returns true for actual enum types only, ignoring generic parameter constraints.
         internal bool IsActualEnum
         {
             get
@@ -1324,6 +1327,8 @@ namespace System
                 return res;
             }
         }
+
+        public override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
 
         public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
 

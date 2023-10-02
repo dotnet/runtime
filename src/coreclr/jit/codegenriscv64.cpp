@@ -1158,6 +1158,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
     GetEmitter()->emitIns_J(INS_jal, block->bbJumpDest);
 
+    BasicBlock* const nextBlock = block->bbNext;
+
     if (block->bbFlags & BBF_RETLESS_CALL)
     {
         // We have a retless call, and the last instruction generated was a call.
@@ -1165,7 +1167,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // block), then we need to generate a breakpoint here (since it will never
         // get executed) to get proper unwind behavior.
 
-        if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
+        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
             instGen(INS_ebreak); // This should never get executed
         }
@@ -1177,8 +1179,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
+        BasicBlock* const jumpDest = nextBlock->bbJumpDest;
+
         // Now go to where the finally funclet needs to return to.
-        if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
+        if ((jumpDest == nextBlock->bbNext) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
         {
             // Fall-through.
             // TODO-RISCV64-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -1188,7 +1192,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-            inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
+            inst_JMP(EJ_jmp, jumpDest);
         }
 
         GetEmitter()->emitEnableGC();
@@ -1201,7 +1205,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        block = block->bbNext;
+        block = nextBlock;
     }
     return block;
 }
@@ -2609,14 +2613,55 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genLockedInstructions: Generate code for a GT_XADD or GT_XCHG node.
+// genLockedInstructions: Generate code for a GT_XADD, GT_XAND, GT_XORR or GT_XCHG node.
 //
 // Arguments:
-//    treeNode - the GT_XADD/XCHG node
+//    treeNode - the GT_XADD/XAND/XORR/XCHG node
 //
 void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 {
-    NYI_RISCV64("genLockedInstructions-----unimplemented/unused on RISCV64 yet----");
+    GenTree*  data      = treeNode->AsOp()->gtOp2;
+    GenTree*  addr      = treeNode->AsOp()->gtOp1;
+    regNumber dataReg   = data->GetRegNum();
+    regNumber addrReg   = addr->GetRegNum();
+    regNumber targetReg = treeNode->GetRegNum();
+    if (targetReg == REG_NA)
+    {
+        targetReg = REG_R0;
+    }
+
+    genConsumeAddress(addr);
+    genConsumeRegs(data);
+
+    emitAttr dataSize = emitActualTypeSize(data);
+    bool     is4      = (dataSize == EA_4BYTE);
+
+    assert(!data->isContainedIntOrIImmed());
+
+    instruction ins = INS_none;
+    switch (treeNode->gtOper)
+    {
+        case GT_XORR:
+            ins = is4 ? INS_amoor_w : INS_amoor_d;
+            break;
+        case GT_XAND:
+            ins = is4 ? INS_amoand_w : INS_amoand_d;
+            break;
+        case GT_XCHG:
+            ins = is4 ? INS_amoswap_w : INS_amoswap_d;
+            break;
+        case GT_XADD:
+            ins = is4 ? INS_amoadd_w : INS_amoadd_d;
+            break;
+        default:
+            noway_assert(!"Unexpected treeNode->gtOper");
+    }
+    GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
+
+    if (targetReg != REG_R0)
+    {
+        genProduceReg(treeNode);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2627,7 +2672,62 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 //
 void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 {
-    NYI_RISCV64("genCodeForCmpXchg-----unimplemented/unused on RISCV64 yet----");
+    assert(treeNode->OperIs(GT_CMPXCHG));
+
+    GenTree* locOp       = treeNode->gtOpLocation;
+    GenTree* valOp       = treeNode->gtOpValue;
+    GenTree* comparandOp = treeNode->gtOpComparand;
+
+    regNumber target    = treeNode->GetRegNum();
+    regNumber loc       = locOp->GetRegNum();
+    regNumber val       = valOp->GetRegNum();
+    regNumber comparand = comparandOp->GetRegNum();
+    regNumber storeErr  = treeNode->ExtractTempReg(RBM_ALLINT);
+
+    // Register allocator should have extended the lifetimes of all input and internal registers
+    // They should all be different
+    noway_assert(target != loc);
+    noway_assert(target != val);
+    noway_assert(target != comparand);
+    noway_assert(target != storeErr);
+    noway_assert(loc != val);
+    noway_assert(loc != comparand);
+    noway_assert(loc != storeErr);
+    noway_assert(val != comparand);
+    noway_assert(val != storeErr);
+    noway_assert(comparand != storeErr);
+    noway_assert(target != REG_NA);
+    noway_assert(storeErr != REG_NA);
+
+    assert(locOp->isUsedFromReg());
+    assert(valOp->isUsedFromReg());
+    assert(!comparandOp->isUsedFromMemory());
+
+    genConsumeAddress(locOp);
+    genConsumeRegs(valOp);
+    genConsumeRegs(comparandOp);
+
+    // NOTE: `genConsumeAddress` marks consumed register as not a GC pointer, assuming the input
+    // registers die at the first generated instruction. However, here the input registers are reused,
+    // so mark the location register as a GC pointer until code generation for this node is finished.
+    gcInfo.gcMarkRegPtrVal(loc, locOp->TypeGet());
+
+    BasicBlock* retry = genCreateTempLabel();
+    BasicBlock* fail  = genCreateTempLabel();
+
+    emitter* e    = GetEmitter();
+    emitAttr size = emitActualTypeSize(valOp);
+    bool     is4  = (size == EA_4BYTE);
+
+    genDefineTempLabel(retry);
+    e->emitIns_R_R_R(is4 ? INS_lr_w : INS_lr_d, size, target, loc, REG_R0); // load original value
+    e->emitIns_J_cond_la(INS_bne, fail, target, comparand);                 // fail if doesn’t match
+    e->emitIns_R_R_R(is4 ? INS_sc_w : INS_sc_d, size, storeErr, loc, val);  // try to update
+    e->emitIns_J(INS_bnez, retry, storeErr);                                // retry if update failed
+    genDefineTempLabel(fail);
+
+    gcInfo.gcMarkRegSetNpt(locOp->gtGetRegMask());
+    genProduceReg(treeNode);
 }
 
 static inline bool isImmed(GenTree* treeNode)
@@ -4643,6 +4743,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_XCHG:
         case GT_XADD:
+        case GT_XORR:
+        case GT_XAND:
             genLockedInstructions(treeNode->AsOp());
             break;
 
@@ -6077,11 +6179,11 @@ void CodeGen::genCall(GenTreeCall* call)
 
             regNumber tmpReg = call->GetSingleTempReg();
             // Register where we save call address in should not be overridden by epilog.
-            assert((tmpReg & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == tmpReg);
+            assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(tmpReg));
 
             regNumber callAddrReg =
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
-            GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
+            GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg, 0);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
             call->gtRsvdRegs |= genRegMask(tmpReg);
         }
@@ -6305,13 +6407,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // For fast tailcalls we have already loaded the call target when processing the call node.
             if (!call->IsFastTailCall())
             {
-                GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
-                                          callThroughIndirReg);
+                GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
+                                            callThroughIndirReg, 0);
             }
             else
             {
                 // Register where we save call address in should not be overridden by epilog.
-                assert((targetAddrReg & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == targetAddrReg);
+                assert((genRegMask(targetAddrReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(targetAddrReg));
             }
 
             // We have now generated code loading the target address from the indirection cell into `targetAddrReg`.
@@ -6907,7 +7009,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     //             addressing mode instruction.  Currently we're 'cheating' by producing one or more
     //             instructions to generate the addressing mode so we need to modify lowering to
     //             produce LEAs that are a 1:1 relationship to the RISCV64 architecture.
-    if (lea->Base() && lea->Index())
+    if (lea->HasBase() && lea->HasIndex())
     {
         GenTree* memBase = lea->Base();
         GenTree* index   = lea->Index();
@@ -6952,7 +7054,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             }
         }
     }
-    else if (lea->Base())
+    else if (lea->HasBase())
     {
         GenTree* memBase = lea->Base();
 
@@ -6983,7 +7085,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             emit->emitIns_R_R_R(INS_add, size, lea->GetRegNum(), memBase->GetRegNum(), tmpReg);
         }
     }
-    else if (lea->Index())
+    else if (lea->HasIndex())
     {
         // If we encounter a GT_LEA node without a base it means it came out
         // when attempting to optimize an arbitrary arithmetic expression during lower.
@@ -7578,11 +7680,22 @@ void CodeGen::genFnPrologCalleeRegArgs()
     noway_assert(regArgMaskLive != 0);
 
     unsigned varNum;
-    unsigned regArgMaskIsInt = 0;
-    unsigned regArgNum       = 0;
-    // Process any circular dependencies
-    unsigned regArg[MAX_REG_ARG * 2]     = {0};
-    unsigned regArgInit[MAX_REG_ARG * 2] = {0};
+    unsigned regArgNum = 0;
+    // Process any rearrangements including circular dependencies.
+    regNumber regArg[MAX_REG_ARG + MAX_FLOAT_REG_ARG];
+    regNumber regArgInit[MAX_REG_ARG + MAX_FLOAT_REG_ARG];
+    emitAttr  regArgAttr[MAX_REG_ARG + MAX_FLOAT_REG_ARG];
+
+    for (int i = 0; i < MAX_REG_ARG + MAX_FLOAT_REG_ARG; i++)
+    {
+        regArg[i] = REG_NA;
+
+#ifdef DEBUG
+        regArgInit[i] = REG_NA;
+        regArgAttr[i] = EA_UNKNOWN;
+#endif
+    }
+
     for (varNum = 0; varNum < compiler->lvaCount; ++varNum)
     {
         LclVarDsc* varDsc = compiler->lvaTable + varNum;
@@ -7638,20 +7751,19 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     {
                         if (genIsValidIntReg(varDsc->GetArgReg()))
                         {
-                            assert(varDsc->GetArgReg() >= REG_ARG_FIRST && varDsc->GetArgReg() <= REG_ARG_LAST);
+                            assert(isValidIntArgReg(varDsc->GetArgReg()));
                             regArg[varDsc->GetArgReg() - REG_ARG_FIRST]     = varDsc->GetArgReg();
                             regArgInit[varDsc->GetArgReg() - REG_ARG_FIRST] = varDsc->GetArgInitReg();
-                            if (varDsc->TypeGet() == TYP_INT)
-                            {
-                                regArgMaskIsInt = 1 << (unsigned)varDsc->GetArgReg();
-                            }
+                            regArgAttr[varDsc->GetArgReg() - REG_ARG_FIRST] =
+                                varDsc->TypeGet() == TYP_INT ? EA_4BYTE : EA_PTRSIZE;
                         }
                         else
                         {
-                            assert(genIsValidFloatReg(varDsc->GetArgReg()));
-                            assert(varDsc->GetArgReg() >= REG_ARG_FP_FIRST && varDsc->GetArgReg() <= REG_ARG_FP_LAST);
-                            regArg[(varDsc->GetArgReg() - REG_ARG_FP_FIRST) | 0x8]     = varDsc->GetArgReg();
-                            regArgInit[(varDsc->GetArgReg() - REG_ARG_FP_FIRST) | 0x8] = varDsc->GetArgInitReg();
+                            assert(isValidFloatArgReg(varDsc->GetArgReg()));
+                            regArg[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG]     = varDsc->GetArgReg();
+                            regArgInit[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG] = varDsc->GetArgInitReg();
+                            regArgAttr[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG] =
+                                varDsc->TypeGet() == TYP_FLOAT ? EA_4BYTE : EA_PTRSIZE;
                         }
                         regArgNum++;
                     }
@@ -7673,9 +7785,11 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     }
                     else
                     {
-                        assert(genIsValidFloatReg(varDsc->GetArgReg()));
-                        regArg[(varDsc->GetArgReg() & 7) | 0x8]     = varDsc->GetArgReg();
-                        regArgInit[(varDsc->GetArgReg() & 7) | 0x8] = varDsc->GetArgInitReg();
+                        assert(isValidFloatArgReg(varDsc->GetArgReg()));
+                        regArg[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG]     = varDsc->GetArgReg();
+                        regArgInit[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG] = varDsc->GetArgInitReg();
+                        regArgAttr[varDsc->GetArgReg() - REG_ARG_FP_FIRST + MAX_REG_ARG] =
+                            varDsc->TypeGet() == TYP_FLOAT ? EA_4BYTE : EA_PTRSIZE;
                         regArgNum++;
                     }
                 }
@@ -7885,22 +7999,17 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
     if (regArgNum > 0)
     {
-        for (int i = MAX_REG_ARG - 1; i >= 0; i--)
+        for (int i = MAX_REG_ARG + MAX_FLOAT_REG_ARG - 1; i >= 0; i--)
         {
-            if (regArg[i] > 0 && (regArgInit[i] <= REG_S1 || regArgInit[i] > REG_A7))
+            if (regArg[i] != REG_NA && !isValidIntArgReg(regArgInit[i]) && !isValidFloatArgReg(regArgInit[i]))
             {
-                instruction ins;
-                if ((regArgMaskIsInt & (1 << regArg[i])) != 0)
-                {
-                    ins = INS_slliw;
-                }
-                else
-                {
-                    ins = INS_ori;
-                }
-                GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                regArgMaskLive &= ~genRegMask((regNumber)regArg[i]);
-                regArg[i] = 0;
+                assert(regArg[i] != regArgInit[i]);
+                assert(isValidIntArgReg(regArg[i]) || isValidFloatArgReg(regArg[i]));
+
+                GetEmitter()->emitIns_Mov(regArgAttr[i], regArgInit[i], regArg[i], false);
+
+                regArgMaskLive &= ~genRegMask(regArg[i]);
+                regArg[i] = REG_NA;
                 regArgNum -= 1;
             }
         }
@@ -7908,170 +8017,86 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
     if (regArgNum > 0)
     {
-        instruction ins;
-        for (int i = MAX_REG_ARG - 1; i >= 0; i--)
+        for (int i = MAX_REG_ARG + MAX_FLOAT_REG_ARG - 1; i >= 0; i--)
         {
-            if (regArg[i] > 0)
+            if (regArg[i] != REG_NA)
             {
-                assert(genIsValidIntReg((regNumber)regArg[i]));
-                assert(genIsValidIntReg((regNumber)regArgInit[i]));
+                assert(regArg[i] != regArgInit[i]);
 
-                regArgNum--;
-                regArgMaskLive &= ~genRegMask((regNumber)regArg[i]);
-                if ((regArgMaskIsInt & (1 << regArg[i])) != 0)
-                {
-                    ins = INS_slliw;
-                }
-                else
-                {
-                    ins = INS_ori;
-                }
+                // regArg indexes list
+                unsigned indexList[MAX_REG_ARG + MAX_FLOAT_REG_ARG];
+                int      count = 0;     // Number of nodes in list
+                bool     loop  = false; // List has a loop
 
-                if (regArgNum == 0)
+                for (unsigned cur = i; regArg[cur] != REG_NA; count++)
                 {
-                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                    break;
-                }
-                else if (regArgInit[i] > regArg[i])
-                {
-                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                }
-                else
-                {
-                    assert(i > 0);
-                    assert(regArgNum > 0);
-
-                    int j = regArgInit[i] - REG_ARG_FIRST;
-                    assert((j >= 0) && (j < MAX_REG_ARG));
-                    if (regArg[j] == 0)
+                    if (cur == i && count > 0)
                     {
-                        GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                    }
-                    else
-                    {
-                        int k = regArgInit[j] - REG_ARG_FIRST;
-                        // assert((k >= 0) && (k < MAX_REG_ARG));
-                        instruction ins2 = (regArgMaskIsInt & (1 << regArg[j])) != 0 ? INS_slliw : INS_ori;
-                        if ((regArg[k] == 0) || (k > i) || k < 0)
-                        {
-                            GetEmitter()->emitIns_R_R_I(ins2, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                        (regNumber)regArg[j], 0);
-                            GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i],
-                                                        0);
-                            regArgNum--;
-                            regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
-                            regArg[j] = 0;
-                        }
-                        else if (k == i)
-                        {
-                            GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, rsGetRsvdReg(), (regNumber)regArg[i], 0);
-                            GetEmitter()->emitIns_R_R_I(ins2, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                        (regNumber)regArg[j], 0);
-                            GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, (regNumber)regArgInit[i], rsGetRsvdReg(),
-                                                        0);
-                            regArgNum--;
-                            regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
-                            regArg[j] = 0;
-                        }
-                        else
-                        {
-                            NYI_RISCV64("-----------CodeGen::genFnPrologCalleeRegArgs() error!--");
-                        }
-
-                        if (regArgNum == 0)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (regArgNum > 0)
-        {
-            for (int i = MAX_REG_ARG + MAX_FLOAT_REG_ARG - 1; i >= MAX_REG_ARG; i--)
-            {
-                if (regArg[i] > 0)
-                {
-                    assert(genIsValidFloatReg((regNumber)regArg[i]));
-
-                    instruction ins = genIsValidIntReg((regNumber)regArgInit[i]) ? INS_fmv_x_d : INS_fsgnj_d;
-
-                    regArgNum--;
-                    regArgMaskLive &= ~genRegMask((regNumber)regArg[i]);
-                    if (regArgNum == 0)
-                    {
-                        GetEmitter()->emitIns_Mov(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i],
-                                                  true);
+                        loop = true;
                         break;
                     }
-                    else if (regArgInit[i] > regArg[i] || (regArgInit[i] <= REG_F9))
+
+                    indexList[count] = cur;
+
+                    for (int count2 = 0; count2 < count; count2++)
                     {
-                        GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[i],
-                                                    (regNumber)regArg[i], (regNumber)regArg[i]);
+                        // The list could not have backlinks except last to first case which handled above.
+                        assert(cur != indexList[count2] && "Attempt to move several values on same register.");
+                    }
+                    assert(cur < MAX_REG_ARG + MAX_FLOAT_REG_ARG);
+                    assert(isValidIntArgReg(regArg[cur]) || isValidFloatArgReg(regArg[cur]));
+
+                    if (isValidIntArgReg(regArgInit[cur]))
+                    {
+                        cur = regArgInit[cur] - REG_ARG_FIRST;
+                    }
+                    else if (isValidFloatArgReg(regArgInit[cur]))
+                    {
+                        cur = regArgInit[cur] - REG_ARG_FP_FIRST + MAX_REG_ARG;
                     }
                     else
                     {
-                        assert(i > MAX_REG_ARG);
-                        assert(regArgNum > 0);
-
-                        int j = genIsValidIntReg((regNumber)regArgInit[i])
-                                    ? (regArgInit[i] - REG_ARG_FIRST)
-                                    : ((((int)regArgInit[i]) - REG_ARG_FP_FIRST) + 0x8);
-                        if (j < MAX_REG_ARG || regArg[j] == 0)
-                        {
-                            GetEmitter()->emitIns_Mov(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i],
-                                                      true);
-                        }
-                        else
-                        {
-                            // NOTE: Not support the int-register case.
-                            assert(genIsValidFloatReg((regNumber)regArg[j]));
-                            assert(genIsValidFloatReg((regNumber)regArgInit[j]));
-
-                            int k = (((int)regArgInit[j]) - REG_ARG_FP_FIRST) + 0x8;
-                            if ((regArg[k] == 0) || (k > i) || (k < MAX_REG_ARG))
-                            {
-                                GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                            (regNumber)regArg[j], (regNumber)regArg[j]);
-                                GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[i],
-                                                            (regNumber)regArg[i], (regNumber)regArg[i]);
-                                regArgNum--;
-                                regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
-                                regArg[j] = 0;
-                                if (regArgNum == 0)
-                                {
-                                    break;
-                                }
-                            }
-                            else if (k == i)
-                            {
-                                GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, REG_SCRATCH_FLT,
-                                                            (regNumber)regArg[i], (regNumber)regArg[i]);
-                                GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                            (regNumber)regArg[j], (regNumber)regArg[j]);
-                                GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, EA_PTRSIZE, (regNumber)regArgInit[i],
-                                                            REG_SCRATCH_FLT, REG_SCRATCH_FLT);
-                                regArgNum--;
-                                regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
-                                regArg[j] = 0;
-                                if (regArgNum == 0)
-                                {
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                NYI_RISCV64("-----------CodeGen::genFnPrologCalleeRegArgs() error!--");
-                            }
-                        }
+                        assert(!"Argument register is neither valid float nor valid int argument register");
                     }
                 }
+
+                if (loop)
+                {
+                    unsigned tmpArg = indexList[count - 1];
+
+                    GetEmitter()->emitIns_Mov(regArgAttr[tmpArg], rsGetRsvdReg(), regArg[tmpArg], false);
+                    count--; // Decrease count to not access last node which regArgInit points to start node i
+                    assert(count > 0);
+                }
+
+                for (int cur = count - 1; cur >= 0; cur--)
+                {
+                    unsigned tmpArg = indexList[cur];
+
+                    GetEmitter()->emitIns_Mov(regArgAttr[tmpArg], regArgInit[tmpArg], regArg[tmpArg], false);
+
+                    regArgMaskLive &= ~genRegMask(regArg[tmpArg]);
+                    regArg[tmpArg] = REG_NA;
+                    regArgNum--;
+                    assert(regArgNum >= 0);
+                };
+
+                if (loop)
+                {
+                    unsigned tmpArg = indexList[count]; // count was decreased for loop case
+
+                    GetEmitter()->emitIns_Mov(regArgAttr[i], regArg[tmpArg], rsGetRsvdReg(), false);
+
+                    regArgMaskLive &= ~genRegMask(regArg[tmpArg]);
+                    regArg[tmpArg] = REG_NA;
+                    regArgNum--;
+                }
+                assert(regArgNum >= 0);
             }
         }
-        assert(regArgNum == 0);
     }
 
+    assert(regArgNum == 0);
     assert(!regArgMaskLive);
 }
 
