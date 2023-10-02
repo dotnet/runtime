@@ -7,6 +7,7 @@
   - MicrosoftNetCoreAppRefPackDir
   - optional: MicrosoftNetCoreAppRuntimePackDir
   - optional: AppHostSourcePath & SingleFileHostSourcePath
+  - optional: Crossgen2Dir
 -->
 
 <Project>
@@ -149,15 +150,14 @@
 
   <!-- Use local Crossgen2 pack for NetCoreAppCurrent. -->
   <Target Name="UpdateLocalCrossgen2Pack"
-          Condition="'$(UseLocalCrossgen2Pack)' == 'true'"
+          Condition="'$(UseLocalCrossgen2Pack)' == 'true' and '$(Crossgen2Dir)' != ''"
           AfterTargets="ResolveFrameworkReferences">
     <ItemGroup>
-      <ResolvedCrossgen2Pack PackageDirectory="$(CoreCLRArtifactsPath)\$(BuildArchitecture)\crossgen2\"
-                             Condition="$([System.String]::new('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Crossgen2'))" />
+      <ResolvedCrossgen2Pack PackageDirectory="$(Crossgen2Dir)"
+                             NuGetPackageVersion="$(ProductVersion)" />
     </ItemGroup>
   </Target>
   
-
   <!-- Use local app host pack for NetCoreAppCurrent. -->
   <Target Name="UpdateLocalAppHostPack"
           Condition="'$(UseLocalAppHostPack)' == 'true'"
@@ -184,6 +184,7 @@
     </ItemGroup>
   </Target>
 
+  <!-- Update the resolved crossgen2 tool to use the app with the same .NET host as the build instead of the built apphost. -->
   <Target Name="UpdateLocalCrossgen2Tool"
           Condition="'$(UseLocalCrossgen2Pack)' == 'true'"
           AfterTargets="ResolveReadyToRunCompilers">

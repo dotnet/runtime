@@ -1,7 +1,7 @@
 <Project>
   <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
     <PropertyGroup>
-      <Crossgen2Dll>$(CoreCLRArtifactsPath)\$(BuildArchitecture)\crossgen2\crossgen2.dll</Crossgen2Dll>
+      <Crossgen2Dll>$([MSBuild]::NormalizePath('$(Crossgen2Dir)', 'tools', 'crossgen2.dll'))</Crossgen2Dll>
       <PublishReadyToRunPerfmapFormatVersion Condition="'$(PublishReadyToRunPerfmapFormatVersion)' == ''">1</PublishReadyToRunPerfmapFormatVersion>
     </PropertyGroup>
 
