@@ -564,16 +564,29 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public void WriteObj(DotnetObjectId objectId, MonoSDBHelper SdbHelper)
         {
-            if (objectId.Scheme == "object")
+            switch (objectId.Scheme)
             {
-                Write(ElementType.Class, objectId.Value);
-            }
-            else if (objectId.Scheme == "valuetype")
-            {
-                if (SdbHelper.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass vt))
+                case "object":
+                {
+                    Write(ElementType.Class, objectId.Value);
+                    break;
+                }
+                case "array":
+                {
+                    Write(ElementType.Array, objectId.Value);
+                    break;
+                }
+                case "valuetype":
+                {
+                    if (!SdbHelper.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass vt))
+                        throw new ArgumentException($"Could not find any valuetype with id: {objectId.Value}", nameof(objectId.Value));
                     Write(vt.Buffer);
-                else
-                    throw new ArgumentException($"Could not find any valuetype with id: {objectId.Value}", nameof(objectId.Value));
+                    break;
+                }
+                default:
+                {
+                    throw new NotImplementedException($"Writing object of scheme: {objectId.Scheme} is not supported");
+                }
             }
         }
 

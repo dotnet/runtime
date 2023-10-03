@@ -451,6 +451,7 @@
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />
     <Compile Include="Compiler\HardwareIntrinsicHelpers.Aot.cs" />
+    <Compile Include="Compiler\HardwareIntrinsicILProvider.cs" />
     <Compile Include="Compiler\IInliningPolicy.cs" />
     <Compile Include="Compiler\Logging\NativeAotFatalErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
