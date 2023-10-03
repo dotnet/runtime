@@ -452,9 +452,10 @@ extends:
             buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -pgoinstrument /p:SkipLibrariesNativeRuntimePackages=true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             nameSuffix: PGO
-            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            extraStepsParameters:
-              name: PGO
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: PGO
             timeoutInMinutes: 95
 
       #
