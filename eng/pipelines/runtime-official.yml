@@ -152,10 +152,10 @@ extends:
                       path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
                       entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
                     - name: dotnet
-                      path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
+                      path: $(Build.SourcesDirectory)/artifacts/bin/osx-$(archType).$(_BuildConfig)/corehost
                       entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
                     - name: apphost
-                      path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
+                      path: $(Build.SourcesDirectory)/artifacts/bin/osx-$(archType).$(_BuildConfig)/corehost
                       entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
               - task: CopyFiles@2
