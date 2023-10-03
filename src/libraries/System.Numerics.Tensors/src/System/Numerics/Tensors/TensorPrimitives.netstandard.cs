@@ -97,7 +97,7 @@ namespace System.Numerics.Tensors
 
             float result;
 
-            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count)
+            if (Vector.IsHardwareAccelerated && load.CanVectorize && x.Length >= Vector<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
 
@@ -304,7 +304,7 @@ namespace System.Numerics.Tensors
             ref float dRef = ref MemoryMarshal.GetReference(destination);
             int i = 0, oneVectorFromEnd;
 
-            if (Vector.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated && op.CanVectorize)
             {
                 oneVectorFromEnd = x.Length - Vector<float>.Count;
                 if (oneVectorFromEnd >= 0)
@@ -885,6 +885,7 @@ namespace System.Numerics.Tensors
 
         private readonly struct NegateOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => -x;
             public Vector<float> Invoke(Vector<float> x) => -x;
         }
@@ -903,24 +904,41 @@ namespace System.Numerics.Tensors
 
         private readonly struct IdentityOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => x;
             public Vector<float> Invoke(Vector<float> x) => x;
         }
 
         private readonly struct SquaredOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => x * x;
             public Vector<float> Invoke(Vector<float> x) => x * x;
         }
 
         private readonly struct AbsoluteOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => MathF.Abs(x);
             public Vector<float> Invoke(Vector<float> x) => Vector.Abs(x);
         }
 
+        private readonly struct Log2Operator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+
+            public float Invoke(float x) => Log2(x);
+
+            public Vector<float> Invoke(Vector<float> x)
+            {
+                // Vectorizing requires shift right support, which is .NET 7 or later
+                throw new NotImplementedException();
+            }
+        }
+
         private interface IUnaryOperator
         {
+            bool CanVectorize { get; }
             float Invoke(float x);
             Vector<float> Invoke(Vector<float> x);
         }
