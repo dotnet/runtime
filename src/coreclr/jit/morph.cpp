@@ -9889,18 +9889,18 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
     GenTree* addr = indir->Addr();
 
 #ifdef TARGET_ARM
-    GenTree* effAddr = addr->gtEffectiveVal(true);
-    // Check for a misalignment floating point indirection.
-    if (effAddr->OperIs(GT_ADD) && varTypeIsFloating(indir))
+    if (varTypeIsFloating(indir))
     {
-        GenTree* addOp2 = effAddr->gtGetOp2();
-        if (addOp2->IsCnsIntOrI())
+        // Check for a misaligned floating point indirection.
+        GenTree*       effAddr = addr->gtEffectiveVal(true);
+        target_ssize_t offset;
+        FieldSeq*      fldSeq;
+        gtPeelOffsets(&effAddr, &offset, &fldSeq);
+
+        if (((offset % genTypeSize(TYP_FLOAT)) != 0) ||
+            (effAddr->IsCnsIntOrI() && ((effAddr->AsIntConCommon()->IconValue() % genTypeSize(TYP_FLOAT)) != 0)))
         {
-            ssize_t offset = addOp2->AsIntCon()->IconValue();
-            if ((offset % genTypeSize(TYP_FLOAT)) != 0)
-            {
-                indir->gtFlags |= GTF_IND_UNALIGNED;
-            }
+            indir->gtFlags |= GTF_IND_UNALIGNED;
         }
     }
 #endif // TARGET_ARM
