@@ -974,21 +974,23 @@ namespace Internal.IL
             _isReadOnly = true;
         }
 
-        private void ImportFieldAccess(int token, bool isStatic, bool write, string reason)
+        private void ImportFieldAccess(int token, bool isStatic, bool? write, string reason)
         {
             var field = (FieldDesc)_methodIL.GetObject(token);
             var canonField = (FieldDesc)_canonMethodIL.GetObject(token);
 
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
 
-            if (write)
+            // Write will be null for ld(s)flda. Consider address loads write unless they were
+            // for initonly fields. We'll trust the initonly that this is not a write.
+            if (write == null)
+                write = !field.IsInitOnly;
+
+            if (write.Value)
             {
                 bool isInitOnlyWrite = field.OwningType == _methodIL.OwningMethod.OwningType
                     && ((field.IsStatic && _methodIL.OwningMethod.IsStaticConstructor)
                         || (!field.IsStatic && _methodIL.OwningMethod.IsConstructor));
-
-                // Consider initonly statics always safe; Roslyn does generate ldflda for these.
-                isInitOnlyWrite |= field.IsStatic && field.IsInitOnly;
 
                 if (!isInitOnlyWrite)
                 {
@@ -1060,7 +1062,7 @@ namespace Internal.IL
 
         private void ImportAddressOfField(int token, bool isStatic)
         {
-            ImportFieldAccess(token, isStatic, write: true, isStatic ? "ldsflda" : "ldflda");
+            ImportFieldAccess(token, isStatic, write: null, isStatic ? "ldsflda" : "ldflda");
         }
 
         private void ImportStoreField(int token, bool isStatic)

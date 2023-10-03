@@ -436,7 +436,7 @@ namespace ILCompiler
             TypePreinit.TypePreinitializationPolicy preinitPolicy = preinitStatics ?
                 new TypePreinit.TypeLoaderAwarePreinitializationPolicy() : new TypePreinit.DisabledPreinitializationPolicy();
 
-            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy, new ReadOnlyFieldPolicy());
+            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitPolicy, new StaticReadOnlyFieldPolicy());
             builder
                 .UseILProvider(ilProvider)
                 .UsePreinitializationManager(preinitManager);
@@ -513,9 +513,11 @@ namespace ILCompiler
                 // has the whole program view.
                 if (preinitStatics)
                 {
+                    var readOnlyFieldPolicy = scanResults.GetReadOnlyFieldPolicy();
                     preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy(),
-                        scanResults.GetReadOnlyFieldPolicy());
-                    builder.UsePreinitializationManager(preinitManager);
+                        readOnlyFieldPolicy);
+                    builder.UsePreinitializationManager(preinitManager)
+                        .UseReadOnlyFieldPolicy(readOnlyFieldPolicy);
                 }
 
                 // If we have a scanner, we can inline threadstatics storage using the information we collected at scanning time.

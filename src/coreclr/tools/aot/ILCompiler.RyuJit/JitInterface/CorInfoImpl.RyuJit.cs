@@ -2168,7 +2168,7 @@ namespace Internal.JitInterface
                 fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE;
             }
 
-            if (field.IsInitOnly)
+            if (_compilation.IsInitOnly(field))
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_FINAL;
 
             pResult->fieldAccessor = fieldAccessor;
@@ -2224,7 +2224,7 @@ namespace Internal.JitInterface
             Debug.Assert(field.IsStatic);
 
 
-            if (!field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
+            if (!field.IsThreadStatic && _compilation.IsInitOnly(field) && field.OwningType is MetadataType owningType)
             {
                 if (field.HasRva)
                 {

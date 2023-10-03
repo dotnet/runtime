@@ -7,6 +7,11 @@ namespace ILCompiler
 {
     public class ReadOnlyFieldPolicy
     {
-        public virtual bool IsReadOnly(FieldDesc field) => field.IsStatic && field.IsInitOnly;
+        public virtual bool IsReadOnly(FieldDesc field) => field.IsInitOnly;
+    }
+
+    public sealed class StaticReadOnlyFieldPolicy : ReadOnlyFieldPolicy
+    {
+        public override bool IsReadOnly(FieldDesc field) => field.IsStatic && field.IsInitOnly;
     }
 }
