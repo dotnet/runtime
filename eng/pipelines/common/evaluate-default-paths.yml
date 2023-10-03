@@ -52,6 +52,14 @@ parameters:
         eng/testing/bump-chrome-version.proj
         eng/testing/ChromeVersions.props
     ]
+    _perf_pipeline_specific_only: [
+        eng/pipelines/runtime-wasm-perf.yml
+        eng/pipelines/coreclr/perf*.yml
+        eng/pipelines/coreclr/templates/perf-job.yml
+        eng/pipelines/coreclr/templates/*-perf-*
+        eng/pipelines/coreclr/templates/run-perf*
+        eng/testing/performance/*
+    ]
 
     # src/workloads is only used in runtime-official builds
     # where evaluate-paths is not used
@@ -90,6 +98,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: mono_excluding_wasm
       include:
@@ -101,6 +110,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
       - eng/Version.Details.xml
       - docs/*
@@ -130,6 +140,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: runtimetests
       combined: true
@@ -137,6 +148,7 @@ jobs:
       - src/tests/*
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: tools_illink
       include:
@@ -160,6 +172,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     # We have limited Apple Silicon testing capacity
     # We want PR testing on a narrower set of changes
@@ -219,6 +232,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_pipelines }}
       exclude:
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: wasmdebuggertests
       combined: true
@@ -234,6 +248,7 @@ jobs:
       exclude:
       - src/mono/nuget/*
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     # wasm/runtimetests need to be run
     - subset: wasm_runtimetests
@@ -253,6 +268,7 @@ jobs:
       - src/mono/wasm/Wasm.Build.Tests/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     # Wasm except Wasm.build.Tests, and debugger
     - subset: wasm_specific_except_wbt_dbg
@@ -274,6 +290,7 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
     - subset: wasm_chrome
       include:
@@ -286,6 +303,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
+      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
       - eng/testing/tests.mobile.targets
       - src/mono/*
       - src/tasks/AndroidAppBuilder/*
