@@ -79,7 +79,7 @@ if (NOT CLR_CMAKE_HOST_WIN32)
   # detect linker
   separate_arguments(ldVersion UNIX_COMMAND "${CMAKE_C_COMPILER} ${FUSE_LD} -Wl,--version")
   execute_process(COMMAND ${ldVersion}
-    ERROR_QUIET
+    # ERROR_QUIET
     OUTPUT_VARIABLE ldVersionOutput)
 
   if("${ldVersionOutput}" MATCHES "LLD")
