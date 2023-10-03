@@ -199,11 +199,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new vector with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
-        static virtual TSelf CreateScalar(T value)
-        {
-            TSelf result = TSelf.Zero;
-            return TSelf.WithElement(result, 0, value);
-        }
+        static virtual TSelf CreateScalar(T value) => TSelf.WithElement(TSelf.Zero, 0, value);
 
         /// <summary>Creates a new vector with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>

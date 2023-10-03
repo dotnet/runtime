@@ -3391,7 +3391,7 @@ namespace System
             public static TVector GetMatchMask<TVector>(TVector left, TVector right)
                 where TVector : struct, ISimdVector<TVector, T>
             {
-                    return TVector.Equals(left, right);
+                return TVector.Equals(left, right);
             }
         }
 
@@ -3415,7 +3415,7 @@ namespace System
             public static TVector GetMatchMask<TVector>(TVector left, TVector right)
                 where TVector : struct, ISimdVector<TVector, T>
             {
-                    return ~TVector.Equals(left, right);
+                return ~TVector.Equals(left, right);
             }
         }
 
