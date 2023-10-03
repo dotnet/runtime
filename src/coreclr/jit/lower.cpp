@@ -7935,7 +7935,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
     do
     {
         // This check is not really needed, just for better throughput.
-        if (!ind->TypeIs(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT))
+        if (!ind->TypeIs(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT) && !varTypeIsSIMD(ind))
         {
             return;
         }
@@ -8022,6 +8022,24 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             case TYP_INT:
                 newType = TYP_LONG;
                 break;
+
+#if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
+            case TYP_SIMD16:
+                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    newType = TYP_SIMD32;
+                    break;
+                }
+                return;
+
+            case TYP_SIMD32:
+                if (comp->IsBaselineVector512IsaSupportedOpportunistically())
+                {
+                    newType = TYP_SIMD64;
+                    break;
+                }
+                return;
+#endif // TARGET_ARM64 && FEATURE_HW_INTRINSICS
 #endif // TARGET_64BIT
 
             // TYP_FLOAT and TYP_DOUBLE aren't needed here - they're expected to
@@ -8029,14 +8047,17 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             //
             // TODO-CQ:
             //   2 x LONG/REF  -> SIMD16
-            //   2 x SIMD16    -> SIMD32
-            //   2 x SIMD32    -> SIMD64
             //
-            // where it's legal (e.g. SIMD is not atomic on x64)
+            // where it's legal since the only guarantee we have is that 8-byte aligned
+            // SIMD writes are atomic for their 64-bit chunks and only on ARM64.
             //
             default:
                 return;
         }
+
+        // We should not be here for stores requiring write barriers.
+        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind));
+        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd));
 
         // Delete previous STOREIND entirely
         BlockRange().Remove(std::move(prevIndRange));
@@ -8050,6 +8071,32 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         // Update type for both STOREIND and val
         ind->gtType         = newType;
         ind->Data()->gtType = newType;
+
+#if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
+        if (varTypeIsSIMD(oldType))
+        {
+            assert(prevData.value->IsVectorConst() && currData.value->IsVectorConst());
+
+            int8_t* lowerCns = prevData.value->AsVecCon()->gtSimdVal.i8;
+            int8_t* upperCns = currData.value->AsVecCon()->gtSimdVal.i8;
+
+            // if the previous store was at a higher address, swap the constants
+            if (prevData.offset > currData.offset)
+            {
+                std::swap(lowerCns, upperCns);
+            }
+
+            simd_t   newCns   = {0};
+            uint32_t oldWidth = genTypeSize(oldType);
+            memcpy(newCns.i8, lowerCns, oldWidth);
+            memcpy(newCns.i8 + oldWidth, upperCns, oldWidth);
+
+            ind->Data()->ClearContained();
+            ind->Data()->AsVecCon()->gtSimdVal = newCns;
+            ind->gtFlags |= GTF_IND_UNALIGNED;
+            continue;
+        }
+#endif
 
         // We currently only support these constants for val
         assert(prevData.value->IsCnsIntOrI() && currData.value->IsCnsIntOrI());
