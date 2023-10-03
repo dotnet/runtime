@@ -958,7 +958,9 @@ ep_enable (
 {
 	EventPipeSessionID sessionId = 0;
 
-	EventPipeSessionOptions options = {
+	EventPipeSessionOptions options;
+	ep_session_options_init(
+		&options,
 		output_path,
 		circular_buffer_size_in_mb,
 		providers,
@@ -969,8 +971,7 @@ ep_enable (
 		true, // stackwalk_requested
 		stream,
 		sync_callback,
-		callback_additional_data,
-	};
+		callback_additional_data);
 
 	sessionId = ep_enable_3(&options);
 
@@ -1083,6 +1084,36 @@ ep_on_exit:
 ep_on_error:
 	ep_exit_error_handler ();
 
+}
+
+void
+ep_session_options_init(
+	EventPipeSessionOptions* options,
+	const ep_char8_t* output_path,
+	uint32_t circular_buffer_size_in_mb,
+	const EventPipeProviderConfiguration* providers,
+	uint32_t providers_len,
+	EventPipeSessionType session_type,
+	EventPipeSerializationFormat format,
+	bool rundown_requested,
+	bool stackwalk_requested,
+	IpcStream* stream,
+	EventPipeSessionSynchronousCallback sync_callback,
+	void* callback_additional_data)
+{
+	EP_ASSERT (options != NULL);
+
+	options->output_path = output_path;
+	options->circular_buffer_size_in_mb = circular_buffer_size_in_mb;
+	options->providers = providers;
+	options->providers_len = providers_len;
+	options->session_type = session_type;
+	options->format = format;
+	options->rundown_requested = rundown_requested;
+	options->stackwalk_requested = stackwalk_requested;
+	options->stream = stream;
+	options->sync_callback = sync_callback;
+	options->callback_additional_data = callback_additional_data;
 }
 
 EventPipeSessionID

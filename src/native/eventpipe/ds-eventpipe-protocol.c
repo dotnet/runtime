@@ -466,7 +466,9 @@ eventpipe_protocol_helper_collect_tracing (
 	}
 
 	{
-		EventPipeSessionOptions options = {
+		EventPipeSessionOptions options;
+		ep_session_options_init(
+			&options,
 			NULL,
 			payload->circular_buffer_size_in_mb,
 			dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration),
@@ -477,8 +479,7 @@ eventpipe_protocol_helper_collect_tracing (
 			payload->stackwalk_requested,
 			ds_ipc_stream_get_stream_ref (stream),
 			NULL,
-			NULL,
-		};
+			NULL);
 
 		session_id = ep_enable_3(&options);
 	}

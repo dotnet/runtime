@@ -110,18 +110,34 @@ ep_volatile_store_allow_write (uint64_t allow_write)
 */
 
 typedef struct EventPipeSessionOptions {
-	const ep_char8_t *output_path;
-	uint32_t circular_buffer_size_in_mb;
 	const EventPipeProviderConfiguration *providers;
+	IpcStream *stream;
+	const ep_char8_t *output_path;
+	void *callback_additional_data;
+	EventPipeSessionSynchronousCallback sync_callback;
+	uint32_t circular_buffer_size_in_mb;
 	uint32_t providers_len;
 	EventPipeSessionType session_type;
 	EventPipeSerializationFormat format;
 	bool rundown_requested;
 	bool stackwalk_requested;
-	IpcStream *stream;
-	EventPipeSessionSynchronousCallback sync_callback;
-	void *callback_additional_data;
 } EventPipeSessionOptions;
+
+inline
+void
+ep_session_options_init (
+	EventPipeSessionOptions *options,
+	const ep_char8_t *output_path,
+	uint32_t circular_buffer_size_in_mb,
+	const EventPipeProviderConfiguration *providers,
+	uint32_t providers_len,
+	EventPipeSessionType session_type,
+	EventPipeSerializationFormat format,
+	bool rundown_requested,
+	bool stackwalk_requested,
+	IpcStream *stream,
+	EventPipeSessionSynchronousCallback sync_callback,
+	void *callback_additional_data);
 
 /*
  * EventPipe.
