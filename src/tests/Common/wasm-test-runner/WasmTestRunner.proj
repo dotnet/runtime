@@ -44,6 +44,7 @@
       <WasmAssemblySearchPaths Include="$(TestBinDir)" />
     </ItemGroup>
 
+    <Message Importance="High" Text="Running BuildAppTarget in WasmTestRunner.proj" />
     <Message Importance="High" Text="AppDir: $(AppDir)" />
     <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
