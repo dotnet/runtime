@@ -50,7 +50,7 @@ namespace System.Reflection.Emit
             }
             _il.OpCode((ILOpCode)opcode.Value);
 
-            // TODO for now only count the Opcodes emitted, in order to correctly we might need to make below API public
+            // TODO: for now only count the Opcodes emitted, in order to calculate it correctly we might need to make internal Opcode APIs public
             // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Reflection/Emit/Opcode.cs#L48
             _maxStackSize++;
         }
