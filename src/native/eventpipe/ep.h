@@ -109,11 +109,7 @@ ep_volatile_store_allow_write (uint64_t allow_write)
 * EventPipeSessionOptions.
 */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
-struct _EventPipeSessionOptions {
-#else
-struct _EventPipeSessionOptions_Internal {
-#endif
+typedef struct EventPipeSessionOptions {
 	const ep_char8_t *output_path;
 	uint32_t circular_buffer_size_in_mb;
 	const EventPipeProviderConfiguration *providers;
@@ -125,13 +121,7 @@ struct _EventPipeSessionOptions_Internal {
 	IpcStream *stream;
 	EventPipeSessionSynchronousCallback sync_callback;
 	void *callback_additional_data;
-};
-
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
-struct _EventPipeSessionOptions {
-	uint8_t _internal [sizeof (struct _EventPipeSessionOptions_Internal)];
-};
-#endif
+} EventPipeSessionOptions;
 
 /*
  * EventPipe.
