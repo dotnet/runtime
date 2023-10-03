@@ -3155,16 +3155,21 @@ void ProcessInputs(string groupName, (string templateFileName, Dictionary<string
 
     Directory.CreateDirectory(outputDirectory);
 
-    using (var testListFile = new StreamWriter(testListFileName, append: false))
+    var testList = new HashSet<string>();
+
+    foreach (var input in inputs)
     {
-        foreach (var input in inputs)
+        string fileName = ProcessInput(groupName, input);
+        if (!testList.Add(fileName))
         {
-            ProcessInput(testListFile, groupName, input);
+            throw new InvalidOperationException($"Duplicate test file name: {fileName}");
         }
     }
+
+    File.WriteAllLines(testListFileName, testList);
 }
 
-void ProcessInput(StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
+string ProcessInput(string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
 {
     var testName = "";
 
@@ -3193,6 +3198,10 @@ void ProcessInput(StreamWriter testListFile, string groupName, (string templateF
     {
         testName = $"{input.templateData["Method"]}.{input.templateData["Op1BaseType"]}";
     }
+    else if ((input.templateFileName == "VectorImmBinaryOperatorTest.template"))
+    {
+        testName = $"{input.templateData["Method"]}.{input.templateData["RetBaseType"]}.Imm{input.templateData["Imm"]}";
+    }
     else
     {
         testName = $"{input.templateData["Method"]}.{input.templateData["RetBaseType"]}";
@@ -3209,6 +3218,6 @@ void ProcessInput(StreamWriter testListFile, string groupName, (string templateF
     }
     template = template.Replace("namespace JIT.HardwareIntrinsics.General", $"namespace JIT.HardwareIntrinsics.General._{groupName}");
 
-    testListFile.WriteLine(fileName);
     File.WriteAllText(fileName, template);
+    return fileName;
 }
