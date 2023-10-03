@@ -1528,7 +1528,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else
                         {
-                            logger.LogDebug($"Failed to read {step.Url} ({e.Message})");
+                            logger.LogDebug($"Failed to read {step.Url} ({e})");
                         }
                     }
                     catch (Exception ex)
