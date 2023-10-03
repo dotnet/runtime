@@ -452,9 +452,12 @@ is_session_id_in_collection (EventPipeSessionID session_id)
 
 static bool check_options_valid (const EventPipeSessionOptions *options)
 {
-	ep_return_false_if_nok (options->format < EP_SERIALIZATION_FORMAT_COUNT);
-	ep_return_false_if_nok (options->session_type == EP_SESSION_TYPE_SYNCHRONOUS || options->circular_buffer_size_in_mb > 0);
-	ep_return_false_if_nok (options->providers_len > 0 && options->providers != NULL);
+	if (options->format >= EP_SERIALIZATION_FORMAT_COUNT)
+		return false;
+	if (options->circular_buffer_size_in_mb <= 0 && options->session_type != EP_SESSION_TYPE_SYNCHRONOUS)
+		return false;
+	if (options->providers == NULL || options->providers_len <= 0)
+		return false;
 	if ((options->session_type == EP_SESSION_TYPE_FILE || options->session_type == EP_SESSION_TYPE_FILESTREAM) && options->output_path == NULL)
 		return false;
 	if (options->session_type == EP_SESSION_TYPE_IPCSTREAM && options->stream == NULL)
