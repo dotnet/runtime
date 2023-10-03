@@ -542,6 +542,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("Thread
 #else // !TARGET_ARM64
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x46, "Maximum number of spins a thread pool worker thread performs before waiting for work")
 #endif // TARGET_ARM64
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_ThreadPool_ThreadTimeoutMs, W("ThreadPool_ThreadTimeoutMs"), (DWORD)-2, "The amount of time in milliseconds a thread pool thread waits without having done any work before timing out and exiting. Set to -1 to disable the timeout. Applies to worker threads, completion port threads, and wait threads. Also see the ThreadPool_ThreadsToKeepAlive config value for relevant information.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_ThreadPool_ThreadsToKeepAlive, W("ThreadPool_ThreadsToKeepAlive"), 0, "The number of worker or completion port threads to keep alive after they are created. Set to -1 to keep all created worker or completion port threads alive. When the ThreadPool_ThreadTimeoutMs config value is also set, for worker and completion port threads the timeout applies to threads in the respective pool that are in excess of the number configured for ThreadPool_ThreadsToKeepAlive.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
 
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_Disable,                             W("HillClimbing_Disable"),                            0, "Disables hill climbing for thread adjustments in the thread pool");
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_WavePeriod,                          W("HillClimbing_WavePeriod"),                         4, "");
