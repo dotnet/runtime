@@ -762,10 +762,10 @@ namespace System.Net.Security
             // Otherwise, fall back to reading a byte via Read, the same way Stream.ReadByte does.
             // This allocation is unfortunate but should be relatively rare, as it'll only occur once
             // per buffer fill internally by Read.
-            Span<byte> oneByte = stackalloc byte[1];
-            int bytesRead = Read(oneByte);
+            byte oneByte = default;
+            int bytesRead = Read(new Span<byte>(ref oneByte));
             Debug.Assert(bytesRead == 0 || bytesRead == 1);
-            return bytesRead == 1 ? oneByte[0] : -1;
+            return bytesRead == 1 ? oneByte : -1;
         }
 
         public override unsafe int Read(Span<byte> buffer)
@@ -798,12 +798,7 @@ namespace System.Net.Security
             return vt.GetAwaiter().GetResult();
         }
 
-        public override void WriteByte(byte value)
-        {
-            Span<byte> oneByte = stackalloc byte[1];
-            oneByte[0] = value;
-            Write(oneByte);
-        }
+        public override void WriteByte(byte value) => Write(new ReadOnlySpan<byte>(ref value));
 
         public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
