@@ -12,6 +12,15 @@ if(CLR_CMAKE_HOST_WIN32)
   set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 endif(CLR_CMAKE_HOST_WIN32)
 
+if(CLR_CMAKE_HOST_UNIX)
+    # Make sure a public symbol is created for Instrumentor_GetInsCount
+    if(CLR_CMAKE_HOST_APPLE)
+        add_link_options(LINKER:-export_dynamic)
+    else()
+        add_link_options(LINKER:--export-dynamic)
+    endif(CLR_CMAKE_HOST_APPLE)
+endif(CLR_CMAKE_HOST_UNIX)
+
 include_directories(.)
 include_directories(../superpmi-shared)
 
@@ -46,15 +55,6 @@ set(SUPERPMI_SOURCES
 add_executable_clr(superpmi
     ${SUPERPMI_SOURCES}
 )
-
-if(CLR_CMAKE_HOST_UNIX)
-    # Make sure a public symbol is created for Instrumentor_GetInsCount
-    if(CLR_CMAKE_HOST_APPLE)
-        target_link_options(superpmi PRIVATE -Wl,-export_dynamic)
-    else()
-        target_link_options(superpmi PRIVATE -Wl,--export-dynamic)
-    endif(CLR_CMAKE_HOST_APPLE)
-endif(CLR_CMAKE_HOST_UNIX)
 
 target_precompile_headers(superpmi PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:standardpch.h>")
 

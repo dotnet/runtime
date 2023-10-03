@@ -77,7 +77,7 @@ endif()
 
 if (NOT CLR_CMAKE_HOST_WIN32)
   # detect linker
-  separate_arguments(ldVersion UNIX_COMMAND "${CMAKE_C_COMPILER} ${CMAKE_SHARED_LINKER_FLAGS} -Wl,--version")
+  separate_arguments(ldVersion UNIX_COMMAND "${CMAKE_C_COMPILER} ${LINK_OPTIONS} -Wl,--version")
   execute_process(COMMAND ${ldVersion}
     ERROR_QUIET
     OUTPUT_VARIABLE ldVersionOutput)

@@ -81,64 +81,53 @@ if (MSVC)
     set(WINDOWS_SUBSYSTEM_VERSION 6.03) #windows subsystem - arm64 minimum is 6.03
   endif ()
 
-  #Do not create Side-by-Side Assembly Manifest
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
+  # Do not create Side-by-Side Assembly Manifest
+  add_link_options(/MANIFEST:NO)
   # can handle addresses larger than 2 gigabytes
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
+  add_link_options(/LARGEADDRESSAWARE)
   #shrink pdb size
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBCOMPRESS")
+  add_link_options(/PDBCOMPRESS)
 
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUGTYPE:CV,FIXUP")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4197,4013,4254,4070,4221")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SUBSYSTEM:WINDOWS,${WINDOWS_SUBSYSTEM_VERSION}")
+  add_link_options(/DEBUG)
+  add_link_options(/DEBUGTYPE:CV,FIXUP)
+  add_link_options(/IGNORE:4197,4013,4254,4070,4221)
+  add_link_options(/SUBSYSTEM:WINDOWS,${WINDOWS_SUBSYSTEM_VERSION})
 
-  set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221")
+  set(STATIC_LIBRARY_OPTIONS  ${STATIC_LIBRARY_OPTIONS} /IGNORE:4221)
 
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUGTYPE:CV,FIXUP")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /PDBCOMPRESS")
+  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/PDBCOMPRESS>)
   # For sanitized builds, we bump up the stack size to 8MB to match behavior on Unix platforms.
   # Sanitized builds can use significantly more stack space than non-sanitized builds due to instrumentation.
   # We don't want to change the default stack size for all builds, as that will likely cause confusion and will
   # increase memory usage.
   if (CLR_CMAKE_ENABLE_SANITIZERS)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:0x800000")
+    add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/STACK:0x800000>)
   else()
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:0x180000")
+    add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/STACK:0x180000>)
   endif()
 
   if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+    add_link_options(/sourcelink:${CLR_SOURCELINK_FILE_PATH})
   endif(EXISTS ${CLR_SOURCELINK_FILE_PATH})
 
   if (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
     # Debug build specific flags
     # The Ninja generator doesn't appear to have the default `/INCREMENTAL:ON` that
     # the Visual Studio generator has. Therefore we will override the default for Visual Studio only.
-    add_link_options($<$<CONFIG:DEBUG>:LINKER:/INCREMENTAL:NO>)
-    add_link_options($<$<CONFIG:DEBUG>:LINKER:/OPT:REF>)
-    add_link_options($<$<CONFIG:DEBUG>:LINKER:/OPT:NOICF>)
+    add_link_options($<$<CONFIG:DEBUG>:/OPT:NOICF>)
   endif (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
+  # Options for all configs
+  add_link_options(/INCREMENTAL:NO>)
+  add_link_options(/OPT:REF>)
 
   # Checked build specific flags
-  add_link_options($<$<CONFIG:CHECKED>:LINKER:/INCREMENTAL:NO>) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
-  add_link_options($<$<CONFIG:CHECKED>:LINKER:/OPT:REF>)
-  add_link_options($<$<CONFIG:CHECKED>:LINKER:/OPT:NOICF>)
+  add_link_options($<$<CONFIG:CHECKED>:/OPT:NOICF>)
 
   # Release build specific flags
-  add_link_options($<$<CONFIG:RELEASE>:LINKER:/LTCG>)
-  add_link_options($<$<CONFIG:RELEASE>:LINKER:/OPT:REF>)
-  add_link_options($<$<CONFIG:RELEASE>:LINKER:/OPT:ICF>)
-  add_link_options($<$<CONFIG:RELEASE>:LINKER:/INCREMENTAL:NO>)
-  set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
+  add_link_options($<$<CONFIG:RELEASE,RELWITHDEBINFO>:/OPT:ICF>)
 
-  # ReleaseWithDebugInfo build specific flags
-  add_link_options($<$<CONFIG:RELWITHDEBINFO>:LINKER:/LTCG>)
-  add_link_options($<$<CONFIG:RELWITHDEBINFO>:LINKER:/OPT:REF>)
-  add_link_options($<$<CONFIG:RELWITHDEBINFO>:LINKER:/OPT:ICF>)
-  set(CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO} /LTCG")
+  # Set LTCG for RELEASE and RELWITHDEBINFO builds that are compatible
+  set(STATIC_LIBRARY_OPTIONS ${STATIC_LIBRARY_OPTIONS} $<$<AND:$<NOT:$<LINK_LANGUAGE:RC>>,$<CONFIG:RELEASE,RELWITHDEBINFO>>:/LTCG>)
 
 elseif (CLR_CMAKE_HOST_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
@@ -166,8 +155,7 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
       # /RTC1 is added by default by CMake and incompatible with ASAN, so remove it.
       string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
       string(REPLACE "/RTC1" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
-      string(REPLACE "/RTC1" "" CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG}")
-      string(REPLACE "/RTC1" "" CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
+      string(REPLACE "/RTC1" $<IF:$<CONFIG:DEBUG>,"","/RTC1"> LINK_OPTIONS "${LINK_OPTIONS}")
     endif()
     # For Mac and Windows platforms, we install the ASAN runtime next to the rest of our outputs to ensure that it's present when we execute our tests on Helix machines
     # The rest of our platforms use statically-linked ASAN so this isn't a concern for those platforms.
@@ -296,7 +284,7 @@ if(CLR_CMAKE_HOST_LINUX)
   add_link_options("LINKER:-z,relro,-z,now")
 elseif(CLR_CMAKE_HOST_FREEBSD)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
-  add_link_options("LINKER--build-id=sha1")
+  add_link_options("LINKER:--build-id=sha1")
 elseif(CLR_CMAKE_HOST_SUNOS)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
@@ -876,7 +864,7 @@ if (MSVC)
 
     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX,ASM_MASM>,$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>>:/guard:ehcont>)
     add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_EH_CONTINUATION>>:/guard:ehcont>)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT")
+    add_link_options($<$<AND:$<NOT:$<LINK_LANGUAGE:RC>>>:/CETCOMPAT>)
   endif (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
 
   # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
@@ -892,8 +880,8 @@ if (MSVC)
     # We won't do this for sanitized builds as the dynamic CRT is not compatible with the static sanitizer runtime and
     # the dynamic sanitizer runtime is not redistributable. Sanitized runtime builds are not production-time scenarios
     # so we don't get the benefits of a dynamic CRT for sanitized runtime builds.
-    add_link_options($<$<CONFIG:RELEASE>:LINKER:/NODEFAULTLIB:libucrt.lib>)
-    add_link_options($<$<CONFIG:RELEASE>:LINKER:/DEFAULTLIB:ucrt.lib>)
+    add_link_options($<$<CONFIG:RELEASE>:/NODEFAULTLIB:libucrt.lib>)
+    add_link_options($<$<CONFIG:RELEASE>:/DEFAULTLIB:ucrt.lib>)
   endif()
 
   add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/ZH:SHA_256>)
