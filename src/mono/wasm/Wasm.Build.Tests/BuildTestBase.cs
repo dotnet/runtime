@@ -325,10 +325,11 @@ namespace Wasm.Build.Tests
             if (_projectDir == null)
                 _projectDir = Path.Combine(BuildEnvironment.TmpPath, id);
             _logPath = Path.Combine(s_buildEnv.LogRootPath, id);
-            _nugetPackagesDir = Path.Combine(BuildEnvironment.TmpPath, "nuget", id);
+            _nugetPackagesDir = _buildContext.NuGetCachePath;
+            //_nugetPackagesDir = Path.Combine(BuildEnvironment.TmpPath, "nuget", id);
 
-            if (Directory.Exists(_nugetPackagesDir))
-                Directory.Delete(_nugetPackagesDir, recursive: true);
+            //if (Directory.Exists(_nugetPackagesDir))
+                //Directory.Delete(_nugetPackagesDir, recursive: true);
 
             Directory.CreateDirectory(_nugetPackagesDir!);
             Directory.CreateDirectory(_logPath);

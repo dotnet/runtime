@@ -13,6 +13,7 @@ namespace Wasm.Build.Tests
 {
     public class SharedBuildPerTestClassFixture : IDisposable
     {
+        public string NuGetCachePath { get; } = Path.Combine(BuildEnvironment.TmpPath, "nuget", BuildTestBase.GetRandomId());
         public Dictionary<BuildArgs, BuildProduct> _buildPaths = new();
 
         public void CacheBuild(BuildArgs buildArgs, BuildProduct product)
@@ -44,6 +45,8 @@ namespace Wasm.Build.Tests
             {
                 RemoveDirectory(kvp.ProjectDir);
             }
+            Console.WriteLine ($"============== DELETING THE NUGET PACKAGES DIR {NuGetCachePath} =============");
+            RemoveDirectory(NuGetCachePath);
         }
 
         private void RemoveDirectory(string path)

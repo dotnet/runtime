@@ -88,6 +88,9 @@ namespace Microsoft.Workload.Build.Tasks
 
                 // FIXME:
                 // make -none
+                // TODO: Check if no-workload stamp is there.. so it's installed
+                // TODO: check if the manifest packages are newer than that stamp
+                // TODO:   if so, do the delete+copy+install-manifests
                 if (Directory.Exists(SdkWithNoWorkloadInstalledPath))
                 {
                     Log.LogMessage(MessageImportance.High, $"Deleting {SdkWithNoWorkloadInstalledPath}");
