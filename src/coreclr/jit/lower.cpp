@@ -8025,7 +8025,8 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
 #if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
             case TYP_SIMD16:
-                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX) &&
+                    (comp->getPreferredVectorByteLength() >= 32))
                 {
                     newType = TYP_SIMD32;
                     break;
@@ -8033,7 +8034,8 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 return;
 
             case TYP_SIMD32:
-                if (comp->IsBaselineVector512IsaSupportedOpportunistically())
+                if (comp->IsBaselineVector512IsaSupportedOpportunistically() &&
+                    (comp->getPreferredVectorByteLength() >= 64))
                 {
                     newType = TYP_SIMD64;
                     break;
