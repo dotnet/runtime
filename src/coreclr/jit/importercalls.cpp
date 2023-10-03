@@ -3251,16 +3251,23 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_CompareExchange:
             {
                 var_types retType = JITtype2varType(sig->retType);
-                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                if (TARGET_POINTER_SIZE < genTypeSize(retType))
                 {
                     break;
                 }
+#if defined(TARGET_RISCV64)
+                else if (4 > genTypeSize(retType))
+                {
+                    break;
+                }
+#endif
+
                 if ((retType == TYP_REF) && impStackTop(1).val->IsIntegralConst(0))
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
                 }
-                else if ((retType != TYP_INT) && (retType != TYP_LONG))
+                else if (!varTypeIsIntegral(retType))
                 {
                     break;
                 }
@@ -3286,17 +3293,24 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(sig->numArgs == 2);
 
                 var_types retType = JITtype2varType(sig->retType);
-                if ((retType == TYP_LONG) && (TARGET_POINTER_SIZE == 4))
+                if (TARGET_POINTER_SIZE < genTypeSize(retType))
                 {
                     break;
                 }
+#if defined(TARGET_RISCV64)
+                else if (4 > genTypeSize(retType))
+                {
+                    break;
+                }
+#endif
+
                 if ((retType == TYP_REF) && impStackTop().val->IsIntegralConst(0))
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
                     assert(ni == NI_System_Threading_Interlocked_Exchange);
                 }
-                else if ((retType != TYP_INT) && (retType != TYP_LONG))
+                else if (!varTypeIsIntegral(retType))
                 {
                     break;
                 }

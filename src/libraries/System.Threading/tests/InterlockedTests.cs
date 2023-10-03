@@ -140,6 +140,38 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        public void InterlockedExchange_Int8()
+        {
+            sbyte value = 42;
+            Assert.Equal(42, Interlocked.Exchange(ref value, 123));
+            Assert.Equal(123, value);
+        }
+
+        [Fact]
+        public void InterlockedExchange_UInt8()
+        {
+            byte value = 42;
+            Assert.Equal(42u, Interlocked.Exchange(ref value, 123));
+            Assert.Equal(123u, value);
+        }
+
+        [Fact]
+        public void InterlockedExchange_Int16()
+        {
+            short value = 42;
+            Assert.Equal(42, Interlocked.Exchange(ref value, 12345));
+            Assert.Equal(12345, value);
+        }
+
+        [Fact]
+        public void InterlockedExchange_UInt16()
+        {
+            ushort value = 42;
+            Assert.Equal(42u, Interlocked.Exchange(ref value, 12345));
+            Assert.Equal(12345u, value);
+        }
+
+        [Fact]
         public void InterlockedExchange_Int32()
         {
             int value = 42;
@@ -238,6 +270,54 @@ namespace System.Threading.Tests
             Assert.Equal(42, (int)valueBeforeUpdate);
             Assert.Same(newValue, value);
             Assert.Equal(12345, (int)value);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_Int8()
+        {
+            sbyte value = 42;
+
+            Assert.Equal(42, Interlocked.CompareExchange(ref value, 123, 41));
+            Assert.Equal(42, value);
+
+            Assert.Equal(42, Interlocked.CompareExchange(ref value, 123, 42));
+            Assert.Equal(123, value);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_UInt8()
+        {
+            byte value = 42;
+
+            Assert.Equal(42u, Interlocked.CompareExchange(ref value, 123, 41));
+            Assert.Equal(42u, value);
+
+            Assert.Equal(42u, Interlocked.CompareExchange(ref value, 123, 42));
+            Assert.Equal(123u, value);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_Int16()
+        {
+            short value = 42;
+
+            Assert.Equal(42, Interlocked.CompareExchange(ref value, 12345, 41));
+            Assert.Equal(42, value);
+
+            Assert.Equal(42, Interlocked.CompareExchange(ref value, 12345, 42));
+            Assert.Equal(12345, value);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_UInt16()
+        {
+            ushort value = 42;
+
+            Assert.Equal(42u, Interlocked.CompareExchange(ref value, 12345, 41));
+            Assert.Equal(42u, value);
+
+            Assert.Equal(42u, Interlocked.CompareExchange(ref value, 12345, 42));
+            Assert.Equal(12345u, value);
         }
 
         [Fact]

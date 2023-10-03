@@ -25,6 +25,24 @@ FORCEINLINE uint32_t PalInterlockedAnd(_Inout_ uint32_t volatile *pDst, uint32_t
     return __sync_and_and_fetch(pDst, iValue);
 }
 
+FORCEINLINE uint8_t PalInterlockedExchange8(_Inout_ uint8_t volatile *pDst, uint8_t iValue)
+{
+#ifdef __clang__
+    return __sync_swap(pDst, iValue);
+#else
+    return __atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
+#endif
+}
+
+FORCEINLINE int16_t PalInterlockedExchange16(_Inout_ int16_t volatile *pDst, int16_t iValue)
+{
+#ifdef __clang__
+    return __sync_swap(pDst, iValue);
+#else
+    return __atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
+#endif
+}
+
 FORCEINLINE int32_t PalInterlockedExchange(_Inout_ int32_t volatile *pDst, int32_t iValue)
 {
 #ifdef __clang__
@@ -41,6 +59,16 @@ FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int
 #else
     return __atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
 #endif
+}
+
+FORCEINLINE uint8_t PalInterlockedCompareExchange8(_Inout_ uint8_t volatile *pDst, uint8_t iValue, uint8_t iComparand)
+{
+    return __sync_val_compare_and_swap(pDst, iComparand, iValue);
+}
+
+FORCEINLINE int16_t PalInterlockedCompareExchange16(_Inout_ int16_t volatile *pDst, int16_t iValue, int16_t iComparand)
+{
+    return __sync_val_compare_and_swap(pDst, iComparand, iValue);
 }
 
 FORCEINLINE int32_t PalInterlockedCompareExchange(_Inout_ int32_t volatile *pDst, int32_t iValue, int32_t iComparand)

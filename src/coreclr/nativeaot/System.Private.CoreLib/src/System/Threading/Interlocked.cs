@@ -12,6 +12,18 @@ namespace System.Threading
         #region CompareExchange
 
         [Intrinsic]
+        public static byte CompareExchange(ref byte location1, byte value, byte comparand)
+        {
+            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+        }
+
+        [Intrinsic]
+        public static short CompareExchange(ref short location1, short value, short comparand)
+        {
+            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+        }
+
+        [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
@@ -41,6 +53,32 @@ namespace System.Threading
         #endregion
 
         #region Exchange
+
+        [Intrinsic]
+        public static byte Exchange(ref byte location1, byte value)
+        {
+            byte oldValue;
+
+            do
+            {
+                oldValue = location1;
+            } while (CompareExchange(ref location1, value, oldValue) != oldValue);
+
+            return oldValue;
+        }
+
+        [Intrinsic]
+        public static short Exchange(ref short location1, short value)
+        {
+            short oldValue;
+
+            do
+            {
+                oldValue = location1;
+            } while (CompareExchange(ref location1, value, oldValue) != oldValue);
+
+            return oldValue;
+        }
 
         [Intrinsic]
         public static int Exchange(ref int location1, int value)

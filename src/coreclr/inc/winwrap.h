@@ -264,6 +264,10 @@ WszCreateProcess(
 
 #define InterlockedIncrement            _InterlockedIncrement
 #define InterlockedDecrement            _InterlockedDecrement
+#define InterlockedExchange8            _InterlockedExchange8
+#define InterlockedCompareExchange8     _InterlockedCompareExchange8
+#define InterlockedExchange16           _InterlockedExchange16
+#define InterlockedCompareExchange16    _InterlockedCompareExchange16
 #define InterlockedExchange             _InterlockedExchange
 #define InterlockedCompareExchange      _InterlockedCompareExchange
 #define InterlockedExchangeAdd          _InterlockedExchangeAdd

@@ -1500,6 +1500,30 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
 
 #include <optsmallperfcritical.h>
 
+FCIMPL2(UINT8,COMInterlocked::Exchange8, UINT8 *location, UINT8 value)
+{
+    FCALL_CONTRACT;
+
+    if( NULL == location) {
+        FCThrow(kNullReferenceException);
+    }
+
+    return InterlockedExchange8((BYTE *) location, value);
+}
+FCIMPLEND
+
+FCIMPL2(INT16,COMInterlocked::Exchange16, INT16 *location, INT16 value)
+{
+    FCALL_CONTRACT;
+
+    if( NULL == location) {
+        FCThrow(kNullReferenceException);
+    }
+
+    return InterlockedExchange16((SHORT *) location, value);
+}
+FCIMPLEND
+
 FCIMPL2(INT32,COMInterlocked::Exchange, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
@@ -1521,6 +1545,30 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
     }
 
     return InterlockedExchange64((INT64 *) location, value);
+}
+FCIMPLEND
+
+FCIMPL3(UINT8, COMInterlocked::CompareExchange8, UINT8* location, UINT8 value, UINT8 comparand)
+{
+    FCALL_CONTRACT;
+
+    if( NULL == location) {
+        FCThrow(kNullReferenceException);
+    }
+
+    return InterlockedCompareExchange8((BYTE*)location, value, comparand);
+}
+FCIMPLEND
+
+FCIMPL3(INT16, COMInterlocked::CompareExchange16, INT16* location, INT16 value, INT16 comparand)
+{
+    FCALL_CONTRACT;
+
+    if( NULL == location) {
+        FCThrow(kNullReferenceException);
+    }
+
+    return InterlockedCompareExchange16((SHORT*)location, value, comparand);
 }
 FCIMPLEND
 

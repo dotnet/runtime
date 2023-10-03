@@ -568,6 +568,10 @@ NOHANDLES(ICALL(ILOCK_20, "Increment(int&)", ves_icall_System_Threading_Interloc
 NOHANDLES(ICALL(ILOCK_21, "Increment(long&)", ves_icall_System_Threading_Interlocked_Increment_Long))
 NOHANDLES(ICALL(ILOCK_22, "MemoryBarrierProcessWide", ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide))
 NOHANDLES(ICALL(ILOCK_23, "Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long))
+NOHANDLES(ICALL(ILOCK_24, "CompareExchange(byte&,byte,byte)", ves_icall_System_Threading_Interlocked_CompareExchange_Byte))
+NOHANDLES(ICALL(ILOCK_25, "CompareExchange(short&,short,short)", ves_icall_System_Threading_Interlocked_CompareExchange_Short))
+NOHANDLES(ICALL(ILOCK_26, "Exchange(byte&,byte)", ves_icall_System_Threading_Interlocked_Exchange_Byte))
+NOHANDLES(ICALL(ILOCK_27, "Exchange(short&,short)", ves_icall_System_Threading_Interlocked_Exchange_Short))
 
 /* include these icalls if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
 #if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
