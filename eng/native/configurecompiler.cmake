@@ -155,7 +155,8 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
       # /RTC1 is added by default by CMake and incompatible with ASAN, so remove it.
       string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
       string(REPLACE "/RTC1" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
-      string(REPLACE "/RTC1" $<IF:$<CONFIG:DEBUG>,"","/RTC1"> LINK_OPTIONS "${LINK_OPTIONS}")
+      string(REPLACE "/RTC1" "" CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG}")
+      string(REPLACE "/RTC1" "" CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG}")
     endif()
     # For Mac and Windows platforms, we install the ASAN runtime next to the rest of our outputs to ensure that it's present when we execute our tests on Helix machines
     # The rest of our platforms use statically-linked ASAN so this isn't a concern for those platforms.
@@ -275,6 +276,9 @@ endif()
 if(CLR_CMAKE_HOST_UNIX)
   foreach(ADDTL_LINKER_FLAG ${CLR_ADDITIONAL_LINKER_FLAGS})
     add_link_options(${ADDTL_LINKER_FLAG})
+    if(${ADDTL_LINKER_FLAG} MATCHES "-fuse_ld=")
+        set(FUSE_LD ${ADDTL_LINKER_FLAG})
+    endif()
   endforeach()
 endif(CLR_CMAKE_HOST_UNIX)
 

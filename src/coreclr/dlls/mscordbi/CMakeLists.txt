@@ -48,7 +48,7 @@ else(CLR_CMAKE_HOST_WIN32)
     if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
         # This option is necessary to ensure that the overloaded new/delete operators defined inside
         # of the utilcode will be used instead of the standard library delete operator.
-        add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:-Xlinker -Bsymbolic>)
+        add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:LINKER:-Bsymbolic>)
     endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
     set_exports_linker_option(${EXPORTS_FILE})

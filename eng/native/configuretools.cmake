@@ -77,7 +77,7 @@ endif()
 
 if (NOT CLR_CMAKE_HOST_WIN32)
   # detect linker
-  separate_arguments(ldVersion UNIX_COMMAND "${CMAKE_C_COMPILER} ${LINK_OPTIONS} -Wl,--version")
+  separate_arguments(ldVersion UNIX_COMMAND "${CMAKE_C_COMPILER} ${FUSE_LD} -Wl,--version")
   execute_process(COMMAND ${ldVersion}
     ERROR_QUIET
     OUTPUT_VARIABLE ldVersionOutput)
@@ -88,8 +88,10 @@ if (NOT CLR_CMAKE_HOST_WIN32)
     set(LD_GNU 1)
   elseif("${ldVersionOutput}" MATCHES "Solaris Link")
     set(LD_SOLARIS 1)
-  else(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
+  elseif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
     set(LD_OSX 1)
+  else()
+    message(FATAL_ERROR "Unable to determine linker")
   endif()
 endif()
 
