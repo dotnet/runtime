@@ -1089,6 +1089,7 @@ ep_on_error:
 
 }
 
+inline
 void
 ep_session_options_init(
 	EventPipeSessionOptions* options,
