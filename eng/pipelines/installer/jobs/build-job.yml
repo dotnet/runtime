@@ -357,10 +357,8 @@ jobs:
               filesToSign:
               - name: dotnet
                 path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
-                entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
               - name: apphost
                 path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
-                entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
         - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+host.pretest+host.tests+packs
           displayName: Build and Package

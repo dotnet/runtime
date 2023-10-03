@@ -52,3 +52,13 @@ endif()
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
     target_link_libraries(apphost PRIVATE shell32.lib)
 endif()
+
+if (CLR_CMAKE_HOST_APPLE)
+    # Add a dependency on the entitlements file to ensure that apphost is rebuilt if only the entitlements file changes.
+    set_source_files_properties(hostfxr_resolver.cpp PROPERTIES OBJECT_DEPENDS ${CLR_ENG_NATIVE_DIR}/entitlements.plist)
+
+    add_custom_command(
+        TARGET apphost
+        POST_BUILD
+        COMMAND codesign -s - -f --entitlements ${CLR_ENG_NATIVE_DIR}/entitlements.plist $<TARGET_FILE:apphost>)
+endif()
