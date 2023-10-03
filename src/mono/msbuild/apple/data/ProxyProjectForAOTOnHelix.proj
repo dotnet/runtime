@@ -5,6 +5,7 @@
 
     <OriginalPublishDir>$([System.IO.Path]::GetFullPath('$(TestRootDir)..\publish\'))</OriginalPublishDir>
     <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
+    <AppleBuildDependsOn Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">ConfigureTrimming;_TrimApp;$(AppleBuildDependsOn)</AppleBuildDependsOn>
     <AppleBuildDependsOn>_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
   </PropertyGroup>
 
@@ -25,6 +26,7 @@
   </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props" />
+  <Import Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Project="$(ILLinkPropsPath)" />
 
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
@@ -68,6 +70,22 @@
 
     <Copy SourceFiles="@(_RuntimePackFiles)"
           DestinationFolder="$(OriginalPublishDir)" />
+  </Target>
+
+  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <Target Name="_TrimApp">
+    <!-- To do: Pass in features that need to be turned on or off -->
+    <ILLink AssemblyPaths="@(AppleAssembliesToBundle)"
+            RootAssemblyNames="@(TrimmerRootAssembly)"
+            RootDescriptorFiles="@(TrimmerRootDescriptor)"
+            OutputDirectory="$(OriginalPublishDir)"
+            ExtraArgs=" --notrimwarn"
+            TrimMode="$(TrimMode)"
+            Warn="5"
+            SingleWarn="true"
+            RemoveSymbols="false">
+      <Output TaskParameter="ExitCode" PropertyName="_ILLinkExitCode" />
+    </ILLink>
   </Target>
 
   <!-- Move the app to where the xharness runner expects it. -->
