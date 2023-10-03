@@ -3696,6 +3696,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	int call_offset = -1;
 
+	StackInfo *sp_args = td->sp;
+
 	if (!td->optimized && op == -1) {
 		int param_offset;
 		if (num_args)
@@ -3776,9 +3778,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (num_sregs == 1)
 				interp_ins_set_sreg (td->last_ins, first_sreg);
 			else if (num_sregs == 2)
-				interp_ins_set_sregs2 (td->last_ins, first_sreg, td->sp [!has_dreg].local);
+				interp_ins_set_sregs2 (td->last_ins, first_sreg, sp_args [1].local);
 			else if (num_sregs == 3)
-				interp_ins_set_sregs3 (td->last_ins, first_sreg, td->sp [!has_dreg].local, td->sp [!has_dreg + 1].local);
+				interp_ins_set_sregs3 (td->last_ins, first_sreg, sp_args [1].local, sp_args [2].local);
 			else
 				g_error ("Unsupported opcode");
 		}
