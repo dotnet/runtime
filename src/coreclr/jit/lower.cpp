@@ -7943,7 +7943,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
     do
     {
         // This check is not really needed, just for better throughput.
-        if (!ind->TypeIs(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT) && !varTypeIsSIMD(ind))
+        if (!varTypeIsIntegralOrI(ind) && !varTypeIsSIMD(ind))
         {
             return;
         }
@@ -8133,7 +8133,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 }
                 return;
 #endif // TARGET_AMD64
-#endif // TARGET_AMD64 && FEATURE_HW_INTRINSICS
+#endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_64BIT
 
             // TYP_FLOAT and TYP_DOUBLE aren't needed here - they're expected to
@@ -8167,6 +8167,8 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         ind->Data()->gtType = newType;
 
 #if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
+        // Upgrading two SIMD stores to a wider SIMD store.
+        // Only on x64 since ARM64 has no options above SIMD16
         if (varTypeIsSIMD(oldType))
         {
             int8_t* lowerCns = prevData.value->AsVecCon()->gtSimdVal.i8;
