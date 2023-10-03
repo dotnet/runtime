@@ -314,8 +314,11 @@ private:
 
     // Per tree node member functions
     void LowerStoreIndirCommon(GenTreeStoreInd* ind);
-    void LowerIndir(GenTreeIndir* ind, GenTree** next = nullptr);
-    bool TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir);
+    GenTree* LowerIndir(GenTreeIndir* ind);
+    bool OptimizeForLdp(GenTreeIndir* ind);
+    bool TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir);
+    void MarkTree(GenTree* root);
+    void UnmarkTree(GenTree* root);
     void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);

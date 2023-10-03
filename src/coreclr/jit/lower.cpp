@@ -410,9 +410,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_NULLCHECK:
         case GT_IND:
         {
-            GenTree* next = nullptr;
-            LowerIndir(node->AsIndir(), &next);
-            return next;
+            return LowerIndir(node->AsIndir());
         }
 
         case GT_STOREIND:
@@ -7837,12 +7835,9 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 // Arguments:
 //    ind - the ind node we are lowering.
 //
-void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
+GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 {
-    if (next != nullptr)
-    {
-        *next = ind->gtNext;
-    }
+    GenTree* next = ind->gtNext;
 
     assert(ind->OperIs(GT_IND, GT_NULLCHECK));
     // Process struct typed indirs separately unless they are unused;
@@ -7892,81 +7887,104 @@ void Lowering::LowerIndir(GenTreeIndir* ind, GenTree** next)
     }
 
 #ifdef TARGET_ARM64
-    if (ind->OperIs(GT_IND) && comp->opts.OptimizationEnabled() && (next != nullptr))
+    if (comp->opts.OptimizationEnabled() && ind->OperIs(GT_IND))
     {
-        target_ssize_t offs   = 0;
-        GenTree*       addr   = ind->Addr();
-        FieldSeq*      fldSeq = nullptr;
-        comp->gtPeelOffsets(&addr, &offs, &fldSeq);
-
-        if (addr->OperIsLocal() && ind->TypeIs(TYP_INT, TYP_LONG, TYP_DOUBLE, TYP_SIMD16))
-        {
-            SavedIndir newInd;
-            newInd.Indir    = ind;
-            newInd.AddrBase = addr->AsLclVarCommon();
-            newInd.Offset   = offs;
-
-            int maxCount = min(m_blockIndirs.Height(), 8);
-            for (int i = 0; i < maxCount; i++)
-            {
-                SavedIndir&   prev      = m_blockIndirs.TopRef(i);
-                GenTreeIndir* prevIndir = prev.Indir;
-                if ((prevIndir == nullptr) || (prevIndir->TypeGet() != ind->TypeGet()))
-                {
-                    continue;
-                }
-
-                if (GenTree::Compare(addr, prev.AddrBase))
-                {
-                    JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
-                            Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), (unsigned)offs,
-                            (unsigned)prev.Offset);
-                    if (abs(offs - prev.Offset) == genTypeSize(ind))
-                    {
-                        JITDUMP("  ..and they are amenable to ldp optimization\n");
-                        if (TryOptimizeForLdp(prevIndir, ind))
-                        {
-                            // Do not let the previous one participate in
-                            // another instance; that can cause us to e.g. convert
-                            // *(x+4), *(x+0), *(x+8), *(x+12) =>
-                            // *(x+4), *(x+8), *(x+0), *(x+12)
-                            prev.Indir = nullptr;
-                        }
-                        break;
-                    }
-                    else
-                    {
-                        JITDUMP("  ..but at wrong offset\n");
-                    }
-                }
-            }
-
-            m_blockIndirs.Push(newInd);
-        }
+        OptimizeForLdp(ind);
     }
 #endif
+
+    return next;
 }
 
 #ifdef TARGET_ARM64
-static void MarkTree(GenTree* node)
+
+//------------------------------------------------------------------------
+// OptimizeForLdp: Record information about an indirection, and try to optimize
+// it by moving it to be adjacent with a previous indirection such that they
+// can be transformed into 'ldp'.
+//
+// Arguments:
+//    ind - Indirection to record and to try to move.
+//
+// Returns:
+//    True if the optimization was successful.
+//
+bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
 {
-    node->gtLIRFlags |= LIR::Flags::Mark;
-    node->VisitOperands([](GenTree* op) {
-        MarkTree(op);
-        return GenTree::VisitResult::Continue;
-    });
+    if (!ind->TypeIs(TYP_INT, TYP_LONG, TYP_DOUBLE, TYP_SIMD16))
+    {
+        return false;
+    }
+
+    target_ssize_t offs   = 0;
+    GenTree*       addr   = ind->Addr();
+    FieldSeq*      fldSeq = nullptr;
+    comp->gtPeelOffsets(&addr, &offs, &fldSeq);
+
+    if (!addr->OperIsLocal())
+    {
+        return false;
+    }
+
+    bool result = false;
+
+    SavedIndir newInd;
+    newInd.Indir    = ind;
+    newInd.AddrBase = addr->AsLclVarCommon();
+    newInd.Offset   = offs;
+
+    int maxCount = min(m_blockIndirs.Height(), 8);
+    for (int i = 0; i < maxCount; i++)
+    {
+        SavedIndir&   prev      = m_blockIndirs.TopRef(i);
+        GenTreeIndir* prevIndir = prev.Indir;
+        if ((prevIndir == nullptr) || (prevIndir->TypeGet() != ind->TypeGet()))
+        {
+            continue;
+        }
+
+        if (GenTree::Compare(addr, prev.AddrBase))
+        {
+            JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
+                    Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), (unsigned)offs, (unsigned)prev.Offset);
+            if (abs(offs - prev.Offset) == genTypeSize(ind))
+            {
+                JITDUMP("  ..and they are amenable to ldp optimization\n");
+                if (TryMakeIndirsAdjacent(prevIndir, newInd.Indir))
+                {
+                    // Do not let the previous one participate in
+                    // another instance; that can cause us to e.g. convert
+                    // *(x+4), *(x+0), *(x+8), *(x+12) =>
+                    // *(x+4), *(x+8), *(x+0), *(x+12)
+                    prev.Indir = nullptr;
+                    result     = true;
+                    break;
+                }
+                break;
+            }
+            else
+            {
+                JITDUMP("  ..but at wrong offset\n");
+            }
+        }
+    }
+
+    m_blockIndirs.Push(newInd);
+    return result;
 }
 
-static void UnmarkTree(GenTree* node)
-{
-    node->gtLIRFlags &= ~LIR::Flags::Mark;
-    node->VisitOperands([](GenTree* op) {
-        UnmarkTree(op);
-        return GenTree::VisitResult::Continue;
-    });
-}
-
-bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
+//------------------------------------------------------------------------
+// TryMakeIndirsAdjacent: Try to prove that it is legal to move an indirection
+// to be adjacent to a previous indirection. If successful, perform the move.
+//
+// Arguments:
+//    ind   - Indirection to record and to try to move.
+//    next  - [out] Next node to lower. Only written if the optimization was successful.
+//
+// Returns:
+//    True if the optimization was successful.
+//
+bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir)
 {
     if ((indir->gtFlags & GTF_IND_VOLATILE) != 0)
     {
@@ -8090,7 +8108,6 @@ bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
                 // except for some of the known cases described above.
                 if (!node->OperIs(GT_IND, GT_BLK, GT_STOREIND, GT_STORE_BLK) || node->AsIndir()->IsVolatile())
                 {
-                    JITDUMP("IsVolatile\n");
                     return true;
                 }
             }
@@ -8101,7 +8118,6 @@ bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
             {
                 if (!node->OperIs(GT_STOREIND, GT_STORE_BLK))
                 {
-                    JITDUMP("Wrong node\n");
                     return true;
                 }
 
@@ -8184,6 +8200,37 @@ bool Lowering::TryOptimizeForLdp(GenTreeIndir* prevIndir, GenTreeIndir* indir)
     UnmarkTree(indir);
     return true;
 }
+
+//------------------------------------------------------------------------
+// MarkTree: Mark trees involved in the computation of 'node' recursively.
+//
+// Arguments:
+//    node - Root node.
+//
+void Lowering::MarkTree(GenTree* node)
+{
+    node->gtLIRFlags |= LIR::Flags::Mark;
+    node->VisitOperands([=](GenTree* op) {
+        MarkTree(op);
+        return GenTree::VisitResult::Continue;
+    });
+}
+
+//------------------------------------------------------------------------
+// UnmarkTree: Unmark trees involved in the computation of 'node' recursively.
+//
+// Arguments:
+//    node - Root node.
+//
+void Lowering::UnmarkTree(GenTree* node)
+{
+    node->gtLIRFlags &= ~LIR::Flags::Mark;
+    node->VisitOperands([=](GenTree* op) {
+        UnmarkTree(op);
+        return GenTree::VisitResult::Continue;
+    });
+}
+
 #endif
 
 //------------------------------------------------------------------------
