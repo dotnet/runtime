@@ -1523,7 +1523,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (tryUseDebuggerProtocol)
                         {
                             string unescapedFileName = Uri.UnescapeDataString(step.Url);
-                            bytes = await context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), token);
+                            bytes = await context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), token).ConfigureAwait(false);
                             assembly = new AssemblyInfo(monoProxy, id, step.Url, bytes[0], bytes[1], logger, token);
                         }
                         else
