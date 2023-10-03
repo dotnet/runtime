@@ -1491,50 +1491,24 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (string url in asm_files)
             {
-                try
-                {
-                    string candidate_pdb = Path.ChangeExtension(url, "pdb");
-                    string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
+                string candidate_pdb = Path.ChangeExtension(url, "pdb");
+                string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
 
-                    steps.Add(
-                        new DebugItem
-                        {
-                            Url = url,
-                            Data = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
-                        });
-                }
-                catch (Exception e)
-                {
-                    if (tryUseDebuggerProtocol)
+                steps.Add(
+                    new DebugItem
                     {
-                        try
-                        {
-                            string unescapedFileName = Uri.UnescapeDataString(url);
-                            steps.Add(
-                            new DebugItem
-                            {
-                                Url = url,
-                                Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), token)
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogDebug($"Failed to get bytes using debugger protocol {url} ({ex.Message})");
-                        }
-                    }
-                    else
-                    {
-                        logger.LogDebug($"Failed to read {url} ({e.Message})");
-                    }
-                }
+                        Url = url,
+                        Data = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
+                    });
             }
 
             foreach (DebugItem step in steps)
             {
                 AssemblyInfo assembly = null;
+                byte[][] bytes;
                 try
                 {
-                    byte[][] bytes = await step.Data.ConfigureAwait(false);
+                    bytes = await step.Data.ConfigureAwait(false);
                     if (bytes[0] == null)
                     {
                         logger.LogDebug($"Bytes from assembly {step.Url} is NULL");
@@ -1544,7 +1518,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 catch (Exception e)
                 {
-                    logger.LogError($"Failed to load {step.Url} ({e.Message})");
+                    try
+                    {
+                        if (tryUseDebuggerProtocol)
+                        {
+                            string unescapedFileName = Uri.UnescapeDataString(step.Url);
+                            bytes = await context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), token);
+                            assembly = new AssemblyInfo(monoProxy, id, step.Url, bytes[0], bytes[1], logger, token);
+                        }
+                        else
+                        {
+                            logger.LogDebug($"Failed to read {step.Url} ({e.Message})");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError($"Failed to load {step.Url} ({ex.Message})");
+                    }
                 }
                 if (assembly == null)
                     continue;
