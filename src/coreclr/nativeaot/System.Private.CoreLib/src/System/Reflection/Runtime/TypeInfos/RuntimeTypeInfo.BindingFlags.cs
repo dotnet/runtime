@@ -11,7 +11,7 @@ namespace System.Reflection.Runtime.TypeInfos
     {
         public ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => Query<ConstructorInfo>(ConstructorPolicies.Instance, bindingAttr).ToArray();
 
-        protected ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        public ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             Debug.Assert(types != null);
 
@@ -52,17 +52,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public MethodInfo[] GetMethods(BindingFlags bindingAttr) => Query<MethodInfo>(MethodPolicies.Instance, bindingAttr).ToArray();
 
-        protected MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
-        {
-            return GetMethodImplCommon(name, GenericParameterCountAny, bindingAttr, binder, callConvention, types, modifiers);
-        }
-
-        protected MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
-        {
-            return GetMethodImplCommon(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
-        }
-
-        private MethodInfo GetMethodImplCommon(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        public MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             Debug.Assert(name != null);
 
@@ -108,7 +98,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public PropertyInfo[] GetProperties(BindingFlags bindingAttr) => Query<PropertyInfo>(PropertyPolicies.Instance, bindingAttr).ToArray();
 
-        protected PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
+        public PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
         {
             Debug.Assert(name != null);
 
@@ -207,6 +197,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         private volatile TypeComponentsCache? _lazyCache;
 
-        private const int GenericParameterCountAny = -1;
+        public const int GenericParameterCountAny = -1;
     }
 }

@@ -260,56 +260,82 @@ namespace System
         protected override bool IsPrimitiveImpl() => _pUnderlyingEEType->IsPrimitive && !_pUnderlyingEEType->IsEnum;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) => throw new NotImplementedException();
+        protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
+            => GetRuntimeTypeInfo().GetConstructorImpl(bindingAttr, binder, callConvention, types, modifiers);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-        public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetConstructors(bindingAttr);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public override EventInfo? GetEvent(string name, BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetEvent(name, bindingAttr);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public override EventInfo[] GetEvents(BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override EventInfo[] GetEvents(BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetEvents(bindingAttr);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo? GetField(string name, BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetField(name, bindingAttr);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo[] GetFields(BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override FieldInfo[] GetFields(BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetFields(bindingAttr);
 
         [DynamicallyAccessedMembers(GetAllMembers)]
-        public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetMembers(bindingAttr);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => throw new NotImplementedException();
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
+            => GetRuntimeTypeInfo().GetMethodImpl(name, RuntimeTypeInfo.GenericParameterCountAny, bindingAttr, binder, callConvention, types, modifiers);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        public override MethodInfo[] GetMethods(BindingFlags bindingAttr) => throw new NotImplementedException();
+        protected override MethodInfo? GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
+            => GetRuntimeTypeInfo().GetMethodImpl(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+        public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetMethods(bindingAttr);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string name, BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetNestedType(name, bindingAttr);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type[] GetNestedTypes(BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override Type[] GetNestedTypes(BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetNestedTypes(bindingAttr);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers) => throw new NotImplementedException();
+        protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
+            => GetRuntimeTypeInfo().GetPropertyImpl(name, bindingAttr, binder, returnType, types, modifiers);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-        public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw new NotImplementedException();
+        public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetProperties(bindingAttr);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-        public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotImplementedException();
+        public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
+            => GetRuntimeTypeInfo().InvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type? GetInterface(string name, bool ignoreCase) => throw new NotImplementedException();
+        public override Type? GetInterface(string name, bool ignoreCase)
+            => GetRuntimeTypeInfo().GetInterface(name, ignoreCase);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type[] GetInterfaces() => throw new NotImplementedException();
-        public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
-        public override object[] GetCustomAttributes(bool inherit) => throw new NotImplementedException();
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();
+        public override Type[] GetInterfaces()
+            => GetRuntimeTypeInfo().GetInterfaces();
+
+        public override bool IsDefined(Type attributeType, bool inherit)
+            => GetRuntimeTypeInfo().IsDefined(attributeType, inherit);
+
+        public override object[] GetCustomAttributes(bool inherit)
+            => GetRuntimeTypeInfo().GetCustomAttributes(inherit);
+
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
+            => GetRuntimeTypeInfo().GetCustomAttributes(attributeType, inherit);
 
         public override string? Namespace => GetRuntimeTypeInfo().Namespace;
 
