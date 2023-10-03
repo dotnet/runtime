@@ -192,7 +192,7 @@ void Compiler::fgDebugCheckUpdate()
         /* For a BBJ_CALLFINALLY block we make sure that we are followed by */
         /* an BBJ_ALWAYS block with BBF_INTERNAL set */
         /* or that it's a BBF_RETLESS_CALL */
-        if (block->KindIs(BBJ_CALLFINALLY) == BBJ_CALLFINALLY)
+        if (block->KindIs(BBJ_CALLFINALLY))
         {
             assert((block->bbFlags & BBF_RETLESS_CALL) || block->isBBCallAlwaysPair());
         }
