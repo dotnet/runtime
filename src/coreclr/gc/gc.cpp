@@ -50288,7 +50288,7 @@ unsigned GCHeap::GetGcCount()
 size_t
 GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 {
-    dprintf (2, ("triggered a GC!"));
+    dprintf (6666, ("triggered a GC! gen %d reason %s", gen, str_gc_reasons[reason]));
 
 #ifdef COMMITTED_BYTES_SHADOW
     // This stress the refresh memory limit work by
