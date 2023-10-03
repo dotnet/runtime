@@ -2919,6 +2919,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         bool writeThru;    // true if the argument gets homed to both stack and register
         bool processed;    // true after we've processed the argument (and it is in its final location)
         bool circular;     // true if this register participates in a circular dependency loop.
+        bool hfaConflict;  // arg is part of an HFA that will end up in the same register
+                           // but in a different slot (eg arg in s3 = v3.s[0], needs to end up in v3.s[3])
     } regArgTab[max(MAX_REG_ARG + 1, MAX_FLOAT_REG_ARG)] = {};
 
     unsigned   varNum;
@@ -3284,7 +3286,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
      * A circular dependency is a set of registers R1, R2, ..., Rn
      * such that R1->R2 (that is, R1 needs to be moved to R2), R2->R3, ..., Rn->R1 */
 
-    bool change = true;
+    bool change         = true;
+    bool hasHfaConflict = false;
     if (regArgMaskLive)
     {
         /* Possible circular dependencies still exist; the previous pass was not enough
@@ -3337,10 +3340,32 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
                     // Each field will be inserted into the same destination register.
+                    //
                     assert(varTypeIsSIMD(varDsc));
                     assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
                     assert(argNum > 0);
                     assert(regArgTab[argNum - 1].varNum == varNum);
+
+                    // If the field is passed in the same register as the destination,
+                    // but is in the wrong part of the register, mark it specially so later
+                    // we make sure to move it to the right spot before "freeing" the destination.
+                    //
+                    destRegNum = varDsc->GetRegNum();
+                    if (regNum == destRegNum)
+                    {
+                        // We only get here if the HFA part is not already in the right slot in
+                        // the destination. That is, it is not slot-1.
+                        //
+                        const int slot = regArgTab[argNum].slot;
+                        assert(slot != 1);
+                        JITDUMP("HFA conflict; arg num %u needs to move from %s[%u] to %s[%u]\n", argNum,
+                                getRegName(regNum), 0, getRegName(destRegNum), slot - 1);
+                        regArgTab[argNum].hfaConflict = true;
+
+                        // We'll need to do a special pass later to resolve these
+                        //
+                        hasHfaConflict = true;
+                    }
                     regArgMaskLive &= ~genRegMask(regNum);
                     regArgTab[argNum].circular = false;
                     change                     = true;
@@ -3736,13 +3761,13 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     size = EA_4BYTE;
                 }
+                // HVA types...?
 
                 /* move the dest reg (begReg) in the extra reg */
 
                 assert(xtraReg != REG_NA);
 
                 regNumber begRegNum = genMapRegArgNumToRegNum(begReg, destMemType);
-
                 GetEmitter()->emitIns_Mov(insCopy, size, xtraReg, begRegNum, /* canSkip */ false);
 
                 regSet.verifyRegUsed(xtraReg);
@@ -3822,6 +3847,75 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             }
         }
     }
+
+#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+    // If we saw any hfa conflicts, handle those now.
+    //
+    if (hasHfaConflict)
+    {
+        // Up above we noticed that there was at least one non-slot-1 HFA arg whose
+        // destination register was the same as the arg register.
+        //
+        // For example, say an HFA was passed as s0-s3 and the destination was v3.
+        // s3 is in the right register, but not in the right slot in the register.
+        //
+        // We handle this by first moving the conflicting part to the right slot
+        // in the destination (via pass 0 below), and then moving the remaining parts
+        // to their respective slots (via pass 1).
+        //
+        // Note the slot index in the register is one less than value of
+        // regArgTab[argNum].slot, so a slot-1 hfa arg goes into slot 0 of the destination).
+        //
+        // So for the above example, we'd first move the "slot-4" s3 (== v3.s[0]) to v3.s[3].
+        // Then we can insert s0 to v3.s[0]) and so on.
+        //
+        // We can exempt slot-1 cases as the conflicting part is already in the
+        // right slot, and code lower down correctly handles populating the remaining slots.
+        //
+        for (argNum = 0; argNum < argMax; argNum++)
+        {
+            if (!regArgTab[argNum].hfaConflict)
+            {
+                continue;
+            }
+
+            varNum                      = regArgTab[argNum].varNum;
+            varDsc                      = compiler->lvaGetDesc(varNum);
+            const regNumber destRegNum  = varDsc->GetRegNum();
+            const var_types regType     = regArgTab[argNum].type;
+            const unsigned  firstArgNum = argNum - (regArgTab[argNum].slot - 1);
+            const unsigned  lastArgNum  = firstArgNum + varDsc->lvHfaSlots() - 1;
+
+            assert(varDsc->lvIsHfa());
+            assert((argNum >= firstArgNum) && (argNum <= lastArgNum));
+            assert(destRegNum == genMapRegArgNumToRegNum(argNum, regType));
+
+            // Pass 0: move the conflicting part; Pass1: insert everything else
+            //
+            for (int pass = 0; pass <= 1; pass++)
+            {
+                for (unsigned currentArgNum = firstArgNum; currentArgNum <= lastArgNum; currentArgNum++)
+                {
+                    const regNumber regNum = genMapRegArgNumToRegNum(currentArgNum, regType);
+                    bool            insertArg =
+                        ((pass == 0) && (currentArgNum == argNum)) || ((pass == 1) && (currentArgNum != argNum));
+
+                    if (insertArg)
+                    {
+                        assert(!regArgTab[currentArgNum].processed);
+
+                        // EA_4BYTE is probably wrong here (and below)
+                        // todo -- suppress self move
+                        GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_4BYTE, destRegNum, regNum,
+                                                      regArgTab[currentArgNum].slot - 1, 0);
+                        regArgTab[currentArgNum].processed = true;
+                        regArgMaskLive &= ~genRegMask(regNum);
+                    }
+                }
+            }
+        }
+    }
+#endif // defined(TARGET_ARM64) && defined(FEATURE_SIMD)
 
     /* Finally take care of the remaining arguments that must be enregistered */
     while (regArgMaskLive)
