@@ -983,8 +983,7 @@ namespace Internal.IL
 
             // Write will be null for ld(s)flda. Consider address loads write unless they were
             // for initonly fields. We'll trust the initonly that this is not a write.
-            if (write == null)
-                write = !field.IsInitOnly;
+            write ??= !field.IsInitOnly;
 
             if (write.Value)
             {
