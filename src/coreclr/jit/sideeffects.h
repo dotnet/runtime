@@ -180,7 +180,6 @@ public:
     void AddNode(Compiler* compiler, GenTree* node);
     bool InterferesWith(const SideEffectSet& other, bool strict) const;
     bool InterferesWith(Compiler* compiler, GenTree* node, bool strict) const;
-    bool InterferesWith(Compiler* compiler, GenTree* node, unsigned overriddenSideEffects, bool strict) const;
     void Clear();
 
     bool WritesLocal(unsigned lclNum)
