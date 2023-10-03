@@ -123,7 +123,6 @@ typedef struct EventPipeSessionOptions {
 	bool stackwalk_requested;
 } EventPipeSessionOptions;
 
-inline
 void
 ep_session_options_init (
 	EventPipeSessionOptions *options,
