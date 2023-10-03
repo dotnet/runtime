@@ -30,7 +30,8 @@
          we might be able to use built-in functionality instead of a packagereference.
          -->
     <_RequiresILLinkPack>false</_RequiresILLinkPack>
-    <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(ToolsILLinkDir)$(NetCoreAppToolCurrent)\ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsILLinkDir)$(NetFrameworkToolCurrent)\ILLink.Tasks.dll</ILLinkTasksAssembly>
     <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
     <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
 
