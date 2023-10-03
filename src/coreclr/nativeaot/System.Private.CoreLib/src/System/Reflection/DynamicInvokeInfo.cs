@@ -806,7 +806,7 @@ namespace System.Reflection
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
                     }
-                    if ((transform & Transform.FunctionPointer) != 0)
+                    else if ((transform & Transform.FunctionPointer) != 0)
                     {
                         obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref obj.GetRawData());
                     }
