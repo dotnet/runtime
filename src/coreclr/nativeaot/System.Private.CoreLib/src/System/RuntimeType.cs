@@ -209,10 +209,10 @@ namespace System
             => _pUnderlyingEEType->IsValueType;
 
         public override unsafe bool IsEnum
-            => new EETypePtr(_pUnderlyingEEType).IsEnum;
+            => _pUnderlyingEEType->IsEnum;
 
         internal unsafe bool IsActualEnum
-            => new EETypePtr(_pUnderlyingEEType).IsEnum;
+            => _pUnderlyingEEType->IsEnum;
 
         protected override unsafe bool IsArrayImpl()
             => _pUnderlyingEEType->IsArray;
@@ -229,11 +229,35 @@ namespace System
         public override Type? GetElementType()
             => _pUnderlyingEEType->IsParameterizedType ? GetTypeFromMethodTable(_pUnderlyingEEType->RelatedParameterType) : null;
 
-        public override Type? BaseType => throw new NotImplementedException();
+        public override Type? BaseType
+        {
+            get
+            {
+                if (_pUnderlyingEEType->IsCanonical)
+                {
+                    MethodTable* pBaseType = _pUnderlyingEEType->NonArrayBaseType;
+                    return (pBaseType != null) ? GetTypeFromMethodTable(pBaseType) : null;
+                }
 
-        protected override TypeAttributes GetAttributeFlagsImpl() => throw new NotImplementedException();
+                if (_pUnderlyingEEType->IsArray)
+                {
+                    return typeof(Array);
+                }
+
+                if (_pUnderlyingEEType->IsGenericTypeDefinition)
+                {
+                    return GetRuntimeTypeInfo().BaseType;
+                }
+
+                return null;
+            }
+        }
+
+        protected override TypeAttributes GetAttributeFlagsImpl() => GetRuntimeTypeInfo().Attributes;
+
         protected override bool IsCOMObjectImpl() => false;
-        protected override bool IsPrimitiveImpl() => throw new NotImplementedException();
+
+        protected override bool IsPrimitiveImpl() => _pUnderlyingEEType->IsPrimitive && !_pUnderlyingEEType->IsEnum;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) => throw new NotImplementedException();
