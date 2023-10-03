@@ -7973,7 +7973,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // Get coalescing data for the previous STOREIND
         GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
-        if (!GetStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData) || (prevTree == nullptr))
+        if (!GetStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData))
         {
             return;
         }
