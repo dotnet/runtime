@@ -1291,6 +1291,7 @@ static MonoInst*
 emit_msb_vector_mask (MonoCompile *cfg, MonoClass *arg_class, MonoTypeEnum arg_type)
 {
 	guint64 msb_mask_value[2];
+	// TODO: with mini, one can emit movi to achieve broadcasting immediate i8/i16/i32
 
 	switch (arg_type) {
 		case MONO_TYPE_I1:

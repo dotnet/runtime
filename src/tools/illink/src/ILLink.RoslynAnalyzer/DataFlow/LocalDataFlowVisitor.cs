@@ -276,6 +276,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					}
 					return value;
 				}
+			case IInlineArrayAccessOperation inlineArrayAccess: {
+					TValue arrayRef = Visit (inlineArrayAccess.Instance, state);
+					TValue index = Visit (inlineArrayAccess.Argument, state);
+					TValue value = Visit (operation.Value, state);
+					HandleArrayElementWrite (arrayRef, index, value, operation, merge: merge);
+					return value;
+				}
 			case IDiscardOperation:
 				// Assignments like "_ = SomeMethod();" don't need dataflow tracking.
 				// Seems like this can't happen with a flow capture operation.
@@ -507,6 +514,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				return TopValue;
 
 			return HandleArrayElementRead (Visit (operation.ArrayReference, state), Visit (operation.Indices[0], state), operation);
+		}
+
+		public override TValue VisitInlineArrayAccess (IInlineArrayAccessOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read));
+			if (!operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read))
+				return TopValue;
+
+			return HandleArrayElementRead (Visit (operation.Instance, state), Visit (operation.Argument, state), operation);
 		}
 
 		public override TValue VisitArgument (IArgumentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
