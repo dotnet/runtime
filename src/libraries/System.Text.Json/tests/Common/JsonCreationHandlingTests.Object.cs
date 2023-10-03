@@ -1165,4 +1165,52 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         [JsonObjectCreationHandling((JsonObjectCreationHandling)(-1))]
         public List<int> Property { get; }
     }
+
+    [Theory]
+    [InlineData(typeof(ClassWithParameterizedConstructorWithPopulateProperty))]
+    [InlineData(typeof(ClassWithParameterizedConstructorWithPopulateType))]
+    public async Task ClassWithParameterizedCtor_UsingPopulateConfiguration_ThrowsNotSupportedException(Type type)
+    {
+        object instance = Activator.CreateInstance(type, "Jim");
+        string json = """{"Username":"Jim","PhoneNumbers":["123456"]}""";
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(instance, type));
+        await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper(json, type));
+        Assert.Throws<NotSupportedException>(() => Serializer.GetTypeInfo(type));
+    }
+
+    public class ClassWithParameterizedConstructorWithPopulateProperty(string name)
+    {
+        public string Name { get; } = name;
+
+        [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+        public List<string> PhoneNumbers { get; } = new();
+    }
+
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    public class ClassWithParameterizedConstructorWithPopulateType(string name)
+    {
+        public string Name { get; } = name;
+
+        public List<string> PhoneNumbers { get; } = new();
+    }
+
+    [Fact]
+    public async Task ClassWithParameterizedCtor_NoPopulateConfiguration_WorksWithGlobalPopulateConfiguration()
+    {
+        string json = """{"Username":"Jim","PhoneNumbers":["123456"]}""";
+
+        JsonSerializerOptions options = Serializer.CreateOptions(makeReadOnly: false);
+        options.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
+
+        ClassWithParameterizedConstructorNoPopulate result = await Serializer.DeserializeWrapper<ClassWithParameterizedConstructorNoPopulate>(json, options);
+        Assert.Empty(result.PhoneNumbers);
+    }
+
+    public class ClassWithParameterizedConstructorNoPopulate(string name)
+    {
+        public string Name { get; } = name;
+
+        public List<string> PhoneNumbers { get; } = new();
+    }
 }
