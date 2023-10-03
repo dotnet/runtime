@@ -8014,21 +8014,23 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         // Now the hardest part: decide whether it's safe to use an unaligned write.
         //
         // IND<byte> is always fine (and all IND<X> created here from such)
-        const bool knownUnaligned =
-            ((ind->gtFlags & GTF_IND_KNOWN_UNALIGNED) != 0) && ((prevInd->gtFlags & GTF_IND_KNOWN_UNALIGNED) != 0);
-        if (!knownUnaligned && (genTypeSize(ind) > 1))
+        // IND<simd> is not required to be atomic per our Memory Model
+        const bool allowsNonAtomic =
+            ((ind->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0) && ((prevInd->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0);
+
+        if (!allowsNonAtomic && (genTypeSize(ind) > 1) && !varTypeIsSIMD(ind))
         {
-            // TODO-CQ: if we see that the target is a local memory (not address exposed)
+            // TODO-CQ: if we see that the target is a local memory (non address exposed)
             // we can use any type (including SIMD) for a new load.
 
             // Ignore indices for now, they can invalidate our alignment assumptions.
+            // Although, we can take scale into account.
             if (currData.index != nullptr)
             {
                 return;
             }
 
-            // If the baseAddr is not TYP_REF we likely have no hints about its alignment.
-            // while TYP_REF guarantees pointer-size alignment.
+            // Base address being TYP_REF gives us a hint that data is pointer-aligned.
             if (!currData.baseAddr->TypeIs(TYP_REF))
             {
                 return;
@@ -8036,13 +8038,13 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
 #ifdef TARGET_XARCH
             // Check whether data can be guaranteed to be in a cache line.
-            // It seems that only x86 can guarantee that.
             int startOffset = min(prevData.offset, currData.offset) % genTypeSize(ind);
             if ((startOffset + (genTypeSize(ind) * 2)) > TARGET_POINTER_SIZE)
             {
                 return;
             }
 #else
+            // ARM doesn't promise atomicity for all unaligned accesses.
             return;
 #endif
         }
@@ -8085,7 +8087,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                     break;
                 }
                 return;
-#endif // TARGET_ARM64 && FEATURE_HW_INTRINSICS
+#endif // TARGET_AMD64 && FEATURE_HW_INTRINSICS
 #endif // TARGET_64BIT
 
             // TYP_FLOAT and TYP_DOUBLE aren't needed here - they're expected to
@@ -8140,9 +8142,8 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             ind->gtFlags |= GTF_IND_UNALIGNED;
             if (genTypeSize(oldType) == 1)
             {
-                // A sign that we can promote such TYP_USHORT loads to any wider types
-                // without taking alignment into account.
-                ind->gtFlags |= GTF_IND_KNOWN_UNALIGNED;
+                // A mark for future foldings that this IND doesn't need to be atomic.
+                ind->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
             }
             continue;
         }
