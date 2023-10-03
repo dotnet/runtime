@@ -7839,21 +7839,29 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
         return false;
     }
 
+    auto isNodeInvariant = [](Compiler* comp, GenTree* node, bool allowNull) {
+        if (node == nullptr)
+        {
+            return allowNull;
+        }
+        // We can allow bigger sideeffect-free trees here, but it's not clear if it's worth it.
+        return node->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
+    };
+
     data->targetType = ind->TypeGet();
     data->value      = ind->Data();
     if (ind->Addr()->OperIs(GT_LEA))
     {
         GenTree* base  = ind->Addr()->AsAddrMode()->Base();
         GenTree* index = ind->Addr()->AsAddrMode()->Index();
-        if ((base == nullptr) || !base->OperIs(GT_LCL_VAR) || comp->lvaVarAddrExposed(base->AsLclVar()->GetLclNum()))
+        if (!isNodeInvariant(comp, base, false))
         {
             // Base must be a local. It's possible for it to be nullptr when index is not null,
             // but let's ignore such cases.
             return false;
         }
 
-        if ((index != nullptr) &&
-            (!index->OperIs(GT_LCL_VAR) || comp->lvaVarAddrExposed(index->AsLclVar()->GetLclNum())))
+        if (!isNodeInvariant(comp, index, true))
         {
             // Index should be either nullptr or a local.
             return false;
@@ -7864,7 +7872,7 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
         data->scale    = ind->Addr()->AsAddrMode()->GetScale();
         data->offset   = ind->Addr()->AsAddrMode()->Offset();
     }
-    else if (ind->Addr()->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(ind->Addr()->AsLclVar()->GetLclNum()))
+    else if (isNodeInvariant(comp, ind->Addr(), true))
     {
         // Address is just a local, no offset, scale is 1
         data->baseAddr = ind->Addr();
@@ -8077,8 +8085,6 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 #if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
         if (varTypeIsSIMD(oldType))
         {
-            assert(prevData.value->IsVectorConst() && currData.value->IsVectorConst());
-
             int8_t* lowerCns = prevData.value->AsVecCon()->gtSimdVal.i8;
             int8_t* upperCns = currData.value->AsVecCon()->gtSimdVal.i8;
 
@@ -8088,20 +8094,17 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 std::swap(lowerCns, upperCns);
             }
 
-            simd_t   newCns   = {0};
+            simd_t   newCns   = {};
             uint32_t oldWidth = genTypeSize(oldType);
             memcpy(newCns.i8, lowerCns, oldWidth);
             memcpy(newCns.i8 + oldWidth, upperCns, oldWidth);
 
-            ind->Data()->ClearContained();
             ind->Data()->AsVecCon()->gtSimdVal = newCns;
+            ind->Data()->ClearContained();
             ind->gtFlags |= GTF_IND_UNALIGNED;
             continue;
         }
 #endif
-
-        // We currently only support these constants for val
-        assert(prevData.value->IsCnsIntOrI() && currData.value->IsCnsIntOrI());
 
         size_t lowerCns = (size_t)prevData.value->AsIntCon()->IconValue();
         size_t upperCns = (size_t)currData.value->AsIntCon()->IconValue();
