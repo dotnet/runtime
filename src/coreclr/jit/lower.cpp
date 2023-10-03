@@ -8036,17 +8036,35 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 return;
             }
 
+            int startOffset = min(prevData.offset, currData.offset) % genTypeSize(ind);
+
 #ifdef TARGET_XARCH
             // Check whether data can be guaranteed to be in a cache line.
-            int startOffset = min(prevData.offset, currData.offset) % genTypeSize(ind);
-            if ((startOffset + (genTypeSize(ind) * 2)) > TARGET_POINTER_SIZE)
+            if ((startOffset + genTypeSize(ind) * 2) > TARGET_POINTER_SIZE)
+            {
+                // NOTE: We can use SIMD if we can assume 16-bytes alignment (on Intel/AMD cpus with AVX+),
+                // but it's very unlikely we can detect that from surrounding code since GC only offers 8-bytes one.
+                return;
+            }
+#elif defined(TARGET_ARM64)
+            if ((startOffset == 0) && ind->TypeIs(TYP_LONG, TYP_REF))
+            {
+                // Per Arm Architecture Reference Manual for A-profile architecture:
+                //
+                // * Writes from SIMD and floating-point registers of a 128-bit value that is 64-bit aligned in memory
+                //   are treated as a pair of single - copy atomic 64 - bit writes.
+                //
+                // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null)
+                //
+                // Actually, we probably don't even need "startOffset == 0" check, if the IND<long> is not naturally
+                // aligned
+                // then it's no longer atomic anyway regardless whether it crosses the cache line boundary or not.
+            }
+            else
             {
                 return;
             }
-#else
-            // ARM doesn't promise atomicity for all unaligned accesses.
-            return;
-#endif
+#endif // TARGET_ARM64
         }
 
         // Since we're merging two stores of the same type, the new type is twice wider.
@@ -8069,7 +8087,34 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 newType = TYP_LONG;
                 break;
 
-#if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS)
+            case TYP_LONG:
+            case TYP_REF:
+                if (comp->IsBaselineSimdIsaSupported())
+                {
+                    // TLDR: we should be here only if one of the conditions is true:
+                    // 1) Both GT_INDs have GTF_IND_ALLOW_NON_ATOMIC flag
+                    // 2) ARM64: Data is at least 8-byte aligned
+                    // 3) AMD64: Data is at least 16-byte aligned on AMD/Intel with AVX+
+                    //
+                    newType = TYP_SIMD16;
+                    if ((oldType == TYP_REF) &&
+                        (!currData.value->IsIntegralConst(0) || !prevData.value->IsIntegralConst(0)))
+                    {
+                        // For TYP_REF we only support null values. In theory, we can also support frozen handles, e.g.:
+                        //
+                        //   arr[1] = "hello";
+                        //   arr[0] = "world";
+                        //
+                        // but we don't want to load managed references into SIMD registers (we can only do so
+                        // when we can issue a nongc region for a block)
+                        return;
+                    }
+                    break;
+                }
+                return;
+
+#if defined(TARGET_AMD64)
             case TYP_SIMD16:
                 if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX) &&
                     (comp->getPreferredVectorByteLength() >= 32))
@@ -8087,6 +8132,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                     break;
                 }
                 return;
+#endif // TARGET_AMD64
 #endif // TARGET_AMD64 && FEATURE_HW_INTRINSICS
 #endif // TARGET_64BIT
 
@@ -8140,11 +8186,6 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             ind->Data()->AsVecCon()->gtSimdVal = newCns;
             ind->Data()->ClearContained();
             ind->gtFlags |= GTF_IND_UNALIGNED;
-            if (genTypeSize(oldType) == 1)
-            {
-                // A mark for future foldings that this IND doesn't need to be atomic.
-                ind->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
-            }
             continue;
         }
 #endif
@@ -8157,6 +8198,24 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         {
             std::swap(lowerCns, upperCns);
         }
+
+#if defined(TARGET_64BIT) && defined(FEATURE_HW_INTRINSICS)
+        // We're promoting two TYP_LONG/TYP_REF into TYP_SIMD16
+        if (varTypeIsSIMD(newType))
+        {
+            // Replace two 64bit constants with a single 128bit constant
+            int8_t val[16];
+            memcpy(val, &lowerCns, 8);
+            memcpy(val + 8, &upperCns, 8);
+            GenTreeVecCon* vecCns = comp->gtNewVconNode(newType, &val);
+
+            BlockRange().InsertAfter(ind->Data(), vecCns);
+            BlockRange().Remove(ind->Data());
+            ind->gtOp2 = vecCns;
+            ind->gtFlags |= GTF_IND_UNALIGNED;
+            continue;
+        }
+#endif // TARGET_64BIT && FEATURE_HW_INTRINSICS
 
         // Trim the constants to the size of the type, e.g. for TYP_SHORT and TYP_USHORT
         // the mask will be 0xFFFF, for TYP_INT - 0xFFFFFFFF.
@@ -8171,6 +8230,11 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         ind->Data()->ClearContained();
         ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
         ind->gtFlags |= GTF_IND_UNALIGNED;
+        if (genTypeSize(oldType) == 1)
+        {
+            // A mark for future foldings that this IND doesn't need to be atomic.
+            ind->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
+        }
 
     } while (true);
 #endif // TARGET_XARCH || TARGET_ARM64
