@@ -22,9 +22,7 @@
 
 The main types provided by this library are:
 
-* ``
-* ``
-* ``
+* `Microsoft.Extensions.Logging.TraceSource.TraceSourceLoggerProvider`
 
 ## Addtional Documentation
 
