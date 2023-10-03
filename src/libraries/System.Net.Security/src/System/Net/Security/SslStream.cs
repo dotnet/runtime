@@ -726,6 +726,12 @@ namespace System.Net.Security
             return manager;
         }
 
+        private static unsafe void ReturnPointerMemoryManager(ref PoolingPointerMemoryManager? field, PoolingPointerMemoryManager manager)
+        {
+            manager.Reset(null, 0);
+            field = manager;
+        }
+
         public override int ReadByte()
         {
             ThrowIfExceptionalOrNotAuthenticated();
@@ -756,8 +762,8 @@ namespace System.Net.Security
             // Otherwise, fall back to reading a byte via Read, the same way Stream.ReadByte does.
             // This allocation is unfortunate but should be relatively rare, as it'll only occur once
             // per buffer fill internally by Read.
-            byte[] oneByte = new byte[1];
-            int bytesRead = Read(oneByte, 0, 1);
+            Span<byte> oneByte = stackalloc byte[1];
+            int bytesRead = Read(oneByte);
             Debug.Assert(bytesRead == 0 || bytesRead == 1);
             return bytesRead == 1 ? oneByte[0] : -1;
         }
@@ -768,7 +774,7 @@ namespace System.Net.Security
 
             fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
             {
-                var memoryManager = RentPointerMemoryManager(ref _readPointerMemoryManager, ptr, buffer.Length);
+                PoolingPointerMemoryManager memoryManager = RentPointerMemoryManager(ref _readPointerMemoryManager, ptr, buffer.Length);
 
                 try
                 {
@@ -778,7 +784,7 @@ namespace System.Net.Security
                 }
                 finally
                 {
-                    _readPointerMemoryManager = memoryManager;
+                    ReturnPointerMemoryManager(ref _readPointerMemoryManager, memoryManager);
                 }
             }
         }
@@ -792,13 +798,20 @@ namespace System.Net.Security
             return vt.GetAwaiter().GetResult();
         }
 
+        public override void WriteByte(byte value)
+        {
+            Span<byte> oneByte = stackalloc byte[1];
+            oneByte[0] = value;
+            Write(oneByte);
+        }
+
         public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
             ThrowIfExceptionalOrNotAuthenticated();
 
             fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
             {
-                var memoryManager = RentPointerMemoryManager(ref _writePointerMemoryManager, ptr, buffer.Length);
+                PoolingPointerMemoryManager memoryManager = RentPointerMemoryManager(ref _writePointerMemoryManager, ptr, buffer.Length);
 
                 try
                 {
@@ -808,7 +821,7 @@ namespace System.Net.Security
                 }
                 finally
                 {
-                    _writePointerMemoryManager = memoryManager;
+                    ReturnPointerMemoryManager(ref _writePointerMemoryManager, memoryManager);
                 }
             }
         }
@@ -945,6 +958,8 @@ namespace System.Net.Security
             throw new InvalidOperationException(SR.net_auth_noauth);
         }
 
+        // (non-generic) copy of the PointerMemoryManager<T> which supports resetting the stored
+        // pointer to allow pooling its instances instead of allocating a new one per Read/Write call.
         internal sealed unsafe class PoolingPointerMemoryManager : MemoryManager<byte>
         {
             private void* _pointer;
