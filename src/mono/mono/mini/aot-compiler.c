@@ -5019,24 +5019,39 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 			MonoGenericContext ctx;
 			MonoMethod *inst, *gshared;
 
-			create_ref_shared_inst (acfg, method, &ctx);
-
-			inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
-			g_assert (is_ok (error)); /* FIXME don't swallow the error */
-
 			sig = mono_method_signature_internal (method);
 			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0])) && !m_type_is_byref (sig->params [0])) {
+				/* ref */
+				create_ref_shared_inst (acfg, method, &ctx);
+
+				inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
+				g_assert (is_ok (error)); /* FIXME don't swallow the error */
+
 				m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, NULL);
 
 				gshared = mini_get_shared_method_full (m, SHARE_MODE_NONE, error);
 				mono_error_assert_ok (error);
 
 				add_extra_method (acfg, gshared);
+
+				if (acfg->jit_opts & MONO_OPT_GSHAREDVT) {
+					/* gsharedvt */
+					create_gsharedvt_inst (acfg, method, &ctx);
+
+					inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
+					g_assert (is_ok (error)); /* FIXME don't swallow the error */
+
+					m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, NULL);
+
+					gshared = mini_get_shared_method_full (m, SHARE_MODE_GSHAREDVT, error);
+					mono_error_assert_ok (error);
+
+					add_extra_method (acfg, gshared);
+				}
 			}
 		}
 
 		if (!mono_class_is_gtd (klass)) {
-
 			m = mono_marshal_get_delegate_invoke (method, NULL);
 
 			add_method (acfg, m);
@@ -10747,7 +10762,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (acfg->aot_opts.no_opt)
 		return TRUE;
 
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && LLVM_API_VERSION >= 1400
+#if (defined(TARGET_X86) || defined(TARGET_AMD64))
 	if (acfg->aot_opts.llvm_cpu_attr && strstr (acfg->aot_opts.llvm_cpu_attr, "sse4.2"))
 		/*
 		 * LLVM 14 added a 'crc32' mattr which needs to be explicitly enabled to
@@ -10793,11 +10808,9 @@ emit_llvm_file (MonoAotCompile *acfg)
 			opts = g_strdup_printf ("%sdefault<O2>,", opts);
 		}
 		opts = g_strdup_printf ("%splace-safepoints\" -spp-all-backedges", opts);
-#elif LLVM_API_VERSION >= 1300
+#else
 		/* The safepoints pass requires the old pass manager */
 		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges -enable-new-pm=0");
-#else
-		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges");
 #endif
 	}
 

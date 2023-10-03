@@ -189,6 +189,8 @@ jobs:
       - eng/Version.Details.xml
       - eng/Versions.props
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - eng/testing/tests.browser.targets
+      - eng/testing/tests.was*.targets
       - eng/testing/workloads-testing.targets
       - src/installer/pkg/sfx/Microsoft.NETCore.App/*
       - src/libraries/sendtohelix*
@@ -270,6 +272,10 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - ${{ parameters._const_paths._always_exclude }}
+
+    - subset: wasm_chrome
+      include:
+      - ${{ parameters._const_paths._wasm_chrome }}
 
     # anything other than mono, or wasm specific paths
     - subset: non_mono_and_wasm

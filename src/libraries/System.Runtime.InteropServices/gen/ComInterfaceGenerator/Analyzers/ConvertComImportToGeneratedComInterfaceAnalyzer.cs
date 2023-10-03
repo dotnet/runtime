@@ -41,12 +41,9 @@ namespace Microsoft.Interop.Analyzers
                     return;
                 }
 
-                TargetFrameworkSettings targetFramework = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.GetTargetFrameworkSettings();
                 var env = new StubEnvironment(
                     context.Compilation,
-                    targetFramework.TargetFramework,
-                    targetFramework.Version,
-                    context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
+                    context.Compilation.GetEnvironmentFlags());
 
                 context.RegisterSymbolAction(context =>
                 {
@@ -81,6 +78,7 @@ namespace Microsoft.Interop.Analyzers
                             method,
                             CreateComImportMarshallingInfoParser(env, diagnostics, method, comImportAttribute),
                             env,
+                            new CodeEmitOptions(SkipInit: true),
                             typeof(ConvertComImportToGeneratedComInterfaceAnalyzer).Assembly);
 
                         var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.ManagedToUnmanaged);
@@ -89,8 +87,8 @@ namespace Microsoft.Interop.Analyzers
                         mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
                         bool anyExplicitlyUnsupportedInfo = false;
 
-                        var managedToNativeStubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
-                        var nativeToManagedStubCodeContext = new NativeToManagedStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
+                        var managedToNativeStubCodeContext = new ManagedToNativeStubCodeContext("return", "nativeReturn");
+                        var nativeToManagedStubCodeContext = new NativeToManagedStubCodeContext("return", "nativeReturn");
 
                         var forwarder = new Forwarder();
                         // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
