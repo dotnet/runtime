@@ -757,7 +757,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     Write(ElementType.U2, (int)us);
                     break;
                 case short s:
-                    Write(ElementType.I2, (uint)s);
+                    Write(ElementType.I2, (uint)s  * coeff);
                     break;
                 case uint ui:
                     Write(ElementType.U4, ui);
