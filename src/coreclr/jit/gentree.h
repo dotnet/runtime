@@ -487,6 +487,8 @@ enum GenTreeFlags : unsigned int
                                               //           This flag is useful in cases where it is required to generate register
                                               //           indirect addressing mode. One such case is virtual stub calls on xarch.
     GTF_IND_UNALIGNED           = 0x02000000, // OperIsIndir() -- the load or store is unaligned (we assume worst case alignment of 1 byte)
+    GTF_IND_KNOWN_UNALIGNED     = 0x00100000, // GT_IND -- same as GTF_IND_UNALIGNED (it's expected to be set) with a legal allowance
+                                              //           to use wider loads/stores where needed.
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
     GTF_IND_INITCLASS           = 0x00200000, // OperIsIndir() -- the indirection requires preceding static cctor
