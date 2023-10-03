@@ -673,37 +673,28 @@ REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
 
 REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
 {
-    if (moduleName == nullptr)
-    {
-        return 0;
-    }
+    assert(moduleName);
     size_t len = strlen(moduleName);
     wchar_t* moduleNameWide = new (nothrow)wchar_t[len + 1];
     if (moduleNameWide == nullptr)
     {
         return 0;
     }
-    for (size_t i = 0; i < len; i++)
+    if (MultiByteToWideChar(CP_UTF8, 0, moduleName, -1, moduleNameWide, (int)len) == 0)
     {
-        moduleNameWide[i] = (wchar_t)moduleName[i];
+        return 0;
     }
     moduleNameWide[len] = '\0';
     
-    HANDLE result = LoadLibraryExW(moduleNameWide, NULL, 0);
+    HANDLE result = LoadLibraryExW(moduleNameWide, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
     delete[] moduleNameWide;
     return result;
 }
 
 REDHAWK_PALEXPORT void* PalGetProcAddress(HANDLE module, const char* functionName)
 {
-    if (module == 0)
-    {
-        return nullptr;
-    }
-    if (functionName == nullptr)
-    {
-        return nullptr;
-    }
+    assert(module);
+    assert(functionName);
     return GetProcAddress((HMODULE)module, functionName);
 }
 

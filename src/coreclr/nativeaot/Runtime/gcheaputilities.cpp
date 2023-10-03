@@ -7,8 +7,6 @@
 #include "gchandleutilities.h"
 
 #include "gceventstatus.h"
-#include "holder.h"
-#include "RhConfig.h"
 
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);
