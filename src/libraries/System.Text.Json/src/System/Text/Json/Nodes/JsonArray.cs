@@ -214,7 +214,8 @@ namespace System.Text.Json.Nodes
                 path.Append('[');
 #if NETCOREAPP
                 Span<char> chars = stackalloc char[JsonConstants.MaximumFormatUInt32Length];
-                ((uint)index).TryFormat(chars, out int charsWritten);
+                bool formatted = ((uint)index).TryFormat(chars, out int charsWritten);
+                Debug.Assert(formatted);
                 path.Append(chars.Slice(0, charsWritten));
 #else
                 path.Append(index.ToString());
