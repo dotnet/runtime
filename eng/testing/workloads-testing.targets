@@ -179,12 +179,14 @@
 
   <Target Name="_InstallWorkloads"
           Inputs="@(AvailableNuGetsInArtifacts)"
-          Outputs="@(_SdkWithWorkloadToInstall->'%(StampPath)');$(_SdkWithNoWorkloadStampPath);$(_SdkPlainStampPath)">
+          Outputs="@(_SdkWithWorkloadToInstall->'%(StampPath)');$(_SdkWithNoWorkloadStampPath)">
     <ItemGroup>
       <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
     </ItemGroup>
 
     <Message Text="Packages found in $(LibrariesShippingPackagesDir): @(_BuiltNuGets)" Importance="Low" />
+    <!--<Exec Command="ls -al $(LibrariesShippingPackagesDir)" />-->
+    <!--<Exec Command="ls -al $(_SdkWithNoWorkloadStampPath) " />-->
 
     <InstallWorkloadFromArtifacts
                      WorkloadIds="@(WorkloadIdForTesting)"

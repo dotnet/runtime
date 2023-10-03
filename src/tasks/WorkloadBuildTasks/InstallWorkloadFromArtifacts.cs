@@ -89,16 +89,23 @@ namespace Microsoft.Workload.Build.Tasks
                 // FIXME:
                 // make -none
                 if (Directory.Exists(SdkWithNoWorkloadInstalledPath))
+                {
+                    Log.LogMessage(MessageImportance.High, $"Deleting {SdkWithNoWorkloadInstalledPath}");
                     Directory.Delete(SdkWithNoWorkloadInstalledPath, recursive: true);
+                }
                 Log.LogMessage(MessageImportance.High, $"Copying {SdkPlainInstallPath} to {SdkWithNoWorkloadInstalledPath}");
                 Utils.DirectoryCopy(SdkPlainInstallPath, SdkWithNoWorkloadInstalledPath);
 
                 // FIXME: TODO:
                 if (Directory.Exists(_workloadCachePath))
                 {
+                    Log.LogMessage(MessageImportance.High, $"Using existing workload cache: {_workloadCachePath}");
                     // clean up any locally build packages
                     foreach (string nupkgPath in Directory.EnumerateFiles(_workloadCachePath, "*-dev.nupkg"))
+                    {
+                        Log.LogMessage(MessageImportance.High, $"Deleting {nupkgPath}");
                         File.Delete(nupkgPath);
+                    }
                 }
 
                 if (!InstallAllManifests())
@@ -135,7 +142,7 @@ namespace Microsoft.Workload.Build.Tasks
                     if (Directory.Exists(req.TargetPath))
                     {
                         Log.LogMessage(MessageImportance.Low, $"Deleting directory {req.TargetPath}");
-                        //Directory.Delete(req.TargetPath, recursive: true);
+                        Directory.Delete(req.TargetPath, recursive: true);
                     }
                 }
 
@@ -178,8 +185,8 @@ namespace Microsoft.Workload.Build.Tasks
                 return false;
             }
 
-            Log.LogMessage(MessageImportance.Low, $"Duplicating {SdkPlainInstallPath} into {req.TargetPath}");
-            Utils.DirectoryCopy(SdkPlainInstallPath, req.TargetPath);
+            Log.LogMessage(MessageImportance.Low, $"Duplicating {SdkWithNoWorkloadInstalledPath} into {req.TargetPath}");
+            Utils.DirectoryCopy(SdkWithNoWorkloadInstalledPath, req.TargetPath);
 
             string nugetConfigContents = GetNuGetConfig();
             if (!InstallPacks(req, nugetConfigContents))
@@ -273,7 +280,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                     },
                                                     logStdErrAsMessage: req.IgnoreErrors,
                                                     silent: false,
-                                                    debugMessageImportance: MessageImportance.Normal);
+                                                    debugMessageImportance: MessageImportance.High);
             if (exitCode != 0)
             {
                 if (req.IgnoreErrors)
