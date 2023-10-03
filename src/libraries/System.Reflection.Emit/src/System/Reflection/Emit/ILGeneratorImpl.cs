@@ -20,6 +20,7 @@ namespace System.Reflection.Emit
         internal ILGeneratorImpl(MethodBuilder methodBuilder, int size)
         {
             _methodBuilder = methodBuilder;
+            // For compat, runtime implementation doesn't throw for negative or zero value.
             _builder = new BlobBuilder(Math.Max(size, DefaultSize));
             _il = new InstructionEncoder(_builder, new ControlFlowBuilder());
         }
@@ -177,7 +178,6 @@ namespace System.Reflection.Emit
         {
             // Puts the opcode onto the IL stream followed by the metadata token
             // represented by str.
-
             ModuleBuilder modBuilder = (ModuleBuilder)_methodBuilder.Module;
             int tempVal = modBuilder.GetStringMetadataToken(str);
             _il.OpCode((ILOpCode)opcode.Value);

@@ -125,6 +125,11 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
             }
 
+            if ((_attributes & MethodAttributes.Abstract) != 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
+            }
+
             return _ilGenerator ??= new ILGeneratorImpl(this, size);
         }
 

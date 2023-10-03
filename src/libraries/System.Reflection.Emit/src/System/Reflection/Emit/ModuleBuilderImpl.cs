@@ -186,7 +186,7 @@ namespace System.Reflection.Emit
             {
                 int offset = -1;
                 ILGeneratorImpl? il = method.ILGeneratorImpl;
-                if (!method.IsAbstract && il != null)
+                if (il != null)
                 {
                     offset = AddMethodBody(method, il, methodBodyEncoder);
                 }
@@ -451,7 +451,9 @@ namespace System.Reflection.Emit
         public override int GetFieldMetadataToken(FieldInfo field) => throw new NotImplementedException();
         public override int GetMethodMetadataToken(ConstructorInfo constructor) => throw new NotImplementedException();
         public override int GetMethodMetadataToken(MethodInfo method) => throw new NotImplementedException();
-        public override int GetStringMetadataToken(string stringConstant) => throw new NotImplementedException();
+
+        public override int GetStringMetadataToken(string stringConstant) => MetadataTokens.GetToken(_metadataBuilder.GetOrAddUserString(stringConstant));
+
         public override int GetTypeMetadataToken(Type type) => throw new NotImplementedException();
         protected override void CreateGlobalFunctionsCore() => throw new NotImplementedException();
 
