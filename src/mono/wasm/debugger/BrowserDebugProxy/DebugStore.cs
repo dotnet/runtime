@@ -1533,7 +1533,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"Failed to load {step.Url} ({ex.Message})");
+                        logger.LogError($"Failed to load {step.Url} ({ex})");
                     }
                 }
                 if (assembly == null)
