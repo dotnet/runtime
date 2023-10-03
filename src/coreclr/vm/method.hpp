@@ -1373,11 +1373,11 @@ public:
     }
 
     // Perf warning: takes the CodeVersionManagerLock on every call
-    BOOL HasNativeCodeReJITAware()
+    BOOL HasNativeCodeAnyVersion()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return GetNativeCodeReJITAware() != NULL;
+        return GetNativeCodeAnyVersion() != NULL;
     }
 
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
@@ -1437,9 +1437,9 @@ public:
     PCODE GetNativeCode();
 
     // Returns GetNativeCode() if it exists, but also checks to see if there
-    // is a non-default IL code version and returns that.
+    // is a non-default code version that is populated with a code body and returns that.
     // Perf warning: takes the CodeVersionManagerLock on every call
-    PCODE GetNativeCodeReJITAware();
+    PCODE GetNativeCodeAnyVersion();
 
 #if defined(FEATURE_JIT_PITCHING)
     bool IsPitchable();
