@@ -35,7 +35,7 @@ namespace Internal.Runtime.Binder
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_BinderAcquireImport")]
         public static unsafe partial IntPtr BinderAcquireImport(IntPtr pPEImage, int* pdwPAFlags);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_BinderAcquirePEImage", StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PEImage_BinderAcquirePEImage", StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial int BinderAcquirePEImage(string szAssemblyPath, out IntPtr ppPEImage, BundleFileLocation bundleFileLocation);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DomainAssembly_GetPEAssembly")]
@@ -675,6 +675,7 @@ namespace Internal.Runtime.Binder
                 }
 
                 assembly = new Assembly(pPEImage, isInTPA);
+                pPEImage = IntPtr.Zero;
                 return HResults.S_OK;
             }
             catch (Exception e)
@@ -685,7 +686,8 @@ namespace Internal.Runtime.Binder
             finally
             {
                 // SAFE_RELEASE(pPEImage);
-                AssemblyLoadContext.PEImage_Release(pPEImage);
+                if (pPEImage != IntPtr.Zero)
+                    AssemblyLoadContext.PEImage_Release(pPEImage);
             }
         }
 

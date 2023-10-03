@@ -1604,6 +1604,8 @@ extern "C" HRESULT QCALLTYPE PEImage_BinderAcquirePEImage(LPCWSTR wszAssemblyPat
 
     BEGIN_QCALL;
 
+    *ppPEImage = NULL;
+
     EX_TRY
     {
         PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
