@@ -3932,16 +3932,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_XZERO:
-			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
-				arm_neon_movi_b (code, VREG_LOW, dreg, 0);
-			else
-				arm_neon_movi_b (code, VREG_FULL, dreg, 0);
+			arm_neon_movi_b (code, get_vector_size_macro (ins), dreg, 0);
 			break;
 		case OP_XONES:
-			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
-				arm_neon_movi_b (code, VREG_LOW, dreg, 0xff);
-			else
-				arm_neon_movi_b (code, VREG_FULL, dreg, 0xff);
+			arm_neon_movi_b (code, get_vector_size_macro (ins), dreg, 0xff);
 			break;
 		case OP_XEXTRACT: 
 			code = emit_xextract (code, (ins->inst_c1 == 8) ? VREG_LOW : VREG_FULL, GTMREG_TO_INT (ins->inst_c0), dreg, sreg1);
