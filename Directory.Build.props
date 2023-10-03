@@ -89,8 +89,9 @@
 
     <!-- The previous supported .NET version. -->
     <NetCoreAppPreviousVersion>8.0</NetCoreAppPreviousVersion>
-    <NetCoreAppPrevious>net$(NetCoreAppPreviousVersion)</NetCoreAppPrevious>
-    <NetCoreAppPrevious Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
+    <!-- For the .NET 9 release, set NetCoreAppPrevious to empty as NuGet has issues
+         with duplicate TFMs (when using both NetCoreAppPrevious and NetCoreAppMinimum). -->
+    <NetCoreAppPrevious />
 
     <!-- The minimum supported .NET version. -->
     <NetCoreAppMinimum>net8.0</NetCoreAppMinimum>
