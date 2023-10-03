@@ -3996,9 +3996,6 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALL_DELEGATE) {
-			// FIXME We don't need to encode the whole signature, just param_count
-			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
-			int param_count = csignature->param_count;
 			return_offset = ip [1];
 			call_args_offset = ip [2];
 			MonoDelegate *del = LOCAL_VAR (call_args_offset, MonoDelegate*);
@@ -4044,6 +4041,7 @@ main_loop:
 			}
 			cmethod = del_imethod;
 			if (!is_multicast) {
+				int param_count = ip [4];
 				if (cmethod->param_count == param_count + 1) {
 					// Target method is static but the delegate has a target object. We handle
 					// this separately from the case below, because, for these calls, the instance

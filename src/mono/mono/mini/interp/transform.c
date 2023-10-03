@@ -3800,7 +3800,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			interp_ins_set_dreg (td->last_ins, dreg);
 			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 			td->last_ins->data [0] = GUINT32_TO_UINT16 (params_stack_size);
-			td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
+			td->last_ins->data [1] = GUINT32_TO_UINT16 (csignature->param_count);
 			if (csignature->param_count) {
 				// Check if the first arg (after the delegate pointer) is simd
 				// In case the delegate represents static method with no target, the instruction
