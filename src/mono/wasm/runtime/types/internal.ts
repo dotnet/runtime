@@ -203,6 +203,9 @@ export type RuntimeHelpers = {
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
 
+    featureWasmEh: boolean,
+    featureWasmSimd: boolean,
+
     //core
     stringify_as_error_with_stack?: (error: any) => string,
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,

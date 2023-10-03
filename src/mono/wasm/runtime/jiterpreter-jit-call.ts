@@ -3,7 +3,7 @@
 
 import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, VoidPtr } from "./types/emscripten";
-import { Module, mono_assert } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import {
     getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
 } from "./memory";
@@ -16,9 +16,6 @@ import {
     getRawCwrap
 } from "./jiterpreter-support";
 import { JiterpreterTable, JiterpCounter, JitQueue } from "./jiterpreter-enums";
-import {
-    compileDoJitCall
-} from "./jiterpreter-feature-detect";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
 import { utf8ToString } from "./strings";
@@ -279,20 +276,14 @@ export function mono_interp_jit_wasm_jit_call_trampoline(
         mono_interp_flush_jitcall_queue();
 }
 
-let doJitCallModule: WebAssembly.Module | undefined = undefined;
-
 function getIsWasmEhSupported(): boolean {
     if (wasmEhSupported !== undefined)
         return wasmEhSupported;
 
     // Probe whether the current environment can handle wasm exceptions
-    try {
-        doJitCallModule = compileDoJitCall();
-        wasmEhSupported = doJitCallModule !== undefined;
-    } catch (exc) {
-        mono_log_info("Disabling WASM EH support due to JIT failure", exc);
-        wasmEhSupported = false;
-    }
+    wasmEhSupported = runtimeHelpers.featureWasmEh === true;
+    if (!wasmEhSupported)
+        mono_log_info("Disabling Jiterpreter Exception Handling");
 
     return wasmEhSupported;
 }
