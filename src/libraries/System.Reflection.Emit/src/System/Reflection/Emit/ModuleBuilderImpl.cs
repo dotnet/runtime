@@ -240,7 +240,7 @@ namespace System.Reflection.Emit
         private static int AddMethodBody(MethodBuilderImpl method, ILGeneratorImpl il, MethodBodyStreamEncoder methodBodyEncoder) =>
             methodBodyEncoder.AddMethodBody(
                 instructionEncoder: il.Instructions,
-                maxStack: 8, // TODO
+                maxStack: il.GetMaxStackSize(),
                 localVariablesSignature: default, // TODO
                 attributes: method.InitLocals ? MethodBodyAttributes.InitLocals : MethodBodyAttributes.None,
                 hasDynamicStackAllocation: il.HasDynamicStackAllocation);

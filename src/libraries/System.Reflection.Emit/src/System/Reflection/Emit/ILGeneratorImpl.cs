@@ -16,6 +16,7 @@ namespace System.Reflection.Emit
         private readonly BlobBuilder _builder;
         private readonly InstructionEncoder _il;
         private bool _hasDynamicStackAllocation;
+        private int _maxStackSize;
 
         internal ILGeneratorImpl(MethodBuilder methodBuilder, int size)
         {
@@ -24,6 +25,8 @@ namespace System.Reflection.Emit
             _builder = new BlobBuilder(Math.Max(size, DefaultSize));
             _il = new InstructionEncoder(_builder, new ControlFlowBuilder());
         }
+
+        internal int GetMaxStackSize() => _maxStackSize;
 
         internal InstructionEncoder Instructions => _il;
         internal bool HasDynamicStackAllocation => _hasDynamicStackAllocation;
@@ -46,6 +49,10 @@ namespace System.Reflection.Emit
                 _hasDynamicStackAllocation = true;
             }
             _il.OpCode((ILOpCode)opcode.Value);
+
+            // TODO for now only count the Opcodes emitted, in order to correctly we might need to make below API public
+            // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Reflection/Emit/Opcode.cs#L48
+            _maxStackSize++;
         }
 
         public override void Emit(OpCode opcode, byte arg)
