@@ -38,16 +38,17 @@ jobs:
         buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
         nameSuffix: iOSNativeAOT
         isOfficialBuild: false
-        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
-        extraStepsParameters:
-          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-          includeRootFolder: true
-          displayName: iOS NativeAOT Artifacts
-          artifactName: iOSNativeAOTarm64
-          archiveExtension: '.tar.gz'
-          archiveType: tar
-          tarCompression: gz
-          hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        postBuildSteps:
+          - template: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+            parameters:
+              rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+              includeRootFolder: true
+              displayName: iOS NativeAOT Artifacts
+              artifactName: iOSNativeAOTarm64
+              archiveExtension: '.tar.gz'
+              archiveType: tar
+              tarCompression: gz
+              hybridGlobalization: ${{ parameters.hybridGlobalization }}
 
   # run mono iOS scenarios scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
