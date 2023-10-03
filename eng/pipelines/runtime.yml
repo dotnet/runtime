@@ -419,7 +419,7 @@ extends:
               value: -arch x64,x86,arm,arm64
           jobParameters:
             buildArgs: -s linuxdac+alpinedac -c $(_BuildConfig)
-            nameSuffix: Build Cross-OS DACs
+            nameSuffix: CrossDac
             isOfficialBuild: false
             timeoutInMinutes: 60
             postBuildSteps:
