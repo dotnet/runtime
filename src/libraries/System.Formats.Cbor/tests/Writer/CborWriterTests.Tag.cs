@@ -91,7 +91,6 @@ namespace System.Formats.Cbor.Tests
             AssertHelper.HexEqual(expectedHexEncoding.HexToByteArray(), encoding);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void WriteDateTimeOffset_IsCultureInvariant()
         {

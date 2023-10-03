@@ -195,7 +195,6 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(expectedValue.Offset, result.Offset);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ReadDateTimeOffset_IsCultureInvariant()
         {
