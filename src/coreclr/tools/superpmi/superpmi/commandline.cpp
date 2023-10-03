@@ -137,12 +137,14 @@ void CommandLine::DumpHelp(const char* program)
     printf(" -jitoption [force] key=value\n");
     printf("     Set the JIT option named \"key\" to \"value\" for JIT 1 if the option was not set.\n");
     printf("     With optional force flag overwrites the existing value if it was already set.\n");
-    printf("     NOTE: do not use a \"DOTNET_\" prefix, \"key\" and \"value\" are case sensitive!\n");
+    printf("     NOTE: do not use a \"DOTNET_\" prefix. \"key\" and \"value\" are case sensitive.\n");
+    printf("     \"key#value\" is also accepted.\n");
     printf("\n");
     printf(" -jit2option [force] key=value\n");
     printf("     Set the JIT option named \"key\" to \"value\" for JIT 2 if the option was not set.\n");
     printf("     With optional force flag overwrites the existing value if it was already set.\n");
-    printf("     NOTE: do not use a \"DOTNET_\" prefix, \"key\" and \"value\" are case sensitive!\n");
+    printf("     NOTE: do not use a \"DOTNET_\" prefix. \"key\" and \"value\" are case sensitive.\n");
+    printf("     \"key#value\" is also accepted.\n");
     printf("\n");
     printf("Inputs are case sensitive.\n");
     printf("\n");
@@ -172,7 +174,7 @@ static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
     char tempKey[1024];
 
     unsigned i;
-    for (i = 0; optionString[i] != '='; i++)
+    for (i = 0; (optionString[i] != '=') && (optionString[i] != '#'); i++)
     {
         if ((i >= 1023) || (optionString[i] == '\0'))
         {

@@ -10,6 +10,7 @@ namespace System.Diagnostics.Metrics
     /// <summary>
     /// Meter is the class responsible for creating and tracking the Instruments.
     /// </summary>
+    [DebuggerDisplay("Name = {Name}, Instruments = {_instruments.Count}")]
     public class Meter : IDisposable
     {
         private static readonly List<Meter> s_allMeters = new List<Meter>();

@@ -323,7 +323,6 @@ npm update --lockfile-version=1
 | Wasm.Build.Tests  | linux+windows              | none                  | linux+windows             |
 | Debugger tests    | linux+windows              | none                  | linux+windows             |
 | Runtime tests     | linux                      | none                  | linux                     |
-| Perftrace         | linux: all tests           | linux: all tests      | none                      |
 | Multi-thread      | linux: all tests           | linux: all tests      | none                      |
 
 * `runtime-extra-platforms` does not run any wasm jobs on PRs
@@ -346,13 +345,27 @@ npm update --lockfile-version=1
 | Wasm.Build.Tests  | linux+windows              | none                                 |
 | Debugger tests    | linux+windows              | none                                 |
 | Runtime tests     | linux                      | none                                 |
-| Perftrace         | linux: build only          | none                                 |
 | Multi-thread      | linux: build only          | none                                 |
 
 * `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
 
 
+## Test setup on CI
+
+Tests are run with V8, Chrome, node, and wasmtime for the various jobs.
+
+- V8: the version used is from `eng/testing/ChromeVersions.props`. This is used for all the library tests, and WBT, but *not* runtime tests.
+- Chrome: Same as V8.
+- Node: fixed version from emsdk
+- wasmtime - fixed version in `src/mono/wasi/wasi-sdk-version.txt`.
+
+### `eng/testing/ChromeVersions.props`
+
+This file is updated once a week by a github action `.github/workflows/bump-chrome-version.yml`, and the version is obtained by `src/tasks/WasmBuildTasks/GetChromeVersions.cs` task.
+
 # Perf pipeline
+
+- V8 version used to run the microbenchmarks is from `eng/testing/ChromeVersions.props`
 
 TBD
 

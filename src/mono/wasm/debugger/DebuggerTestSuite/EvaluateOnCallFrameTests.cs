@@ -585,7 +585,7 @@ namespace DebuggerTests
                 Assert.Equal("Unable to evaluate element access 'f.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["result"]?["description"]?.Value<string>());
                 var exceptionDetailsStack = res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0];
                 Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", exceptionDetailsStack?["functionName"]?.Value<string>());
-                Assert.Equal(556, exceptionDetailsStack?["lineNumber"]?.Value<int>());
+                Assert.Equal(562, exceptionDetailsStack?["lineNumber"]?.Value<int>());
                 Assert.Equal(12, exceptionDetailsStack?["columnNumber"]?.Value<int>());
                 (_, res) = await EvaluateOnCallFrame(id, "f[1]", expect_ok: false );
                 Assert.Equal( "Unable to evaluate element access 'f[1]': Cannot apply indexing with [] to an object of type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate'", res.Error["result"]?["description"]?.Value<string>());
@@ -650,7 +650,7 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateObjectByNonIntLocals() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 14, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -662,7 +662,9 @@ namespace DebuggerTests
                     ("f[shortString]", TBool(false)),
                     ("f[aFloat]", TNumber(1)),
                     ("f[aDouble]", TNumber(2)),
-                    ("f[aDecimal]", TNumber(3)) // object
+                    ("f[aDecimal]", TNumber(3)),
+                    ("f[arr]", TChar('t')),
+                    ("f[objIdx]", TNumber(123))
                 );
             });
 
@@ -722,7 +724,7 @@ namespace DebuggerTests
                 Assert.Equal("Unable to evaluate element access 'f.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["result"]?["description"]?.Value<string>());
                 var exceptionDetailsStack = res.Error["exceptionDetails"]?["stackTrace"]?["callFrames"]?[0];
                 Assert.Equal("DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals", exceptionDetailsStack?["functionName"]?.Value<string>());
-                Assert.Equal(556, exceptionDetailsStack?["lineNumber"]?.Value<int>());
+                Assert.Equal(562, exceptionDetailsStack?["lineNumber"]?.Value<int>());
                 Assert.Equal(12, exceptionDetailsStack?["columnNumber"]?.Value<int>());
             });
 
@@ -859,7 +861,9 @@ namespace DebuggerTests
                    ("f.textArrayOfArrays[f.idx1][f.idx1]", TString("2")),
                    ("f.textListOfLists[1][1]", TString("2")),
                    ("f.textListOfLists[j][j]", TString("2")),
-                   ("f.textListOfLists[f.idx1][f.idx1]", TString("2")));
+                   ("f.textListOfLists[f.idx1][f.idx1]", TString("2")),
+                   ("f.numArrayOfArrays[f.numArray[f.numList[1]]][f.numList[0]]", TNumber(2))
+                );
 
            });
 
