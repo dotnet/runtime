@@ -85,9 +85,9 @@
       <Sha>02fe27cd6a9b001c8feb7938e6ef4b3799745759b</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23476.1">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.23502.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>13d6536e2dc92404da76d61d248badc040eb0de0</Sha>
+      <Sha>64a8874f3c485657e732ca56a5f24e2095740103</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100.Transport" Version="8.0.0-rtm.23477.1">
@@ -100,9 +100,9 @@
       <Sha>7b55da982fc6e71c1776c4de89111aee0eecb45a</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="8.0.0-alpha.1.23475.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="8.0.0-alpha.1.23502.1">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>e04156dbe14f882a80d4499dbebd45ab156b6c3c</Sha>
+      <Sha>ed17956dbc31097b7ba6a66be086f4a70a97d84f</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
@@ -350,9 +350,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>492f7464d31d9599531fab2a67bc2422046f5133</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="8.0.0-alpha.0.23475.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="8.0.0-alpha.0.23502.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>6c20c1d568568b9b2da84f878ac9cb4a48aaa4e5</Sha>
+      <Sha>94979ba9c2904e39ddb9aa255a288caacd6ce166</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="8.0.0-beta.23421.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
