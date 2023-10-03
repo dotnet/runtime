@@ -563,20 +563,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static void Log(ReadOnlySpan<float> x, Span<float> destination)
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MathF.Log(x[i]);
-            }
-        }
+        public static void Log(ReadOnlySpan<float> x, Span<float> destination) =>
+            InvokeSpanIntoSpan<LogOperator>(x, destination);
 
         /// <summary>Computes the element-wise base 2 logarithm of single-precision floating-point numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>

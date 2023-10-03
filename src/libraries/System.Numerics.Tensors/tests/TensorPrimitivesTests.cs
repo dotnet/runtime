@@ -1008,6 +1008,41 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
+        public static void Log_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            // NaN
+            x[s_random.Next(x.Length)] = float.NaN;
+
+            // +Infinity
+            x[s_random.Next(x.Length)] = float.PositiveInfinity;
+
+            // -Infinity
+            x[s_random.Next(x.Length)] = float.NegativeInfinity;
+
+            // +Zero
+            x[s_random.Next(x.Length)] = +0.0f;
+
+            // -Zero
+            x[s_random.Next(x.Length)] = -0.0f;
+
+            // +Epsilon
+            x[s_random.Next(x.Length)] = +float.Epsilon;
+
+            // -Epsilon
+            x[s_random.Next(x.Length)] = -float.Epsilon;
+
+            TensorPrimitives.Log(x, destination);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Log(x[i]), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
         public static void Log_ThrowsForTooShortDestination(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
