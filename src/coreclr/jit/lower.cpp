@@ -7834,7 +7834,7 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
     }
 
     // Data has to be INT_CNS, can be also VEC_CNS in future.
-    if (!ind->Data()->IsCnsIntOrI())
+    if (!ind->Data()->IsCnsIntOrI() && !ind->Data()->IsVectorConst())
     {
         return false;
     }
