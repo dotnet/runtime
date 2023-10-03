@@ -3330,11 +3330,21 @@ public:
 
                 if (m_pCompiler->info.compMethodHash() == (unsigned)JitConfig.JitCSEHash())
                 {
-                    doCSE = ((1ULL << attempt) & ((unsigned long long)JitConfig.JitCSEMask())) != 0;
-
-                    JITDUMP("CSE " FMT_CSE " attempt %u %s by hash 0x%x mask 0x%0x: %s\n", candidate.CseIndex(),
-                            attempt, doCSE ? "allowed" : "disabled", JitConfig.JitCSEHash(), JitConfig.JitCSEMask(),
-                            m_pCompiler->info.compFullName);
+                    // We can only mask the first 32 CSE attempts, so suppress anything beyond that.
+                    // Note methods with > 32 CSEs are currently quite rare.
+                    //
+                    if (attempt > 32)
+                    {
+                        doCSE = false;
+                        JITDUMP("CSE " FMT_CSE " attempt %u disabled, out side of mask range\n", candidate.CseIndex(),
+                                attempt, doCSE ? "allowed" : "disabled");
+                    }
+                    else
+                    {
+                        doCSE = ((1 << attempt) & ((unsigned)JitConfig.JitCSEMask())) != 0;
+                        JITDUMP("CSE " FMT_CSE " attempt %u %s mask 0x%0x: %s\n", candidate.CseIndex(), attempt,
+                                doCSE ? "allowed" : "disabled", JitConfig.JitCSEMask());
+                    }
                 }
             }
 

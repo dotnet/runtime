@@ -376,9 +376,28 @@ CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 #define CONST_CSE_ENABLE_ALL 3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
 
+#if defined(DEBUG)
 // Allow fine-grained controls of CSEs done in a particular method
+//
+// Specify method that will respond to the CSEMask.
+// 0 means feature disabled and all methods run CSE normally.
 CONFIG_INTEGER(JitCSEHash, W("JitCSEHash"), 0)
+
+// Bitmask of allowed CSEs in methods specified by JitCSEHash.
+// These bits control the "cse attempts" made by normal jitting,
+// for the first 32 CSEs attempted (Note this is not the same as
+// the CSE candidate number, which reflects the order
+// in which CSEs were discovered).
+//
+// 0: do no CSEs
+// 1: do only the first CSE
+// 2: do only the second CSE
+// C: do only the third and fourth CSEs
+// F: do only the first four CSEs
+// ...etc...
+// FFFFFFFF : do all the CSEs normally done
 CONFIG_INTEGER(JitCSEMask, W("JitCSEMask"), 0)
+#endif
 
 // Enable metric output in jit disasm & elsewhere
 CONFIG_INTEGER(JitMetrics, W("JitMetrics"), 0)

@@ -5224,11 +5224,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         char metricPart[128] = {0};
         if (JitConfig.JitMetrics() > 0)
         {
-            INDEBUG(sprintf_s(debugPart, 128, ", perfScore=%.2f, numCse=%u", info.compPerfScore, optCSEcount));
+            INDEBUG(sprintf_s(metricPart, 128, ", perfScore=%.2f, numCse=%u", info.compPerfScore, optCSEcount));
         }
 
         const bool hasProf = fgHaveProfileData();
-        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s,%s]\n", methodsCompiled, fullName,
+        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s%s]\n", methodsCompiled, fullName,
                compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
                info.compILCodeSize, *methodCodeSize, debugPart, metricPart);
     }
