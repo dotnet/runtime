@@ -1,0 +1,5 @@
+<Project>
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)/src/tests/Common/XHarnessRunnerLibrary/XHarnessRunnerLibrary.csproj" />
+  </ItemGroup>
+</Project>
