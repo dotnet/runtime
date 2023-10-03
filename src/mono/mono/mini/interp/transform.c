@@ -3801,6 +3801,15 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 			td->last_ins->data [0] = GUINT32_TO_UINT16 (params_stack_size);
 			td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
+			if (csignature->param_count) {
+				// Check if the first arg (after the delegate pointer) is simd
+				// In case the delegate represents static method with no target, the instruction
+				// needs to be able to access the actual arguments to continue with the call so it
+				// needs to know whether there is an empty stack slot between the delegate ptr and the
+				// rest of the args
+				gboolean first_arg_is_simd = td->locals [sp_args [1].local].flags & INTERP_LOCAL_FLAG_SIMD;
+				td->last_ins->data [2] = first_arg_is_simd ? MINT_SIMD_ALIGNMENT : MINT_STACK_SLOT_SIZE;
+			}
 		} else if (calli) {
 			MintICallSig icall_sig = MINT_ICALLSIG_MAX;
 #ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX

@@ -4062,10 +4062,10 @@ main_loop:
 				} else {
 					// skip the delegate pointer for static calls
 					// FIXME we could avoid memmove
-					memmove (locals + call_args_offset, locals + call_args_offset + MINT_STACK_SLOT_SIZE, ip [3]);
+					memmove (locals + call_args_offset, locals + call_args_offset + ip [5], ip [3]);
 				}
 			}
-			ip += 5;
+			ip += 6;
 
 			InterpMethodCodeType code_type = cmethod->code_type;
 
