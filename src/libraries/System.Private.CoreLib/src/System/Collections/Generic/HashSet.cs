@@ -988,22 +988,16 @@ namespace System.Collections.Generic
             {
                 return;
             }
-            Entry[]? oldEntries = _entries;
-            int oldCount = _count;
-            TrimAndCopy(oldEntries, oldCount);
-        }
 
-        /// <summary>
-        /// Sets capacity based on given count and copies entries in new array
-        /// </summary>
-        /// <param name="entries"></param>
-        /// <param name="count"></param>
-        private void TrimAndCopy(Entry[]? entries, int count)
-        {
-            int newSize = HashHelpers.GetPrime(count);
+            Entry[]? oldEntries = _entries;
+
+            int oldCount = _count;
             _version++;
-            Initialize(newSize);
-            CopyEntries(entries, count);
+            Initialize(newCapacity);
+
+            Debug.Assert(oldEntries is not null);
+
+            CopyEntries(oldEntries, oldCount);
         }
 
         /// <summary>
@@ -1011,16 +1005,18 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="entries"></param>
         /// <param name="count"></param>
-        private void CopyEntries(Entry[]? entries, int count)
+        private void CopyEntries(Entry[] entries, int count)
         {
+            Debug.Assert(_entries is not null);
+
             int newCount = 0;
             for (int i = 0; i < count; i++)
             {
-                if (entries![i].Next >= -1)
+                if (entries[i].Next >= -1)
                 {
-                    int hashCode = entries![i].HashCode; // At this point, we know we have entries.
-                    ref Entry entry = ref _entries![count];
-                    entry = entries![i];
+                    int hashCode = entries[i].HashCode; // At this point, we know we have entries.
+                    ref Entry entry = ref _entries[count];
+                    entry = entries[i];
                     ref int bucket = ref GetBucketRef(hashCode);
                     entry.Next = bucket - 1; // Value in _buckets is 1-based
                     bucket = newCount + 1;
@@ -1083,9 +1079,16 @@ namespace System.Collections.Generic
                 // or source._entries when they aren't initialized.
                 return;
             }
+            Debug.Assert(_entries is not null);
+            Debug.Assert(_buckets is not null);
+            Debug.Assert(source._entries is not null);
+            Debug.Assert(source._buckets is not null);
+#if TARGET_64BIT
+            _fastModMultiplier = source._fastModMultiplier;
+#endif
             if (!IsTrimNeeded())
             {
-                if (_buckets != null && _entries != null && _buckets.Length >= source._buckets!.Length && _entries.Length >= source._entries!.Length)
+                if (_buckets.Length >= source._buckets!.Length && _entries.Length >= source._entries!.Length)
                 {
                     source._buckets.CopyTo(_buckets, 0);
                     source._entries.CopyTo(_entries, 0);
@@ -1099,14 +1102,19 @@ namespace System.Collections.Generic
                 _freeList = source._freeList;
                 _freeCount = source._freeCount;
                 _count = source._count;
-#if TARGET_64BIT
-                _fastModMultiplier = source._fastModMultiplier;
-#endif
             }
             else
             {
-                TrimAndCopy(source._entries, source._count);
-                _freeList = source._freeList;
+                int newCapacity = HashHelpers.GetPrime(source.Count);
+                int currentCapacity = _entries == null ? 0 : _entries.Length;
+
+                Entry[] oldEntries = source._entries;
+
+                int oldCount = source._count;
+                _version++;
+                Initialize(newCapacity);
+
+                CopyEntries(oldEntries, oldCount);
             }
             Debug.Assert(Count == source.Count);
         }
@@ -1483,7 +1491,7 @@ namespace System.Collections.Generic
         /// </summary>
         internal static bool EqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2) => set1.Comparer.Equals(set2.Comparer);
 
-#endregion
+        #endregion
 
         private struct Entry
         {
