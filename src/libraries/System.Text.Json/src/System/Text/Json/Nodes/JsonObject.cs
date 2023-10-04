@@ -207,7 +207,7 @@ namespace System.Text.Json.Nodes
                 if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
                     path.Append("['");
-                    path.Append(JsonHelpers.GetPropertyName(propertyName, JavaScriptEncoder.Default));
+                    path.Append(JsonHelpers.GetEscapedPropertyName(propertyName, JavaScriptEncoder.Default));
                     path.Append("']");
                 }
                 else
