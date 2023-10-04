@@ -20210,16 +20210,16 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                         widenedType     = TYP_SIMD64;
                         widenedSimdSize = 64;
 
-                        op1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic, simdBaseJitType,
+                        GenTree* widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic, simdBaseJitType,
                                                        widenedSimdSize);
 
-                        op2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic, simdBaseJitType,
+                        GenTree* widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic, simdBaseJitType,
                                                        widenedSimdSize);
 
-                        op1 =
-                            gtNewSimdBinOpNode(GT_MUL, widenedType, op1, op2, widenedSimdBaseJitType, widenedSimdSize);
+                        GenTree* widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2, widenedSimdBaseJitType,
+                                                 widenedSimdSize);
 
-                        return gtNewSimdHWIntrinsicNode(type, op1, narrowIntrinsic, widenedSimdBaseJitType,
+                        return gtNewSimdHWIntrinsicNode(type, widenedProduct, narrowIntrinsic, widenedSimdBaseJitType,
                                                         widenedSimdSize);
                     }
                     else if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -20242,16 +20242,18 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                             widenedType     = TYP_SIMD32;
                             widenedSimdSize = 32;
 
-                            op1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic, simdBaseJitType,
+                            GenTree* widenendOp1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic, simdBaseJitType,
                                                            widenedSimdSize);
 
-                            op2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic, simdBaseJitType,
+                            GenTree* widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic, simdBaseJitType,
                                                            widenedSimdSize);
 
-                            op1 = gtNewSimdBinOpNode(GT_MUL, widenedType, op1, op2, widenedSimdBaseJitType,
+                            GenTree* widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenendOp1, widenedOp2,
+                                                                         widenedSimdBaseJitType,
                                                      widenedSimdSize);
 
-                            return gtNewSimdHWIntrinsicNode(type, op1, narrowIntrinsic, widenedSimdBaseJitType,
+                            return gtNewSimdHWIntrinsicNode(type, widenedProduct, narrowIntrinsic,
+                                                            widenedSimdBaseJitType,
                                                             widenedSimdSize);
                         }
                         else
@@ -20262,11 +20264,14 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                             widenedType     = TYP_SIMD32;
                             widenedSimdSize = 32;
 
-                            op1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic, simdBaseJitType, simdSize);
+                            GenTree* widenedOp1 =
+                                gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic, simdBaseJitType, simdSize);
 
-                            op2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic, simdBaseJitType, simdSize);
+                            GenTree* widenedOp2 =
+                                gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic, simdBaseJitType, simdSize);
 
-                            op1 = gtNewSimdBinOpNode(GT_MUL, widenedType, op1, op2, widenedSimdBaseJitType,
+                            GenTree* widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2,
+                                                                         widenedSimdBaseJitType,
                                                      widenedSimdSize);
 
                             GenTreeVecCon* vecCon1 = gtNewVconNode(widenedType);
@@ -20279,17 +20284,20 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                             // Validate we can't use AVX512F_VL_TernaryLogic here
                             assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
 
-                            op1 = gtNewSimdBinOpNode(GT_AND, widenedType, op1, vecCon1, widenedSimdBaseJitType,
+                            GenTree* maskedProduct = gtNewSimdBinOpNode(GT_AND, widenedType, widenedProduct, vecCon1,
+                                                     widenedSimdBaseJitType,
                                                      widenedSimdSize);
-                            op2 = fgMakeMultiUse(&op1);
-                            op1 = gtNewSimdHWIntrinsicNode(widenedType, op1, op2, NI_AVX2_PackUnsignedSaturate,
+                            GenTree* maskedProductDup = fgMakeMultiUse(&maskedProduct);
+                            GenTree* packedProduct = gtNewSimdHWIntrinsicNode(widenedType, maskedProduct, maskedProductDup,
+                                                           NI_AVX2_PackUnsignedSaturate,
                                                            CORINFO_TYPE_UBYTE, widenedSimdSize);
 
                             CorInfoType permuteBaseJitType =
                                 (simdBaseType == TYP_BYTE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
-                            op1 = gtNewSimdHWIntrinsicNode(widenedType, op1, gtNewIconNode(SHUFFLE_WYZX),
+                            GenTree* shuffledProduct =
+                                gtNewSimdHWIntrinsicNode(widenedType, packedProduct, gtNewIconNode(SHUFFLE_WYZX),
                                                            NI_AVX2_Permute4x64, permuteBaseJitType, widenedSimdSize);
-                            return gtNewSimdGetLowerNode(type, op1, simdBaseJitType, widenedSimdSize);
+                            return gtNewSimdGetLowerNode(type, shuffledProduct, simdBaseJitType, widenedSimdSize);
                         }
                     }
 
@@ -20302,17 +20310,19 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     GenTree* op2Dup = fgMakeMultiUse(&op2);
 
                     // Multiply widened lower parts
-                    op1 = gtNewSimdWidenLowerNode(type, op1, simdBaseJitType, simdSize);
-                    op2 = gtNewSimdWidenLowerNode(type, op2, simdBaseJitType, simdSize);
-                    op1 = gtNewSimdBinOpNode(GT_MUL, type, op1, op2, widenedSimdBaseJitType, simdSize);
+                    GenTree* lowerOp1 = gtNewSimdWidenLowerNode(type, op1, simdBaseJitType, simdSize);
+                    GenTree* lowerOp2 = gtNewSimdWidenLowerNode(type, op2, simdBaseJitType, simdSize);
+                    GenTree* lowerProduct =
+                        gtNewSimdBinOpNode(GT_MUL, type, lowerOp1, lowerOp2, widenedSimdBaseJitType, simdSize);
 
                     // Multiply widened upper parts
-                    op1Dup = gtNewSimdWidenUpperNode(type, op1Dup, simdBaseJitType, simdSize);
-                    op2Dup = gtNewSimdWidenUpperNode(type, op2Dup, simdBaseJitType, simdSize);
-                    op2    = gtNewSimdBinOpNode(GT_MUL, type, op1Dup, op2Dup, widenedSimdBaseJitType, simdSize);
+                    GenTree* upperOp1 = gtNewSimdWidenUpperNode(type, op1Dup, simdBaseJitType, simdSize);
+                    GenTree* upperOp2 = gtNewSimdWidenUpperNode(type, op2Dup, simdBaseJitType, simdSize);
+                    GenTree* upperProduct =
+                        gtNewSimdBinOpNode(GT_MUL, type, upperOp1, upperOp2, widenedSimdBaseJitType, simdSize);
 
                     // Narrow lower and upper
-                    return gtNewSimdNarrowNode(type, op1, op2, simdBaseJitType, simdSize);
+                    return gtNewSimdNarrowNode(type, lowerProduct, upperProduct, simdBaseJitType, simdSize);
                 }
 
                 case TYP_SHORT:
