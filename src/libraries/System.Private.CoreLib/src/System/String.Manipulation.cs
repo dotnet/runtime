@@ -1238,108 +1238,7 @@ namespace System
                 }
 
                 // Find all occurrences of the oldValue character.
-                char c = oldValue[0];
-                nuint offset = 0;
-                nuint lengthToExamine = (uint)this.Length;
-
-                if (Vector512.IsHardwareAccelerated && this.Length >= (uint)Vector512<ushort>.Count*2)
-                {
-                    ref char source = ref MemoryMarshal.GetReference(this.AsSpan());
-                    Vector512<ushort> v1 = Vector512.Create((ushort)c);
-                    do
-                    {
-                        Vector512<ushort> vector = Vector512.LoadUnsafe(ref source, offset);
-
-                        if (Vector512.EqualsAny(vector, v1))
-                        {
-                            // Skip every other bit
-                            ulong mask = (Vector512.Equals(vector, v1)).AsByte().ExtractMostSignificantBits() & 0x5555555555555555;
-                            do
-                            {
-                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                                replacementIndices.Append((int)(offset + bitPos));
-                                mask = BitOperations.ResetLowestSetBit(mask);
-                            } while (mask != 0);
-                        }
-
-                        offset += (nuint)Vector512<ushort>.Count;
-                    } while (offset <= lengthToExamine - (nuint)Vector512<ushort>.Count);
-                }
-                else if (Vector256.IsHardwareAccelerated && this.Length >= (uint)Vector256<ushort>.Count*2)
-                {
-                    ref char source = ref MemoryMarshal.GetReference(this.AsSpan());
-                    Vector256<ushort> v1 = Vector256.Create((ushort)c);
-                    do
-                    {
-                        Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, offset);
-                        Vector256<byte> cmp = (Vector256.Equals(vector, v1)).AsByte();
-
-                        if (cmp != Vector256<byte>.Zero)
-                        {
-                            // Skip every other bit
-                            uint mask = cmp.ExtractMostSignificantBits() & 0x55555555;
-                            do
-                            {
-                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                                replacementIndices.Append((int)(offset + bitPos));
-                                mask = BitOperations.ResetLowestSetBit(mask);
-                            } while (mask != 0);
-                        }
-
-                        offset += (nuint)Vector256<ushort>.Count;
-                    } while (offset <= lengthToExamine - (nuint)Vector256<ushort>.Count);
-                }
-                else if (Vector128.IsHardwareAccelerated && this.Length >= (uint)Vector128<ushort>.Count*2)
-                {
-                    ref char source = ref MemoryMarshal.GetReference(this.AsSpan());
-                    Vector128<ushort> v1 = Vector128.Create((ushort)c);
-                    do
-                    {
-                        Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
-                        Vector128<byte> cmp = (Vector128.Equals(vector, v1)).AsByte();
-
-                        if (cmp != Vector128<byte>.Zero)
-                        {
-                            // Skip every other bit
-                            uint mask = cmp.ExtractMostSignificantBits() & 0x5555;
-                            do
-                            {
-                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
-                                replacementIndices.Append((int)(offset + bitPos));
-                                mask = BitOperations.ResetLowestSetBit(mask);
-                            } while (mask != 0);
-                        }
-
-                        offset += (nuint)Vector128<ushort>.Count;
-                    } while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count);
-                }
-                int i = (int)offset;
-                if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
-                {
-                    while (true)
-                    {
-                        int pos = PackedSpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
-                        if (pos < 0)
-                        {
-                            break;
-                        }
-                        replacementIndices.Append(i + pos);
-                        i += pos + 1;
-                    }
-                }
-                else
-                {
-                    while (true)
-                    {
-                        int pos = SpanHelpers.NonPackedIndexOfChar(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
-                        if (pos < 0)
-                        {
-                            break;
-                        }
-                        replacementIndices.Append(i + pos);
-                        i += pos + 1;
-                    }
-                }
+                MakeReplacementSearchVectorized(this, ref replacementIndices, oldValue[0]);
             }
             else
             {
@@ -1370,6 +1269,91 @@ namespace System
             replacementIndices.Dispose();
 
             return dst;
+        }
+
+        private static void MakeReplacementSearchVectorized(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> replacementIndices, char c)
+        {
+            nuint offset = 0;
+            nuint lengthToExamine = (uint)sourceSpan.Length;
+            ref char source = ref MemoryMarshal.GetReference(sourceSpan);
+
+            if (Vector512.IsHardwareAccelerated && sourceSpan.Length >= (uint)Vector512<ushort>.Count*2)
+            {
+                Vector512<ushort> v1 = Vector512.Create((ushort)c);
+                do
+                {
+                    Vector512<ushort> vector = Vector512.LoadUnsafe(ref source, offset);
+
+                    if (Vector512.EqualsAny(vector, v1))
+                    {
+                        // Skip every other bit
+                        ulong mask = (Vector512.Equals(vector, v1)).AsByte().ExtractMostSignificantBits() & 0x5555555555555555;
+                        do
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            replacementIndices.Append((int)(offset + bitPos));
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        } while (mask != 0);
+                    }
+
+                    offset += (nuint)Vector512<ushort>.Count;
+                } while (offset <= lengthToExamine - (nuint)Vector512<ushort>.Count);
+            }
+            else if (Vector256.IsHardwareAccelerated && sourceSpan.Length >= (uint)Vector256<ushort>.Count*2)
+            {
+                Vector256<ushort> v1 = Vector256.Create((ushort)c);
+                do
+                {
+                    Vector256<ushort> vector = Vector256.LoadUnsafe(ref source, offset);
+                    Vector256<byte> cmp = (Vector256.Equals(vector, v1)).AsByte();
+
+                    if (cmp != Vector256<byte>.Zero)
+                    {
+                        // Skip every other bit
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x55555555;
+                        do
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            replacementIndices.Append((int)(offset + bitPos));
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        } while (mask != 0);
+                    }
+
+                    offset += (nuint)Vector256<ushort>.Count;
+                } while (offset <= lengthToExamine - (nuint)Vector256<ushort>.Count);
+            }
+            else if (Vector128.IsHardwareAccelerated && sourceSpan.Length >= (uint)Vector128<ushort>.Count*2)
+            {
+                Vector128<ushort> v1 = Vector128.Create((ushort)c);
+                do
+                {
+                    Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
+                    Vector128<byte> cmp = (Vector128.Equals(vector, v1)).AsByte();
+
+                    if (cmp != Vector128<byte>.Zero)
+                    {
+                        // Skip every other bit
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x5555;
+                        do
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            replacementIndices.Append((int)(offset + bitPos));
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        } while (mask != 0);
+                    }
+
+                    offset += (nuint)Vector128<ushort>.Count;
+                } while (offset <= lengthToExamine - (nuint)Vector128<ushort>.Count);
+            }
+            while (offset < lengthToExamine)
+            {
+                char curr = Unsafe.Add(ref source, offset);
+                if (curr == c)
+                {
+                    replacementIndices.Append((int)offset);
+                }
+                offset++;
+            }
         }
 
         private string ReplaceHelper(int oldValueLength, string newValue, ReadOnlySpan<int> indices)
