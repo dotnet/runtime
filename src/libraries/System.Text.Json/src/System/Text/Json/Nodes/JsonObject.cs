@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Nodes
 {
@@ -207,7 +206,7 @@ namespace System.Text.Json.Nodes
                 if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
                     path.Append("['");
-                    path.Append(JsonHelpers.GetEscapedPropertyName(propertyName, JavaScriptEncoder.Default));
+                    path.Append(JsonHelpers.GetEscapedPropertyName(propertyName));
                     path.Append("']");
                 }
                 else

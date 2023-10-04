@@ -55,11 +55,12 @@ namespace System.Text.Json
 
         public static string GetEscapedPropertyName(
             string rawPropertyName,
-            JavaScriptEncoder encoder)
+            JavaScriptEncoder? encoder = null)
         {
+            encoder ??= JavaScriptEncoder.Default;
             int indexOfFirstCharacterToEncode = JsonWriterHelper.NeedsEscaping(rawPropertyName.AsSpan(), encoder);
             return indexOfFirstCharacterToEncode >= 0
-                ? encoder.Encoder(rawPropertyName)
+                ? encoder.Encode(rawPropertyName)
                 : rawPropertyName;
         }
 
