@@ -2231,13 +2231,13 @@ namespace Internal.JitInterface
                     return TryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
                 }
 
+                int targetPtrSize = _compilation.TypeSystemContext.Target.PointerSize;
+
                 PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
                 if (preinitManager.IsPreinitialized(owningType))
                 {
                     TypePreinit.ISerializableValue value = preinitManager
                         .GetPreinitializationInfo(owningType).GetFieldValue(field);
-
-                    int targetPtrSize = _compilation.TypeSystemContext.Target.PointerSize;
 
                     if (value == null)
                     {
@@ -2270,6 +2270,15 @@ namespace Internal.JitInterface
                                 new Span<byte>(&handle, targetPtrSize).CopyTo(new Span<byte>(buffer, targetPtrSize));
                                 return true;
                         }
+                    }
+                }
+                else if (!owningType.HasStaticConstructor)
+                {
+                    int size = field.FieldType.GetElementSize().AsInt;
+                    if (size >= bufferSize && valueOffset <= size - bufferSize)
+                    {
+                        new Span<byte>(buffer, bufferSize).Clear();
+                        return true;
                     }
                 }
             }

@@ -379,6 +379,12 @@ namespace ILCompiler
                                 else
                                     return Status.Fail(methodIL.OwningMethod, opcode);
                             }
+                            else if (_readOnlyPolicy.IsReadOnly(field)
+                                && !field.OwningType.HasStaticConstructor)
+                            {
+                                // (Effectively) read only field but no static constructor to set it: the value is default-initialized.
+                                stack.PushFromLocation(field.FieldType, NewUninitializedLocationValue(field.FieldType));
+                            }
                             else
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Load from other non-initonly static");
