@@ -195,7 +195,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 bool hasStoreData = false;
 
-                foreach (string file in Directory.GetFiles(dir))
+                foreach (string file in Directory.EnumerateFiles(dir))
                 {
                     hasStoreData |= ProcessFile(file, out _, skipStat: true);
                 }

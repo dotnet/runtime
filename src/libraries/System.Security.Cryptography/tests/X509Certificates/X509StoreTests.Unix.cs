@@ -69,7 +69,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         sslCertDir1,
                         "/invalid1",
                         sslCertDir2,
-                        "/invalid2"
+                        "/invalid2",
+                        "",
             });
 
             var psi = new ProcessStartInfo();
