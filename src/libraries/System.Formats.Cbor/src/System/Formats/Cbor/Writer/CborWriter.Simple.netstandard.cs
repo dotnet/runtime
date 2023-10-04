@@ -19,6 +19,10 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         private void WriteHalf(ushort value)
         {
+            if (HalfHelpers.HalfIsNaN(value))
+            {
+                value = 0x7e00; // canonical NaN as per RFC 7049
+            }
             EnsureWriteCapacity(1 + sizeof(ushort));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional16BitData));
             CborHelpers.WriteHalfBigEndian(_buffer.AsSpan(_offset), value);
@@ -30,7 +34,7 @@ namespace System.Formats.Cbor
         internal static bool TryConvertSingleToHalf(float value, out ushort result)
         {
             result = HalfHelpers.FloatToHalf(value);
-            return CborHelpers.SingleToInt32Bits(HalfHelpers.HalfToFloat(result)) == CborHelpers.SingleToInt32Bits(value);
+            return float.IsNaN(value) || CborHelpers.SingleToInt32Bits(HalfHelpers.HalfToFloat(result)) == CborHelpers.SingleToInt32Bits(value);
         }
     }
 }

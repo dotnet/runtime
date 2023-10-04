@@ -18,11 +18,6 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteSingle(float value)
         {
-            if (float.IsNaN(value))
-            {
-                value = BitConverter.Int32BitsToSingle(0x7fc00000); // canonical NaN as per RFC 7049
-            }
-
             if (!CborConformanceModeHelpers.RequiresPreservingFloatPrecision(ConformanceMode) &&
                  TryConvertSingleToHalf(value, out var half))
             {
@@ -43,11 +38,6 @@ namespace System.Formats.Cbor
         /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteDouble(double value)
         {
-            if (double.IsNaN(value))
-            {
-                value = BitConverter.Int64BitsToDouble(0x7ff8000000000000); // canonical NaN as per RFC 7049
-            }
-
             if (!CborConformanceModeHelpers.RequiresPreservingFloatPrecision(ConformanceMode) &&
                  TryConvertDoubleToSingle(value, out float single))
             {
@@ -67,6 +57,10 @@ namespace System.Formats.Cbor
         }
         private void WriteSingleCore(float value)
         {
+            if (float.IsNaN(value))
+            {
+                value = CborHelpers.Int32BitsToSingle(0x7fc00000); // canonical NaN as per RFC 7049
+            }
             EnsureWriteCapacity(1 + sizeof(float));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional32BitData));
             CborHelpers.WriteSingleBigEndian(_buffer.AsSpan(_offset), value);
@@ -76,6 +70,10 @@ namespace System.Formats.Cbor
 
         private void WriteDoubleCore(double value)
         {
+            if (double.IsNaN(value))
+            {
+                value = BitConverter.Int64BitsToDouble(0x7ff8000000000000); // canonical NaN as per RFC 7049
+            }
             EnsureWriteCapacity(1 + sizeof(double));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional64BitData));
             CborHelpers.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
@@ -140,7 +138,7 @@ namespace System.Formats.Cbor
         private static bool TryConvertDoubleToSingle(double value, out float result)
         {
             result = (float)value;
-            return BitConverter.DoubleToInt64Bits(result) == BitConverter.DoubleToInt64Bits(value);
+            return double.IsNaN(value) || BitConverter.DoubleToInt64Bits(result) == BitConverter.DoubleToInt64Bits(value);
         }
     }
 }

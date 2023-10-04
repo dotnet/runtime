@@ -65,6 +65,11 @@ namespace System.Formats.Cbor
                 => CborHelpers.Int32BitsToSingle((int)(((sign ? 1U : 0U) << FloatSignShift) + ((uint)exp << FloatExponentShift) + sig));
         }
 
+        public static bool HalfIsNaN(ushort value)
+        {
+            return (value & ~((ushort)1 << HalfSignShift)) > HalfPositiveInfinityBits;
+        }
+
         private static (int Exp, uint Sig) NormSubnormalF16Sig(uint sig)
         {
             int shiftDist = LeadingZeroCount(sig) - 16 - 5;
