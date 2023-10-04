@@ -57,6 +57,66 @@ namespace System.Numerics.Tensors.Tests
             float ax = MathF.Abs(x), ay = MathF.Abs(y);
             return (ax < ay) || float.IsNaN(ax) || (ax == ay && *(int*)&x < 0) ? x : y;
         }
+
+        private static unsafe int SingleToInt32(float f) => *(int*)&f;
+
+        private static unsafe float Int32ToSingle(int i) => *(float*)&i;
+
+        private static float AnotherSingleNaN = Int32ToSingle(-8388607);
+
+        /// <summary>Loads a variety of special values (e.g. NaN) into random positions in <paramref name="x"/>.</summary>
+        private static void SetSpecialValues(Span<float> x)
+        {
+            // NaN
+            x[s_random.Next(x.Length)] = float.NaN;
+            x[s_random.Next(x.Length)] = AnotherSingleNaN;
+
+            // +Infinity, -Infinity
+            x[s_random.Next(x.Length)] = float.PositiveInfinity;
+            x[s_random.Next(x.Length)] = float.NegativeInfinity;
+
+            // +Zero, -Zero
+            x[s_random.Next(x.Length)] = +0.0f;
+            x[s_random.Next(x.Length)] = -0.0f;
+
+            // +Epsilon, -Epsilon
+            x[s_random.Next(x.Length)] = +float.Epsilon;
+            x[s_random.Next(x.Length)] = -float.Epsilon;
+        }
+
+        /// <summary>
+        /// Loads a variety of special values (e.g. NaN) into random positions in <paramref name="x"/>
+        /// and related values into the corresponding positions in <paramref name="y"/>.
+        /// </summary>
+        private static void SetSpecialValues(Span<float> x, Span<float> y)
+        {
+            int pos;
+
+            // NaNs
+            pos = s_random.Next(x.Length);
+            x[pos] = float.NaN;
+            y[pos] = AnotherSingleNaN;
+
+            // +Infinity, -Infinity
+            pos = s_random.Next(x.Length);
+            x[pos] = float.PositiveInfinity;
+            y[pos] = float.NegativeInfinity;
+
+            // +Zero, -Zero
+            pos = s_random.Next(x.Length);
+            x[pos] = +0.0f;
+            y[pos] = -0.0f;
+
+            // +Epsilon, -Epsilon
+            pos = s_random.Next(x.Length);
+            x[pos] = +float.Epsilon;
+            y[pos] = -float.Epsilon;
+
+            // Same magnitude, opposite sign
+            pos = s_random.Next(x.Length);
+            x[pos] = +5.0f;
+            y[pos] = -5.0f;
+        }
         #endregion
 
         #region Abs
@@ -1013,26 +1073,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            // NaN
-            x[s_random.Next(x.Length)] = float.NaN;
-
-            // +Infinity
-            x[s_random.Next(x.Length)] = float.PositiveInfinity;
-
-            // -Infinity
-            x[s_random.Next(x.Length)] = float.NegativeInfinity;
-
-            // +Zero
-            x[s_random.Next(x.Length)] = +0.0f;
-
-            // -Zero
-            x[s_random.Next(x.Length)] = -0.0f;
-
-            // +Epsilon
-            x[s_random.Next(x.Length)] = +float.Epsilon;
-
-            // -Epsilon
-            x[s_random.Next(x.Length)] = -float.Epsilon;
+            SetSpecialValues(x);
 
             TensorPrimitives.Log(x, destination);
             for (int i = 0; i < tensorLength; i++)
@@ -1098,26 +1139,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            // NaN
-            x[s_random.Next(x.Length)] = float.NaN;
-
-            // +Infinity
-            x[s_random.Next(x.Length)] = float.PositiveInfinity;
-
-            // -Infinity
-            x[s_random.Next(x.Length)] = float.NegativeInfinity;
-
-            // +Zero
-            x[s_random.Next(x.Length)] = +0.0f;
-
-            // -Zero
-            x[s_random.Next(x.Length)] = -0.0f;
-
-            // +Epsilon
-            x[s_random.Next(x.Length)] = +float.Epsilon;
-
-            // -Epsilon
-            x[s_random.Next(x.Length)] = -float.Epsilon;
+            SetSpecialValues(x);
 
             TensorPrimitives.Log2(x, destination);
             for (int i = 0; i < tensorLength; i++)
@@ -1240,19 +1262,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            // NaNs
-            x[s_random.Next(x.Length)] = float.NaN;
-            y[s_random.Next(y.Length)] = float.NaN;
-
-            // Same magnitude, opposite sign
-            int pos = s_random.Next(x.Length);
-            x[pos] = -5f;
-            y[pos] = 5f;
-
-            // Positive and negative 0s
-            pos = s_random.Next(x.Length);
-            x[pos] = 0f;
-            y[pos] = -0f;
+            SetSpecialValues(x, y);
 
             TensorPrimitives.Max(x, y, destination);
             for (int i = 0; i < tensorLength; i++)
@@ -1397,19 +1407,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            // NaNs
-            x[s_random.Next(x.Length)] = float.NaN;
-            y[s_random.Next(y.Length)] = float.NaN;
-
-            // Same magnitude, opposite sign
-            int pos = s_random.Next(x.Length);
-            x[pos] = -5f;
-            y[pos] = 5f;
-
-            // Positive and negative 0s
-            pos = s_random.Next(x.Length);
-            x[pos] = 0f;
-            y[pos] = -0f;
+            SetSpecialValues(x, y);
 
             TensorPrimitives.MaxMagnitude(x, y, destination);
             for (int i = 0; i < tensorLength; i++)
@@ -1553,19 +1551,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            // NaNs
-            x[s_random.Next(x.Length)] = float.NaN;
-            y[s_random.Next(y.Length)] = float.NaN;
-
-            // Same magnitude, opposite sign
-            int pos = s_random.Next(x.Length);
-            x[pos] = -5f;
-            y[pos] = 5f;
-
-            // Positive and negative 0s
-            pos = s_random.Next(x.Length);
-            x[pos] = 0f;
-            y[pos] = -0f;
+            SetSpecialValues(x, y);
 
             TensorPrimitives.Min(x, y, destination);
             for (int i = 0; i < tensorLength; i++)
@@ -1708,19 +1694,7 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> y = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            // NaNs
-            x[s_random.Next(x.Length)] = float.NaN;
-            y[s_random.Next(y.Length)] = float.NaN;
-
-            // Same magnitude, opposite sign
-            int pos = s_random.Next(x.Length);
-            x[pos] = -5f;
-            y[pos] = 5f;
-
-            // Positive and negative 0s
-            pos = s_random.Next(x.Length);
-            x[pos] = 0f;
-            y[pos] = -0f;
+            SetSpecialValues(x, y);
 
             TensorPrimitives.MinMagnitude(x, y, destination);
             for (int i = 0; i < tensorLength; i++)
