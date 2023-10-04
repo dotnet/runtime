@@ -1708,9 +1708,9 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         DWORD scale;
         BitScanForward(&scale, node->gtElemSize);
 
+#ifdef TARGET_ARM64
         if (!index->TypeIs(TYP_I_IMPL))
         {
-#if defined(TARGET_ARM64)
             if (scale <= 4)
             {
                 // target = base + index<<scale
@@ -1718,7 +1718,6 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
                                               indexReg, scale, INS_OPTS_UXTW);
             }
             else
-#endif
             {
                 GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
                 indexReg      = tmpReg;
@@ -1727,6 +1726,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             }
         }
         else
+#endif // TARGET_ARM64
         {
             // dest = base + index * scale
             genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
@@ -1734,12 +1734,14 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     }
     else // we have to load the element size and use a MADD (multiply-add) instruction
     {
+#ifdef TARGET_ARM64
         if (!index->TypeIs(TYP_I_IMPL))
         {
             const regNumber tmpReg2 = node->ExtractTempReg();
             GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
             indexReg = tmpReg2;
         }
+#endif // TARGET_ARM64
 
         // tmpReg = element size
         instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->gtElemSize);
