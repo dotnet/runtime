@@ -11,7 +11,7 @@ namespace Microsoft.Interop
 {
     internal static class LibraryImportGeneratorHelpers
     {
-        public static MarshallingGeneratorFactoryKey<(TargetFrameworkSettings, LibraryImportGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, TargetFrameworkSettings tf, LibraryImportGeneratorOptions options)
+        public static IMarshallingGeneratorFactory CreateGeneratorFactory(TargetFrameworkSettings tf, LibraryImportGeneratorOptions options, EnvironmentFlags env)
         {
             IMarshallingGeneratorFactory generatorFactory;
 
@@ -36,7 +36,7 @@ namespace Microsoft.Interop
 
                 // Since the char type can go into the P/Invoke signature here, we can only use it when
                 // runtime marshalling is disabled.
-                generatorFactory = new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: env.EnvironmentFlags.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), TypeNames.LibraryImportAttribute_ShortName);
+                generatorFactory = new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), TypeNames.LibraryImportAttribute_ShortName);
 
                 InteropGenerationOptions interopGenerationOptions = new(options.UseMarshalType);
                 generatorFactory = new MarshalAsMarshallingGeneratorFactory(interopGenerationOptions, generatorFactory);
@@ -47,19 +47,19 @@ namespace Microsoft.Interop
                         // Since the char type in an array will not be part of the P/Invoke signature, we can
                         // use the regular blittable marshaller in all cases.
                         new CharMarshallingGeneratorFactory(generatorFactory, useBlittableMarshallerForUtf16: true, TypeNames.LibraryImportAttribute_ShortName),
-                        new AttributedMarshallingModelOptions(env.EnvironmentFlags.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut));
+                        new AttributedMarshallingModelOptions(env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), MarshalMode.ElementIn, MarshalMode.ElementRef, MarshalMode.ElementOut));
                     // We don't need to include the later generator factories for collection elements
                     // as the later generator factories only apply to parameters.
                     generatorFactory = new AttributedMarshallingModelGeneratorFactory(
                         generatorFactory,
                         elementFactory,
-                        new AttributedMarshallingModelOptions(env.EnvironmentFlags.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), MarshalMode.ManagedToUnmanagedIn, MarshalMode.ManagedToUnmanagedRef, MarshalMode.ManagedToUnmanagedOut));
+                        new AttributedMarshallingModelOptions(env.HasFlag(EnvironmentFlags.DisableRuntimeMarshalling), MarshalMode.ManagedToUnmanagedIn, MarshalMode.ManagedToUnmanagedRef, MarshalMode.ManagedToUnmanagedOut));
                 }
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
             }
 
-            return MarshallingGeneratorFactoryKey.Create((tf, options), generatorFactory);
+            return generatorFactory;
         }
     }
 }

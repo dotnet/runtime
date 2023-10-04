@@ -81,8 +81,8 @@ namespace Microsoft.Interop.Analyzers
                             new CodeEmitOptions(SkipInit: true),
                             typeof(ConvertComImportToGeneratedComInterfaceAnalyzer).Assembly);
 
-                        var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.ManagedToUnmanaged);
-                        var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.UnmanagedToManaged);
+                        var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorFactory(env.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged);
+                        var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorFactory(env.EnvironmentFlags, MarshalDirection.UnmanagedToManaged);
 
                         mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
                         bool anyExplicitlyUnsupportedInfo = false;
@@ -118,8 +118,8 @@ namespace Microsoft.Interop.Analyzers
                                 info = info with { MarshallingAttributeInfo = inner };
                             }
                             // Run both factories and collect any binding failures.
-                            ResolvedGenerator unmanagedToManagedGenerator = unmanagedToManagedFactory.GeneratorFactory.Create(info, nativeToManagedStubCodeContext);
-                            ResolvedGenerator managedToUnmanagedGenerator = managedToUnmanagedFactory.GeneratorFactory.Create(info, managedToNativeStubCodeContext);
+                            ResolvedGenerator unmanagedToManagedGenerator = unmanagedToManagedFactory.Create(info, nativeToManagedStubCodeContext);
+                            ResolvedGenerator managedToUnmanagedGenerator = managedToUnmanagedFactory.Create(info, managedToNativeStubCodeContext);
                             return managedToUnmanagedGenerator with
                             {
                                 Diagnostics = managedToUnmanagedGenerator.Diagnostics.AddRange(unmanagedToManagedGenerator.Diagnostics)
