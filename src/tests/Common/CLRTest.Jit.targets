@@ -63,9 +63,9 @@ export RunningIlasmRoundTrip=
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
   mkdir IL-RT
-  cp -R *.* IL-RT/
-  echo "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(InputAssemblyName)
-  "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(InputAssemblyName)
+  cp $(InputAssemblyName) $(TargetAssemblyName)
+  echo "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(TargetAssemblyName)
+  "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(TargetAssemblyName)
   ERRORLEVEL=$?
   if [ $ERRORLEVEL -ne 0 ]
   then
@@ -81,8 +81,8 @@ then
   ilasm_count=1
   while true
   do
-    echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    echo "$CORE_ROOT/ilasm" -output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    "$CORE_ROOT/ilasm" -output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
     ERRORLEVEL=$?
     if [ $ERRORLEVEL -eq 0 ]
     then
@@ -111,8 +111,8 @@ fi
       <BashIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
-  echo $LAUNCHER $(TargetAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
-  $LAUNCHER $(TargetAssemblyName) "${CLRTestExecutionArguments[@]}"
+  echo $LAUNCHER $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
+  $LAUNCHER $(InputAssemblyName) "${CLRTestExecutionArguments[@]}"
   ERRORLEVEL=$?
   if [ $ERRORLEVEL -ne $CLRTestExpectedExitCode ]
   then
@@ -147,9 +147,9 @@ REM Todo: Ilasm round-trip on linked binaries.
 IF NOT DEFINED DoLink (
   IF DEFINED RunningIlasmRoundTrip (
     mkdir IL-RT
-    xcopy /E *.* IL-RT\
-    ECHO %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
-    %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
+    copy $(InputAssemblyName) $(TargetAssemblyName)
+    ECHO %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(TargetAssemblyName)
+    %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(TargetAssemblyName)
 
     IF NOT "!ERRORLEVEL!"=="0" (
       ECHO EXECUTION OF ILDASM - FAILED !ERRORLEVEL!
@@ -162,8 +162,8 @@ IF NOT DEFINED DoLink (
 
    set ilasm_count=1
 :Try_ilasm
-    ECHO %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    ECHO %CORE_ROOT%\ilasm.exe /output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    %CORE_ROOT%\ilasm.exe /output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
     IF NOT "!ERRORLEVEL!"=="0" (
       ECHO EXECUTION OF ILASM - Try !ilasm_count! FAILED with status !ERRORLEVEL! 
       IF !ilasm_count! LEQ 3 (
