@@ -91,9 +91,14 @@ namespace System.Security.Cryptography
             // about our crypto primitives in wasm environments.
             private Sha1ForNonSecretPurposes _state; // mutable struct - don't make readonly
 
-            public void Initialize()
+            public SHA1ManagedImplementation()
             {
                 _state = new();
+            }
+
+            public void Initialize()
+            {
+                this = new();
             }
 
             public void AppendHashData(ReadOnlySpan<byte> partIn)
@@ -125,22 +130,6 @@ namespace System.Security.Cryptography
 
             public SHA256ManagedImplementation()
             {
-                InitializeState();
-            }
-
-            public void Initialize()
-            {
-                InitializeState();
-
-                // Zeroize potentially sensitive information.
-                _buffer = default;
-                _W = default;
-            }
-
-            private void InitializeState()
-            {
-                _count = 0;
-
                 _stateSHA256[0] = 0x6a09e667;
                 _stateSHA256[1] = 0xbb67ae85;
                 _stateSHA256[2] = 0x3c6ef372;
@@ -149,6 +138,11 @@ namespace System.Security.Cryptography
                 _stateSHA256[5] = 0x9b05688c;
                 _stateSHA256[6] = 0x1f83d9ab;
                 _stateSHA256[7] = 0x5be0cd19;
+            }
+
+            public void Initialize()
+            {
+                this = new();
             }
 
             /* SHA256 block update operation. Continues an SHA message-digest
@@ -362,22 +356,6 @@ namespace System.Security.Cryptography
 
             public SHA384ManagedImplementation()
             {
-                InitializeState();
-            }
-
-            public void Initialize()
-            {
-                InitializeState();
-
-                // Zeroize potentially sensitive information.
-                _buffer = default;
-                _W = default;
-            }
-
-            private void InitializeState()
-            {
-                _count = 0;
-
                 _stateSHA384[0] = 0xcbbb9d5dc1059ed8;
                 _stateSHA384[1] = 0x629a292a367cd507;
                 _stateSHA384[2] = 0x9159015a3070dd17;
@@ -386,6 +364,11 @@ namespace System.Security.Cryptography
                 _stateSHA384[5] = 0x8eb44a8768581511;
                 _stateSHA384[6] = 0xdb0c2e0d64f98fa7;
                 _stateSHA384[7] = 0x47b5481dbefa4fa4;
+            }
+
+            public void Initialize()
+            {
+                this = new();
             }
 
             /* SHA384 block update operation. Continues an SHA message-digest
@@ -603,22 +586,6 @@ namespace System.Security.Cryptography
 
             public SHA512ManagedImplementation()
             {
-                InitializeState();
-            }
-
-            public void Initialize()
-            {
-                InitializeState();
-
-                // Zeroize potentially sensitive information.
-                _buffer = default;
-                _W = default;
-            }
-
-            private void InitializeState()
-            {
-                _count = 0;
-
                 _stateSHA512[0] = 0x6a09e667f3bcc908;
                 _stateSHA512[1] = 0xbb67ae8584caa73b;
                 _stateSHA512[2] = 0x3c6ef372fe94f82b;
@@ -627,6 +594,11 @@ namespace System.Security.Cryptography
                 _stateSHA512[5] = 0x9b05688c2b3e6c1f;
                 _stateSHA512[6] = 0x1f83d9abfb41bd6b;
                 _stateSHA512[7] = 0x5be0cd19137e2179;
+            }
+
+            public void Initialize()
+            {
+                this = new();
             }
 
             /* SHA512 block update operation. Continues an SHA message-digest
