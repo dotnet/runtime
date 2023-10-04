@@ -1344,20 +1344,7 @@ namespace System.Text.Json.SourceGeneration
 
             private static string FormatBool(bool value) => value ? "true" : "false";
             private static string FormatStringLiteral(string? value)
-            {
-                string returnValue;
-
-                if (value is null)
-                {
-                    returnValue = "null";
-                }
-                else
-                {
-                    returnValue = SyntaxFactory.Literal(value).ToFullString();
-                }
-
-                return returnValue;
-            }
+                => value is null ? "null" : SyntaxFactory.Literal(value).ToFullString();
 
             /// <summary>
             /// Method used to generate JsonTypeInfo given options instance
