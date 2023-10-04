@@ -240,7 +240,7 @@ jobs:
       - template: /eng/pipelines/common/templates/global-build-step.yml
         parameters:
           buildArgs: ${{ parameters.buildArgs }}
-          useContinueOnErrorDuringBuild: $${{ parameters.useContinueOnErrorDuringBuild }}
+          useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
           shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
       - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:

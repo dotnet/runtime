@@ -71,7 +71,7 @@ extends:
           - windows_arm64
           jobParameters:
             buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
-            nameSuffix: AllSubsets_CoreCLR
+            nameSuffix: CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             postBuildSteps:
@@ -84,6 +84,7 @@ extends:
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
                 buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
+                displayName: Build managed CoreCLR components, all libraries, hosts, and packs
 
             # Upload the results.
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -105,7 +106,7 @@ extends:
           - windows_x86
           jobParameters:
             buildArgs: -s clr.runtime+clr.alljits -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
-            nameSuffix: AllSubsets_CoreCLR
+            nameSuffix: CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             postBuildSteps:
@@ -118,6 +119,7 @@ extends:
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
                 buildArgs: -s clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
+                displayName: Build managed CoreCLR components, all libraries, hosts, and packs
 
             # Upload the results.
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -137,7 +139,7 @@ extends:
           - osx_x64
           jobParameters:
             buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime+host.native -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
-            nameSuffix: AllSubsets_CoreCLR
+            nameSuffix: CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             postBuildSteps:
@@ -152,10 +154,10 @@ extends:
                       path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
                       entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
                     - name: dotnet
-                      path: $(Build.SourcesDirectory)/artifacts/bin/osx-$(archType).$(_BuildConfig)/corehost
+                      path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
                       entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
                     - name: apphost
-                      path: $(Build.SourcesDirectory)/artifacts/bin/osx-$(archType).$(_BuildConfig)/corehost
+                      path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
                       entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
               - task: CopyFiles@2
@@ -170,6 +172,7 @@ extends:
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
                   buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+libs+host.tools+host.pkg+packs -c $(_BuildConfig)
+                  displayName: Build managed CoreCLR and host components, all libraries, hosts, and packs
 
               # Upload the results.
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -195,7 +198,7 @@ extends:
           - linux_musl_arm64
           jobParameters:
             buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.aot+clr.packages+libs+host+packs -c $(_BuildConfig)
-            nameSuffix: AllSubsets_CoreCLR
+            nameSuffix: CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             postBuildSteps:
@@ -282,12 +285,12 @@ extends:
               parameters:
                 name: windows_x64
             dependsOn:
-            - build_linux_x64_release_AllSubsets_CoreCLR
-            - build_linux_arm_release_AllSubsets_CoreCLR
-            - build_linux_arm64_release_AllSubsets_CoreCLR
-            - build_linux_musl_x64_release_AllSubsets_CoreCLR
-            - build_linux_musl_arm_release_AllSubsets_CoreCLR
-            - build_linux_musl_arm64_release_AllSubsets_CoreCLR
+            - build_linux_x64_release_CoreCLR
+            - build_linux_arm_release_CoreCLR
+            - build_linux_arm64_release_CoreCLR
+            - build_linux_musl_x64_release_CoreCLR
+            - build_linux_musl_arm_release_CoreCLR
+            - build_linux_musl_arm64_release_CoreCLR
           variables:
           - name: crossDacArtifactsContainer
             value: CoreCLRCrossDacArtifacts
@@ -318,7 +321,7 @@ extends:
           - linux_bionic_x64
           jobParameters:
             buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true
-            nameSuffix: AllSubsets_NativeAOT
+            nameSuffix: NativeAOT
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -361,7 +364,7 @@ extends:
           # - windows_arm64
           jobParameters:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false
-            nameSuffix: AllSubsets_Mono
+            nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -378,7 +381,7 @@ extends:
           - wasi_wasm
           jobParameters:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-            nameSuffix: AllSubsets_Mono
+            nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -394,7 +397,7 @@ extends:
           - browser_wasm
           jobParameters:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-            nameSuffix: AllSubsets_Mono_multithread
+            nameSuffix: Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread
             postBuildSteps:
@@ -525,7 +528,7 @@ extends:
             jobParameters:
               buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                         /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-              nameSuffix: AllSubsets_Mono_LLVMJIT
+              nameSuffix: Mono_LLVMJIT
               runtimeVariant: LLVMJIT
               isOfficialBuild: ${{ variables.isOfficialBuild }}
               postBuildSteps:
@@ -539,7 +542,7 @@ extends:
             jobParameters:
               buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
                           /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-              nameSuffix: AllSubsets_Mono_LLVMAOT
+              nameSuffix: Mono_LLVMAOT
               runtimeVariant: LLVMAOT
               isOfficialBuild: ${{ variables.isOfficialBuild }}
               postBuildSteps:
@@ -618,24 +621,24 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             dependsOn:
-            - Build_android_arm_release_AllSubsets_Mono
-            - Build_android_arm64_release_AllSubsets_Mono
-            - Build_android_x86_release_AllSubsets_Mono
-            - Build_android_x64_release_AllSubsets_Mono
-            - Build_browser_wasm_Linux_release_AllSubsets_Mono
-            - Build_wasi_wasm_linux_release_AllSubsets_Mono
-            - Build_ios_arm64_release_AllSubsets_Mono
-            - Build_iossimulator_x64_release_AllSubsets_Mono
-            - Build_iossimulator_arm64_release_AllSubsets_Mono
-            - Build_maccatalyst_arm64_release_AllSubsets_Mono
-            - Build_maccatalyst_x64_release_AllSubsets_Mono
-            - Build_tvos_arm64_release_AllSubsets_Mono
-            - Build_tvossimulator_arm64_release_AllSubsets_Mono
-            - Build_tvossimulator_x64_release_AllSubsets_Mono
+            - Build_android_arm_release_Mono
+            - Build_android_arm64_release_Mono
+            - Build_android_x86_release_Mono
+            - Build_android_x64_release_Mono
+            - Build_browser_wasm_Linux_release_Mono
+            - Build_wasi_wasm_linux_release_Mono
+            - Build_ios_arm64_release_Mono
+            - Build_iossimulator_x64_release_Mono
+            - Build_iossimulator_arm64_release_Mono
+            - Build_maccatalyst_arm64_release_Mono
+            - Build_maccatalyst_x64_release_Mono
+            - Build_tvos_arm64_release_Mono
+            - Build_tvossimulator_arm64_release_Mono
+            - Build_tvossimulator_x64_release_Mono
             - Build_windows_x64_release_CrossAOT_Mono
-            - Build_windows_x64_release_AllSubsets_CoreCLR
-            - Build_windows_x86_release_AllSubsets_CoreCLR
-            - Build_windows_arm64_release_AllSubsets_CoreCLR
+            - Build_windows_x64_release_CoreCLR
+            - Build_windows_x86_release_CoreCLR
+            - Build_windows_arm64_release_CoreCLR
 
     - ${{ if eq(variables.isOfficialBuild, true) }}:
       - template: /eng/pipelines/official/stages/publish.yml
