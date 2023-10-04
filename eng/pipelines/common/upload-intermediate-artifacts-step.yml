@@ -25,5 +25,9 @@ steps:
     TargetFolder: '$(Build.StagingDirectory)/IntermediateArtifacts/${{ parameters.name }}'
     CleanTargetFolder: true
 
-- publish: '$(Build.StagingDirectory)/IntermediateArtifacts'
-  artifact: IntermediateArtifacts
+- task: PublishBuildArtifacts@1
+  displayName: Publish intermediate artifacts
+  inputs:
+    pathToPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'
+    artifactName: IntermediateArtifacts
+    artifactType: container

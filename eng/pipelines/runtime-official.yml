@@ -209,9 +209,12 @@ extends:
                   SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
                   Contents: libcoreclr.so
                   TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGroup)$(osSubgroup).$(archType).$(_BuildConfig)/$(crossDacHostArch)
-              - publish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
+              - task: PublishBuildArtifacts@1
                 displayName: Publish runtime for CrossDac
-                artifact: CoreCLRCrossDacArtifacts
+                inputs:
+                  pathToPublish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
+                  PublishLocation: Container
+                  artifactName: CoreCLRCrossDacArtifacts
               # Create RPMs and DEBs
               - template: /eng/pipelines/installer/jobs/steps/build-linux-package.yml
                 parameters:
@@ -252,8 +255,12 @@ extends:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             preBuildSteps:
-            - download: current
-              artifact: $(crossDacArtifactsContainer)
+            - task: DownloadBuildArtifacts@0
+              displayName: Download Runtimes for CrossDac packaging
+              inputs:
+                artifactName: $(crossDacArtifactsContainer)
+                downloadPath: $(crossDacArtifactsBasePath)
+                checkDownloadedFiles: true
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
                 buildArgs: -s linuxdac+alpinedac -c $(_BuildConfig)
@@ -287,8 +294,10 @@ extends:
           variables:
           - name: crossDacArtifactsContainer
             value: CoreCLRCrossDacArtifacts
+          - name: crossDacArtifactsBasePath
+            value: $(Build.StagingDirectory)/CrossDac
           - name: crossDacArtifactsPath
-            value: $(Pipeline.Workspace)/$(crossDacArtifactsContainer)
+            value: $(crossDacArtifactsBasePath)/$(crossDacArtifactsContainer)
 
       #
       # Build NativeAOT runtime packs
