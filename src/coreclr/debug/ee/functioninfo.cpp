@@ -1565,9 +1565,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
     _ASSERTE(fd != NULL);
-
     // The debugger doesn't track Lightweight-codegen methods b/c they have no metadata.
     if (fd->IsDynamicMethod())
     {
@@ -1576,15 +1574,11 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
 
     if (startAddr == NULL)
     {
-        // This will grab the start address for the current code version.
         startAddr = g_pEEInterface->GetFunctionAddress(fd);
         if (startAddr == NULL)
         {
-            startAddr = fd->GetNativeCodeReJITAware();
-            if (startAddr == NULL)
-            {
-                return NULL;
-            }
+            //The only case this should happen is if we are trying to get the DJI for a method that has not been jitted yet.
+            return NULL;
         }
     }
     else

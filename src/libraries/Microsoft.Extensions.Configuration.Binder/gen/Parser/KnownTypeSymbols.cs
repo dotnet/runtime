@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record KnownTypeSymbols
+    internal sealed class KnownTypeSymbols
     {
         public CSharpCompilation Compilation { get; }
 
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? OptionsConfigurationServiceCollectionExtensions { get; }
 
         public INamedTypeSymbol GenericIList_Unbound { get; }
-        public INamedTypeSymbol GenericICollection_Unbound { get; }
+        public INamedTypeSymbol? GenericICollection_Unbound { get; }
         public INamedTypeSymbol GenericICollection { get; }
         public INamedTypeSymbol GenericIEnumerable_Unbound { get; }
         public INamedTypeSymbol IEnumerable { get; }
@@ -61,7 +61,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             Compilation = compilation;
 
-            // Primitives (needed because they are Microsoft.CodeAnalysis.SpecialType.None)
+            // Primitives
+            String = compilation.GetSpecialType(SpecialType.System_String);
             CultureInfo = compilation.GetBestTypeByMetadataName(typeof(CultureInfo));
             DateOnly = compilation.GetBestTypeByMetadataName("System.DateOnly");
             DateTimeOffset = compilation.GetBestTypeByMetadataName(typeof(DateTimeOffset));
@@ -103,7 +104,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             // Used for type equivalency checks for unbound generics. The parameters of the types
             // retured by the Roslyn Get*Type* APIs are not unbound, so we construct unbound
             // generics to equal those corresponding to generic types in the input type graphs.
-            GenericICollection_Unbound = GenericICollection?.ConstructUnboundGenericType();
+            GenericICollection_Unbound = GenericICollection.ConstructUnboundGenericType();
             GenericIDictionary_Unbound = GenericIDictionary?.ConstructUnboundGenericType();
             GenericIEnumerable_Unbound = compilation.GetSpecialType(SpecialType.System_Collections_Generic_IEnumerable_T).ConstructUnboundGenericType();
             GenericIList_Unbound = compilation.GetSpecialType(SpecialType.System_Collections_Generic_IList_T).ConstructUnboundGenericType();
