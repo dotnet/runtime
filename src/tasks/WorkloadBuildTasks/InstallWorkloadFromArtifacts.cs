@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -65,6 +66,7 @@ namespace Microsoft.Workload.Build.Tasks
         [GeneratedRegex(@"^\d+\.\d+\.\d+(-[A-z]*\.*\d*)?")]
         private static partial Regex bandVersionRegex();
 
+        private readonly Stopwatch _stopwatch = new();
         public override bool Execute()
         {
             try
@@ -111,8 +113,13 @@ namespace Microsoft.Workload.Build.Tasks
                     }
                 }
 
-                if (!InstallAllManifests())
-                    return false;
+                _stopwatch.Start();
+                {
+                    if (!InstallAllManifests())
+                        return false;
+                }
+                _stopwatch.Stop();
+                Log.LogMessage(MessageImportance.High, $"Installing manifests took {_stopwatch.Elapsed.TotalSeconds} secs");
 
                 if (OnlyUpdateManifests)
                     return !Log.HasLoggedErrors;
@@ -160,8 +167,13 @@ namespace Microsoft.Workload.Build.Tasks
                     if (!req.Validate(Log))
                         return false;
 
-                    if (!ExecuteInternal(req) && !req.IgnoreErrors)
-                        return false;
+                    _stopwatch.Start();
+                    {
+                        if (!ExecuteInternal(req) && !req.IgnoreErrors)
+                            return false;
+                    }
+                    _stopwatch.Stop();
+                    Log.LogMessage(MessageImportance.High, $"Installing workload took {_stopwatch.Elapsed.TotalSeconds:F} secs");
 
                     File.WriteAllText(req.StampPath, string.Empty);
                 }
