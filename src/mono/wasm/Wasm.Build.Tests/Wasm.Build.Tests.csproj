@@ -15,7 +15,9 @@
     <!-- these are imported in this project instead -->
     <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
+    <!-- '/.dockerenv' - is to check if this is running in a codespace -->
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallChromeForTests>
+    <InstallV8ForTests Condition="'$(InstallV8ForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallV8ForTests>
 
     <!-- don't run any wasm build steps -->
     <IsBrowserWasmProject>false</IsBrowserWasmProject>
@@ -93,6 +95,9 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=$(_WasmBrowserPathForTests)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export V8_PATH_FOR_TESTS=$(_WasmJSEnginePathForTests)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set V8_PATH_FOR_TESTS=$(_WasmJSEnginePathForTests)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />

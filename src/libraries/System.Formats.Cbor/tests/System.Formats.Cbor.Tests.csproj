@@ -1,6 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <nullable>enable</nullable>
     <!-- Referenced assembly 'FsCheck' does not have a strong name.-->
     <NoWarn>$(NoWarn);CS8002</NoWarn>

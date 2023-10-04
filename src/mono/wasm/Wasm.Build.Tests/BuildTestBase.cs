@@ -262,15 +262,9 @@ namespace Wasm.Build.Tests
             args.Append($" --expected-exit-code={expectedAppExitCode}");
             args.Append($" {extraXHarnessArgs ?? string.Empty}");
 
+            // `/.dockerenv` - is to check if this is running in a codespace
             if (File.Exists("/.dockerenv"))
                 args.Append(" --browser-arg=--no-sandbox");
-
-            if (!string.IsNullOrEmpty(EnvironmentVariables.BrowserPathForTests))
-            {
-                if (!File.Exists(EnvironmentVariables.BrowserPathForTests))
-                    throw new Exception($"Cannot find BROWSER_PATH_FOR_TESTS={EnvironmentVariables.BrowserPathForTests}");
-                args.Append($" --browser-path=\"{EnvironmentVariables.BrowserPathForTests}\"");
-            }
 
             args.Append(" -- ");
             if (extraXHarnessMonoArgs != null)
