@@ -981,9 +981,9 @@ namespace Internal.IL
 
             _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _compilation.NodeFactory, _canonMethodIL, canonField);
 
-            // Write will be null for ld(s)flda. Consider address loads write unless they were
-            // for initonly fields. We'll trust the initonly that this is not a write.
-            write ??= !field.IsInitOnly;
+            // `write` will be null for ld(s)flda. Consider address loads write unless they were
+            // for initonly static fields. We'll trust the initonly that this is not a write.
+            write ??= !field.IsInitOnly || !field.IsStatic;
 
             if (write.Value)
             {
