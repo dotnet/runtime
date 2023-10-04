@@ -291,7 +291,8 @@ mono_ios_runtime_init (void)
     char icu_dat_path [1024];
     int res;
 #if defined(HYBRID_GLOBALIZATION)
-    res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt_hybrid.dat");
+    //res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt_hybrid.dat");
+    res = 1;
 #else
     res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
 #endif
@@ -302,7 +303,7 @@ mono_ios_runtime_init (void)
         "RUNTIME_IDENTIFIER",
         "APP_CONTEXT_BASE_DIRECTORY",
         "PINVOKE_OVERRIDE",
-#if !defined(INVARIANT_GLOBALIZATION)
+#if !defined(INVARIANT_GLOBALIZATION) && !defined(HYBRID_GLOBALIZATION)
         "ICU_DAT_FILE_PATH"
 #endif
     };
@@ -310,7 +311,7 @@ mono_ios_runtime_init (void)
         APPLE_RUNTIME_IDENTIFIER,
         bundle,
         pinvoke_override,
-#if !defined(INVARIANT_GLOBALIZATION)
+#if !defined(INVARIANT_GLOBALIZATION) && !defined(HYBRID_GLOBALIZATION)
         icu_dat_path
 #endif
     };
