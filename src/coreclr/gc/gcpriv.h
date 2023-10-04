@@ -363,7 +363,7 @@ const int policy_expand  = 2;
 #ifdef SIMPLE_DPRINTF
 
 void GCLog (const char *fmt, ... );
-#define dprintf(l,x) {if ((l == GTC_LOG)) {GCLog x;}}
+#define dprintf(l,x) {if ((l == 6666)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
 #ifdef HOST_64BIT
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
