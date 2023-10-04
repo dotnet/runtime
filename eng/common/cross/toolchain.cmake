@@ -172,7 +172,7 @@ elseif(FREEBSD)
     set(CMAKE_ASM_COMPILER_TARGET ${triple})
     set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
     add_link_options(-fuse-ld=lld)
-    set(FUSE_LD "-fuse-ld=lld")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
 elseif(ILLUMOS)
     set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
 
