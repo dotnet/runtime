@@ -12,8 +12,6 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 			var foo = new Foo ();
 			var bar = new Bar ();
 			var baz = new Baz ();
-			var fooBaz = new FooBaz ();
-			var fooBar = new FooBar ();
 		}
 
 		[Kept]
@@ -40,22 +38,6 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 		[DebuggerDisplay (null)]
 		class Baz
 		{
-		}
-
-		[Kept]
-		[KeptMember (".ctor()")]
-		[DebuggerDisplay ("_", Name="{Property}")]
-		class FooBaz
-		{
-			public int Property { get; set; }
-		}
-
-		[Kept]
-		[KeptMember (".ctor()")]
-		[DebuggerDisplay ("_", Type="{Property}")]
-		class FooBar
-		{
-			public int Property { get; set; }
 		}
 	}
 }

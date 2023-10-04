@@ -196,8 +196,10 @@ namespace System.Net.Quic.Tests
             await listener.DisposeAsync();
             serverDisposed.SetResult();
 
-            var accept1Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask1);
-            var accept2Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask2);
+            var accept1Exception = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await acceptTask1);
+            var accept2Exception = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await acceptTask2);
+
+            Assert.Equal(accept1Exception, accept2Exception);
 
             // Connect attempt should be stopped with "UserCanceled".
             var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);

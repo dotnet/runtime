@@ -11,6 +11,11 @@ using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 namespace Microsoft.Interop
 {
     /// <summary>
+    /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
+    /// </summary>
+    public sealed record SafeHandleMarshallingInfo(bool AccessibleDefaultConstructor, bool IsAbstract) : MarshallingInfo;
+
+    /// <summary>
     /// This class supports generating marshalling info for SafeHandle-derived types.
     /// </summary>
     public sealed class SafeHandleMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
@@ -47,6 +52,7 @@ namespace Microsoft.Interop
         public MarshallingInfo GetMarshallingInfo(ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
         {
             bool hasDefaultConstructor = false;
+            bool hasAccessibleDefaultConstructor = false;
             if (type is INamedTypeSymbol named && !named.IsAbstract && named.InstanceConstructors.Length > 0)
             {
                 foreach (IMethodSymbol ctor in named.InstanceConstructors)
@@ -54,16 +60,18 @@ namespace Microsoft.Interop
                     if (ctor.Parameters.Length == 0)
                     {
                         hasDefaultConstructor = ctor.DeclaredAccessibility == Accessibility.Public;
+                        hasAccessibleDefaultConstructor = _compilation.IsSymbolAccessibleWithin(ctor, _containingScope);
                         break;
                     }
                 }
             }
 
-            // If we don't have the SafeHandleMarshaller<T> type, then we'll return a MissingSupportMarshallingInfo
-            // indicating that we don't support marshalling SafeHandles with source-generated marshalling.
+            // If we don't have the SafeHandleMarshaller<T> type, then we'll use the built-in support in the generator.
+            // This support will be removed when dotnet/runtime doesn't build any packages for platforms below .NET 8
+            // as the downlevel support is dotnet/runtime specific.
             if (_safeHandleMarshallerType is null)
             {
-                return new MissingSupportMarshallingInfo();
+                return new SafeHandleMarshallingInfo(hasAccessibleDefaultConstructor, type.IsAbstract);
             }
 
             INamedTypeSymbol entryPointType = _safeHandleMarshallerType.Construct(type);

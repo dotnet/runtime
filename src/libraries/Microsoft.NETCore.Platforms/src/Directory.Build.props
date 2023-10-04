@@ -1,9 +1,0 @@
-<Project>
-
-  <PropertyGroup>
-    <IsSourceProject>false</IsSourceProject>
-  </PropertyGroup>
-
-  <Import Project="..\..\Directory.Build.props" />
-
-</Project>

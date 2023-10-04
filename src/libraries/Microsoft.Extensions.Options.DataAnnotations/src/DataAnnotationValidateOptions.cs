@@ -95,8 +95,7 @@ namespace Microsoft.Extensions.Options
 
             foreach (PropertyInfo propertyInfo in options.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
             {
-                // Indexers are properties which take parameters. Ignore them.
-                if (propertyInfo.GetMethod is null || propertyInfo.GetMethod.GetParameters().Length > 0)
+                if (propertyInfo.GetMethod is null)
                 {
                     continue;
                 }

@@ -26,6 +26,8 @@ namespace Microsoft.Interop
             _compareToTrue = compareToTrue;
         }
 
+        public bool IsSupported(TargetFramework target, Version version) => true;
+
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             Debug.Assert(info.ManagedType is SpecialTypeInfo(_, _, SpecialType.System_Boolean));

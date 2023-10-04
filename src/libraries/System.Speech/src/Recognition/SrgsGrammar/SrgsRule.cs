@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Speech.Internal;
@@ -15,8 +14,6 @@ namespace System.Speech.Recognition.SrgsGrammar
     [DebuggerTypeProxy(typeof(SrgsRuleDebugDisplay))]
     public class SrgsRule : IRule
     {
-        private static readonly SearchValues<char> s_invalidChars = SearchValues.Create("?*+|()^$/;.=<>[]{}\\ \t\r\n");
-
         #region Constructors
         private SrgsRule()
         {
@@ -386,7 +383,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 XmlParser.ThrowSrgsException(SRID.ConstructorNotAllowed, _id);
             }
 
-            if (s != null && (s.Length == 0 || s.AsSpan().ContainsAny(s_invalidChars)))
+            if (s != null && (s.IndexOfAny(s_invalidChars) >= 0 || s.Length == 0))
             {
                 XmlParser.ThrowSrgsException(SRID.InvalidMethodName);
             }
@@ -419,6 +416,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         private string _onError;
 
         private string _onRecognition;
+        private static readonly char[] s_invalidChars = new char[] { '?', '*', '+', '|', '(', ')', '^', '$', '/', ';', '.', '=', '<', '>', '[', ']', '{', '}', '\\', ' ', '\t', '\r', '\n' };
 
         #endregion
 

@@ -69,8 +69,8 @@ namespace System.Numerics.Tensors
 
         private static float Aggregate<TLoad, TAggregate>(
             float identityValue, ReadOnlySpan<float> x, TLoad load = default, TAggregate aggregate = default)
-            where TLoad : struct, IUnaryOperator
-            where TAggregate : struct, IBinaryOperator
+            where TLoad : IUnaryOperator
+            where TAggregate : IBinaryOperator
         {
             // Initialize the result to the identity value
             float result = identityValue;
@@ -112,8 +112,8 @@ namespace System.Numerics.Tensors
 
         private static float Aggregate<TBinary, TAggregate>(
             float identityValue, ReadOnlySpan<float> x, ReadOnlySpan<float> y, TBinary binary = default, TAggregate aggregate = default)
-            where TBinary : struct, IBinaryOperator
-            where TAggregate : struct, IBinaryOperator
+            where TBinary : IBinaryOperator
+            where TAggregate : IBinaryOperator
         {
             // Initialize the result to the identity value
             float result = identityValue;
@@ -156,7 +156,7 @@ namespace System.Numerics.Tensors
 
         private static void InvokeSpanIntoSpan<TUnaryOperator>(
             ReadOnlySpan<float> x, Span<float> destination, TUnaryOperator op = default)
-            where TUnaryOperator : struct, IUnaryOperator
+            where TUnaryOperator : IUnaryOperator
         {
             if (x.Length > destination.Length)
             {
@@ -203,7 +203,7 @@ namespace System.Numerics.Tensors
 
         private static void InvokeSpanSpanIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination, TBinaryOperator op = default)
-            where TBinaryOperator : struct, IBinaryOperator
+            where TBinaryOperator : IBinaryOperator
         {
             if (x.Length != y.Length)
             {
@@ -258,7 +258,7 @@ namespace System.Numerics.Tensors
 
         private static void InvokeSpanScalarIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination, TBinaryOperator op = default)
-            where TBinaryOperator : struct, IBinaryOperator
+            where TBinaryOperator : IBinaryOperator
         {
             if (x.Length > destination.Length)
             {
@@ -309,7 +309,7 @@ namespace System.Numerics.Tensors
 
         private static void InvokeSpanSpanSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> z, Span<float> destination, TTernaryOperator op = default)
-            where TTernaryOperator : struct, ITernaryOperator
+            where TTernaryOperator : ITernaryOperator
         {
             if (x.Length != y.Length || x.Length != z.Length)
             {
@@ -369,7 +369,7 @@ namespace System.Numerics.Tensors
 
         private static void InvokeSpanSpanScalarIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, float z, Span<float> destination, TTernaryOperator op = default)
-            where TTernaryOperator : struct, ITernaryOperator
+            where TTernaryOperator : ITernaryOperator
         {
             if (x.Length != y.Length)
             {
@@ -430,7 +430,7 @@ namespace System.Numerics.Tensors
 
         private static void InvokeSpanScalarSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, float y, ReadOnlySpan<float> z, Span<float> destination, TTernaryOperator op = default)
-            where TTernaryOperator : struct, ITernaryOperator
+            where TTernaryOperator : ITernaryOperator
         {
             if (x.Length != z.Length)
             {

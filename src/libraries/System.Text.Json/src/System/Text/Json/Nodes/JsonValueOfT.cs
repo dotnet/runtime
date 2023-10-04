@@ -72,17 +72,8 @@ namespace System.Text.Json.Nodes
                 return element.ValueKind;
             }
 
-            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(default, JsonSerializerOptions.BufferSizeDefault, out PooledByteBufferWriter output);
-            try
-            {
-                WriteTo(writer);
-                writer.Flush();
-                return JsonElement.ParseValue(output.WrittenMemory.Span, options: default).ValueKind;
-            }
-            finally
-            {
-                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
-            }
+            using PooledByteBufferWriter output = WriteToPooledBuffer();
+            return JsonElement.ParseValue(output.WrittenMemory.Span, options: default).ValueKind;
         }
 
         internal sealed override bool DeepEqualsCore(JsonNode? otherNode)
@@ -116,21 +107,9 @@ namespace System.Text.Json.Nodes
                 }
             }
 
-            using PooledByteBufferWriter thisOutput = WriteToPooledBuffer(this);
-            using PooledByteBufferWriter otherOutput = WriteToPooledBuffer(otherNode);
+            using PooledByteBufferWriter thisOutput = WriteToPooledBuffer();
+            using PooledByteBufferWriter otherOutput = otherNode.WriteToPooledBuffer();
             return thisOutput.WrittenMemory.Span.SequenceEqual(otherOutput.WrittenMemory.Span);
-
-            static PooledByteBufferWriter WriteToPooledBuffer(
-                JsonNode node,
-                JsonSerializerOptions? options = null,
-                JsonWriterOptions writerOptions = default,
-                int bufferSize = JsonSerializerOptions.BufferSizeDefault)
-            {
-                var bufferWriter = new PooledByteBufferWriter(bufferSize);
-                using var writer = new Utf8JsonWriter(bufferWriter, writerOptions);
-                node.WriteTo(writer, options);
-                return bufferWriter;
-            }
         }
 
         internal TypeToConvert ConvertJsonElement<TypeToConvert>()

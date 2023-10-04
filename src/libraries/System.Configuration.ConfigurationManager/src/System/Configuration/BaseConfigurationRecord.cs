@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -19,12 +18,6 @@ namespace System.Configuration
     [DebuggerDisplay("ConfigPath = {ConfigPath}")]
     internal abstract class BaseConfigurationRecord : IInternalConfigRecord
     {
-#if NET8_0_OR_GREATER
-        private static readonly SearchValues<char> s_invalidSubPathChars = SearchValues.Create(InvalidSubPathCharactersString);
-#else
-        private static ReadOnlySpan<char> s_invalidSubPathChars => InvalidSubPathCharactersString.AsSpan();
-#endif
-
         protected const string NewLine = "\r\n";
 
         internal const string KeywordTrue = "true";
@@ -135,6 +128,7 @@ namespace System.Configuration
 
         // Comparer used in sorting IndirectInputs.
         private static readonly IComparer<SectionInput> s_indirectInputsComparer = new IndirectLocationInputComparer();
+        private static readonly char[] s_invalidSubPathCharactersArray = InvalidSubPathCharactersString.ToCharArray();
         protected Hashtable _children; // configName -> record
 
         private object _configContext; // Context for config level
@@ -3096,7 +3090,7 @@ namespace System.Configuration
                 throw new ConfigurationErrorsException(SR.Config_location_path_invalid_last_character, errorInfo);
 
             // combination of URI reserved characters and OS invalid filename characters, minus / (allowed reserved character)
-            if (subPath.AsSpan().IndexOfAny(s_invalidSubPathChars) >= 0)
+            if (subPath.IndexOfAny(s_invalidSubPathCharactersArray) != -1)
                 throw new ConfigurationErrorsException(SR.Config_location_path_invalid_character, errorInfo);
 
             return subPath;
