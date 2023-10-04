@@ -188,8 +188,13 @@ namespace Microsoft.Workload.Build.Tasks
                 return false;
             }
 
-            Log.LogMessage(MessageImportance.Low, $"Duplicating {SdkWithNoWorkloadInstalledPath} into {req.TargetPath}");
-            Utils.DirectoryCopy(SdkWithNoWorkloadInstalledPath, req.TargetPath);
+            if (!Directory.Exists(req.TargetPath))
+            {
+                // we start fresh, so if this exists then a workload has been installed in this same
+                // task invocation
+                Log.LogMessage(MessageImportance.Low, $"Duplicating {SdkWithNoWorkloadInstalledPath} into {req.TargetPath}");
+                Utils.DirectoryCopy(SdkWithNoWorkloadInstalledPath, req.TargetPath);
+            }
 
             string nugetConfigContents = GetNuGetConfig();
             if (!InstallPacks(req, nugetConfigContents))
@@ -236,7 +241,7 @@ namespace Microsoft.Workload.Build.Tasks
                 if (!InstallWorkloadManifest(workload,
                                              req.ManifestName,
                                              req.Version,
-                                             SdkPlainInstallPath,
+                                             SdkWithNoWorkloadInstalledPath,
                                              nugetConfigContents,
                                              stopOnMissing: true))
                 {
@@ -358,6 +363,7 @@ namespace Microsoft.Workload.Build.Tasks
             }
 
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
+            Log.LogMessage(MessageImportance.High, $"outputDir: {outputDir}");
             var bandVersion = VersionBandForManifestPackages;
             // regex matching the version band, e.g. 6.0.100-preview.3.21202.5 => 6.0.100-preview.3
             string packagePreleaseVersion = bandVersionRegex().Match(version).Groups[1].Value;
