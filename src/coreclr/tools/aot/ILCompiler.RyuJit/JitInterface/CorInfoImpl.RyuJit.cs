@@ -2274,6 +2274,7 @@ namespace Internal.JitInterface
                 }
                 else if (!owningType.HasStaticConstructor)
                 {
+                    // (Effectively) read only field but no static constructor to set it: the value is default-initialized.
                     int size = field.FieldType.GetElementSize().AsInt;
                     if (size >= bufferSize && valueOffset <= size - bufferSize)
                     {
