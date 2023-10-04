@@ -41,15 +41,15 @@ namespace System.Text.Json.Serialization.Converters
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
         private const int NameCacheSizeSoftLimit = 64;
-        private const string NumericPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
+        private static readonly Regex s_numericRegex = NumericRegex();
+        private const string NumericRegexPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
+        private const int NumericRegexTimeoutMs = 200;
 
 #if NETCOREAPP
-        [GeneratedRegex(NumericPattern)]
+        [GeneratedRegex(NumericRegexPattern, MatchTimeoutMilliseconds = NumericRegexTimeoutMs)]
         private static partial Regex NumericRegex();
-
-        private static readonly Regex s_numericRegex = NumericRegex();
 #else
-        private static readonly Regex s_numericRegex = new(NumericPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(200));
+        private static Regex NumericRegex() => new(NumericRegexPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(NumericRegexTimeoutMs));
 #endif
 
         public override bool CanConvert(Type type)
