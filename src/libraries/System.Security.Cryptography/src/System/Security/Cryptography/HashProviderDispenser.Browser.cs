@@ -53,9 +53,15 @@ namespace System.Security.Cryptography
 
             public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
-                HashProvider provider = CreateHashProvider(hashAlgorithmId);
-                provider.AppendHashData(source);
-                return provider.FinalizeHashAndReset(destination);
+                switch (hashAlgorithmId)
+                {
+                    case HashAlgorithmNames.SHA1:
+                    case HashAlgorithmNames.SHA256:
+                    case HashAlgorithmNames.SHA384:
+                    case HashAlgorithmNames.SHA512:
+                        return SHAManagedHashProvider.HashData(hashAlgorithmId, source, destination);
+                }
+                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
             }
 
             public static void HashDataXof(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)

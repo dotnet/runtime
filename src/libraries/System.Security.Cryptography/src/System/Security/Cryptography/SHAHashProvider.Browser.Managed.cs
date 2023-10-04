@@ -41,6 +41,34 @@ namespace System.Security.Cryptography
             }
         }
 
+        public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            switch (hashAlgorithmId)
+            {
+                case HashAlgorithmNames.SHA1:
+                    Hash<SHA1ManagedImplementation>(source, destination);
+                    return 20;
+                case HashAlgorithmNames.SHA256:
+                    Hash<SHA256ManagedImplementation>(source, destination);
+                    return 32;
+                case HashAlgorithmNames.SHA384:
+                    Hash<SHA384ManagedImplementation>(source, destination);
+                    return 48;
+                case HashAlgorithmNames.SHA512:
+                    Hash<SHA512ManagedImplementation>(source, destination);
+                    return 64;
+                default:
+                    throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            }
+
+            static void Hash<T>(ReadOnlySpan<byte> source, Span<byte> destination) where T : struct, new(), ISHAManagedImplementation
+            {
+                T impl = new();
+                impl.AppendHashData(source);
+                impl.FinalizeHashAndReset(destination);
+            }
+        }
+
         public override void AppendHashData(ReadOnlySpan<byte> data)
         {
             impl.AppendHashData(data);
