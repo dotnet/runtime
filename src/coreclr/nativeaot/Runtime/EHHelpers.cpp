@@ -283,10 +283,6 @@ EXTERN_C void * RhpAssignRefAVLocation;
 EXTERN_C void * RhpCheckedAssignRefAVLocation;
 EXTERN_C void * RhpCheckedLockCmpXchgAVLocation;
 EXTERN_C void * RhpCheckedXchgAVLocation;
-EXTERN_C void * RhpLockCmpXchg8AVLocation;
-EXTERN_C void * RhpLockCmpXchg16AVLocation;
-EXTERN_C void * RhpLockCmpXchg32AVLocation;
-EXTERN_C void * RhpLockCmpXchg64AVLocation;
 EXTERN_C void * RhpByRefAssignRefAVLocation1;
 
 #if !defined(HOST_ARM64)
@@ -307,10 +303,6 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpCheckedAssignRefAVLocation,
         (uintptr_t)&RhpCheckedLockCmpXchgAVLocation,
         (uintptr_t)&RhpCheckedXchgAVLocation,
-        (uintptr_t)&RhpLockCmpXchg8AVLocation,
-        (uintptr_t)&RhpLockCmpXchg16AVLocation,
-        (uintptr_t)&RhpLockCmpXchg32AVLocation,
-        (uintptr_t)&RhpLockCmpXchg64AVLocation,
         (uintptr_t)&RhpByRefAssignRefAVLocation1,
 #if !defined(HOST_ARM64)
         (uintptr_t)&RhpByRefAssignRefAVLocation2,

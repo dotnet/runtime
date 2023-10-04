@@ -21,13 +21,13 @@ namespace System.Threading
         [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
-            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+            return CompareExchange(ref location1, value, comparand);
         }
 
         [Intrinsic]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
-            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+            return CompareExchange(ref location1, value, comparand);
         }
 
         [Intrinsic]

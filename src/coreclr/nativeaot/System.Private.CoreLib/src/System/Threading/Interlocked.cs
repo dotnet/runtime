@@ -14,25 +14,25 @@ namespace System.Threading
         [Intrinsic]
         public static byte CompareExchange(ref byte location1, byte value, byte comparand)
         {
-            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+            return CompareExchange(ref location1, value, comparand);
         }
 
         [Intrinsic]
         public static short CompareExchange(ref short location1, short value, short comparand)
         {
-            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+            return CompareExchange(ref location1, value, comparand);
         }
 
         [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
-            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+            return CompareExchange(ref location1, value, comparand);
         }
 
         [Intrinsic]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
-            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+            return CompareExchange(ref location1, value, comparand);
         }
 
         [Intrinsic]
@@ -57,53 +57,25 @@ namespace System.Threading
         [Intrinsic]
         public static byte Exchange(ref byte location1, byte value)
         {
-            byte oldValue;
-
-            do
-            {
-                oldValue = location1;
-            } while (CompareExchange(ref location1, value, oldValue) != oldValue);
-
-            return oldValue;
+            return Exchange(ref location1, value);
         }
 
         [Intrinsic]
         public static short Exchange(ref short location1, short value)
         {
-            short oldValue;
-
-            do
-            {
-                oldValue = location1;
-            } while (CompareExchange(ref location1, value, oldValue) != oldValue);
-
-            return oldValue;
+            return Exchange(ref location1, value);
         }
 
         [Intrinsic]
         public static int Exchange(ref int location1, int value)
         {
-            int oldValue;
-
-            do
-            {
-                oldValue = location1;
-            } while (CompareExchange(ref location1, value, oldValue) != oldValue);
-
-            return oldValue;
+            return Exchange(ref location1, value);
         }
 
         [Intrinsic]
         public static long Exchange(ref long location1, long value)
         {
-            long oldValue;
-
-            do
-            {
-                oldValue = location1;
-            } while (CompareExchange(ref location1, value, oldValue) != oldValue);
-
-            return oldValue;
+            return Exchange(ref location1, value);
         }
 
         [Intrinsic]

@@ -92,17 +92,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpFallbackFailFast")]
         internal static extern unsafe void RhpFallbackFailFast();
 
-        //
-        // Interlocked helpers
-        //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
-        internal static extern int InterlockedCompareExchange(ref int location1, int value, int comparand);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg64")]
-        internal static extern long InterlockedCompareExchange(ref long location1, long value, long comparand);
-
         // Moves memory from smem to dmem. Size must be a positive value.
         // This copy uses an intrinsic to be safe for copying arbitrary bits of
         // heap memory
