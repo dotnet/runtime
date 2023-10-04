@@ -5086,11 +5086,26 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
     {
         // A non-null context here implies our [+ some offset] parent is an indirection, one that
         // will implicitly null-check the produced address.
-        addExplicitNullCheck = (mac == nullptr) || fgIsBigOffset(mac->m_totalOffset + fieldOffset);
+        addExplicitNullCheck = (mac == nullptr) || fgIsBigOffset(mac->TotalOffset + fieldOffset);
 
-        if (!addExplicitNullCheck)
+        // The transformation here turns a value dependency (FIELD_ADDR being a
+        // known non-null operand) into a control-flow dependency (introducing
+        // explicit COMMA(NULLCHECK, ...)). This effectively "disconnects" the
+        // null check from the parent of the FIELD_ADDR node. For the cases
+        // where we made use of non-nullness we need to make the dependency
+        // explicit now.
+        if (addExplicitNullCheck)
         {
-            mac->m_used = true;
+            if (mac != nullptr)
+            {
+                mac->Consumer->SetHasOrderingSideEffect();
+            }
+        }
+        else
+        {
+            // We can elide the null check only by letting it happen as part of
+            // the consuming indirection, so it is no longer non-faulting.
+            mac->Consumer->gtFlags &= ~GTF_IND_NONFAULTING;
         }
     }
 
@@ -5153,6 +5168,13 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         }
 
         addr = gtNewOperNode(GT_ADD, (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, addr, offsetNode);
+
+        // We cannot form and GC report an invalid byref, so this must preserve
+        // its ordering with the null check.
+        if (addExplicitNullCheck && addr->TypeIs(TYP_BYREF))
+        {
+            addr->SetHasOrderingSideEffect();
+        }
     }
 #endif
 
@@ -5168,6 +5190,13 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
     {
         addr = gtNewOperNode(GT_ADD, (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, addr,
                              gtNewIconNode(fieldOffset, fieldSeq));
+
+        // We cannot form and GC report an invalid byref, so this must preserve
+        // its ordering with the null check.
+        if (addExplicitNullCheck && addr->TypeIs(TYP_BYREF))
+        {
+            addr->SetHasOrderingSideEffect();
+        }
     }
 
     if (addExplicitNullCheck)
@@ -8937,17 +8966,18 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         if (tree->OperIsIndir()) // TODO-CQ: add more operators here (e. g. atomics).
         {
             // Communicate to FIELD_ADDR morphing that the parent is an indirection.
-            mac = &indMac;
+            indMac.Consumer = tree->AsIndir();
+            mac             = &indMac;
         }
         // For additions, if we already have a context, keep track of whether all offsets added
         // to the address are constant, and their sum does not overflow.
         else if ((mac != nullptr) && tree->OperIs(GT_ADD) && op2->IsCnsIntOrI())
         {
-            ClrSafeInt<size_t> offset(mac->m_totalOffset);
+            ClrSafeInt<size_t> offset(mac->TotalOffset);
             offset += op2->AsIntCon()->IconValue();
             if (!offset.IsOverflow())
             {
-                mac->m_totalOffset = offset.Value();
+                mac->TotalOffset = offset.Value();
             }
             else
             {
@@ -8960,13 +8990,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         }
 
         tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1, mac);
-
-        if ((mac != nullptr) && mac->m_used && tree->OperIsIndir())
-        {
-            // This context was used to elide an explicit null check on a FIELD_ADDR, with the expectation that
-            // this indirection will now be responsible for null-checking (implicitly).
-            tree->gtFlags &= ~GTF_IND_NONFAULTING;
-        }
 
         // If we are exiting the "then" part of a Qmark-Colon we must
         // save the state of the current copy assignment table
