@@ -237,10 +237,11 @@ jobs:
         - task: CodeQL3000Init@0
           displayName: Initialize CodeQL (manually-injected)
 
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci $(_archParameter) $(_osParameter) $(crossArg) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
-        displayName: Build product
-        ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
-          continueOnError: ${{ parameters.shouldContinueOnError }}
+      - template: /eng/pipelines/common/templates/global-build-step.yml
+        parameters:
+          buildArgs: ${{ parameters.buildArgs }}
+          useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
       - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
         - task: CodeQL3000Finalize@0
