@@ -101,6 +101,7 @@ if /i "%arg%" == "SkipManaged"           (set __SkipManaged=1&set processedArgs=
 if /i "%arg%" == "SkipNative"            (set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "SkipTestWrappers"      (set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "SkipGenerateLayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "Standalone"            (set BuildAsStandalone=true&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%arg%" == "CopyNativeOnly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set __SkipGenerateLayout=1&set __SkipTestWrappers=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -382,6 +383,7 @@ echo -SkipManaged: Skip the managed tests build.
 echo -SkipNative: Skip the native tests build.
 echo -SkipTestWrappers: Skip generating test wrappers.
 echo -SkipGenerateLayout: Skip generating the Core_Root layout.
+echo -Standalone: Builds the tests as standalone exes.
 echo.
 echo -CopyNativeOnly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
 echo -GenerateLayoutOnly: Only generate the Core_Root layout without building managed or native test components.

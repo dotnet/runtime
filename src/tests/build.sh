@@ -146,6 +146,7 @@ usage_list+=("-skipmanaged - Skip the managed tests build.")
 usage_list+=("-skipnative - Skip the native tests build.")
 usage_list+=("-skiptestwrappers - Skip generating test wrappers.")
 usage_list+=("-skipgeneratelayout - Skip generating the Core_Root layout.")
+usage_list+=("-standalone - Builds the tests as standalone exes.")
 usage_list+=("")
 usage_list+=("-copynativeonly - Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-generatelayoutonly - Only generate the Core_Root layout without building managed or native test components.")
@@ -279,6 +280,10 @@ handle_arguments_local() {
 
         skipgeneratelayout|-skipgeneratelayout)
             __SkipGenerateLayout=1
+            ;;
+
+        standalone|-standalone)
+            BuildAsStandalone=true
             ;;
 
         excludemonofailures|-excludemonofailures)
