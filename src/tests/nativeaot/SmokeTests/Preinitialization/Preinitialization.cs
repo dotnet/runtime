@@ -435,20 +435,27 @@ class TestReferenceTypeWithReadonlyNullGCPointerAllocation
 {
     class ReferenceType
     {
+        // Can't actually access this from anywhere because the test is compiled
+        // with IlcTrimMetadata=false and accessing the field would make it reflection-visible.
         public readonly string StringValue;
 
-        public ReferenceType(string stringvalue)
+        public ReferenceType()
         {
-            StringValue = stringvalue;
         }
     }
 
-    static ReferenceType s_referenceType = new ReferenceType(null);
+    static ReferenceType s_referenceType = new ReferenceType();
 
     public static void Run()
     {
+#if DEBUG
+        // ReferenceType.StringValue is considered maybe reflection-accessed in this test
+        // without the whole program analysis done in RELEASE configuration.
+        Assert.IsLazyInitialized(typeof(TestReferenceTypeWithReadonlyNullGCPointerAllocation));
+#else
         Assert.IsPreinitialized(typeof(TestReferenceTypeWithReadonlyNullGCPointerAllocation));
-        Assert.AreSame(null, s_referenceType.StringValue);
+#endif
+        s_referenceType.ToString();
     }
 }
 
