@@ -7928,6 +7928,17 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         return;
     }
 
+    // TODO-ARM64-CQ: revisit TYP_REF if we find a case where it's beneficial.
+    // The algorithm does support TYP_REF (with null value), but it seems to be not worth
+    // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
+    // items at once. Although, it may be profitable to do "stp q0, q0, [addr]"
+    //
+    // Other types are added for better throughput to early out.
+    if (ind->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT, TYP_FLOAT, TYP_DOUBLE))
+    {
+        return;
+    }
+
     // We're going to do it in a loop while we see suitable STOREINDs to coalesce.
     // E.g.: we have the following LIR sequence:
     //
