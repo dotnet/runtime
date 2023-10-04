@@ -3,14 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
 
 namespace GenericDimValuetypeBug
 {
-    public class Program
+    class Program
     {
-        [Fact]
-        public static int TestEntryPoint()
+        static int Main()
         {
             if (RunOne() != 17)
                 return 1;

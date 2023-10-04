@@ -279,19 +279,17 @@ namespace System.Diagnostics
                         sb.Append(']');
                     }
 
-                    ReadOnlySpan<ParameterInfo> pi = default;
-                    bool appendParameters = true;
+                    ParameterInfo[]? pi = null;
                     try
                     {
-                        pi = mb.GetParametersAsSpan();
+                        pi = mb.GetParameters();
                     }
                     catch
                     {
                         // The parameter info cannot be loaded, so we don't
                         // append the parameter list.
-                        appendParameters = false;
                     }
-                    if (appendParameters)
+                    if (pi != null)
                     {
                         // arguments printing
                         sb.Append('(');

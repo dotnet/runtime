@@ -40,7 +40,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var test = new VerifyCS.Test {
 				TestCode = source,
 				FixedCode = fixedSource,
-				ReferenceAssemblies = TestCaseUtils.NetCoreAppReferencessemblies
+				ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (

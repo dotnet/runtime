@@ -12,19 +12,18 @@ using Xunit;
 namespace DynamicObjects {
     public class M {
         public const string ObjectRequiredMessage = "some string";
-        [Fact]
-        public static void TestEntryPoint()
-        {
+        public static int Main() {
             var instance = createObject();
             var attrs = instance.GetType().GetProperty("prop1").GetCustomAttributes();
 
             Assert.True(attrs.Count() == 2);
-            Assert.Equal("System.ComponentModel.DataAnnotations.DisplayAttribute", attrs.ElementAt(0).ToString());
-            Assert.Equal("System.ComponentModel.DataAnnotations.RequiredAttribute", attrs.ElementAt(1).ToString());
+            Assert.Equal(attrs.ElementAt(0).ToString(), "System.ComponentModel.DataAnnotations.DisplayAttribute");
+            Assert.Equal(attrs.ElementAt(1).ToString(), "System.ComponentModel.DataAnnotations.RequiredAttribute");
             Assert.Equal(typeof(RequiredAttribute), attrs.ElementAt(1).GetType());
             Assert.Equal(ObjectRequiredMessage, ((RequiredAttribute)attrs.ElementAt(1)).FormatErrorMessage("abc"));
 
             Console.WriteLine("Success");
+            return 100;
         }
 
         public static object createObject () {

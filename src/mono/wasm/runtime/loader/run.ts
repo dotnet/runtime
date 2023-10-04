@@ -6,7 +6,7 @@ import BuildConfiguration from "consts:configuration";
 import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, LoadBootResourceCallback } from "../types";
 import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
-import { ENVIRONMENT_IS_WEB, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { mono_exit } from "./exit";
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
@@ -18,14 +18,18 @@ import { setupPreloadChannelToMainThread } from "./worker";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
 import { initCacheToUseIfEnabled } from "./assetsCache";
 
+const module = globalObjectsRoot.module;
+const monoConfig = module.config as MonoConfigInternal;
 
 export class HostBuilder implements DotnetHostBuilder {
     private instance?: RuntimeAPI;
+    private applicationArguments?: string[];
+    private virtualWorkingDirectory?: string;
 
     // internal
     withModuleConfig(moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
         try {
-            deep_merge_module(emscriptenModule, moduleConfig);
+            deep_merge_module(module, moduleConfig);
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -36,7 +40,7 @@ export class HostBuilder implements DotnetHostBuilder {
     // internal
     withOnConfigLoaded(onConfigLoaded: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder {
         try {
-            deep_merge_module(emscriptenModule, {
+            deep_merge_module(module, {
                 onConfigLoaded
             });
             return this;
@@ -72,8 +76,8 @@ export class HostBuilder implements DotnetHostBuilder {
         try {
             // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
             if (ENVIRONMENT_IS_WEB) {
-                globalThis.addEventListener("unhandledrejection", (event) => handler(event, event.reason));
-                globalThis.addEventListener("error", (event) => handler(event, event.error));
+                window.addEventListener("unhandledrejection", (event) => handler(event, event.reason));
+                window.addEventListener("error", (event) => handler(event, event.error));
             }
             return this;
         } catch (err) {
@@ -186,7 +190,7 @@ export class HostBuilder implements DotnetHostBuilder {
     withConfigSrc(configSrc: string): DotnetHostBuilder {
         try {
             mono_assert(configSrc && typeof configSrc === "string", "must be file path or URL");
-            deep_merge_module(emscriptenModule, { configSrc });
+            deep_merge_module(module, { configSrc });
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -197,9 +201,7 @@ export class HostBuilder implements DotnetHostBuilder {
     withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder {
         try {
             mono_assert(vfsPath && typeof vfsPath === "string", "must be directory path");
-            deep_merge_config(monoConfig, {
-                virtualWorkingDirectory: vfsPath
-            });
+            this.virtualWorkingDirectory = vfsPath;
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -263,9 +265,7 @@ export class HostBuilder implements DotnetHostBuilder {
     withApplicationArguments(...args: string[]): DotnetHostBuilder {
         try {
             mono_assert(args && Array.isArray(args), "must be array of strings");
-            deep_merge_config(monoConfig, {
-                applicationArguments: args
-            });
+            this.applicationArguments = args;
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -308,7 +308,7 @@ export class HostBuilder implements DotnetHostBuilder {
                 throw new Error("URLSearchParams is supported");
             }
 
-            const params = new URLSearchParams(globalThis.window.location.search);
+            const params = new URLSearchParams(window.location.search);
             const values = params.getAll("arg");
             return this.withApplicationArguments(...values);
         } catch (err) {
@@ -354,7 +354,19 @@ export class HostBuilder implements DotnetHostBuilder {
     async create(): Promise<RuntimeAPI> {
         try {
             if (!this.instance) {
-                this.instance = await createApi();
+                if (ENVIRONMENT_IS_WEB && (module.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+                    setup_proxy_console("main", globalThis.console, globalThis.location.origin);
+                }
+                mono_assert(module, "Null moduleConfig");
+                mono_assert(module.config, "Null moduleConfig.config");
+                await createEmscripten(module);
+                this.instance = globalObjectsRoot.api;
+            }
+            if (this.virtualWorkingDirectory) {
+                const FS = (this.instance!.Module as any).FS;
+                const wds = FS.stat(this.virtualWorkingDirectory);
+                mono_assert(wds && FS.isDir(wds.mode), () => `Could not find working directory ${this.virtualWorkingDirectory}`);
+                FS.chdir(this.virtualWorkingDirectory);
             }
             return this.instance;
         } catch (err) {
@@ -365,27 +377,27 @@ export class HostBuilder implements DotnetHostBuilder {
 
     async run(): Promise<number> {
         try {
-            mono_assert(emscriptenModule.config, "Null moduleConfig.config");
+            mono_assert(module.config, "Null moduleConfig.config");
             if (!this.instance) {
                 await this.create();
             }
-            mono_assert(emscriptenModule.config.mainAssemblyName, "Null moduleConfig.config.mainAssemblyName");
-            return this.instance!.runMainAndExit(emscriptenModule.config.mainAssemblyName);
+            mono_assert(module.config.mainAssemblyName, "Null moduleConfig.config.mainAssemblyName");
+            if (!this.applicationArguments) {
+                if (ENVIRONMENT_IS_NODE) {
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-ignore:
+                    const process = await import(/* webpackIgnore: true */"process");
+                    this.applicationArguments = process.argv.slice(2);
+                } else {
+                    this.applicationArguments = [];
+                }
+            }
+            return this.instance!.runMainAndExit(module.config.mainAssemblyName, this.applicationArguments!);
         } catch (err) {
             mono_exit(1, err);
             throw err;
         }
     }
-}
-
-export async function createApi(): Promise<RuntimeAPI> {
-    if (ENVIRONMENT_IS_WEB && (loaderHelpers.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
-        setup_proxy_console("main", globalThis.console, globalThis.location.origin);
-    }
-    mono_assert(emscriptenModule, "Null moduleConfig");
-    mono_assert(loaderHelpers.config, "Null moduleConfig.config");
-    await createEmscripten(emscriptenModule);
-    return globalObjectsRoot.api;
 }
 
 export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI | EmscriptenModuleInternal> {
@@ -395,23 +407,23 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         if (extension.ready) {
             throw new Error("Module.ready couldn't be redefined.");
         }
-        Object.assign(emscriptenModule, extension);
-        deep_merge_module(emscriptenModule, extension);
+        Object.assign(module, extension);
+        deep_merge_module(module, extension);
     }
     else if (typeof moduleFactory === "object") {
-        deep_merge_module(emscriptenModule, moduleFactory);
+        deep_merge_module(module, moduleFactory);
     }
     else {
         throw new Error("Can't use moduleFactory callback of createDotnetRuntime function.");
     }
 
-    await detect_features_and_polyfill(emscriptenModule);
+    await detect_features_and_polyfill(module);
     if (BuildConfiguration === "Debug") {
         mono_log_info(`starting script ${loaderHelpers.scriptUrl}`);
         mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
     }
 
-    return emscriptenModule.ENVIRONMENT_IS_PTHREAD
+    return module.ENVIRONMENT_IS_PTHREAD
         ? createEmscriptenWorker()
         : createEmscriptenMain();
 }
@@ -450,25 +462,25 @@ async function initializeModules(es6Modules: [RuntimeModuleExportsInternal, Nati
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 
     emscriptenFactory((originalModule: EmscriptenModuleInternal) => {
-        Object.assign(emscriptenModule, {
+        Object.assign(module, {
             ready: originalModule.ready,
             __dotnet_runtime: {
                 initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, passEmscriptenInternals
             }
         });
 
-        return emscriptenModule;
+        return module;
     });
 }
 
 async function createEmscriptenMain(): Promise<RuntimeAPI> {
-    if (!emscriptenModule.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
+    if (!module.configSrc && (!loaderHelpers.config || Object.keys(loaderHelpers.config).length === 0 || (!loaderHelpers.config.assets && !loaderHelpers.config.resources))) {
         // if config file location nor assets are provided
-        emscriptenModule.configSrc = "./blazor.boot.json";
+        module.configSrc = "./blazor.boot.json";
     }
 
     // download config
-    await mono_wasm_load_config(emscriptenModule);
+    await mono_wasm_load_config(module);
 
     prepareAssets();
 
@@ -516,5 +528,5 @@ async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
     const es6Modules = await Promise.all(promises);
     await initializeModules(es6Modules as any);
 
-    return emscriptenModule;
+    return module;
 }

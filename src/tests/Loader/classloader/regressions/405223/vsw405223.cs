@@ -6,12 +6,10 @@
 // since that is the behavior in Everett and we should be consistent in Whidbey.
 
 using System;
-using Xunit;
 
-public class Class1
+class Class1
 {
-	[Fact]
-	public static int TestEntryPoint() 
+	public static int Main() 
 	{
 	        object o1 = new short[3];
 	        object o2 = new char[3];

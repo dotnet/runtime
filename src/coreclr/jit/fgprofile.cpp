@@ -473,7 +473,7 @@ void BlockCountInstrumentor::RelocateProbes()
         }
 
         JITDUMP("Return " FMT_BB " is successor of possible tail call\n", block->bbNum);
-        assert(block->KindIs(BBJ_RETURN));
+        assert(block->bbJumpKind == BBJ_RETURN);
 
         // Scan for critical preds, and add relocated probes to non-critical preds.
         //
@@ -499,12 +499,12 @@ void BlockCountInstrumentor::RelocateProbes()
             {
                 // Ensure this pred is not a fall through.
                 //
-                if (pred->KindIs(BBJ_NONE))
+                if (pred->bbJumpKind == BBJ_NONE)
                 {
-                    pred->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
+                    pred->bbJumpKind = BBJ_ALWAYS;
                     pred->bbJumpDest = block;
                 }
-                assert(pred->KindIs(BBJ_ALWAYS));
+                assert(pred->bbJumpKind == BBJ_ALWAYS);
             }
         }
 
@@ -945,7 +945,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
         visitor->VisitBlock(block);
         nBlocks++;
 
-        switch (block->GetBBJumpKind())
+        switch (block->bbJumpKind)
         {
             case BBJ_CALLFINALLY:
             {
@@ -1028,7 +1028,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         JITDUMP("No jump dest for " FMT_BB ", suspect bad code\n", block->bbNum);
                         visitor->Badcode();
                     }
-                    else if (!block->KindIs(BBJ_LEAVE))
+                    else if (block->bbJumpKind != BBJ_LEAVE)
                     {
                         JITDUMP("EH RET in " FMT_BB " most-nested in try, suspect bad code\n", block->bbNum);
                         visitor->Badcode();
@@ -1552,9 +1552,9 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
                         // Importer folding may have changed the block jump kind
                         // to BBJ_NONE. If so, warp it back to BBJ_ALWAYS.
                         //
-                        if (block->KindIs(BBJ_NONE))
+                        if (block->bbJumpKind == BBJ_NONE)
                         {
-                            block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
+                            block->bbJumpKind = BBJ_ALWAYS;
                             block->bbJumpDest = target;
                         }
 
@@ -1657,7 +1657,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         }
 
         JITDUMP("Return " FMT_BB " is successor of possible tail call\n", block->bbNum);
-        assert(block->KindIs(BBJ_RETURN));
+        assert(block->bbJumpKind == BBJ_RETURN);
 
         // This block should have just one probe, which we no longer need.
         //
@@ -1695,12 +1695,12 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 
                 // Ensure this pred is not a fall through.
                 //
-                if (pred->KindIs(BBJ_NONE))
+                if (pred->bbJumpKind == BBJ_NONE)
                 {
-                    pred->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
+                    pred->bbJumpKind = BBJ_ALWAYS;
                     pred->bbJumpDest = block;
                 }
-                assert(pred->KindIs(BBJ_ALWAYS));
+                assert(pred->bbJumpKind == BBJ_ALWAYS);
             }
         }
 
@@ -3166,7 +3166,7 @@ void EfficientEdgeCountReconstructor::Prepare()
         m_unknownBlocks++;
 
 #ifdef DEBUG
-        if (block->KindIs(BBJ_RETURN))
+        if (block->bbJumpKind == BBJ_RETURN)
         {
             nReturns++;
         }
@@ -3233,7 +3233,7 @@ void EfficientEdgeCountReconstructor::Prepare()
                     CLRRandom* const random =
                         m_comp->impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomEdgeCounts());
 
-                    const bool isReturn = sourceBlock->KindIs(BBJ_RETURN);
+                    const bool isReturn = sourceBlock->bbJumpKind == BBJ_RETURN;
 
                     // We simulate the distribution of counts seen in StdOptimizationData.Mibc.
                     //
@@ -3922,7 +3922,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 //
 void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, BlockInfo* info)
 {
-    switch (block->GetBBJumpKind())
+    switch (block->bbJumpKind)
     {
         case BBJ_SWITCH:
             MarkInterestingSwitches(block, info);
@@ -3949,7 +3949,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingBlocks(BasicBlock* block, B
 //
 void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block, BlockInfo* info)
 {
-    assert(block->KindIs(BBJ_SWITCH));
+    assert(block->bbJumpKind == BBJ_SWITCH);
 
     // Thresholds for detecting a dominant switch case.
     //
@@ -4429,11 +4429,11 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bSrc = bDst->bbPreds->getSourceBlock();
 
                     // Does this block flow into only one other block
-                    if (bSrc->KindIs(BBJ_NONE))
+                    if (bSrc->bbJumpKind == BBJ_NONE)
                     {
                         bOnlyNext = bSrc->bbNext;
                     }
-                    else if (bSrc->KindIs(BBJ_ALWAYS))
+                    else if (bSrc->bbJumpKind == BBJ_ALWAYS)
                     {
                         bOnlyNext = bSrc->bbJumpDest;
                     }
@@ -4450,11 +4450,11 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 }
 
                 // Does this block flow into only one other block
-                if (bDst->KindIs(BBJ_NONE))
+                if (bDst->bbJumpKind == BBJ_NONE)
                 {
                     bOnlyNext = bDst->bbNext;
                 }
-                else if (bDst->KindIs(BBJ_ALWAYS))
+                else if (bDst->bbJumpKind == BBJ_ALWAYS)
                 {
                     bOnlyNext = bDst->bbJumpDest;
                 }
@@ -4485,7 +4485,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     // To minimize asmdiffs for now, modify weights only if splitting.
                     if (fgFirstColdBlock != nullptr)
                     {
-                        if (bSrc->KindIs(BBJ_CALLFINALLY))
+                        if (bSrc->bbJumpKind == BBJ_CALLFINALLY)
                         {
                             newWeight = bSrc->bbWeight;
                         }
@@ -4687,7 +4687,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
             }
 
             slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-            switch (bSrc->GetBBJumpKind())
+            switch (bSrc->bbJumpKind)
             {
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
@@ -4756,7 +4756,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                 bSrc = edge->getSourceBlock();
 
                 slop = BasicBlock::GetSlopFraction(bSrc, bDst) + 1;
-                if (bSrc->KindIs(BBJ_COND))
+                if (bSrc->bbJumpKind == BBJ_COND)
                 {
                     weight_t    diff;
                     FlowEdge*   otherEdge;

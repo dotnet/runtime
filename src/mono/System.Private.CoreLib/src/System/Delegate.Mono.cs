@@ -210,7 +210,7 @@ namespace System
             if (invoke is null)
                 return null;
 
-            ReadOnlySpan<ParameterInfo> delargs = invoke.GetParametersAsSpan();
+            ParameterInfo[] delargs = invoke.GetParametersNoCopy();
             Type[] delargtypes = new Type[delargs.Length];
 
             for (int i = 0; i < delargs.Length; i++)
@@ -250,8 +250,8 @@ namespace System
                 return false;
             }
 
-            ReadOnlySpan<ParameterInfo> delargs = invoke.GetParametersAsSpan();
-            ReadOnlySpan<ParameterInfo> args = method.GetParametersAsSpan();
+            ParameterInfo[] delargs = invoke.GetParametersNoCopy();
+            ParameterInfo[] args = method.GetParametersNoCopy();
 
             bool argLengthMatch;
 
@@ -437,7 +437,7 @@ namespace System
             MethodInfo? invoke = GetType().GetMethod("Invoke");
             if (invoke != null && args != null)
             {
-                ReadOnlySpan<ParameterInfo> delegateParameters = invoke.GetParametersAsSpan();
+                ParameterInfo[] delegateParameters = invoke.GetParameters();
                 for (int i = 0; i < args.Length; i++)
                 {
                     if (args[i] == Type.Missing)

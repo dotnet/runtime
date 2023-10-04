@@ -185,19 +185,19 @@ namespace Wasm.Build.Tests
         [InlineData("Release", false)]
         [InlineData("Release", true)]
         public void ConsoleBuildAndRunDefault(string config, bool relinking)
-            => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework, addFrameworkArg: true);
+            => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework);
 
         [Theory]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
         // [InlineData("Debug", "-f net7.0", "net7.0")]
         [InlineData("Debug", "-f net8.0", "net8.0")]
         public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs, string expectedTFM)
-            => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM, addFrameworkArg: extraNewArgs?.Length == 0);
+            => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM);
 
-        private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs, string expectedTFM, bool addFrameworkArg)
+        private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs, string expectedTFM)
         {
             string id = $"{config}_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs, addFrameworkArg: addFrameworkArg);
+            string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             UpdateProgramCS();
@@ -418,7 +418,7 @@ namespace Wasm.Build.Tests
         {
             string config = "Debug";
             string id = $"browser_{config}_{GetRandomId()}";
-            CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs, addFrameworkArg: extraNewArgs.Length == 0);
+            CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs);
 
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using Xunit;
 
 public abstract class A { }
 
@@ -91,13 +90,13 @@ public class G
     }
 }
 
-public class Program
+class Program
 {
-    [Fact]
-    public static void TestEntryPoint()
+    static int Main()
     {
         var container = new G();
         container.RegisterNamedObjectType<B>();
         container.Register<B, D>();
+        return 100;
     }
 }

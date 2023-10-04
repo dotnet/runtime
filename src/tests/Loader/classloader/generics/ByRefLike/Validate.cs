@@ -9,7 +9,7 @@ using InvalidCSharp;
 
 using Xunit;
 
-public class Validate
+class Validate
 {
     [Fact]
     [SkipOnMono("Mono does not support ByRefLike generics yet")]

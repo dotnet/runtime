@@ -40,12 +40,11 @@ jobs:
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 180
       # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            interpreter: true
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        interpreter: true
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
 # Build the whole product using Mono for iOSSimulator/tvOSSimulator and run runtime tests with iOS/tvOS simulators
@@ -85,15 +84,14 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
             testGroup: innerloop
-      postBuildSteps:
-        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-          parameters:
-            creator: dotnet-bot
-            compileOnHelix: true
-            interpreter: true
-            testBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-            extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        compileOnHelix: true
+        interpreter: true
+        testBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # Build the whole product using Native AOT for iOSSimulator/tvOSSimulator and run runtime tests with iOS/tvOS simulators
@@ -133,9 +131,8 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
             testGroup: innerloop
-      postBuildSteps:
-        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-          parameters:
-            creator: dotnet-bot
-            testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
-            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
+        testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)

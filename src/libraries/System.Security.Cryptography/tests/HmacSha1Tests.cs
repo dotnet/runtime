@@ -17,8 +17,6 @@ namespace System.Security.Cryptography.Tests
             public static int HashSizeInBytes => HMACSHA1.HashSizeInBytes;
         }
 
-        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.SHA1;
-
         private static readonly byte[][] s_testKeys2202 =
         {
             null,

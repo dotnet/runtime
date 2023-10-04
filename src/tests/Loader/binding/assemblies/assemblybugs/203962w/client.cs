@@ -3,13 +3,11 @@
 using System;
 using System.IO;
 using System.Reflection;
-using Xunit;
 
 public class client
 {
 
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 
 		try

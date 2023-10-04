@@ -282,7 +282,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				lambda ();
 			}
 
-			[ExpectedWarning ("IL2111")]
+			[ExpectedWarning ("IL2111", "<" + nameof (LambdaWithCorrectParameter) + ">",
+				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void LambdaWithCorrectParameter ()
 			{
 				var lambda =
@@ -629,20 +630,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[ExpectedWarning ("IL2111")]
+			[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestMethodThroughDelegate ()
 			{
 				Action<Type> a = AnnotatedMethod;
 			}
 
-			[ExpectedWarning ("IL2111")]
+			[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestLambdaThroughDelegate ()
 			{
 				Action<Type> a = ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => { };
 				a (null);
 			}
 
-			[ExpectedWarning ("IL2111")]
+			[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestLocalFunctionThroughDelegate ()
 			{
 				Action<Type> a = LocalFunction;
@@ -675,7 +676,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class DAMReflectionAccessToCompilerGeneratedCode
 		{
 			// ldftn access - this MUST warn since the action can be called without the annotation
-			[ExpectedWarning ("IL2111")]
+			[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void Lambda ()
 			{
 				Action<Type> a = ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => {

@@ -604,7 +604,7 @@
 
 } // end of class GI4Class`1
 
-.class public auto ansi beforefieldinit Program
+.class private auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  Negative() cil managed

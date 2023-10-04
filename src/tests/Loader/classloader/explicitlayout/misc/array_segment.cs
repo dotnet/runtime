@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Xunit;
 
 // Structs come from from System.Net.Sockets tests
 internal struct FakeArraySegment
@@ -35,8 +34,7 @@ public class Test_ExplicitLayoutWithArraySegment
 		ArraySegment<byte> internalBuffer = fakeArraySegment.ToActual();
     }
 
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		try
 		{

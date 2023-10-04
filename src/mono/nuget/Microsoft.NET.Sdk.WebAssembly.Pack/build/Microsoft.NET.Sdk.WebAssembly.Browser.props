@@ -25,8 +25,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Trimmer defaults -->
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
-    <TrimMode Condition="'$(TrimMode)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true'">partial</TrimMode>
-    <TrimMode Condition="'$(TrimMode)' == '' and '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'">full</TrimMode>
+    <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
     <TrimmerRemoveSymbols Condition="'$(TrimmerRemoveSymbols)' == ''">false</TrimmerRemoveSymbols>
 
     <!-- Static web assets defaults -->

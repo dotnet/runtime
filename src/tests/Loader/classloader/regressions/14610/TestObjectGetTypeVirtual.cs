@@ -5,7 +5,6 @@
 using System;
 using System.Text;
 using System.Reflection;
-using Xunit;
 
 public class MyObject{
   public const int MY_OBJECT_FOO = 42;
@@ -51,8 +50,7 @@ public class Test_TestObjectGetTypeVirtual{
   public const int PASS = 100;
   public const int FAIL = 42;
 
-  [Fact]
-  public static int TestEntryPoint(){
+  public static int Main(){
 
     // Note: These first two tests are just to demonstrate the principle
     // behind this bug/regression.  If they fail, it is not really critical,

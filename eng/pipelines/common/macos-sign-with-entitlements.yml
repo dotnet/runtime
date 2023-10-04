@@ -1,14 +1,12 @@
 parameters:
   filesToSign: []
-  timeoutInMinutes: '30'
 
 steps:
   - task: UseDotNet@2
-    displayName: Install .NET 6 SDK for signing.
+    displayName: 'Use .NET Core SDK 2.1.808'
     inputs:
-      packageType: 'sdk'
-      version: '6.0.x'
-      installationPath: '$(Agent.TempDirectory)/dotnet'
+      packageType: sdk
+      version: 2.1.808
 
   - ${{ each file in parameters.filesToSign }}:
     - script: codesign -s - -f --entitlements ${{ file.entitlementsFile }} ${{ file.path }}/${{ file.name }}
@@ -30,7 +28,7 @@ steps:
       includeRootFolder: true
       replaceExistingArchive: true
 
-  - task: EsrpCodeSigning@4
+  - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
     displayName: 'ESRP CodeSigning'
     inputs:
       ConnectedServiceName: 'ESRP CodeSigning'
@@ -50,14 +48,6 @@ steps:
             "toolVersion": "1.0"
           }
         ]  
-      SessionTimeout: ${{ parameters.timeoutInMinutes }}
-      MaxConcurrency: '50'
-      MaxRetryAttempts: '5'
-      PendingAnalysisWaitTimeoutMinutes: '5'
-    env:
-      DOTNET_MULTILEVEL_LOOKUP: 0
-      DOTNET_ROOT: '$(Agent.TempDirectory)/dotnet'
-      DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR: '$(Agent.TempDirectory)/dotnet'
 
   - task: ExtractFiles@1
     displayName: 'Extract MacOS after signing'

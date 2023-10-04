@@ -6,7 +6,6 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Collections;
-using Xunit;
 
 public class GenClass<T>
 {
@@ -16,8 +15,7 @@ public class GenClass<T>
 public class PropsArIList  
 {
 
-	[Fact]
-	public static int TestEntryPoint()  
+	public static int Main()  
 	{
 
 		int result = 0;

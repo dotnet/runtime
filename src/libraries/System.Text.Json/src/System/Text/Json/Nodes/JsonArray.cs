@@ -202,26 +202,15 @@ namespace System.Text.Json.Nodes
             List[index] = value;
         }
 
-        internal override void GetPath(ref ValueStringBuilder path, JsonNode? child)
+        internal override void GetPath(List<string> path, JsonNode? child)
         {
-            Parent?.GetPath(ref path, this);
-
             if (child != null)
             {
                 int index = List.IndexOf(child);
-                Debug.Assert(index >= 0);
-
-                path.Append('[');
-#if NETCOREAPP
-                Span<char> chars = stackalloc char[JsonConstants.MaximumFormatUInt32Length];
-                bool formatted = ((uint)index).TryFormat(chars, out int charsWritten);
-                Debug.Assert(formatted);
-                path.Append(chars.Slice(0, charsWritten));
-#else
-                path.Append(index.ToString());
-#endif
-                path.Append(']');
+                path.Add($"[{index}]");
             }
+
+            Parent?.GetPath(path, this);
         }
 
         /// <inheritdoc/>

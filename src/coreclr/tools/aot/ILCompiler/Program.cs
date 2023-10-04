@@ -20,7 +20,6 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Dataflow;
-using ILCompiler.DependencyAnalysis;
 using ILLink.Shared;
 
 using Debug = System.Diagnostics.Debug;
@@ -143,11 +142,6 @@ namespace ILCompiler
 
             if (typeSystemContext.InputFilePaths.Count == 0)
                 throw new CommandLineException("No input files specified");
-
-            ilProvider = new HardwareIntrinsicILProvider(
-                instructionSetSupport,
-                new ExternSymbolMappedField(typeSystemContext.GetWellKnownType(WellKnownType.Int32), "g_cpuFeatures"),
-                ilProvider);
 
             SecurityMitigationOptions securityMitigationOptions = 0;
             string guard = Get(_command.Guard);

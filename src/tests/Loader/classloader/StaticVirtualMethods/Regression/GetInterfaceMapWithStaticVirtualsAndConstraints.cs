@@ -7,10 +7,9 @@ using Xunit;
 
 namespace GetInterfaceMapWithStaticVirtualsAndConstraints
 {
-    public static class Program
+    internal static class Program
     {
-        [Fact]
-        public static void TestEntryPoint()
+        static int Main()
         {
             Type i, s;
             InterfaceMapping imap;
@@ -24,7 +23,7 @@ namespace GetInterfaceMapWithStaticVirtualsAndConstraints
                 Console.WriteLine($"{iMethod.DeclaringType } {iMethod}");
             }
 
-            Assert.Single(imap.TargetMethods);
+            Assert.Equal(1, imap.TargetMethods.Length);
             foreach (var iMethod in imap.TargetMethods)
             {
                 Console.WriteLine($"{iMethod.DeclaringType } {iMethod}");
@@ -38,7 +37,7 @@ namespace GetInterfaceMapWithStaticVirtualsAndConstraints
                 Console.WriteLine($"{iMethod.DeclaringType } {iMethod}");
             }
 
-            Assert.Single(imap.TargetMethods);
+            Assert.Equal(1, imap.TargetMethods.Length);
             foreach (var iMethod in imap.TargetMethods)
             {
                 Console.WriteLine($"{iMethod.DeclaringType } {iMethod}");
@@ -54,7 +53,7 @@ namespace GetInterfaceMapWithStaticVirtualsAndConstraints
             {
                 Console.WriteLine($"{iMethod.DeclaringType } {iMethod}");
             }
-            Assert.Single(imap.TargetMethods);
+            Assert.Equal(1, imap.TargetMethods.Length);
             foreach (var iMethod in imap.TargetMethods)
             {
                 Console.WriteLine($"{iMethod.DeclaringType } {iMethod}");
@@ -67,12 +66,14 @@ namespace GetInterfaceMapWithStaticVirtualsAndConstraints
             {
                 Console.WriteLine($"{iMethod.DeclaringType } {iMethod}");
             }
-            Assert.Single(imap.TargetMethods);
+            Assert.Equal(1, imap.TargetMethods.Length);
             foreach (var iMethod in imap.TargetMethods)
             {
                 Console.WriteLine($"{iMethod.DeclaringType } {iMethod}");
                 Assert.Equal(typeof(Outer<int>.IInstanceImpl), iMethod.DeclaringType);
             }
+
+            return 100;
         }
     }
 

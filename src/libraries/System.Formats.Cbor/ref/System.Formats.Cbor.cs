@@ -124,9 +124,7 @@ namespace System.Formats.Cbor
     }
     public partial class CborWriter
     {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public CborWriter(System.Formats.Cbor.CborConformanceMode conformanceMode, bool convertIndefiniteLengthEncodings, bool allowMultipleRootLevelValues) { }
-        public CborWriter(System.Formats.Cbor.CborConformanceMode conformanceMode = System.Formats.Cbor.CborConformanceMode.Strict, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false, int initialCapacity = -1) { }
+        public CborWriter(System.Formats.Cbor.CborConformanceMode conformanceMode = System.Formats.Cbor.CborConformanceMode.Strict, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false) { }
         public bool AllowMultipleRootLevelValues { get { throw null; } }
         public int BytesWritten { get { throw null; } }
         public System.Formats.Cbor.CborConformanceMode ConformanceMode { get { throw null; } }

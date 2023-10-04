@@ -196,25 +196,22 @@ namespace System.Text.Json.Nodes
             return null;
         }
 
-        internal override void GetPath(ref ValueStringBuilder path, JsonNode? child)
+        internal override void GetPath(List<string> path, JsonNode? child)
         {
-            Parent?.GetPath(ref path, this);
-
             if (child != null)
             {
                 string propertyName = Dictionary.FindValue(child)!.Value.Key;
                 if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
-                    path.Append("['");
-                    path.Append(propertyName);
-                    path.Append("']");
+                    path.Add($"['{propertyName}']");
                 }
                 else
                 {
-                    path.Append('.');
-                    path.Append(propertyName);
+                    path.Add($".{propertyName}");
                 }
             }
+
+            Parent?.GetPath(path, this);
         }
 
         internal void SetItem(string propertyName, JsonNode? value)

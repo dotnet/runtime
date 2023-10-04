@@ -13,7 +13,6 @@ Expected: Should return the same exception.
 */
 
 using System;
-using Xunit;
 
 
 public class A 
@@ -48,8 +47,7 @@ public struct B
 
 public class Test_TypeLoadInitExcep
 {	
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{ 
 		bool result = true;
 		

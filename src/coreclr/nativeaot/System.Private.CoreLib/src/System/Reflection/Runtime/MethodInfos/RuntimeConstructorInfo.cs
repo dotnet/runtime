@@ -54,7 +54,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return result;
         }
 
-        public sealed override ReadOnlySpan<ParameterInfo> GetParametersAsSpan()
+        public sealed override ParameterInfo[] GetParametersNoCopy()
         {
             return RuntimeParameters;
         }

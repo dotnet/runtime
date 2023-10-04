@@ -24,21 +24,21 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		private static readonly string MonoLinkerTestsCases = "Mono.Linker.Tests.Cases";
 
-		public static readonly ReferenceAssemblies NetCoreAppReferencessemblies =
+		public static readonly ReferenceAssemblies Net6PreviewAssemblies =
 		new ReferenceAssemblies (
 				"net8.0",
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0-rc.1.23419.4"),
+				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0-alpha.1.23060.19"),
 				Path.Combine ("ref", "net8.0"))
 			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
 
-		private static ImmutableArray<MetadataReference> s_netcoreappRefs;
+		private static ImmutableArray<MetadataReference> s_net6Refs;
 		public static async ValueTask<ImmutableArray<MetadataReference>> GetNet6References ()
 		{
-			if (s_netcoreappRefs.IsDefault) {
-				var refs = await NetCoreAppReferencessemblies.ResolveAsync (null, default);
-				ImmutableInterlocked.InterlockedInitialize (ref s_netcoreappRefs, refs);
+			if (s_net6Refs.IsDefault) {
+				var refs = await Net6PreviewAssemblies.ResolveAsync (null, default);
+				ImmutableInterlocked.InterlockedInitialize (ref s_net6Refs, refs);
 			}
-			return s_netcoreappRefs;
+			return s_net6Refs;
 		}
 
 		public static string FindTestSuiteDir (string rootDir, string suiteName)

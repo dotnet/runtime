@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using Xunit;
 
 namespace TestFunctionPointer
 {
@@ -37,10 +36,9 @@ namespace TestFunctionPointer
         }
     }
 
-    public unsafe class Program
+    unsafe class Program
     {
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             return TestThings.Functions2[0][0](TestThings.Functions[0][0]());
         }

@@ -27,7 +27,7 @@ namespace Microsoft.Interop
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             SequenceEqualImmutableArray<AttributeSyntax> ForwardedAttributes,
             LibraryImportData LibraryImportData,
-            MarshallingGeneratorFactoryKey<(TargetFrameworkSettings TargetFramework, LibraryImportGeneratorOptions Options)> GeneratorFactoryKey,
+            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version Version, LibraryImportGeneratorOptions Options)> GeneratorFactoryKey,
             SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
         public static class StepNames
@@ -64,15 +64,14 @@ namespace Microsoft.Interop
             IncrementalValueProvider<LibraryImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
                 .Select(static (options, ct) => new LibraryImportGeneratorOptions(options.GlobalOptions));
 
-            IncrementalValueProvider<TargetFrameworkSettings> targetFramework = context.AnalyzerConfigOptionsProvider.Select((options, ct) => options.GlobalOptions.GetTargetFrameworkSettings());
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
 
             // Validate environment that is being used to generate stubs.
-            context.RegisterDiagnostics(context.CompilationProvider.Combine(attributedMethods.Collect()).Combine(targetFramework).SelectMany((data, ct) =>
+            context.RegisterDiagnostics(stubEnvironment.Combine(attributedMethods.Collect()).SelectMany((data, ct) =>
             {
-                if (data.Left.Right.IsEmpty // no attributed methods
-                    || data.Left.Left.Options is CSharpCompilationOptions { AllowUnsafe: true } // Unsafe code enabled
-                    || data.Right.TargetFramework != TargetFramework.Net) // Downlevel scenarios use forwarders and don't need unsafe code
+                if (data.Right.IsEmpty // no attributed methods
+                    || data.Left.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true } // Unsafe code enabled
+                    || data.Left.TargetFramework != TargetFramework.Net) // Non-.NET 5 scenarios use forwarders and don't need unsafe code
                 {
                     return ImmutableArray<DiagnosticInfo>.Empty;
                 }
@@ -83,17 +82,15 @@ namespace Microsoft.Interop
             IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
                 .Combine(stubOptions)
-                .Combine(targetFramework)
                 .Select(static (data, ct) => new
                 {
-                    data.Left.Left.Left.Syntax,
-                    data.Left.Left.Left.Symbol,
-                    Environment = data.Left.Left.Right,
-                    Options = data.Left.Right,
-                    TargetFramework = data.Right
+                    data.Left.Left.Syntax,
+                    data.Left.Left.Symbol,
+                    Environment = data.Left.Right,
+                    Options = data.Right
                 })
                 .Select(
-                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, data.TargetFramework, data.Options, ct)
+                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, data.Options, ct)
                 )
                 .WithTrackingName(StepNames.CalculateStubInformation)
                 .Combine(stubOptions)
@@ -214,7 +211,6 @@ namespace Microsoft.Interop
             MethodDeclarationSyntax originalSyntax,
             IMethodSymbol symbol,
             StubEnvironment environment,
-            TargetFrameworkSettings targetFramework,
             LibraryImportGeneratorOptions options,
             CancellationToken ct)
         {
@@ -288,12 +284,7 @@ namespace Microsoft.Interop
             }
 
             // Create the stub.
-            var signatureContext = SignatureContext.Create(
-                symbol,
-                DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr),
-                environment,
-                new CodeEmitOptions(SkipInit: targetFramework.TargetFramework == TargetFramework.Net),
-                typeof(LibraryImportGenerator).Assembly);
+            var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr), environment, typeof(LibraryImportGenerator).Assembly);
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
@@ -307,7 +298,7 @@ namespace Microsoft.Interop
                 locations,
                 new SequenceEqualImmutableArray<AttributeSyntax>(additionalAttributes.ToImmutableArray(), SyntaxEquivalentComparer.Instance),
                 LibraryImportData.From(libraryImportData),
-                LibraryImportGeneratorHelpers.CreateGeneratorFactory(environment, targetFramework, options),
+                LibraryImportGeneratorHelpers.CreateGeneratorFactory(environment, options),
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray())
                 );
         }
@@ -324,7 +315,8 @@ namespace Microsoft.Interop
 
             bool supportsTargetFramework = !pinvokeStub.LibraryImportData.SetLastError
                 || options.GenerateForwarders
-                || (pinvokeStub.GeneratorFactoryKey.Key.TargetFramework is (TargetFramework.Net, { Major: >= 6 }));
+                || (pinvokeStub.GeneratorFactoryKey.Key.TargetFramework == TargetFramework.Net
+                    && pinvokeStub.GeneratorFactoryKey.Key.Version.Major >= 6);
 
             foreach (TypePositionInfo typeInfo in pinvokeStub.SignatureContext.ElementTypeInformation)
             {
@@ -337,11 +329,12 @@ namespace Microsoft.Interop
 
             // Generate stub code
             var stubGenerator = new PInvokeStubCodeGenerator(
+                pinvokeStub.GeneratorFactoryKey.Key.TargetFramework,
+                pinvokeStub.GeneratorFactoryKey.Key.Version,
                 pinvokeStub.SignatureContext.ElementTypeInformation,
                 pinvokeStub.LibraryImportData.SetLastError && !options.GenerateForwarders,
                 diagnostics,
-                pinvokeStub.GeneratorFactoryKey.GeneratorFactory,
-                new CodeEmitOptions(SkipInit: pinvokeStub.GeneratorFactoryKey.Key.TargetFramework is (TargetFramework.Net, _)));
+                pinvokeStub.GeneratorFactoryKey.GeneratorFactory);
 
             // Check if the generator should produce a forwarder stub - regular DllImport.
             // This is done if the signature is blittable or the target framework is not supported.

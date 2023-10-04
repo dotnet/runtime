@@ -8,9 +8,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
 
-public class Test_vsw529206ModuleCctor
+class Test_vsw529206ModuleCctor
 {
 	public static bool pass;
     	
@@ -29,8 +28,7 @@ public class Test_vsw529206ModuleCctor
 		TriggerModuleCctorClass.intStatic = 5;
 	}
 
-    	[Fact]
-    	public static int TestEntryPoint()
+    	public static int Main()
     	{
     		pass = true;
 			

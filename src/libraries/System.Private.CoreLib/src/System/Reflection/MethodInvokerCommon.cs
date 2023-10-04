@@ -58,7 +58,7 @@ namespace System.Reflection
                 {
                     invokerFlags[i] |= InvokerArgFlags.IsValueType;
                 }
-                else if (type.IsActualValueType)
+                else if (RuntimeTypeHandle.IsValueType(type))
                 {
                     invokerFlags[i] |= InvokerArgFlags.IsValueType | InvokerArgFlags.IsValueType_ByRef_Or_Pointer;
 

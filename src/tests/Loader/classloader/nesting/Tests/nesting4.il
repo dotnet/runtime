@@ -19,7 +19,7 @@
 // generics: Nongeneric
 // depends on nested: InstanceField
 
-.class public EnclType
+.class private EnclType
 {
   // nested type 
   // kind: Interface

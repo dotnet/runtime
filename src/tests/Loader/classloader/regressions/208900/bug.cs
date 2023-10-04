@@ -7,8 +7,6 @@
 #pragma warning disable 0414
 using System;
 
-using Xunit;
-
 struct MyStruct
 {
     public MyStruct(object _f1, int _f2) { f1 = _f1; f2 = _f2; }
@@ -22,13 +20,23 @@ class M
    public virtual U GenericMethod<U>(U x1) {  return x1; }
 }
 
-public class Test_bug
+class Test_bug
 {
-    [Fact]
-    public static void TestEntryPoint()
+  
+    static int Main()
     {
         M obj = new M();
         MyStruct myStruct = new MyStruct("obj", 787980);
-        Assert.True(obj.GenericMethod<MyStruct>(myStruct).Equals(myStruct));
+        if(obj.GenericMethod<MyStruct>(myStruct).Equals(myStruct)){
+            Console.WriteLine("PASS");
+            return 100;
+        }
+        else{
+            Console.WriteLine("FAIL");
+            return 101;
+        }      
     }
+    
 }
+
+

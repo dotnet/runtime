@@ -6504,7 +6504,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 case NI_AVX2_ConvertToUInt32:
                 {
                     // These intrinsics are "ins reg/mem, xmm"
-                    isContainable = varTypeIsIntegral(simdBaseType) && (genTypeSize(src) == genTypeSize(node));
+                    isContainable = varTypeIsIntegral(simdBaseType);
                     break;
                 }
 
@@ -6568,8 +6568,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     size_t   numArgs = hwintrinsic->GetOperandCount();
                     GenTree* lastOp  = hwintrinsic->Op(numArgs);
 
-                    isContainable = HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI() &&
-                                    (genTypeSize(simdBaseType) == genTypeSize(node));
+                    isContainable = HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI();
 
                     if (isContainable && (intrinsicId == NI_SSE2_Extract))
                     {
@@ -8203,12 +8202,10 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX512F_BroadcastScalarToVector512:
         {
-            var_types parentBaseType = parentNode->GetSimdBaseType();
-            var_types childBaseType  = hwintrinsic->GetSimdBaseType();
-
-            if (varTypeIsSmall(parentBaseType) || (genTypeSize(parentBaseType) != genTypeSize(childBaseType)))
+            var_types baseType = hwintrinsic->GetSimdBaseType();
+            if (varTypeIsSmall(baseType))
             {
-                // early return if either base type is not embedded broadcast compatible.
+                // early return if the base type is not embedded broadcast compatible.
                 return false;
             }
 
@@ -8216,7 +8213,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             if (intrinsicId == NI_SSE3_MoveAndDuplicate)
             {
                 // NI_SSE3_MoveAndDuplicate is for Vector128<double> only.
-                assert(childBaseType == TYP_DOUBLE);
+                assert(baseType == TYP_DOUBLE);
             }
 
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
@@ -8249,15 +8246,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX_BroadcastScalarToVector256:
         {
-            var_types parentBaseType = parentNode->GetSimdBaseType();
-            var_types childBaseType  = hwintrinsic->GetSimdBaseType();
-
-            if (varTypeIsSmall(parentBaseType) || (genTypeSize(parentBaseType) != genTypeSize(childBaseType)))
-            {
-                // early return if either base type is not embedded broadcast compatible.
-                return false;
-            }
-
             return parentNode->OperIsEmbBroadcastCompatible();
         }
 

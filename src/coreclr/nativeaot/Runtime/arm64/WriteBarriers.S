@@ -224,11 +224,9 @@ LEAF_END RhpByRefAssignRefArm64, _TEXT
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x12
         ccmp    x14, x12, #0x2, hs
-        bhs     LOCAL_LABEL(NotInHeap)
+        blo     C_FUNC(RhpAssignRefArm64)
 
-        b       C_FUNC(RhpAssignRefArm64)
-
-LOCAL_LABEL(NotInHeap):
+NotInHeap:
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
         str     x15, [x14], 8
         ret
@@ -295,44 +293,44 @@ LEAF_END RhpAssignRef, _TEXT
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
         PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
-        tbz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(CmpXchgRetry)
+        tbz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, CmpXchgRetry
 #endif
 
         mov    x10, x2
     ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
         casal  x10, x1, [x0]                  // exchange
         cmp    x2, x10
-        bne    LOCAL_LABEL(CmpXchgNoUpdate)
+        bne    CmpXchgNoUpdate
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        b      LOCAL_LABEL(DoCardsCmpXchg)
-LOCAL_LABEL(CmpXchgRetry):
+        b      DoCardsCmpXchg
+CmpXchgRetry:
         // Check location value is what we expect.
     ALTERNATE_ENTRY  RhpCheckedLockCmpXchgAVLocation2
         ldaxr   x10, [x0]
         cmp     x10, x2
-        bne     LOCAL_LABEL(CmpXchgNoUpdate)
+        bne     CmpXchgNoUpdate
 
         // Current value matches comparand, attempt to update with the new value.
         stlxr   w12, x1, [x0]
-        cbnz    w12, LOCAL_LABEL(CmpXchgRetry)
+        cbnz    w12, CmpXchgRetry
 #endif
 
-LOCAL_LABEL(DoCardsCmpXchg):
+DoCardsCmpXchg:
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         // already correctly set up.
 
         INSERT_CHECKED_WRITE_BARRIER_CORE x0, x1
 
-LOCAL_LABEL(CmpXchgNoUpdate):
+CmpXchgNoUpdate:
         // x10 still contains the original value.
         mov     x0, x10
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        tbnz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(NoBarrierCmpXchg)
+        tbnz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, NoBarrierCmpXchg
         InterlockedOperationBarrier
-LOCAL_LABEL(NoBarrierCmpXchg):
+NoBarrierCmpXchg:
 #endif
         ret     lr
 
@@ -359,25 +357,25 @@ LOCAL_LABEL(NoBarrierCmpXchg):
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
         PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
-        tbz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(ExchangeRetry)
+        tbz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, ExchangeRetry
 #endif
 
     ALTERNATE_ENTRY  RhpCheckedXchgAVLocation
         swpal  x1, x10, [x0]                   // exchange
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        b      LOCAL_LABEL(DoCardsXchg)
-LOCAL_LABEL(ExchangeRetry):
+        b      DoCardsXchg
+ExchangeRetry:
         // Read the existing memory location.
     ALTERNATE_ENTRY  RhpCheckedXchgAVLocation2
         ldaxr   x10,  [x0]
 
         // Attempt to update with the new value.
         stlxr   w12, x1, [x0]
-        cbnz    w12, LOCAL_LABEL(ExchangeRetry)
+        cbnz    w12, ExchangeRetry
 #endif
 
-LOCAL_LABEL(DoCardsXchg):
+DoCardsXchg:
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         // already correctly set up.
@@ -388,9 +386,9 @@ LOCAL_LABEL(DoCardsXchg):
         mov     x0, x10
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        tbnz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(NoBarrierXchg)
+        tbnz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, NoBarrierXchg
         InterlockedOperationBarrier
-LOCAL_LABEL(NoBarrierXchg):
+NoBarrierXchg:
 #endif
         ret
 

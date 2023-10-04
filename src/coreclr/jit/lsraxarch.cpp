@@ -1269,7 +1269,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         if (argNode->OperGet() == GT_FIELD_LIST)
         {
             assert(argNode->isContained());
-            assert(varTypeIsStruct(arg.GetSignatureType()));
+            assert(varTypeIsStruct(argNode) || abiInfo.IsStruct);
 
             unsigned regIndex = 0;
             for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
@@ -2762,7 +2762,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 // BuildIndir: Specify register requirements for address expression of an indirection operation.
 //
 // Arguments:
-//    indirTree    -   GT_IND or GT_STOREIND GenTree node
+//    indirTree    -   GT_IND or GT_STOREIND gentree node
 //
 // Return Value:
 //    The number of sources consumed by this node.

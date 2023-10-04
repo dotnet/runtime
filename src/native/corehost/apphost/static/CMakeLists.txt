@@ -36,7 +36,9 @@ set(HEADERS
 add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
 remove_definitions(-DEXPORT_SHARED_API)
+add_definitions(-DHOSTPOLICY_EMBEDDED)
 add_definitions(-DNATIVE_LIBS_EMBEDDED)
+
 
 include(../../fxr/files.cmake)
 include(../../hostpolicy/files.cmake)

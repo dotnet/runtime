@@ -3,25 +3,26 @@
 
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
-using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     [DebuggerDisplay("Name={DisplayString}, Kind={SpecKind}")]
-    public abstract record TypeSpec
+    internal abstract record TypeSpec
     {
+        private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
+
         public TypeSpec(ITypeSymbol type)
         {
-            TypeRef = new TypeRef(type);
-            EffectiveTypeRef = TypeRef; // Overriden by NullableSpec.
-            (Namespace, DisplayString, Name) = type.GetTypeName();
+            Namespace = type.ContainingNamespace?.ToDisplayString();
+            DisplayString = type.ToDisplayString(s_minimalDisplayFormat);
+            Name = (Namespace is null ? string.Empty : Namespace + ".") + DisplayString.Replace(".", "+");
             IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring();
             IsValueType = type.IsValueType;
         }
-
-        public TypeRef TypeRef { get; }
-
-        public TypeRef EffectiveTypeRef { get; protected init; }
 
         public string Name { get; }
 
@@ -32,35 +33,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public string? Namespace { get; }
 
         public bool IsValueType { get; }
+
+        public abstract TypeSpecKind SpecKind { get; }
+
+        public abstract bool CanBindTo { get; }
+
+        public abstract bool CanInstantiate { get; }
+
+        public abstract TypeSpec EffectiveType { get; }
     }
 
-    public abstract record ComplexTypeSpec : TypeSpec
+    internal enum TypeSpecKind
     {
-        protected ComplexTypeSpec(ITypeSymbol type) : base(type) { }
-    }
-
-    internal sealed record NullableSpec : TypeSpec
-    {
-        public NullableSpec(ITypeSymbol type, TypeRef underlyingTypeRef) : base(type) =>
-            EffectiveTypeRef = underlyingTypeRef;
-    }
-
-    internal sealed record UnsupportedTypeSpec : TypeSpec
-    {
-        public UnsupportedTypeSpec(ITypeSymbol type) : base(type) { }
-
-        public required NotSupportedReason NotSupportedReason { get; init; }
-    }
-
-    public enum NotSupportedReason
-    {
-        UnknownType = 1,
-        MissingPublicInstanceConstructor = 2,
-        CollectionNotSupported = 3,
-        DictionaryKeyNotSupported = 4,
-        ElementTypeNotSupported = 5,
-        MultipleParameterizedConstructors = 6,
-        MultiDimArraysNotSupported = 7,
-        NullableUnderlyingTypeNotSupported = 8,
+        Unknown = 0,
+        ParsableFromString = 1,
+        Object = 2,
+        Enumerable = 3,
+        Dictionary = 4,
+        IConfigurationSection = 5,
+        Nullable = 6,
     }
 }

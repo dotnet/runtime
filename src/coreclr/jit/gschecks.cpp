@@ -529,7 +529,7 @@ void Compiler::gsParamsToShadows()
         // We would have to insert assignments in all such blocks, just before GT_JMP stmnt.
         for (BasicBlock* const block : Blocks())
         {
-            if (!block->KindIs(BBJ_RETURN))
+            if (block->bbJumpKind != BBJ_RETURN)
             {
                 continue;
             }

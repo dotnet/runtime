@@ -419,7 +419,7 @@ namespace System
             #region If argumentTypes supplied
             if (argumentTypes != null)
             {
-                ReadOnlySpan<ParameterInfo> parameterInfos = methodBase.GetParametersAsSpan();
+                ParameterInfo[] parameterInfos = methodBase.GetParametersNoCopy();
 
                 if (argumentTypes.Length != parameterInfos.Length)
                 {
@@ -820,7 +820,9 @@ namespace System
             if (types.Length == 0 && candidates.Count == 1)
             {
                 ConstructorInfo firstCandidate = candidates[0];
-                if (firstCandidate.GetParametersAsSpan().Length == 0)
+
+                ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
+                if (parameters == null || parameters.Length == 0)
                 {
                     return firstCandidate;
                 }
@@ -1308,13 +1310,10 @@ namespace System
             return res;
         }
 
-        // Returns true for actual value types only, ignoring generic parameter constraints.
-        internal bool IsActualValueType => RuntimeTypeHandle.IsValueType(this);
-
         // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
 
-        // Returns true for actual enum types only, ignoring generic parameter constraints.
+        // Returns true for actual enum types only.
         internal bool IsActualEnum
         {
             get
@@ -1327,8 +1326,6 @@ namespace System
                 return res;
             }
         }
-
-        public override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
 
         public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
 
@@ -1560,7 +1557,7 @@ namespace System
                             throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName));
                         }
 
-                        if (invokeMethod.GetParametersAsSpan().Length == 0)
+                        if (invokeMethod.GetParametersNoCopy().Length == 0)
                         {
                             if (args.Length != 0)
                             {

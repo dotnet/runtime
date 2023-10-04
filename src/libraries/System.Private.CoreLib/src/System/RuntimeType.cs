@@ -15,6 +15,7 @@ namespace System
     {
         public override Assembly Assembly => RuntimeTypeHandle.GetAssembly(this);
         public override Type? BaseType => GetBaseType();
+        public override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
         public override bool IsGenericParameter => RuntimeTypeHandle.IsGenericVariable(this);
         public override bool IsTypeDefinition => RuntimeTypeHandle.IsTypeDefinition(this);
         public override bool IsSecurityCritical => true;
@@ -133,8 +134,16 @@ namespace System
             // Get all of the values as the underlying type and copy them to a new array of the enum type.
             Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
             Array ret = Array.CreateInstance(this, values.Length);
+#if MONO
+            // TODO https://github.com/dotnet/runtime/issues/79224:
+            // Array.Copy can be used instead when bool[] is no longer supported, or if mono's Array.Copy is updated to support copying a bool[] to an EnumBackedByBool[].
+            for (int i = 0; i < values.Length; i++)
+            {
+                ret.SetValue(Enum.ToObject(this, values.GetValue(i)!), i);
+            }
+#else
             Array.Copy(values, ret, values.Length);
-
+#endif
             return ret;
         }
 
@@ -649,7 +658,7 @@ namespace System
                 // Invoke
                 if (finalists == null &&
                     argCnt == 0 &&
-                    finalist.GetParametersAsSpan().Length == 0 &&
+                    finalist.GetParametersNoCopy().Length == 0 &&
                     (bindingFlags & BindingFlags.OptionalParamBinding) == 0)
                 {
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);
@@ -896,7 +905,7 @@ namespace System
 
                 if (sigElementType.IsInstanceOfType(value))
                 {
-                    if (sigElementType.IsActualValueType)
+                    if (RuntimeTypeHandle.IsValueType(sigElementType))
                     {
                         if (sigElementType.IsNullableOfT)
                         {
@@ -915,7 +924,7 @@ namespace System
 
                 if (value == null)
                 {
-                    if (!sigElementType.IsActualValueType)
+                    if (!RuntimeTypeHandle.IsValueType(sigElementType))
                     {
                         return CheckValueStatus.Success;
                     }
@@ -942,7 +951,7 @@ namespace System
                     return CheckValueStatus.Success;
                 }
 
-                if (!IsActualValueType)
+                if (!RuntimeTypeHandle.IsValueType(this))
                 {
                     return CheckValueStatus.Success;
                 }

@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Unbox005.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="ILLib.ilproj" />
+    <ProjectReference Include="Lib.ilproj" />
   </ItemGroup>
 </Project>

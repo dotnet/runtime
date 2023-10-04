@@ -1,6 +1,7 @@
 <Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
+    <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
     <EnableDefaultItems>true</EnableDefaultItems>
     <CLSCompliant>false</CLSCompliant>
 

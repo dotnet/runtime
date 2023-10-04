@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Xunit;
 
 
 
@@ -213,8 +212,7 @@ public class Test_Base01b_auto_ser
 	
 	}
 	
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		new GenInt().VerifyLayout();
 		new GenDouble().VerifyLayout();

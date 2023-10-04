@@ -386,20 +386,20 @@ namespace System.Text.Json
 
             for (int i = 0; i < _count - 1; i++)
             {
-                if (_stack[i].JsonTypeInfo.UsesParameterizedConstructor)
+                if (_stack[i].JsonTypeInfo.Converter.ConstructorIsParameterized)
                 {
                     return _stack[i].JsonTypeInfo;
                 }
             }
 
-            Debug.Assert(Current.JsonTypeInfo.UsesParameterizedConstructor);
+            Debug.Assert(Current.JsonTypeInfo.Converter.ConstructorIsParameterized);
             return Current.JsonTypeInfo;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetConstructorArgumentState()
         {
-            if (Current.JsonTypeInfo.UsesParameterizedConstructor)
+            if (Current.JsonTypeInfo.Converter.ConstructorIsParameterized)
             {
                 Current.CtorArgumentState ??= new();
             }

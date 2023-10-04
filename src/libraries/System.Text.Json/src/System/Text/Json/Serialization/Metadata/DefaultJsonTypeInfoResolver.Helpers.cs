@@ -38,20 +38,12 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonTypeInfo CreateTypeInfoCore(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, converter, options);
+            typeInfo.NumberHandling = GetNumberHandlingForType(typeInfo.Type);
+            typeInfo.PreferredPropertyObjectCreationHandling = GetObjectCreationHandlingForType(typeInfo.Type);
 
-            if (GetNumberHandlingForType(typeInfo.Type) is { } numberHandling)
+            if (typeInfo.Kind == JsonTypeInfoKind.Object)
             {
-                typeInfo.NumberHandling = numberHandling;
-            }
-
-            if (GetObjectCreationHandlingForType(typeInfo.Type) is { } creationHandling)
-            {
-                typeInfo.PreferredPropertyObjectCreationHandling = creationHandling;
-            }
-
-            if (GetUnmappedMemberHandling(typeInfo.Type) is { } unmappedMemberHandling)
-            {
-                typeInfo.UnmappedMemberHandling = unmappedMemberHandling;
+                typeInfo.UnmappedMemberHandling = GetUnmappedMemberHandling(typeInfo.Type);
             }
 
             typeInfo.PopulatePolymorphismMetadata();

@@ -1,5 +1,4 @@
 using System;
-using Xunit;
 
 /* Regression test for https://github.com/dotnet/runtime/issues/85821
  * ensure that self-referencing generic instances are initialized correctly and don't TLE
@@ -7,8 +6,7 @@ using Xunit;
 
 public class Program
 {
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         var test = typeof(Node<double>);
         var fit = test.GetField("Children").FieldType;

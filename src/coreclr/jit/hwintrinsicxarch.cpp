@@ -1371,12 +1371,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_Ceiling:
         {
             assert(sig->numArgs == 1);
-
-            if (!varTypeIsFloating(simdBaseType))
-            {
-                retNode = impSIMDPopStack();
-                break;
-            }
+            assert(varTypeIsFloating(simdBaseType));
 
             if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
@@ -1991,12 +1986,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_Floor:
         {
             assert(sig->numArgs == 1);
-
-            if (!varTypeIsFloating(simdBaseType))
-            {
-                retNode = impSIMDPopStack();
-                break;
-            }
+            assert(varTypeIsFloating(simdBaseType));
 
             if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {

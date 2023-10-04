@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using SourceGenerators;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json.SourceGeneration
 {

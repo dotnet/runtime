@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Text.Json.Serialization;
-using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {

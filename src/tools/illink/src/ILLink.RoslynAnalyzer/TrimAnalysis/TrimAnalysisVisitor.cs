@@ -114,7 +114,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// The instance reference operation represents a 'this' or 'base' reference to the containing type,
 			// so we get the annotation from the containing method.
 			if (instanceRef.Type != null && instanceRef.Type.IsTypeInterestingForDataflow ()) {
-				// 'this' is not allowed in field/property initializers, so the owning symbol should be a method.
 				Debug.Assert (OwningSymbol is IMethodSymbol);
 				if (OwningSymbol is IMethodSymbol method)
 					return new MethodParameterValue (method, (ParameterIndex) 0, method.GetDynamicallyAccessedMemberTypes ());
@@ -298,7 +297,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override void HandleReturnValue (MultiValue returnValue, IOperation operation)
 		{
-			// Return statements should only happen inside of method bodies.
 			Debug.Assert (OwningSymbol is IMethodSymbol);
 			if (OwningSymbol is not IMethodSymbol method)
 				return;
@@ -311,18 +309,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					isReturnValue: true
 				);
 			}
-		}
-
-		public override MultiValue HandleDelegateCreation (IMethodSymbol method, MultiValue instance, IOperation operation)
-		{
-			TrimAnalysisPatterns.Add (new TrimAnalysisReflectionAccessPattern (
-				method,
-				instance,
-				operation,
-				OwningSymbol
-			));
-
-			return TopValue;
 		}
 
 		static bool TryGetConstantValue (IOperation operation, out MultiValue constValue)

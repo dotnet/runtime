@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 struct Foo 
 {
@@ -28,8 +27,7 @@ public class Test_method005
 	
 	}
 	
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		Foo f = new Foo();
 

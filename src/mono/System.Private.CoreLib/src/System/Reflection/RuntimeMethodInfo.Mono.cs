@@ -190,7 +190,7 @@ namespace System.Reflection
                 sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this));
 
             sbName.Append('(');
-            RuntimeParameterInfo.FormatParameters(sbName, GetParametersAsSpan(), CallingConvention);
+            RuntimeParameterInfo.FormatParameters(sbName, GetParametersNoCopy(), CallingConvention);
             sbName.Append(')');
 
             return sbName.ToString();

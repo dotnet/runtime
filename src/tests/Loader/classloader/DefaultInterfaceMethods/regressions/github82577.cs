@@ -1,13 +1,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 
-public class Program
+class Program
 {
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
        int ret;
        ret = (new TestClass() as ITestInterface).PublicInterfaceProtectedVirtualClass();

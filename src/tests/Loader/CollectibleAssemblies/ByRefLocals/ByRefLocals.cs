@@ -8,9 +8,8 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
-using Xunit;
 
-public class Program
+class Program
 {
     class TestALC : AssemblyLoadContext
     {
@@ -26,8 +25,7 @@ public class Program
         }
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         var holdResult = HoldAssembliesAliveThroughByRefFields(out GCHandle gch1, out GCHandle gch2);
         if (holdResult != 100)
@@ -92,7 +90,7 @@ public class Program
     {
         var currentALC = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
         var alc = new TestALC(currentALC);
-        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ByRefLocalsUnloaded.dll"));
+        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Unloaded.dll"));
         gchToAssembly = GCHandle.Alloc(a, GCHandleType.WeakTrackResurrection);
 
         var spanAccessor = (IReturnSpan)Activator.CreateInstance(a.GetType("SpanAccessor"));

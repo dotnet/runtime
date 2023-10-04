@@ -676,6 +676,12 @@ sigsuspend(const sigset_t *sigmask)
 }
 
 int
+getdtablesize (void)
+{
+	return 256; //random constant that is the fd limit
+}
+
+int
 inotify_init (void)
 {
 	g_error ("inotify_init");

@@ -3,14 +3,12 @@
 
 using System;
 using System.Linq;
-using Xunit;
 
 namespace BugInReflection
 {
-    public class Program
+    class Program
     {
-        [Fact]
-        public static void TestEntryPoint()
+        static int Main()
         {
             // This tests the ability to load a type when
             // 1. The type implements an interface
@@ -28,6 +26,7 @@ namespace BugInReflection
             // To workaround the bug in .NET 5, simply make the Post class have enough virtual methods to match
             // the number of virtual methods on the ITitle interface.
             new BlogPost();
+            return 100;
         }
     }
 

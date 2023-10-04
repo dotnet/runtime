@@ -3,19 +3,25 @@
 
 using System;
 
-using Xunit;
-
 /// <summary>
 /// Regression test case for Dev10 897464 bug: Assemblies that contain global values will work with .NET 2.0  but fail with a BadImageFormat exception on .NET 4.0
 /// </summary>
-public class Program
+class Program
 {
-    [Fact]
-    public static void TestEntryPoint()
+    static Int32 Main()
     {
         Program p = new Program();
 
-        Assert.True(p.Run());
+        if (p.Run())
+        {
+            Console.WriteLine("PASS");
+            return 100;
+        }
+        else
+        {
+            Console.WriteLine("FAIL");
+            return -1;
+        }
     }
 
     public Boolean Run()

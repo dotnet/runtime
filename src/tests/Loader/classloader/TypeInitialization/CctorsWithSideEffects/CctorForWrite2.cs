@@ -7,7 +7,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
 
 public class CorrectException : Exception
 {
@@ -15,8 +14,7 @@ public class CorrectException : Exception
 
 public class CCC
 {
-    [Fact]
-    public static int TestEntryPoint() => ClassCallingCctor<object>.Test();
+    public static int Main() => ClassCallingCctor<object>.Test();
 }
 
 public class ClassCallingCctor<T>

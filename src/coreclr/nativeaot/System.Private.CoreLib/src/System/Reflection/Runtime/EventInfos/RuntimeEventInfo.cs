@@ -110,7 +110,7 @@ namespace System.Reflection.Runtime.EventInfos
         public sealed override string ToString()
         {
             MethodInfo addMethod = this.AddMethod;
-            ReadOnlySpan<ParameterInfo> parameters = addMethod.GetParametersAsSpan();
+            ParameterInfo[] parameters = addMethod.GetParametersNoCopy();
             if (parameters.Length == 0)
                 throw new InvalidOperationException(); // Legacy: Why is a ToString() intentionally throwing an exception?
             RuntimeParameterInfo runtimeParameterInfo = (RuntimeParameterInfo)(parameters[0]);

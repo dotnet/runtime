@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
 // Regression test for a bug found in Roslyn testing; as of authoting
 // this test CoreCLR static virtual method support apparently has a bug
 // causing "Testing Test1" to return "I1.M1" from a call to M1 instead
@@ -13,13 +12,12 @@ interface I1
     static abstract int M2();
 }
 
-public class Test1 : Test2, I1
+class Test1 : Test2, I1
 {
     static public int M1() { return 0; }
     static public ref int M2() { throw null; }
 
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         System.Console.WriteLine("Testing Test2");
         bool ok2 = Test<Test2>();
@@ -38,7 +36,7 @@ public class Test1 : Test2, I1
 
 }
 
-public class Test2 : I1
+class Test2 : I1
 {
     static string I1.M1()
     {

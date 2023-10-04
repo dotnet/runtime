@@ -227,7 +227,8 @@ namespace System
                     }
                     else
                     {
-                        return rtMethod.GetParametersAsSpan()[position]; // Point to the correct ParameterInfo of the method
+                        ParameterInfo[] parameters = rtMethod.GetParameters();
+                        return parameters[position]; // Point to the correct ParameterInfo of the method
                     }
                 }
             }

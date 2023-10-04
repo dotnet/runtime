@@ -36,7 +36,7 @@ struct MyArray<T> : IEnumerable<T>
     }
 }
 
-public unsafe class Validate
+unsafe class Validate
 {
     // ====================== SizeOf ==============================================================
     [InlineArray(42)]

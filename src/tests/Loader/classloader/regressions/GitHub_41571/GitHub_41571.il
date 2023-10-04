@@ -42,10 +42,10 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public auto ansi beforefieldinit GitHub_41571.Program
+.class private auto ansi beforefieldinit GitHub_41571.Program
        extends [System.Runtime]System.Object
 {
-  .method public hidebysig static int32 
+  .method private hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

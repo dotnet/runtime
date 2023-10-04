@@ -54,11 +54,8 @@
 typedef int BOOL;
 typedef uint32_t DWORD;
 typedef uint64_t DWORD64;
-#ifdef _MSC_VER
-typedef unsigned long ULONG;
-#else
 typedef uint32_t ULONG;
-#endif
+
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
 

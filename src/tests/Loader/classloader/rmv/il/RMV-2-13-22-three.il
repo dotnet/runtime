@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
-.assembly extern xunit.core {}
 /*RDawson - 11/2/200
 
   Check that static and instance methods of a value class 
@@ -12,7 +11,7 @@
 .assembly Bob{}
 .assembly extern mscorlib {}
 
-.class public value sealed Foo extends [mscorlib]System.ValueType{
+.class value sealed Foo extends [mscorlib]System.ValueType{
 	.field public int32 foo
 	.method public specialname void .ctor(){
 		ldarg.0
@@ -31,9 +30,6 @@
 }
 
 .method public static int32 main(){
-	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-	    01 00 00 00
-	)
 	.locals(value class Foo)
 	.entrypoint
 	.maxstack 8

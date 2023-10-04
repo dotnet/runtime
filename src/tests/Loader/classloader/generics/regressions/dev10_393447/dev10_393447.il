@@ -122,7 +122,7 @@ class Program
 
 } // end of class MyGStruct`1
 
-.class public auto ansi beforefieldinit Program
+.class private auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method private hidebysig static bool  NonGeneric() cil managed

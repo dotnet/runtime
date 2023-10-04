@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 interface IFoo<in T>
 {
@@ -14,18 +13,17 @@ interface IFoo2<in T>
     static abstract string DoStatic();
 }
 
-public class Fooer<T> : IFoo2<T>
+class Fooer<T> : IFoo2<T>
 {
     public static string DoStatic() => typeof(T).ToString();
 }
 
-public class Program : IFoo<object>
+class Program : IFoo<object>
 {
     static string CallStatic<T, U>() where T : IFoo<U> => T.DoStatic();
     static string CallStatic2<T, U>() where T : IFoo2<U> => T.DoStatic();
 
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         string staticResult1 = CallStatic<Program, string>();
         Console.WriteLine("SVM call result #1: {0} (System.Object expected - using default interface implementation)", staticResult1);

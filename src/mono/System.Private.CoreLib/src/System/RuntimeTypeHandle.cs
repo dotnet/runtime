@@ -247,6 +247,11 @@ namespace System
         }
 #pragma warning restore IDE0060
 
+        internal static bool IsInterface(RuntimeType type)
+        {
+            return (type.Attributes & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetArrayRank(QCallTypeHandle type);
 

@@ -12,7 +12,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Xunit;
 
 public struct Wrapper { public Object o; }
 	
@@ -23,8 +22,7 @@ public struct Wrapper { public Object o; }
 
 public class Test{
 
-  [Fact]
-  public static int TestEntryPoint(){
+  public static int Main(){
       bool caught=false;
       try{
           Go();

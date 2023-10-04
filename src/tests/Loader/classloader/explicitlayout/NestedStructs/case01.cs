@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Xunit;
 
 [StructLayout(LayoutKind.Explicit, Size = 24)]
 public struct ComplexStruct
@@ -37,8 +36,7 @@ public struct InnerStruct
     public int Low;
 }
 
-public class Test_NestedStructsWithExplicitLayout_Case01
-{
+public class Test_NestedStructsWithExplicitLayout_Case01 {
     private ComplexStruct currentCount = default;
 
     private void IncrementCount()
@@ -48,8 +46,7 @@ public class Test_NestedStructsWithExplicitLayout_Case01
         currentCount = x;
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main ()
     {
         try
         {

@@ -3,7 +3,6 @@
 
 using System;
 using System.Numerics;
-using Xunit;
 
 // This regression test tracks the issue where explicit static interface
 // method implementation compiles but program crashes with "Fatal error"
@@ -22,8 +21,7 @@ public sealed class Program
     
     public readonly record struct Int32Value(int Value) : IValue<Int32Value, int>;
 
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         const string ExpectedValue = "Int32Value { Value = 1 }";
         string actualValue = new Int32Value(1).ToString();

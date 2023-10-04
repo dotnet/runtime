@@ -60,13 +60,15 @@ namespace Microsoft.Interop.Analyzers
 
                     StubEnvironment env = new StubEnvironment(
                         context.Compilation,
-                        context.Compilation.GetEnvironmentFlags());
+                        targetFramework.TargetFramework,
+                        targetFramework.Version,
+                        context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
 
-                    context.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, libraryImportAttrType, env, targetFramework), SymbolKind.Method);
+                    context.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, libraryImportAttrType, env), SymbolKind.Method);
                 });
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol libraryImportAttrType, StubEnvironment env, TargetFrameworkSettings tf)
+        private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol libraryImportAttrType, StubEnvironment env)
         {
             var method = (IMethodSymbol)context.Symbol;
 
@@ -112,19 +114,14 @@ namespace Microsoft.Interop.Analyzers
             // later user work.
             GeneratorDiagnosticsBag diagnostics = new(new DiagnosticDescriptorProvider(), new MethodSignatureDiagnosticLocations((MethodDeclarationSyntax)method.DeclaringSyntaxReferences[0].GetSyntax()), SR.ResourceManager, typeof(FxResources.Microsoft.Interop.LibraryImportGenerator.SR));
             AttributeData dllImportAttribute = method.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.DllImportAttribute);
-            SignatureContext targetSignatureContext = SignatureContext.Create(
-                method,
-                DefaultMarshallingInfoParser.Create(env, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute),
-                env,
-                new CodeEmitOptions(SkipInit: tf.TargetFramework == TargetFramework.Net),
-                typeof(ConvertToLibraryImportAnalyzer).Assembly);
+            SignatureContext targetSignatureContext = SignatureContext.Create(method, DefaultMarshallingInfoParser.Create(env, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute), env, typeof(ConvertToLibraryImportAnalyzer).Assembly);
 
-            var generatorFactoryKey = LibraryImportGeneratorHelpers.CreateGeneratorFactory(env, tf, new LibraryImportGeneratorOptions(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions));
+            var generatorFactoryKey = LibraryImportGeneratorHelpers.CreateGeneratorFactory(env, new LibraryImportGeneratorOptions(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions));
 
             bool mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
             bool anyExplicitlyUnsupportedInfo = false;
 
-            var stubCodeContext = new ManagedToNativeStubCodeContext("return", "nativeReturn");
+            var stubCodeContext = new ManagedToNativeStubCodeContext(env.TargetFramework, env.TargetFrameworkVersion, "return", "nativeReturn");
 
             var forwarder = new Forwarder();
             // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.

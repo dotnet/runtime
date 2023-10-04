@@ -4,7 +4,6 @@
 // negative tests
 
 using System;
-using Xunit;
 
 public class Base { }
 public class Sub : Base { }
@@ -123,8 +122,7 @@ public class TestClass
 		}
 	}
 
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 
 		if (RunTests())

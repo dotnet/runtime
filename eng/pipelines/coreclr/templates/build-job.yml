@@ -17,6 +17,7 @@ parameters:
   testGroup: ''
   timeoutInMinutes: ''
   variables: {}
+  pgoType: ''
 
 ### Product build
 jobs:
@@ -35,18 +36,21 @@ jobs:
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
     disableClrTest: ${{ parameters.disableClrTest }}
+    pgoType: ${{ parameters.pgoType }}
 
     # Compute job name from template parameters
-    name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}',
+    name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}{5}',
       parameters.runtimeVariant,
       parameters.osGroup,
       parameters.osSubgroup,
       parameters.archType,
-      parameters.buildConfig) }}
-    displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4}',
+      parameters.buildConfig,
+      parameters.pgoType) }}
+    displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4} {5}',
       parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup,
       parameters.archType,
-      parameters.buildConfig) }}
+      parameters.buildConfig,
+      parameters.pgoType) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -74,7 +78,7 @@ jobs:
     - name: enforcePgoArg
       value: ''
     # The EnforcePGO script is only supported on Windows and is not supported on arm64.
-    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'windows'), ne(parameters.archType, 'arm64'))) }}:
+    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'windows'), ne(parameters.archType, 'arm64')), ne(parameters.pgoType, 'pgo')) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
 
@@ -89,6 +93,12 @@ jobs:
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - name: clrRuntimeComponentsBuildArg
         value: '-component runtime -component alljits -component nativeaot -component spmi '
+
+    - name: pgoInstrumentArg
+      value: ''
+    - ${{ if eq(parameters.pgoType, 'PGO' )}}:
+      - name: pgoInstrumentArg
+        value: '-pgoinstrument '
 
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
@@ -163,10 +173,10 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if or(eq(parameters.crossBuild, 'true'), ne(parameters.archType, 'x64')) }}:
@@ -180,7 +190,7 @@ jobs:
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages $(crossArg) $(compilerArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages $(crossArg) $(compilerArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
     # Build native test components
@@ -229,7 +239,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(in(parameters.osGroup, 'windows', 'linux'), ne(parameters.archType, 'x86')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows', 'linux'), ne(parameters.archType, 'x86'), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
           parameters:
             archType: ${{ parameters.archType }}
@@ -241,7 +251,7 @@ jobs:
             ${{ else }}:
               hostArchType: x64
 
-    - ${{ if and(in(parameters.osGroup, 'windows'), eq(parameters.archType, 'x86')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows'), eq(parameters.archType, 'x86'), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
           parameters:
             archType: arm
@@ -252,7 +262,7 @@ jobs:
 
     - ${{ if and(ne(parameters.testGroup, ''), ne(parameters.disableClrTest, true)) }}:
       # Publish test native components for consumption by test execution.
-      - ${{ if ne(parameters.isOfficialBuild, true) }}:
+      - ${{ if and(ne(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/common/upload-artifact-step.yml
           parameters:
             rootFolder: $(nativeTestArtifactRootFolderPath)
@@ -264,7 +274,7 @@ jobs:
             displayName: 'native test components'
 
     # Save packages using the prepare-signed-artifacts format.
-    - ${{ if eq(parameters.isOfficialBuild, true) }}:
+    - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:
       - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         parameters:
           name: ${{ parameters.platform }}
@@ -280,6 +290,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '$(publishLogsArtifactPrefix)_Attempt$(System.JobAttempt)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: '$(publishLogsArtifactPrefix)_Attempt$(System.JobAttempt)_${{ parameters.pgoType }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

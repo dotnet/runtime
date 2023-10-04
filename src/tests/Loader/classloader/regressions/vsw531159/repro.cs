@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 public class Gen<U>
 {
@@ -11,8 +10,7 @@ public class Gen<U>
 
 public class Test_repro
 {
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		try
 		{

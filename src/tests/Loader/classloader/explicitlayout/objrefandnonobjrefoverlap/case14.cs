@@ -8,7 +8,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Xunit;
 
 public enum MyEnum {nil, alpha, beta};
 
@@ -36,8 +35,7 @@ public struct WrapBar { public Bar o; }
 
 public class Test{
 
-  [Fact]
-  public static int TestEntryPoint(){
+  public static int Main(){
       bool caught=false;
       try{
           Go();

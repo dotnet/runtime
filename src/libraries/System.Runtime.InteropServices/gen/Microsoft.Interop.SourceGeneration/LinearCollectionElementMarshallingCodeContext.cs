@@ -35,8 +35,10 @@ namespace Microsoft.Interop
             _nativeSpanIdentifier = nativeSpanIdentifier;
             ParentContext = parentContext;
             Direction = ParentContext.Direction;
-            CodeEmitOptions = ParentContext.CodeEmitOptions;
         }
+
+        public override (TargetFramework framework, Version version) GetTargetFramework()
+            => ParentContext!.GetTargetFramework();
 
         /// <summary>
         /// Get managed and native instance identifiers for the <paramref name="info"/>

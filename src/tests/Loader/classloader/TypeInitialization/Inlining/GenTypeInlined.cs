@@ -6,7 +6,6 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
-using Xunit;
 
 public class Foo<T>
 {
@@ -99,8 +98,7 @@ public struct InlinedVal<T>
 
 public class Test_GenTypeInlined
 {
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		Foo<int>.Meth_In();
 		Foo<char>.Meth_NotIn();

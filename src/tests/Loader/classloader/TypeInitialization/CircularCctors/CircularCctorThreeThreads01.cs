@@ -10,7 +10,6 @@ This should form a three thread deadlock, which we will detect and allow one of 
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
-using Xunit;
 public class A 
 {
 	public static int i;
@@ -128,8 +127,7 @@ public class Test_CircularCctorThreeThreads01
 	}
 
 
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
   		Thread t1 = new Thread(RunGetA);
 	        t1.Name = "T1";

@@ -124,10 +124,9 @@ extends:
             buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true
             nameSuffix: AllSubsets_NativeAOT
             isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: NativeAOTRuntimePacks
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: NativeAOTRuntimePacks
 
       #
       # Build Mono runtime packs
@@ -167,10 +166,9 @@ extends:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false
             nameSuffix: AllSubsets_Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -184,10 +182,9 @@ extends:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: AllSubsets_Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -201,10 +198,9 @@ extends:
             nameSuffix: AllSubsets_Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
 
       # Build Mono AOT offset headers once, for consumption elsewhere
       #
@@ -246,10 +242,9 @@ extends:
             - android
             - browser
             isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -270,10 +265,9 @@ extends:
             - android
             - browser
             isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -301,10 +295,9 @@ extends:
             - ios
             - maccatalyst
             isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoRuntimePacks
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
 
       #
       # Build Mono LLVM runtime packs
@@ -332,24 +325,22 @@ extends:
               nameSuffix: AllSubsets_Mono_LLVMJIT
               runtimeVariant: LLVMJIT
               isOfficialBuild: ${{ variables.isOfficialBuild }}
-              postBuildSteps:
-                - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                  parameters:
-                    name: MonoRuntimePacks
+              extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              extraStepsParameters:
+                name: MonoRuntimePacks
           #LLVMAOT
           - jobTemplate: /eng/pipelines/common/global-build-job.yml
             buildConfig: release
             runtimeFlavor: mono
             jobParameters:
               buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                          /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+                          /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
               nameSuffix: AllSubsets_Mono_LLVMAOT
               runtimeVariant: LLVMAOT
               isOfficialBuild: ${{ variables.isOfficialBuild }}
-              postBuildSteps:
-                - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                  parameters:
-                    name: MonoRuntimePacks
+              extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+              extraStepsParameters:
+                name: MonoRuntimePacks
 
       #
       # Build libraries using live CoreLib from CoreCLR
@@ -404,10 +395,9 @@ extends:
           - SourceBuild_linux_x64
           jobParameters:
             nameSuffix: PortableSourceBuild
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: SourceBuildPackages
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: SourceBuildPackages
             timeoutInMinutes: 95
 
       #
@@ -435,13 +425,12 @@ extends:
           - windows_arm64
 
       #
-      # Build PGO Instrumented CoreCLR Release
+      # Build PGO CoreCLR release
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
-          helixQueueGroup: ci
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: release
           platforms:
           - windows_x64
           - windows_x86
@@ -449,14 +438,29 @@ extends:
           - windows_arm64
           - linux_arm64
           jobParameters:
-            buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -pgoinstrument /p:SkipLibrariesNativeRuntimePackages=true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
-            nameSuffix: PGO
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: PGO
-            timeoutInMinutes: 95
+            signBinaries: false
+            testGroup: innerloop
+            pgoType: 'PGO'
+
+      #
+      # PGO Build
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+          buildConfig: Release
+          jobParameters:
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            liveRuntimeBuildConfig: release
+            liveLibrariesBuildConfig: Release
+            pgoType: 'PGO'
+          platforms:
+          - windows_x64
+          - windows_x86
+          - linux_x64
+          - windows_arm64
+          - linux_arm64
 
       #
       # Build Workloads
@@ -486,9 +490,9 @@ extends:
             - Build_tvossimulator_arm64_release_AllSubsets_Mono
             - Build_tvossimulator_x64_release_AllSubsets_Mono
             - Build_windows_x64_release_CrossAOT_Mono
-            - installer_coreclr__windows_x64_Release_
-            - installer_coreclr__windows_x86_Release_
-            - installer_coreclr__windows_arm64_Release_
+            - installer__coreclr__windows_x64_Release_
+            - installer__coreclr__windows_x86_Release_
+            - installer__coreclr__windows_arm64_Release_
 
     - ${{ if eq(variables.isOfficialBuild, true) }}:
       - template: /eng/pipelines/official/stages/publish.yml

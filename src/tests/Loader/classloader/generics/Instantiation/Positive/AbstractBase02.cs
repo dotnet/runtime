@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 public struct ValX0 {}
 public struct ValY0 {}
@@ -70,8 +69,7 @@ public class Test_AbstractBase02
 	
 	}
 	
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		Eval((new Gen<int>(new int())).InstVerify(typeof(int))); 	
 		Eval((new Gen<double>(new double())).InstVerify(typeof(double))); 

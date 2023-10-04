@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 public struct ValX0 {}
 public struct ValY0 {}
@@ -165,8 +164,7 @@ public class Test_NestedBaseClass03
 	
 	}
 	
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		Eval(new GenInt().InstVerify());
 		Eval(new GenDouble().InstVerify());

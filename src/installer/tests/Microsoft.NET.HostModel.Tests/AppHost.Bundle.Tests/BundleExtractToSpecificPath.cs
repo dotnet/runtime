@@ -43,7 +43,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(bundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractBaseDir)
+                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractBaseDir)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
@@ -85,7 +85,7 @@ namespace AppHost.Bundle.Tests
                 .WorkingDirectory(Path.GetDirectoryName(singleFile))
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, relativePath)
+                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, relativePath)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
@@ -112,7 +112,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(bundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractBaseDir)
+                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractBaseDir)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
@@ -130,7 +130,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(bundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractBaseDir)
+                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractBaseDir)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
@@ -152,7 +152,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(bundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractBaseDir)
+                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractBaseDir)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
@@ -171,7 +171,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(bundledApp.Path)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractBaseDir)
+                .EnvironmentVariable(BundleHelper.DotnetBundleExtractBaseEnvVariable, extractBaseDir)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
@@ -195,7 +195,6 @@ namespace AppHost.Bundle.Tests
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable(defaultExpansionEnvVariable, nonExistentPath)
-                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, null)
                 .Execute().Should().Fail()
                 .And.HaveStdErrContaining(expectedErrorMessagePart);
         }
@@ -216,7 +215,6 @@ namespace AppHost.Bundle.Tests
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable("HOME", null)
-                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, null)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");

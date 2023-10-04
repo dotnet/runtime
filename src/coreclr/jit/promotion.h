@@ -60,7 +60,6 @@ public:
         }
 
         bool IntersectsOrAdjacent(const Segment& other) const;
-        bool Intersects(const Segment& other) const;
         bool Contains(const Segment& other) const;
         void Merge(const Segment& other);
     };
@@ -69,7 +68,7 @@ private:
     jitstd::vector<Segment> m_segments;
 
 public:
-    explicit StructSegments(CompAllocator allocator) : m_segments(allocator)
+    StructSegments(CompAllocator allocator) : m_segments(allocator)
     {
     }
 
@@ -77,7 +76,6 @@ public:
     void Subtract(const Segment& segment);
     bool IsEmpty();
     bool CoveringSegment(Segment* result);
-    bool Intersects(const Segment& segment);
 
 #ifdef DEBUG
     void Dump();
@@ -89,14 +87,12 @@ struct AggregateInfo
 {
     jitstd::vector<Replacement> Replacements;
     unsigned                    LclNum;
-    // Unpromoted parts of the struct local.
-    StructSegments Unpromoted;
     // Min offset in the struct local of the unpromoted part.
     unsigned UnpromotedMin = 0;
     // Max offset in the struct local of the unpromoted part.
     unsigned UnpromotedMax = 0;
 
-    AggregateInfo(CompAllocator alloc, unsigned lclNum) : Replacements(alloc), LclNum(lclNum), Unpromoted(alloc)
+    AggregateInfo(CompAllocator alloc, unsigned lclNum) : Replacements(alloc), LclNum(lclNum)
     {
     }
 

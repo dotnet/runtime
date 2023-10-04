@@ -16,7 +16,7 @@ namespace System.Reflection
         public static MethodBase GetCurrentMethod() { throw NotImplemented.ByDesign; } //Implemented by toolchain.
 
         // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
-        public virtual ReadOnlySpan<ParameterInfo> GetParametersAsSpan() => GetParameters();
+        public virtual ParameterInfo[] GetParametersNoCopy() => GetParameters();
 
         //
         // MethodBase MetadataDefinitionMethod { get; }

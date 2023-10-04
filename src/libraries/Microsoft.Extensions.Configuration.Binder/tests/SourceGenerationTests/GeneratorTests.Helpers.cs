@@ -9,10 +9,10 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,9 +24,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     public partial class ConfigurationBindingGeneratorTests
     {
-        /// <summary>
-        /// Keep in sync with variants, e.g. <see cref="BindCallSampleCodeVariant_ReorderedInvocations"/>.
-        /// </summary>
         private const string BindCallSampleCode = """
             using System.Collections.Generic;
             using Microsoft.Extensions.Configuration;
@@ -66,7 +63,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         private static readonly Assembly[] s_compilationAssemblyRefs = new[] {
-            typeof(BitArray).Assembly,
             typeof(ConfigurationBinder).Assembly,
             typeof(ConfigurationBuilder).Assembly,
             typeof(CultureInfo).Assembly,
@@ -91,19 +87,18 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
         private static async Task VerifyThatSourceIsGenerated(string testSourceCode)
         {
-            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(testSourceCode);
-            GeneratedSourceResult? source = result.GeneratedSource;
-
-            Assert.NotNull(source);
-            Assert.Empty(result.Diagnostics);
-            Assert.True(source.Value.SourceText.Lines.Count > 10);
+            var (d, r) = await RunGenerator(testSourceCode);
+            Assert.Equal(1, r.Length);
+            Assert.Empty(d);
+            Assert.True(r[0].SourceText.Lines.Count > 10);
         }
 
-        private static async Task<ConfigBindingGenRunResult> VerifyAgainstBaselineUsingFile(
+        private static async Task VerifyAgainstBaselineUsingFile(
             string filename,
             string testSourceCode,
+            Action<ImmutableArray<Diagnostic>>? assessDiagnostics = null,
             ExtensionClassType extType = ExtensionClassType.None,
-            ExpectedDiagnostics expectedDiags = ExpectedDiagnostics.None)
+            bool validateOutputCompDiags = true)
         {
             string path = extType is ExtensionClassType.None
                 ? Path.Combine("Baselines", filename)
@@ -112,52 +107,73 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingGenerator).Assembly.GetName().Version?.ToString())
                                              .Split(Environment.NewLine);
 
-            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(testSourceCode);
-            result.ValidateDiagnostics(expectedDiags);
-
-            SourceText resultSourceText = result.GeneratedSource.Value.SourceText;
-            bool resultEqualsBaseline = RoslynTestUtils.CompareLines(expectedLines, resultSourceText, out string errorMessage);
+            var (d, r) = await RunGenerator(testSourceCode, validateOutputCompDiags);
+            bool success = RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText, out string errorMessage);
 
 #if UPDATE_BASELINES
-            if (!resultEqualsBaseline)
+            if (!success)
             {
-                const string envVarName = "RepoRootDir";
-                string errMessage = $"To update baselines, specify a '{envVarName}' environment variable. See this assembly's README.md doc for more details.";
+                const string envVarName = "RepoRootDir"
+                string errMessage = $"To update baselines, specify a '{envVarName}' environment variable. See this assembly's README.md doc for more details."
 
                 string? repoRootDir = Environment.GetEnvironmentVariable(envVarName);
                 Assert.True(repoRootDir is not null, errMessage);
 
-                IEnumerable<string> lines = resultSourceText.Lines.Select(l => l.ToString());
+                IEnumerable<string> lines = r[0].SourceText.Lines.Select(l => l.ToString());
                 string source = string.Join(Environment.NewLine, lines).TrimEnd(Environment.NewLine.ToCharArray()) + Environment.NewLine;
                 path = Path.Combine($"{repoRootDir}\\src\\libraries\\Microsoft.Extensions.Configuration.Binder\\tests\\SourceGenerationTests\\", path);
 
                 await File.WriteAllTextAsync(path, source).ConfigureAwait(false);
-                resultEqualsBaseline = true;
+                success = true;
             }
 #endif
 
-            Assert.True(resultEqualsBaseline, errorMessage);
-
-            return result;
+            Assert.Single(r);
+            (assessDiagnostics ?? ((d) => Assert.Empty(d))).Invoke(d);
+            Assert.True(success, errorMessage);
         }
 
-        private static async Task<ConfigBindingGenRunResult> RunGeneratorAndUpdateCompilation(
-            string source,
+        private static async Task<(ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>)> RunGenerator(
+            string testSourceCode,
+            bool validateOutputCompDiags = false,
             LanguageVersion langVersion = LanguageVersion.CSharp12,
-            IEnumerable<Assembly>? assemblyReferences = null)
+            IEnumerable<Assembly>? references = null)
         {
-            ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver(langVersion, assemblyReferences);
-            return await driver.RunGeneratorAndUpdateCompilation(source);
+            using var workspace = RoslynTestUtils.CreateTestWorkspace();
+            CSharpParseOptions parseOptions = new CSharpParseOptions(langVersion).WithFeatures(new[] {
+                new KeyValuePair<string, string>("InterceptorsPreview", ""),
+                new KeyValuePair<string, string>("InterceptorsPreviewNamespaces", "Microsoft.Extensions.Configuration.Binder.SourceGeneration")
+            });
+
+            Project proj = RoslynTestUtils.CreateTestProject(workspace, references ?? s_compilationAssemblyRefs, langVersion: langVersion)
+                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Annotations))
+                .WithDocuments(new string[] { testSourceCode })
+                .WithParseOptions(parseOptions);
+
+            Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
+
+            Compilation comp = await proj.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
+            CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { new ConfigurationBindingGenerator().AsSourceGenerator() }, parseOptions: parseOptions);
+            GeneratorDriver gd = cgd.RunGeneratorsAndUpdateCompilation(comp, out Compilation outputCompilation, out _, CancellationToken.None);
+            GeneratorDriverRunResult runResult = gd.GetRunResult();
+
+            if (validateOutputCompDiags)
+            {
+                ImmutableArray<Diagnostic> diagnostics = outputCompilation.GetDiagnostics();
+                Assert.False(diagnostics.Any(d => d.Severity > DiagnosticSeverity.Info));
+            }
+
+            return (runResult.Results[0].Diagnostics, runResult.Results[0].GeneratedSources);
         }
 
-        private static List<Assembly> GetAssemblyRefsWithAdditional(params Type[] additional)
+        public static List<Assembly> GetAssemblyRefsWithAdditional(params Type[] additional)
         {
             List<Assembly> assemblies = new(s_compilationAssemblyRefs);
             assemblies.AddRange(additional.Select(t => t.Assembly));
             return assemblies;
         }
 
-        private static HashSet<Assembly> GetFilteredAssemblyRefs(IEnumerable<Type> exclusions)
+        public static HashSet<Assembly> GetFilteredAssemblyRefs(IEnumerable<Type> exclusions)
         {
             HashSet<Assembly> assemblies = new(s_compilationAssemblyRefs);
             foreach (Type exclusion in exclusions)

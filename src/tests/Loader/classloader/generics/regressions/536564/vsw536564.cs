@@ -5,7 +5,6 @@
 // We were getting a TypeLoadException when trying to load Class1
 
 using System;
-using Xunit;
 
 public interface I1 
 {
@@ -21,8 +20,7 @@ public class Class1 : I1
 
 public class Test_vsw536564
 {
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		try
 		{

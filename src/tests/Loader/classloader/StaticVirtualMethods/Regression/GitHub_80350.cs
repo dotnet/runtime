@@ -2,17 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 // This regression test tracks the issue where implementation of a static virtual method
 // on a derived type is not found when there is a re-abstraction of the same method
 // higher in inheritance hierarchy.
 
-public class Test1 : I2
+class Test1 : I2
 {
 
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         string result = Test<Test1>();
         const string expectedResult = "Test1.M1";

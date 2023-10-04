@@ -8,7 +8,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Xunit;
 
 public class Foo{
     public int i=42;
@@ -41,8 +40,7 @@ public class Test{
         return;
     }
 
-  [Fact]
-  public static int TestEntryPoint(){
+  public static int Main(){
       bool caught=false;
       try{
           Go();

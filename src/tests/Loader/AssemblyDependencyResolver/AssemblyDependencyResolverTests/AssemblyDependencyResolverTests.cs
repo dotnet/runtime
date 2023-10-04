@@ -9,7 +9,7 @@ using Xunit;
 
 namespace AssemblyDependencyResolverTests
 {
-    public class AssemblyDependencyResolverTests : TestBase
+    class AssemblyDependencyResolverTests : TestBase
     {
         string _componentDirectory;
         string _componentAssemblyPath;
@@ -306,8 +306,7 @@ namespace AssemblyDependencyResolverTests
                 relativePath + Path.DirectorySeparatorChar + XPlatformUtils.GetStandardNativeLibraryFileName(simpleName));
         }
 
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             return TestBase.RunTests(
                 typeof(AssemblyDependencyResolverTests),

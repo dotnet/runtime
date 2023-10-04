@@ -14,8 +14,11 @@ namespace Microsoft.Interop
 {
     public static class IncrementalGeneratorInitializationContextExtensions
     {
-        public static IncrementalValueProvider<EnvironmentFlags> CreateEnvironmentFlagsProvider(this IncrementalGeneratorInitializationContext context)
+        public static IncrementalValueProvider<StubEnvironment> CreateStubEnvironmentProvider(this IncrementalGeneratorInitializationContext context)
         {
+            var tfmVersion = context.AnalyzerConfigOptionsProvider
+                .Select((options, ct) => options.GlobalOptions.GetTargetFrameworkSettings());
+
             var isModuleSkipLocalsInit = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute,
@@ -25,29 +28,13 @@ namespace Microsoft.Interop
                     // SkipLocalsInit attributes. So the result we return here is meaningless.
                     (context, ct) => true)
                 .Collect()
-                .Select((topLevelAttrs, ct) => !topLevelAttrs.IsEmpty ? EnvironmentFlags.SkipLocalsInit : EnvironmentFlags.None);
+                .Select((topLevelAttrs, ct) => !topLevelAttrs.IsEmpty);
 
-            var disabledRuntimeMarshalling = context.SyntaxProvider
-                .ForAttributeWithMetadataName(
-                    TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute,
-                    // DisableRuntimeMarshalling is only available at the top level.
-                    (node, ct) => true,
-                    // Only allow DisableRuntimeMarshalling attributes from the attribute type in the core assembly.
-                    // Otherwise the runtime isn't going to respect it and invalid behavior can happen.
-                    (context, ct) => SymbolEqualityComparer.Default.Equals(context.Attributes[0].AttributeClass.ContainingAssembly, context.SemanticModel.Compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly))
-                .Where(valid => valid)
-                .Collect()
-                .Select((topLevelAttrs, ct) => !topLevelAttrs.IsEmpty ? EnvironmentFlags.DisableRuntimeMarshalling : EnvironmentFlags.None);
-
-            return isModuleSkipLocalsInit.Combine(disabledRuntimeMarshalling).Select((data, ct) => data.Left | data.Right);
-        }
-
-        public static IncrementalValueProvider<StubEnvironment> CreateStubEnvironmentProvider(this IncrementalGeneratorInitializationContext context)
-        {
-            return context.CompilationProvider
-                .Combine(context.CreateEnvironmentFlagsProvider())
+            return tfmVersion
+                .Combine(isModuleSkipLocalsInit)
+                .Combine(context.CompilationProvider)
                 .Select((data, ct) =>
-                    new StubEnvironment(data.Left, data.Right));
+                    new StubEnvironment(data.Right, data.Left.Left.TargetFramework, data.Left.Left.Version, data.Left.Right));
         }
 
         public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<DiagnosticInfo> diagnostics)

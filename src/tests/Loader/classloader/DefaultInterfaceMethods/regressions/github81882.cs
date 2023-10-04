@@ -27,8 +27,7 @@ namespace LeaveAbstractMethodsNulInVTable
 
     public class Program
     {
-        [Fact]
-        public static void TestEntryPoint()
+        public static int Main()
         {
             IDefault c = new ClassB();
 
@@ -37,6 +36,8 @@ namespace LeaveAbstractMethodsNulInVTable
 
             string s2 = c.Method2();
             Assert.Equal("ClassB Method2", s2);
+
+            return 100;
         }
     }
 

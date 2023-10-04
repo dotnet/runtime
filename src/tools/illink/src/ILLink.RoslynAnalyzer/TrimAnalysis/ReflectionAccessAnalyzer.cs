@@ -1,7 +1,6 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILLink.RoslynAnalyzer.DataFlow;
@@ -81,23 +80,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		internal static void GetReflectionAccessDiagnosticsForMethod (in DiagnosticContext diagnosticContext, IMethodSymbol methodSymbol)
 		{
-			if (methodSymbol.IsInRequiresUnreferencedCodeAttributeScope (out var requiresUnreferencedCodeAttributeData)) {
+			if (methodSymbol.IsInRequiresUnreferencedCodeAttributeScope (out var requiresUnreferencedCodeAttributeData))
 				ReportRequiresUnreferencedCodeDiagnostic (diagnosticContext, requiresUnreferencedCodeAttributeData, methodSymbol);
-			} else {
-				foreach (var diagnostic in GetDiagnosticsForReflectionAccessToDAMOnMethod (diagnosticContext, methodSymbol))
-					diagnosticContext.AddDiagnostic (diagnostic);
-			}
-		}
-
-		internal static IEnumerable<Diagnostic> GetDiagnosticsForReflectionAccessToDAMOnMethod (DiagnosticContext diagnosticContext, IMethodSymbol methodSymbol)
-		{
-			if (methodSymbol.IsVirtual && FlowAnnotations.GetMethodReturnValueAnnotation (methodSymbol) != DynamicallyAccessedMemberTypes.None) {
-				yield return diagnosticContext.CreateDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
-			} else {
+			else if (methodSymbol.IsVirtual && FlowAnnotations.GetMethodReturnValueAnnotation (methodSymbol) != DynamicallyAccessedMemberTypes.None)
+				diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
+			else {
 				foreach (var parameter in methodSymbol.GetParameters ()) {
 					if (FlowAnnotations.GetMethodParameterAnnotation (parameter) != DynamicallyAccessedMemberTypes.None) {
-						yield return diagnosticContext.CreateDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
-						yield break;
+						diagnosticContext.AddDiagnostic (DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName ());
+						break;
 					}
 				}
 			}

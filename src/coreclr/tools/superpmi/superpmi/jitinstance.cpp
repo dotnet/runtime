@@ -8,6 +8,7 @@
 #include "jithost.h"
 #include "errorhandling.h"
 #include "spmiutil.h"
+#include "metricssummary.h"
 
 JitInstance* JitInstance::InitJit(char*                         nameOfJit,
                                   bool                          breakOnAssert,
@@ -297,23 +298,28 @@ extern "C" DLLEXPORT NOINLINE void Instrumentor_GetInsCount(UINT64* result)
     }
 }
 
-ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput)
+JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput, MetricsSummary* metrics, bool* isMinOpts)
 {
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
     {
         JitInstance*        pThis;
+        JitInstance::Result result;
         CORINFO_METHOD_INFO info;
         unsigned            flags;
         int                 mcIndex;
         bool                collectThroughput;
+        MetricsSummary*     metrics;
         bool*               isMinOpts;
-        ReplayResults       results;
     } param;
     param.pThis             = this;
+    param.result            = RESULT_SUCCESS; // assume success
     param.flags             = 0;
     param.mcIndex           = mcIndex;
     param.collectThroughput = collectThroughput;
-    param.results.Result    = ReplayResult::Success;
+    param.metrics           = metrics;
+    param.isMinOpts         = isMinOpts;
+
+    *isMinOpts = false;
 
     // store to instance field our raw values, so we can figure things out a bit later...
     mc = MethodToCompile;
@@ -336,7 +342,7 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
         CORJIT_FLAGS jitFlags;
         pParam->pThis->mc->repGetJitFlags(&jitFlags, sizeof(jitFlags));
 
-        pParam->results.IsMinOpts =
+        *pParam->isMinOpts =
             jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE) ||
             jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT) ||
             jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
@@ -357,11 +363,11 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
         CorInfoMethodRuntimeFlags flags = pParam->pThis->mc->cr->repSetMethodAttribs(pParam->info.ftn);
         if ((flags & CORINFO_FLG_SWITCHED_TO_MIN_OPT) != 0)
         {
-            pParam->results.IsMinOpts = true;
+            *pParam->isMinOpts = true;
         }
         else if ((flags & CORINFO_FLG_SWITCHED_TO_OPTIMIZED) != 0)
         {
-            pParam->results.IsMinOpts = false;
+            *pParam->isMinOpts = false;
         }
 
         if (jitResult == CORJIT_SKIPPED)
@@ -410,12 +416,12 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
 
             pParam->pThis->mc->cr->recMessageLog(jitResult == CORJIT_OK ? "Successful Compile" : "Successful Compile (BADCODE)");
 
-            pParam->results.NumCodeBytes = NCodeSizeBlock;
+            pParam->metrics->NumCodeBytes += NCodeSizeBlock;
         }
         else
         {
             LogDebug("compileMethod failed with result %d", jitResult);
-            pParam->results.Result = ReplayResult::Error;
+            pParam->result = RESULT_ERROR;
         }
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)
@@ -427,7 +433,7 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
             char* message = e.GetExceptionMessage();
             LogMissing("Method context %d failed to replay: %s", mcIndex, message);
             e.DeleteMessage();
-            param.results.Result = ReplayResult::Miss;
+            param.result = RESULT_MISSING;
         }
         else if (e.GetCode() == EXCEPTIONCODE_RECORDED_EXCEPTION)
         {
@@ -446,7 +452,7 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
         else
         {
             e.ShowAndDeleteMessage();
-            param.results.Result = ReplayResult::Error;
+            param.result = RESULT_ERROR;
         }
     }
     PAL_ENDTRY
@@ -463,8 +469,22 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
     UINT64 insCountAfter = 0;
     Instrumentor_GetInsCount(&insCountAfter);
 
-    param.results.NumExecutedInstructions = static_cast<long long>(insCountAfter - insCountBefore);
-    return param.results;
+    if (param.result == RESULT_SUCCESS)
+    {
+        metrics->SuccessfulCompiles++;
+        metrics->NumExecutedInstructions += static_cast<long long>(insCountAfter - insCountBefore);
+    }
+    else
+    {
+        metrics->FailingCompiles++;
+    }
+
+    if (param.result == RESULT_MISSING)
+    {
+        metrics->MissingCompiles++;
+    }
+
+    return param.result;
 }
 
 void JitInstance::timeResult(CORINFO_METHOD_INFO info, unsigned flags)

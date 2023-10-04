@@ -31,6 +31,7 @@ set(SUPERPMI_SOURCES
     jitdebugger.cpp
     jitinstance.cpp
     methodstatsemitter.cpp
+    metricssummary.cpp
     neardiffer.cpp
     parallelsuperpmi.cpp
     superpmi.cpp

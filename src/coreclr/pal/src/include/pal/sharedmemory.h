@@ -85,19 +85,6 @@ public:
     DWORD GetErrorCode() const;
 };
 
-class SharedMemorySystemCallErrors
-{
-private:
-    char *m_buffer;
-    int m_bufferSize;
-    int m_length;
-    bool m_isTracking;
-
-public:
-    SharedMemorySystemCallErrors(char *buffer, int bufferSize);
-    void Append(LPCSTR format, ...);
-};
-
 class SharedMemoryHelpers
 {
 private:
@@ -119,22 +106,20 @@ public:
     static void BuildSharedFilesPath(PathCharString& destination, const char *suffix, int suffixByteCount);
     static bool AppendUInt32String(PathCharString& destination, UINT32 value);
 
-    static bool EnsureDirectoryExists(SharedMemorySystemCallErrors *errors, const char *path, bool isGlobalLockAcquired, bool createIfNotExist = true, bool isSystemDirectory = false);
+    static bool EnsureDirectoryExists(const char *path, bool isGlobalLockAcquired, bool createIfNotExist = true, bool isSystemDirectory = false);
 private:
-    static int Open(SharedMemorySystemCallErrors *errors, LPCSTR path, int flags, mode_t mode = static_cast<mode_t>(0));
+    static int Open(LPCSTR path, int flags, mode_t mode = static_cast<mode_t>(0));
 public:
-    static int OpenDirectory(SharedMemorySystemCallErrors *errors, LPCSTR path);
-    static int CreateOrOpenFile(SharedMemorySystemCallErrors *errors, LPCSTR path, bool createIfNotExist = true, bool *createdRef = nullptr);
+    static int OpenDirectory(LPCSTR path);
+    static int CreateOrOpenFile(LPCSTR path, bool createIfNotExist = true, bool *createdRef = nullptr);
     static void CloseFile(int fileDescriptor);
 
-    static int ChangeMode(LPCSTR path, mode_t mode);
+    static SIZE_T GetFileSize(int fileDescriptor);
+    static void SetFileSize(int fileDescriptor, SIZE_T byteCount);
 
-    static SIZE_T GetFileSize(SharedMemorySystemCallErrors *errors, LPCSTR filePath, int fileDescriptor);
-    static void SetFileSize(SharedMemorySystemCallErrors *errors, LPCSTR filePath, int fileDescriptor, SIZE_T byteCount);
+    static void *MemoryMapFile(int fileDescriptor, SIZE_T byteCount);
 
-    static void *MemoryMapFile(SharedMemorySystemCallErrors *errors, LPCSTR filePath, int fileDescriptor, SIZE_T byteCount);
-
-    static bool TryAcquireFileLock(SharedMemorySystemCallErrors *errors, int fileDescriptor, int operation);
+    static bool TryAcquireFileLock(int fileDescriptor, int operation);
     static void ReleaseFileLock(int fileDescriptor);
 
     static void VerifyStringOperation(bool success);
@@ -222,7 +207,7 @@ private:
     SharedMemoryProcessDataHeader *m_nextInProcessDataHeaderList;
 
 public:
-    static SharedMemoryProcessDataHeader *CreateOrOpen(SharedMemorySystemCallErrors *errors, LPCSTR name, SharedMemorySharedDataHeader requiredSharedDataHeader, SIZE_T sharedDataByteCount, bool createIfNotExist, bool *createdRef);
+    static SharedMemoryProcessDataHeader *CreateOrOpen(LPCSTR name, SharedMemorySharedDataHeader requiredSharedDataHeader, SIZE_T sharedDataByteCount, bool createIfNotExist, bool *createdRef);
 
 public:
     static SharedMemoryProcessDataHeader *PalObject_GetProcessDataHeader(CorUnix::IPalObject *object);
@@ -275,7 +260,7 @@ public:
 public:
     static void AcquireCreationDeletionProcessLock();
     static void ReleaseCreationDeletionProcessLock();
-    static void AcquireCreationDeletionFileLock(SharedMemorySystemCallErrors *errors);
+    static void AcquireCreationDeletionFileLock();
     static void ReleaseCreationDeletionFileLock();
 
 public:

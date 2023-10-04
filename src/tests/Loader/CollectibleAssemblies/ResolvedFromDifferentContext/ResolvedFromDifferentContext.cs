@@ -14,7 +14,6 @@ using System.Runtime.Loader;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.IO;
-using Xunit;
 
 class TestAssemblyLoadContext : AssemblyLoadContext
 {
@@ -32,7 +31,7 @@ class TestAssemblyLoadContext : AssemblyLoadContext
         {
             AssemblyLoadContext alc1 = new AssemblyLoadContext("Dependencies", true);
             Console.WriteLine($"Loading TestInterface by alc {alc1} for {(IsCollectible ? "collectible" : "non-collectible")} alc {this}");
-            Assembly a = alc1.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("TestInterface", "TestInterface.dll")));
+            Assembly a = alc1.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("..", "TestInterface", "TestInterface.dll")));
             interfaceAssemblyRef = new WeakReference(a);
             return a;
         }
@@ -41,7 +40,7 @@ class TestAssemblyLoadContext : AssemblyLoadContext
     }
 }
 
-public class Test
+class Test
 {
     static AssemblyLoadContext alc1 = null;
     static WeakReference interfaceAssemblyRef = null;
@@ -57,7 +56,7 @@ public class Test
         alc1 = new AssemblyLoadContext("Dependencies", true);
         AssemblyLoadContext alc2 = new AssemblyLoadContext("Test1", collectibleParent);
         alc2.Resolving += Alc2_Resolving;
-        Assembly assembly = alc2.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("TestClass", "TestClass.dll")));
+        Assembly assembly = alc2.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("..", "TestClass", "TestClass.dll")));
 
         Type t = assembly.GetType("TestClass.Class");
         Console.WriteLine($"Type {t} obtained");
@@ -77,7 +76,7 @@ public class Test
         if (alc1 != null && arg2.Name == "TestInterface")
         {
             Console.WriteLine($"Loading TestInterface by alc {alc1} for {(arg1.IsCollectible ? "collectible" : "non-collectible")} alc {arg1}");
-            Assembly a = alc1.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("TestInterface", "TestInterface.dll")));
+            Assembly a = alc1.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("..", "TestInterface", "TestInterface.dll")));
             interfaceAssemblyRef = new WeakReference(a);
             return a;
         }
@@ -89,7 +88,7 @@ public class Test
     private static Assembly LoadUsingLoadOverride(bool collectibleParent)
     {
         TestAssemblyLoadContext alc2 = new TestAssemblyLoadContext("Test2", collectibleParent);
-        Assembly assembly = alc2.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("TestClass", "TestClass.dll")));
+        Assembly assembly = alc2.LoadFromAssemblyPath(Test.GetTestAssemblyPath(Path.Join("..", "TestClass", "TestClass.dll")));
 
         Type t = assembly.GetType("TestClass.Class");
         
@@ -207,8 +206,7 @@ public class Test
         return 100;
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         int status = 100;
         foreach (TestCase testCase in Enum.GetValues(typeof(TestCase)))

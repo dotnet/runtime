@@ -1744,10 +1744,6 @@ void Compiler::compShutdown()
 #endif // DEBUG
     jitprintf("   NYI:                 %u\n", fatal_NYI);
 #endif // MEASURE_FATAL
-
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
-    DumpOnShutdown::DumpAll();
-#endif
 }
 
 /*****************************************************************************
@@ -1790,7 +1786,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compClassHnd   = compHnd->getMethodClass(methodHnd);
 
 #ifdef DEBUG
-    compAllowStress = true;
+    bRangeAllowStress = false;
 
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
@@ -1830,11 +1826,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     static ConfigMethodRange fJitStressRange;
     fJitStressRange.EnsureInit(JitConfig.JitStressRange());
     assert(!fJitStressRange.Error());
-    compAllowStress =
-        fJitStressRange.Contains(info.compMethodHash()) &&
-        (JitConfig.JitStressOnly().isEmpty() ||
-         JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args));
-
+    bRangeAllowStress = fJitStressRange.Contains(info.compMethodHash());
 #endif // DEBUG
 
     eeInfoInitialized = false;
@@ -3526,7 +3518,13 @@ unsigned Compiler::compStressAreaHash(compStressArea area)
 //
 bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weight)
 {
-    if (!compAllowStress)
+    if (!bRangeAllowStress)
+    {
+        return false;
+    }
+
+    if (!JitConfig.JitStressOnly().isEmpty() &&
+        !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         return false;
     }
@@ -4321,14 +4319,23 @@ const char* Compiler::compGetStressMessage() const
     if ((JitConfig.JitStressModeNames() != nullptr) || (getJitStressLevel() > 0))
     {
         // Is the method being jitted excluded from stress via range?
-        if (compAllowStress)
+        if (bRangeAllowStress)
         {
-            // Not excluded -- stress can happen
-            stressMessage = " JitStress";
+            // Or is it excluded via name?
+            if (!JitConfig.JitStressOnly().isEmpty() ||
+                !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+            {
+                // Not excluded -- stress can happen
+                stressMessage = " JitStress";
+            }
+            else
+            {
+                stressMessage = " NoJitStress(Only)";
+            }
         }
         else
         {
-            stressMessage = " NoJitStress";
+            stressMessage = " NoJitStress(Range)";
         }
     }
 #endif // DEBUG
@@ -5275,7 +5282,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         }
 
         // If there is an unconditional jump (which is not part of callf/always pair)
-        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
+        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
@@ -5300,7 +5307,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             bool              unmarkedLoopAlign    = false;
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
-            if (block->KindIs(BBJ_CALLFINALLY))
+            if (block->bbJumpKind == BBJ_CALLFINALLY)
             {
                 // It must be a retless BBJ_CALLFINALLY if we get here.
                 assert(!block->isBBCallAlwaysPair());

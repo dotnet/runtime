@@ -3,7 +3,6 @@
 
 using System;
 
-using Xunit;
 
 //====================  Cases of nested classes  ====================//
 class Outer1
@@ -149,8 +148,7 @@ public class Test_dev10_724989
     }
 
 
-    [Fact]
-    public static void TestEntryPoint()
+    static int Main()
     {
         NestedClassesTest();
         Console.WriteLine();
@@ -158,6 +156,12 @@ public class Test_dev10_724989
         DerivedClassesTest();
         Console.WriteLine();
 
-        Assert.True(Success);
+        if (Success)
+        {
+            Console.WriteLine("Pass");
+            return 100;
+        }
+        Console.WriteLine("Fail");
+        return -1;
     }
 }

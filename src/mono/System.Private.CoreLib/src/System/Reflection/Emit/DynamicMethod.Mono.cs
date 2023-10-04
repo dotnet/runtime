@@ -146,7 +146,7 @@ namespace System.Reflection.Emit
             return _nrefs - 1;
         }
 
-        internal override int GetParametersCount() => GetParametersAsSpan().Length;
+        internal override int GetParametersCount() => GetParametersNoCopy().Length;
 
         private sealed class DynamicMethodTokenGenerator : ITokenGenerator
         {

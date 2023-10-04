@@ -329,10 +329,15 @@ namespace System.Reflection.Emit
 
         public override MethodInfo GetBaseDefinition() => this;
 
-        public override ParameterInfo[] GetParameters() =>
-            GetParametersAsSpan().ToArray();
+        public override ParameterInfo[] GetParameters()
+        {
+            ParameterInfo[] privateParameters = LoadParameters();
+            ParameterInfo[] parameters = new ParameterInfo[privateParameters.Length];
+            Array.Copy(privateParameters, parameters, privateParameters.Length);
+            return parameters;
+        }
 
-        internal override ReadOnlySpan<ParameterInfo> GetParametersAsSpan() => LoadParameters();
+        internal override ParameterInfo[] GetParametersNoCopy() => LoadParameters();
 
         public override MethodImplAttributes GetMethodImplementationFlags() =>
             MethodImplAttributes.IL | MethodImplAttributes.NoInlining;

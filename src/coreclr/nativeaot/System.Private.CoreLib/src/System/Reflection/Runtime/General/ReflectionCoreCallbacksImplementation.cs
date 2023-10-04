@@ -304,7 +304,7 @@ namespace System.Reflection.Runtime.General
                 bindingFlags |= BindingFlags.IgnoreCase;
             }
             RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
-            ReadOnlySpan<ParameterInfo> parameters = invokeMethod.GetParametersAsSpan();
+            ParameterInfo[] parameters = invokeMethod.GetParametersNoCopy();
             int numParameters = parameters.Length;
             Type[] parameterTypes = new Type[numParameters];
             for (int i = 0; i < numParameters; i++)

@@ -65,7 +65,7 @@ namespace System.Reflection
             if (MemberImpl == null)
                 throw new SerializationException(SR.Serialization_InsufficientState);
 
-            ReadOnlySpan<ParameterInfo> args;
+            ParameterInfo[] args;
             switch (MemberImpl.MemberType)
             {
                 case MemberTypes.Constructor:
@@ -79,9 +79,9 @@ namespace System.Reflection
                     }
                     else
                     {
-                        args = ((MethodBase)MemberImpl).GetParametersAsSpan();
+                        args = ((MethodBase)MemberImpl).GetParametersNoCopy();
 
-                        if (PositionImpl < args.Length)
+                        if (args != null && PositionImpl < args.Length)
                             return args[PositionImpl];
                         else
                             throw new SerializationException(SR.Serialization_BadParameterInfo);
@@ -90,7 +90,7 @@ namespace System.Reflection
                 case MemberTypes.Property:
                     args = ((PropertyInfo)MemberImpl).GetIndexParameters();
 
-                    if (PositionImpl > -1 && PositionImpl < args.Length)
+                    if (args != null && PositionImpl > -1 && PositionImpl < args.Length)
                         return args[PositionImpl];
                     else
                         throw new SerializationException(SR.Serialization_BadParameterInfo);

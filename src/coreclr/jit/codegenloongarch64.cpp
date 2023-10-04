@@ -1217,7 +1217,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     {
         SetHasTailCalls(true);
 
-        noway_assert(block->KindIs(BBJ_RETURN));
+        noway_assert(block->bbJumpKind == BBJ_RETURN);
         noway_assert(block->GetFirstLIRNode() != nullptr);
 
         /* figure out what jump we have */
@@ -1520,8 +1520,6 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
     GetEmitter()->emitIns_J(INS_bl, block->bbJumpDest);
 
-    BasicBlock* const nextBlock = block->bbNext;
-
     if (block->bbFlags & BBF_RETLESS_CALL)
     {
         // We have a retless call, and the last instruction generated was a call.
@@ -1529,7 +1527,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // block), then we need to generate a breakpoint here (since it will never
         // get executed) to get proper unwind behavior.
 
-        if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
+        if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
         {
             instGen(INS_break); // This should never get executed
         }
@@ -1541,10 +1539,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
-        BasicBlock* const jumpDest = nextBlock->bbJumpDest;
-
         // Now go to where the finally funclet needs to return to.
-        if ((jumpDest == nextBlock->bbNext) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
+        if (block->bbNext->bbJumpDest == block->bbNext->bbNext)
         {
             // Fall-through.
             // TODO-LOONGARCH64-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -1554,7 +1550,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-            inst_JMP(EJ_jmp, jumpDest);
+            inst_JMP(EJ_jmp, block->bbNext->bbJumpDest);
         }
 
         GetEmitter()->emitEnableGC();
@@ -1567,7 +1563,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        block = nextBlock;
+        block = block->bbNext;
     }
     return block;
 }
@@ -2932,7 +2928,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
+    noway_assert(compiler->compCurBB->bbJumpKind == BBJ_SWITCH);
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
     unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
@@ -4140,7 +4136,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 // A GT_JCMP node is created for an integer-comparison's conditional branch.
 void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 {
-    assert(compiler->compCurBB->KindIs(BBJ_COND));
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
 
     assert(tree->OperIs(GT_JCMP));
     assert(!varTypeIsFloating(tree));
@@ -6486,11 +6482,11 @@ void CodeGen::genCall(GenTreeCall* call)
 
             regNumber tmpReg = call->GetSingleTempReg();
             // Register where we save call address in should not be overridden by epilog.
-            assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(tmpReg));
+            assert((tmpReg & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == tmpReg);
 
             regNumber callAddrReg =
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
-            GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg, 0);
+            GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), tmpReg, callAddrReg);
             // We will use this again when emitting the jump in genCallInstruction in the epilog
             call->gtRsvdRegs |= genRegMask(tmpReg);
         }
@@ -6714,13 +6710,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // For fast tailcalls we have already loaded the call target when processing the call node.
             if (!call->IsFastTailCall())
             {
-                GetEmitter()->emitIns_R_R_I(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
-                                            callThroughIndirReg, 0);
+                GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
+                                          callThroughIndirReg);
             }
             else
             {
                 // Register where we save call address in should not be overridden by epilog.
-                assert((genRegMask(targetAddrReg) & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == genRegMask(targetAddrReg));
+                assert((targetAddrReg & (RBM_INT_CALLEE_TRASH & ~RBM_RA)) == targetAddrReg);
             }
 
             // We have now generated code loading the target address from the indirection cell into `targetAddrReg`.
@@ -7344,7 +7340,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     //             addressing mode instruction.  Currently we're 'cheating' by producing one or more
     //             instructions to generate the addressing mode so we need to modify lowering to
     //             produce LEAs that are a 1:1 relationship to the LOONGARCH64 architecture.
-    if (lea->HasBase() && lea->HasIndex())
+    if (lea->Base() && lea->Index())
     {
         GenTree* memBase = lea->Base();
         GenTree* index   = lea->Index();
@@ -7389,7 +7385,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             }
         }
     }
-    else if (lea->HasBase())
+    else if (lea->Base())
     {
         GenTree* memBase = lea->Base();
 
@@ -7420,7 +7416,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             emit->emitIns_R_R_R(INS_add_d, size, lea->GetRegNum(), memBase->GetRegNum(), tmpReg);
         }
     }
-    else if (lea->HasIndex())
+    else if (lea->Index())
     {
         // If we encounter a GT_LEA node without a base it means it came out
         // when attempting to optimize an arbitrary arithmetic expression during lower.
@@ -7685,15 +7681,19 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             callType   = emitter::EC_INDIR_R;
             callTarget = REG_DEFAULT_HELPER_CALL_TARGET;
 
+            // ssize_t imm = (4 + 1 + 1) << 2;// 4=li, 1=load, 1=jirl.
+
+            // instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr);
+            // emit->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, callTarget, callTarget, 0);
             if (compiler->opts.compReloc)
             {
-                ssize_t imm = (3 + 1) << 2; // to jirl's next instr.
+                ssize_t imm = (2 + 1) << 2; // , 1=jirl.
                 emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
                 GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, callTarget, (ssize_t)pAddr);
             }
             else
             {
-                ssize_t imm = (4 + 1) << 2; // to jirl's next instr.
+                ssize_t imm = (3 + 1) << 2; // , 1=jirl.
                 emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
 
                 // GetEmitter()->emitIns_R_I(INS_pcaddu12i, EA_PTRSIZE, callTarget, (ssize_t)pAddr);

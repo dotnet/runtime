@@ -94,10 +94,10 @@ namespace System.Security.Cryptography
         public virtual bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) => throw DerivedClassMustOverride();
 
         protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            CryptographicOperations.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
+            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
 
         protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            CryptographicOperations.HashData(hashAlgorithm, data);
+            HashOneShotHelpers.HashData(hashAlgorithm, data);
 
         public virtual bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
@@ -308,7 +308,7 @@ namespace System.Security.Cryptography
             // If this is an algorithm that we ship, then we can use the hash one-shot.
             if (this is IRuntimeAlgorithm)
             {
-                return CryptographicOperations.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
+                return HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
             }
 
             // If this is not our algorithm implementation, for compatibility purposes we need to

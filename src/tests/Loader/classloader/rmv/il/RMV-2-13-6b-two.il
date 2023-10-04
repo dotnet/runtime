@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
-.assembly extern xunit.core {}
 /*RDawson
 
   Check that methods can be either static or virtual
@@ -11,7 +10,7 @@
 .assembly Bob{}
 .assembly extern mscorlib {}
 
-.class public Foo{
+.class Foo{
 	.method public static void foo(){
 		ret
 	}
@@ -28,9 +27,6 @@
 }
 
 .method public static int32 main(){
-	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-	    01 00 00 00
-	)
 	.entrypoint
 	.maxstack 8
 	newobj instance	void Foo::.ctor()

@@ -667,21 +667,21 @@ public:
         class LiveRangeDumper
         {
             // Iterator to the first edited/added position during actual block code generation. If last
-            // block had a closed "VariableLiveRange" (with a valid "m_EndEmitLocation") and no changes
+            // block had a closed "VariableLiveRange" (with a valid "m_EndEmitLocation") and not changes
             // were applied to variable liveness, it points to the end of variable's LiveRangeList.
-            LiveRangeListIterator m_startingLiveRange;
-            bool                  m_hasLiveRangesToDump; // True if a live range for this variable has been
+            LiveRangeListIterator m_StartingLiveRange;
+            bool                  m_hasLiveRangestoDump; // True if a live range for this variable has been
                                                          // reported from last call to EndBlock
 
         public:
             LiveRangeDumper(const LiveRangeList* liveRanges)
-                : m_startingLiveRange(liveRanges->end()), m_hasLiveRangesToDump(false){};
+                : m_StartingLiveRange(liveRanges->end()), m_hasLiveRangestoDump(false){};
 
             // Make the dumper point to the last "VariableLiveRange" opened or nullptr if all are closed
             void resetDumper(const LiveRangeList* list);
 
-            // Make "LiveRangeDumper" instance point at the last "VariableLiveRange" added so we can
-            // start dumping from there after the "BasicBlock"s code is generated.
+            // Make "LiveRangeDumper" instance points the last "VariableLiveRange" added so we can
+            // start dumping from there after the actual "BasicBlock"s code is generated.
             void setDumperStartAt(const LiveRangeListIterator liveRangeIt);
 
             // Return an iterator to the first "VariableLiveRange" edited/added during the current
@@ -703,11 +703,10 @@ public:
         class VariableLiveDescriptor
         {
             LiveRangeList* m_VariableLiveRanges; // the variable locations of this variable
-            INDEBUG(LiveRangeDumper* m_VariableLifeBarrier;)
-            INDEBUG(unsigned m_varNum;)
+            INDEBUG(LiveRangeDumper* m_VariableLifeBarrier);
 
         public:
-            VariableLiveDescriptor(CompAllocator allocator DEBUG_ARG(unsigned varNum));
+            VariableLiveDescriptor(CompAllocator allocator);
 
             bool           hasVariableLiveRangeOpen() const;
             LiveRangeList* getLiveRanges() const;

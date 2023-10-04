@@ -100,10 +100,10 @@
 
 } // end of class Sample.C1
 
-.class public auto ansi beforefieldinit Sample.Program
+.class private auto ansi beforefieldinit Sample.Program
        extends [System.Runtime]System.Object
 {
-  .method public hidebysig static int32 
+  .method private hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

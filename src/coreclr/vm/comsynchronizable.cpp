@@ -1035,7 +1035,7 @@ FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
+FCIMPL1(void, ThreadNative::SpinWait, int iterations)
 {
     FCALL_CONTRACT;
 
@@ -1044,8 +1044,29 @@ extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
         return;
     }
 
+    //
+    // If we're not going to spin for long, it's ok to remain in cooperative mode.
+    // The threshold is determined by the cost of entering preemptive mode; if we're
+    // spinning for less than that number of cycles, then switching to preemptive
+    // mode won't help a GC start any faster.
+    //
+    if (iterations <= 100000)
+    {
+        YieldProcessorNormalized(iterations);
+        return;
+    }
+
+    //
+    // Too many iterations; better switch to preemptive mode to avoid stalling a GC.
+    //
+    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
+    GCX_PREEMP();
+
     YieldProcessorNormalized(iterations);
+
+    HELPER_METHOD_FRAME_END();
 }
+FCIMPLEND
 
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread()
 {

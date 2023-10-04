@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 
 public interface ITestInterfaceEx1<TSelf>
@@ -31,11 +30,11 @@ public struct Test : ITestInterface<Test>
     }
 }
 
-public class Program
+internal class Program
 {
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main(string[] args)
     {
         new Test(null);
+        return 100;
     }
 }

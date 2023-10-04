@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Xunit;
 
 [StructLayout(LayoutKind.Explicit, Size = 16)]
 public struct FirstLevel
@@ -50,8 +49,7 @@ public struct ThirdLevel
     public int Low;
 }
 
-public class Test_NestedStructsWithExplicitLayout_Case02
-{
+public class Test_NestedStructsWithExplicitLayout_Case02 {
     private int Run(int value)
     {
         var x = new FirstLevel();
@@ -59,8 +57,7 @@ public class Test_NestedStructsWithExplicitLayout_Case02
         return x.SecondLevel.ThirdLevel.Low;
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main ()
     {
         try
         {

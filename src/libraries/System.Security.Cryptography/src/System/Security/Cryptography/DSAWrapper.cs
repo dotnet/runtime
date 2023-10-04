@@ -157,9 +157,9 @@ namespace System.Security.Cryptography
         public override string ToString() => _wrapped.ToString()!;
 
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            CryptographicOperations.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
+            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            CryptographicOperations.HashData(hashAlgorithm, data);
+            HashOneShotHelpers.HashData(hashAlgorithm, data);
     }
 }

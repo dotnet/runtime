@@ -22,7 +22,6 @@ In E.cctor: thread T3: A.i 5
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
-using Xunit;
 public class A 
 {
 	public static int i;
@@ -143,8 +142,7 @@ public class Test_CircularCctorThreeThreads03
 	}
 
 
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 
 		Thread t1 = new Thread(RunGetA);

@@ -4,7 +4,6 @@
 // super simple case. forget wrapper structs, just overlap an int and an objref!
 using System;
 using System.Runtime.InteropServices;
-using Xunit;
 
 [ StructLayout( LayoutKind.Explicit )] public struct MyUnion1 {
     [ FieldOffset( 0 )] public int i;
@@ -13,8 +12,7 @@ using Xunit;
 
 public class Test{
 
-  [Fact]
-  public static int TestEntryPoint(){
+  public static int Main(){
       bool caught=false;
       try{
           Go();

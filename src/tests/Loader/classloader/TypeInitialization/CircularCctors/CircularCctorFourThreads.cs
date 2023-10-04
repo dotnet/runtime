@@ -25,7 +25,6 @@ In E.cctor: thread T4: A.i 5
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
-using Xunit;
 public struct A
 {
 	public static int i;
@@ -150,8 +149,7 @@ public class Test_CircularCctorFourThreads
 	}
 
 
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 
 		Thread t1 = new Thread(RunGetA);

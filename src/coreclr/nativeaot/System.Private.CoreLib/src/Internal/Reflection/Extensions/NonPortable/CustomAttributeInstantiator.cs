@@ -40,11 +40,11 @@ namespace Internal.Reflection.Extensions.NonPortable
             // Find the public constructor that matches the supplied arguments.
             //
             ConstructorInfo? matchingCtor = null;
-            ReadOnlySpan<ParameterInfo> matchingParameters = default;
+            ParameterInfo[]? matchingParameters = null;
             IList<CustomAttributeTypedArgument> constructorArguments = cad.ConstructorArguments;
             foreach (ConstructorInfo ctor in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                ReadOnlySpan<ParameterInfo> parameters = ctor.GetParametersAsSpan();
+                ParameterInfo[] parameters = ctor.GetParametersNoCopy();
                 if (parameters.Length != constructorArguments.Count)
                     continue;
                 int i;
@@ -68,7 +68,7 @@ namespace Internal.Reflection.Extensions.NonPortable
             //
             // Found the right constructor. Instantiate the Attribute.
             //
-            int arity = matchingParameters.Length;
+            int arity = matchingParameters!.Length;
             object?[] invokeArguments = new object[arity];
             for (int i = 0; i < arity; i++)
             {

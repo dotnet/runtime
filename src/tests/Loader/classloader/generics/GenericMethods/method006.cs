@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 struct Foo<U>
 {
@@ -28,8 +27,7 @@ public class Test_method006
 	
 	}
 	
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 
 		Eval(new Foo<int>().Function<int>(1,1).Equals("11"));

@@ -243,9 +243,10 @@ namespace Microsoft.Interop
         // private static readonly InvocationExpressionSyntax SkipInitInvocation =
         public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubCodeContext context)
         {
+            (TargetFramework fmk, _) = context.GetTargetFramework();
             if (info.ManagedType is not PointerTypeInfo
                 && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
-                && context.CodeEmitOptions.SkipInit)
+                && fmk is TargetFramework.Net)
             {
                 // Use the Unsafe.SkipInit<T> API when available and
                 // managed type is usable as a generic parameter.

@@ -9,7 +9,6 @@ using Microsoft.CodeAnalysis.Text;
 #if !ROSLYN4_4_OR_GREATER
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 #endif
-using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {

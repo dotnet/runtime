@@ -1025,7 +1025,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     unsafe
                     {
-                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsByRef);
+                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsByRefType);
                     }
                     TypeSystemContext.ByRefTypesCache.AddOrGetExisting(typeAsParameterizedType.RuntimeTypeHandle);
                 }
@@ -1034,7 +1034,7 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(typeAsParameterizedType is PointerType);
                     unsafe
                     {
-                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsPointer);
+                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsPointerType);
                     }
                     TypeSystemContext.PointerTypesCache.AddOrGetExisting(typeAsParameterizedType.RuntimeTypeHandle);
                 }
@@ -1259,7 +1259,7 @@ namespace Internal.Runtime.TypeLoader
                 pointerTypeHandle = EETypeCreator.CreatePointerEEType((uint)pointerType.GetHashCode(), pointeeTypeHandle, pointerType);
                 unsafe
                 {
-                    Debug.Assert(pointerTypeHandle.ToEETypePtr()->IsPointer);
+                    Debug.Assert(pointerTypeHandle.ToEETypePtr()->IsPointerType);
                 }
                 TypeSystemContext.PointerTypesCache.AddOrGetExisting(pointerTypeHandle);
 
@@ -1279,7 +1279,7 @@ namespace Internal.Runtime.TypeLoader
                 byRefTypeHandle = EETypeCreator.CreateByRefEEType((uint)byRefType.GetHashCode(), pointeeTypeHandle, byRefType);
                 unsafe
                 {
-                    Debug.Assert(byRefTypeHandle.ToEETypePtr()->IsByRef);
+                    Debug.Assert(byRefTypeHandle.ToEETypePtr()->IsByRefType);
                 }
                 TypeSystemContext.ByRefTypesCache.AddOrGetExisting(byRefTypeHandle);
 
@@ -1304,7 +1304,7 @@ namespace Internal.Runtime.TypeLoader
                 runtimeTypeHandle = EETypeCreator.CreateFunctionPointerEEType((uint)functionPointerType.GetHashCode(), returnTypeHandle, parameterHandles, functionPointerType);
                 unsafe
                 {
-                    Debug.Assert(runtimeTypeHandle.ToEETypePtr()->IsFunctionPointer);
+                    Debug.Assert(runtimeTypeHandle.ToEETypePtr()->IsFunctionPointerType);
                 }
                 TypeSystemContext.FunctionPointerTypesCache.AddOrGetExisting(runtimeTypeHandle);
 

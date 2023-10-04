@@ -145,7 +145,6 @@ public:
 
     // cctors
     vector(const vector& vec);
-    vector(vector&& vec);
 
     template <typename Alt, typename AltAllocator>
     explicit vector(const vector<Alt, AltAllocator>& vec);
@@ -195,8 +194,6 @@ public:
     vector& operator=(const vector& vec);
     template <typename Alt, typename AltAllocator>
     vector<T, Allocator>& operator=(const vector<Alt, AltAllocator>& vec);
-
-    vector& operator=(vector&& vec);
 
     reference operator[](size_type n);
     const_reference operator[](size_type n) const;
@@ -329,18 +326,6 @@ vector<T, Allocator>::vector(const vector<T, Allocator>& vec)
     {
         new (m_pArray + i, placement_t()) T(vec.m_pArray[i]);
     }
-}
-
-template <typename T, typename Allocator>
-vector<T, Allocator>::vector(vector<T, Allocator>&& vec)
-    : m_allocator(vec.m_allocator)
-    , m_pArray(vec.m_pArray)
-    , m_nSize(vec.m_nSize)
-    , m_nCapacity(vec.m_nCapacity)
-{
-    vec.m_pArray = nullptr;
-    vec.m_nSize = 0;
-    vec.m_nCapacity = 0;
 }
 
 template <typename T, typename Allocator>
@@ -593,20 +578,6 @@ vector<T, Allocator>& vector<T, Allocator>::operator=(const vector<T, Allocator>
     return *this;
 }
 
-template <typename T, typename Allocator>
-vector<T, Allocator>& vector<T, Allocator>::operator=(vector<T, Allocator>&& vec)
-{
-    m_allocator = vec.m_allocator;
-    m_pArray = vec.m_pArray;
-    m_nSize = vec.m_nSize;
-    m_nCapacity = vec.m_nCapacity;
-
-    vec.m_pArray = nullptr;
-    vec.m_nSize = 0;
-    vec.m_nCapacity = 0;
-
-    return *this;
-}
 
 template <typename T, typename Allocator>
 typename vector<T, Allocator>::reference vector<T, Allocator>::operator[](size_type n)

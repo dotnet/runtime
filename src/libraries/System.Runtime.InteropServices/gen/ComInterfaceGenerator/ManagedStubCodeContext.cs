@@ -13,5 +13,7 @@ namespace Microsoft.Interop
         public override bool SingleFrameSpansNativeContext => throw new NotImplementedException();
 
         public override bool AdditionalTemporaryStateLivesAcrossStages => throw new NotImplementedException();
+
+        public override (TargetFramework framework, Version version) GetTargetFramework() => throw new NotImplementedException();
     }
 }

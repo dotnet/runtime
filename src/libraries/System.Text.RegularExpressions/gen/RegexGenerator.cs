@@ -36,10 +36,19 @@ namespace System.Text.RegularExpressions.Generator
             "#pragma warning disable CS0219 // Variable assigned but never used",
         };
 
-        internal record struct CompilationData(bool AllowUnsafe, bool CheckOverflow, LanguageVersion LanguageVersion);
+        private record struct CompilationData(bool AllowUnsafe, bool CheckOverflow, LanguageVersion LanguageVersion);
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+            // To avoid invalidating every regex's output when anything from the compilation changes,
+            // we extract from it the only things we care about.
+            IncrementalValueProvider<CompilationData> compilationDataProvider =
+                context.CompilationProvider
+                .Select((x, _) =>
+                    x.Options is CSharpCompilationOptions options ?
+                        new CompilationData(options.AllowUnsafe, options.CheckOverflow, ((CSharpCompilation)x).LanguageVersion) :
+                        default);
+
             // Produces one entry per generated regex.  This may be:
             // - DiagnosticData in the case of a failure that should end the compilation
             // - (RegexMethod regexMethod, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers) in the case of valid regex
@@ -73,7 +82,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             RegexTree regexTree = RegexParser.Parse(method.Pattern, method.Options | RegexOptions.Compiled, method.Culture); // make sure Compiled is included to get all optimizations applied to it
                             AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
-                            return new RegexMethod(method.DeclaringType, method.DiagnosticLocation, method.MethodName, method.Modifiers, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis, method.CompilationData);
+                            return new RegexMethod(method.DeclaringType, method.DiagnosticLocation, method.MethodName, method.Modifiers, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis);
                         }
                         catch (Exception e)
                         {
@@ -84,9 +93,13 @@ namespace System.Text.RegularExpressions.Generator
                     return methodOrDiagnostic;
                 })
 
+                // Now incorporate the compilation data, as it impacts code generation.
+                .Combine(compilationDataProvider)
+
                 // Generate the RunnerFactory for each regex, if possible.  This is where the bulk of the implementation occurs.
-                .Select((state, _) =>
+                .Select((methodOrDiagnosticAndCompilationData, _) =>
                 {
+                    object? state = methodOrDiagnosticAndCompilationData.Left;
                     if (state is not RegexMethod regexMethod)
                     {
                         Debug.Assert(state is DiagnosticData);
@@ -95,9 +108,9 @@ namespace System.Text.RegularExpressions.Generator
 
                     // If we're unable to generate a full implementation for this regex, report a diagnostic.
                     // We'll still output a limited implementation that just caches a new Regex(...).
-                    if (!SupportsCodeGeneration(regexMethod, regexMethod.CompilationData.LanguageVersion, out string? reason))
+                    if (!SupportsCodeGeneration(regexMethod, methodOrDiagnosticAndCompilationData.Right.LanguageVersion, out string? reason))
                     {
-                        return (regexMethod, reason, new DiagnosticData(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.DiagnosticLocation), regexMethod.CompilationData);
+                        return (regexMethod, reason, new DiagnosticData(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.DiagnosticLocation), methodOrDiagnosticAndCompilationData.Right);
                     }
 
                     // Generate the core logic for the regex.
@@ -106,16 +119,13 @@ namespace System.Text.RegularExpressions.Generator
                     var writer = new IndentedTextWriter(sw);
                     writer.Indent += 2;
                     writer.WriteLine();
-                    EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers, regexMethod.CompilationData.CheckOverflow);
+                    EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers, methodOrDiagnosticAndCompilationData.Right.CheckOverflow);
                     writer.Indent -= 2;
-                    return (regexMethod, sw.ToString(), requiredHelpers, regexMethod.CompilationData);
+                    return (regexMethod, sw.ToString(), requiredHelpers, methodOrDiagnosticAndCompilationData.Right);
                 })
 
                 // Combine all of the generated text outputs into a single batch. We then generate a single source output from that batch.
-                .Collect()
-
-                // Apply sequence equality comparison on the result array for incremental caching.
-                .WithComparer(new ObjectImmutableArraySequenceEqualityComparer());
+                .Collect();
 
             // When there something to output, take all the generated strings and concatenate them to output,
             // and raise all of the created diagnostics.
@@ -356,39 +366,6 @@ namespace System.Text.RegularExpressions.Generator
         {
             /// <summary>Create a <see cref="Diagnostic"/> from the data.</summary>
             public Diagnostic ToDiagnostic() => Diagnostic.Create(descriptor, location, arg is null ? Array.Empty<object>() : new[] { arg });
-        }
-
-        private sealed class ObjectImmutableArraySequenceEqualityComparer : IEqualityComparer<ImmutableArray<object>>
-        {
-            public bool Equals(ImmutableArray<object> left, ImmutableArray<object> right)
-            {
-                if (left.Length != right.Length)
-                {
-                    return false;
-                }
-
-                for (int i = 0; i < left.Length; i++)
-                {
-                    bool areEqual = left[i] is { } leftElem
-                        ? leftElem.Equals(right[i])
-                        : right[i] is null;
-
-                    if (!areEqual)
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            public int GetHashCode([DisallowNull] ImmutableArray<object> obj)
-            {
-                int hash = 0;
-                for (int i = 0; i < obj.Length; i++)
-                    hash = (hash, obj[i]).GetHashCode();
-                return hash;
-            }
         }
     }
 }

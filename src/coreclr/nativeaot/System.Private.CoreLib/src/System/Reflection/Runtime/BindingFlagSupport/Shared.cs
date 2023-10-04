@@ -40,7 +40,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             #endregion
 
             #region ArgumentTypes
-            ReadOnlySpan<ParameterInfo> parameterInfos = methodBase.GetParametersAsSpan();
+            ParameterInfo[] parameterInfos = methodBase.GetParametersNoCopy();
 
             if (argumentTypes.Length != parameterInfos.Length)
             {

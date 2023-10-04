@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Buffers.Binary;
+
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
@@ -63,19 +63,13 @@ public sealed partial class WebcilReader : IDisposable
         {
             return false;
         }
+        if (!BitConverter.IsLittleEndian)
+        {
+            throw new NotImplementedException("TODO: implement big endian support");
+        }
         fixed (byte* p = buffer)
         {
             header = *(WebcilHeader*)p;
-        }
-        if (!BitConverter.IsLittleEndian)
-        {
-            header.version_major = BinaryPrimitives.ReverseEndianness(header.version_major);
-            header.version_minor = BinaryPrimitives.ReverseEndianness(header.version_minor);
-            header.coff_sections = BinaryPrimitives.ReverseEndianness(header.coff_sections);
-            header.pe_cli_header_rva = BinaryPrimitives.ReverseEndianness(header.pe_cli_header_rva);
-            header.pe_cli_header_size = BinaryPrimitives.ReverseEndianness(header.pe_cli_header_size);
-            header.pe_debug_rva = BinaryPrimitives.ReverseEndianness(header.pe_debug_rva);
-            header.pe_debug_rva = BinaryPrimitives.ReverseEndianness(header.pe_debug_size);
         }
         if (header.id[0] != 'W' || header.id[1] != 'b'
             || header.id[2] != 'I' || header.id[3] != 'L'
@@ -352,7 +346,6 @@ public sealed partial class WebcilReader : IDisposable
 
     private unsafe ImmutableArray<WebcilSectionHeader> ReadSections()
     {
-        WebcilSectionHeader secheader;
         var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(_header.coff_sections);
         var buffer = new byte[Marshal.SizeOf<WebcilSectionHeader>()];
         _stream.Seek(SectionDirectoryOffset + _webcilInWasmOffset, SeekOrigin.Begin);
@@ -364,24 +357,8 @@ public sealed partial class WebcilReader : IDisposable
             }
             fixed (byte* p = buffer)
             {
-                secheader = (*(WebcilSectionHeader*)p);
-            }
-            if (!BitConverter.IsLittleEndian)
-            {
-                sections.Add
-                (
-                    new WebcilSectionHeader
-                    (
-                        virtualSize: BinaryPrimitives.ReverseEndianness(secheader.VirtualSize),
-                        virtualAddress: BinaryPrimitives.ReverseEndianness(secheader.VirtualAddress),
-                        sizeOfRawData: BinaryPrimitives.ReverseEndianness(secheader.SizeOfRawData),
-                        pointerToRawData: BinaryPrimitives.ReverseEndianness(secheader.PointerToRawData)
-                    )
-                );
-            }
-            else
-            {
-                sections.Add(secheader);
+                // FIXME endianness
+                sections.Add(*(WebcilSectionHeader*)p);
             }
         }
         return sections.MoveToImmutable();

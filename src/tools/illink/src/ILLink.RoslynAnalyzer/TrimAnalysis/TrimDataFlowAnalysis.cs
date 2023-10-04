@@ -100,11 +100,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			switch (tracingMechanism) {
 			case TracingType.Console:
-// Analyzers should not be writing to the console,
-// but this is only used for debugging purposes and is off by default.
-#pragma warning disable RS1035
 				Console.WriteLine (tracingInfo);
-#pragma warning restore RS1035
 				break;
 			case TracingType.Debug:
 				Debug.WriteLine (tracingInfo);
@@ -118,11 +114,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			switch (tracingMechanism) {
 			case TracingType.Console:
-// Analyzers should not be writing to the console,
-// but this is only used for debugging purposes and is off by default.
-#pragma warning disable RS1035
 				Console.Write (tracingInfo);
-#pragma warning restore RS1035
 				break;
 			case TracingType.Debug:
 				Debug.Write (tracingInfo);

@@ -933,7 +933,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class CompilerGeneratedCodeDAM
 		{
 			[Kept]
-			[ExpectedWarning ("IL2111")]
+			[ExpectedWarning ("IL2111", nameof (LambdaWithDAM))]
 			static void LambdaWithDAM ()
 			{
 				Action<Type> a =

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Globalization;
 using System.Numerics;
 
 namespace System.Formats.Cbor
@@ -43,8 +42,8 @@ namespace System.Formats.Cbor
 #else
                 value.Offset == TimeSpan.Zero ?
 #endif // NET8_0_OR_GREATER
-                value.UtcDateTime.ToString(Rfc3339FormatString, CultureInfo.InvariantCulture) : // prefer 'Z' over '+00:00'
-                value.ToString(Rfc3339FormatString, CultureInfo.InvariantCulture);
+                value.UtcDateTime.ToString(Rfc3339FormatString) : // prefer 'Z' over '+00:00'
+                value.ToString(Rfc3339FormatString);
 
             WriteTag(CborTag.DateTimeString);
             WriteTextString(dateString);

@@ -20,6 +20,8 @@ namespace Microsoft.Interop.JavaScript
         private readonly JSSignatureContext _signatureContext;
 
         public JSExportCodeGenerator(
+            TargetFramework targetFramework,
+            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             JSExportData attributeData,
             JSSignatureContext signatureContext,
@@ -27,10 +29,7 @@ namespace Microsoft.Interop.JavaScript
             IMarshallingGeneratorFactory generatorFactory)
         {
             _signatureContext = signatureContext;
-            NativeToManagedStubCodeContext innerContext = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnIdentifier)
-            {
-                CodeEmitOptions = new(SkipInit: true)
-            };
+            NativeToManagedStubCodeContext innerContext = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _context = new JSExportCodeContext(attributeData, innerContext);
 
             _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new EmptyJSGenerator(), out var bindingFailures);
@@ -40,10 +39,7 @@ namespace Microsoft.Interop.JavaScript
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                innerContext = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnNativeIdentifier)
-                {
-                    CodeEmitOptions = new(SkipInit: true)
-                };
+                innerContext = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnNativeIdentifier);
                 _context = new JSExportCodeContext(attributeData, innerContext);
             }
 
@@ -63,7 +59,7 @@ namespace Microsoft.Interop.JavaScript
 
         public BlockSyntax GenerateJSExportBody()
         {
-            List<StatementSyntax> invoke = InvokeSyntax();
+            StatementSyntax invoke = InvokeSyntax();
             GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context);
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.CleanupCallerAllocated.IsEmpty || !statements.CleanupCalleeAllocated.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
@@ -83,7 +79,7 @@ namespace Microsoft.Interop.JavaScript
             var tryStatements = new List<StatementSyntax>();
             tryStatements.AddRange(statements.Unmarshal);
 
-            tryStatements.AddRange(invoke);
+            tryStatements.Add(invoke);
 
             if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
@@ -97,18 +93,6 @@ namespace Microsoft.Interop.JavaScript
             tryStatements.AddRange(statements.Marshal);
 
             List<StatementSyntax> allStatements = setupStatements;
-
-            // Wrap unmarshall, invocation and return value marshalling in try-catch.
-            // In case of exception, marshal exception instead of return value.
-            var tryInvokeAndMarshal = TryStatement(SingletonList(CatchClause()
-                        .WithDeclaration(CatchDeclaration(IdentifierName(Constants.ExceptionGlobal)).WithIdentifier(Identifier("ex")))
-                        .WithBlock(Block(SingletonList<StatementSyntax>(
-                            ExpressionStatement(InvocationExpression(
-                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                IdentifierName(Constants.ArgumentException), IdentifierName(Constants.ToJSMethod)))
-                            .WithArgumentList(ArgumentList(SingletonSeparatedList(Argument(IdentifierName("ex")))))))))))
-                .WithBlock(Block(tryStatements));
-
             List<StatementSyntax> finallyStatements = new List<StatementSyntax>();
             if (!(statements.GuaranteedUnmarshal.IsEmpty && statements.CleanupCalleeAllocated.IsEmpty))
             {
@@ -116,13 +100,15 @@ namespace Microsoft.Interop.JavaScript
             }
 
             finallyStatements.AddRange(statements.CleanupCallerAllocated);
-
             if (finallyStatements.Count > 0)
             {
-                tryInvokeAndMarshal = TryStatement(Block(tryInvokeAndMarshal), default, FinallyClause(Block(finallyStatements)));
+                allStatements.Add(
+                    TryStatement(Block(tryStatements), default, FinallyClause(Block(finallyStatements))));
             }
-
-            allStatements.Add(tryInvokeAndMarshal);
+            else
+            {
+                allStatements.AddRange(tryStatements);
+            }
 
             return Block(allStatements);
         }
@@ -189,7 +175,7 @@ namespace Microsoft.Interop.JavaScript
                     Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(1)))))))))))));
         }
 
-        private List<StatementSyntax> InvokeSyntax()
+        private TryStatementSyntax InvokeSyntax()
         {
             var statements = new List<StatementSyntax>();
             var arguments = new List<ArgumentSyntax>();
@@ -219,8 +205,16 @@ namespace Microsoft.Interop.JavaScript
                      IdentifierName(nativeIdentifier), invocation));
 
                 statements.Add(statement);
+                statements.AddRange(_marshallers.ManagedReturnMarshaller.Generator.Generate(_marshallers.ManagedReturnMarshaller.TypeInfo, _context with { CurrentStage = StubCodeContext.Stage.Marshal }));
             }
-            return statements;
+            return TryStatement(SingletonList(CatchClause()
+                        .WithDeclaration(CatchDeclaration(IdentifierName(Constants.ExceptionGlobal)).WithIdentifier(Identifier("ex")))
+                        .WithBlock(Block(SingletonList<StatementSyntax>(
+                            ExpressionStatement(InvocationExpression(
+                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                IdentifierName(Constants.ArgumentException), IdentifierName(Constants.ToJSMethod)))
+                            .WithArgumentList(ArgumentList(SingletonSeparatedList(Argument(IdentifierName("ex")))))))))))
+                .WithBlock(Block(statements));
 
         }
 

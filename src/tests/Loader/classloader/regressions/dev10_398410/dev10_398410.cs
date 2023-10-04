@@ -12,20 +12,20 @@
 
 
 using System;
-using Xunit;
 
 
 public class MyDerived : MyBase, I
 {
 }
 
-public class MyTest
+class MyTest
 {
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main()
     {
         I I1 = new MyDerived();
 
         System.Console.WriteLine("I1.Print<object>: " + I1.Print<object>());
+
+        return 100;
     }
 }

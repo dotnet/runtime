@@ -18,7 +18,6 @@ generic interfaces:
 
 using System;
 using System.Collections.Generic;
-using Xunit;
  using System.Collections;
 
 public struct MyClassICollection : ICollection<MyClassICollection> 
@@ -338,8 +337,7 @@ public struct MyClassIList2:  IList<MyClassIList>,  IList<int>
 
 public class Test_Struct_ImplementMscorlibGenInterface
 {
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		#pragma warning disable 219
 		

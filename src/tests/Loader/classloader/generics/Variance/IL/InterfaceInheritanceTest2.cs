@@ -9,7 +9,6 @@
 */
 
 using System;
-using Xunit;
 
 public class C1<T> : I1<T> 
 {
@@ -102,8 +101,7 @@ public class Test_InterfaceInheritanceTest2
 	
 	
 	
-  	[Fact]
-  	public static int TestEntryPoint() 
+  	public static int Main() 
 	{
 		pass = true;
 

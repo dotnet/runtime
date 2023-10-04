@@ -5,29 +5,37 @@
 // Loading type C resulted in TypeLoadException
 
 using System;
-using Xunit;
 
 interface I
 {
-    void meth();
+	void meth();
 }
 
-public class A
+class A
 {
-    public void meth(){}
+	public void meth(){}
 }
 
-public class B : A
+class B : A
 {
-    new private void meth(){}
+	new private void meth(){}
 }
 
-public class C : B, I
+class C : B, I
 {
-    [Fact]
-    public static void TestEntryPoint()
-    {
-        C c = new C();
-        Console.WriteLine("PASS");
-    }
+	public static int Main()
+	{
+		try
+		{
+			C c = new C();
+			Console.WriteLine("PASS");
+			return 100;
+		}
+		catch (Exception e)
+		{
+			Console.WriteLine("Caught unexpected exception: " + e);
+			return 101;
+		}
+
+	}
 }

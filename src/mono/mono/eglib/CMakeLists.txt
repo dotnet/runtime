@@ -1,18 +1,12 @@
 project(eglib C)
 
 set(eglib_win32_sources
-    gdate-win32.c
-    gfile-win32.c
-    gmisc-win32.c
-    gmodule-win32.c
-    gtimer-win32.c)
+    gdate-win32.c gdir-win32.c gfile-win32.c gmisc-win32.c
+    gmodule-win32.c gtimer-win32.c)
 
 set(eglib_unix_sources
-    gdate-unix.c
-    gfile-unix.c
-    gmisc-unix.c
-    gmodule-unix.c
-    gtimer-unix.c)
+    gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c
+    gmodule-unix.c gtimer-unix.c)
 
 if(HOST_WIN32)
 set(eglib_platform_sources ${eglib_win32_sources})
@@ -36,6 +30,7 @@ set(eglib_common_sources
     glist.c
     gqueue.c
     gpath.c
+    gspawn.c
     gfile.c
     gfile-posix.c
     gutf8.c

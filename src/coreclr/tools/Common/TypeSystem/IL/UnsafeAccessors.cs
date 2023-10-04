@@ -71,12 +71,13 @@ namespace Internal.IL
                         return GenerateAccessorBadImageFailure(method);
                     }
 
-                    if (!ValidateTargetType(retType, out context.TargetType))
+                    const string ctorName = ".ctor";
+                    context.TargetType = ValidateTargetType(retType);
+                    if (context.TargetType == null)
                     {
                         return GenerateAccessorBadImageFailure(method);
                     }
 
-                    const string ctorName = ".ctor";
                     if (!TrySetTargetMethod(ref context, ctorName, out isAmbiguous))
                     {
                         return GenerateAccessorSpecificFailure(ref context, ctorName, isAmbiguous);
@@ -99,7 +100,8 @@ namespace Internal.IL
                         return GenerateAccessorBadImageFailure(method);
                     }
 
-                    if (!ValidateTargetType(firstArgType, out context.TargetType))
+                    context.TargetType = ValidateTargetType(firstArgType);
+                    if (context.TargetType == null)
                     {
                         return GenerateAccessorBadImageFailure(method);
                     }
@@ -130,7 +132,8 @@ namespace Internal.IL
                         return GenerateAccessorBadImageFailure(method);
                     }
 
-                    if (!ValidateTargetType(firstArgType, out context.TargetType))
+                    context.TargetType = ValidateTargetType(firstArgType);
+                    if (context.TargetType == null)
                     {
                         return GenerateAccessorBadImageFailure(method);
                     }
@@ -218,7 +221,7 @@ namespace Internal.IL
             public FieldDesc TargetField;
         }
 
-        private static bool ValidateTargetType(TypeDesc targetTypeMaybe, out TypeDesc validated)
+        private static TypeDesc ValidateTargetType(TypeDesc targetTypeMaybe)
         {
             TypeDesc targetType = targetTypeMaybe.IsByRef
                 ? ((ParameterizedType)targetTypeMaybe).ParameterType
@@ -229,11 +232,10 @@ namespace Internal.IL
             if ((targetType.IsParameterizedType && !targetType.IsArray)
                 || targetType.IsFunctionPointer)
             {
-                targetType = null;
+                ThrowHelper.ThrowBadImageFormatException();
             }
 
-            validated = targetType;
-            return validated != null;
+            return targetType;
         }
 
         private static bool DoesMethodMatchUnsafeAccessorDeclaration(ref GenerationContext context, MethodDesc method, bool ignoreCustomModifiers)

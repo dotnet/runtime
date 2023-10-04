@@ -368,45 +368,17 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_CMPXCHG:
         {
-            GenTreeCmpXchg* cas = tree->AsCmpXchg();
-            assert(!cas->gtOpComparand->isContained());
-            srcCount = 3;
-            assert(dstCount == 1);
-
-            buildInternalIntRegisterDefForNode(tree); // temp reg for store conditional error
-            // Extend lifetimes of argument regs because they may be reused during retries
-            setDelayFree(BuildUse(cas->gtOpLocation));
-            setDelayFree(BuildUse(cas->gtOpValue));
-            setDelayFree(BuildUse(cas->gtOpComparand));
-
-            // Internals may not collide with target
-            setInternalRegsDelayFree = true;
-            buildInternalRegisterUses();
-            BuildDef(tree);
+            NYI_RISCV64("-----unimplemented on RISCV64 yet----");
         }
         break;
 
         case GT_LOCKADD:
-            assert(!"-----unimplemented on RISCV64----");
-            break;
-
         case GT_XORR:
         case GT_XAND:
         case GT_XADD:
         case GT_XCHG:
         {
-            assert(dstCount == (tree->TypeIs(TYP_VOID) ? 0 : 1));
-            GenTree* addr = tree->gtGetOp1();
-            GenTree* data = tree->gtGetOp2();
-            assert(!addr->isContained() && !data->isContained());
-            srcCount = 2;
-
-            BuildUse(addr);
-            BuildUse(data);
-            if (dstCount == 1)
-            {
-                BuildDef(tree);
-            }
+            NYI_RISCV64("-----unimplemented on RISCV64 yet----");
         }
         break;
 
@@ -475,7 +447,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 if (sizeVal != 0)
                 {
                     // Compute the amount of memory to properly STACK_ALIGN.
-                    // Note: The GenTree node is not updated here as it is cheap to recompute stack aligned size.
+                    // Note: The Gentree node is not updated here as it is cheap to recompute stack aligned size.
                     // This should also help in debugging as we can examine the original size specified with
                     // localloc.
                     sizeVal = AlignUp(sizeVal, STACK_ALIGN);
@@ -669,7 +641,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 //                       of an indirection operation.
 //
 // Arguments:
-//    indirTree - GT_IND, GT_STOREIND or block GenTree node
+//    indirTree - GT_IND, GT_STOREIND or block gentree node
 //
 // Return Value:
 //    The number of sources consumed by this node.

@@ -11,8 +11,7 @@
     <!-- TODO: Remove InterceptorsPreview feature after 8.0 RC2 SDK is used for build -->
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
-    <!-- TODO: reinstate pragma suppressions for config binding diagnostics: https://github.com/dotnet/runtime/issues/92509. -->
-    <NoWarn>$(NoWarn);SYSLIB1100;SYSLIB1101</NoWarn>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <PackageDescription>Console logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
   </PropertyGroup>
 

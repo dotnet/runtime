@@ -3,7 +3,6 @@
 
 using System;
 using System.Threading;
-using Xunit;
 
 interface IFoo 
 {
@@ -34,8 +33,7 @@ public class Test_method009
 	
 	}
 	
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		IFoo f = new Foo();
 

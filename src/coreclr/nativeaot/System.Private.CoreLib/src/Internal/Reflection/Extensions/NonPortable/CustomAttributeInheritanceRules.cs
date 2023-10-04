@@ -235,7 +235,7 @@ namespace Internal.Reflection.Extensions.NonPortable
 
                 if (e.Position >= 0)
                 {
-                    return methodParent.GetParametersAsSpan()[e.Position];
+                    return methodParent.GetParametersNoCopy()[e.Position];
                 }
                 else
                 {

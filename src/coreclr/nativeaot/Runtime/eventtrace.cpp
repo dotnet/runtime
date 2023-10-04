@@ -78,8 +78,8 @@ void EventTracing_Initialize()
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled = FALSE;
 
     // Register the ETW providers with the system.
-    EventRegisterMicrosoft_Windows_DotNETRuntimePrivate();
-    EventRegisterMicrosoft_Windows_DotNETRuntime();
+    RH_ETW_REGISTER_Microsoft_Windows_DotNETRuntimePrivate();
+    RH_ETW_REGISTER_Microsoft_Windows_DotNETRuntime();
 
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimePrivateHandle;
     MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_DotNETRuntimeHandle;
@@ -93,6 +93,10 @@ enum CallbackProviderIndex
     DotNETRuntimeStress = 2,
     DotNETRuntimePrivate = 3
 };
+
+// @TODO
+int const EVENT_CONTROL_CODE_ENABLE_PROVIDER=1;
+int const EVENT_CONTROL_CODE_DISABLE_PROVIDER=0;
 
 void EtwCallbackCommon(
     CallbackProviderIndex ProviderIndex,
@@ -176,7 +180,7 @@ void EtwCallbackCommon(
 #ifdef FEATURE_ETW
 
 void EtwCallback(
-    const GUID * /*SourceId*/,
+    GUID * /*SourceId*/,
     uint32_t IsEnabled,
     uint8_t Level,
     uint64_t MatchAnyKeyword,

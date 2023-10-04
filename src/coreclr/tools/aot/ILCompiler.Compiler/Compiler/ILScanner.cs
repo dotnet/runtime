@@ -411,8 +411,8 @@ namespace ILCompiler
             private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
-            private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
-            private HashSet<TypeDesc> _disqualifiedTypes = new();
+            private Dictionary<TypeDesc, HashSet<TypeDesc>> _interfaceImplementators = new();
+            private HashSet<TypeDesc> _disqualifiedInterfaces = new();
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
@@ -437,8 +437,8 @@ namespace ILCompiler
                                 {
                                     // If the interface is implemented through IDynamicInterfaceCastable, there might be
                                     // no real upper bound on the number of actual classes implementing it.
-                                    if (CanAssumeWholeProgramViewOnTypeUse(factory, type, baseInterface))
-                                        _disqualifiedTypes.Add(baseInterface);
+                                    if (CanAssumeWholeProgramViewOnInterfaceUse(factory, type, baseInterface))
+                                        _disqualifiedInterfaces.Add(baseInterface);
                                 }
                             }
                         }
@@ -457,21 +457,12 @@ namespace ILCompiler
 
                             if (type is not MetadataType { IsAbstract: true })
                             {
-                                // Record all interfaces this class implements to _implementators
+                                // Record all interfaces this class implements to _interfaceImplementators
                                 foreach (DefType baseInterface in type.RuntimeInterfaces)
                                 {
-                                    if (CanAssumeWholeProgramViewOnTypeUse(factory, type, baseInterface))
+                                    if (CanAssumeWholeProgramViewOnInterfaceUse(factory, type, baseInterface))
                                     {
                                         RecordImplementation(baseInterface, type);
-                                    }
-                                }
-
-                                // Record all base types of this class
-                                for (DefType @base = type.BaseType; @base != null; @base = @base.BaseType)
-                                {
-                                    if (CanAssumeWholeProgramViewOnTypeUse(factory, type, @base))
-                                    {
-                                        RecordImplementation(@base, type);
                                     }
                                 }
                             }
@@ -483,13 +474,7 @@ namespace ILCompiler
                                 // due to MakeGenericType.
                                 foreach (DefType baseInterface in type.RuntimeInterfaces)
                                 {
-                                    _disqualifiedTypes.Add(baseInterface);
-                                }
-
-                                // Same for base classes
-                                for (DefType @base = type.BaseType; @base != null; @base = @base.BaseType)
-                                {
-                                    _disqualifiedTypes.Add(@base);
+                                    _disqualifiedInterfaces.Add(baseInterface);
                                 }
                             }
                             else if (type.IsArray || type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
@@ -505,7 +490,7 @@ namespace ILCompiler
                                     {
                                         // Limit to the generic ones - ICollection<T>, etc.
                                         if (baseInterface.HasInstantiation)
-                                            _disqualifiedTypes.Add(baseInterface);
+                                            _disqualifiedInterfaces.Add(baseInterface);
                                     }
                                 }
                             }
@@ -528,23 +513,22 @@ namespace ILCompiler
                 }
             }
 
-            private static bool CanAssumeWholeProgramViewOnTypeUse(NodeFactory factory, TypeDesc implementingType, DefType baseType)
+            private static bool CanAssumeWholeProgramViewOnInterfaceUse(NodeFactory factory, TypeDesc implementingType, DefType interfaceType)
             {
-                if (!baseType.HasInstantiation)
+                if (!interfaceType.HasInstantiation)
                 {
                     return true;
                 }
 
                 // If there are variance considerations, bail
-                if (baseType.IsInterface
-                    && VariantInterfaceMethodUseNode.IsVariantInterfaceImplementation(factory, implementingType, baseType))
+                if (VariantInterfaceMethodUseNode.IsVariantInterfaceImplementation(factory, implementingType, interfaceType))
                 {
                     return false;
                 }
 
-                if (baseType.IsCanonicalSubtype(CanonicalFormKind.Any)
-                    || baseType.ConvertToCanonForm(CanonicalFormKind.Specific) != baseType
-                    || baseType.Context.SupportsUniversalCanon)
+                if (interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any)
+                    || interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific) != interfaceType
+                    || interfaceType.Context.SupportsUniversalCanon)
                 {
                     // If the interface has a canonical form, we might not have a full view of all implementers.
                     // E.g. if we have:
@@ -565,10 +549,10 @@ namespace ILCompiler
                 Debug.Assert(!implType.IsInterface);
 
                 HashSet<TypeDesc> implList;
-                if (!_implementators.TryGetValue(type, out implList))
+                if (!_interfaceImplementators.TryGetValue(type, out implList))
                 {
                     implList = new();
-                    _implementators[type] = implList;
+                    _interfaceImplementators[type] = implList;
                 }
                 implList.Add(implType);
             }
@@ -620,23 +604,13 @@ namespace ILCompiler
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
             {
-                if (_disqualifiedTypes.Contains(type))
+                if (_disqualifiedInterfaces.Contains(type))
                     return null;
 
-                if (_implementators.TryGetValue(type, out HashSet<TypeDesc> implementations))
+                if (type.IsInterface && _interfaceImplementators.TryGetValue(type, out HashSet<TypeDesc> implementations))
                 {
-                    TypeDesc[] types;
+                    var types = new TypeDesc[implementations.Count];
                     int index = 0;
-                    if (!type.IsInterface && type is not MetadataType { IsAbstract: true })
-                    {
-                        types = new TypeDesc[implementations.Count + 1];
-                        types[index++] = type;
-                    }
-                    else
-                    {
-                        types = new TypeDesc[implementations.Count];
-                    }
-
                     foreach (TypeDesc implementation in implementations)
                     {
                         types[index++] = implementation;

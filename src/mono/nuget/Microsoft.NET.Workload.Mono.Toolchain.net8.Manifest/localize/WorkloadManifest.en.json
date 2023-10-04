@@ -1,5 +1,0 @@
-{
-  "workloads/wasm-tools-net8/description": ".NET WebAssembly build tools for net8.0",
-  "workloads/wasm-experimental-net8/description": ".NET WebAssembly experimental tooling for net8.0",
-  "workloads/runtimes-windows-net8/description": "Windows Runtime Packs for net8.0"
-}

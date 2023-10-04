@@ -117,15 +117,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
-            if (_name is null)
-            {
-                Value.WritePropertyNameTo(writer);
-            }
-            else
-            {
-                writer.WritePropertyName(_name);
-            }
-
+            writer.WritePropertyName(Name);
             Value.WriteTo(writer);
         }
 

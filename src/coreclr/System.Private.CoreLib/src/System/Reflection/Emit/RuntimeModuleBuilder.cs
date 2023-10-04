@@ -458,7 +458,7 @@ namespace System.Reflection.Emit
             }
 
             Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
-            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
+            ParameterInfo[] parameters = method.GetParametersNoCopy();
 
             Type[] parameterTypes = new Type[parameters.Length];
             Type[][] requiredCustomModifiers = new Type[parameterTypes.Length][];
@@ -542,19 +542,19 @@ namespace System.Reflection.Emit
             return typeList;
         }
 
-        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className)
         {
             return GetType(className, false, false);
         }
 
-        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className, bool ignoreCase)
         {
             return GetType(className, false, ignoreCase);
         }
 
-        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             lock (SyncRoot)

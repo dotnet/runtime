@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Xunit;
 
 [StructLayout(LayoutKind.Explicit)]
 public struct FirstLevel
@@ -32,16 +31,14 @@ public struct ThirdLevel
     public long ConflictingValueTypeField;
 }
 
-public class Test_NestedStructsWithExplicitLayout_Case06
-{
+public class Test_NestedStructsWithExplicitLayout_Case06 {
     private void Run()
     {
         var x = new FirstLevel();
         x.ConflictingObjectField = new object();
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main ()
     {
         try
         {

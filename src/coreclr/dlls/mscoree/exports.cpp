@@ -138,6 +138,7 @@ static void ConvertConfigPropertiesToUnicode(
     LPCWSTR** propertyValuesWRef,
     BundleProbeFn** bundleProbe,
     PInvokeOverrideFn** pinvokeOverride,
+    bool* hostPolicyEmbedded,
     host_runtime_contract** hostContract)
 {
     LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[propertyCount];
@@ -168,6 +169,11 @@ static void ConvertConfigPropertiesToUnicode(
             // so we only set the p/invoke override if it has not already been set.
             if (*pinvokeOverride == nullptr)
                 *pinvokeOverride = (PInvokeOverrideFn*)u16_strtoui64(propertyValuesW[propertyIndex], nullptr, 0);
+        }
+        else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_HOSTPOLICY_EMBEDDED) == 0)
+        {
+            // The HOSTPOLICY_EMBEDDED property indicates if the executable has hostpolicy statically linked in
+            *hostPolicyEmbedded = (u16_strcmp(propertyValuesW[propertyIndex], W("true")) == 0);
         }
         else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_RUNTIME_CONTRACT) == 0)
         {
@@ -246,6 +252,7 @@ int coreclr_initialize(
     LPCWSTR* propertyKeysW;
     LPCWSTR* propertyValuesW;
     BundleProbeFn* bundleProbe = nullptr;
+    bool hostPolicyEmbedded = false;
     PInvokeOverrideFn* pinvokeOverride = nullptr;
     host_runtime_contract* hostContract = nullptr;
 
@@ -261,6 +268,7 @@ int coreclr_initialize(
         &propertyValuesW,
         &bundleProbe,
         &pinvokeOverride,
+        &hostPolicyEmbedded,
         &hostContract);
 
 #ifdef TARGET_UNIX
@@ -274,6 +282,8 @@ int coreclr_initialize(
         return hr;
     }
 #endif
+
+    g_hostpolicy_embedded = hostPolicyEmbedded;
 
     if (hostContract != nullptr)
     {

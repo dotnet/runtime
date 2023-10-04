@@ -10,7 +10,6 @@ Expected: Should get no exceptions.
 
 using System;
 using System.IO;
-using Xunit;
 
 public class MyClass
 {	
@@ -44,8 +43,7 @@ public struct MyStruct
 
 public class Test_CctorOpenFile
 {
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 
 		int ret;

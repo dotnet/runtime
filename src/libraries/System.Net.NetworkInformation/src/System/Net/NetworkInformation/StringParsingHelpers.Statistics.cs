@@ -407,25 +407,15 @@ namespace System.Net.NetworkInformation
             {
                 sr.ReadLine();
                 sr.ReadLine();
-                Span<Range> pieces = stackalloc Range[18]; // [0]-[16] used, +1 to ensure any additional segment goes into [17]
+                int index = 0;
                 while (!sr.EndOfStream)
                 {
                     string line = sr.ReadLine()!;
                     if (line.Contains(name))
                     {
+                        Span<Range> pieces = stackalloc Range[18]; // [0] skipped, [1]-[16] used, +1 to ensure any additional segment goes into [17]
                         ReadOnlySpan<char> lineSpan = line;
-                        int pieceCount = lineSpan.SplitAny(pieces, " :", StringSplitOptions.RemoveEmptyEntries);
-
-                        if (pieceCount < 17)
-                        {
-                            continue;
-                        }
-
-                        if (!lineSpan[pieces[0]].SequenceEqual(name))
-                        {
-                            // The adapter name doesn't exactly match.
-                            continue;
-                        }
+                        pieces = pieces.Slice(0, lineSpan.SplitAny(pieces, " :", StringSplitOptions.RemoveEmptyEntries));
 
                         return new IPInterfaceStatisticsTable()
                         {
@@ -448,6 +438,7 @@ namespace System.Net.NetworkInformation
                             CompressedPacketsTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[16]]),
                         };
                     }
+                    index += 1;
                 }
 
                 throw ExceptionHelper.CreateForParseFailure();

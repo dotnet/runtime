@@ -593,7 +593,7 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsPointer
+        internal bool IsPointerType
         {
             get
             {
@@ -601,7 +601,7 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsByRef
+        internal bool IsByRefType
         {
             get
             {
@@ -641,7 +641,7 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsFunctionPointer
+        internal bool IsFunctionPointerType
         {
             get
             {
@@ -673,13 +673,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsFunctionPointer);
+                Debug.Assert(IsFunctionPointerType);
                 return _uBaseSize & ~FunctionPointerFlags.FlagsMask;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert(IsFunctionPointer);
+                Debug.Assert(IsFunctionPointerType);
                 _uBaseSize = value | (_uBaseSize & FunctionPointerFlags.FlagsMask);
             }
 #endif
@@ -689,13 +689,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsFunctionPointer);
+                Debug.Assert(IsFunctionPointerType);
                 return (_uBaseSize & FunctionPointerFlags.IsUnmanaged) != 0;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert(IsFunctionPointer);
+                Debug.Assert(IsFunctionPointerType);
                 if (value)
                     _uBaseSize |= FunctionPointerFlags.IsUnmanaged;
                 else
@@ -719,13 +719,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsFunctionPointer);
+                Debug.Assert(IsFunctionPointerType);
                 return _relatedType._pRelatedParameterType;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert(IsDynamicType && IsFunctionPointer);
+                Debug.Assert(IsDynamicType && IsFunctionPointerType);
                 _relatedType._pRelatedParameterType = value;
             }
 #endif
@@ -834,7 +834,7 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsValueType);
-                // BaseSize returns the GC size including space for the sync block index field, the MethodTable* and
+                // get_BaseSize returns the GC size including space for the sync block index field, the MethodTable* and
                 // padding for GC heap alignment. Must subtract all of these to get the size used for locals, array
                 // elements or fields of another type.
                 return BaseSize - ((uint)sizeof(ObjHeader) + (uint)sizeof(MethodTable*) + ValueTypeFieldPadding);
@@ -924,7 +924,7 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsDynamicType);
                 Debug.Assert(!IsParameterizedType);
-                Debug.Assert(!IsFunctionPointer);
+                Debug.Assert(!IsFunctionPointerType);
                 Debug.Assert(IsCanonical);
                 _relatedType._pBaseType = value;
             }
@@ -1332,10 +1332,10 @@ namespace Internal.Runtime
 
             if (eField == EETypeField.ETF_FunctionPointerParameters)
             {
-                Debug.Assert(IsFunctionPointer);
+                Debug.Assert(IsFunctionPointerType);
                 return cbOffset;
             }
-            if (IsFunctionPointer)
+            if (IsFunctionPointerType)
             {
                 cbOffset += NumFunctionPointerParameters * relativeOrFullPointerOffset;
             }

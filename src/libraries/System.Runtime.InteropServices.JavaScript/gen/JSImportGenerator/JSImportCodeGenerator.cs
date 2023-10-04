@@ -27,6 +27,8 @@ namespace Microsoft.Interop.JavaScript
         private readonly JSSignatureContext _signatureContext;
 
         public JSImportCodeGenerator(
+            TargetFramework targetFramework,
+            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             JSImportData attributeData,
             JSSignatureContext signatureContext,
@@ -34,10 +36,7 @@ namespace Microsoft.Interop.JavaScript
             IMarshallingGeneratorFactory generatorFactory)
         {
             _signatureContext = signatureContext;
-            ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier)
-            {
-                CodeEmitOptions = new(SkipInit: true)
-            };
+            ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _context = new JSImportCodeContext(attributeData, innerContext);
             _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new EmptyJSGenerator(), out var bindingFailures);
 
@@ -46,10 +45,7 @@ namespace Microsoft.Interop.JavaScript
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                innerContext = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnNativeIdentifier)
-                {
-                    CodeEmitOptions = new(SkipInit: true)
-                };
+                innerContext = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnNativeIdentifier);
                 _context = new JSImportCodeContext(attributeData, innerContext);
             }
 

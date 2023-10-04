@@ -5,7 +5,6 @@
 // we used to get System.Security.VerificationException when invoking Meth2<GenS<C>>()
 
 using System;
-using Xunit;
 
 public interface GenI<T> { }
 public struct GenS<T> : GenI<T> { }
@@ -23,8 +22,7 @@ public class Test_vsw515341
 		c.Meth2<GenS<C>>();	
 	}
 	
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		try
 		{

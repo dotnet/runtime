@@ -111,7 +111,7 @@ namespace System
         {
             get
             {
-                return _value->IsPointer;
+                return _value->IsPointerType;
             }
         }
 
@@ -119,7 +119,7 @@ namespace System
         {
             get
             {
-                return _value->IsFunctionPointer;
+                return _value->IsFunctionPointerType;
             }
         }
 
@@ -127,7 +127,7 @@ namespace System
         {
             get
             {
-                return _value->IsByRef;
+                return _value->IsByRefType;
             }
         }
 
@@ -164,7 +164,7 @@ namespace System
             {
                 // Q: When is an enum type a constructed generic type?
                 // A: When it's nested inside a generic type.
-                if (!IsDefType)
+                if (!(IsDefType))
                     return false;
 
                 // Generic type definitions that return true for IsPrimitive are type definitions of generic enums.
@@ -214,7 +214,7 @@ namespace System
         {
             get
             {
-                return !_value->IsParameterizedType && !_value->IsFunctionPointer;
+                return !_value->IsParameterizedType && !_value->IsFunctionPointerType;
             }
         }
 

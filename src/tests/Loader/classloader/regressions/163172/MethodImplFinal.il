@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
-.assembly extern xunit.core {}
 // this test is a regression case for VSWhidbey 163172
 // Class A has method f()
 // Class B extends A and explicitly implements A::f() (with B::g()) B::g() is final 
@@ -38,13 +37,9 @@
 
 // ================== GLOBAL METHODS =========================
 
-.class public auto ansi MethodImplFinal {
 .method public static int32 modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl) 
         main() cil managed
   {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
     .entrypoint
 
     // Code size       42 (0x2a)
@@ -84,7 +79,7 @@
     ldloc.1
     ret
 } // end of global method main
-}   
+
 
 // =============================================================
 

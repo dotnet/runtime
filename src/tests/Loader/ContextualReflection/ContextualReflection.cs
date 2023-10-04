@@ -23,7 +23,7 @@ namespace ContextualReflectionTest
         public MockAssembly() {}
     }
 
-    public class Program : IProgram
+    class Program : IProgram
     {
         public AssemblyLoadContext alc { get; set; }
         public Assembly alcAssembly { get; set; }
@@ -31,14 +31,15 @@ namespace ContextualReflectionTest
         public IProgram alcProgramInstance { get; set; }
         public Assembly defaultAssembly { get; set; }
 
-        [Fact]
-        public static void TestEntryPoint()
+        public static int Main()
         {
             Program program = new Program(isolated:false);
 
             program.RunTests();
 
             Console.WriteLine("Success");
+
+            return 100;
         }
 
         public Program()
@@ -83,7 +84,7 @@ namespace ContextualReflectionTest
             VerifyIsolation();
             Assert.Equal(defaultAssembly, Assembly.GetExecutingAssembly());
             Assert.Equal(AssemblyLoadContext.Default, AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly()));
-            Assert.NotEqual(typeof(Program), alcProgramType);
+            Assert.NotEqual(alcProgramType, typeof(Program));
             Assert.NotEqual((object)alcProgramInstance, (object)this);
         }
 
@@ -92,7 +93,7 @@ namespace ContextualReflectionTest
             VerifyIsolation();
             Assert.Equal(alcAssembly, Assembly.GetExecutingAssembly());
             Assert.Equal(alc, AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly()));
-            Assert.Equal(typeof(Program), alcProgramType);
+            Assert.Equal(alcProgramType, typeof(Program));
             Assert.Equal((object)alcProgramInstance, (object)this);
         }
 
@@ -285,7 +286,7 @@ namespace ContextualReflectionTest
                 try
                 {
                     IDisposable defaultScope = AssemblyLoadContext.EnterContextualReflection(null);
-                    Assert.Null(AssemblyLoadContext.CurrentContextualReflectionContext);
+                    Assert.Equal(null, AssemblyLoadContext.CurrentContextualReflectionContext);
 
                     throw new InvalidOperationException();
                 }
@@ -737,7 +738,7 @@ namespace ContextualReflectionTest
 
             AssemblyLoadContext context = AssemblyLoadContext.GetLoadContext(assemblyBuilder);
             Assert.Equal(assemblyLoadContext, context);
-            Assert.Contains(assemblyLoadContext.Assemblies, a => AssemblyName.ReferenceMatchesDefinition(a.GetName(), assemblyBuilder.GetName()));
+            Assert.True(assemblyLoadContext.Assemblies.Any(a => AssemblyName.ReferenceMatchesDefinition(a.GetName(), assemblyBuilder.GetName())));
         }
 
         void TestMockAssemblyThrows()

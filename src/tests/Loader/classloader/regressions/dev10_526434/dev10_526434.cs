@@ -4,16 +4,15 @@
 //This pattern of interface implementation caused a buffer overflow and caused an AV (see bug DEV10_526434)
 
 using System;
-using Xunit;
 
-public class HelloWorld
+class HelloWorld
 {
-    [Fact]
-    public static void TestEntryPoint()
+    static int Main()
     {
         C<object> c = new C<object>();
 
-        Console.WriteLine("Pass: {0}", c);
+        Console.WriteLine("Pass");
+        return 100;
     }
 }
 

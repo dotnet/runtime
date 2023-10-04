@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 
 delegate int Del(object p);
@@ -32,10 +31,9 @@ class Top : Middle
     }
 }
 
-public class Test_LdVirtFtnOnAbstractMethod
+class Test_LdVirtFtnOnAbstractMethod
 {
-    [Fact]
-    public static int TestEntryPoint() 
+    public static int Main() 
     {
         var del1 = new Top().TestA<object>();
         var del2 = new Top().TestB<object>();

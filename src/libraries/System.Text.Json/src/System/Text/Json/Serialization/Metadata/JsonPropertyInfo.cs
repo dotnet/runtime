@@ -495,17 +495,9 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(ParentTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
             Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
 
-            JsonObjectCreationHandling effectiveObjectCreationHandling = JsonObjectCreationHandling.Replace;
             if (ObjectCreationHandling == null)
             {
-                // Consult type-level configuration, then global configuration.
-                // Ignore global configuration if we're using a parameterized constructor.
-                JsonObjectCreationHandling preferredCreationHandling =
-                    ParentTypeInfo.PreferredPropertyObjectCreationHandling
-                    ?? (ParentTypeInfo.DetermineUsesParameterizedConstructor()
-                        ? JsonObjectCreationHandling.Replace
-                        : Options.PreferredObjectCreationHandling);
-
+                JsonObjectCreationHandling preferredCreationHandling = ParentTypeInfo.PreferredPropertyObjectCreationHandling ?? Options.PreferredObjectCreationHandling;
                 bool canPopulate =
                     preferredCreationHandling == JsonObjectCreationHandling.Populate &&
                     EffectiveConverter.CanPopulate &&
@@ -514,7 +506,7 @@ namespace System.Text.Json.Serialization.Metadata
                     !ParentTypeInfo.SupportsPolymorphicDeserialization &&
                     !(Set == null && IgnoreReadOnlyMember);
 
-                effectiveObjectCreationHandling = canPopulate ? JsonObjectCreationHandling.Populate : JsonObjectCreationHandling.Replace;
+                EffectiveObjectCreationHandling = canPopulate ? JsonObjectCreationHandling.Populate : JsonObjectCreationHandling.Replace;
             }
             else if (ObjectCreationHandling == JsonObjectCreationHandling.Populate)
             {
@@ -545,24 +537,18 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReadOnlyMember(this);
                 }
 
-                effectiveObjectCreationHandling = JsonObjectCreationHandling.Populate;
+                EffectiveObjectCreationHandling = JsonObjectCreationHandling.Populate;
             }
-
-            if (effectiveObjectCreationHandling is JsonObjectCreationHandling.Populate)
+            else
             {
-                if (ParentTypeInfo.DetermineUsesParameterizedConstructor())
-                {
-                    ThrowHelper.ThrowNotSupportedException_ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors();
-                }
-
-                if (Options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReferenceHandling();
-                }
+                Debug.Assert(EffectiveObjectCreationHandling == JsonObjectCreationHandling.Replace);
             }
 
-            // Validation complete, commit configuration.
-            EffectiveObjectCreationHandling = effectiveObjectCreationHandling;
+            if (EffectiveObjectCreationHandling == JsonObjectCreationHandling.Populate &&
+                Options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
+            {
+                ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowReferenceHandling();
+            }
         }
 
         private bool NumberHandingIsApplicable()

@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for NativeAotIncompatible -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <OutputType>Exe</OutputType>
     <NativeAotIncompatible>true</NativeAotIncompatible> <!-- https://github.com/dotnet/runtime/issues/72589 -->
   </PropertyGroup>
   <PropertyGroup>

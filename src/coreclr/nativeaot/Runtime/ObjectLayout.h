@@ -43,9 +43,9 @@ class Object
 
     PTR_EEType  m_pEEType;
 public:
-    MethodTable * GetMethodTable() const
+    MethodTable * get_EEType() const
         { return m_pEEType; }
-    MethodTable * GetGCSafeMethodTable() const
+    MethodTable * get_SafeEEType() const
 #ifdef TARGET_64BIT
         { return dac_cast<PTR_EEType>((dac_cast<TADDR>(m_pEEType)) & ~((uintptr_t)7)); }
 #else
@@ -66,7 +66,11 @@ public:
     //
     MethodTable * RawGetMethodTable() const
     {
-        return (MethodTable*)GetMethodTable();
+        return (MethodTable*)get_EEType();
+    }
+    MethodTable * GetGCSafeMethodTable() const
+    {
+        return (MethodTable *)get_SafeEEType();
     }
     void RawSetMethodTable(MethodTable * pMT)
     {

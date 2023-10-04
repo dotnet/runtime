@@ -118,20 +118,9 @@ namespace System.Reflection
             [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
             public ProxyAssembly(AssemblyLoadContext alc)
             {
-                string name;
-                if (alc == AssemblyLoadContext.Default)
-                {
-                    name = "ProxyBuilder";
-                }
-                else
-                {
-                    string? alcName = alc.Name;
-                    name = string.IsNullOrEmpty(alcName) ? $"DispatchProxyTypes.{alc.GetHashCode()}" : $"DispatchProxyTypes.{new AssemblyName { Name = alcName }}";
-                }
-
                 AssemblyBuilderAccess builderAccess =
                     alc.IsCollectible ? AssemblyBuilderAccess.RunAndCollect : AssemblyBuilderAccess.Run;
-                _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), builderAccess);
+                _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ProxyBuilder"), builderAccess);
                 _mb = _ab.DefineDynamicModule("testmod");
             }
 

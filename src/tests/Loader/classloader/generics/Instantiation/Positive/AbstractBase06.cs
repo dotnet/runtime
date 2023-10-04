@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 public struct ValX0 {}
 public struct ValY0 {}
@@ -288,8 +287,7 @@ public class Test_AbstractBase06
 	
 	}
 	
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		IGen<int> IGenInt = new GenInt();
 		IGenInt._Init(new int());

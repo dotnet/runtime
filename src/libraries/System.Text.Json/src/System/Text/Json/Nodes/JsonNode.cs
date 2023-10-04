@@ -131,13 +131,19 @@ namespace System.Text.Json.Nodes
                 return "$";
             }
 
-            var path = new ValueStringBuilder(stackalloc char[JsonConstants.StackallocCharThreshold]);
-            path.Append('$');
-            GetPath(ref path, null);
-            return path.ToString();
+            var path = new List<string>();
+            GetPath(path, null);
+
+            var sb = new StringBuilder("$");
+            for (int i = path.Count - 1; i >= 0; i--)
+            {
+                sb.Append(path[i]);
+            }
+
+            return sb.ToString();
         }
 
-        internal abstract void GetPath(ref ValueStringBuilder path, JsonNode? child);
+        internal abstract void GetPath(List<string> path, JsonNode? child);
 
         /// <summary>
         ///   Gets the root <see cref="JsonNode"/>.

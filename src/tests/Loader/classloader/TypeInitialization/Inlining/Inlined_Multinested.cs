@@ -6,7 +6,6 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
-using Xunit;
 
 public class Bar
 {
@@ -127,8 +126,7 @@ public struct InlinedVal
 
 public class Test_Inlined_Multinested
 {
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		Bar.BarMeth_In();
 		Bar.BarMeth_NotIn();

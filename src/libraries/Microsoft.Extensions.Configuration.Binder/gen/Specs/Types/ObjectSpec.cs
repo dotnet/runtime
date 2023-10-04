@@ -1,39 +1,27 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
-using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    public sealed record ObjectSpec : ComplexTypeSpec
+    internal sealed record ObjectSpec : ComplexTypeSpec
     {
-        public ObjectSpec(
-            INamedTypeSymbol type,
-            ObjectInstantiationStrategy instantiationStrategy,
-            ImmutableEquatableArray<PropertySpec>? properties,
-            ImmutableEquatableArray<ParameterSpec>? constructorParameters,
-            string? initExceptionMessage) : base(type)
-        {
-            InstantiationStrategy = instantiationStrategy;
-            Properties = properties;
-            ConstructorParameters = constructorParameters;
-            InitExceptionMessage = initExceptionMessage;
-        }
+        public ObjectSpec(INamedTypeSymbol type) : base(type) { }
 
-        public ObjectInstantiationStrategy InstantiationStrategy { get; }
+        public override TypeSpecKind SpecKind => TypeSpecKind.Object;
 
-        public ImmutableEquatableArray<PropertySpec>? Properties { get; }
+        public override bool HasBindableMembers => Properties.Values.Any(p => p.ShouldBindTo);
 
-        public ImmutableEquatableArray<ParameterSpec>? ConstructorParameters { get; }
+        public override bool CanInstantiate => InstantiationStrategy is not InstantiationStrategy.None && InitExceptionMessage is null;
 
-        public string? InitExceptionMessage { get; }
-    }
+        public Dictionary<string, PropertySpec> Properties { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public enum ObjectInstantiationStrategy
-    {
-        None = 0,
-        ParameterlessConstructor = 1,
-        ParameterizedConstructor = 2,
+        public List<ParameterSpec> ConstructorParameters { get; } = new();
+
+        public string? InitExceptionMessage { get; set; }
     }
 }

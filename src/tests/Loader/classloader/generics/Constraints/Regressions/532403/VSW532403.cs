@@ -7,7 +7,6 @@
 // constraint and the child has recursion in inheritance.
 
 using System;
-using Xunit;
 
 public class Test1
 {
@@ -20,8 +19,8 @@ public class Test1
  
     public static void Test()
     {
-        Derived<int> m = new Derived<int>();
-    Base<Derived<int>> m2 = new Derived<int>();
+    	Derived<int> m = new Derived<int>();
+  	Base<Derived<int>> m2 = new Derived<int>();
     }
 }
 
@@ -36,27 +35,27 @@ public class Test2
  
     public static void Test()
     {
-        Derived<int> m = new Derived<int>();
-    Base<Derived<int>> m2 = new Derived<int>();
+    	Derived<int> m = new Derived<int>();
+	Base<Derived<int>> m2 = new Derived<int>();
     }
 }
 
 public class Test3
 {
-        public interface Base<T> where T : struct
-        {
-        }
-        public struct Derived<T> : Base<Derived<T>>
-        {
-        }
+    	public interface Base<T> where T : struct
+    	{
+    	}
+    	public struct Derived<T> : Base<Derived<T>>
+    	{
+    	}
  
-        public static void Test()
-    {
-        #pragma warning disable 219
-            Derived<int> m = new Derived<int>();
-        Base<Derived<int>> m2 = new Derived<int>();
-        #pragma warning restore 219
-        }
+    	public static void Test()
+	{
+		#pragma warning disable 219
+    		Derived<int> m = new Derived<int>();
+		Base<Derived<int>> m2 = new Derived<int>();
+		#pragma warning restore 219
+    	}
 }
 
 public class Test4
@@ -70,47 +69,63 @@ public class Test4
  
     public static void Test()
     {
-        Derived<int> m = new Derived<int>();
-    Base<Derived<int>> m2 = new Derived<int>();
+    	Derived<int> m = new Derived<int>();
+	Base<Derived<int>> m2 = new Derived<int>();
     }
 }
+
+
+
 
 public class RunTests
 {
 
-    static bool pass;
+	static bool pass;
 
-    delegate void Case();
-       
-    static void Check(Case mytest, string testName)
-        {
+       delegate void Case();
+	   
+	static void Check(Case mytest, string testName)
+    	{
 
-        Console.Write(testName);
+		Console.Write(testName);
 
-        try
-        {
-            mytest();
-            
-            Console.WriteLine("PASS");
-        }
-        catch (Exception e) 
-        {
-            Console.WriteLine("FAIL: Caught unexpected exception: " + e);
-            pass = false;
-        }
+		try
+		{
+			mytest();
+			
+			Console.WriteLine("PASS");
+		}
+		catch (Exception e) 
+		{
+			Console.WriteLine("FAIL: Caught unexpected exception: " + e);
+			pass = false;
+		}
 
-    }
+	}
 
-    [Fact]
-    public static void TestEntryPoint()
-    {
-        pass = true;
+	public static int  Main()
+    	{
+    		pass = true;
 
-        Check(new Case(Test1.Test), "Test 1: Base class with new() constraint  : ");
-        Check(new Case(Test2.Test), "Test 2: Base class with class constraint  : ");
-        Check(new Case(Test3.Test), "Test 3: Base class with struct constraint  : ");
-        Check(new Case(Test4.Test), "Test 4: Base class with class and new() constraints : ");
+		Check(new Case(Test1.Test), "Test 1: Base class with new() constraint  : ");
+		Check(new Case(Test2.Test), "Test 2: Base class with class constraint  : ");
+		Check(new Case(Test3.Test), "Test 3: Base class with struct constraint  : ");
+		Check(new Case(Test4.Test), "Test 4: Base class with class and new() constraints : ");
 
-        Assert.True(pass);
-    }
+		
+
+		if (pass)
+		{
+			Console.WriteLine("All tests passed");
+			return 100;
+		}
+		else
+		{
+			Console.WriteLine("FAIL");
+			return 101;
+		}
+		
+    
+   	 }
 }
+

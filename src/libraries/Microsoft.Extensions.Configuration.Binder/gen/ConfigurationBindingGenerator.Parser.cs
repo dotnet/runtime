@@ -7,73 +7,45 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Operations;
 using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed partial class ConfigurationBindingGenerator : IIncrementalGenerator
     {
-        internal sealed partial class Parser(CompilationData compilationData)
+        private sealed partial class Parser
         {
-            private readonly KnownTypeSymbols _typeSymbols = compilationData.TypeSymbols!;
-            private readonly bool _langVersionIsSupported = compilationData.LanguageVersionIsSupported;
+            private record struct InvocationDiagnosticInfo(DiagnosticDescriptor Descriptor, object[]? MessageArgs);
 
-            private readonly List<TypeParseInfo> _invocationTypeParseInfo = new();
-            private readonly Queue<TypeParseInfo> _typesToParse = new();
-            private readonly Dictionary<ITypeSymbol, TypeSpec> _createdTypeSpecs = new(SymbolEqualityComparer.Default);
+            private readonly SourceProductionContext _context;
+            private readonly SourceGenerationSpec _sourceGenSpec = new();
+            private readonly KnownTypeSymbols _typeSymbols;
+            private readonly ImmutableArray<BinderInvocation> _invocations;
 
-            private readonly InterceptorInfo.Builder _interceptorInfoBuilder = new();
-            private BindingHelperInfo.Builder? _helperInfoBuilder; // Init'ed with type index when registering interceptors, after creating type specs.
+            private readonly Dictionary<ITypeSymbol, TypeSpec?> _createdSpecs = new(SymbolEqualityComparer.Default);
+            private readonly HashSet<ITypeSymbol> _unsupportedTypes = new(SymbolEqualityComparer.Default);
 
-            public List<DiagnosticInfo>? Diagnostics { get; private set; }
+            private readonly List<InvocationDiagnosticInfo> _invocationTargetTypeDiags = new();
+            private readonly Dictionary<ITypeSymbol, HashSet<InvocationDiagnosticInfo>> _typeDiagnostics = new(SymbolEqualityComparer.Default);
 
-            public SourceGenerationSpec? GetSourceGenerationSpec(ImmutableArray<BinderInvocation?> invocations, CancellationToken cancellationToken)
+            public Parser(SourceProductionContext context, KnownTypeSymbols typeSymbols, ImmutableArray<BinderInvocation> invocations)
             {
-                if (!_langVersionIsSupported)
-                {
-                    RecordDiagnostic(DiagnosticDescriptors.LanguageVersionNotSupported, trimmedLocation: Location.None);
-                    return null;
-                }
+                _context = context;
+                _typeSymbols = typeSymbols;
+                _invocations = invocations;
+            }
 
+            public SourceGenerationSpec? GetSourceGenerationSpec()
+            {
                 if (_typeSymbols is not { IConfiguration: { }, ConfigurationBinder: { } })
                 {
                     return null;
                 }
 
-                ParseInvocations(invocations);
-                CreateTypeSpecs(cancellationToken);
-                RegisterInterceptors();
-
-                return new SourceGenerationSpec
+                foreach (BinderInvocation invocation in _invocations)
                 {
-                    InterceptorInfo = _interceptorInfoBuilder.ToIncrementalValue(),
-                    BindingHelperInfo = _helperInfoBuilder!.ToIncrementalValue(),
-                    ConfigTypes = _createdTypeSpecs.Values.OrderBy(s => s.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
-                };
-            }
-
-            private bool IsValidRootConfigType([NotNullWhen(true)] ITypeSymbol? type)
-            {
-                if (type is null ||
-                    type.SpecialType is SpecialType.System_Object or SpecialType.System_Void ||
-                    !_typeSymbols.Compilation.IsSymbolAccessibleWithin(type, _typeSymbols.Compilation.Assembly) ||
-                    type.TypeKind is TypeKind.TypeParameter or TypeKind.Pointer or TypeKind.Error ||
-                    type.IsRefLikeType ||
-                    ContainsGenericParameters(type))
-                {
-                    return false;
-                }
-
-                return true;
-            }
-
-            private void ParseInvocations(ImmutableArray<BinderInvocation?> invocations)
-            {
-                foreach (BinderInvocation? invocation in invocations)
-                {
-                    Debug.Assert(invocation is not null);
                     IMethodSymbol targetMethod = invocation.Operation.TargetMethod;
                     INamedTypeSymbol? candidateBinderType = targetMethod.ContainingType;
                     Debug.Assert(targetMethod.IsExtensionMethod);
@@ -91,123 +63,173 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ParseInvocation_ServiceCollectionExt(invocation);
                     }
                 }
+
+                return _sourceGenSpec;
             }
 
-            private void CreateTypeSpecs(CancellationToken cancellationToken)
+            private bool IsValidRootConfigType(ITypeSymbol? type)
             {
-                while (_typesToParse.Count > 0)
+                if (type is null ||
+                    type.SpecialType is SpecialType.System_Object or SpecialType.System_Void ||
+                    !_typeSymbols.Compilation.IsSymbolAccessibleWithin(type, _typeSymbols.Compilation.Assembly) ||
+                    type.TypeKind is TypeKind.TypeParameter or TypeKind.Pointer or TypeKind.Error ||
+                    type.IsRefLikeType ||
+                    ContainsGenericParameters(type))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    return false;
+                }
 
-                    TypeParseInfo typeParseInfo = _typesToParse.Dequeue();
-                    ITypeSymbol typeSymbol = typeParseInfo.TypeSymbol;
+                return true;
+            }
 
-                    if (!_createdTypeSpecs.ContainsKey(typeSymbol))
+            private TypeSpec? GetTargetTypeForRootInvocation(ITypeSymbol? type, Location? invocationLocation)
+            {
+                if (!IsValidRootConfigType(type))
+                {
+                    _context.ReportDiagnostic(Diagnostic.Create(Diagnostics.CouldNotDetermineTypeInfo, invocationLocation));
+                    return null;
+                }
+
+                return GetTargetTypeForRootInvocationCore(type, invocationLocation);
+            }
+
+            public TypeSpec? GetTargetTypeForRootInvocationCore(ITypeSymbol type, Location? invocationLocation)
+            {
+                TypeSpec? spec = GetOrCreateTypeSpec(type);
+
+                foreach (InvocationDiagnosticInfo diag in _invocationTargetTypeDiags)
+                {
+                    _context.ReportDiagnostic(Diagnostic.Create(diag.Descriptor, invocationLocation, diag.MessageArgs));
+                }
+
+                _invocationTargetTypeDiags.Clear();
+                return spec;
+            }
+
+            private TypeSpec? GetOrCreateTypeSpec(ITypeSymbol type)
+            {
+                if (_createdSpecs.TryGetValue(type, out TypeSpec? spec))
+                {
+                    if (_typeDiagnostics.TryGetValue(type, out HashSet<InvocationDiagnosticInfo>? typeDiags))
                     {
-                        _createdTypeSpecs.Add(typeSymbol, CreateTypeSpec(typeParseInfo));
+                        _invocationTargetTypeDiags.AddRange(typeDiags);
                     }
+
+                    return spec;
                 }
-            }
-
-            private void RegisterInterceptors()
-            {
-                TypeIndex typeIndex = new(_createdTypeSpecs.Values);
-                _helperInfoBuilder = new(typeIndex);
-
-                foreach (TypeParseInfo typeParseInfo in _invocationTypeParseInfo)
-                {
-                    TypeSpec typeSpec = _createdTypeSpecs[typeParseInfo.TypeSymbol];
-                    MethodsToGen overload = typeParseInfo.BindingOverload;
-
-                    if ((MethodsToGen.ConfigBinder_Any & overload) is not 0)
-                    {
-                        RegisterInterceptor_ConfigurationBinder(typeParseInfo, typeSpec);
-                    }
-                    else if ((MethodsToGen.OptionsBuilderExt_Any & overload) is not 0)
-                    {
-                        RegisterInterceptor_OptionsBuilderExt(typeParseInfo, typeSpec);
-                    }
-                    else
-                    {
-                        Debug.Assert((MethodsToGen.ServiceCollectionExt_Any & overload) is not 0);
-                        RegisterInterceptor_ServiceCollectionExt(typeParseInfo, typeSpec);
-                    }
-                }
-            }
-
-            private void EnqueueTargetTypeForRootInvocation(ITypeSymbol? typeSymbol, MethodsToGen overload, BinderInvocation invocation)
-            {
-                if (!IsValidRootConfigType(typeSymbol))
-                {
-                    RecordDiagnostic(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
-                }
-                else
-                {
-                    TypeParseInfo typeParseInfo = TypeParseInfo.Create(typeSymbol, overload, invocation, containingTypeDiagInfo: null);
-                    _typesToParse.Enqueue(typeParseInfo);
-                    _invocationTypeParseInfo.Add(typeParseInfo);
-                }
-            }
-
-            private TypeRef EnqueueTransitiveType(TypeParseInfo containingTypeParseInfo, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor diagDescriptor, string? memberName = null)
-            {
-                TypeParseInfo memberTypeParseInfo = containingTypeParseInfo.ToTransitiveTypeParseInfo(memberTypeSymbol, diagDescriptor, memberName);
-
-                if (_createdTypeSpecs.TryGetValue(memberTypeSymbol, out TypeSpec? memberTypeSpec))
-                {
-                    RecordTypeDiagnosticIfRequired(memberTypeParseInfo, memberTypeSpec);
-                    return memberTypeSpec.TypeRef;
-                }
-
-                _typesToParse.Enqueue(memberTypeParseInfo);
-                return new TypeRef(memberTypeSymbol);
-            }
-
-            private TypeSpec CreateTypeSpec(TypeParseInfo typeParseInfo)
-            {
-                ITypeSymbol type = typeParseInfo.TypeSymbol;
-                TypeSpec spec;
 
                 if (IsNullable(type, out ITypeSymbol? underlyingType))
                 {
-                    TypeRef underlyingTypeRef = EnqueueTransitiveType(
-                        typeParseInfo,
-                        underlyingType,
-                        DiagnosticDescriptors.NullableUnderlyingTypeNotSupported);
-
-                    spec = new NullableSpec(type, underlyingTypeRef);
+                    spec = MemberTypeIsBindable(type, underlyingType, Diagnostics.NullableUnderlyingTypeNotSupported, out TypeSpec? underlyingTypeSpec)
+                        ? new NullableSpec(type, underlyingTypeSpec)
+                        : null;
                 }
                 else if (IsParsableFromString(type, out StringParsableTypeKind specialTypeKind))
                 {
                     ParsableFromStringSpec stringParsableSpec = new(type) { StringParsableTypeKind = specialTypeKind };
+
+                    if (stringParsableSpec.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue)
+                    {
+                        _sourceGenSpec.PrimitivesForHelperGen.Add(stringParsableSpec);
+                    }
+
                     spec = stringParsableSpec;
                 }
-                else if (type.TypeKind is TypeKind.Array)
+                else if (IsSupportedArrayType(type))
                 {
-                    spec = CreateArraySpec(typeParseInfo);
-                    Debug.Assert(spec is ArraySpec or UnsupportedTypeSpec);
+                    spec = CreateArraySpec((type as IArrayTypeSymbol));
                 }
                 else if (IsCollection(type))
                 {
-                    spec = CreateCollectionSpec(typeParseInfo);
+                    spec = CreateCollectionSpec((INamedTypeSymbol)type);
                 }
                 else if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.IConfigurationSection))
                 {
                     spec = new ConfigurationSectionSpec(type);
                 }
-                else if (type is INamedTypeSymbol)
+                else if (type is INamedTypeSymbol namedType)
                 {
-                    spec = CreateObjectSpec(typeParseInfo);
+                    // List<string> is used in generated code as a temp holder for formatting
+                    // an error for config properties that don't map to object properties.
+                    _sourceGenSpec.Namespaces.Add("System.Collections.Generic");
+
+                    spec = CreateObjectSpec(namedType);
                 }
                 else
                 {
-                    spec = CreateUnsupportedTypeSpec(typeParseInfo, NotSupportedReason.UnknownType);
+                    RegisterUnsupportedType(type, Diagnostics.TypeNotSupported);
                 }
 
-                RecordTypeDiagnosticIfRequired(typeParseInfo, spec);
+                foreach (InvocationDiagnosticInfo diag in _invocationTargetTypeDiags)
+                {
+                    RegisterTypeDiagnostic(type, diag);
+                }
 
-                return spec;
+                if (spec is { Namespace: string @namespace } && @namespace is not "<global namespace>")
+                {
+                    _sourceGenSpec.Namespaces.Add(@namespace);
+                }
+
+                return _createdSpecs[type] = spec;
             }
+
+            private bool TryRegisterTypeForBindCoreMainGen(ComplexTypeSpec type)
+            {
+                if (type.HasBindableMembers)
+                {
+                    bool registeredForBindCoreGen = TryRegisterTypeForBindCoreGen(type);
+                    Debug.Assert(registeredForBindCoreGen);
+
+                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCoreMain, type);
+                    Register_AsConfigWithChildren_HelperForGen_IfRequired(type);
+                    return true;
+                }
+
+                return false;
+            }
+
+            private bool TryRegisterTypeForBindCoreGen(ComplexTypeSpec type)
+            {
+                if (type.HasBindableMembers)
+                {
+                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, type);
+                    return true;
+                }
+
+                return false;
+            }
+
+            private void RegisterTypeForGetCoreGen(TypeSpec typeSpec)
+            {
+                RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetCore, typeSpec);
+                Register_AsConfigWithChildren_HelperForGen_IfRequired(typeSpec);
+            }
+
+            private void RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper method, TypeSpec type)
+            {
+                if (!_sourceGenSpec.TypesForGen_CoreBindingHelper_Methods.TryGetValue(method, out HashSet<TypeSpec>? types))
+                {
+                    _sourceGenSpec.TypesForGen_CoreBindingHelper_Methods[method] = types = new HashSet<TypeSpec>();
+                }
+
+                types.Add(type);
+                _sourceGenSpec.MethodsToGen_CoreBindingHelper |= method;
+            }
+
+            private void Register_AsConfigWithChildren_HelperForGen_IfRequired(TypeSpec possibleComplexType)
+            {
+                if (possibleComplexType is ComplexTypeSpec)
+                {
+                    _sourceGenSpec.MethodsToGen_CoreBindingHelper |= MethodsToGen_CoreBindingHelper.AsConfigWithChildren;
+                }
+            }
+
+            /// <summary>
+            /// Registers interceptors for root binding methods, except for ConfigurationBinder.Bind,
+            /// which is handled by <see cref="RegisterInterceptor"/>
+            /// </summary>
+            private void RegisterInterceptor(Enum method, IInvocationOperation operation) =>
+                _sourceGenSpec.InterceptionInfo.RegisterCacheEntry(method, new InterceptorLocationInfo(operation));
 
             private static bool IsNullable(ITypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? underlyingType)
             {
@@ -327,197 +349,232 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private TypeSpec CreateArraySpec(TypeParseInfo typeParseInfo)
+            private EnumerableSpec? CreateArraySpec(IArrayTypeSymbol arrayTypeSymbol)
             {
-                IArrayTypeSymbol typeSymbol = (IArrayTypeSymbol)typeParseInfo.TypeSymbol;
+                ITypeSymbol elementTypeSymbol = arrayTypeSymbol.ElementType;
 
-                if (typeSymbol.Rank > 1)
+                if (!MemberTypeIsBindable(arrayTypeSymbol, elementTypeSymbol, Diagnostics.ElementTypeNotSupported, out TypeSpec elementTypeSpec))
                 {
-                    return CreateUnsupportedTypeSpec(typeParseInfo, NotSupportedReason.MultiDimArraysNotSupported);
+                    return null;
                 }
 
-                TypeRef elementTypeRef = EnqueueTransitiveType(
-                    typeParseInfo,
-                    typeSymbol.ElementType,
-                    DiagnosticDescriptors.ElementTypeNotSupported);
+                // We want a BindCore method for List<TElement> as a temp holder for the array values.
+                // Since the element type is supported, we can certainly a list of elements.
+                EnumerableSpec listTypeSpec = (EnumerableSpec)GetOrCreateTypeSpec(_typeSymbols.List.Construct(elementTypeSymbol));
 
-                return new ArraySpec(typeSymbol)
+                EnumerableSpec spec = new EnumerableSpec(arrayTypeSymbol)
                 {
-                    ElementTypeRef = elementTypeRef,
+                    ElementType = elementTypeSpec,
+                    InstantiationStrategy = InstantiationStrategy.Array,
+                    PopulationStrategy = CollectionPopulationStrategy.Cast_Then_Add, // Using the concrete list type as a temp holder.
+                    TypeToInstantiate = listTypeSpec,
+                    PopulationCastType = null,
                 };
+
+                bool registeredForBindCore = TryRegisterTypeForBindCoreGen(listTypeSpec) && TryRegisterTypeForBindCoreGen(spec);
+                Debug.Assert(registeredForBindCore);
+                return spec;
             }
 
-            private TypeSpec CreateCollectionSpec(TypeParseInfo typeParseInfo)
+            private CollectionSpec? CreateCollectionSpec(INamedTypeSymbol type)
             {
-                INamedTypeSymbol type = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
-
-                TypeSpec spec;
-                if (IsCandidateDictionary(type, out ITypeSymbol? keyType, out ITypeSymbol? elementType))
+                CollectionSpec? spec;
+                if (IsCandidateDictionary(type, out ITypeSymbol keyType, out ITypeSymbol elementType))
                 {
-                    spec = CreateDictionarySpec(typeParseInfo, keyType, elementType);
-                    Debug.Assert(spec is DictionarySpec or UnsupportedTypeSpec);
+                    spec = CreateDictionarySpec(type, keyType, elementType);
+                    Debug.Assert(spec is null or DictionarySpec { KeyType: null or ParsableFromStringSpec });
                 }
                 else
                 {
-                    spec = CreateEnumerableSpec(typeParseInfo);
-                    Debug.Assert(spec is EnumerableSpec or UnsupportedTypeSpec);
+                    spec = CreateEnumerableSpec(type);
                 }
+
+                if (spec is null)
+                {
+                    return null;
+                }
+
+                bool registerForBindCoreGen = TryRegisterTypeForBindCoreGen(spec);
+                Debug.Assert(registerForBindCoreGen);
+                return spec;
+            }
+
+            private DictionarySpec CreateDictionarySpec(INamedTypeSymbol type, ITypeSymbol keyType, ITypeSymbol elementType)
+            {
+                if (!MemberTypeIsBindable(type, keyType, Diagnostics.DictionaryKeyNotSupported, out TypeSpec keySpec) ||
+                    !MemberTypeIsBindable(type, elementType, Diagnostics.ElementTypeNotSupported, out TypeSpec elementSpec))
+                {
+                    return null;
+                }
+
+                if (keySpec.SpecKind is not TypeSpecKind.ParsableFromString)
+                {
+                    RegisterUnsupportedType(type, Diagnostics.DictionaryKeyNotSupported);
+                    return null;
+                }
+
+                InstantiationStrategy constructionStrategy;
+                CollectionPopulationStrategy populationStrategy;
+                INamedTypeSymbol? typeToInstantiate = null;
+                INamedTypeSymbol? populationCastType = null;
+
+                if (HasPublicParameterLessCtor(type))
+                {
+                    constructionStrategy = InstantiationStrategy.ParameterlessConstructor;
+
+                    if (HasAddMethod(type, keyType, elementType))
+                    {
+                        populationStrategy = CollectionPopulationStrategy.Add;
+                    }
+                    else if (GetInterface(type, _typeSymbols.GenericIDictionary_Unbound) is not null)
+                    {
+                        populationCastType = _typeSymbols.GenericIDictionary;
+                        populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
+                    }
+                    else
+                    {
+                        RegisterUnsupportedType(type, Diagnostics.CollectionNotSupported);
+                        return null;
+                    }
+                }
+                else if (IsInterfaceMatch(type, _typeSymbols.GenericIDictionary_Unbound) || IsInterfaceMatch(type, _typeSymbols.IDictionary))
+                {
+                    typeToInstantiate = _typeSymbols.Dictionary;
+                    constructionStrategy = InstantiationStrategy.ParameterlessConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Add;
+                }
+                else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlyDictionary_Unbound))
+                {
+                    typeToInstantiate = _typeSymbols.Dictionary;
+                    populationCastType = _typeSymbols.GenericIDictionary;
+                    constructionStrategy = InstantiationStrategy.ToEnumerableMethod;
+                    populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
+                    _sourceGenSpec.Namespaces.Add("System.Linq");
+                }
+                else
+                {
+                    RegisterUnsupportedType(type, Diagnostics.CollectionNotSupported);
+                    return null;
+                }
+
+                Debug.Assert(!(populationStrategy is CollectionPopulationStrategy.Cast_Then_Add && populationCastType is null));
+
+                DictionarySpec spec = new(type)
+                {
+                    KeyType = (ParsableFromStringSpec)keySpec,
+                    ElementType = elementSpec,
+                    InstantiationStrategy = constructionStrategy,
+                    PopulationStrategy = populationStrategy,
+                    TypeToInstantiate = ConstructGenericCollectionSpecIfRequired(typeToInstantiate, keyType, elementType) as DictionarySpec,
+                    PopulationCastType = ConstructGenericCollectionSpecIfRequired(populationCastType, keyType, elementType) as DictionarySpec,
+                };
 
                 return spec;
             }
 
-            private TypeSpec CreateDictionarySpec(TypeParseInfo typeParseInfo, ITypeSymbol keyTypeSymbol, ITypeSymbol elementTypeSymbol)
+            private EnumerableSpec? CreateEnumerableSpec(INamedTypeSymbol type)
             {
-                INamedTypeSymbol type = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
+                if (!TryGetElementType(type, out ITypeSymbol? elementType) ||
+                    !MemberTypeIsBindable(type, elementType, Diagnostics.ElementTypeNotSupported, out TypeSpec elementSpec))
+                {
+                    return null;
+                }
 
-                CollectionInstantiationStrategy instantiationStrategy;
-                CollectionInstantiationConcreteType instantiationConcreteType;
-                CollectionPopulationCastType populationCastType;
+                InstantiationStrategy instantiationStrategy;
+                CollectionPopulationStrategy populationStrategy;
+                INamedTypeSymbol? typeToInstantiate = null;
+                INamedTypeSymbol? populationCastType = null;
 
                 if (HasPublicParameterLessCtor(type))
                 {
-                    instantiationStrategy = CollectionInstantiationStrategy.ParameterlessConstructor;
-                    instantiationConcreteType = CollectionInstantiationConcreteType.Self;
-
-                    if (HasAddMethod(type, keyTypeSymbol, elementTypeSymbol))
-                    {
-                        populationCastType = CollectionPopulationCastType.NotApplicable;
-                    }
-                    else if (_typeSymbols.GenericIDictionary is not null && GetInterface(type, _typeSymbols.GenericIDictionary_Unbound) is not null)
-                    {
-                        populationCastType = CollectionPopulationCastType.IDictionary;
-                    }
-                    else
-                    {
-                        return CreateUnsupportedCollectionSpec(typeParseInfo);
-                    }
-                }
-                else if (_typeSymbols.Dictionary is not null &&
-                    (IsInterfaceMatch(type, _typeSymbols.GenericIDictionary_Unbound) || IsInterfaceMatch(type, _typeSymbols.IDictionary)))
-                {
-                    instantiationStrategy = CollectionInstantiationStrategy.ParameterlessConstructor;
-                    instantiationConcreteType = CollectionInstantiationConcreteType.Dictionary;
-                    populationCastType = CollectionPopulationCastType.NotApplicable;
-                }
-                else if (_typeSymbols.Dictionary is not null && IsInterfaceMatch(type, _typeSymbols.IReadOnlyDictionary_Unbound))
-                {
-                    instantiationStrategy = CollectionInstantiationStrategy.LinqToDictionary;
-                    instantiationConcreteType = CollectionInstantiationConcreteType.Dictionary;
-                    populationCastType = CollectionPopulationCastType.IDictionary;
-                }
-                else
-                {
-                    return CreateUnsupportedCollectionSpec(typeParseInfo);
-                }
-
-                TypeRef keyTypeRef = EnqueueTransitiveType(typeParseInfo, keyTypeSymbol, DiagnosticDescriptors.DictionaryKeyNotSupported);
-                TypeRef elementTypeRef = EnqueueTransitiveType(typeParseInfo, elementTypeSymbol, DiagnosticDescriptors.ElementTypeNotSupported);
-
-                return new DictionarySpec(type)
-                {
-                    KeyTypeRef = keyTypeRef,
-                    ElementTypeRef = elementTypeRef,
-                    InstantiationStrategy = instantiationStrategy,
-                    InstantiationConcreteType = instantiationConcreteType,
-                    PopulationCastType = populationCastType,
-                };
-            }
-
-            private TypeSpec CreateEnumerableSpec(TypeParseInfo typeParseInfo)
-            {
-                INamedTypeSymbol type = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
-
-                if (!TryGetElementType(type, out ITypeSymbol? elementType))
-                {
-                    return CreateUnsupportedCollectionSpec(typeParseInfo);
-                }
-
-                CollectionInstantiationStrategy instantiationStrategy;
-                CollectionInstantiationConcreteType instantiationConcreteType;
-                CollectionPopulationCastType populationCastType;
-
-                if (HasPublicParameterLessCtor(type))
-                {
-                    instantiationStrategy = CollectionInstantiationStrategy.ParameterlessConstructor;
-                    instantiationConcreteType = CollectionInstantiationConcreteType.Self;
+                    instantiationStrategy = InstantiationStrategy.ParameterlessConstructor;
 
                     if (HasAddMethod(type, elementType))
                     {
-                        populationCastType = CollectionPopulationCastType.NotApplicable;
+                        populationStrategy = CollectionPopulationStrategy.Add;
                     }
-                    else if (_typeSymbols.GenericICollection is not null && GetInterface(type, _typeSymbols.GenericICollection_Unbound) is not null)
+                    else if (GetInterface(type, _typeSymbols.GenericICollection_Unbound) is not null)
                     {
-                        populationCastType = CollectionPopulationCastType.ICollection;
+                        populationCastType = _typeSymbols.GenericICollection;
+                        populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                     }
                     else
                     {
-                        return CreateUnsupportedCollectionSpec(typeParseInfo);
+                        RegisterUnsupportedType(type, Diagnostics.CollectionNotSupported);
+                        return null;
                     }
                 }
-                else if ((IsInterfaceMatch(type, _typeSymbols.GenericICollection_Unbound) || IsInterfaceMatch(type, _typeSymbols.GenericIList_Unbound)))
+                else if (IsInterfaceMatch(type, _typeSymbols.GenericICollection_Unbound) ||
+                    IsInterfaceMatch(type, _typeSymbols.GenericIList_Unbound))
                 {
-                    instantiationStrategy = CollectionInstantiationStrategy.ParameterlessConstructor;
-                    instantiationConcreteType = CollectionInstantiationConcreteType.List;
-                    populationCastType = CollectionPopulationCastType.NotApplicable;
+                    typeToInstantiate = _typeSymbols.List;
+                    instantiationStrategy = InstantiationStrategy.ParameterlessConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Add;
                 }
                 else if (IsInterfaceMatch(type, _typeSymbols.GenericIEnumerable_Unbound))
                 {
-                    instantiationStrategy = CollectionInstantiationStrategy.CopyConstructor;
-                    instantiationConcreteType = CollectionInstantiationConcreteType.List;
-                    populationCastType = CollectionPopulationCastType.ICollection;
+                    typeToInstantiate = _typeSymbols.List;
+                    populationCastType = _typeSymbols.GenericICollection;
+                    instantiationStrategy = InstantiationStrategy.ParameterizedConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                 }
                 else if (IsInterfaceMatch(type, _typeSymbols.ISet_Unbound))
                 {
-                    instantiationStrategy = CollectionInstantiationStrategy.ParameterlessConstructor;
-                    instantiationConcreteType = CollectionInstantiationConcreteType.HashSet;
-                    populationCastType = CollectionPopulationCastType.NotApplicable;
+                    typeToInstantiate = _typeSymbols.HashSet;
+                    instantiationStrategy = InstantiationStrategy.ParameterlessConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Add;
                 }
                 else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlySet_Unbound))
                 {
-                    instantiationStrategy = CollectionInstantiationStrategy.CopyConstructor;
-                    instantiationConcreteType = CollectionInstantiationConcreteType.HashSet;
-                    populationCastType = CollectionPopulationCastType.ISet;
+                    typeToInstantiate = _typeSymbols.HashSet;
+                    populationCastType = _typeSymbols.ISet;
+                    instantiationStrategy = InstantiationStrategy.ParameterizedConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                 }
                 else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlyList_Unbound) || IsInterfaceMatch(type, _typeSymbols.IReadOnlyCollection_Unbound))
                 {
-                    instantiationStrategy = CollectionInstantiationStrategy.CopyConstructor;
-                    instantiationConcreteType = CollectionInstantiationConcreteType.List;
-                    populationCastType = CollectionPopulationCastType.ICollection;
+                    typeToInstantiate = _typeSymbols.List;
+                    populationCastType = _typeSymbols.GenericICollection;
+                    instantiationStrategy = InstantiationStrategy.ParameterizedConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                 }
                 else
                 {
-                    return CreateUnsupportedCollectionSpec(typeParseInfo);
+                    RegisterUnsupportedType(type, Diagnostics.CollectionNotSupported);
+                    return null;
                 }
 
-                TypeRef elementTypeRef = EnqueueTransitiveType(typeParseInfo, elementType, DiagnosticDescriptors.ElementTypeNotSupported);
+                Debug.Assert(!(populationStrategy is CollectionPopulationStrategy.Cast_Then_Add && populationCastType is null));
 
-                return new EnumerableSpec(type)
+                EnumerableSpec spec = new(type)
                 {
-                    ElementTypeRef = elementTypeRef,
+                    ElementType = elementSpec,
                     InstantiationStrategy = instantiationStrategy,
-                    InstantiationConcreteType = instantiationConcreteType,
-                    PopulationCastType = populationCastType,
+                    PopulationStrategy = populationStrategy,
+                    TypeToInstantiate = ConstructGenericCollectionSpecIfRequired(typeToInstantiate, elementType) as EnumerableSpec,
+                    PopulationCastType = ConstructGenericCollectionSpecIfRequired(populationCastType, elementType) as EnumerableSpec,
                 };
+
+                return spec;
             }
 
-            private ObjectSpec CreateObjectSpec(TypeParseInfo typeParseInfo)
+            private ObjectSpec? CreateObjectSpec(INamedTypeSymbol objectSymbol)
             {
-                INamedTypeSymbol typeSymbol = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
-                string typeName = typeSymbol.GetTypeName().Name;
+                // Add spec to cache before traversing properties to avoid stack overflow.
+                ObjectSpec objectSpec = new(objectSymbol);
+                _createdSpecs.Add(objectSymbol, objectSpec);
 
-                ObjectInstantiationStrategy initializationStrategy = ObjectInstantiationStrategy.None;
-                DiagnosticDescriptor? initDiagDescriptor = null;
-                string? initExceptionMessage = null;
-
+                string typeName = objectSpec.Name;
                 IMethodSymbol? ctor = null;
+                DiagnosticDescriptor? initDiagDescriptor = null;
 
-                if (!(typeSymbol.IsAbstract || typeSymbol.TypeKind is TypeKind.Interface))
+                if (!(objectSymbol.IsAbstract || objectSymbol.TypeKind is TypeKind.Interface))
                 {
                     IMethodSymbol? parameterlessCtor = null;
                     IMethodSymbol? parameterizedCtor = null;
                     bool hasMultipleParameterizedCtors = false;
 
-                    foreach (IMethodSymbol candidate in typeSymbol.InstanceConstructors)
+                    foreach (IMethodSymbol candidate in objectSymbol.InstanceConstructors)
                     {
                         if (candidate.DeclaredAccessibility is not Accessibility.Public)
                         {
@@ -538,14 +595,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                     }
 
-                    bool hasPublicParameterlessCtor = typeSymbol.IsValueType || parameterlessCtor is not null;
+                    bool hasPublicParameterlessCtor = objectSymbol.IsValueType || parameterlessCtor is not null;
                     if (!hasPublicParameterlessCtor && hasMultipleParameterizedCtors)
                     {
-                        initDiagDescriptor = DiagnosticDescriptors.MultipleParameterizedConstructors;
-                        initExceptionMessage = string.Format(Emitter.ExceptionMessages.MultipleParameterizedConstructors, typeName);
+                        initDiagDescriptor = Diagnostics.MultipleParameterizedConstructors;
+                        objectSpec.InitExceptionMessage = string.Format(Emitter.ExceptionMessages.MultipleParameterizedConstructors, typeName);
                     }
 
-                    ctor = typeSymbol.IsValueType
+                    ctor = objectSymbol.IsValueType
                         // Roslyn ctor fetching APIs include paramerterless ctors for structs, unlike System.Reflection.
                         ? parameterizedCtor ?? parameterlessCtor
                         : parameterlessCtor ?? parameterizedCtor;
@@ -553,23 +610,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (ctor is null)
                 {
-                    initDiagDescriptor = DiagnosticDescriptors.MissingPublicInstanceConstructor;
-                    initExceptionMessage = string.Format(Emitter.ExceptionMessages.MissingPublicInstanceConstructor, typeName);
+                    initDiagDescriptor = Diagnostics.MissingPublicInstanceConstructor;
+                    objectSpec.InitExceptionMessage = string.Format(Emitter.ExceptionMessages.MissingPublicInstanceConstructor, typeName);
                 }
                 else
                 {
-                    initializationStrategy = ctor.Parameters.Length is 0 ? ObjectInstantiationStrategy.ParameterlessConstructor : ObjectInstantiationStrategy.ParameterizedConstructor;
+                    objectSpec.InstantiationStrategy = ctor.Parameters.Length is 0 ? InstantiationStrategy.ParameterlessConstructor : InstantiationStrategy.ParameterizedConstructor;
                 }
 
                 if (initDiagDescriptor is not null)
                 {
-                    Debug.Assert(initExceptionMessage is not null);
-                    RecordTypeDiagnostic(typeParseInfo, initDiagDescriptor);
+                    Debug.Assert(objectSpec.InitExceptionMessage is not null);
+                    RegisterUnsupportedType(objectSymbol, initDiagDescriptor);
                 }
 
-                Dictionary<string, PropertySpec>? properties = null;
-
-                INamedTypeSymbol? current = typeSymbol;
+                INamedTypeSymbol current = objectSymbol;
                 while (current is not null)
                 {
                     ImmutableArray<ISymbol> members = current.GetMembers();
@@ -578,90 +633,105 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property)
                         {
                             string propertyName = property.Name;
-                            TypeRef propertyTypeRef = EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName);
+                            TypeSpec propertyTypeSpec = GetOrCreateTypeSpec(property.Type);
 
-                            AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
-                            string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
-
-                            PropertySpec spec = new(property)
+                            if (propertyTypeSpec?.CanBindTo is not true)
                             {
-                                TypeRef = propertyTypeRef,
-                                ConfigurationKeyName = configKeyName
-                            };
+                                InvocationDiagnosticInfo propertyDiagnostic = new InvocationDiagnosticInfo(Diagnostics.PropertyNotSupported, new string[] { propertyName, objectSymbol.ToDisplayString() });
+                                RegisterTypeDiagnostic(causingType: objectSymbol, propertyDiagnostic);
+                                _invocationTargetTypeDiags.Add(propertyDiagnostic);
+                            }
 
-                            (properties ??= new(StringComparer.OrdinalIgnoreCase))[propertyName] = spec;
+                            if (propertyTypeSpec is not null)
+                            {
+                                AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
+                                string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
+                                PropertySpec spec = new(property) { Type = propertyTypeSpec, ConfigurationKeyName = configKeyName };
+
+                                objectSpec.Properties[propertyName] = spec;
+                                Register_AsConfigWithChildren_HelperForGen_IfRequired(propertyTypeSpec);
+                            }
                         }
                     }
                     current = current.BaseType;
                 }
 
-                List<ParameterSpec>? ctorParams = null;
-
-                if (initializationStrategy is ObjectInstantiationStrategy.ParameterizedConstructor)
+                if (objectSpec.InstantiationStrategy is InstantiationStrategy.ParameterizedConstructor)
                 {
-                    Debug.Assert(ctor is not null);
-                    List<string>? missingParameters = null;
-                    List<string>? invalidParameters = null;
+                    List<string> missingParameters = new();
+                    List<string> invalidParameters = new();
 
                     foreach (IParameterSymbol parameter in ctor.Parameters)
                     {
                         string parameterName = parameter.Name;
 
-                        if (properties?.TryGetValue(parameterName, out PropertySpec? propertySpec) is not true)
+                        if (!objectSpec.Properties.TryGetValue(parameterName, out PropertySpec? propertySpec))
                         {
-                            (missingParameters ??= new()).Add(parameterName);
+                            missingParameters.Add(parameterName);
                         }
                         else if (parameter.RefKind is not RefKind.None)
                         {
-                            (invalidParameters ??= new()).Add(parameterName);
+                            invalidParameters.Add(parameterName);
                         }
                         else
                         {
                             ParameterSpec paramSpec = new ParameterSpec(parameter)
                             {
-                                TypeRef = propertySpec.TypeRef,
+                                Type = propertySpec.Type,
                                 ConfigurationKeyName = propertySpec.ConfigurationKeyName,
                             };
 
                             propertySpec.MatchingCtorParam = paramSpec;
-                            (ctorParams ??= new()).Add(paramSpec);
+                            objectSpec.ConstructorParameters.Add(paramSpec);
                         }
                     }
 
-                    if (invalidParameters?.Count > 0)
+                    if (invalidParameters.Count > 0)
                     {
-                        initExceptionMessage = string.Format(Emitter.ExceptionMessages.CannotBindToConstructorParameter, typeName, FormatParams(invalidParameters));
+                        objectSpec.InitExceptionMessage = string.Format(Emitter.ExceptionMessages.CannotBindToConstructorParameter, typeName, FormatParams(invalidParameters));
                     }
-                    else if (missingParameters?.Count > 0)
+                    else if (missingParameters.Count > 0)
                     {
-                        if (typeSymbol.IsValueType)
+                        if (objectSymbol.IsValueType)
                         {
-                            initializationStrategy = ObjectInstantiationStrategy.ParameterlessConstructor;
+                            objectSpec.InstantiationStrategy = InstantiationStrategy.ParameterlessConstructor;
                         }
                         else
                         {
-                            initExceptionMessage = string.Format(Emitter.ExceptionMessages.ConstructorParametersDoNotMatchProperties, typeName, FormatParams(missingParameters));
+                            objectSpec.InitExceptionMessage = string.Format(Emitter.ExceptionMessages.ConstructorParametersDoNotMatchProperties, typeName, FormatParams(missingParameters));
                         }
+                    }
+
+                    if (objectSpec.CanInstantiate)
+                    {
+                        RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.Initialize, objectSpec);
                     }
 
                     static string FormatParams(List<string> names) => string.Join(",", names);
                 }
 
-                return new ObjectSpec(
-                    typeSymbol,
-                    initializationStrategy,
-                    properties: properties?.Values.ToImmutableEquatableArray(),
-                    constructorParameters: ctorParams?.ToImmutableEquatableArray(),
-                    initExceptionMessage);
+                Debug.Assert((objectSpec.CanInstantiate && objectSpec.InitExceptionMessage is null) ||
+                    (!objectSpec.CanInstantiate && objectSpec.InitExceptionMessage is not null) ||
+                    (!objectSpec.CanInstantiate && (objectSymbol.IsAbstract || objectSymbol.TypeKind is TypeKind.Interface)));
+
+                TryRegisterTypeForBindCoreGen(objectSpec);
+                return objectSpec;
             }
 
-            private static UnsupportedTypeSpec CreateUnsupportedCollectionSpec(TypeParseInfo typeParseInfo)
-                => CreateUnsupportedTypeSpec(typeParseInfo, NotSupportedReason.CollectionNotSupported);
+            private bool MemberTypeIsBindable(ITypeSymbol containingTypeSymbol, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor containingTypeDiagDescriptor, out TypeSpec? memberTypeSpec)
+            {
+                if (GetOrCreateTypeSpec(memberTypeSymbol) is TypeSpec { CanBindTo: true } spec)
+                {
+                    memberTypeSpec = spec;
+                    return true;
+                }
 
-            private static UnsupportedTypeSpec CreateUnsupportedTypeSpec(TypeParseInfo typeParseInfo, NotSupportedReason reason) =>
-                new(typeParseInfo.TypeSymbol) { NotSupportedReason = reason };
+                RegisterUnsupportedType(containingTypeSymbol, containingTypeDiagDescriptor);
+                memberTypeSpec = null;
+                return false;
+            }
 
-            private bool TryGetElementType(INamedTypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? elementType)
+            private bool TryGetElementType(INamedTypeSymbol type, out ITypeSymbol? elementType)
             {
                 INamedTypeSymbol? candidate = GetInterface(type, _typeSymbols.GenericIEnumerable_Unbound);
 
@@ -675,7 +745,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return false;
             }
 
-            private bool IsCandidateDictionary(INamedTypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? keyType, [NotNullWhen(true)] out ITypeSymbol? elementType)
+            private bool IsCandidateDictionary(INamedTypeSymbol type, out ITypeSymbol? keyType, out ITypeSymbol? elementType)
             {
                 INamedTypeSymbol? candidate = GetInterface(type, _typeSymbols.GenericIDictionary_Unbound) ?? GetInterface(type, _typeSymbols.IReadOnlyDictionary_Unbound);
 
@@ -701,13 +771,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private bool IsCollection(ITypeSymbol type) =>
                 type is INamedTypeSymbol namedType && GetInterface(namedType, _typeSymbols.IEnumerable) is not null;
 
-            private static INamedTypeSymbol? GetInterface(INamedTypeSymbol type, INamedTypeSymbol? @interface)
+            private bool IsSupportedArrayType(ITypeSymbol type)
             {
-                if (@interface is null)
+                if (type is not IArrayTypeSymbol arrayType)
                 {
-                    return null;
+                    return false;
                 }
 
+                if (arrayType.Rank > 1)
+                {
+                    RegisterUnsupportedType(arrayType, Diagnostics.MultiDimArraysNotSupported);
+                    return false;
+                }
+
+                return true;
+            }
+
+            private static INamedTypeSymbol? GetInterface(INamedTypeSymbol type, INamedTypeSymbol @interface)
+            {
                 if (IsInterfaceMatch(type, @interface))
                 {
                     return type;
@@ -724,13 +805,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return type.AllInterfaces.FirstOrDefault(candidate => SymbolEqualityComparer.Default.Equals(candidate, @interface));
             }
 
-            private static bool IsInterfaceMatch(INamedTypeSymbol type, INamedTypeSymbol? @interface)
+            private static bool IsInterfaceMatch(INamedTypeSymbol type, INamedTypeSymbol @interface)
             {
-                if (@interface is null)
-                {
-                    return false;
-                }
-
                 if (type.IsGenericType)
                 {
                     INamedTypeSymbol unbound = type.ConstructUnboundGenericType();
@@ -764,8 +840,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static bool HasAddMethod(INamedTypeSymbol type, ITypeSymbol element)
             {
-                INamedTypeSymbol? current = type;
-                while (current is not null)
+                INamedTypeSymbol current = type;
+                while (current != null)
                 {
                     if (current.GetMembers("Add").Any(member =>
                         member is IMethodSymbol { Parameters.Length: 1 } method &&
@@ -780,8 +856,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static bool HasAddMethod(INamedTypeSymbol type, ITypeSymbol key, ITypeSymbol element)
             {
-                INamedTypeSymbol? current = type;
-                while (current is not null)
+                INamedTypeSymbol current = type;
+                while (current != null)
                 {
                     if (current.GetMembers("Add").Any(member =>
                         member is IMethodSymbol { Parameters.Length: 2 } method &&
@@ -797,50 +873,39 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static bool IsEnum(ITypeSymbol type) => type is INamedTypeSymbol { EnumUnderlyingType: INamedTypeSymbol { } };
 
-            private void RecordTypeDiagnosticIfRequired(TypeParseInfo typeParseInfo, TypeSpec typeSpec)
-            {
-                ContainingTypeDiagnosticInfo? containingTypeDiagInfo = typeParseInfo.ContainingTypeDiagnosticInfo;
+            private CollectionSpec? ConstructGenericCollectionSpecIfRequired(INamedTypeSymbol? collectionType, params ITypeSymbol[] parameters) =>
+                (collectionType is not null ? ConstructGenericCollectionSpec(collectionType, parameters) : null);
 
-                if (typeSpec is UnsupportedTypeSpec unsupportedTypeSpec)
-                {
-                    DiagnosticDescriptor descriptor = DiagnosticDescriptors.GetNotSupportedDescriptor(unsupportedTypeSpec.NotSupportedReason);
-                    RecordTypeDiagnostic(typeParseInfo, descriptor);
-                }
-                else if (containingTypeDiagInfo?.Descriptor == DiagnosticDescriptors.DictionaryKeyNotSupported &&
-                    typeSpec is not ParsableFromStringSpec)
-                {
-                    ReportContainingTypeDiagnosticIfRequired(typeParseInfo);
-                }
+            private CollectionSpec? ConstructGenericCollectionSpec(INamedTypeSymbol type, params ITypeSymbol[] parameters)
+            {
+                Debug.Assert(type.IsGenericType);
+                INamedTypeSymbol constructedType = type.Construct(parameters);
+                return CreateCollectionSpec(constructedType);
             }
 
-            private void RecordTypeDiagnostic(TypeParseInfo typeParseInfo, DiagnosticDescriptor descriptor)
+            private void RegisterUnsupportedType(ITypeSymbol type, DiagnosticDescriptor descriptor = null)
             {
-                RecordDiagnostic(descriptor, typeParseInfo.BinderInvocation.Location, new object?[] { typeParseInfo.TypeName });
-                ReportContainingTypeDiagnosticIfRequired(typeParseInfo);
-            }
+                InvocationDiagnosticInfo diagInfo = new(descriptor, new string[] { type.ToDisplayString() });
 
-            private void ReportContainingTypeDiagnosticIfRequired(TypeParseInfo typeParseInfo)
-            {
-                ContainingTypeDiagnosticInfo? containingTypeDiagInfo = typeParseInfo.ContainingTypeDiagnosticInfo;
-
-                while (containingTypeDiagInfo is not null)
+                if (!_unsupportedTypes.Contains(type))
                 {
-                    string containingTypeName = containingTypeDiagInfo.TypeName;
-
-                    object[] messageArgs = containingTypeDiagInfo.MemberName is string memberName
-                        ? new[] { memberName, containingTypeName }
-                        : new[] { containingTypeName };
-
-                    RecordDiagnostic(containingTypeDiagInfo.Descriptor, typeParseInfo.BinderInvocation.Location, messageArgs);
-
-                    containingTypeDiagInfo = containingTypeDiagInfo.ContainingTypeInfo;
+                    RegisterTypeDiagnostic(type, diagInfo);
+                    _unsupportedTypes.Add(type);
                 }
+
+                _invocationTargetTypeDiags.Add(diagInfo);
             }
 
-            private void RecordDiagnostic(DiagnosticDescriptor descriptor, Location trimmedLocation, params object?[]? messageArgs)
+            private void RegisterTypeDiagnostic(ITypeSymbol causingType, InvocationDiagnosticInfo info)
             {
-                Diagnostics ??= new List<DiagnosticInfo>();
-                Diagnostics.Add(DiagnosticInfo.Create(descriptor, trimmedLocation, messageArgs));
+                bool typeHadDiags = _typeDiagnostics.TryGetValue(causingType, out HashSet<InvocationDiagnosticInfo>? typeDiags);
+                typeDiags ??= new HashSet<InvocationDiagnosticInfo>();
+                typeDiags.Add(info);
+
+                if (!typeHadDiags)
+                {
+                    _typeDiagnostics[causingType] = typeDiags;
+                }
             }
         }
     }

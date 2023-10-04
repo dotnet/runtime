@@ -18,9 +18,5 @@ namespace System
         [DoesNotReturn]
         public static void ThrowArgument_SpansMustBeNonEmpty() =>
             throw new ArgumentException(SR.Argument_SpansMustBeNonEmpty);
-
-        [DoesNotReturn]
-        public static void ThrowArgument_InputAndDestinationSpanMustNotOverlap() =>
-            throw new ArgumentException(SR.Argument_InputAndDestinationSpanMustNotOverlap, "destination");
     }
 }

@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
-using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {

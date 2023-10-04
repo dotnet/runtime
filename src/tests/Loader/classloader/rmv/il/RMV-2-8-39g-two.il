@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
-.assembly extern xunit.core {}
 /* RDawson - 11/2/200
 
    Checks that we can specify a enum with one integral field
@@ -11,15 +10,12 @@
 .assembly boo{}
 .assembly extern mscorlib {}
 
-.class public Foo extends [mscorlib]System.Enum{
+.class Foo extends [mscorlib]System.Enum{
 	.field public static literal int32 Bar = int32(0)
 	.field public specialname rtspecialname int32 value__
 }
 
 .method public static int32 main(){
-	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-	    01 00 00 00
-	)
 	.locals (value class Foo)
 	.entrypoint
 	.maxstack 8

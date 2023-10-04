@@ -47,7 +47,7 @@ namespace System.Reflection
         // used by EE
         private IntPtr GetMethodDesc() { return MethodHandle.Value; }
 
-        internal virtual ReadOnlySpan<ParameterInfo> GetParametersAsSpan() { return GetParameters(); }
+        internal virtual ParameterInfo[] GetParametersNoCopy() { return GetParameters(); }
         #endregion
     }
 }

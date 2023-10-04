@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for CrossGenTest -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <OutputType>Exe</OutputType>
 
     <!-- Crossgen2 currently doesn't support this negative check - that should be fine as runtime behavior is undefined in the presence of invalid IL. -->
     <CrossGenTest>false</CrossGenTest>

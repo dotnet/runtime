@@ -5,13 +5,11 @@
 // test was asserting.
 
 using System;
-using Xunit;
 
 public class Test_VSW576621
 
 {
-   [Fact]
-   public static int TestEntryPoint()
+   public static int Main()
    {
   
       	C2 obj2 = new C2();

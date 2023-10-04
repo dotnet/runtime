@@ -3,15 +3,13 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Xunit;
 
 public class Program
 {
     [DllImport("libc", EntryPoint = "setlocale")]
     public static extern IntPtr setlocale(int category, [MarshalAs(UnmanagedType.LPStr)] string locale);
 
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         Assembly a1 = Assembly.GetExecutingAssembly();
 

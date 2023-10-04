@@ -1,8 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
-using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -10,9 +10,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed partial class Emitter
         {
+            private bool ShouldEmitMethods(MethodsToGen_ConfigurationBinder methods) => (_sourceGenSpec.MethodsToGen_ConfigurationBinder & methods) != 0;
+
             private void EmitBindingExtensions_IConfiguration()
             {
-                if (!ShouldEmitMethods(MethodsToGen.ConfigBinder_Any))
+                if (!ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Any))
                 {
                     return;
                 }
@@ -29,30 +31,30 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 const string expressionForGetCore = nameof(MethodsToGen_CoreBindingHelper.GetCore);
                 const string documentation = "Attempts to bind the configuration instance to a new instance of type T.";
 
-                if (ShouldEmitMethods(MethodsToGen.ConfigBinder_Get_T))
+                if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Get_T))
                 {
-                    EmitStartDefinition_Get_Or_GetValue_Overload(MethodsToGen.ConfigBinder_Get_T, documentation);
+                    StartMethodDefinition(MethodsToGen_ConfigurationBinder.Get_T, documentation);
                     _writer.WriteLine($"public static T? {Identifier.Get}<T>(this {Identifier.IConfiguration} {Identifier.configuration}) => " +
                         $"(T?)({expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureOptions}: null) ?? default(T));");
                 }
 
-                if (ShouldEmitMethods(MethodsToGen.ConfigBinder_Get_T_BinderOptions))
+                if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Get_T_BinderOptions))
                 {
-                    EmitStartDefinition_Get_Or_GetValue_Overload(MethodsToGen.ConfigBinder_Get_T_BinderOptions, documentation);
+                    StartMethodDefinition(MethodsToGen_ConfigurationBinder.Get_T_BinderOptions, documentation);
                     _writer.WriteLine($"public static T? {Identifier.Get}<T>(this {Identifier.IConfiguration} {Identifier.configuration}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}) => " +
                         $"(T?)({expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureOptions}) ?? default(T));");
                 }
 
-                if (ShouldEmitMethods(MethodsToGen.ConfigBinder_Get_TypeOf))
+                if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Get_TypeOf))
                 {
-                    EmitStartDefinition_Get_Or_GetValue_Overload(MethodsToGen.ConfigBinder_Get_TypeOf, documentation);
+                    StartMethodDefinition(MethodsToGen_ConfigurationBinder.Get_TypeOf, documentation);
                     _writer.WriteLine($"public static object? {Identifier.Get}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}) => " +
                         $"{expressionForGetCore}({Identifier.configuration}, {Identifier.type}, {Identifier.configureOptions}: null);");
                 }
 
-                if (ShouldEmitMethods(MethodsToGen.ConfigBinder_Get_TypeOf_BinderOptions))
+                if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Get_TypeOf_BinderOptions))
                 {
-                    EmitStartDefinition_Get_Or_GetValue_Overload(MethodsToGen.ConfigBinder_Get_TypeOf_BinderOptions, documentation);
+                    StartMethodDefinition(MethodsToGen_ConfigurationBinder.Get_TypeOf_BinderOptions, documentation);
                     _writer.WriteLine($"public static object? {Identifier.Get}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}) => " +
                         $"{expressionForGetCore}({Identifier.configuration}, {Identifier.type}, {Identifier.configureOptions});");
                 }
@@ -63,30 +65,30 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 const string expressionForGetValueCore = $"{Identifier.BindingExtensions}.{nameof(MethodsToGen_CoreBindingHelper.GetValueCore)}";
                 const string documentation = "Extracts the value with the specified key and converts it to the specified type.";
 
-                if (ShouldEmitMethods(MethodsToGen.ConfigBinder_GetValue_T_key))
+                if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.GetValue_T_key))
                 {
-                    EmitStartDefinition_Get_Or_GetValue_Overload(MethodsToGen.ConfigBinder_GetValue_T_key, documentation);
+                    StartMethodDefinition(MethodsToGen_ConfigurationBinder.GetValue_T_key, documentation);
                     _writer.WriteLine($"public static T? {Identifier.GetValue}<T>(this {Identifier.IConfiguration} {Identifier.configuration}, string {Identifier.key}) => " +
                         $"(T?)({expressionForGetValueCore}({Identifier.configuration}, typeof(T), {Identifier.key}) ?? default(T));");
                 }
 
-                if (ShouldEmitMethods(MethodsToGen.ConfigBinder_GetValue_T_key_defaultValue))
+                if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.GetValue_T_key_defaultValue))
                 {
-                    EmitStartDefinition_Get_Or_GetValue_Overload(MethodsToGen.ConfigBinder_GetValue_T_key_defaultValue, documentation);
+                    StartMethodDefinition(MethodsToGen_ConfigurationBinder.GetValue_T_key_defaultValue, documentation);
                     _writer.WriteLine($"public static T? {Identifier.GetValue}<T>(this {Identifier.IConfiguration} {Identifier.configuration}, string {Identifier.key}, T {Identifier.defaultValue}) => " +
                         $"(T?)({expressionForGetValueCore}({Identifier.configuration}, typeof(T), {Identifier.key}) ?? {Identifier.defaultValue});");
                 }
 
-                if (ShouldEmitMethods(MethodsToGen.ConfigBinder_GetValue_TypeOf_key))
+                if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.GetValue_TypeOf_key))
                 {
-                    EmitStartDefinition_Get_Or_GetValue_Overload(MethodsToGen.ConfigBinder_GetValue_TypeOf_key, documentation);
+                    StartMethodDefinition(MethodsToGen_ConfigurationBinder.GetValue_TypeOf_key, documentation);
                     _writer.WriteLine($"public static object? {Identifier.GetValue}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, string {Identifier.key}) => " +
                         $"{expressionForGetValueCore}({Identifier.configuration}, {Identifier.type}, {Identifier.key});");
                 }
 
-                if (ShouldEmitMethods(MethodsToGen.ConfigBinder_GetValue_TypeOf_key_defaultValue))
+                if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.GetValue_TypeOf_key_defaultValue))
                 {
-                    EmitStartDefinition_Get_Or_GetValue_Overload(MethodsToGen.ConfigBinder_GetValue_TypeOf_key_defaultValue, documentation);
+                    StartMethodDefinition(MethodsToGen_ConfigurationBinder.GetValue_TypeOf_key_defaultValue, documentation);
                     _writer.WriteLine($"public static object? {Identifier.GetValue}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, string {Identifier.key}, object? {Identifier.defaultValue}) => " +
                         $"{expressionForGetValueCore}({Identifier.configuration}, {Identifier.type}, {Identifier.key}) ?? {Identifier.defaultValue};");
                 }
@@ -94,52 +96,50 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindMethods_ConfigurationBinder()
             {
-                if (!ShouldEmitMethods(MethodsToGen.ConfigBinder_Bind))
+                if (!ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Bind))
                 {
                     return;
                 }
 
                 string instanceParamExpr = $"object? {Identifier.instance}";
 
-                if (ShouldEmitMethods(MethodsToGen.ConfigBinder_Bind_instance))
+                if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Bind_instance))
                 {
                     EmitMethods(
-                        _interceptorInfo.ConfigBinder_Bind_instance,
+                        MethodsToGen_ConfigurationBinder.Bind_instance,
                         additionalParams: instanceParamExpr,
                         configExpression: Identifier.configuration,
                         configureOptions: false);
                 }
 
-                if (ShouldEmitMethods(MethodsToGen.ConfigBinder_Bind_instance_BinderOptions))
+                if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions))
                 {
                     EmitMethods(
-                        _interceptorInfo.ConfigBinder_Bind_instance_BinderOptions,
+                        MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions,
                         additionalParams: $"{instanceParamExpr}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions}",
                         configExpression: Identifier.configuration,
                         configureOptions: true);
                 }
 
-                if (ShouldEmitMethods(MethodsToGen.ConfigBinder_Bind_key_instance))
+                if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Bind_key_instance))
                 {
                     EmitMethods(
-                        _interceptorInfo.ConfigBinder_Bind_key_instance,
+                        MethodsToGen_ConfigurationBinder.Bind_key_instance,
                         additionalParams: $"string {Identifier.key}, {instanceParamExpr}",
                         configExpression: $"{Expression.configurationGetSection}({Identifier.key})",
                         configureOptions: false);
                 }
 
-                void EmitMethods(ImmutableEquatableArray<TypedInterceptorInvocationInfo>? interceptorInfo, string additionalParams, string configExpression, bool configureOptions)
+                void EmitMethods(MethodsToGen_ConfigurationBinder method, string additionalParams, string configExpression, bool configureOptions)
                 {
-                    Debug.Assert(interceptorInfo is not null);
-
-                    foreach ((ComplexTypeSpec type, ImmutableEquatableArray<InvocationLocationInfo> locations) in interceptorInfo)
+                    foreach ((ComplexTypeSpec type, List<InterceptorLocationInfo> interceptorInfoList) in _sourceGenSpec.InterceptionInfo_ConfigBinder.GetOverloadInfo(method))
                     {
                         EmitBlankLineIfRequired();
                         _writer.WriteLine($"/// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>");
-                        EmitInterceptsLocationAnnotations(locations);
+                        EmitInterceptsLocationAnnotations(interceptorInfoList);
                         EmitStartBlock($"public static void {Identifier.Bind}_{type.IdentifierCompatibleSubstring}(this {Identifier.IConfiguration} {Identifier.configuration}, {additionalParams})");
 
-                        if (_typeIndex.HasBindableMembers(type))
+                        if (type.HasBindableMembers)
                         {
                             Debug.Assert(!type.IsValueType);
                             string binderOptionsArg = configureOptions ? $"{Identifier.GetBinderOptions}({Identifier.configureOptions})" : $"{Identifier.binderOptions}: null";
@@ -147,7 +147,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
                             EmitCheckForNullArgument_WithBlankLine(Identifier.instance, voidReturn: true);
                             _writer.WriteLine($$"""
-                                var {{Identifier.typedObj}} = ({{type.DisplayString}}){{Identifier.instance}};
+                                var {{Identifier.typedObj}} = ({{type.EffectiveType.DisplayString}}){{Identifier.instance}};
                                 {{nameof(MethodsToGen_CoreBindingHelper.BindCore)}}({{configExpression}}, ref {{Identifier.typedObj}}, defaultValueIfNotFound: false, {{binderOptionsArg}});
                                 """);
                         }
@@ -157,11 +157,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private void EmitStartDefinition_Get_Or_GetValue_Overload(MethodsToGen overload, string documentation)
+            private void StartMethodDefinition(MethodsToGen_ConfigurationBinder method, string documentation)
             {
                 EmitBlankLineIfRequired();
                 _writer.WriteLine($"/// <summary>{documentation}</summary>");
-                EmitInterceptsLocationAnnotations(overload);
+                EmitInterceptsLocationAnnotations(method);
             }
         }
     }

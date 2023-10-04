@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    public sealed record PropertySpec : MemberSpec
+    internal sealed record PropertySpec : MemberSpec
     {
         public PropertySpec(IPropertySymbol property) : base(property)
         {
@@ -28,5 +28,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public override bool CanGet { get; }
 
         public override bool CanSet { get; }
+
+        public bool ShouldBindTo => CanGet || CanSet;
     }
 }

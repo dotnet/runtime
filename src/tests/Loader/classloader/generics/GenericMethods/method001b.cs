@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 public class Foo 
 {
@@ -28,8 +27,7 @@ public class Test_method001b : Foo
 	
 	}
 	
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		Test_method001b t = new Test_method001b();
 

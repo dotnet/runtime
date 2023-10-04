@@ -8,7 +8,6 @@
 //results in a call to Foo1's method A instead of Foo2's method A.
 
 using System;
-using Xunit;
 
 class Foo3 : Foo2, IFoo
 {
@@ -18,10 +17,9 @@ class Bar3<T> : Bar2<T>, IBar<T>
 {
 }
 
-public class MainClass
+class MainClass
 {
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{
 		bool ok = true;
         int result;

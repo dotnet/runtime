@@ -17,7 +17,7 @@ namespace System.Reflection
         internal MethodInvoker(RuntimeMethodInfo method)
         {
             _methodBaseInvoker = method.MethodInvoker;
-            _parameterCount = method.GetParametersAsSpan().Length;
+            _parameterCount = method.GetParametersNoCopy().Length;
         }
 
         internal MethodInvoker(RuntimeConstructorInfo constructor)

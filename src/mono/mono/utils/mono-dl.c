@@ -12,6 +12,7 @@
 #include "config.h"
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-dl.h"
+#include "mono/utils/mono-embed.h"
 #include "mono/utils/mono-path.h"
 #include "mono/utils/mono-threads-api.h"
 #include "mono/utils/mono-error-internals.h"

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
-.assembly extern xunit.core {}
 .assembly BIGDAT {}
 .assembly extern mscorlib{}
 .module BIGDAT
@@ -23,9 +22,6 @@
 
   .method static public int32 BIGDAT()
   {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
     .entrypoint
             newobj      instance void BIGDAT/WS_TYPE::.ctor ()
             stsfld      class BIGDAT/WS_TYPE BIGDAT::WS_DATA

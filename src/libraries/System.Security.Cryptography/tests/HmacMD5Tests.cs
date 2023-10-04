@@ -15,10 +15,8 @@ namespace System.Security.Cryptography.Tests
         public sealed class Traits : IHmacTrait
         {
             public static bool IsSupported => true;
-            public static int HashSizeInBytes => HMACMD5.HashSizeInBytes;
+            public static int HashSizeInBytes => HMACSHA1.HashSizeInBytes;
         }
-
-        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.MD5;
 
         private static readonly byte[][] s_testKeys2202 =
         {

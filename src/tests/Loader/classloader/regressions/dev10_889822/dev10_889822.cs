@@ -3,27 +3,24 @@
 
 using System;
 using System.IO;
-using Xunit;
 
 interface IFoo {
     void foo();
 }
 
-public class My
-{
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        try {
-           IFoo s = null;
-           s.foo();        
-        }
-        catch (NullReferenceException) {
-            Console.WriteLine("Successfully caught a null reference exception.");
-            return 100;
-        }
-        
-        Console.WriteLine("Failed!!");
-        return -1;
-    }
+class My {
+	static int Main()
+	{
+		try {
+		   IFoo s = null;
+		   s.foo();		   
+		}
+		catch (NullReferenceException) {
+			Console.WriteLine("Successfully caught a null reference exception.");
+			return 100;
+		}
+		
+		Console.WriteLine("Failed!!");
+		return -1;
+	}
 }

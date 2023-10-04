@@ -103,8 +103,8 @@ namespace System.Diagnostics.Tracing
                 new EventPipeProviderConfiguration(NativeRuntimeEventSource.EventSourceName, (ulong)aggregatedKeywords, (uint)enableLevel, null)
             };
 
-            ulong sessionID = EventPipeInternal.Enable(null, EventPipeSerializationFormat.NetTrace, DefaultEventListenerCircularMBSize, providerConfiguration);
-            if (sessionID == 0)
+            m_sessionID = EventPipeInternal.Enable(null, EventPipeSerializationFormat.NetTrace, DefaultEventListenerCircularMBSize, providerConfiguration);
+            if (m_sessionID == 0)
             {
                 throw new EventSourceException(SR.EventSource_CouldNotEnableEventPipe);
             }
@@ -113,7 +113,7 @@ namespace System.Diagnostics.Tracing
             EventPipeSessionInfo sessionInfo;
             unsafe
             {
-                if (!EventPipeInternal.GetSessionInfo(sessionID, &sessionInfo))
+                if (!EventPipeInternal.GetSessionInfo(m_sessionID, &sessionInfo))
                 {
                     Debug.Fail("GetSessionInfo returned false.");
                 }
@@ -124,11 +124,8 @@ namespace System.Diagnostics.Tracing
             long syncTimeQPC = sessionInfo.StartTimeStamp;
             long timeQPCFrequency = sessionInfo.TimeStampFrequency;
 
-            Debug.Assert(Volatile.Read(ref m_sessionID) == 0);
-            Volatile.Write(ref m_sessionID, sessionID);
-
             // Start the dispatch task.
-            StartDispatchTask(sessionID, syncTimeUtc, syncTimeQPC, timeQPCFrequency);
+            StartDispatchTask(m_sessionID, syncTimeUtc, syncTimeQPC, timeQPCFrequency);
         }
 
         private void StartDispatchTask(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency)
@@ -145,16 +142,12 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
 
-            if (m_dispatchTaskCancellationSource?.IsCancellationRequested ?? true)
+            if (m_dispatchTask != null)
             {
-                return;
+                Debug.Assert(m_dispatchTaskCancellationSource != null);
+                m_dispatchTaskCancellationSource?.Cancel();
+                EventPipeInternal.SignalSession(m_sessionID);
             }
-
-            ulong sessionID = Volatile.Read(ref m_sessionID);
-            Debug.Assert(sessionID != 0);
-            m_dispatchTaskCancellationSource.Cancel();
-            EventPipeInternal.SignalSession(sessionID);
-            Volatile.Write(ref m_sessionID, 0);
         }
 
         private unsafe void DispatchEventsToEventListeners(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency, Task? previousDispatchTask, CancellationToken token)
@@ -194,16 +187,7 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            // Wait for SignalSession() to be called before we call disable, otherwise
-            // the SignalSession() call could be on a disabled session.
-            SpinWait sw = default;
-            while (Volatile.Read(ref m_sessionID) == sessionID)
-            {
-                sw.SpinOnce();
-            }
-
-            // Disable the old session. This can happen asynchronously since we aren't using the old session
-            // anymore.
+            // Disable the old session. This can happen asynchronously since we aren't using the old session anymore
             EventPipeInternal.Disable(sessionID);
         }
 

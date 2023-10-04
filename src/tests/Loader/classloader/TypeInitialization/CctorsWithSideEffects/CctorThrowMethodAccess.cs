@@ -13,7 +13,6 @@ Expected: Should return the same exception.
 */
 
 using System;
-using Xunit;
 
 // TEST1
 // static method access
@@ -383,8 +382,7 @@ public class Test_CctorThrowMethodAccess
 	}
 
 	
-	[Fact]
-	public static int TestEntryPoint()
+	public static int Main()
 	{ 
 		bool pass = true;
 		

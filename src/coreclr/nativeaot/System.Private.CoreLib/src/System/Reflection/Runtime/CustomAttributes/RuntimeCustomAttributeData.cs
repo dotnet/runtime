@@ -72,7 +72,7 @@ namespace System.Reflection.Runtime.CustomAttributes
             int parameterCount = parameterTypes.Length;
             foreach (ConstructorInfo candidate in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
-                ReadOnlySpan<ParameterInfo> candidateParameters = candidate.GetParametersAsSpan();
+                ParameterInfo[] candidateParameters = candidate.GetParametersNoCopy();
                 if (parameterCount != candidateParameters.Length)
                     continue;
 

@@ -16,8 +16,10 @@ namespace System.Security.Cryptography.Tests
             public static int HashSizeInBytes => SHA1.HashSizeInBytes;
         }
 
-        protected override HashAlgorithm Create() => SHA1.Create();
-        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.SHA1;
+        protected override HashAlgorithm Create()
+        {
+            return SHA1.Create();
+        }
 
         protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {

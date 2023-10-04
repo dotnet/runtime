@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
 
 public interface IPublisher<out TData>
 {
@@ -112,10 +111,10 @@ public class ProgramBase<TT> : TestItf4<TT>
 
 public class Program : ProgramBase<InputData>, TestItf2<InputData>
 {
-    [Fact]
-    public static void TestEntryPoint()
+    static int Main()
     {
         new Program().Start();
+        return 100;
     }
 
     public void Start()

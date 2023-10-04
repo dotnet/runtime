@@ -24,7 +24,7 @@ namespace Microsoft.Interop.JavaScript
             ContainingSyntax StubMethodSyntaxTemplate,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSExportData JSExportData,
-            MarshallingGeneratorFactoryKey<JSGeneratorOptions> GeneratorFactoryKey,
+            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion, JSGeneratorOptions)> GeneratorFactoryKey,
             SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
         public static class StepNames
@@ -214,14 +214,14 @@ namespace Microsoft.Interop.JavaScript
                 methodSyntaxTemplate,
                 locations,
                 jsExportData,
-                CreateGeneratorFactory(options),
+                CreateGeneratorFactory(environment, options),
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
-        private static MarshallingGeneratorFactoryKey<JSGeneratorOptions> CreateGeneratorFactory(JSGeneratorOptions options)
+        private static MarshallingGeneratorFactoryKey<(TargetFramework, Version, JSGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, JSGeneratorOptions options)
         {
             JSGeneratorFactory jsGeneratorFactory = new JSGeneratorFactory();
-            return MarshallingGeneratorFactoryKey.Create(options, jsGeneratorFactory);
+            return MarshallingGeneratorFactoryKey.Create((env.TargetFramework, env.TargetFrameworkVersion, options), jsGeneratorFactory);
         }
 
         private static NamespaceDeclarationSyntax GenerateRegSource(
@@ -294,6 +294,8 @@ namespace Microsoft.Interop.JavaScript
 
             // Generate stub code
             var stubGenerator = new JSExportCodeGenerator(
+                incrementalContext.GeneratorFactoryKey.Key.TargetFramework,
+                incrementalContext.GeneratorFactoryKey.Key.TargetFrameworkVersion,
                 incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
                 incrementalContext.JSExportData,
                 incrementalContext.SignatureContext,

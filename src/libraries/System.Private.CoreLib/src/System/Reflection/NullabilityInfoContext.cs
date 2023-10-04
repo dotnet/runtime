@@ -86,47 +86,35 @@ namespace System.Reflection
 
         private void CheckParameterMetadataType(ParameterInfo parameter, NullabilityInfo nullability)
         {
-            ParameterInfo? metaParameter;
-            MemberInfo metaMember;
-
-            switch (parameter.Member)
+            if (parameter.Member is MethodInfo method)
             {
-                case ConstructorInfo ctor:
-                    var metaCtor = (ConstructorInfo)GetMemberMetadataDefinition(ctor);
-                    metaMember = metaCtor;
-                    metaParameter = GetMetaParameter(metaCtor, parameter);
-                    break;
-
-                case MethodInfo method:
-                    MethodInfo metaMethod = GetMethodMetadataDefinition(method);
-                    metaMember = metaMethod;
-                    metaParameter = string.IsNullOrEmpty(parameter.Name) ? metaMethod.ReturnParameter : GetMetaParameter(metaMethod, parameter);
-                    break;
-
-                default:
-                    return;
-            }
-
-            if (metaParameter != null)
-            {
-                CheckGenericParameters(nullability, metaMember, metaParameter.ParameterType, parameter.Member.ReflectedType);
-            }
-        }
-
-        private static ParameterInfo? GetMetaParameter(MethodBase metaMethod, ParameterInfo parameter)
-        {
-            ReadOnlySpan<ParameterInfo> parameters = metaMethod.GetParametersAsSpan();
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                if (parameter.Position == i &&
-                    parameter.Name == parameters[i].Name)
+                MethodInfo metaMethod = GetMethodMetadataDefinition(method);
+                ParameterInfo? metaParameter = null;
+                if (string.IsNullOrEmpty(parameter.Name))
                 {
-                    return parameters[i];
+                    metaParameter = metaMethod.ReturnParameter;
+                }
+                else
+                {
+                    ParameterInfo[] parameters = metaMethod.GetParameters();
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        if (parameter.Position == i &&
+                            parameter.Name == parameters[i].Name)
+                        {
+                            metaParameter = parameters[i];
+                            break;
+                        }
+                    }
+                }
+
+                if (metaParameter != null)
+                {
+                    CheckGenericParameters(nullability, metaMethod, metaParameter.ParameterType, parameter.Member.ReflectedType);
                 }
             }
-
-            return null;
         }
+
         private static MethodInfo GetMethodMetadataDefinition(MethodInfo method)
         {
             if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
@@ -212,7 +200,7 @@ namespace System.Reflection
 
             if (setter != null)
             {
-                CheckNullabilityAttributes(nullability, setter.GetParametersAsSpan()[^1].GetCustomAttributesData());
+                CheckNullabilityAttributes(nullability, setter.GetParameters()[^1].GetCustomAttributesData());
             }
             else
             {
@@ -456,7 +444,7 @@ namespace System.Reflection
                 return method.ReturnType;
             }
 
-            return property.GetSetMethod(true)!.GetParametersAsSpan()[0].ParameterType;
+            return property.GetSetMethod(true)!.GetParameters()[0].ParameterType;
         }
 
         private void CheckGenericParameters(NullabilityInfo nullability, MemberInfo metaMember, Type metaType, Type? reflectedType)

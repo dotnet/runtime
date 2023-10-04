@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-public unsafe class Validate
+unsafe class Validate
 {
     [Fact]
     public static void Explicit_Fails()
