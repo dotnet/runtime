@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Text;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
-using System.Text.RegularExpressions;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -41,16 +39,6 @@ namespace System.Text.Json.Serialization.Converters
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
         private const int NameCacheSizeSoftLimit = 64;
-        private static readonly Regex s_numericRegex = NumericRegex();
-        private const string NumericRegexPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
-        private const int NumericRegexTimeoutMs = 200;
-
-#if NETCOREAPP
-        [GeneratedRegex(NumericRegexPattern, MatchTimeoutMilliseconds = NumericRegexTimeoutMs)]
-        private static partial Regex NumericRegex();
-#else
-        private static Regex NumericRegex() => new(NumericRegexPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(NumericRegexTimeoutMs));
-#endif
 
         public override bool CanConvert(Type type)
         {
@@ -384,7 +372,7 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success;
             T result;
-            if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0 || !s_numericRegex.IsMatch(source))
+            if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0 || !JsonHelpers.IntegerRegex.IsMatch(source))
             {
                 // Try parsing case sensitive first
                 success = Enum.TryParse(source, out result) || Enum.TryParse(source, ignoreCase: true, out result);
@@ -407,7 +395,7 @@ namespace System.Text.Json.Serialization.Converters
 #else
         private bool TryParseEnumCore(string? enumString, JsonSerializerOptions _, out T value)
         {
-            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0 && s_numericRegex.IsMatch(enumString))
+            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0 && JsonHelpers.IntegerRegex.IsMatch(enumString))
             {
                 value = default;
                 return false;
