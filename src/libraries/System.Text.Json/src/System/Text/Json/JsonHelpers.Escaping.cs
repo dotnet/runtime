@@ -53,31 +53,11 @@ namespace System.Text.Json
             return escapedString;
         }
 
-        public static string GetPropertyName(
+        public static string GetEscapedPropertyName(
             string rawPropertyName,
             JavaScriptEncoder? encoder)
         {
-            int indexOfFirstCharacterToEncode;
-            string returnValue;
-
-            indexOfFirstCharacterToEncode = JsonWriterHelper.NeedsEscaping(rawPropertyName.AsSpan(), encoder);
-
-            if (indexOfFirstCharacterToEncode != -1)
-            {
-                returnValue = GetEscapedPropertyName(rawPropertyName, encoder);
-            }
-            else
-            {
-                returnValue = rawPropertyName;
-            }
-
-            return returnValue;
-        }
-
-        private static string GetEscapedPropertyName(
-            string rawPropertyName,
-            JavaScriptEncoder? encoder)
-        {
+            Debug.Assert(JsonWriterHelper.NeedsEscaping(rawPropertyName.AsSpan(), encoder) != -1);
             return (encoder ?? JavaScriptEncoder.Default).Encode(rawPropertyName);
         }
 
