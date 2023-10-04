@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="Unloaded.csproj" />
+    <ProjectReference Include="StaticsUnloaded.csproj" />
     <ProjectReference Include="Accessor.csproj" />
     <Compile Include="CollectibleStatics.cs" />
   </ItemGroup>
