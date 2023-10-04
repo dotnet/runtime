@@ -2937,8 +2937,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // Add an ordering dependency between the bounds check and
                 // forming the byref to prevent these from being reordered. The
                 // JIT is not allowed to create arbitrary illegal byrefs.
-                boundsCheck->gtFlags |= GTF_ORDER_SIDEEFF;
-                result->gtFlags |= GTF_ORDER_SIDEEFF;
+                boundsCheck->SetHasOrderingSideEffect();
+                result->SetHasOrderingSideEffect();
                 retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
 
                 break;

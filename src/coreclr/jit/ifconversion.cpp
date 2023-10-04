@@ -793,5 +793,10 @@ PhaseStatus Compiler::optIfConversion()
     }
 #endif
 
+    if (madeChanges)
+    {
+        fgRenumberBlocks();
+    }
+
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

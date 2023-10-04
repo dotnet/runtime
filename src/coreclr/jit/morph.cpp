@@ -4558,8 +4558,8 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // dependency, so make sure this dependency remains visible. Also, the
         // JIT is not allowed to create arbitrary byrefs, so we must make sure
         // the address is not reordered with the bounds check.
-        boundsCheck->gtFlags |= GTF_ORDER_SIDEEFF;
-        addr->gtFlags |= GTF_ORDER_SIDEEFF;
+        boundsCheck->SetHasOrderingSideEffect();
+        addr->SetHasOrderingSideEffect();
 
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), boundsCheck, tree);
         fgSetRngChkTarget(boundsCheck);
@@ -5116,7 +5116,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         GenTree* lclVar  = gtNewLclvNode(lclNum, objRefType);
         GenTree* nullchk = gtNewNullCheck(lclVar, compCurBB);
 
-        nullchk->gtFlags |= GTF_ORDER_SIDEEFF;
+        nullchk->SetHasOrderingSideEffect();
 
         if (store != nullptr)
         {
@@ -5129,10 +5129,6 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         }
 
         addr = gtNewLclvNode(lclNum, objRefType); // Use "tmpLcl" to create "addr" node.
-
-        // Ensure the creation of the byref does not get reordered with the
-        // null check, as that could otherwise create an illegal byref.
-        addr->gtFlags |= GTF_ORDER_SIDEEFF;
     }
     else
     {
@@ -9893,18 +9889,18 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
     GenTree* addr = indir->Addr();
 
 #ifdef TARGET_ARM
-    GenTree* effAddr = addr->gtEffectiveVal(true);
-    // Check for a misalignment floating point indirection.
-    if (effAddr->OperIs(GT_ADD) && varTypeIsFloating(indir))
+    if (varTypeIsFloating(indir))
     {
-        GenTree* addOp2 = effAddr->gtGetOp2();
-        if (addOp2->IsCnsIntOrI())
+        // Check for a misaligned floating point indirection.
+        GenTree*       effAddr = addr->gtEffectiveVal(true);
+        target_ssize_t offset;
+        FieldSeq*      fldSeq;
+        gtPeelOffsets(&effAddr, &offset, &fldSeq);
+
+        if (((offset % genTypeSize(TYP_FLOAT)) != 0) ||
+            (effAddr->IsCnsIntOrI() && ((effAddr->AsIntConCommon()->IconValue() % genTypeSize(TYP_FLOAT)) != 0)))
         {
-            ssize_t offset = addOp2->AsIntCon()->IconValue();
-            if ((offset % genTypeSize(TYP_FLOAT)) != 0)
-            {
-                indir->gtFlags |= GTF_IND_UNALIGNED;
-            }
+            indir->gtFlags |= GTF_IND_UNALIGNED;
         }
     }
 #endif // TARGET_ARM

@@ -758,7 +758,7 @@
 
 } // end of class ResolutionAtRuntimeMethodParam
 
-.class private auto ansi beforefieldinit Program
+.class public auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  Negative() cil managed

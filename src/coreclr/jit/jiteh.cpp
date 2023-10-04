@@ -2379,7 +2379,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
-            arg->gtFlags |= GTF_ORDER_SIDEEFF;
+            arg->SetHasOrderingSideEffect();
             unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));
             lvaTable[tempNum].lvType = TYP_REF;
             GenTree* argStore        = gtNewTempStore(tempNum, arg);

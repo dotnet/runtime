@@ -25,10 +25,10 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            if (jsonTypeInfo.CreateObject != null || state.Current.IsPopulating)
+            if (!jsonTypeInfo.UsesParameterizedConstructor || state.Current.IsPopulating)
             {
                 // Fall back to default object converter in following cases:
-                // - if user has set a default constructor delegate with contract customization
+                // - if user configuration has invalidated the parameterized constructor
                 // - we're continuing populating an object.
                 return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
             }

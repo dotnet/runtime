@@ -503,7 +503,7 @@ uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, (Object* pObj1, Object* pObj2))
 {
-    ASSERT(pObj1->GetMethodTable()->IsEquivalentTo(pObj2->GetMethodTable()));
+    ASSERT(pObj1->GetMethodTable() == pObj2->GetMethodTable());
     ASSERT(pObj1->GetMethodTable()->IsValueType());
 
     MethodTable * pEEType = pObj1->GetMethodTable();

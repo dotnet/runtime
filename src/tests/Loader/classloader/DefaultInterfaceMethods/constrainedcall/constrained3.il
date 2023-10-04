@@ -41,7 +41,7 @@
   }
 }
 
-.class value Adder`1<T, U> implements class IFrobber`1<!T>, class IRobber`1<!U>, class IGrabber`1<!U[]>
+.class public value Adder`1<T, U> implements class IFrobber`1<!T>, class IRobber`1<!U>, class IGrabber`1<!U[]>
 {
 }
 
