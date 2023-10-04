@@ -97,8 +97,7 @@ namespace System.Security.Cryptography
 
             public override void Initialize()
             {
-                _state = default;
-                _state.Start();
+                _state = new();
             }
 
             public override void HashCore(byte[] partIn, int ibStart, int cbSize)

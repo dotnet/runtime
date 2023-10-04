@@ -14,18 +14,14 @@ namespace System
     internal struct Sha1ForNonSecretPurposes
     {
         private long _length; // Total message length in bits
-        private uint[] _w; // Workspace
+        private HashState _w; // Workspace
         private int _pos; // Length of current chunk in bytes
 
         /// <summary>
-        /// Call Start() to initialize the hash object.
+        /// Call the default constructor to initialize the hash object.
         /// </summary>
-        public void Start()
+        public Sha1ForNonSecretPurposes()
         {
-            _w ??= new uint[85];
-
-            _length = 0;
-            _pos = 0;
             _w[80] = 0x67452301;
             _w[81] = 0xEFCDAB89;
             _w[82] = 0x98BADCFE;
@@ -154,6 +150,12 @@ namespace System
 
             _length += 512; // 64 bytes == 512 bits
             _pos = 0;
+        }
+
+        [InlineArray(85)]
+        private struct HashState
+        {
+            uint _x;
         }
     }
 }

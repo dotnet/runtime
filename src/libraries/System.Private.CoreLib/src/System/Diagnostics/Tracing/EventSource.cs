@@ -1695,16 +1695,14 @@ namespace System.Diagnostics.Tracing
                 0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
             };
 
-            byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
-            Sha1ForNonSecretPurposes hash = default;
-            hash.Start();
+            Sha1ForNonSecretPurposes hash = new();
             hash.Append(namespaceBytes);
-            hash.Append(bytes);
-            Array.Resize(ref bytes, 16);
-            hash.Finish(bytes);
+            hash.Append(Encoding.BigEndianUnicode.GetBytes(name));
+            Span<byte> output = stackalloc byte[16];
+            hash.Finish(output);
 
-            bytes[7] = unchecked((byte)((bytes[7] & 0x0F) | 0x50));    // Set high 4 bits of octet 7 to 5, as per RFC 4122
-            return new Guid(bytes);
+            output[7] = unchecked((byte)((output[7] & 0x0F) | 0x50));    // Set high 4 bits of octet 7 to 5, as per RFC 4122
+            return new Guid(output);
         }
 
         private static unsafe void DecodeObjects(object?[] decodedObjects, Type[] parameterTypes, EventData* data)
@@ -5282,7 +5280,7 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// <term>Will NOT build a manifest!</term> If the intention is to build a manifest don’t use this constructor.
+        /// <term>Will NOT build a manifest!</term> If the intention is to build a manifest donï¿½t use this constructor.
         ///'resources, is a resource manager.  If specified all messages are localized using that manager.
         /// </summary>
         internal ManifestBuilder(ResourceManager? resources, EventManifestOptions flags)
