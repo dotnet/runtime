@@ -136,7 +136,8 @@ namespace Wasm.Build.Tests
                                         projectTemplate: s_resourcesProjectTemplate,
                                         extraProperties: $@"
                                             <EmccCompileOptimizationFlag>-O0</EmccCompileOptimizationFlag>
-                                            <EmccLinkOptimizationFlag>-O0</EmccLinkOptimizationFlag>",
+                                            <EmccLinkOptimizationFlag>-O0</EmccLinkOptimizationFlag>
+                                            <WasmDedup>false</WasmDedup>", // -O0 can cause aot-instances.dll to blow up, and fail to compile, and it is not really needed here
                                         extraItems: $"<EmbeddedResource Include=\"{BuildEnvironment.RelativeTestAssetsPath}resx\\*\" />");
 
             BuildProject(buildArgs,
