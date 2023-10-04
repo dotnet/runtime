@@ -150,20 +150,8 @@ namespace System.Reflection.Runtime.PropertyInfos
 
 namespace System.Reflection.Runtime.TypeInfos
 {
-    // TODO: !!! Move
     internal abstract partial class RuntimeTypeInfo
     {
-        public Type[] GetGenericArguments()
-        {
-            if (IsConstructedGenericType)
-                return GenericTypeArguments;
-            if (IsGenericTypeDefinition)
-                return GenericTypeParameters;
-            return Array.Empty<Type>();
-        }
-
-        public bool IsGenericType => IsConstructedGenericType || IsGenericTypeDefinition;
-
         public Type[] GetInterfaces() => ImplementedInterfaces.ToArray();
 
         public Type? GetInterface(string name, bool ignoreCase)

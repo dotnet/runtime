@@ -145,7 +145,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     inBaseClass = true;
                 }
 
-                type = type.BaseType.ToRuntimeTypeInfo();
+                type = type.BaseType?.ToRuntimeTypeInfo()!;
             }
 
             return queriedMembers;

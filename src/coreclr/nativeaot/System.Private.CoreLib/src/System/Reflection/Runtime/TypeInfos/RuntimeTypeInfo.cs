@@ -69,7 +69,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public Type BaseType
+        public Type? BaseType
         {
             get
             {
@@ -248,6 +248,8 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public IEnumerable<Type> ImplementedInterfaces
         {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+                Justification = "Interface lists on base types will be preserved same as for the current type")]
             get
             {
                 LowLevelListWithIList<Type> result = new LowLevelListWithIList<Type>();
@@ -410,11 +412,11 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         //
-        // Left unsealed as IsGenericType types must override this.
+        // Left unsealed as generic types must override this.
         //
         public virtual Type GetGenericTypeDefinition()
         {
-            Debug.Assert(!IsGenericType);
+            Debug.Assert(!IsGenericTypeDefinition && !IsConstructedGenericType);
             throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
         }
 

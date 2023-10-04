@@ -93,7 +93,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public override Type[] GetFunctionPointerParameterTypes()
         {
-
             if (_key.ParameterTypes.Length == 0)
                 return Type.EmptyTypes;
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -229,6 +230,9 @@ namespace System
         public override Type? GetElementType()
             => _pUnderlyingEEType->IsParameterizedType ? GetTypeFromMethodTable(_pUnderlyingEEType->RelatedParameterType) : null;
 
+        public override int GetArrayRank()
+            => _pUnderlyingEEType->IsArray ? _pUnderlyingEEType->ArrayRank : throw new ArgumentException(SR.Argument_HasToBeArrayClass);
+
         public override Type? BaseType
         {
             get
@@ -251,6 +255,119 @@ namespace System
 
                 return null;
             }
+        }
+
+        public override bool IsTypeDefinition
+            => (_pUnderlyingEEType->IsCanonical &&  !_pUnderlyingEEType->IsGeneric) || _pUnderlyingEEType->IsGenericTypeDefinition;
+
+        public override bool IsGenericType
+            => _pUnderlyingEEType->IsGeneric || _pUnderlyingEEType->IsGenericTypeDefinition;
+
+        public override bool IsGenericTypeDefinition
+            => _pUnderlyingEEType->IsGenericTypeDefinition;
+
+        public override bool IsConstructedGenericType
+            => _pUnderlyingEEType->IsGeneric;
+
+        public override Type GetGenericTypeDefinition()
+            => _pUnderlyingEEType->IsGeneric ? GetTypeFromMethodTable(_pUnderlyingEEType->GenericDefinition) :
+            _pUnderlyingEEType->IsGenericTypeDefinition ? this :
+            throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
+
+        public override Type[] GenericTypeArguments
+        {
+            get
+            {
+                MethodTable* pUnderlyingEEType = _pUnderlyingEEType;
+
+                if (!pUnderlyingEEType->IsGeneric)
+                    return EmptyTypes;
+
+                MethodTableList genericArguments = pUnderlyingEEType->GenericArguments;
+
+                Type[] result = new Type[pUnderlyingEEType->GenericArity];
+                for (int i = 0; i < result.Length; i++)
+                {
+                    result[i] = GetTypeFromMethodTable(genericArguments[i]);
+                }
+                return result;
+            }
+        }
+
+        public override Type[] GenericTypeParameters
+            => GetRuntimeTypeInfo().GenericTypeParameters;
+
+        public override Type[] GetGenericArguments()
+        {
+            if (IsConstructedGenericType)
+                return GenericTypeArguments;
+            if (IsGenericTypeDefinition)
+                return GenericTypeParameters;
+            return EmptyTypes;
+        }
+
+        // Identical to base class
+        // public override bool IsGenericParameter => false;
+        public override bool IsGenericTypeParameter => false;
+        public override bool IsGenericMethodParameter => false;
+
+        // Identical to base class
+        // public override int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
+        public override GenericParameterAttributes GenericParameterAttributes => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
+        public override Type[] GetGenericParameterConstraints() => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
+
+        public override bool IsSZArray
+            => _pUnderlyingEEType->ElementType == EETypeElementType.SzArray;
+
+        public override bool IsVariableBoundArray
+            => _pUnderlyingEEType->ElementType == EETypeElementType.Array;
+
+        public override bool IsByRefLike
+            => _pUnderlyingEEType->IsByRefLike;
+
+        public override bool IsFunctionPointer
+            => _pUnderlyingEEType->IsFunctionPointer;
+
+        public override bool IsUnmanagedFunctionPointer
+            => _pUnderlyingEEType->IsUnmanagedFunctionPointer;
+
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            if (!IsFunctionPointer)
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+
+            // Requires a modified type to return the modifiers.
+            return EmptyTypes;
+        }
+
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            if (!IsFunctionPointer)
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+
+            MethodTable* pUnderlyingEEType = _pUnderlyingEEType;
+
+            uint count = pUnderlyingEEType->NumFunctionPointerParameters;
+            if (count == 0)
+                return EmptyTypes;
+
+            MethodTableList parameterTypes = pUnderlyingEEType->FunctionPointerParameters;
+
+            Type[] result = new Type[count];
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = GetTypeFromMethodTable(parameterTypes[i]);
+            }
+            return result;
+
+        }
+
+        public override Type GetFunctionPointerReturnType()
+        {
+            if (!IsFunctionPointer)
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+
+            return GetTypeFromMethodTable(_pUnderlyingEEType->FunctionPointerReturnType);
         }
 
         protected override TypeAttributes GetAttributeFlagsImpl() => GetRuntimeTypeInfo().Attributes;
@@ -326,7 +443,23 @@ namespace System
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
-            => GetRuntimeTypeInfo().GetInterfaces();
+        {
+            MethodTable* pUnderlyingEEType = _pUnderlyingEEType;
+
+            if (pUnderlyingEEType->IsGenericTypeDefinition)
+                return GetRuntimeTypeInfo().GetInterfaces();
+
+            int count = pUnderlyingEEType->NumInterfaces;
+            if (count == 0)
+                return EmptyTypes;
+
+            Type[] result = new Type[count];
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = GetTypeFromMethodTable(pUnderlyingEEType->InterfaceMap[i]);
+            }
+            return result;
+        }
 
         public override bool IsDefined(Type attributeType, bool inherit)
             => GetRuntimeTypeInfo().IsDefined(attributeType, inherit);
@@ -336,6 +469,12 @@ namespace System
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
             => GetRuntimeTypeInfo().GetCustomAttributes(attributeType, inherit);
+
+        public override IEnumerable<CustomAttributeData> CustomAttributes
+            => GetRuntimeTypeInfo().CustomAttributes;
+
+        public override IList<CustomAttributeData> GetCustomAttributesData()
+            => GetRuntimeTypeInfo().GetCustomAttributesData();
 
         public override string? Namespace => GetRuntimeTypeInfo().Namespace;
 
@@ -350,6 +489,8 @@ namespace System
         public override Guid GUID => GetRuntimeTypeInfo().GUID;
 
         public override string Name => GetRuntimeTypeInfo().Name;
+
+        public override bool HasSameMetadataDefinitionAs(MemberInfo other) => GetRuntimeTypeInfo().HasSameMetadataDefinitionAs(other);
 
         public override Type MakePointerType()
             => GetRuntimeTypeInfo().MakePointerType();
