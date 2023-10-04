@@ -3,6 +3,6 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="test.il" />
+    <Compile Include="test_dd52.il" />
   </ItemGroup>
 </Project>
