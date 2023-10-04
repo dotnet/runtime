@@ -9,7 +9,7 @@ Provides support for reading and writing values in Concise Binary Object Represe
 
 <!-- The key features of this package -->
 
-* Reader and writers types for the CBOR format.
+* Reader and writer types for the CBOR format.
 * Built-in support for different CBOR conformance modes.
 
 ## How to Use
@@ -83,7 +83,7 @@ The main types provided by this library are:
 * `System.Formats.Cbor.CborContentException`
 * `System.Formats.Cbor.CborTag`
 
-## Addtional Documentation
+## Additional Documentation
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
@@ -92,6 +92,30 @@ The main types provided by this library are:
 ## Related Packages
 
 <!-- The related packages associated with this package -->
+
+.NETFramework 4.6.2:
+
+* Provides HashCode types: [Microsoft.Bcl.HashCode](https://www.nuget.org/packages/Microsoft.Bcl.HashCode/)
+* Resource pooling: [System.Buffers](https://www.nuget.org/packages/System.Buffers/)
+* Efficient memory representation: [System.Memory](https://www.nuget.org/packages/System.Memory/)
+* Provides functionality over pointers: [System.Runtime.CompilerServices.Unsafe](https://www.nuget.org/packages/System.Runtime.CompilerServices.Unsafe/)
+* Provides underlying type for tuples: [System.ValueTuple](https://www.nuget.org/packages/System.ValueTuple/)
+
+
+.NETStandard 2.0:
+
+* Provides HashCode types: [Microsoft.Bcl.HashCode](https://www.nuget.org/packages/Microsoft.Bcl.HashCode/)
+* Resource pooling: [System.Buffers](https://www.nuget.org/packages/System.Buffers/)
+* Efficient memory representation: [System.Memory](https://www.nuget.org/packages/System.Memory/)
+* Provides functionality over pointers: [System.Runtime.CompilerServices.Unsafe](https://www.nuget.org/packages/System.Runtime.CompilerServices.Unsafe/)
+
+.net6.0:
+
+No dependencies.
+
+.net7.0:
+
+No dependencies.
 
 ## Feedback & Contributing
 
