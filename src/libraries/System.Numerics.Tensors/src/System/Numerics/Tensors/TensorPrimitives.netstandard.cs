@@ -923,6 +923,19 @@ namespace System.Numerics.Tensors
             public Vector<float> Invoke(Vector<float> x) => Vector.Abs(x);
         }
 
+        private readonly struct ExpOperator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+
+            public float Invoke(float x) => MathF.Exp(x);
+
+            public Vector<float> Invoke(Vector<float> x)
+            {
+                // Vectorizing requires shift left support, which is .NET 7 or later
+                throw new NotImplementedException();
+            }
+        }
+
         private readonly struct LogOperator : IUnaryOperator
         {
             public bool CanVectorize => false;
