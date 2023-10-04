@@ -5275,7 +5275,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         }
 
         // If there is an unconditional jump (which is not part of callf/always pair)
-        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
@@ -5300,7 +5300,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             bool              unmarkedLoopAlign    = false;
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
-            if (block->bbJumpKind == BBJ_CALLFINALLY)
+            if (block->KindIs(BBJ_CALLFINALLY))
             {
                 // It must be a retless BBJ_CALLFINALLY if we get here.
                 assert(!block->isBBCallAlwaysPair());
