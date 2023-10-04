@@ -418,7 +418,7 @@ extends:
             - name: _archParameter
               value: -arch x64,x86,arm,arm64
           jobParameters:
-            buildArgs: -s linuxdac+alpinedac -c $(_BuildConfig)
+            buildArgs: -s linuxdac+alpinedac -c Checked,$(_BuildConfig)
             nameSuffix: CrossDac
             isOfficialBuild: false
             timeoutInMinutes: 60
