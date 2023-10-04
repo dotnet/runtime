@@ -355,7 +355,7 @@ namespace System.CodeDom.Tests
 
             string expectedTab = string.Concat(Enumerable.Repeat(TabString, itw.Indent));
             Assert.Equal(
-                "first" + Environment.NewLine +
+                expectedTab + "first" + Environment.NewLine +
                 expectedTab + "second" + Environment.NewLine +
                 expectedTab + "third" + Environment.NewLine,
                 sb.ToString());
@@ -382,7 +382,7 @@ namespace System.CodeDom.Tests
                 itw.WriteLine("Should be indented");
                 itw.Flush();
 
-                Assert.Equal(itw.NewLine + tabString + "Should be indented" + itw.NewLine, sb.ToString());
+                Assert.Equal(tabString + itw.NewLine + tabString + "Should be indented" + itw.NewLine, sb.ToString());
                 itw.Close();
             }
         }
@@ -449,7 +449,7 @@ namespace System.CodeDom.Tests
             itw.WriteLineNoTabs("notabs");
 
             Assert.Equal(
-                "" + newline +
+                "t" + newline +
                 "tTrueabcde45.66.789101112131415 1615 16 1715 16 17 18True" + newline +
                 "ta" + newline +
                 "tbc" + newline +
@@ -596,7 +596,7 @@ namespace System.CodeDom.Tests
             await callWriteAsync(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.WriteAsync), indicator.LastCalledMethod);
-            Assert.Equal($"{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
+            Assert.Equal($"{TabString}{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
         }
 
         [Theory]
@@ -613,7 +613,7 @@ namespace System.CodeDom.Tests
             await callWriteAsync(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.WriteAsync), indicator.LastCalledMethod);
-            Assert.Equal($"{prefix}{expected}", indicator.GetStringBuilder().ToString());
+            Assert.Equal($"{TabString}{prefix}{expected}", indicator.GetStringBuilder().ToString());
         }
 
         [Theory]
@@ -631,7 +631,7 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(WriteLineAsync_MemberData))]
-        public async Task WriteLineAsync_WithIndents_FirstLine_IsNotIndented(Func<IndentedTextWriter, Task> callWriteLineAsync, string expected)
+        public async Task WriteLineAsync_WithIndents(Func<IndentedTextWriter, Task> callWriteLineAsync, string expected)
         {
             var indicator = new IndicatingTextWriter();
             var itw = new IndentedTextWriter(indicator, TabString);
@@ -640,7 +640,7 @@ namespace System.CodeDom.Tests
             await callWriteLineAsync(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.WriteLineAsync), indicator.LastCalledMethod);
-            Assert.Equal(expected, indicator.GetStringBuilder().ToString());
+            Assert.Equal($"{TabString}{expected}", indicator.GetStringBuilder().ToString());
         }
 
         [Theory]
@@ -657,7 +657,7 @@ namespace System.CodeDom.Tests
             await callWriteLineAsync(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.WriteLineAsync), indicator.LastCalledMethod);
-            Assert.Equal($"{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
+            Assert.Equal($"{TabString}{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
         }
 
         [Fact]
@@ -694,7 +694,7 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(Write_MemberData))]
-        public void Write_WithIndents_FirstLine_IsNotIndented(Action<IndentedTextWriter> callWrite, string expected)
+        public void Write_WithIndents_FirstLine_IsIndented(Action<IndentedTextWriter> callWrite, string expected)
         {
             var indicator = new IndicatingTextWriter();
             var itw = new IndentedTextWriter(indicator, TabString);
@@ -704,12 +704,12 @@ namespace System.CodeDom.Tests
             callWrite(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.Write), indicator.LastCalledMethod);
-            Assert.Equal(expected, indicator.GetStringBuilder().ToString());
+            Assert.Equal($"{TabString}{expected}", indicator.GetStringBuilder().ToString());
         }
 
         [Theory]
         [MemberData(nameof(Write_MemberData))]
-        public void Write_IsIndented_AfterWriteLine(Action<IndentedTextWriter> callWrite, string expected)
+        public void Write_IsIndented(Action<IndentedTextWriter> callWrite, string expected)
         {
             var indicator = new IndicatingTextWriter();
             var itw = new IndentedTextWriter(indicator, TabString);
@@ -721,7 +721,7 @@ namespace System.CodeDom.Tests
             callWrite(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.Write), indicator.LastCalledMethod);
-            Assert.Equal($"{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
+            Assert.Equal($"{TabString}{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
         }
 
         [Theory]
@@ -750,12 +750,12 @@ namespace System.CodeDom.Tests
             callWriteLine(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.WriteLine), indicator.LastCalledMethod);
-            Assert.Equal(expected, indicator.GetStringBuilder().ToString());
+            Assert.Equal($"{TabString}{expected}", indicator.GetStringBuilder().ToString());
         }
 
         [Theory]
         [MemberData(nameof(WriteLine_MemberData))]
-        public void WriteLine_IsIndented_AfterWriteLine(Action<IndentedTextWriter> callWriteLine, string expected)
+        public void WriteLine_IsIndented(Action<IndentedTextWriter> callWriteLine, string expected)
         {
             var indicator = new IndicatingTextWriter();
             var itw = new IndentedTextWriter(indicator, TabString);
@@ -767,7 +767,7 @@ namespace System.CodeDom.Tests
             callWriteLine(itw);
 
             Assert.Equal(nameof(IndentedTextWriter.WriteLine), indicator.LastCalledMethod);
-            Assert.Equal($"{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
+            Assert.Equal($"{TabString}{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
         }
 
         [Fact]
