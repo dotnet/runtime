@@ -5260,7 +5260,7 @@ public:
     {
         ASSERT_TP pAssertionOut;
 
-        if (predBlock->bbJumpKind == BBJ_COND && (predBlock->bbJumpDest == block))
+        if (predBlock->KindIs(BBJ_COND) && (predBlock->bbJumpDest == block))
         {
             pAssertionOut = mJumpDestOut[predBlock->bbNum];
 
@@ -5460,7 +5460,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 
             printf(FMT_BB " valueGen = ", block->bbNum);
             optPrintAssertionIndices(block->bbAssertionGen);
-            if (block->bbJumpKind == BBJ_COND)
+            if (block->KindIs(BBJ_COND))
             {
                 printf(" => " FMT_BB " valueGen = ", block->bbJumpDest->bbNum);
                 optPrintAssertionIndices(jumpDestGen[block->bbNum]);
@@ -6020,7 +6020,7 @@ PhaseStatus Compiler::optAssertionPropMain()
             printf(FMT_BB ":\n", block->bbNum);
             optDumpAssertionIndices(" in   = ", block->bbAssertionIn, "\n");
             optDumpAssertionIndices(" out  = ", block->bbAssertionOut, "\n");
-            if (block->bbJumpKind == BBJ_COND)
+            if (block->KindIs(BBJ_COND))
             {
                 printf(" " FMT_BB " = ", block->bbJumpDest->bbNum);
                 optDumpAssertionIndices(bbJtrueAssertionOut[block->bbNum], "\n");

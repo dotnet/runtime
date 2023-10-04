@@ -99,6 +99,14 @@ namespace System.Numerics.Tensors.Tests
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Abs(x, destination));
         }
+
+        [Fact]
+        public static void Abs_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Abs(array.AsSpan(1, 5), array.AsSpan(0, 5)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Abs(array.AsSpan(1, 5), array.AsSpan(2, 5)));
+        }
         #endregion
 
         #region Add
@@ -164,6 +172,16 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(x, y, destination));
         }
 
+        [Fact]
+        public static void Add_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(4, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(array.AsSpan(1, 2), array.AsSpan(5, 2), array.AsSpan(6, 2)));
+        }
+
         [Theory]
         [MemberData(nameof(TensorLengthsIncluding0))]
         public static void Add_TensorScalar(int tensorLength)
@@ -205,6 +223,14 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(x, y, destination));
+        }
+
+        [Fact]
+        public static void Add_TensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(array.AsSpan(1, 2), 42, array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Add(array.AsSpan(1, 2), 42, array.AsSpan(2, 2)));
         }
         #endregion
 
@@ -267,6 +293,18 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
 
+        [Fact]
+        public static void AddMultiply_ThreeTensors_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(5, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(6, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(8, 2)));
+        }
+
         [Theory]
         [MemberData(nameof(TensorLengthsIncluding0))]
         public static void AddMultiply_TensorTensorScalar(int tensorLength)
@@ -323,6 +361,16 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
+        }
+
+        [Fact]
+        public static void AddMultiply_TensorTensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), 42, array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), 42, array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), 42, array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), array.AsSpan(4, 2), 42, array.AsSpan(5, 2)));
         }
 
         [Theory]
@@ -382,6 +430,16 @@ namespace System.Numerics.Tensors.Tests
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(x, y, multiplier, destination));
         }
+
+        [Fact]
+        public static void AddMultiply_TensorScalarTensor_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), 42, array.AsSpan(4, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), 42, array.AsSpan(4, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), 42, array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.AddMultiply(array.AsSpan(1, 2), 42, array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
         #endregion
 
         #region Cosh
@@ -423,6 +481,14 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Cosh(x, destination));
+        }
+
+        [Fact]
+        public static void Cosh_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Cosh(array.AsSpan(1, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Cosh(array.AsSpan(1, 2), array.AsSpan(2, 2)));
         }
         #endregion
 
@@ -575,6 +641,16 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(x, y, destination));
         }
 
+        [Fact]
+        public static void Divide_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
+
         [Theory]
         [MemberData(nameof(TensorLengthsIncluding0))]
         public static void Divide_TensorScalar(int tensorLength)
@@ -616,6 +692,16 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(x, y, destination));
+        }
+
+        [Fact]
+        public static void Divide_TensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Divide(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
         }
         #endregion
 
@@ -697,6 +783,14 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Exp(x, destination));
+        }
+
+        [Fact]
+        public static void Exp_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Exp(array.AsSpan(1, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Exp(array.AsSpan(1, 2), array.AsSpan(2, 2)));
         }
         #endregion
 
@@ -914,12 +1008,55 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
+        public static void Log_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            // NaN
+            x[s_random.Next(x.Length)] = float.NaN;
+
+            // +Infinity
+            x[s_random.Next(x.Length)] = float.PositiveInfinity;
+
+            // -Infinity
+            x[s_random.Next(x.Length)] = float.NegativeInfinity;
+
+            // +Zero
+            x[s_random.Next(x.Length)] = +0.0f;
+
+            // -Zero
+            x[s_random.Next(x.Length)] = -0.0f;
+
+            // +Epsilon
+            x[s_random.Next(x.Length)] = +float.Epsilon;
+
+            // -Epsilon
+            x[s_random.Next(x.Length)] = -float.Epsilon;
+
+            TensorPrimitives.Log(x, destination);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Log(x[i]), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
         public static void Log_ThrowsForTooShortDestination(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Log(x, destination));
+        }
+
+        [Fact]
+        public static void Log_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Log(array.AsSpan(1, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Log(array.AsSpan(1, 2), array.AsSpan(2, 2)));
         }
         #endregion
 
@@ -956,12 +1093,55 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
+        public static void Log2_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            // NaN
+            x[s_random.Next(x.Length)] = float.NaN;
+
+            // +Infinity
+            x[s_random.Next(x.Length)] = float.PositiveInfinity;
+
+            // -Infinity
+            x[s_random.Next(x.Length)] = float.NegativeInfinity;
+
+            // +Zero
+            x[s_random.Next(x.Length)] = +0.0f;
+
+            // -Zero
+            x[s_random.Next(x.Length)] = -0.0f;
+
+            // +Epsilon
+            x[s_random.Next(x.Length)] = +float.Epsilon;
+
+            // -Epsilon
+            x[s_random.Next(x.Length)] = -float.Epsilon;
+
+            TensorPrimitives.Log2(x, destination);
+            for (int i = 0; i < tensorLength; i++)
+            {
+                Assert.Equal(MathF.Log(x[i], 2), destination[i], Tolerance);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
         public static void Log2_ThrowsForTooShortDestination(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Log2(x, destination));
+        }
+
+        [Fact]
+        public static void Log2_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Log2(array.AsSpan(1, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Log2(array.AsSpan(1, 2), array.AsSpan(2, 2)));
         }
         #endregion
 
@@ -1108,6 +1288,16 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Max(x, y, destination));
+        }
+
+        [Fact]
+        public static void Max_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Max(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Max(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Max(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Max(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
         }
         #endregion
 
@@ -1256,6 +1446,16 @@ namespace System.Numerics.Tensors.Tests
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MaxMagnitude(x, y, destination));
         }
+
+        [Fact]
+        public static void MaxMagnitude_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MaxMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MaxMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MaxMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MaxMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
         #endregion
 
         #region Min
@@ -1402,6 +1602,16 @@ namespace System.Numerics.Tensors.Tests
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Min(x, y, destination));
         }
+
+        [Fact]
+        public static void Min_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Min(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Min(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Min(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Min(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
         #endregion
 
         #region MinMagnitude
@@ -1547,6 +1757,16 @@ namespace System.Numerics.Tensors.Tests
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MinMagnitude(x, y, destination));
         }
+
+        [Fact]
+        public static void MinMagnitude_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MinMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MinMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MinMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MinMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
         #endregion
 
         #region Multiply
@@ -1604,6 +1824,16 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(x, y, destination));
         }
 
+        [Fact]
+        public static void Multiply_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
+
         [Theory]
         [MemberData(nameof(TensorLengthsIncluding0))]
         public static void Multiply_TensorScalar(int tensorLength)
@@ -1645,6 +1875,14 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(x, y, destination));
+        }
+
+        [Fact]
+        public static void Multiply_TensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(array.AsSpan(1, 2), 42, array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Multiply(array.AsSpan(1, 2), 42, array.AsSpan(2, 2)));
         }
         #endregion
 
@@ -1707,6 +1945,18 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
 
+        [Fact]
+        public static void MultiplyAdd_ThreeTensors_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(5, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(6, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(7, 2), array.AsSpan(8, 2)));
+        }
+
         [Theory]
         [MemberData(nameof(TensorLengthsIncluding0))]
         public static void MultiplyAdd_TensorTensorScalar(int tensorLength)
@@ -1750,6 +2000,16 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
+        }
+
+        [Fact]
+        public static void MultiplyAdd_TensorTensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), 42, array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), 42, array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), 42, array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), array.AsSpan(4, 2), 42, array.AsSpan(5, 2)));
         }
 
         [Theory]
@@ -1796,6 +2056,16 @@ namespace System.Numerics.Tensors.Tests
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(x, y, addend, destination));
         }
+
+        [Fact]
+        public static void MultiplyAdd_TensorScalarTensor_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), 42, array.AsSpan(4, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), 42, array.AsSpan(4, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), 42, array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.MultiplyAdd(array.AsSpan(1, 2), 42, array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
         #endregion
 
         #region Negate
@@ -1837,6 +2107,14 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Negate(x, destination));
+        }
+
+        [Fact]
+        public static void Negate_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Negate(array.AsSpan(1, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Negate(array.AsSpan(1, 2), array.AsSpan(2, 2)));
         }
         #endregion
 
@@ -2064,6 +2342,14 @@ namespace System.Numerics.Tensors.Tests
         {
             AssertExtensions.Throws<ArgumentException>(() => TensorPrimitives.Sigmoid(ReadOnlySpan<float>.Empty, CreateTensor(1)));
         }
+
+        [Fact]
+        public static void Sigmoid_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Sigmoid(array.AsSpan(1, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Sigmoid(array.AsSpan(1, 2), array.AsSpan(2, 2)));
+        }
         #endregion
 
         #region Sinh
@@ -2105,6 +2391,14 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Sinh(x, destination));
+        }
+
+        [Fact]
+        public static void Sinh_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Sinh(array.AsSpan(1, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Sinh(array.AsSpan(1, 2), array.AsSpan(2, 2)));
         }
         #endregion
 
@@ -2186,6 +2480,14 @@ namespace System.Numerics.Tensors.Tests
         {
             AssertExtensions.Throws<ArgumentException>(() => TensorPrimitives.SoftMax(ReadOnlySpan<float>.Empty, CreateTensor(1)));
         }
+
+        [Fact]
+        public static void SoftMax_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.SoftMax(array.AsSpan(1, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.SoftMax(array.AsSpan(1, 2), array.AsSpan(2, 2)));
+        }
         #endregion
 
         #region Subtract
@@ -2243,6 +2545,16 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(x, y, destination));
         }
 
+        [Fact]
+        public static void Subtract_TwoTensors_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(2, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
+        }
+
         [Theory]
         [MemberData(nameof(TensorLengthsIncluding0))]
         public static void Subtract_TensorScalar(int tensorLength)
@@ -2284,6 +2596,14 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(x, y, destination));
+        }
+
+        [Fact]
+        public static void Subtract_TensorScalar_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(array.AsSpan(1, 2), 42, array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Subtract(array.AsSpan(1, 2), 42, array.AsSpan(2, 2)));
         }
         #endregion
 
@@ -2410,6 +2730,14 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
 
             AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Tanh(x, destination));
+        }
+
+        [Fact]
+        public static void Tanh_ThrowsForOverlapppingInputsWithOutputs()
+        {
+            float[] array = new float[10];
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Tanh(array.AsSpan(1, 2), array.AsSpan(0, 2)));
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Tanh(array.AsSpan(1, 2), array.AsSpan(2, 2)));
         }
         #endregion
     }

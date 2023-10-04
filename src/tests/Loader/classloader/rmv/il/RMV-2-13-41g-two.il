@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 /*RDawson - 11/2/200
 
   Check that a .cctor in an interface is legal
@@ -16,7 +17,7 @@
 	}
 }
 
-.class Foo2 implements Foo{
+.class public Foo2 implements Foo{
 	.method public specialname void .ctor(){
 		ldarg.0
 		call	instance void [mscorlib]System.Object::.ctor()
@@ -25,6 +26,9 @@
 }
 
 .method public static int32 main(){
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack 8
 	newobj instance	void Foo2::.ctor()
