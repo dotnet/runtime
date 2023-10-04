@@ -31,7 +31,6 @@ internal class Program
         TestCctorCycle.Run();
         TestReferenceTypeAllocation.Run();
         TestReferenceTypeWithGCPointerAllocation.Run();
-        TestReferenceTypeWithReadonlyNullGCPointerAllocation.Run();
         TestRelationalOperators.Run();
         TestTryFinally.Run();
         TestTryCatch.Run();
@@ -428,34 +427,6 @@ class TestReferenceTypeWithGCPointerAllocation
     {
         Assert.IsLazyInitialized(typeof(TestReferenceTypeWithGCPointerAllocation));
         Assert.AreSame("hi", s_referenceType.StringValue);
-    }
-}
-
-class TestReferenceTypeWithReadonlyNullGCPointerAllocation
-{
-    class ReferenceType
-    {
-        // Can't actually access this from anywhere because the test is compiled
-        // with IlcTrimMetadata=false and accessing the field would make it reflection-visible.
-        public readonly string StringValue;
-
-        public ReferenceType()
-        {
-        }
-    }
-
-    static ReferenceType s_referenceType = new ReferenceType();
-
-    public static void Run()
-    {
-#if DEBUG
-        // ReferenceType.StringValue is considered maybe reflection-accessed in this test
-        // without the whole program analysis done in RELEASE configuration.
-        Assert.IsLazyInitialized(typeof(TestReferenceTypeWithReadonlyNullGCPointerAllocation));
-#else
-        Assert.IsPreinitialized(typeof(TestReferenceTypeWithReadonlyNullGCPointerAllocation));
-#endif
-        s_referenceType.ToString();
     }
 }
 

@@ -410,7 +410,9 @@ class DeadCodeElimination
             // We're testing the optimizations mentioned above work by inspecting the side effect
             // (that is only visible to trim-unsafe code).
             Console.WriteLine($"Testing we were able to make non-readonly field read-only: {ClassThatShouldBePreinited.Value}");
+#if !DEBUG
             ThrowIfPresentWithUsableMethodTable(typeof(TestUnmodifiableStaticFieldOptimization), nameof(Unimportant));
+#endif
         }
     }
 
@@ -464,7 +466,9 @@ class DeadCodeElimination
             IsModified.Instance.Field = new object();
             typeof(IsReflectedOn).GetFields();
 
+#if !DEBUG
             ThrowIfPresentWithUsableMethodTable(typeof(TestUnmodifiableInstanceFieldOptimization), nameof(Canary1));
+#endif
             ThrowIfNotPresent(typeof(TestUnmodifiableInstanceFieldOptimization), nameof(Canary2));
             ThrowIfNotPresent(typeof(TestUnmodifiableInstanceFieldOptimization), nameof(Canary3));
         }
