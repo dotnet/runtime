@@ -83,7 +83,7 @@ public:
 bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
 {
     // Block should have a single successor or be a return.
-    if (!(block->GetUniqueSucc() != nullptr || (m_doElseConversion && (block->bbJumpKind == BBJ_RETURN))))
+    if (!(block->GetUniqueSucc() != nullptr || (m_doElseConversion && (block->KindIs(BBJ_RETURN)))))
     {
         return false;
     }
@@ -137,7 +137,7 @@ bool OptIfConversionDsc::IfConvertCheckThenFlow()
         {
             // All the Then blocks up to m_finalBlock are in a valid flow.
             m_flowFound = true;
-            if (thenBlock->bbJumpKind == BBJ_RETURN)
+            if (thenBlock->KindIs(BBJ_RETURN))
             {
                 assert(m_finalBlock == nullptr);
                 m_mainOper = GT_RETURN;
@@ -553,7 +553,7 @@ void OptIfConversionDsc::IfConvertDump()
 bool OptIfConversionDsc::optIfConvert()
 {
     // Does the block end by branching via a JTRUE after a compare?
-    if (m_startBlock->bbJumpKind != BBJ_COND || m_startBlock->NumSucc() != 2)
+    if (!m_startBlock->KindIs(BBJ_COND) || m_startBlock->NumSucc() != 2)
     {
         return false;
     }
@@ -743,7 +743,7 @@ bool OptIfConversionDsc::optIfConvert()
 
     // Update the flow from the original block.
     m_comp->fgRemoveAllRefPreds(m_startBlock->bbNext, m_startBlock);
-    m_startBlock->bbJumpKind = BBJ_ALWAYS;
+    m_startBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
 
 #ifdef DEBUG
     if (m_comp->verbose)

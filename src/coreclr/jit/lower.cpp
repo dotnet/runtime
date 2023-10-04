@@ -801,12 +801,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         noway_assert(comp->opts.OptimizationDisabled());
         if (originalSwitchBB->bbNext == jumpTab[0])
         {
-            originalSwitchBB->bbJumpKind = BBJ_NONE;
+            originalSwitchBB->SetBBJumpKind(BBJ_NONE DEBUG_ARG(comp));
             originalSwitchBB->bbJumpDest = nullptr;
         }
         else
         {
-            originalSwitchBB->bbJumpKind = BBJ_ALWAYS;
+            originalSwitchBB->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
             originalSwitchBB->bbJumpDest = jumpTab[0];
         }
         // Remove extra predecessor links if there was more than one case.
@@ -891,16 +891,16 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // afterDefaultCondBlock is now the switch, and all the switch targets have it as a predecessor.
     // originalSwitchBB is now a BBJ_NONE, and there is a predecessor edge in afterDefaultCondBlock
     // representing the fall-through flow from originalSwitchBB.
-    assert(originalSwitchBB->bbJumpKind == BBJ_NONE);
+    assert(originalSwitchBB->KindIs(BBJ_NONE));
     assert(originalSwitchBB->bbNext == afterDefaultCondBlock);
-    assert(afterDefaultCondBlock->bbJumpKind == BBJ_SWITCH);
+    assert(afterDefaultCondBlock->KindIs(BBJ_SWITCH));
     assert(afterDefaultCondBlock->bbJumpSwt->bbsHasDefault);
     assert(afterDefaultCondBlock->isEmpty()); // Nothing here yet.
 
     // The GT_SWITCH code is still in originalSwitchBB (it will be removed later).
 
     // Turn originalSwitchBB into a BBJ_COND.
-    originalSwitchBB->bbJumpKind = BBJ_COND;
+    originalSwitchBB->SetBBJumpKind(BBJ_COND DEBUG_ARG(comp));
     originalSwitchBB->bbJumpDest = jumpTab[jumpCnt - 1];
 
     // Fix the pred for the default case: the default block target still has originalSwitchBB
@@ -957,12 +957,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         }
         if (afterDefaultCondBlock->bbNext == uniqueSucc)
         {
-            afterDefaultCondBlock->bbJumpKind = BBJ_NONE;
+            afterDefaultCondBlock->SetBBJumpKind(BBJ_NONE DEBUG_ARG(comp));
             afterDefaultCondBlock->bbJumpDest = nullptr;
         }
         else
         {
-            afterDefaultCondBlock->bbJumpKind = BBJ_ALWAYS;
+            afterDefaultCondBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
             afterDefaultCondBlock->bbJumpDest = uniqueSucc;
         }
     }
@@ -1036,13 +1036,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // case: there is no need to compare against the case index, since it's
                 // guaranteed to be taken (since the default case was handled first, above).
 
-                currentBlock->bbJumpKind = BBJ_ALWAYS;
+                currentBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
             }
             else
             {
                 // Otherwise, it's a conditional branch. Set the branch kind, then add the
                 // condition statement.
-                currentBlock->bbJumpKind = BBJ_COND;
+                currentBlock->SetBBJumpKind(BBJ_COND DEBUG_ARG(comp));
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:
@@ -1074,8 +1074,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // so fgRemoveBlock() doesn't complain.
             JITDUMP("Lowering switch " FMT_BB ": all switch cases were fall-through\n", originalSwitchBB->bbNum);
             assert(currentBlock == afterDefaultCondBlock);
-            assert(currentBlock->bbJumpKind == BBJ_SWITCH);
-            currentBlock->bbJumpKind = BBJ_NONE;
+            assert(currentBlock->KindIs(BBJ_SWITCH));
+            currentBlock->SetBBJumpKind(BBJ_NONE DEBUG_ARG(comp));
             currentBlock->bbFlags &= ~BBF_DONT_REMOVE;
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
         }
@@ -1159,7 +1159,7 @@ bool Lowering::TryLowerSwitchToBitTest(
 {
     assert(jumpCount >= 2);
     assert(targetCount >= 2);
-    assert(bbSwitch->bbJumpKind == BBJ_SWITCH);
+    assert(bbSwitch->KindIs(BBJ_SWITCH));
     assert(switchValue->OperIs(GT_LCL_VAR));
 
     //
@@ -1247,7 +1247,7 @@ bool Lowering::TryLowerSwitchToBitTest(
     //
 
     GenCondition bbSwitchCondition;
-    bbSwitch->bbJumpKind = BBJ_COND;
+    bbSwitch->SetBBJumpKind(BBJ_COND DEBUG_ARG(comp));
 
     comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
@@ -5317,8 +5317,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     JITDUMP("======= Inserting PInvoke method epilog\n");
 
     // Method doing PInvoke calls has exactly one return block unless it has "jmp" or tail calls.
-    assert(((returnBB == comp->genReturnBB) && (returnBB->bbJumpKind == BBJ_RETURN)) ||
-           returnBB->endsWithTailCallOrJmp(comp));
+    assert(((returnBB == comp->genReturnBB) && returnBB->KindIs(BBJ_RETURN)) || returnBB->endsWithTailCallOrJmp(comp));
 
     LIR::Range& returnBlockRange = LIR::AsRange(returnBB);
 
