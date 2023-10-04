@@ -22,9 +22,12 @@
 
 The main types provided by this library are:
 
-* ``
-* ``
-* ``
+* `System.Formats.Cbor.CborReader`
+* `System.Formats.Cbor.CborWriter`
+* `System.Formats.Cbor.CborReaderState`
+* `System.Formats.Cbor.CborConformanceMode`
+* `System.Formats.Cbor.CborContentException`
+* `System.Formats.Cbor.CborTag`
 
 ## Addtional Documentation
 
