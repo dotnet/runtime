@@ -283,6 +283,8 @@ namespace Microsoft.Workload.Build.Tasks
 
             using (new LogTimeTaken(Log, $"Installing from cache for {req.WorkloadId}"))
             {
+                foreach (string nupkg in Directory.EnumerateFiles(_workloadCachePath))
+                    Log.LogMessage(MessageImportance.Low, $"Found {nupkg}");
                 return RunWorkloadInstallCommand(req, nugetConfigPath, $"--from-cache {_workloadCachePath}");
             }
         }
