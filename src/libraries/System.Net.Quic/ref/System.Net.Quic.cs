@@ -23,11 +23,20 @@ namespace System.Net.Quic
     public sealed partial class QuicConnection : System.IAsyncDisposable
     {
         internal QuicConnection() { }
+        public System.Security.Authentication.CipherAlgorithmType CipherAlgorithm { get { throw null; } }
+        public int CipherStrength { get { throw null; } }
+        public System.Security.Authentication.HashAlgorithmType HashAlgorithm { get { throw null; } }
+        public int HashStrength { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
+        public System.Security.Authentication.ExchangeAlgorithmType KeyExchangeAlgorithm { get { throw null; } }
+        public int KeyExchangeStrength { get { throw null; } }
         public System.Net.IPEndPoint LocalEndPoint { get { throw null; } }
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Net.Security.TlsCipherSuite NegotiatedCipherSuite { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get { throw null; } }
         public System.Net.IPEndPoint RemoteEndPoint { get { throw null; } }
+        public System.Security.Authentication.SslProtocols SslProtocol { get { throw null; } }
         public string TargetHostName { get { throw null; } }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicStream> AcceptInboundStreamAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.ValueTask CloseAsync(long errorCode, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
