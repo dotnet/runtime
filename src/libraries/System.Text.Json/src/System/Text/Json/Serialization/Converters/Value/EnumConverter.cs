@@ -46,8 +46,10 @@ namespace System.Text.Json.Serialization.Converters
 #if NETCOREAPP
         [GeneratedRegex(NumericPattern)]
         private static partial Regex NumericRegex();
+
+        private static readonly Regex s_numericRegex = NumericRegex();
 #else
-        private static readonly Regex s_numericRegex = new(NumericPattern);
+        private static readonly Regex s_numericRegex = new(NumericPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(200));
 #endif
 
         public override bool CanConvert(Type type)
@@ -382,7 +384,7 @@ namespace System.Text.Json.Serialization.Converters
 
             bool success;
             T result;
-            if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0 || !NumericRegex().IsMatch(source))
+            if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0 || !s_numericRegex.IsMatch(source))
             {
                 // Try parsing case sensitive first
                 success = Enum.TryParse(source, out result) || Enum.TryParse(source, ignoreCase: true, out result);
