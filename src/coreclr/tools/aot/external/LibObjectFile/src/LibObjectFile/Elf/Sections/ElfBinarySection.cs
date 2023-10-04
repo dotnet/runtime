@@ -42,7 +42,7 @@ namespace LibObjectFile.Elf
         }
 
         public override ulong TableEntrySize => OriginalTableEntrySize;
-        
+
         /// <summary>
         /// Gets or sets the associated stream to this section.
         /// </summary>
