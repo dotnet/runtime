@@ -931,7 +931,7 @@ namespace System.Numerics.Tensors
 
             public Vector<float> Invoke(Vector<float> x)
             {
-                // Vectorizing requires shift right support, which is .NET 7 or later
+                // Vectorizing requires shift left support, which is .NET 7 or later
                 throw new NotImplementedException();
             }
         }
