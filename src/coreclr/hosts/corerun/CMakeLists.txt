@@ -39,13 +39,7 @@ else(CLR_CMAKE_HOST_WIN32)
 endif(CLR_CMAKE_HOST_WIN32)
 
 if (CLR_CMAKE_HOST_APPLE)
-    # Add a dependency on the entitlements file to ensure that corerun is rebuilt if only the entitlements file changes.
-    set_source_files_properties(corerun.cpp PROPERTIES OBJECT_DEPENDS ${CLR_ENG_NATIVE_DIR}/entitlements.plist)
-
-    add_custom_command(
-        TARGET corerun
-        POST_BUILD
-        COMMAND codesign -s - -f --entitlements ${CLR_ENG_NATIVE_DIR}/entitlements.plist $<TARGET_FILE:corerun>)
+    adhoc_sign_with_entitlements(corerun "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
 endif()
 
 install_clr(TARGETS corerun DESTINATIONS . COMPONENT hosts)

@@ -17,11 +17,5 @@ list(APPEND SOURCES
 include(../exe.cmake)
 
 if (CLR_CMAKE_HOST_APPLE)
-    # Add a dependency on the entitlements file to ensure that dotnet is rebuilt if only the entitlements file changes.
-    set_source_files_properties(../apphost/standalone/hostfxr_resolver.cpp PROPERTIES OBJECT_DEPENDS ${CLR_ENG_NATIVE_DIR}/entitlements.plist)
-
-    add_custom_command(
-        TARGET dotnet
-        POST_BUILD
-        COMMAND codesign -s - -f --entitlements ${CLR_ENG_NATIVE_DIR}/entitlements.plist $<TARGET_FILE:dotnet>)
+    adhoc_sign_with_entitlements(dotnet "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
 endif()
