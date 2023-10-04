@@ -118,15 +118,13 @@ namespace System.Security.Cryptography
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/sha256managed.cs
         private sealed class SHA256ManagedImplementation : SHAManagedImplementationBase
         {
-            private byte[] _buffer;
+            private HashBuffer64 _buffer;
             private long _count; // Number of bytes in the hashed message
             private HashState<uint> _stateSHA256;
             private ExpandedBuffer<uint> _W;
 
             public SHA256ManagedImplementation()
             {
-                _buffer = new byte[64];
-
                 InitializeState();
             }
 
@@ -135,7 +133,7 @@ namespace System.Security.Cryptography
                 InitializeState();
 
                 // Zeroize potentially sensitive information.
-                Array.Clear(_buffer, 0, _buffer.Length);
+                _buffer = default;
                 _W = default;
             }
 
@@ -167,7 +165,7 @@ namespace System.Security.Cryptography
 
                 if ((bufferLen > 0) && (bufferLen + partIn.Length >= 64))
                 {
-                    partIn[..64 - bufferLen].CopyTo(_buffer.AsSpan(bufferLen));
+                    partIn[..64 - bufferLen].CopyTo(_buffer[bufferLen..]);
                     SHATransform(ref _W, ref _stateSHA256, _buffer);
                     bufferLen = 0;
                 }
@@ -178,7 +176,7 @@ namespace System.Security.Cryptography
                     partIn = partIn[64..];
                 }
 
-                partIn.CopyTo(_buffer.AsSpan(bufferLen));
+                partIn.CopyTo(_buffer[bufferLen..]);
             }
 
             /* SHA256 finalization. Ends an SHA256 message-digest operation, writing
@@ -353,15 +351,13 @@ namespace System.Security.Cryptography
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/sha384managed.cs
         private sealed class SHA384ManagedImplementation : SHAManagedImplementationBase
         {
-            private byte[] _buffer;
+            private HashBuffer128 _buffer;
             private ulong _count; // Number of bytes in the hashed message
             private HashState<ulong> _stateSHA384;
             private ExpandedBuffer<ulong> _W;
 
             public SHA384ManagedImplementation()
             {
-                _buffer = new byte[128];
-
                 InitializeState();
             }
 
@@ -370,7 +366,7 @@ namespace System.Security.Cryptography
                 InitializeState();
 
                 // Zeroize potentially sensitive information.
-                Array.Clear(_buffer, 0, _buffer.Length);
+                _buffer = default;
                 _W = default;
             }
 
@@ -402,7 +398,7 @@ namespace System.Security.Cryptography
 
                 if ((bufferLen > 0) && (bufferLen + partIn.Length >= 128))
                 {
-                    partIn[..128 - bufferLen].CopyTo(_buffer.AsSpan(bufferLen));
+                    partIn[..128 - bufferLen].CopyTo(_buffer[bufferLen..]);
                     SHATransform(ref _W, ref _stateSHA384, _buffer);
                     bufferLen = 0;
                 }
@@ -413,7 +409,7 @@ namespace System.Security.Cryptography
                     partIn = partIn[128..];
                 }
 
-                partIn.CopyTo(_buffer.AsSpan(bufferLen));
+                partIn.CopyTo(_buffer[bufferLen..]);
             }
 
             /* SHA384 finalization. Ends an SHA384 message-digest operation, writing
@@ -592,15 +588,13 @@ namespace System.Security.Cryptography
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/sha512managed.cs
         private sealed class SHA512ManagedImplementation : SHAManagedImplementationBase
         {
-            private byte[] _buffer;
+            private HashBuffer128 _buffer;
             private ulong _count; // Number of bytes in the hashed message
             private HashState<ulong> _stateSHA512;
             private ExpandedBuffer<ulong> _W;
 
             public SHA512ManagedImplementation()
             {
-                _buffer = new byte[128];
-
                 InitializeState();
             }
 
@@ -609,7 +603,7 @@ namespace System.Security.Cryptography
                 InitializeState();
 
                 // Zeroize potentially sensitive information.
-                Array.Clear(_buffer, 0, _buffer.Length);
+                _buffer = default;
                 _W = default;
             }
 
@@ -641,7 +635,7 @@ namespace System.Security.Cryptography
 
                 if ((bufferLen > 0) && (bufferLen + partIn.Length >= 128))
                 {
-                    partIn[..128 - bufferLen].CopyTo(_buffer.AsSpan(bufferLen));
+                    partIn[..128 - bufferLen].CopyTo(_buffer[bufferLen..]);
                     SHATransform(ref _W, ref _stateSHA512, _buffer);
                     bufferLen = 0;
                 }
@@ -652,7 +646,7 @@ namespace System.Security.Cryptography
                     partIn = partIn[128..];
                 }
 
-                partIn.CopyTo(_buffer.AsSpan(bufferLen));
+                partIn.CopyTo(_buffer[bufferLen..]);
             }
 
             /* SHA512 finalization. Ends an SHA512 message-digest operation, writing
@@ -838,6 +832,18 @@ namespace System.Security.Cryptography
         private struct ExpandedBuffer<T>
         {
             public T Data;
+        }
+
+        [InlineArray(64)]
+        private struct HashBuffer64
+        {
+            public byte Data;
+        }
+
+        [InlineArray(128)]
+        private struct HashBuffer128
+        {
+            public byte Data;
         }
 
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/utils.cs
