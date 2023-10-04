@@ -66,7 +66,6 @@ namespace Microsoft.Workload.Build.Tasks
         [GeneratedRegex(@"^\d+\.\d+\.\d+(-[A-z]*\.*\d*)?")]
         private static partial Regex bandVersionRegex();
 
-        private readonly Stopwatch _stopwatch = new();
         public override bool Execute()
         {
             try
@@ -113,13 +112,12 @@ namespace Microsoft.Workload.Build.Tasks
                     }
                 }
 
-                _stopwatch.Start();
+                bool manifestsUpdated = false;
+                using (new LogTimeTaken(Log, "Installing manifests"))
                 {
-                    if (!InstallAllManifests())
+                    if (!InstallAllManifests(out manifestsUpdated))
                         return false;
                 }
-                _stopwatch.Stop();
-                Log.LogMessage(MessageImportance.High, $"Installing manifests took {_stopwatch.Elapsed.TotalSeconds} secs");
 
                 if (OnlyUpdateManifests)
                     return !Log.HasLoggedErrors;
@@ -147,12 +145,16 @@ namespace Microsoft.Workload.Build.Tasks
                                 : throw new LogAsErrorException($"Could not find any workload variant named '{w.variant}'");
                     }).ToArray();
 
-                foreach (InstallWorkloadRequest req in selectedRequests)
+
+                if (manifestsUpdated)
                 {
-                    if (Directory.Exists(req.TargetPath))
+                    foreach (InstallWorkloadRequest req in selectedRequests)
                     {
-                        Log.LogMessage(MessageImportance.Low, $"Deleting directory {req.TargetPath}");
-                        Directory.Delete(req.TargetPath, recursive: true);
+                        if (Directory.Exists(req.TargetPath))
+                        {
+                            Log.LogMessage(MessageImportance.Low, $"Deleting directory {req.TargetPath}");
+                            Directory.Delete(req.TargetPath, recursive: true);
+                        }
                     }
                 }
 
@@ -167,13 +169,11 @@ namespace Microsoft.Workload.Build.Tasks
                     if (!req.Validate(Log))
                         return false;
 
-                    _stopwatch.Start();
+                    using (new LogTimeTaken(Log, $"Installing workload {req.WorkloadId}"))
                     {
-                        if (!ExecuteInternal(req) && !req.IgnoreErrors)
+                        if (!InstallWorkload(req) && !req.IgnoreErrors)
                             return false;
                     }
-                    _stopwatch.Stop();
-                    Log.LogMessage(MessageImportance.High, $"Installing workload took {_stopwatch.Elapsed.TotalSeconds:F} secs");
 
                     File.WriteAllText(req.StampPath, string.Empty);
                 }
@@ -192,7 +192,7 @@ namespace Microsoft.Workload.Build.Tasks
             }
         }
 
-        private bool ExecuteInternal(InstallWorkloadRequest req)
+        private bool InstallWorkload(InstallWorkloadRequest req)
         {
             if (!File.Exists(TemplateNuGetConfigPath))
             {
@@ -220,8 +220,9 @@ namespace Microsoft.Workload.Build.Tasks
             return !Log.HasLoggedErrors;
         }
 
-        private bool InstallAllManifests()
+        private bool InstallAllManifests(out bool installed)
         {
+            installed = false;
             var allManifestPkgs = Directory.EnumerateFiles(LocalNuGetsPath, "*Manifest*nupkg");
             if (!AnyInputsNewerThanOutput(AllManifestsStampPath, allManifestPkgs))
             {
@@ -261,6 +262,7 @@ namespace Microsoft.Workload.Build.Tasks
                 }
 
                 manifestsInstalled.Add(req.ManifestName);
+                installed = true;
             }
 
             File.WriteAllText(AllManifestsStampPath, string.Empty);
@@ -273,10 +275,16 @@ namespace Microsoft.Workload.Build.Tasks
             string nugetConfigPath = Path.Combine(_tempDir, $"NuGet.{Path.GetRandomFileName()}.config");
             File.WriteAllText(nugetConfigPath, nugetConfigContents);
 
-            if (!RunWorkloadInstallCommand(req, nugetConfigPath, $"--download-to-cache {_workloadCachePath}"))
-                return false;
+            using (new LogTimeTaken(Log, $"Downloading to cache for {req.WorkloadId}"))
+            {
+                if (!RunWorkloadInstallCommand(req, nugetConfigPath, $"--download-to-cache {_workloadCachePath}"))
+                    return false;
+            }
 
-            return RunWorkloadInstallCommand(req, nugetConfigPath, $"--from-cache {_workloadCachePath}");
+            using (new LogTimeTaken(Log, $"Installing from cache for {req.WorkloadId}"))
+            {
+                return RunWorkloadInstallCommand(req, nugetConfigPath, $"--from-cache {_workloadCachePath}");
+            }
         }
 
         private bool RunWorkloadInstallCommand(InstallWorkloadRequest req, string nugetConfigPath, string extraArgs)
@@ -287,8 +295,6 @@ namespace Microsoft.Workload.Build.Tasks
                 $" --configfile \"{nugetConfigPath}\"" +
                 $" --temp-dir \"{_tempDir}/workload-install-temp\"" +
                 $" {extraArgs}" +
-                //$" --download-to-cache {_workloadCachePath}" +
-                //$" --from-cache {_workloadCachePath}" +
                 $" {req.WorkloadId}";
             (int exitCode, string output) = Utils.TryRunProcess(
                                                     Log,
@@ -300,7 +306,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                     },
                                                     logStdErrAsMessage: req.IgnoreErrors,
                                                     silent: false,
-                                                    debugMessageImportance: MessageImportance.High);
+                                                    debugMessageImportance: MessageImportance.Low);
             if (exitCode != 0)
             {
                 if (req.IgnoreErrors)
@@ -526,4 +532,28 @@ namespace Microsoft.Workload.Build.Tasks
                                      string Version,
                                      string OutputDir,
                                      string relativeSourceDir = "");
+
+    internal sealed class LogTimeTaken : IDisposable
+    {
+        private TaskLoggingHelper _log;
+        private string _prefix;
+        private MessageImportance _messageImportance;
+        private Stopwatch _stopwatch;
+
+        public LogTimeTaken(TaskLoggingHelper log, string prefix, MessageImportance importance = MessageImportance.High)
+        {
+            _log = log;
+            _prefix = prefix;
+            _messageImportance = importance;
+            _stopwatch = new();
+            _stopwatch.Start();
+        }
+
+        public void Dispose()
+        {
+            _stopwatch.Stop();
+            _log.LogMessage(_messageImportance, $"{_prefix} took {_stopwatch.Elapsed.TotalSeconds:F} secs");
+        }
+
+    }
 }
