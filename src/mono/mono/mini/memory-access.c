@@ -130,6 +130,12 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 	}
 
 	g_assert (align > 0);
+	
+#ifndef NO_UNALIGNED_ACCESS	
+	// Unaligned access is not a problem on this platform. Use the longest
+	// possible vector.
+	goto copy_16;
+#endif
 
 MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (align < TARGET_SIZEOF_VOID_P) {
@@ -143,7 +149,7 @@ MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	//Unaligned offsets don't naturaly happen in the runtime, so it's ok to be conservative in how we copy
 	//We assume that input src and dest are be aligned to `align` so offset just worsen it
 	int offsets_mask;
-	offsets_mask = (doffset | soffset) & 0x7; //we only care about the misalignment part
+	offsets_mask = (doffset | soffset) & 0xf; //we only care about the misalignment part
 	if (offsets_mask) {
 		if (offsets_mask % 2 == 1)
 			goto copy_1;
@@ -151,8 +157,27 @@ MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			goto copy_2;
 		if (TARGET_SIZEOF_VOID_P == 8 && offsets_mask % 8 == 4)
 			goto copy_4;
+		if (TARGET_SIZEOF_VOID_P == 8 && offsets_mask == 8)
+			goto copy_8;
 	}
 
+copy_16:
+#if defined(TARGET_ARM64) && !defined(DISABLE_SIMD)
+	while (size >= 16) {
+		cur_reg = alloc_xreg (cfg);
+		// if klass is NULL, this will default to a 128-bit structure
+		MonoInst* ins;
+		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADX_MEMBASE, cur_reg, srcreg, soffset);
+		ins->klass = NULL;
+		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, destreg, doffset, cur_reg);
+		ins->klass = NULL;
+		doffset += 16;
+		soffset += 16;
+		size -= 16;
+	}
+#endif
+
+copy_8:
 	if (SIZEOF_REGISTER == 8) {
 		while (size >= 8) {
 			cur_reg = alloc_preg (cfg);
