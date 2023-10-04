@@ -162,7 +162,7 @@ MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	}
 
 copy_16:
-#if defined(TARGET_ARM64) && !defined(DISABLE_SIMD)
+#if (defined(TARGET_ARM64) || defined(TARGET_AMD64)) && !defined(DISABLE_SIMD)
 	while (size >= 16) {
 		cur_reg = alloc_xreg (cfg);
 		// if klass is NULL, this will default to a 128-bit structure
