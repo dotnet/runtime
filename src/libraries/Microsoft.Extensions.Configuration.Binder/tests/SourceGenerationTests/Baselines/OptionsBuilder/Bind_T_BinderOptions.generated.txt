@@ -86,14 +86,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (type == typeof(Program.MyClass))
             {
                 var temp = (Program.MyClass)instance;
-                BindCore(configuration, ref temp, binderOptions);
+                BindCore(configuration, ref temp, defaultValueIfNotFound: false, binderOptions);
                 return;
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
         }
 
-        public static void BindCore(IConfiguration configuration, ref List<int> instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref List<int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
@@ -104,22 +104,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
-            instance.MyString = configuration["MyString"]!;
+            if (configuration["MyString"] is string value1)
+            {
+                instance.MyString = value1;
+            }
 
             if (configuration["MyInt"] is string value2)
             {
                 instance.MyInt = ParseInt(value2, () => configuration.GetSection("MyInt").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.MyInt = default;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section3)
             {
                 List<int>? temp5 = instance.MyList;
                 temp5 ??= new List<int>();
-                BindCore(section3, ref temp5, binderOptions);
+                BindCore(section3, ref temp5, defaultValueIfNotFound: false, binderOptions);
                 instance.MyList = temp5;
             }
         }

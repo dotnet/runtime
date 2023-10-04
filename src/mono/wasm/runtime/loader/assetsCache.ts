@@ -154,7 +154,7 @@ async function getCacheToUseIfEnabled(config: MonoConfig): Promise<Cache | null>
 
     // cache integrity is compromised if the first request has been served over http (except localhost)
     // in this case, we want to disable caching and integrity validation
-    if (window.isSecureContext === false) {
+    if (globalThis.isSecureContext === false) {
         return null;
     }
 

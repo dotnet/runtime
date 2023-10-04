@@ -1770,7 +1770,7 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
         assert(insertionPoint != nullptr);
 
 #if DEBUG
-        switch (block->bbJumpKind)
+        switch (block->GetBBJumpKind())
         {
             case BBJ_COND:
                 assert(insertionPoint->OperIsConditionalJump());

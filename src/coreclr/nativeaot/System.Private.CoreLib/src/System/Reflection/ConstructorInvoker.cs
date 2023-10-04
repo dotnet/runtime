@@ -18,7 +18,7 @@ namespace System.Reflection
         internal ConstructorInvoker(RuntimeConstructorInfo constructor)
         {
             _methodBaseInvoker = constructor.MethodInvoker;
-            _parameterCount = constructor.GetParametersNoCopy().Length;
+            _parameterCount = constructor.GetParametersAsSpan().Length;
             _declaringTypeHandle = constructor.DeclaringType.TypeHandle;
         }
 

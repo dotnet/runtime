@@ -675,12 +675,12 @@ private:
 
                 if (!condTree->IsIntegralConst(0))
                 {
-                    block->bbJumpKind = BBJ_ALWAYS;
+                    block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_compiler));
                     m_compiler->fgRemoveRefPred(block->bbNext, block);
                 }
                 else
                 {
-                    block->bbJumpKind = BBJ_NONE;
+                    block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(m_compiler));
                     m_compiler->fgRemoveRefPred(block->bbJumpDest, block);
                 }
             }
@@ -1444,7 +1444,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         // DDB 91389: Don't throw away the (only) inlinee block
         // when its return type is not BBJ_RETURN.
         // In other words, we need its BBJ_ to perform the right thing.
-        if (InlineeCompiler->fgFirstBB->bbJumpKind == BBJ_RETURN)
+        if (InlineeCompiler->fgFirstBB->KindIs(BBJ_RETURN))
         {
             // Inlinee contains just one BB. So just insert its statement list to topBlock.
             if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
@@ -1523,20 +1523,20 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 block->bbFlags |= BBF_INTERNAL;
             }
 
-            if (block->bbJumpKind == BBJ_RETURN)
+            if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
                 if (block->bbNext)
                 {
                     JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
                             block->bbNum, bottomBlock->bbNum);
-                    block->bbJumpKind = BBJ_ALWAYS;
+                    block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                     block->bbJumpDest = bottomBlock;
                 }
                 else
                 {
                     JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                    block->bbJumpKind = BBJ_NONE;
+                    block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                 }
 
                 fgAddRefPred(bottomBlock, block);
@@ -1945,7 +1945,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
     unsigned lclCnt     = InlineeMethodInfo->locals.numArgs;
     bool     bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-    bool     bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+    bool     bbIsReturn = block->KindIs(BBJ_RETURN);
 
     // If the callee contains zero-init locals, we need to explicitly initialize them if we are
     // in a loop or if the caller doesn't have compInitMem set. Otherwise we can rely on the

@@ -101,6 +101,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
+extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
 
 #endif // _COMSYNCHRONIZABLE_H
 

@@ -88,8 +88,10 @@ private:
     insCflags TruthifyingFlags(GenCondition cond);
     void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
     void ContainCheckNeg(GenTreeOp* neg);
-    void TryLowerCselToCinc(GenTreeOp* select, GenTree* cond);
-    void TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond);
+    void TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond);
+    void TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
+    GenTree* TryLowerAddSubToMulLongOp(GenTreeOp* op);
+    GenTree* TryLowerNegToMulLongOp(GenTreeOp* op);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
@@ -131,8 +133,8 @@ private:
     // Call Lowering
     // ------------------------------
     GenTree* LowerCall(GenTree* call);
-    GenTree* LowerCallMemmove(GenTreeCall* call);
-    GenTree* LowerCallMemcmp(GenTreeCall* call);
+    bool LowerCallMemmove(GenTreeCall* call, GenTree** next);
+    bool LowerCallMemcmp(GenTreeCall* call, GenTree** next);
     void LowerCFGCall(GenTreeCall* call);
     void MoveCFGCallArg(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
@@ -267,7 +269,7 @@ private:
     // operands.
     //
     // Arguments:
-    //     tree  -             Gentree of a binary operation.
+    //     tree  -             GenTree of a binary operation.
     //     isSafeToMarkOp1     True if it's safe to mark op1 as register optional
     //     isSafeToMarkOp2     True if it's safe to mark op2 as register optional
     //
@@ -310,6 +312,7 @@ private:
     void LowerStoreIndirCommon(GenTreeStoreInd* ind);
     void LowerIndir(GenTreeIndir* ind);
     void LowerStoreIndir(GenTreeStoreInd* node);
+    void LowerStoreIndirCoalescing(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
     bool TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
