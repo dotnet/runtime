@@ -182,8 +182,8 @@ IF NOT DEFINED DoLink (
       <BatchIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
 IF NOT DEFINED DoLink (
   if defined RunningIlasmRoundTrip (
-    ECHO %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments%
-    %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments%
+    ECHO %LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments%
+    %LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments%
     IF NOT "!ERRORLEVEL!"=="%CLRTestExpectedExitCode%" (
       ECHO END EXECUTION OF IL{D}ASM BINARY - FAILED !ERRORLEVEL! vs %CLRTestExpectedExitCode%
       Exit /b 1
