@@ -7844,7 +7844,7 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
         {
             return allowNull;
         }
-        // We can allow bigger sideeffect-free trees here, but it's not clear if it's worth it.
+        // We can allow bigger trees here, but it's not clear if it's worth it.
         return node->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
     };
 
@@ -7942,12 +7942,6 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
     // to get a single store of 8 bytes.
     do
     {
-        // This check is not really needed, just for better throughput.
-        if (!varTypeIsIntegralOrI(ind) && !varTypeIsSIMD(ind))
-        {
-            return;
-        }
-
         StoreCoalescingData currData;
         StoreCoalescingData prevData;
 
@@ -8036,18 +8030,20 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 return;
             }
 
-            int startOffset = min(prevData.offset, currData.offset) % genTypeSize(ind);
+            const int ptrAlignOffset = min(prevData.offset, currData.offset) % genTypeSize(ind);
 
 #ifdef TARGET_XARCH
             // Check whether data can be guaranteed to be in a cache line.
-            if ((startOffset + genTypeSize(ind) * 2) > TARGET_POINTER_SIZE)
+            // Only AMD/Intel can guarantee that unaligned writes are atomic if they don't cross the
+            // cache line boundary.
+            if ((ptrAlignOffset + genTypeSize(ind) * 2) > TARGET_POINTER_SIZE)
             {
                 // NOTE: We can use SIMD if we can assume 16-bytes alignment (on Intel/AMD cpus with AVX+),
                 // but it's very unlikely we can detect that from surrounding code since GC only offers 8-bytes one.
                 return;
             }
 #elif defined(TARGET_ARM64)
-            if ((startOffset == 0) && ind->TypeIs(TYP_LONG, TYP_REF))
+            if ((ptrAlignOffset == 0) && ind->TypeIs(TYP_LONG, TYP_REF))
             {
                 // Per Arm Architecture Reference Manual for A-profile architecture:
                 //
@@ -8056,9 +8052,9 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 //
                 // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null)
                 //
-                // Actually, we probably don't even need "startOffset == 0" check, if the IND<long> is not naturally
-                // aligned
-                // then it's no longer atomic anyway regardless whether it crosses the cache line boundary or not.
+                // Actually, we probably don't even need "ptrAlignOffset == 0" check, if the IND<LONG/REF> is
+                // not naturally aligned then it's no longer atomic anyway regardless whether it crosses
+                // the cache line boundary or not.
             }
             else
             {
@@ -8079,7 +8075,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
             case TYP_SHORT:
             case TYP_USHORT:
-                newType = TYP_INT; // TYP_UINT is not legal in IR
+                newType = TYP_INT;
                 break;
 
 #ifdef TARGET_64BIT
@@ -8116,6 +8112,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
 #if defined(TARGET_AMD64)
             case TYP_SIMD16:
+                // Check for AVX to present and PreferredVectorByteLength
                 if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX) &&
                     (comp->getPreferredVectorByteLength() >= 32))
                 {
@@ -8125,6 +8122,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 return;
 
             case TYP_SIMD32:
+                // Same for AVX512
                 if (comp->IsBaselineVector512IsaSupportedOpportunistically() &&
                     (comp->getPreferredVectorByteLength() >= 64))
                 {
@@ -8139,11 +8137,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             // TYP_FLOAT and TYP_DOUBLE aren't needed here - they're expected to
             // be converted to TYP_INT/TYP_LONG for constant value.
             //
-            // TODO-CQ:
-            //   2 x LONG/REF  -> SIMD16
-            //
-            // where it's legal since the only guarantee we have is that 8-byte aligned
-            // SIMD writes are atomic for their 64-bit chunks and only on ARM64.
+            // TYP_UINT and TYP_ULONG are not legal for GT_IND.
             //
             default:
                 return;
@@ -8203,6 +8197,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
 #if defined(TARGET_64BIT) && defined(FEATURE_HW_INTRINSICS)
         // We're promoting two TYP_LONG/TYP_REF into TYP_SIMD16
+        // All legality checks were done above.
         if (varTypeIsSIMD(newType))
         {
             // Replace two 64bit constants with a single 128bit constant
