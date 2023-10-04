@@ -9,15 +9,15 @@ using Xunit;
 public class Runtime_90508
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Vector128<double> Test1(Vector128<double> v, double b) =>
+    private static Vector128<double> Test1(Vector128<double> v) =>
         v + Sse3.MoveAndDuplicate(Vector128.CreateScalarUnsafe(b));
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Vector128<double> Test2(Vector128<double> v, double b) =>
+    private static Vector128<double> Test2(Vector128<double> v) =>
         v + Sse3.MoveAndDuplicate(Vector128.CreateScalarUnsafe(1.0));
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Vector128<double> Test3(Vector128<double> v, double b) =>
+    private static Vector128<double> Test3(Vector128<double> v) =>
         v + Sse3.MoveAndDuplicate(Vector128.Create(1.0));
 
     [Fact]
@@ -28,9 +28,9 @@ public class Runtime_90508
             return 100;
         }
 
-        if (Test1(Vector128.Create(42.0), 1).ToString().Equals("<43, 43>") &&
-            Test2(Vector128.Create(42.0), 1).ToString().Equals("<43, 43>") &&
-            Test3(Vector128.Create(42.0), 1).ToString().Equals("<43, 43>"))
+        if (Test1(Vector128.Create(42.0)).ToString().Equals("<43, 43>") &&
+            Test2(Vector128.Create(42.0)).ToString().Equals("<43, 43>") &&
+            Test3(Vector128.Create(42.0)).ToString().Equals("<43, 43>"))
         {
             return 100;
         }
