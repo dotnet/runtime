@@ -62,6 +62,7 @@ namespace System.Text.Json
                 ? encoder.Encoder(rawPropertyName)
                 : rawPropertyName;
         }
+
         private static byte[] GetEscapedPropertyNameSection(
             ReadOnlySpan<byte> utf8Value,
             int firstEscapeIndexVal,
