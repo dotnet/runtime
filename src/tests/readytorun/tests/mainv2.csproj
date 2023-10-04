@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
     <ProjectReference Include="testv1\test.csproj" />
+    <ProjectReference Include="testv2\test.csproj" ReferenceOutputAssembly="false" />
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
