@@ -547,7 +547,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Ceiling:
         {
             assert(sig->numArgs == 1);
-            assert(varTypeIsFloating(simdBaseType));
+
+            if (!varTypeIsFloating(simdBaseType))
+            {
+                retNode = impSIMDPopStack();
+                break;
+            }
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdCeilNode(retType, op1, simdBaseJitType, simdSize);
@@ -1098,7 +1103,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Floor:
         {
             assert(sig->numArgs == 1);
-            assert(varTypeIsFloating(simdBaseType));
+
+            if (!varTypeIsFloating(simdBaseType))
+            {
+                retNode = impSIMDPopStack();
+                break;
+            }
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdFloorNode(retType, op1, simdBaseJitType, simdSize);
@@ -1725,6 +1735,48 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_AdvSimd_StoreVector64x2:
+        case NI_AdvSimd_Arm64_StoreVector128x2:
+        {
+            assert(sig->numArgs == 2);
+            assert(retType == TYP_VOID);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2                 = impPopStack().val;
+            unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+            argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1                 = getArgForHWIntrinsic(argType, argClass);
+
+            assert(op2->TypeGet() == TYP_STRUCT);
+            if (op1->OperIs(GT_CAST))
+            {
+                // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                // we really want, so throw away the cast.
+                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                {
+                    op1 = op1->gtGetOp1();
+                }
+            }
+
+            if (!op2->OperIs(GT_LCL_VAR))
+            {
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("StoreVectorNx2 temp tree"));
+
+                impStoreTemp(tmp, op2, CHECK_SPILL_NONE);
+                op2 = gtNewLclvNode(tmp, argType);
+            }
+            op2 = gtConvertTableOpToFieldList(op2, fieldCount);
+
+            info.compNeedsConsecutiveRegisters = true;
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 

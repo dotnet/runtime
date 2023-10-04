@@ -378,7 +378,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             block->bbMemoryLiveIn  = fullMemoryKindSet;
             block->bbMemoryLiveOut = fullMemoryKindSet;
 
-            switch (block->bbJumpKind)
+            switch (block->GetBBJumpKind())
             {
                 case BBJ_EHFINALLYRET:
                 case BBJ_EHFAULTRET:
@@ -491,7 +491,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
 
         // Mark the FrameListRoot as used, if applicable.
 
-        if (block->bbJumpKind == BBJ_RETURN && compMethodRequiresPInvokeFrame())
+        if (block->KindIs(BBJ_RETURN) && compMethodRequiresPInvokeFrame())
         {
             assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
             if (!opts.ShouldUsePInvokeHelpers())
@@ -886,7 +886,7 @@ void Compiler::fgExtendDbgLifetimes()
     {
         VarSetOps::ClearD(this, initVars);
 
-        switch (block->bbJumpKind)
+        switch (block->GetBBJumpKind())
         {
             case BBJ_NONE:
                 PREFIX_ASSUME(block->bbNext != nullptr);
@@ -2451,7 +2451,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
         {
             // Get the set of live variables on exit from an exception region.
             VarSetOps::UnionD(this, exceptVars, block->bbLiveOut);
-            if (block->bbJumpKind == BBJ_EHFINALLYRET)
+            if (block->KindIs(BBJ_EHFINALLYRET))
             {
                 // Live on exit from finally.
                 // We track these separately because, in addition to having EH live-out semantics,

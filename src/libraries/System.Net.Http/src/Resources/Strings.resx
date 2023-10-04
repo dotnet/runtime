@@ -534,6 +534,9 @@
   <data name="net_http_synchronous_reads_not_supported" xml:space="preserve">
     <value>Synchronous reads are not supported, use ReadAsync instead.</value>
   </data>
+  <data name="net_http_synchronous_writes_not_supported" xml:space="preserve">
+    <value>Synchronous writes are not supported, use WriteAsync instead.</value>
+  </data>
   <data name="net_socks_auth_failed" xml:space="preserve">
     <value>Failed to authenticate with the SOCKS server.</value>
   </data>

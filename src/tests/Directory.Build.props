@@ -4,6 +4,7 @@
     <LibrariesConfiguration>Release</LibrariesConfiguration>
     <!-- NativeAot tests rely on presence of ILLink targets, but don't actually run ILLink. -->
     <UsingToolMicrosoftNetILLinkTasks Condition="'$(UsingToolMicrosoftNetILLinkTasks)' == ''">true</UsingToolMicrosoftNetILLinkTasks>
+    <InstallV8ForTests>false</InstallV8ForTests>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />

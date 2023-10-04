@@ -3312,7 +3312,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
             regNumber tmpReg = call->GetSingleTempReg();
             // Register where we save call address in should not be overridden by epilog.
-            assert((tmpReg & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == tmpReg);
+            assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == genRegMask(tmpReg));
 
             regNumber callAddrReg =
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
@@ -3572,7 +3572,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             else
             {
                 // Register where we save call address in should not be overridden by epilog.
-                assert((targetAddrReg & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == targetAddrReg);
+                assert((genRegMask(targetAddrReg) & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == genRegMask(targetAddrReg));
             }
 
             // We have now generated code loading the target address from the indirection cell into `targetAddrReg`.
@@ -4610,7 +4610,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     //             addressing mode instruction.  Currently we're 'cheating' by producing one or more
     //             instructions to generate the addressing mode so we need to modify lowering to
     //             produce LEAs that are a 1:1 relationship to the ARM64 architecture.
-    if (lea->Base() && lea->Index())
+    if (lea->HasBase() && lea->HasIndex())
     {
         GenTree* memBase = lea->Base();
         GenTree* index   = lea->Index();
@@ -4687,7 +4687,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
         }
     }
-    else if (lea->Base())
+    else if (lea->HasBase())
     {
         GenTree* memBase = lea->Base();
 
@@ -4715,7 +4715,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             emit->emitIns_R_R_R(INS_add, size, lea->GetRegNum(), memBase->GetRegNum(), tmpReg);
         }
     }
-    else if (lea->Index())
+    else if (lea->HasIndex())
     {
         // If we encounter a GT_LEA node without a base it means it came out
         // when attempting to optimize an arbitrary arithmetic expression during lower.
@@ -5515,7 +5515,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     {
         SetHasTailCalls(true);
 
-        noway_assert(block->bbJumpKind == BBJ_RETURN);
+        noway_assert(block->KindIs(BBJ_RETURN));
         noway_assert(block->GetFirstLIRNode() != nullptr);
 
         /* figure out what jump we have */

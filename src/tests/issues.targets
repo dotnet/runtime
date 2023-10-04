@@ -30,6 +30,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/mono/runningmono/*">
             <Issue>This test is to verify we are running mono, and therefore only makes sense on mono.</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/2164/foreground-shutdown/*">
+            <Issue>https://github.com/dotnet/runtime/issues/83658</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Coverage/271010/**">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
@@ -251,9 +254,6 @@
 
     <!-- Windows all architecture excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/2164/foreground-shutdown/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84006</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x64 specific excludes -->
@@ -2387,15 +2387,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/objrefandnonobjrefoverlap/case9/**">
             <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case04/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case05/**">
-            <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/RefFields/Validate/**">
             <Issue>expected failure: unsupported type with ref field fails at AOT compile time, not runtime</Issue>
         </ExcludeList>
@@ -3699,6 +3690,12 @@
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/**">
             <Issue>System.Diagnostics.Process is not supported</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsMobile)' == 'true'">
@@ -3733,7 +3730,7 @@
             <FilteredExcludeList
                 Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)').Replace('\', '/'))"
                 Condition="'%(ExcludeList.Extension)' == '.dll'" />
-            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.RootDir)%(ExcludeList.Directory)%(ExcludeList.FileName)'))', '.cmd').Replace('\', '/'))"
+            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.Identity)'))', '.cmd').Replace('\', '/'))"
                 Condition="'%(ExcludeList.Extension)' == '.OutOfProcessTest'" />
       </ItemGroup>
     </Target>

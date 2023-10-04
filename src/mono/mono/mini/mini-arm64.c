@@ -3932,14 +3932,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_XZERO:
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			arm_neon_movi_b (code, get_vector_size_macro (ins), dreg, 0);
 			break;
 		case OP_XONES:
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
-			arm_neon_not_16b (code, dreg, dreg);
+			arm_neon_movi_b (code, get_vector_size_macro (ins), dreg, 0xff);
 			break;
 		case OP_XEXTRACT: 
-			code = emit_xextract (code, VREG_FULL, GTMREG_TO_INT (ins->inst_c0), dreg, sreg1);
+			code = emit_xextract (code, (ins->inst_c1 == 8) ? VREG_LOW : VREG_FULL, GTMREG_TO_INT (ins->inst_c0), dreg, sreg1);
 			break;
 		case OP_STOREX_MEMBASE:
 			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
@@ -3981,7 +3980,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_EXPAND_R4:
 		case OP_EXPAND_R8: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, 0);
+			if (ins->opcode == OP_EXPAND_R8)
+				arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, 0);
+			else
+				arm_neon_fdup_e (code, get_vector_size_macro (ins), t, dreg, sreg1, 0);
 			break;
 		}
 		case OP_EXTRACT_I1:
@@ -4004,6 +4006,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				// Technically, this broadcasts element #inst_c0 to all dest XREG elements; whereas it should
 				// set the FREG to the said element. Since FREG and XREG pool is the same on arm64 and the rest
 				// of the F/XREG is ignored in FREG mode, this operation remains valid.
+				// FIXME: pass VREG_LOW for 64-bit vectors
 				arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, GTMREG_TO_UINT32 (ins->inst_c0));
 			}
 			break;
@@ -4098,17 +4101,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_ARM64_XADDV: {
 			switch (ins->inst_c0) {
-			case INTRINS_AARCH64_ADV_SIMD_FADDV:
+			case INTRINS_AARCH64_ADV_SIMD_FADDV: {
+				const int width = get_vector_size_macro (ins);
 				if (ins->inst_c1 == MONO_TYPE_R8) {
 					arm_neon_faddp (code, VREG_FULL, TYPE_F64, dreg, sreg1, sreg1);
 				} else if (ins->inst_c1 == MONO_TYPE_R4) {
-					arm_neon_faddp (code, VREG_FULL, TYPE_F32, dreg, sreg1, sreg1);
-					arm_neon_faddp (code, VREG_FULL, TYPE_F32, dreg, dreg, dreg);
+					arm_neon_faddp (code, width, TYPE_F32, dreg, sreg1, sreg1);
+					if (width == VREG_FULL)
+						arm_neon_faddp (code, width, TYPE_F32, dreg, dreg, dreg);
 				} else {
 					g_assert_not_reached ();
 				} 
 				break;
-
+			}
 			case INTRINS_AARCH64_ADV_SIMD_UADDV:
 			case INTRINS_AARCH64_ADV_SIMD_SADDV: 
 				if (get_type_size_macro (ins->inst_c1) == TYPE_I64) 
@@ -4124,7 +4129,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CREATE_SCALAR_INT: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			arm_neon_movi_b (code, VREG_FULL, dreg, 0);
 			arm_neon_ins_g(code, t, dreg, sreg1, 0);
 			break;
 		}
@@ -4139,7 +4144,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 			// Use a temp register for zero op, as sreg1 and dreg share the same register here
-			arm_neon_eor_16b (code, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+			arm_neon_movi_b (code, VREG_FULL, NEON_TMP_REG, 0);
 			arm_neon_ins_e(code, t, NEON_TMP_REG, sreg1, 0, 0);
 			arm_neon_mov (code, dreg, NEON_TMP_REG);
 			break;
@@ -4174,17 +4179,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XLOWER: {
 			if (dreg == sreg1) {
 				// clean the upper half
-				arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+				arm_neon_movi_b (code, VREG_FULL, NEON_TMP_REG, 0);
 				arm_neon_ins_e (code, SIZE_8, dreg, NEON_TMP_REG, 1, 0); 
 			} else {
-				arm_neon_eor (code, VREG_FULL, dreg, dreg, dreg);
+				arm_neon_movi_b (code, VREG_FULL, dreg, 0);
 				arm_neon_mov_8b (code, dreg, sreg1);
 			}
 			break;
 		}
 		case OP_XUPPER:
 			// shift in 64 zeros from the left
-			arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+			arm_neon_movi_b (code, VREG_FULL, NEON_TMP_REG, 0);
 			arm_neon_ext_16b (code, dreg, sreg1, NEON_TMP_REG, 8);
 			break;
 	

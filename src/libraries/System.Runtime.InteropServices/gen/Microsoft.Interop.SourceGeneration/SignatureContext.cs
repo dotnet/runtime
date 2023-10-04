@@ -71,32 +71,30 @@ namespace Microsoft.Interop
             IMethodSymbol method,
             MarshallingInfoParser marshallingInfoParser,
             StubEnvironment env,
+            CodeEmitOptions options,
             Assembly generatorInfoAssembly)
         {
             ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, marshallingInfoParser, env);
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
-            if (env.TargetFramework != TargetFramework.Unknown)
-            {
-                string generatorName = generatorInfoAssembly.GetName().Name;
-                string generatorVersion = generatorInfoAssembly.GetName().Version.ToString();
-                // Define additional attributes for the stub definition.
-                additionalAttrs.Add(
-                    AttributeList(
-                        SingletonSeparatedList(
-                            Attribute(
-                                NameSyntaxes.System_CodeDom_Compiler_GeneratedCodeAttribute,
-                                AttributeArgumentList(
-                                    SeparatedList(
-                                        new[]
-                                        {
+            string generatorName = generatorInfoAssembly.GetName().Name;
+            string generatorVersion = generatorInfoAssembly.GetName().Version.ToString();
+            // Define additional attributes for the stub definition.
+            additionalAttrs.Add(
+                AttributeList(
+                    SingletonSeparatedList(
+                        Attribute(
+                            NameSyntaxes.System_CodeDom_Compiler_GeneratedCodeAttribute,
+                            AttributeArgumentList(
+                                SeparatedList(
+                                    new[]
+                                    {
                                             AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(generatorName))),
                                             AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(generatorVersion)))
-                                        }))))));
-            }
+                                    }))))));
 
-            if (env.TargetFrameworkVersion >= new Version(5, 0) && !MethodIsSkipLocalsInit(env, method))
+            if (options.SkipInit && !MethodIsSkipLocalsInit(env, method))
             {
                 additionalAttrs.Add(
                     AttributeList(
@@ -165,7 +163,7 @@ namespace Microsoft.Interop
 
         private static bool MethodIsSkipLocalsInit(StubEnvironment env, IMethodSymbol method)
         {
-            if (env.ModuleSkipLocalsInit)
+            if (env.EnvironmentFlags.HasFlag(EnvironmentFlags.SkipLocalsInit))
             {
                 return true;
             }

@@ -873,17 +873,19 @@ namespace Mono.Linker.Tests.TestCasesRunner
 										}
 										if (memberDefinition is not MethodDefinition)
 											continue;
-										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
-										}
-										if (memberDefinition.Name == ".ctor" &&
-											memberDefinition.DeclaringType.FullName == expectedMember.FullName) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
+										if (actualName.StartsWith (expectedMember.DeclaringType.FullName)) {
+											if (memberDefinition.Name == ".cctor" &&
+												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
+												expectedWarningFound = true;
+												loggedMessages.Remove (loggedMessage);
+												break;
+											}
+											if (memberDefinition.Name == ".ctor" &&
+												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition || memberDefinition.DeclaringType.FullName == expectedMember.FullName)) {
+												expectedWarningFound = true;
+												loggedMessages.Remove (loggedMessage);
+												break;
+											}
 										}
 									} else if (attrProvider is AssemblyDefinition expectedAssembly) {
 										// Allow assembly-level attributes to match warnings from compiler-generated Main

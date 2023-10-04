@@ -710,28 +710,6 @@ inline size_t unsigned_abs(__int64 x)
 
 /*****************************************************************************/
 
-#define HISTOGRAM_MAX_SIZE_COUNT 64
-
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
-
-class Histogram
-{
-public:
-    Histogram(const unsigned* const sizeTable);
-
-    void dump(FILE* output);
-    void record(unsigned size);
-
-private:
-    unsigned              m_sizeCount;
-    const unsigned* const m_sizeTable;
-    unsigned              m_counts[HISTOGRAM_MAX_SIZE_COUNT];
-};
-
-#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
-
-/*****************************************************************************/
-
 #include "error.h"
 
 /*****************************************************************************/
