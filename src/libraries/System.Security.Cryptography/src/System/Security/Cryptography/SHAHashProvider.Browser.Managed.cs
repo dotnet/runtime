@@ -13,9 +13,8 @@ namespace System.Security.Cryptography
 {
     internal sealed class SHAManagedHashProvider : HashProvider
     {
-        private int hashSizeInBytes;
-        private SHAManagedImplementationBase impl;
-        private MemoryStream? buffer;
+        private readonly int hashSizeInBytes;
+        private readonly ISHAManagedImplementation impl;
 
         public SHAManagedHashProvider(string hashAlgorithmId)
         {
@@ -44,15 +43,15 @@ namespace System.Security.Cryptography
 
         public override void AppendHashData(ReadOnlySpan<byte> data)
         {
-            buffer ??= new MemoryStream(1000);
-
-            buffer.Write(data);
+            impl.AppendHashData(data);
         }
 
         public override int FinalizeHashAndReset(Span<byte> destination)
         {
-            GetCurrentHash(destination);
-            buffer = null;
+            Debug.Assert(destination.Length >= hashSizeInBytes);
+
+            impl.FinalizeHashAndReset(destination);
+            impl.Initialize();
 
             return hashSizeInBytes;
         }
@@ -61,12 +60,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length >= hashSizeInBytes);
 
-            impl.Initialize();
-            if (buffer != null)
-            {
-                impl.HashCore(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
-            }
-            impl.HashFinal().CopyTo(destination);
+            impl.GetCurrentHash(destination);
 
             return hashSizeInBytes;
         }
@@ -75,7 +69,6 @@ namespace System.Security.Cryptography
 
         public override void Reset()
         {
-            buffer = null;
             impl.Initialize();
         }
 
@@ -83,40 +76,47 @@ namespace System.Security.Cryptography
         {
         }
 
-        private abstract class SHAManagedImplementationBase
+        private interface ISHAManagedImplementation
         {
-            public abstract void Initialize();
-            public abstract void HashCore(ReadOnlySpan<byte> partIn);
-            public abstract byte[] HashFinal();
+            void Initialize();
+            void AppendHashData(ReadOnlySpan<byte> partIn);
+            void FinalizeHashAndReset(Span<byte> destination);
+            void GetCurrentHash(Span<byte> destination);
         }
 
-        private sealed class SHA1ManagedImplementation : SHAManagedImplementationBase
+        private struct SHA1ManagedImplementation : ISHAManagedImplementation
         {
             // It's ok to use a "non-secret purposes" hashing implementation here, as this is only
             // used in wasm scenarios, and as of the current release we don't make any security guarantees
             // about our crypto primitives in wasm environments.
             private Sha1ForNonSecretPurposes _state; // mutable struct - don't make readonly
 
-            public override void Initialize()
+            public void Initialize()
             {
                 _state = new();
             }
 
-            public override void HashCore(ReadOnlySpan<byte> partIn)
+            public void AppendHashData(ReadOnlySpan<byte> partIn)
             {
                 _state.Append(partIn);
             }
 
-            public override byte[] HashFinal()
+            public void FinalizeHashAndReset(Span<byte> destination)
             {
-                byte[] output = new byte[20];
-                _state.Finish(output);
-                return output;
+                _state.Finish(destination);
+            }
+
+            public readonly void GetCurrentHash(Span<byte> destination)
+            {
+                // GetCurrentHash must not modify the state of the hash object.
+                // We copy it and then call Finish on the copy.
+                Sha1ForNonSecretPurposes state = _state;
+                state.Finish(destination);
             }
         }
 
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/sha256managed.cs
-        private sealed class SHA256ManagedImplementation : SHAManagedImplementationBase
+        private struct SHA256ManagedImplementation : ISHAManagedImplementation
         {
             private HashBuffer64 _buffer;
             private long _count; // Number of bytes in the hashed message
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography
                 InitializeState();
             }
 
-            public override void Initialize()
+            public void Initialize()
             {
                 InitializeState();
 
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography
             operation, processing another message block, and updating the
             context.
             */
-            public override unsafe void HashCore(ReadOnlySpan<byte> partIn)
+            public void AppendHashData(ReadOnlySpan<byte> partIn)
             {
                 /* Compute length of buffer */
                 int bufferLen = (int)(_count & 0x3f);
@@ -182,10 +182,8 @@ namespace System.Security.Cryptography
             /* SHA256 finalization. Ends an SHA256 message-digest operation, writing
             the message digest.
             */
-            public override byte[] HashFinal()
+            public void FinalizeHashAndReset(Span<byte> destination)
             {
-                byte[] hash = new byte[32]; // HashSizeValue = 256
-
                 /* Compute padding: 80 00 00 ... 00 00 <bit count>
                 */
 
@@ -203,12 +201,18 @@ namespace System.Security.Cryptography
                 BinaryPrimitives.WriteUInt64BigEndian(pad[..padLen - sizeof(ulong)], bitCount);
 
                 /* Digest padding */
-                HashCore(pad[..padLen]);
+                AppendHashData(pad[..padLen]);
 
                 /* Store digest */
-                SHAUtils.DWORDToBigEndian(hash, _stateSHA256[..8]);
+                SHAUtils.DWORDToBigEndian(destination, _stateSHA256[..8]);
+            }
 
-                return hash;
+            public readonly void GetCurrentHash(Span<byte> destination)
+            {
+                // GetCurrentHash must not modify the state of the hash object.
+                // We copy it and then call FinalizeHashAndReset on the copy.
+                SHA256ManagedImplementation state = this;
+                state.FinalizeHashAndReset(destination);
             }
 
             private static ReadOnlySpan<uint> _K => new uint[] {
@@ -349,7 +353,7 @@ namespace System.Security.Cryptography
         }
 
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/sha384managed.cs
-        private sealed class SHA384ManagedImplementation : SHAManagedImplementationBase
+        private struct SHA384ManagedImplementation : ISHAManagedImplementation
         {
             private HashBuffer128 _buffer;
             private ulong _count; // Number of bytes in the hashed message
@@ -361,7 +365,7 @@ namespace System.Security.Cryptography
                 InitializeState();
             }
 
-            public override void Initialize()
+            public void Initialize()
             {
                 InitializeState();
 
@@ -388,7 +392,7 @@ namespace System.Security.Cryptography
             operation, processing another message block, and updating the
             context.
             */
-            public override unsafe void HashCore(ReadOnlySpan<byte> partIn)
+            public void AppendHashData(ReadOnlySpan<byte> partIn)
             {
                 /* Compute length of buffer */
                 int bufferLen = (int)(_count & 0x7f);
@@ -415,10 +419,8 @@ namespace System.Security.Cryptography
             /* SHA384 finalization. Ends an SHA384 message-digest operation, writing
             the message digest.
             */
-            public override byte[] HashFinal()
+            public void FinalizeHashAndReset(Span<byte> destination)
             {
-                byte[] hash = new byte[48]; // HashSizeValue = 384
-
                 /* Compute padding: 80 00 00 ... 00 00 <bit count>
                 */
 
@@ -436,12 +438,18 @@ namespace System.Security.Cryptography
                 BinaryPrimitives.WriteUInt64BigEndian(pad[..padLen - sizeof(ulong)], bitCount);
 
                 /* Digest padding */
-                HashCore(pad[..padLen]);
+                AppendHashData(pad[..padLen]);
 
                 /* Store digest */
-                SHAUtils.QuadWordToBigEndian(hash, _stateSHA384[..6]);
+                SHAUtils.QuadWordToBigEndian(destination, _stateSHA384[..6]);
+            }
 
-                return hash;
+            public readonly void GetCurrentHash(Span<byte> destination)
+            {
+                // GetCurrentHash must not modify the state of the hash object.
+                // We copy it and then call FinalizeHashAndReset on the copy.
+                SHA384ManagedImplementation state = this;
+                state.FinalizeHashAndReset(destination);
             }
 
             private static ReadOnlySpan<ulong> _K => new ulong[] {
@@ -586,7 +594,7 @@ namespace System.Security.Cryptography
         }
 
         // ported from https://github.com/microsoft/referencesource/blob/a48449cb48a9a693903668a71449ac719b76867c/mscorlib/system/security/cryptography/sha512managed.cs
-        private sealed class SHA512ManagedImplementation : SHAManagedImplementationBase
+        private struct SHA512ManagedImplementation : ISHAManagedImplementation
         {
             private HashBuffer128 _buffer;
             private ulong _count; // Number of bytes in the hashed message
@@ -598,7 +606,7 @@ namespace System.Security.Cryptography
                 InitializeState();
             }
 
-            public override void Initialize()
+            public void Initialize()
             {
                 InitializeState();
 
@@ -625,7 +633,7 @@ namespace System.Security.Cryptography
             operation, processing another message block, and updating the
             context.
             */
-            public override unsafe void HashCore(ReadOnlySpan<byte> partIn)
+            public void AppendHashData(ReadOnlySpan<byte> partIn)
             {
                 /* Compute length of buffer */
                 int bufferLen = (int)(_count & 0x7f);
@@ -652,10 +660,8 @@ namespace System.Security.Cryptography
             /* SHA512 finalization. Ends an SHA512 message-digest operation, writing
             the message digest.
             */
-            public override byte[] HashFinal()
+            public void FinalizeHashAndReset(Span<byte> destination)
             {
-                byte[] hash = new byte[64]; // HashSizeValue = 512
-
                 /* Compute padding: 80 00 00 ... 00 00 <bit count>
                 */
 
@@ -673,12 +679,18 @@ namespace System.Security.Cryptography
                 BinaryPrimitives.WriteUInt64BigEndian(pad[..padLen - sizeof(ulong)], bitCount);
 
                 /* Digest padding */
-                HashCore(pad[..padLen]);
+                AppendHashData(pad[..padLen]);
 
                 /* Store digest */
-                SHAUtils.QuadWordToBigEndian(hash, _stateSHA512[..8]);
+                SHAUtils.QuadWordToBigEndian(destination, _stateSHA512[..8]);
+            }
 
-                return hash;
+            public readonly void GetCurrentHash(Span<byte> destination)
+            {
+                // GetCurrentHash must not modify the state of the hash object.
+                // We copy it and then call FinalizeHashAndReset on the copy.
+                SHA512ManagedImplementation state = this;
+                state.FinalizeHashAndReset(destination);
             }
 
             private static ReadOnlySpan<ulong> _K => new ulong[] {
