@@ -769,13 +769,11 @@ namespace System.Reflection
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
                     }
-                    if ((transform & Transform.FunctionPointer) != 0)
-                    {
-                        obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref obj.GetRawData());
-                    }
                     else
                     {
-                        obj = RuntimeImports.RhBox(argumentInfo.Type, ref obj.GetRawData());
+                        obj = RuntimeImports.RhBox(
+                            (transform & Transform.FunctionPointer) != 0 ? EETypePtr.EETypePtrOf<IntPtr>() : argumentInfo.Type,
+                            ref obj.GetRawData());
                     }
                 }
 
@@ -806,13 +804,11 @@ namespace System.Reflection
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
                     }
-                    if ((transform & Transform.FunctionPointer) != 0)
-                    {
-                        obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref obj.GetRawData());
-                    }
                     else
                     {
-                        obj = RuntimeImports.RhBox(argumentInfo.Type, ref obj.GetRawData());
+                        obj = RuntimeImports.RhBox(
+                            (transform & Transform.FunctionPointer) != 0 ? EETypePtr.EETypePtrOf<IntPtr>() : argumentInfo.Type,
+                            ref obj.GetRawData());
                     }
                 }
 
