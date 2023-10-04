@@ -35,13 +35,13 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 static inline guint8
 mono_atomic_cas_u8 (volatile guint8 *dest, guint8 exch, guint8 comp)
 {
-	return InterlockedCompareExchange ((BYTE volatile *)dest, (LONG)exch, (LONG)comp);
+	return InterlockedCompareExchange8 ((BYTE volatile *)dest, (LONG)exch, (LONG)comp);
 }
 
 static inline gint16
 mono_atomic_cas_i16 (volatile gint16 *dest, gint16 exch, gint16 comp)
 {
-	return InterlockedCompareExchange ((SHORT volatile *)dest, (LONG)exch, (LONG)comp);
+	return InterlockedCompareExchange16 ((SHORT volatile *)dest, (LONG)exch, (LONG)comp);
 }
 
 static inline gint32
