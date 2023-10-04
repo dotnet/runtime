@@ -1079,8 +1079,6 @@ namespace System.Collections.Generic
                 // or source._entries when they aren't initialized.
                 return;
             }
-            Debug.Assert(_entries is not null);
-            Debug.Assert(_buckets is not null);
             Debug.Assert(source._entries is not null);
             Debug.Assert(source._buckets is not null);
 #if TARGET_64BIT
@@ -1088,7 +1086,8 @@ namespace System.Collections.Generic
 #endif
             if (!IsTrimNeeded())
             {
-                if (_buckets.Length >= source._buckets!.Length && _entries.Length >= source._entries!.Length)
+                if (_buckets != null && _entries != null &&
+                    _buckets.Length >= source._buckets!.Length && _entries.Length >= source._entries!.Length)
                 {
                     source._buckets.CopyTo(_buckets, 0);
                     source._entries.CopyTo(_entries, 0);
