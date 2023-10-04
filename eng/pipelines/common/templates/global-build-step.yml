@@ -1,0 +1,12 @@
+parameters:
+  buildArgs: ''
+  useContinueOnErrorDuringBuild: false
+  shouldContinueOnError: false
+  archParameter: $(_archParameter)
+  displayName: Build product
+
+steps:
+  - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci ${{ parameters.archParameter }} $(_osParameter) $(crossArg) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
+    displayName: ${{ parameters.displayName }}
+    ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
+      continueOnError: ${{ parameters.shouldContinueOnError }}
