@@ -955,6 +955,7 @@ namespace System.Net.Security
 
         // (non-generic) copy of the PointerMemoryManager<T> which supports resetting the stored
         // pointer to allow pooling its instances instead of allocating a new one per Read/Write call.
+        // The memory ponted to by the intenal poiner is assumed to be externally pinned (or naive memory).
         internal sealed unsafe class PoolingPointerMemoryManager : MemoryManager<byte>
         {
             private void* _pointer;
@@ -977,11 +978,13 @@ namespace System.Net.Security
 
             public override MemoryHandle Pin(int elementIndex = 0)
             {
-                throw new NotSupportedException();
+                // memory assumed to be pinned already
+                return new MemoryHandle(_pointer, default, null);
             }
 
             public override void Unpin()
             {
+                // nop
             }
         }
     }
