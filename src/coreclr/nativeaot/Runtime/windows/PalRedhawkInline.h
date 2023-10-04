@@ -35,11 +35,11 @@ FORCEINLINE uint32_t PalInterlockedAnd(_Inout_ uint32_t volatile *pDst, uint32_t
     return _InterlockedAnd((long volatile *)pDst, iValue);
 }
 
-EXTERN_C unsigned char __PN__MACHINECALL_CDECL_OR_DEFAULT _InterlockedExchange8(unsigned char volatile *, unsigned char);
+EXTERN_C char __PN__MACHINECALL_CDECL_OR_DEFAULT _InterlockedExchange8(char volatile *, char);
 #pragma intrinsic(_InterlockedExchange8)
 FORCEINLINE uint8_t PalInterlockedExchange8(_Inout_ uint8_t volatile *pDst, uint8_t iValue)
 {
-    return _InterlockedExchange8((unsigned char volatile *)pDst, iValue);
+    return _InterlockedExchange8((char volatile *)pDst, (char)iValue);
 }
 
 EXTERN_C short __PN__MACHINECALL_CDECL_OR_DEFAULT _InterlockedExchange16(short volatile *, short);
@@ -56,11 +56,11 @@ FORCEINLINE int32_t PalInterlockedExchange(_Inout_ int32_t volatile *pDst, int32
     return _InterlockedExchange((long volatile *)pDst, iValue);
 }
 
-EXTERN_C unsigned char __PN__MACHINECALL_CDECL_OR_DEFAULT _InterlockedCompareExchange8(unsigned char volatile *, unsigned char, unsigned char);
+EXTERN_C char __PN__MACHINECALL_CDECL_OR_DEFAULT _InterlockedCompareExchange8(char volatile *, char, char);
 #pragma intrinsic(_InterlockedCompareExchange8)
 FORCEINLINE uint8_t PalInterlockedCompareExchange8(_Inout_ uint8_t volatile *pDst, uint8_t iValue, uint8_t iComparand)
 {
-    return _InterlockedCompareExchange8((unsigned char volatile *)pDst, iValue, iComparand);
+    return _InterlockedCompareExchange8((char volatile *)pDst, (char)iValue, (char)iComparand);
 }
 
 EXTERN_C short __PN__MACHINECALL_CDECL_OR_DEFAULT _InterlockedCompareExchange16(short volatile *, short, short);
