@@ -63,7 +63,7 @@ export RunningIlasmRoundTrip=
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
   mkdir IL-RT
-  cp *.* IL-RT/
+  cp -R *.* IL-RT/
   echo "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(InputAssemblyName)
   "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(InputAssemblyName)
   ERRORLEVEL=$?
@@ -147,7 +147,7 @@ REM Todo: Ilasm round-trip on linked binaries.
 IF NOT DEFINED DoLink (
   IF DEFINED RunningIlasmRoundTrip (
     mkdir IL-RT
-    copy *.* IL-RT\
+    xcopy /E *.* IL-RT\
     ECHO %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
     %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
 
