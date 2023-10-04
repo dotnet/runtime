@@ -2,7 +2,7 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
-Provides support for reading and writing values in Concise Binary Object Representation (CBOR), as originally defined in [IETF RFC 7049](https://www.ietf.org/rfc/rfc7049.html).
+Provides support for reading and writing values in Concise Binary Object Representation (CBOR) format, as originally defined in [IETF RFC 7049](https://www.ietf.org/rfc/rfc7049.html).
 
 
 ## Key Features
