@@ -680,7 +680,7 @@ REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
     {
         return 0;
     }
-    if (MultiByteToWideChar(CP_UTF8, 0, moduleName, -1, moduleNameWide, (int)len) == 0)
+    if (MultiByteToWideChar(CP_UTF8, 0, moduleName, -1, moduleNameWide, (int)(len + 1)) == 0)
     {
         return 0;
     }
