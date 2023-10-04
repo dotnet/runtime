@@ -375,10 +375,12 @@ mono_ios_runtime_init (int argc, char** argv)
     mono_set_crash_chaining (TRUE);
 
     if (wait_for_debugger) {
+        char** argv_ext = (char**) malloc ((argc + 1) * sizeof (char*));
+        // copy passed args
+        memcpy (argv_ext, argv, argc * sizeof (char*));
+        // add an extra arg
+        argv_ext [argc] = strdup ("--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556");
         argc++;
-        char** copy_argv = (char**) malloc (argc * sizeof (char*));
-        memcpy (copy_argv, argv, (argc - 1) * sizeof (char*));
-        copy_argv [argc - 1] = strdup ("--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556");
 
         mono_jit_parse_options (argc, copy_argv);
         // The caller should invoke free_managed_args to free other items
