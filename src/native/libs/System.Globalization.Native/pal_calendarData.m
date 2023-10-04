@@ -255,7 +255,7 @@ GetCalendarsNative
 
 Returns the list of CalendarIds that are available for the specified locale.
 */
-int32_t GlobalizationNative_GetCalendarsNative(CalendarId* calendars, int32_t calendarsCapacity)
+int32_t GlobalizationNative_GetCalendarsNative(const char* localeName, CalendarId* calendars, int32_t calendarsCapacity)
 {
     @autoreleasepool
     {
@@ -277,10 +277,17 @@ int32_t GlobalizationNative_GetCalendarsNative(CalendarId* calendars, int32_t ca
             NSCalendarIdentifierPersian,
             NSCalendarIdentifierRepublicOfChina,
         ];
+
+        NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+        NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+        NSString *defaultCalendarIdentifier = [currentLocale calendarIdentifier];
         int32_t calendarCount = MIN(calendarIdentifiers.count, calendarsCapacity);
+        calendars[0] = GetCalendarId([defaultCalendarIdentifier UTF8String]);
         for (int i = 0; i < calendarCount; i++)
         {
             NSString *calendarIdentifier = calendarIdentifiers[i];
+            if (calendarIdentifier == defaultCalendarIdentifier)
+                continue;
             calendars[i] = GetCalendarId([calendarIdentifier UTF8String]);
         }
         return calendarCount;

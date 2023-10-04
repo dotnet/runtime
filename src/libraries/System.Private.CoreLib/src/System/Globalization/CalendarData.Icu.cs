@@ -92,7 +92,7 @@ namespace System.Globalization
             int count;
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
-                count = Interop.Globalization.GetCalendarsNative(calendars, calendars.Length);
+                count = Interop.Globalization.GetCalendarsNative(localeName, calendars, calendars.Length);
             else
                 count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
 #else
