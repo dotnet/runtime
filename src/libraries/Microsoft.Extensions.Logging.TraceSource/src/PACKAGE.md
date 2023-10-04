@@ -65,7 +65,7 @@ The main types provided by this library are:
 <!-- The related packages associated with this package -->
 
 * Abstractions for dependency injection: [Microsoft.Extensions.DependencyInjection.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.DependencyInjection.Abstractions/)
-* Defult implementation of logging infrastructure: [Microsoft.Extensions.Logging](https://www.nuget.org/packages/Microsoft.Extensions.Logging/)
+* Default implementation of logging infrastructure: [Microsoft.Extensions.Logging](https://www.nuget.org/packages/Microsoft.Extensions.Logging/)
 * Abstractions for logging: [Microsoft.Extensions.Logging.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.Logging.Abstractions/)
 
 ## Feedback & Contributing
