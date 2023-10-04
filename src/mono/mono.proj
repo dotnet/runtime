@@ -947,8 +947,7 @@
       <_MonoAotCrossPdbFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossPdbFileName)</_MonoAotCrossPdbFilePath>
     </PropertyGroup>
     <PropertyGroup>
-      <_MonoLLVMHostArchitecture Condition="'$(TargetArchitecture)' == 'wasm'">$(BuildArchitecture)</_MonoLLVMHostArchitecture>
-      <_MonoLLVMHostArchitecture Condition="'$(TargetArchitecture)' != 'wasm'">$(AotHostArchitecture)</_MonoLLVMHostArchitecture>
+      <_MonoLLVMHostArchitecture>$(AotHostArchitecture)</_MonoLLVMHostArchitecture>
     </PropertyGroup>
 
     <!-- Copy Mono runtime files to artifacts directory -->
