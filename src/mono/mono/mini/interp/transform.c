@@ -4813,6 +4813,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	gboolean save_last_error = FALSE;
 	gboolean link_bblocks = TRUE;
 	gboolean inlining = td->method != method;
+	gboolean generate_enc_seq_points_without_debug_info = FALSE;
 	InterpBasicBlock *exit_bb = NULL;
 
 	original_bb = bb = mono_basic_block_split (method, error, header);
@@ -4859,6 +4860,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			int n_il_offsets;
 
 			mono_debug_get_seq_points (minfo, NULL, NULL, NULL, &sps, &n_il_offsets);
+			if (n_il_offsets == 0)
+				generate_enc_seq_points_without_debug_info = mono_debug_generate_enc_seq_points_without_debug_info (minfo);
 			// FIXME: Free
 			seq_point_locs = mono_bitset_mem_new (mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
 			sym_seq_points = TRUE;
@@ -5084,6 +5087,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			WRITE64_INS (td->last_ins, 0, &counter);
 		}
 
+		if (generate_enc_seq_points_without_debug_info)
+		{
+			if ((*td->ip == CEE_NOP) ||
+				(*td->ip == CEE_CALLVIRT) ||
+				(*td->ip == CEE_CALLI) ||
+				(*td->ip == CEE_CALL) ||
+				(GPTRDIFF_TO_INT (td->sp - td->stack) == 0))
+			last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
+		}
 		switch (*td->ip) {
 		case CEE_NOP:
 			/* lose it */
@@ -5353,7 +5365,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if (!interp_transform_call (td, method, NULL, generic_context, constrained_class, readonly, error, TRUE, save_last_error, tailcall))
 				goto exit;
 
-			if (need_seq_point) {
+			if (need_seq_point && !generate_seq_points_without_debug_info) {
 				// check if it is a nested call and remove the MONO_INST_NONEMPTY_STACK of the last breakpoint, only for non native methods
 				if (!(method->flags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 					if (emitted_funccall_seq_point)	{

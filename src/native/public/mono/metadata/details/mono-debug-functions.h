@@ -7,6 +7,7 @@
 #endif
 
 MONO_API_FUNCTION(mono_bool, mono_debug_enabled, (void))
+MONO_API_FUNCTION(mono_bool, mono_debug_generate_enc_seq_points_without_debug_info, (MonoDebugMethodInfo* minfo))
 
 MONO_API_FUNCTION(void, mono_debug_init, (MonoDebugFormat format))
 MONO_API_FUNCTION(void, mono_debug_open_image_from_memory, (MonoImage *image, const mono_byte *raw_contents, int size))
