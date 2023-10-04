@@ -365,7 +365,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             }
         }
 
-        for (block = fgFirstBB; block; block = block->bbNext)
+        for (block = fgFirstBB; block; block = block->GetBBNext())
         {
             // Strictly speaking, the assignments for the "Def" cases aren't necessary here.
             // The empty set would do as well.  Use means "use-before-def", so as long as that's
@@ -407,7 +407,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
     // memory that is not a GC Heap def.
     byrefStatesMatchGcHeapStates = true;
 
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (block = fgFirstBB; block; block = block->GetBBNext())
     {
         VarSetOps::ClearD(this, fgCurUseSet);
         VarSetOps::ClearD(this, fgCurDefSet);
@@ -889,8 +889,8 @@ void Compiler::fgExtendDbgLifetimes()
         switch (block->GetBBJumpKind())
         {
             case BBJ_NONE:
-                PREFIX_ASSUME(block->bbNext != nullptr);
-                VarSetOps::UnionD(this, initVars, block->bbNext->bbScope);
+                PREFIX_ASSUME(block->GetBBNext() != nullptr);
+                VarSetOps::UnionD(this, initVars, block->GetBBNext()->bbScope);
                 break;
 
             case BBJ_ALWAYS:
@@ -903,15 +903,15 @@ void Compiler::fgExtendDbgLifetimes()
                 if (!(block->bbFlags & BBF_RETLESS_CALL))
                 {
                     assert(block->isBBCallAlwaysPair());
-                    PREFIX_ASSUME(block->bbNext != nullptr);
-                    VarSetOps::UnionD(this, initVars, block->bbNext->bbScope);
+                    PREFIX_ASSUME(block->GetBBNext() != nullptr);
+                    VarSetOps::UnionD(this, initVars, block->GetBBNext()->bbScope);
                 }
                 VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
                 break;
 
             case BBJ_COND:
-                PREFIX_ASSUME(block->bbNext != nullptr);
-                VarSetOps::UnionD(this, initVars, block->bbNext->bbScope);
+                PREFIX_ASSUME(block->GetBBNext() != nullptr);
+                VarSetOps::UnionD(this, initVars, block->GetBBNext()->bbScope);
                 VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
                 break;
 
@@ -1305,11 +1305,11 @@ class LiveVarAnalysis
             m_memoryLiveIn  = emptyMemoryKindSet;
             m_memoryLiveOut = emptyMemoryKindSet;
 
-            for (BasicBlock* block = m_compiler->fgLastBB; block; block = block->bbPrev)
+            for (BasicBlock* block = m_compiler->fgLastBB; block; block = block->GetBBPrev())
             {
                 // sometimes block numbers are not monotonically increasing which
                 // would cause us not to identify backedges
-                if (block->bbNext && block->bbNext->bbNum <= block->bbNum)
+                if (block->GetBBNext() && block->GetBBNext()->bbNum <= block->bbNum)
                 {
                     m_hasPossibleBackEdge = true;
                 }

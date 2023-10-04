@@ -205,7 +205,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
-    BasicBlock* const nextBlock = block->bbNext;
+    BasicBlock* const nextBlock = block->GetBBNext();
 
 #if defined(FEATURE_EH_FUNCLETS)
     // Generate a call to the finally, like this:
@@ -256,7 +256,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         BasicBlock* const jumpDest = nextBlock->bbJumpDest;
 
         // Now go to where the finally funclet needs to return to.
-        if ((jumpDest == nextBlock->bbNext) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
+        if ((jumpDest == nextBlock->GetBBNext()) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
         {
             // Fall-through.
             // TODO-XArch-CQ: Can we get rid of this instruction, and just have the call return directly

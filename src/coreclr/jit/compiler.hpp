@@ -633,7 +633,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 
             BasicBlock* finBeg = ehDsc->ebdHndBeg;
 
-            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->GetBBNext())
             {
                 if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
                 {
@@ -642,12 +642,12 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 
                 assert(bcall->isBBCallAlwaysPair());
 
-                RETURN_ON_ABORT(func(bcall->bbNext));
+                RETURN_ON_ABORT(func(bcall->GetBBNext()));
             }
 
             RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
 
-            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->GetBBNext())
             {
                 if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
                 {
@@ -655,7 +655,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
                 }
 
                 assert(bcall->isBBCallAlwaysPair());
-                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bcall->bbNext, func));
+                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bcall->GetBBNext(), func));
             }
 
             break;
@@ -767,7 +767,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 
             BasicBlock* finBeg = ehDsc->ebdHndBeg;
 
-            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->GetBBNext())
             {
                 if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
                 {
@@ -776,7 +776,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 
                 assert(bcall->isBBCallAlwaysPair());
 
-                RETURN_ON_ABORT(func(bcall->bbNext));
+                RETURN_ON_ABORT(func(bcall->GetBBNext()));
             }
 
             break;
@@ -3235,7 +3235,7 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     // Must do this after we update bbJumpKind of block.
     if (isCallAlwaysPair)
     {
-        BasicBlock* leaveBlk = block->bbNext;
+        BasicBlock* leaveBlk = block->GetBBNext();
         noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
 
         // leaveBlk is now unreachable, so scrub the pred lists.

@@ -52,7 +52,7 @@ public:
         }
 
         int count = 0;
-        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->bbNext))
+        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->GetBBNext()))
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {

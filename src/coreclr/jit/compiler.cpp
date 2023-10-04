@@ -5291,11 +5291,11 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
+        if ((block->GetBBNext() != nullptr) && (block->GetBBNext()->isLoopAlign()))
         {
             // Loop alignment is disabled for cold blocks
             assert((block->bbFlags & BBF_COLD) == 0);
-            BasicBlock* const loopTop              = block->bbNext;
+            BasicBlock* const loopTop              = block->GetBBNext();
             bool              isSpecialCallFinally = block->isBBCallAlwaysPairTail();
             bool              unmarkedLoopAlign    = false;
 
@@ -9614,7 +9614,7 @@ BasicBlock* dFindBlock(unsigned bbNum)
     BasicBlock* block = nullptr;
 
     dbBlock = nullptr;
-    for (block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (block = comp->fgFirstBB; block != nullptr; block = block->GetBBNext())
     {
         if (block->bbNum == bbNum)
         {

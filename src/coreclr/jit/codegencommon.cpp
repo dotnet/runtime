@@ -402,10 +402,10 @@ void CodeGen::genMarkLabelsForCodegen()
                 {
                     // For callfinally thunks, we need to mark the block following the callfinally/always pair,
                     // as that's needed for identifying the range of the "duplicate finally" region in EH data.
-                    BasicBlock* bbToLabel = block->bbNext;
+                    BasicBlock* bbToLabel = block->GetBBNext();
                     if (block->isBBCallAlwaysPair())
                     {
-                        bbToLabel = bbToLabel->bbNext; // skip the BBJ_ALWAYS
+                        bbToLabel = bbToLabel->GetBBNext(); // skip the BBJ_ALWAYS
                     }
                     if (bbToLabel != nullptr)
                     {
@@ -446,16 +446,16 @@ void CodeGen::genMarkLabelsForCodegen()
         JITDUMP("  " FMT_BB " : try begin\n", HBtab->ebdTryBeg->bbNum);
         JITDUMP("  " FMT_BB " : hnd begin\n", HBtab->ebdHndBeg->bbNum);
 
-        if (HBtab->ebdTryLast->bbNext != nullptr)
+        if (HBtab->ebdTryLast->GetBBNext() != nullptr)
         {
-            HBtab->ebdTryLast->bbNext->bbFlags |= BBF_HAS_LABEL;
-            JITDUMP("  " FMT_BB " : try end\n", HBtab->ebdTryLast->bbNext->bbNum);
+            HBtab->ebdTryLast->GetBBNext()->bbFlags |= BBF_HAS_LABEL;
+            JITDUMP("  " FMT_BB " : try end\n", HBtab->ebdTryLast->GetBBNext()->bbNum);
         }
 
-        if (HBtab->ebdHndLast->bbNext != nullptr)
+        if (HBtab->ebdHndLast->GetBBNext() != nullptr)
         {
-            HBtab->ebdHndLast->bbNext->bbFlags |= BBF_HAS_LABEL;
-            JITDUMP("  " FMT_BB " : hnd end\n", HBtab->ebdHndLast->bbNext->bbNum);
+            HBtab->ebdHndLast->GetBBNext()->bbFlags |= BBF_HAS_LABEL;
+            JITDUMP("  " FMT_BB " : hnd end\n", HBtab->ebdHndLast->GetBBNext()->bbNum);
         }
 
         if (HBtab->HasFilter())
@@ -2302,9 +2302,9 @@ void CodeGen::genReportEH()
         hndBeg = compiler->ehCodeOffset(HBtab->ebdHndBeg);
 
         tryEnd = (HBtab->ebdTryLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(HBtab->ebdTryLast->bbNext);
+                                                           : compiler->ehCodeOffset(HBtab->ebdTryLast->GetBBNext());
         hndEnd = (HBtab->ebdHndLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(HBtab->ebdHndLast->bbNext);
+                                                           : compiler->ehCodeOffset(HBtab->ebdHndLast->GetBBNext());
 
         if (HBtab->HasFilter())
         {
@@ -2524,9 +2524,9 @@ void CodeGen::genReportEH()
                 hndBeg = compiler->ehCodeOffset(bbHndBeg);
 
                 tryEnd = (bbTryLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(bbTryLast->bbNext);
+                                                           : compiler->ehCodeOffset(bbTryLast->GetBBNext());
                 hndEnd = (bbHndLast == compiler->fgLastBB) ? compiler->info.compNativeCodeSize
-                                                           : compiler->ehCodeOffset(bbHndLast->bbNext);
+                                                           : compiler->ehCodeOffset(bbHndLast->GetBBNext());
 
                 if (encTab->HasFilter())
                 {
@@ -2590,10 +2590,10 @@ void CodeGen::genReportEH()
 
                 // How big is it? The BBJ_ALWAYS has a null bbEmitCookie! Look for the block after, which must be
                 // a label or jump target, since the BBJ_CALLFINALLY doesn't fall through.
-                BasicBlock* bbLabel = block->bbNext;
+                BasicBlock* bbLabel = block->GetBBNext();
                 if (block->isBBCallAlwaysPair())
                 {
-                    bbLabel = bbLabel->bbNext; // skip the BBJ_ALWAYS
+                    bbLabel = bbLabel->GetBBNext(); // skip the BBJ_ALWAYS
                 }
                 if (bbLabel == nullptr)
                 {
@@ -5210,7 +5210,7 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     assert(block != nullptr);
     const VARSET_TP& gcrefVarsArg(GetEmitter()->emitThisGCrefVars);
-    bool             last = (block->bbNext == nullptr);
+    bool             last = (block->GetBBNext() == nullptr);
     GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg, last);
 }
 
@@ -5257,7 +5257,7 @@ void CodeGen::genReserveFuncletEpilog(BasicBlock* block)
 
     JITDUMP("Reserving funclet epilog IG for block " FMT_BB "\n", block->bbNum);
 
-    bool last = (block->bbNext == nullptr);
+    bool last = (block->GetBBNext() == nullptr);
     GetEmitter()->emitCreatePlaceholderIG(IGPT_FUNCLET_EPILOG, block, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                           gcInfo.gcRegByrefSetCur, last);
 }

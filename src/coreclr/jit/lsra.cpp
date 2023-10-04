@@ -1028,7 +1028,7 @@ void LinearScan::setBlockSequence()
         // For layout order, simply use bbNext
         if (isTraversalLayoutOrder())
         {
-            nextBlock = block->bbNext;
+            nextBlock = block->GetBBNext();
             continue;
         }
 
@@ -1483,15 +1483,15 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             varDsc->SetRegNum(newRegNum);
             count++;
 
-            BasicBlock* prevReportedBlock = bb->bbPrev;
-            if (bb->bbPrev != nullptr && bb->bbPrev->isBBCallAlwaysPairTail())
+            BasicBlock* prevReportedBlock = bb->GetBBPrev();
+            if (bb->GetBBPrev() != nullptr && bb->GetBBPrev()->isBBCallAlwaysPairTail())
             {
                 // For callf+always pair we generate the code for the always
                 // block in genCallFinally and skip it, so we don't report
                 // anything for it (it has only trivial instructions, so that
                 // does not matter much). So whether we need to rehome or not
                 // depends on what we reported at the end of the callf block.
-                prevReportedBlock = bb->bbPrev->bbPrev;
+                prevReportedBlock = bb->GetBBPrev()->GetBBPrev();
             }
 
             if (prevReportedBlock != nullptr && VarSetOps::IsMember(compiler, prevReportedBlock->bbLiveOut, varIndex))
@@ -2547,7 +2547,8 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                 if (predBlock->KindIs(BBJ_COND))
                 {
                     // Special handling to improve matching on backedges.
-                    BasicBlock* otherBlock = (block == predBlock->bbNext) ? predBlock->bbJumpDest : predBlock->bbNext;
+                    BasicBlock* otherBlock =
+                        (block == predBlock->GetBBNext()) ? predBlock->bbJumpDest : predBlock->GetBBNext();
                     noway_assert(otherBlock != nullptr);
                     if (isBlockVisited(otherBlock) && !blockInfo[otherBlock->bbNum].hasEHBoundaryIn)
                     {

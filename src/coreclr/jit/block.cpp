@@ -133,7 +133,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
         // these cannot cause transfer to the handler...)
         // TODO-Throughput: It would be nice if we could iterate just over the blocks in the try, via
         // something like:
-        //   for (BasicBlock* bb = ehblk->ebdTryBeg; bb != ehblk->ebdTryLast->bbNext; bb = bb->bbNext)
+        //   for (BasicBlock* bb = ehblk->ebdTryBeg; bb != ehblk->ebdTryLast->GetBBNext(); bb = bb->GetBBNext())
         //     (plus adding in any filter blocks outside the try whose exceptions are handled here).
         // That doesn't work, however: funclets have caused us to sometimes split the body of a try into
         // more than one sequence of contiguous blocks.  We need to find a better way to do this.
@@ -160,7 +160,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
                 if (enclosingDsc->HasFilter())
                 {
                     for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
-                         filterBlk             = filterBlk->bbNext)
+                         filterBlk             = filterBlk->GetBBNext())
                     {
                         res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
 
@@ -1509,10 +1509,10 @@ bool BasicBlock::isBBCallAlwaysPair() const
         assert(!(this->bbFlags & BBF_RETLESS_CALL));
 #endif
         // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
-        assert(this->bbNext != nullptr);
-        assert(this->bbNext->KindIs(BBJ_ALWAYS));
-        assert(this->bbNext->bbFlags & BBF_KEEP_BBJ_ALWAYS);
-        assert(this->bbNext->isEmpty());
+        assert(this->GetBBNext() != nullptr);
+        assert(this->GetBBNext()->KindIs(BBJ_ALWAYS));
+        assert(this->GetBBNext()->bbFlags & BBF_KEEP_BBJ_ALWAYS);
+        assert(this->GetBBNext()->isEmpty());
 
         return true;
     }
