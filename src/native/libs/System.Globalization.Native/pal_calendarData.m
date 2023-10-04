@@ -282,13 +282,14 @@ int32_t GlobalizationNative_GetCalendarsNative(const char* localeName, CalendarI
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
         NSString *defaultCalendarIdentifier = [currentLocale calendarIdentifier];
         int32_t calendarCount = MIN(calendarIdentifiers.count, calendarsCapacity);
-        calendars[0] = GetCalendarId([defaultCalendarIdentifier UTF8String]);
+        int32_t calendarIndex = 0;
+        calendars[calendarIndex++] = GetCalendarId([defaultCalendarIdentifier UTF8String]);
         for (int i = 0; i < calendarCount; i++)
         {
             NSString *calendarIdentifier = calendarIdentifiers[i];
             if (calendarIdentifier == defaultCalendarIdentifier)
                 continue;
-            calendars[i] = GetCalendarId([calendarIdentifier UTF8String]);
+            calendars[calendarIndex++] = GetCalendarId([calendarIdentifier UTF8String]);
         }
         return calendarCount;
     }

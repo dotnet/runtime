@@ -67,7 +67,7 @@ namespace System.Globalization.Tests
             {
                 dtfi.Calendar = calendar;
 
-                if (PlatformDetection.IsNotUsingLimitedCultures && !PlatformDetection.IsHybridGlobalizationOnOSX)
+                if (PlatformDetection.IsNotUsingLimitedCultures)
                 {
                     // Mobile / Browser ICU doesn't contain NativeCalendarName,
                     Assert.Equal(nativeCalendarName, dtfi.NativeCalendarName);
@@ -75,7 +75,7 @@ namespace System.Globalization.Tests
             }
             catch
             {
-                if (PlatformDetection.IsNlsGlobalization || PlatformDetection.IsHybridGlobalizationOnOSX)
+                if (PlatformDetection.IsNlsGlobalization)
                 {
                     // Persian calendar is recently supported as one of the optional calendars for fa-IR
                     Assert.True(calendar is PersianCalendar, "Exception can occur only with PersianCalendar");
