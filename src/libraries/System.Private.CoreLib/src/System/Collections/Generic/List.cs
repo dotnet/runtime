@@ -144,14 +144,17 @@ namespace System.Collections.Generic
         {
             get
             {
+                T[] items = _items;
+
                 // Following trick can reduce the range check by one
-                if ((uint)index >= (uint)_size)
+                if ((uint)index >= (uint)_size ||
+                    (uint)index >= (uint)items.Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
                 }
-                return _items[index];
-            }
 
+                return items[index];
+            }
             set
             {
                 if ((uint)index >= (uint)_size)
