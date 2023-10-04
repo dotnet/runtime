@@ -104,9 +104,7 @@ namespace ILCompiler.ObjectWriter
 
         protected bool ShouldShareSymbol(ObjectNode node)
         {
-            // TODO: Not supported yet
-            if (_nodeFactory.Target.IsOSXLike ||
-                _nodeFactory.Target.OperatingSystem == TargetOS.Linux)
+            if (_nodeFactory.Target.IsOSXLike)
                 return false;
 
             return ShouldShareSymbol(node, node.GetSection(_nodeFactory));
@@ -114,9 +112,7 @@ namespace ILCompiler.ObjectWriter
 
         protected bool ShouldShareSymbol(ObjectNode node, ObjectNodeSection section)
         {
-            // TODO: Not supported yet
-            if (_nodeFactory.Target.IsOSXLike ||
-                _nodeFactory.Target.OperatingSystem == TargetOS.Linux)
+            if (_nodeFactory.Target.IsOSXLike)
                 return false;
 
             // Foldable sections are always COMDATs
@@ -163,6 +159,11 @@ namespace ILCompiler.ObjectWriter
             int addend)
         {
             _sectionIndexToRelocations[sectionIndex].Add(new SymbolicRelocation(offset, relocType, symbolName, addend));
+        }
+
+        protected bool SectionHasRelocations(int sectionIndex)
+        {
+            return _sectionIndexToRelocations[sectionIndex].Count > 0;
         }
 
         protected virtual void EmitReferencedMethod(string symbolName) { }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Linq;
 using System.Numerics;
@@ -34,6 +35,8 @@ namespace ILCompiler.ObjectWriter
         private int _sectionIndex;
         private Dictionary<int, Stream> _bssStreams = new();
         private Dictionary<int, ElfSection> _sectionIndexToElfSection = new();
+        private Dictionary<ElfSection, int> _elfSectionToSectionIndex = new();
+        private Dictionary<string, ElfGroupSection> _comdatNameToElfSection = new();
         private Dictionary<ElfSection, ElfRelocationTable> _sectionToRelocationTable = new();
 
         // Symbol table
@@ -58,13 +61,27 @@ namespace ILCompiler.ObjectWriter
 
         protected override void CreateSection(ObjectNodeSection section, Stream sectionStream)
         {
+            ElfSection elfSection;
+            ElfGroupSection groupSection = null;
             string sectionName =
                 section.Name == "rdata" ? ".rodata" :
                 (section.Name.StartsWith("_") || section.Name.StartsWith(".") ? section.Name : "." + section.Name);
 
+            if (section.ComdatName != null &&
+                !_comdatNameToElfSection.TryGetValue(section.ComdatName, out groupSection))
+            {
+                groupSection = new ElfGroupSection
+                {
+                    Link = _symbolTable,
+                    // Info = <symbol index> of the COMDAT symbol, to be filled later
+                };
+                groupSection.GroupFlags = 1; // GRP_COMDAT
+                _comdatNameToElfSection.Add(section.ComdatName, groupSection);
+            }
+
             if (section.Type == SectionType.Uninitialized)
             {
-                ElfSection elfSection = new ElfBinarySection()
+                elfSection = new ElfBinarySection()
                 {
                     Name = sectionName,
                     Type = ElfSectionType.NoBits,
@@ -72,24 +89,19 @@ namespace ILCompiler.ObjectWriter
                 };
 
                 _bssStreams[_sectionIndex] = sectionStream;
-                _sectionIndexToElfSection[_sectionIndex++] = elfSection;
-                _objectFile.AddSection(elfSection);
             }
             else if (section == ObjectNodeSection.TLSSection)
             {
-                ElfSection elfSection = new ElfBinarySection(sectionStream)
+                elfSection = new ElfBinarySection(sectionStream)
                 {
                     Name = sectionName,
                     Type = ElfSectionType.ProgBits,
                     Flags = ElfSectionFlags.Alloc | ElfSectionFlags.Write | ElfSectionFlags.Tls
                 };
-
-                _sectionIndexToElfSection[_sectionIndex++] = elfSection;
-                _objectFile.AddSection(elfSection);
             }
             else
             {
-                ElfSection elfSection = new ElfBinarySection(sectionStream)
+                elfSection = new ElfBinarySection(sectionStream)
                 {
                     Name = sectionName,
                     Type = section.Name == ".eh_frame" && _objectFile.Arch == ElfArch.X86_64 ?
@@ -99,20 +111,11 @@ namespace ILCompiler.ObjectWriter
                         (section.Type == SectionType.Writeable ? ElfSectionFlags.Alloc | ElfSectionFlags.Write :
                         ElfSectionFlags.Alloc)
                 };
-
-                var elfRelocationTable = new ElfRelocationTable
-                {
-                    Name = ".rela" + sectionName,
-                    Link = _symbolTable,
-                    Info = elfSection,
-                    Alignment = 8,
-                };
-
-                _sectionIndexToElfSection[_sectionIndex++] = elfSection;
-                _sectionToRelocationTable[elfSection] = elfRelocationTable;
-                _objectFile.AddSection(elfSection);
-                _objectFile.AddSection(elfRelocationTable);
             }
+
+            _elfSectionToSectionIndex[elfSection] = _sectionIndex;
+            _sectionIndexToElfSection[_sectionIndex++] = elfSection;
+            groupSection?.AddSection(elfSection);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -206,6 +209,12 @@ namespace ILCompiler.ObjectWriter
                 _symbolTable.Entries.Add(definedSymbol);
                 _symbolNameToIndex[definedSymbol.Name] = symbolIndex;
                 symbolIndex++;
+            }
+
+            // Update group sections links
+            foreach (var (comdatName, groupSection) in _comdatNameToElfSection)
+            {
+                groupSection.Info = new ElfSectionLink(_symbolNameToIndex[comdatName]);
             }
         }
 
@@ -314,6 +323,11 @@ namespace ILCompiler.ObjectWriter
 
         protected override void EmitDebugSections(DwarfFile dwarfFile)
         {
+            // NOTE: We need the layout to find the offset and size of the __managedcode section
+            var elfDiagnostics = new DiagnosticBag();
+            _objectFile.UpdateLayout(elfDiagnostics);
+            Debug.Assert(!elfDiagnostics.HasErrors);
+
             foreach (var unit in dwarfFile.InfoSection.Units)
             {
                 var rootDIE = (DwarfDIECompileUnit)unit.Root;
@@ -321,6 +335,7 @@ namespace ILCompiler.ObjectWriter
                 dwarfFile.AddressRangeTable.Unit = unit;
                 foreach (var elfSection in _objectFile.Sections)
                 {
+                    // TODO: What about __managedcode in COMDAT?
                     if (elfSection.Flags.HasFlag(ElfSectionFlags.Executable) &&
                         elfSection.Name == "__managedcode")
                     {
@@ -455,8 +470,50 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private void AddElfSectionWithRelocationsIfNecessary(ElfSection elfSection, ElfGroupSection groupSection = null)
+        {
+            int sectionIndex = _elfSectionToSectionIndex[elfSection];
+            elfSection.Flags |= groupSection is not null ? ElfSectionFlags.Group : 0;
+            _objectFile.AddSection(elfSection);
+
+            if (SectionHasRelocations(sectionIndex))
+            {
+                var elfRelocationTable = new ElfRelocationTable
+                {
+                    Name = ".rela" + elfSection.Name,
+                    Link = _symbolTable,
+                    Info = elfSection,
+                    Alignment = 8,
+                    Flags = groupSection is not null ? ElfSectionFlags.Group : 0
+                };
+
+                _sectionToRelocationTable[elfSection] = elfRelocationTable;
+                _objectFile.AddSection(elfRelocationTable);
+                groupSection?.AddSection(elfRelocationTable);
+            }
+        }
+
         protected override void EmitSectionsAndLayout()
         {
+            foreach (var groupSection in _comdatNameToElfSection.Values)
+            {
+                _objectFile.AddSection(groupSection);
+                for (int i = 0, sectionCount = groupSection.Sections.Count; i < sectionCount; i++)
+                {
+                    AddElfSectionWithRelocationsIfNecessary(groupSection.Sections[i], groupSection);
+                }
+            }
+
+            foreach (var elfSection in _sectionIndexToElfSection.Values)
+            {
+                // If the section was not already added as part of COMDAT group,
+                // add it now.
+                if (elfSection.Parent is null)
+                {
+                    AddElfSectionWithRelocationsIfNecessary(elfSection);
+                }
+            }
+
             _objectFile.AddSection(_symbolTable.Link.Section);
             _objectFile.AddSection(_symbolTable);
             _objectFile.AddSection(new ElfSectionHeaderStringTable());
@@ -470,10 +527,6 @@ namespace ILCompiler.ObjectWriter
                 Name = ".note.GNU-stack",
                 Type = ElfSectionType.ProgBits,
             });
-
-            var elfDiagnostics = new DiagnosticBag();
-            _objectFile.UpdateLayout(elfDiagnostics);
-            Debug.Assert(!elfDiagnostics.HasErrors);
         }
 
         protected override void EmitObjectFile(string objectFilePath)
@@ -488,6 +541,53 @@ namespace ILCompiler.ObjectWriter
         {
             using ElfObjectWriter writer = new ElfObjectWriter(factory, options);
             writer.EmitObject(objectFilePath, nodes, dumper, logger);
+        }
+
+        public sealed class ElfGroupSection : ElfSection
+        {
+            private List<ElfSection> _sections = new(4);
+
+            public ElfGroupSection()
+            {
+                Name = ".group";
+                Type = ElfSectionType.Group;
+                Alignment = 4;
+            }
+
+            public uint GroupFlags { get; set; }
+            public IReadOnlyList<ElfSection> Sections => _sections;
+            public override ulong TableEntrySize => 4;
+
+            public void AddSection(ElfSection section) => _sections.Add(section);
+
+            public override void UpdateLayout(DiagnosticBag diagnostics)
+            {
+                Size = (ulong)(4u + (_sections.Count * 4u));
+            }
+
+            public override void Verify(DiagnosticBag diagnostics)
+            {
+                base.Verify(diagnostics);
+
+                foreach (var section in _sections)
+                {
+                    if (section.Parent != this.Parent)
+                    {
+                        diagnostics.Error(DiagnosticId.ELF_ERR_InvalidSectionInfoParent, $"Invalid parent for grouped section");
+                    }
+                }
+            }
+
+            protected override void Read(ElfReader reader) => throw new NotImplementedException();
+
+            protected override void Write(ElfWriter writer)
+            {
+                writer.Write((uint)GroupFlags);
+                foreach (var section in _sections)
+                {
+                    writer.Write((uint)section.SectionIndex);
+                }
+            }
         }
     }
 }
