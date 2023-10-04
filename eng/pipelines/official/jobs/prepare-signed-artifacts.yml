@@ -38,12 +38,11 @@ jobs:
     condition: and(succeeded(),
                 in(variables['SignType'], 'real', 'test'))
 
-  - task: DownloadBuildArtifacts@0
+  - task: DownloadPipelineArtifact@2
     displayName: Download IntermediateArtifacts
     inputs:
       artifactName: IntermediateArtifacts
       downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
-      checkDownloadedFiles: true
 
   - script: >-
       build.cmd -ci
