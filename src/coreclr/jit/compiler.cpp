@@ -9201,6 +9201,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
+#ifndef DBGFUNC
+#ifdef _MSC_VER
+#define DBGFUNC __declspec(dllexport)
+#else
+#define DBGFUNC
+#endif
+#endif
+
 /*****************************************************************************/
 /* The following functions are intended to be called from the debugger, to dump
  * various data structures.
@@ -9238,70 +9246,70 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      dBlockList                  : Display a BasicBlockList*.
  */
 
-void cBlock(Compiler* comp, BasicBlock* block)
+DBGFUNC void cBlock(Compiler* comp, BasicBlock* block)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Block %u\n", sequenceNumber++);
     comp->fgTableDispBasicBlock(block);
 }
 
-void cBlocks(Compiler* comp)
+DBGFUNC void cBlocks(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Blocks %u\n", sequenceNumber++);
     comp->fgDispBasicBlocks();
 }
 
-void cBlocksV(Compiler* comp)
+DBGFUNC void cBlocksV(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *BlocksV %u\n", sequenceNumber++);
     comp->fgDispBasicBlocks(true);
 }
 
-void cStmt(Compiler* comp, Statement* statement)
+DBGFUNC void cStmt(Compiler* comp, Statement* statement)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Stmt %u\n", sequenceNumber++);
     comp->gtDispStmt(statement, ">>>");
 }
 
-void cTree(Compiler* comp, GenTree* tree)
+DBGFUNC void cTree(Compiler* comp, GenTree* tree)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Tree %u\n", sequenceNumber++);
     comp->gtDispTree(tree, nullptr, ">>>");
 }
 
-void cTreeLIR(Compiler* comp, GenTree* tree)
+DBGFUNC void cTreeLIR(Compiler* comp, GenTree* tree)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *TreeLIR %u\n", sequenceNumber++);
     comp->gtDispLIRNode(tree);
 }
 
-void cTrees(Compiler* comp)
+DBGFUNC void cTrees(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Trees %u\n", sequenceNumber++);
     comp->fgDumpTrees(comp->fgFirstBB, nullptr);
 }
 
-void cEH(Compiler* comp)
+DBGFUNC void cEH(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *EH %u\n", sequenceNumber++);
     comp->fgDispHandlerTab();
 }
 
-void cVar(Compiler* comp, unsigned lclNum)
+DBGFUNC void cVar(Compiler* comp, unsigned lclNum)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Var %u\n", sequenceNumber++);
     comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
 }
 
-void cVarDsc(Compiler* comp, LclVarDsc* varDsc)
+DBGFUNC void cVarDsc(Compiler* comp, LclVarDsc* varDsc)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *VarDsc %u\n", sequenceNumber++);
@@ -9309,56 +9317,56 @@ void cVarDsc(Compiler* comp, LclVarDsc* varDsc)
     comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
 }
 
-void cVars(Compiler* comp)
+DBGFUNC void cVars(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Vars %u\n", sequenceNumber++);
     comp->lvaTableDump();
 }
 
-void cVarsFinal(Compiler* comp)
+DBGFUNC void cVarsFinal(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Vars %u\n", sequenceNumber++);
     comp->lvaTableDump(Compiler::FINAL_FRAME_LAYOUT);
 }
 
-void cBlockPreds(Compiler* comp, BasicBlock* block)
+DBGFUNC void cBlockPreds(Compiler* comp, BasicBlock* block)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *BlockPreds %u\n", sequenceNumber++);
     block->dspPreds();
 }
 
-void cBlockSuccs(Compiler* comp, BasicBlock* block)
+DBGFUNC void cBlockSuccs(Compiler* comp, BasicBlock* block)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *BlockSuccs %u\n", sequenceNumber++);
     block->dspSuccs(comp);
 }
 
-void cReach(Compiler* comp)
+DBGFUNC void cReach(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Reach %u\n", sequenceNumber++);
     comp->fgDispReach();
 }
 
-void cDoms(Compiler* comp)
+DBGFUNC void cDoms(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Doms %u\n", sequenceNumber++);
     comp->fgDispDoms();
 }
 
-void cLiveness(Compiler* comp)
+DBGFUNC void cLiveness(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Liveness %u\n", sequenceNumber++);
     comp->fgDispBBLiveness();
 }
 
-void cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
+DBGFUNC void cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *CVarSet %u\n", sequenceNumber++);
@@ -9366,7 +9374,7 @@ void cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
     printf("\n"); // dumpConvertedVarSet() doesn't emit a trailing newline
 }
 
-void cLoop(Compiler* comp, unsigned loopNum)
+DBGFUNC void cLoop(Compiler* comp, unsigned loopNum)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Loop %u\n", sequenceNumber++);
@@ -9374,7 +9382,7 @@ void cLoop(Compiler* comp, unsigned loopNum)
     printf("\n");
 }
 
-void cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
+DBGFUNC void cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *LoopPtr %u\n", sequenceNumber++);
@@ -9382,44 +9390,44 @@ void cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
     printf("\n");
 }
 
-void cLoops(Compiler* comp)
+DBGFUNC void cLoops(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Loops %u\n", sequenceNumber++);
     comp->optPrintLoopTable();
 }
 
-void dBlock(BasicBlock* block)
+DBGFUNC void dBlock(BasicBlock* block)
 {
     cBlock(JitTls::GetCompiler(), block);
 }
 
-void dBlocks()
+DBGFUNC void dBlocks()
 {
     cBlocks(JitTls::GetCompiler());
 }
 
-void dBlocksV()
+DBGFUNC void dBlocksV()
 {
     cBlocksV(JitTls::GetCompiler());
 }
 
-void dStmt(Statement* statement)
+DBGFUNC void dStmt(Statement* statement)
 {
     cStmt(JitTls::GetCompiler(), statement);
 }
 
-void dTree(GenTree* tree)
+DBGFUNC void dTree(GenTree* tree)
 {
     cTree(JitTls::GetCompiler(), tree);
 }
 
-void dTreeLIR(GenTree* tree)
+DBGFUNC void dTreeLIR(GenTree* tree)
 {
     cTreeLIR(JitTls::GetCompiler(), tree);
 }
 
-void dTreeRange(GenTree* first, GenTree* last)
+DBGFUNC void dTreeRange(GenTree* first, GenTree* last)
 {
     Compiler* comp = JitTls::GetCompiler();
     GenTree*  cur  = first;
@@ -9433,82 +9441,82 @@ void dTreeRange(GenTree* first, GenTree* last)
     }
 }
 
-void dTrees()
+DBGFUNC void dTrees()
 {
     cTrees(JitTls::GetCompiler());
 }
 
-void dEH()
+DBGFUNC void dEH()
 {
     cEH(JitTls::GetCompiler());
 }
 
-void dVar(unsigned lclNum)
+DBGFUNC void dVar(unsigned lclNum)
 {
     cVar(JitTls::GetCompiler(), lclNum);
 }
 
-void dVarDsc(LclVarDsc* varDsc)
+DBGFUNC void dVarDsc(LclVarDsc* varDsc)
 {
     cVarDsc(JitTls::GetCompiler(), varDsc);
 }
 
-void dVars()
+DBGFUNC void dVars()
 {
     cVars(JitTls::GetCompiler());
 }
 
-void dVarsFinal()
+DBGFUNC void dVarsFinal()
 {
     cVarsFinal(JitTls::GetCompiler());
 }
 
-void dBlockPreds(BasicBlock* block)
+DBGFUNC void dBlockPreds(BasicBlock* block)
 {
     cBlockPreds(JitTls::GetCompiler(), block);
 }
 
-void dBlockSuccs(BasicBlock* block)
+DBGFUNC void dBlockSuccs(BasicBlock* block)
 {
     cBlockSuccs(JitTls::GetCompiler(), block);
 }
 
-void dReach()
+DBGFUNC void dReach()
 {
     cReach(JitTls::GetCompiler());
 }
 
-void dDoms()
+DBGFUNC void dDoms()
 {
     cDoms(JitTls::GetCompiler());
 }
 
-void dLiveness()
+DBGFUNC void dLiveness()
 {
     cLiveness(JitTls::GetCompiler());
 }
 
-void dCVarSet(VARSET_VALARG_TP vars)
+DBGFUNC void dCVarSet(VARSET_VALARG_TP vars)
 {
     cCVarSet(JitTls::GetCompiler(), vars);
 }
 
-void dLoop(unsigned loopNum)
+DBGFUNC void dLoop(unsigned loopNum)
 {
     cLoop(JitTls::GetCompiler(), loopNum);
 }
 
-void dLoopPtr(const Compiler::LoopDsc* loop)
+DBGFUNC void dLoopPtr(const Compiler::LoopDsc* loop)
 {
     cLoopPtr(JitTls::GetCompiler(), loop);
 }
 
-void dLoops()
+DBGFUNC void dLoops()
 {
     cLoops(JitTls::GetCompiler());
 }
 
-void dRegMask(regMaskTP mask)
+DBGFUNC void dRegMask(regMaskTP mask)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== dRegMask %u\n", sequenceNumber++);
@@ -9516,7 +9524,7 @@ void dRegMask(regMaskTP mask)
     printf("\n"); // dspRegMask() doesn't emit a trailing newline
 }
 
-void dBlockList(BasicBlockList* list)
+DBGFUNC void dBlockList(BasicBlockList* list)
 {
     printf("WorkList: ");
     while (list != nullptr)
@@ -9531,15 +9539,15 @@ void dBlockList(BasicBlockList* list)
 // Trees, Stmts, and/or Blocks using id or bbNum.
 // That can be used in watch window or as a way to get address of fields for data break points.
 
-GenTree*    dbTree;
-Statement*  dbStmt;
-BasicBlock* dbTreeBlock;
-BasicBlock* dbBlock;
+DBGFUNC GenTree* dbTree;
+DBGFUNC Statement* dbStmt;
+DBGFUNC BasicBlock* dbTreeBlock;
+DBGFUNC BasicBlock* dbBlock;
 
 // Debug APIs for finding Trees, Stmts, and/or Blocks.
 // As a side effect, they set the debug variables above.
 
-GenTree* dFindTree(GenTree* tree, unsigned id)
+DBGFUNC GenTree* dFindTree(GenTree* tree, unsigned id)
 {
     if (tree == nullptr)
     {
@@ -9561,7 +9569,7 @@ GenTree* dFindTree(GenTree* tree, unsigned id)
     return child;
 }
 
-GenTree* dFindTree(unsigned id)
+DBGFUNC GenTree* dFindTree(unsigned id)
 {
     Compiler* comp = JitTls::GetCompiler();
     GenTree*  tree;
@@ -9585,7 +9593,7 @@ GenTree* dFindTree(unsigned id)
     return nullptr;
 }
 
-Statement* dFindStmt(unsigned id)
+DBGFUNC Statement* dFindStmt(unsigned id)
 {
     Compiler* comp = JitTls::GetCompiler();
 
@@ -9608,7 +9616,7 @@ Statement* dFindStmt(unsigned id)
     return nullptr;
 }
 
-BasicBlock* dFindBlock(unsigned bbNum)
+DBGFUNC BasicBlock* dFindBlock(unsigned bbNum)
 {
     Compiler*   comp  = JitTls::GetCompiler();
     BasicBlock* block = nullptr;
@@ -9626,7 +9634,7 @@ BasicBlock* dFindBlock(unsigned bbNum)
     return block;
 }
 
-Compiler::LoopDsc* dFindLoop(unsigned loopNum)
+DBGFUNC Compiler::LoopDsc* dFindLoop(unsigned loopNum)
 {
     Compiler* comp = JitTls::GetCompiler();
 
@@ -9639,7 +9647,7 @@ Compiler::LoopDsc* dFindLoop(unsigned loopNum)
     return &comp->optLoopTable[loopNum];
 }
 
-void cTreeFlags(Compiler* comp, GenTree* tree)
+DBGFUNC void cTreeFlags(Compiler* comp, GenTree* tree)
 {
     int chars = 0;
 
@@ -10199,7 +10207,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
     }
 }
 
-void dTreeFlags(GenTree* tree)
+DBGFUNC void dTreeFlags(GenTree* tree)
 {
     cTreeFlags(JitTls::GetCompiler(), tree);
 }
