@@ -20,12 +20,28 @@ namespace LibObjectFile.Elf
                 !Name.IsEmpty ||
                 VirtualAddress != 0 ||
                 Alignment != 0 ||
-                !Link.IsEmpty ||
                 !Info.IsEmpty ||
-                Offset != 0 ||
-                Size != 0)
+                Offset != 0)
             {
                 diagnostics.Error(DiagnosticId.ELF_ERR_InvalidNullSection, "Invalid Null section. This section should not be modified and all properties must be null");
+            }
+
+            if (Size != 0 && Parent.VisibleSectionCount < ElfNative.SHN_LORESERVE)
+            {
+                diagnostics.Error(DiagnosticId.ELF_ERR_InvalidNullSection, "Invalid Null section. Size is non-zero but number of sections is lower than SHN_LORESERVE");
+            }
+            else if (Size == 0 && Parent.VisibleSectionCount >= ElfNative.SHN_LORESERVE)
+            {
+                diagnostics.Error(DiagnosticId.ELF_ERR_InvalidNullSection, "Invalid Null section. Size is zero but number of sections is higher or equal to SHN_LORESERVE");
+            }
+
+            if (!Link.IsEmpty && (Parent.SectionHeaderStringTable?.SectionIndex ?? 0) < ElfNative.SHN_LORESERVE)
+            {
+                diagnostics.Error(DiagnosticId.ELF_ERR_InvalidNullSection, "Invalid Null section. Link is non-zero but index of section header string section is lower than SHN_LORESERVE");
+            }
+            else if (Link.IsEmpty && (Parent.SectionHeaderStringTable?.SectionIndex ?? 0) >= ElfNative.SHN_LORESERVE)
+            {
+                diagnostics.Error(DiagnosticId.ELF_ERR_InvalidNullSection, "Invalid Null section. Link is non-zero but index of section header string section is higher or equal to SHN_LORESERVE");
             }
         }
 

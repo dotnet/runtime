@@ -230,6 +230,8 @@ namespace LibObjectFile.Elf
                     var section = sections[i];
                     if (i == 0 && section.Type == ElfSectionType.Null)
                     {
+                        section.Size = VisibleSectionCount >= ElfNative.SHN_LORESERVE ? VisibleSectionCount : 0;
+                        section.Link = (SectionHeaderStringTable?.SectionIndex ?? 0) >= ElfNative.SHN_LORESERVE ? SectionHeaderStringTable : null;
                         continue;
                     }
 

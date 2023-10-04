@@ -155,8 +155,9 @@ namespace LibObjectFile.Elf
             // entries for sections
             _encoder.Encode(out hdr.e_shoff, (uint)Layout.OffsetOfSectionHeaderTable);
             _encoder.Encode(out hdr.e_shentsize, Layout.SizeOfSectionHeaderEntry);
-            _encoder.Encode(out hdr.e_shnum, (ushort)ObjectFile.VisibleSectionCount);
-            _encoder.Encode(out hdr.e_shstrndx, (ushort)(ObjectFile.SectionHeaderStringTable?.SectionIndex ?? (ushort)0));
+            _encoder.Encode(out hdr.e_shnum, ObjectFile.VisibleSectionCount >= ElfNative.SHN_LORESERVE ? (ushort)0 : (ushort)ObjectFile.VisibleSectionCount);
+            uint shstrSectionIndex = ObjectFile.SectionHeaderStringTable?.SectionIndex ?? 0u;
+            _encoder.Encode(out hdr.e_shstrndx, shstrSectionIndex >= ElfNative.SHN_LORESERVE ? (ushort)ElfNative.SHN_XINDEX : (ushort)shstrSectionIndex);
 
             Write(hdr);
         }
@@ -181,11 +182,13 @@ namespace LibObjectFile.Elf
             // entries for sections
             _encoder.Encode(out hdr.e_shoff, Layout.OffsetOfSectionHeaderTable);
             _encoder.Encode(out hdr.e_shentsize, (ushort)sizeof(Elf64_Shdr));
-            _encoder.Encode(out hdr.e_shnum, (ushort)ObjectFile.VisibleSectionCount);
-            _encoder.Encode(out hdr.e_shstrndx, (ushort)(ObjectFile.SectionHeaderStringTable?.SectionIndex ?? (ushort)0));
+            _encoder.Encode(out hdr.e_shnum, ObjectFile.VisibleSectionCount >= ElfNative.SHN_LORESERVE ? (ushort)0 : (ushort)ObjectFile.VisibleSectionCount);
+            uint shstrSectionIndex = ObjectFile.SectionHeaderStringTable?.SectionIndex ?? 0u;
+            _encoder.Encode(out hdr.e_shstrndx, shstrSectionIndex >= ElfNative.SHN_LORESERVE ? (ushort)ElfNative.SHN_XINDEX : (ushort)shstrSectionIndex);
 
             Write(hdr);
         }
+
         private void CheckProgramHeaders()
         {
             if (ObjectFile.Segments.Count == 0)
