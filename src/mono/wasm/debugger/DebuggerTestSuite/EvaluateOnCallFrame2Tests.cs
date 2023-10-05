@@ -510,7 +510,7 @@ namespace DebuggerTests
                     // ("test.SumDefaultNegativeAndRequiredParamShortInts(-1, -120)", TNumber(-121)), // we have no way of testing it, debugger recognizes passed literals as integers and does not find the correct overload. We would need to cast to short and we don't support passing parameters with a cast.
                     // ("test.SumDefaultNegativeAndRequiredParamShortInts(-1)", TNumber(-124)), // default: -123
                     // ("test.GetDefaultNegativeShortInt(-123)", TNumber(-123)),
-                    ("test.GetDefaultNegativeShortInt()", TNumber(-32768)), // default: -32768
+                    ("test.GetDefaultNegativeShortInt()", TNumber(-123)), // default: -123
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))
