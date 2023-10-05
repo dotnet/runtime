@@ -61,9 +61,11 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
             }
 
-            static void Hash<T>(ReadOnlySpan<byte> source, Span<byte> destination) where T : struct, new(), ISHAManagedImplementation
+            static void Hash<T>(ReadOnlySpan<byte> source, Span<byte> destination) where T : struct, ISHAManagedImplementation
             {
+                #pragma warning disable SA1129 // Do not use default value type constructor
                 T impl = new();
+                #pragma warning restore SA1129 // Do not use default value type constructor
                 impl.AppendHashData(source);
                 impl.FinalizeHashAndReset(destination);
             }
@@ -187,7 +189,7 @@ namespace System.Security.Cryptography
 
                 if ((bufferLen > 0) && (bufferLen + partIn.Length >= 64))
                 {
-                    partIn[..64 - bufferLen].CopyTo(_buffer[bufferLen..]);
+                    partIn[..(64 - bufferLen)].CopyTo(_buffer[bufferLen..]);
                     SHATransform(ref _W, ref _stateSHA256, _buffer);
                     bufferLen = 0;
                 }
@@ -215,12 +217,12 @@ namespace System.Security.Cryptography
 
                 Span<byte> pad = stackalloc byte[64 + 16];
                 pad[0] = 0x80;
-                pad[1..padLen - 1].Clear();
+                pad[1..(padLen - 1)].Clear();
 
                 //  Convert count to bit count
-                ulong bitCount = _count * 8;
+                ulong bitCount = (ulong)_count * 8;
 
-                BinaryPrimitives.WriteUInt64BigEndian(pad[..padLen - sizeof(ulong)], bitCount);
+                BinaryPrimitives.WriteUInt64BigEndian(pad[..(padLen - sizeof(ulong))], bitCount);
 
                 /* Digest padding */
                 AppendHashData(pad[..padLen]);
@@ -273,7 +275,7 @@ namespace System.Security.Cryptography
 
                 // fill in the first 16 bytes of W.
                 SHAUtils.DWORDFromBigEndian(expandedBuffer[..16], block);
-                SHA256Expand(expandedBuffer);
+                SHA256Expand(ref expandedBuffer);
 
                 /* Apply the SHA256 compression function */
                 // We are trying to be smart here and avoid as many copies as we can
@@ -413,7 +415,7 @@ namespace System.Security.Cryptography
 
                 if ((bufferLen > 0) && (bufferLen + partIn.Length >= 128))
                 {
-                    partIn[..128 - bufferLen].CopyTo(_buffer[bufferLen..]);
+                    partIn[..(128 - bufferLen)].CopyTo(_buffer[bufferLen..]);
                     SHATransform(ref _W, ref _stateSHA384, _buffer);
                     bufferLen = 0;
                 }
@@ -441,12 +443,12 @@ namespace System.Security.Cryptography
 
                 Span<byte> pad = stackalloc byte[128 + 16];
                 pad[0] = 0x80;
-                pad[1..padLen - 1].Clear();
+                pad[1..(padLen - 1)].Clear();
 
                 //  Convert count to bit count
-                ulong bitCount = _count * 8;
+                ulong bitCount = (ulong)_count * 8;
 
-                BinaryPrimitives.WriteUInt64BigEndian(pad[..padLen - sizeof(ulong)], bitCount);
+                BinaryPrimitives.WriteUInt64BigEndian(pad[..(padLen - sizeof(ulong))], bitCount);
 
                 /* Digest padding */
                 AppendHashData(pad[..padLen]);
@@ -503,7 +505,7 @@ namespace System.Security.Cryptography
 
                 // fill in the first 16 blocks of W.
                 SHAUtils.QuadWordFromBigEndian(expandedBuffer[..16], block);
-                SHA384Expand(expandedBuffer);
+                SHA384Expand(ref expandedBuffer);
 
                 /* Apply the SHA384 compression function */
                 // We are trying to be smart here and avoid as many copies as we can
@@ -643,7 +645,7 @@ namespace System.Security.Cryptography
 
                 if ((bufferLen > 0) && (bufferLen + partIn.Length >= 128))
                 {
-                    partIn[..128 - bufferLen].CopyTo(_buffer[bufferLen..]);
+                    partIn[..(128 - bufferLen)].CopyTo(_buffer[bufferLen..]);
                     SHATransform(ref _W, ref _stateSHA512, _buffer);
                     bufferLen = 0;
                 }
@@ -671,12 +673,12 @@ namespace System.Security.Cryptography
 
                 Span<byte> pad = stackalloc byte[128 + 16];
                 pad[0] = 0x80;
-                pad[1..padLen - 1].Clear();
+                pad[1..(padLen - 1)].Clear();
 
                 //  Convert count to bit count
-                ulong bitCount = _count * 8;
+                ulong bitCount = (ulong)_count * 8;
 
-                BinaryPrimitives.WriteUInt64BigEndian(pad[..padLen - sizeof(ulong)], bitCount);
+                BinaryPrimitives.WriteUInt64BigEndian(pad[..(padLen - sizeof(ulong))], bitCount);
 
                 /* Digest padding */
                 AppendHashData(pad[..padLen]);
@@ -733,7 +735,7 @@ namespace System.Security.Cryptography
 
                 // fill in the first 16 blocks of W.
                 SHAUtils.QuadWordFromBigEndian(expandedBuffer[..16], block);
-                SHA512Expand(expandedBuffer);
+                SHA512Expand(ref expandedBuffer);
 
                 /* Apply the SHA512 compression function */
                 // We are trying to be smart here and avoid as many copies as we can
@@ -865,7 +867,7 @@ namespace System.Security.Cryptography
             {
                 for (int i = 0; i < x.Length; i++)
                 {
-                    x[i] = BinaryPrimitives.ReadUInt64BigEndian(block[i * sizeof(uint)..]);
+                    x[i] = BinaryPrimitives.ReadUInt32BigEndian(block[(i * sizeof(uint))..]);
                 }
             }
 
@@ -874,7 +876,7 @@ namespace System.Security.Cryptography
             {
                 for (int i = 0; i < x.Length; i++)
                 {
-                    BinaryPrimitives.WriteUInt32BigEndian(block[i * sizeof(uint)..], x[i]);
+                    BinaryPrimitives.WriteUInt32BigEndian(block[(i * sizeof(uint))..], x[i]);
                 }
             }
 
@@ -882,7 +884,7 @@ namespace System.Security.Cryptography
             {
                 for (int i = 0; i < x.Length; i++)
                 {
-                    x[i] = BinaryPrimitives.ReadUInt64BigEndian(block[i * sizeof(ulong)..]);
+                    x[i] = BinaryPrimitives.ReadUInt64BigEndian(block[(i * sizeof(ulong))..]);
                 }
             }
 
@@ -891,7 +893,7 @@ namespace System.Security.Cryptography
             {
                 for (int i = 0; i < x.Length; i++)
                 {
-                    BinaryPrimitives.WriteUInt64BigEndian(block[i * sizeof(ulong)..], x[i]);
+                    BinaryPrimitives.WriteUInt64BigEndian(block[(i * sizeof(ulong))..], x[i]);
                 }
             }
         }
