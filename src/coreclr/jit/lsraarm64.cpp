@@ -1876,10 +1876,10 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
 
 //------------------------------------------------------------------------
 //  BuildConsecutiveRegistersForDef: Build RefTypeDef ref position(s) for
-//  `treeNode` that produces `fieldCount` consecutive registers.
+//  `treeNode` that produces `registerCount` consecutive registers.
 //
 //  For the first RefPosition of the series, it sets the `regCount` field equal to
-//  the number of subsequent RefPositions (including the first one) involved for this
+//  the total number of RefPositions (including the first one) involved for this
 //  treeNode. For the subsequent RefPositions, it sets the `regCount` to 0. For all
 //  the RefPositions created, it sets the `needsConsecutive` flag so it can be used to
 //  identify these RefPositions during allocation.
