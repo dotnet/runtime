@@ -262,15 +262,9 @@ namespace Wasm.Build.Tests
             args.Append($" --expected-exit-code={expectedAppExitCode}");
             args.Append($" {extraXHarnessArgs ?? string.Empty}");
 
+            // `/.dockerenv` - is to check if this is running in a codespace
             if (File.Exists("/.dockerenv"))
                 args.Append(" --browser-arg=--no-sandbox");
-
-            if (!string.IsNullOrEmpty(EnvironmentVariables.BrowserPathForTests))
-            {
-                if (!File.Exists(EnvironmentVariables.BrowserPathForTests))
-                    throw new Exception($"Cannot find BROWSER_PATH_FOR_TESTS={EnvironmentVariables.BrowserPathForTests}");
-                args.Append($" --browser-path=\"{EnvironmentVariables.BrowserPathForTests}\"");
-            }
 
             args.Append(" -- ");
             if (extraXHarnessMonoArgs != null)
@@ -345,7 +339,8 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
-            File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(dir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
+            if (BuildEnvironment.UseWBTOverridePackTargets)
+                File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(dir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
             string targetNuGetConfigPath = Path.Combine(dir, "nuget.config");
             if (addNuGetSourceForLocalPackages)

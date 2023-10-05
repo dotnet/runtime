@@ -12746,6 +12746,14 @@ mono_op_no_side_effects (int opcode)
 	case OP_NOT_NULL:
 	case OP_IL_SEQ_POINT:
 	case OP_RTTYPE:
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM) || defined(TARGET_ARM64)
+	case OP_EXTRACT_I1:
+	case OP_EXTRACT_I2:
+	case OP_EXTRACT_I4:
+	case OP_EXTRACT_I8:
+	case OP_EXTRACT_R4:
+	case OP_EXTRACT_R8:
+#endif
 		return TRUE;
 	default:
 		return FALSE;

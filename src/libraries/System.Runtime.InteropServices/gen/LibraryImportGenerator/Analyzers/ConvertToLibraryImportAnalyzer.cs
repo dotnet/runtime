@@ -119,7 +119,7 @@ namespace Microsoft.Interop.Analyzers
                 new CodeEmitOptions(SkipInit: tf.TargetFramework == TargetFramework.Net),
                 typeof(ConvertToLibraryImportAnalyzer).Assembly);
 
-            var generatorFactoryKey = LibraryImportGeneratorHelpers.CreateGeneratorFactory(env, tf, new LibraryImportGeneratorOptions(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions));
+            var factory = LibraryImportGeneratorHelpers.CreateGeneratorFactory(tf, new LibraryImportGeneratorOptions(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions), env.EnvironmentFlags);
 
             bool mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
             bool anyExplicitlyUnsupportedInfo = false;
@@ -140,7 +140,7 @@ namespace Microsoft.Interop.Analyzers
                     anyExplicitlyUnsupportedInfo = true;
                     return ResolvedGenerator.Resolved(forwarder);
                 }
-                return generatorFactoryKey.GeneratorFactory.Create(info, stubCodeContext);
+                return factory.Create(info, stubCodeContext);
             }), stubCodeContext, forwarder, out var bindingFailures);
 
             mayRequireAdditionalWork |= bindingFailures.Any(d => d.IsFatal);

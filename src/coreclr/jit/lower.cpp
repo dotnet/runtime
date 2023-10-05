@@ -801,12 +801,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         noway_assert(comp->opts.OptimizationDisabled());
         if (originalSwitchBB->bbNext == jumpTab[0])
         {
-            originalSwitchBB->bbJumpKind = BBJ_NONE;
+            originalSwitchBB->SetBBJumpKind(BBJ_NONE DEBUG_ARG(comp));
             originalSwitchBB->bbJumpDest = nullptr;
         }
         else
         {
-            originalSwitchBB->bbJumpKind = BBJ_ALWAYS;
+            originalSwitchBB->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
             originalSwitchBB->bbJumpDest = jumpTab[0];
         }
         // Remove extra predecessor links if there was more than one case.
@@ -891,16 +891,16 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // afterDefaultCondBlock is now the switch, and all the switch targets have it as a predecessor.
     // originalSwitchBB is now a BBJ_NONE, and there is a predecessor edge in afterDefaultCondBlock
     // representing the fall-through flow from originalSwitchBB.
-    assert(originalSwitchBB->bbJumpKind == BBJ_NONE);
+    assert(originalSwitchBB->KindIs(BBJ_NONE));
     assert(originalSwitchBB->bbNext == afterDefaultCondBlock);
-    assert(afterDefaultCondBlock->bbJumpKind == BBJ_SWITCH);
+    assert(afterDefaultCondBlock->KindIs(BBJ_SWITCH));
     assert(afterDefaultCondBlock->bbJumpSwt->bbsHasDefault);
     assert(afterDefaultCondBlock->isEmpty()); // Nothing here yet.
 
     // The GT_SWITCH code is still in originalSwitchBB (it will be removed later).
 
     // Turn originalSwitchBB into a BBJ_COND.
-    originalSwitchBB->bbJumpKind = BBJ_COND;
+    originalSwitchBB->SetBBJumpKind(BBJ_COND DEBUG_ARG(comp));
     originalSwitchBB->bbJumpDest = jumpTab[jumpCnt - 1];
 
     // Fix the pred for the default case: the default block target still has originalSwitchBB
@@ -957,12 +957,12 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         }
         if (afterDefaultCondBlock->bbNext == uniqueSucc)
         {
-            afterDefaultCondBlock->bbJumpKind = BBJ_NONE;
+            afterDefaultCondBlock->SetBBJumpKind(BBJ_NONE DEBUG_ARG(comp));
             afterDefaultCondBlock->bbJumpDest = nullptr;
         }
         else
         {
-            afterDefaultCondBlock->bbJumpKind = BBJ_ALWAYS;
+            afterDefaultCondBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
             afterDefaultCondBlock->bbJumpDest = uniqueSucc;
         }
     }
@@ -1036,13 +1036,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // case: there is no need to compare against the case index, since it's
                 // guaranteed to be taken (since the default case was handled first, above).
 
-                currentBlock->bbJumpKind = BBJ_ALWAYS;
+                currentBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
             }
             else
             {
                 // Otherwise, it's a conditional branch. Set the branch kind, then add the
                 // condition statement.
-                currentBlock->bbJumpKind = BBJ_COND;
+                currentBlock->SetBBJumpKind(BBJ_COND DEBUG_ARG(comp));
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:
@@ -1074,8 +1074,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // so fgRemoveBlock() doesn't complain.
             JITDUMP("Lowering switch " FMT_BB ": all switch cases were fall-through\n", originalSwitchBB->bbNum);
             assert(currentBlock == afterDefaultCondBlock);
-            assert(currentBlock->bbJumpKind == BBJ_SWITCH);
-            currentBlock->bbJumpKind = BBJ_NONE;
+            assert(currentBlock->KindIs(BBJ_SWITCH));
+            currentBlock->SetBBJumpKind(BBJ_NONE DEBUG_ARG(comp));
             currentBlock->bbFlags &= ~BBF_DONT_REMOVE;
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
         }
@@ -1159,7 +1159,7 @@ bool Lowering::TryLowerSwitchToBitTest(
 {
     assert(jumpCount >= 2);
     assert(targetCount >= 2);
-    assert(bbSwitch->bbJumpKind == BBJ_SWITCH);
+    assert(bbSwitch->KindIs(BBJ_SWITCH));
     assert(switchValue->OperIs(GT_LCL_VAR));
 
     //
@@ -1247,7 +1247,7 @@ bool Lowering::TryLowerSwitchToBitTest(
     //
 
     GenCondition bbSwitchCondition;
-    bbSwitch->bbJumpKind = BBJ_COND;
+    bbSwitch->SetBBJumpKind(BBJ_COND DEBUG_ARG(comp));
 
     comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
@@ -5317,8 +5317,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     JITDUMP("======= Inserting PInvoke method epilog\n");
 
     // Method doing PInvoke calls has exactly one return block unless it has "jmp" or tail calls.
-    assert(((returnBB == comp->genReturnBB) && (returnBB->bbJumpKind == BBJ_RETURN)) ||
-           returnBB->endsWithTailCallOrJmp(comp));
+    assert(((returnBB == comp->genReturnBB) && returnBB->KindIs(BBJ_RETURN)) || returnBB->endsWithTailCallOrJmp(comp));
 
     LIR::Range& returnBlockRange = LIR::AsRange(returnBB);
 
@@ -7802,6 +7801,436 @@ void Lowering::ContainCheckBitCast(GenTree* node)
     }
 }
 
+struct StoreCoalescingData
+{
+    var_types targetType;
+    GenTree*  baseAddr;
+    GenTree*  index;
+    GenTree*  value;
+    uint32_t  scale;
+    int       offset;
+};
+
+//------------------------------------------------------------------------
+// GetStoreCoalescingData: given a STOREIND node, get the data needed to perform
+//    store coalescing including pointer to the previous node.
+//
+// Arguments:
+//    comp     - the compiler instance
+//    ind      - the STOREIND node
+//    data     - [OUT] the data needed for store coalescing
+//
+// Return Value:
+//    true if the data was successfully retrieved, false otherwise.
+//    Basically, false means that we definitely can't do store coalescing.
+//
+static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCoalescingData* data)
+{
+    // Don't merge volatile stores.
+    if (ind->IsVolatile())
+    {
+        return false;
+    }
+
+    // Data has to be INT_CNS, can be also VEC_CNS in future.
+    if (!ind->Data()->IsCnsIntOrI() && !ind->Data()->IsVectorConst())
+    {
+        return false;
+    }
+
+    auto isNodeInvariant = [](Compiler* comp, GenTree* node, bool allowNull) {
+        if (node == nullptr)
+        {
+            return allowNull;
+        }
+        // We can allow bigger trees here, but it's not clear if it's worth it.
+        return node->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
+    };
+
+    data->targetType = ind->TypeGet();
+    data->value      = ind->Data();
+    if (ind->Addr()->OperIs(GT_LEA))
+    {
+        GenTree* base  = ind->Addr()->AsAddrMode()->Base();
+        GenTree* index = ind->Addr()->AsAddrMode()->Index();
+        if (!isNodeInvariant(comp, base, false))
+        {
+            // Base must be a local. It's possible for it to be nullptr when index is not null,
+            // but let's ignore such cases.
+            return false;
+        }
+
+        if (!isNodeInvariant(comp, index, true))
+        {
+            // Index should be either nullptr or a local.
+            return false;
+        }
+
+        data->baseAddr = base == nullptr ? nullptr : base;
+        data->index    = index == nullptr ? nullptr : index;
+        data->scale    = ind->Addr()->AsAddrMode()->GetScale();
+        data->offset   = ind->Addr()->AsAddrMode()->Offset();
+    }
+    else if (isNodeInvariant(comp, ind->Addr(), true))
+    {
+        // Address is just a local, no offset, scale is 1
+        data->baseAddr = ind->Addr();
+        data->index    = nullptr;
+        data->scale    = 1;
+        data->offset   = 0;
+    }
+    else
+    {
+        // Address is not LEA or local.
+        return false;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
+// LowerStoreIndirCoalescing: If the given STOREIND node is followed by a similar
+//    STOREIND node, try to merge them into a single store of a twice wider type. Example:
+//
+//    *  STOREIND  int
+//    +--*  LCL_VAR   byref  V00
+//    \--*  CNS_INT   int    0x1
+//
+//    *  STOREIND  int
+//    +--*  LEA(b+4)  byref
+//    |  \--*  LCL_VAR   byref  V00
+//    \--*  CNS_INT   int    0x2
+//
+//    We can merge these two into into a single store of 8 bytes with (0x1 | (0x2 << 32)) as the value
+//
+//    *  STOREIND  long
+//    +--*  LEA(b+0)  byref
+//    |  \--*  LCL_VAR   byref  V00
+//    \--*  CNS_INT   long  0x200000001
+//
+// Arguments:
+//    ind - the current STOREIND node
+//
+void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
+{
+// LA, RISC-V and ARM32 more likely to recieve a terrible performance hit from
+// unaligned accesses making this optimization questionable.
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    if (!comp->opts.OptimizationEnabled())
+    {
+        return;
+    }
+
+    // For now, we require the current STOREIND to have LEA (previous store may not have it)
+    // So we can easily adjust the offset, consider making it more flexible in future.
+    if (!ind->Addr()->OperIs(GT_LEA))
+    {
+        return;
+    }
+
+    // TODO-ARM64-CQ: enable TYP_REF if we find a case where it's beneficial.
+    // The algorithm does support TYP_REF (with null value), but it seems to be not worth
+    // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
+    // items at once. Although, it may be profitable to do "stp q0, q0, [addr]".
+    if (!varTypeIsIntegral(ind) && !varTypeIsSIMD(ind))
+    {
+        return;
+    }
+
+    // We're going to do it in a loop while we see suitable STOREINDs to coalesce.
+    // E.g.: we have the following LIR sequence:
+    //
+    //     ...addr nodes...
+    //   STOREIND(int)
+    //     ...addr nodes...
+    //   STOREIND(short)
+    //     ...addr nodes...
+    //   STOREIND(short) <-- we're here
+    //
+    // First we merge two 'short' stores, then we merge the result with the 'int' store
+    // to get a single store of 8 bytes.
+    do
+    {
+        StoreCoalescingData currData;
+        StoreCoalescingData prevData;
+
+        // Get coalescing data for the current STOREIND
+        if (!GetStoreCoalescingData(comp, ind, &currData))
+        {
+            return;
+        }
+
+        bool isClosedRange = false;
+        // Now we need to find the very first LIR node representing the current STOREIND
+        // and make sure that there are no other unexpected nodes in-between.
+        LIR::ReadOnlyRange currIndRange = BlockRange().GetTreeRange(ind, &isClosedRange);
+        if (!isClosedRange)
+        {
+            return;
+        }
+        GenTree* prevTree = currIndRange.FirstNode()->gtPrev;
+        // Now we need to find the previous STOREIND,
+        // we can ignore any NOPs or IL_OFFSETs in-between
+        while ((prevTree != nullptr) && prevTree->OperIs(GT_NOP, GT_IL_OFFSET))
+        {
+            prevTree = prevTree->gtPrev;
+        }
+
+        // It's not a STOREIND - bail out.
+        if ((prevTree == nullptr) || !prevTree->OperIs(GT_STOREIND))
+        {
+            return;
+        }
+
+        // Get coalescing data for the previous STOREIND
+        GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
+        if (!GetStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData))
+        {
+            return;
+        }
+
+        // Same for the previous STOREIND, make sure there are no unexpected nodes around.
+        LIR::ReadOnlyRange prevIndRange = BlockRange().GetTreeRange(prevInd, &isClosedRange);
+        if (!isClosedRange)
+        {
+            return;
+        }
+
+        // STOREIND aren't value nodes.
+        LIR::Use use;
+        assert(!BlockRange().TryGetUse(prevInd, &use) && !BlockRange().TryGetUse(ind, &use));
+
+        // BaseAddr, Index, Scale and Type all have to match.
+        if ((prevData.scale != currData.scale) || (prevData.targetType != currData.targetType) ||
+            !GenTree::Compare(prevData.baseAddr, currData.baseAddr) ||
+            !GenTree::Compare(prevData.index, currData.index))
+        {
+            return;
+        }
+
+        // Offset has to match the size of the type. We don't support the same or overlapping offsets.
+        if (abs(prevData.offset - currData.offset) != (int)genTypeSize(prevData.targetType))
+        {
+            return;
+        }
+
+        // Now the hardest part: decide whether it's safe to use an unaligned write.
+        //
+        // IND<byte> is always fine (and all IND<X> created here from such)
+        // IND<simd> is not required to be atomic per our Memory Model
+        const bool allowsNonAtomic =
+            ((ind->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0) && ((prevInd->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0);
+
+        if (!allowsNonAtomic && (genTypeSize(ind) > 1) && !varTypeIsSIMD(ind))
+        {
+            // TODO-CQ: if we see that the target is a local memory (non address exposed)
+            // we can use any type (including SIMD) for a new load.
+
+            // Ignore indices for now, they can invalidate our alignment assumptions.
+            // Although, we can take scale into account.
+            if (currData.index != nullptr)
+            {
+                return;
+            }
+
+            // Base address being TYP_REF gives us a hint that data is pointer-aligned.
+            if (!currData.baseAddr->TypeIs(TYP_REF))
+            {
+                return;
+            }
+
+            // Check whether the combined indir is still aligned.
+            bool isCombinedIndirAtomic = (genTypeSize(ind) < TARGET_POINTER_SIZE) &&
+                                         (min(prevData.offset, currData.offset) % (genTypeSize(ind) * 2)) == 0;
+
+            if (genTypeSize(ind) == TARGET_POINTER_SIZE)
+            {
+#ifdef TARGET_ARM64
+                // Per Arm Architecture Reference Manual for A-profile architecture:
+                //
+                // * Writes from SIMD and floating-point registers of a 128-bit value that is 64-bit aligned in memory
+                //   are treated as a pair of single - copy atomic 64 - bit writes.
+                //
+                // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null)
+                //
+                // And we assume on ARM64 TYP_LONG/TYP_REF are always 64-bit aligned, otherwise
+                // we're already doing a load that has no atomicity guarantees.
+                isCombinedIndirAtomic = true;
+#endif
+            }
+
+            if (!isCombinedIndirAtomic)
+            {
+                return;
+            }
+        }
+
+        // Since we're merging two stores of the same type, the new type is twice wider.
+        var_types oldType = ind->TypeGet();
+        var_types newType;
+        switch (oldType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                newType = TYP_USHORT;
+                break;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                newType = TYP_INT;
+                break;
+
+#ifdef TARGET_64BIT
+            case TYP_INT:
+                newType = TYP_LONG;
+                break;
+
+#if defined(FEATURE_HW_INTRINSICS)
+            case TYP_LONG:
+            case TYP_REF:
+                if (comp->IsBaselineSimdIsaSupported())
+                {
+                    // TLDR: we should be here only if one of the conditions is true:
+                    // 1) Both GT_INDs have GTF_IND_ALLOW_NON_ATOMIC flag
+                    // 2) ARM64: Data is at least 8-byte aligned
+                    // 3) AMD64: Data is at least 16-byte aligned on AMD/Intel with AVX+
+                    //
+                    newType = TYP_SIMD16;
+                    if ((oldType == TYP_REF) &&
+                        (!currData.value->IsIntegralConst(0) || !prevData.value->IsIntegralConst(0)))
+                    {
+                        // For TYP_REF we only support null values. In theory, we can also support frozen handles, e.g.:
+                        //
+                        //   arr[1] = "hello";
+                        //   arr[0] = "world";
+                        //
+                        // but we don't want to load managed references into SIMD registers (we can only do so
+                        // when we can issue a nongc region for a block)
+                        return;
+                    }
+                    break;
+                }
+                return;
+
+#if defined(TARGET_AMD64)
+            case TYP_SIMD16:
+                if (comp->getPreferredVectorByteLength() >= 32)
+                {
+                    newType = TYP_SIMD32;
+                    break;
+                }
+                return;
+
+            case TYP_SIMD32:
+                if (comp->getPreferredVectorByteLength() >= 64)
+                {
+                    newType = TYP_SIMD64;
+                    break;
+                }
+                return;
+#endif // TARGET_AMD64
+#endif // FEATURE_HW_INTRINSICS
+#endif // TARGET_64BIT
+
+            // TYP_FLOAT and TYP_DOUBLE aren't needed here - they're expected to
+            // be converted to TYP_INT/TYP_LONG for constant value.
+            //
+            // TYP_UINT and TYP_ULONG are not legal for GT_IND.
+            //
+            default:
+                return;
+        }
+
+        // We should not be here for stores requiring write barriers.
+        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind));
+        assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd));
+
+        // Delete previous STOREIND entirely
+        BlockRange().Remove(std::move(prevIndRange));
+
+        // It's not expected to be contained yet, but just in case...
+        ind->Data()->ClearContained();
+
+        // We know it's always LEA for now
+        GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
+
+        // Update offset to be the minimum of the two
+        addr->SetOffset(min(prevData.offset, currData.offset));
+
+        // Update type for both STOREIND and val
+        ind->gtType         = newType;
+        ind->Data()->gtType = newType;
+
+#if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
+        // Upgrading two SIMD stores to a wider SIMD store.
+        // Only on x64 since ARM64 has no options above SIMD16
+        if (varTypeIsSIMD(oldType))
+        {
+            int8_t* lowerCns = prevData.value->AsVecCon()->gtSimdVal.i8;
+            int8_t* upperCns = currData.value->AsVecCon()->gtSimdVal.i8;
+
+            // if the previous store was at a higher address, swap the constants
+            if (prevData.offset > currData.offset)
+            {
+                std::swap(lowerCns, upperCns);
+            }
+
+            simd_t   newCns   = {};
+            uint32_t oldWidth = genTypeSize(oldType);
+            memcpy(newCns.i8, lowerCns, oldWidth);
+            memcpy(newCns.i8 + oldWidth, upperCns, oldWidth);
+
+            ind->Data()->AsVecCon()->gtSimdVal = newCns;
+            continue;
+        }
+#endif
+
+        size_t lowerCns = (size_t)prevData.value->AsIntCon()->IconValue();
+        size_t upperCns = (size_t)currData.value->AsIntCon()->IconValue();
+
+        // if the previous store was at a higher address, swap the constants
+        if (prevData.offset > currData.offset)
+        {
+            std::swap(lowerCns, upperCns);
+        }
+
+#if defined(TARGET_64BIT) && defined(FEATURE_HW_INTRINSICS)
+        // We're promoting two TYP_LONG/TYP_REF into TYP_SIMD16
+        // All legality checks were done above.
+        if (varTypeIsSIMD(newType))
+        {
+            // Replace two 64bit constants with a single 128bit constant
+            int8_t val[16];
+            memcpy(val, &lowerCns, 8);
+            memcpy(val + 8, &upperCns, 8);
+            GenTreeVecCon* vecCns = comp->gtNewVconNode(newType, &val);
+
+            BlockRange().InsertAfter(ind->Data(), vecCns);
+            BlockRange().Remove(ind->Data());
+            ind->gtOp2 = vecCns;
+            continue;
+        }
+#endif // TARGET_64BIT && FEATURE_HW_INTRINSICS
+
+        // Trim the constants to the size of the type, e.g. for TYP_SHORT and TYP_USHORT
+        // the mask will be 0xFFFF, for TYP_INT - 0xFFFFFFFF.
+        size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_IN_BYTE;
+        lowerCns &= mask;
+        upperCns &= mask;
+
+        size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_IN_BYTE)));
+        JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
+
+        ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
+        if (genTypeSize(oldType) == 1)
+        {
+            // A mark for future foldings that this IND doesn't need to be atomic.
+            ind->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
+        }
+
+    } while (true);
+#endif // TARGET_XARCH || TARGET_ARM64
+}
+
 //------------------------------------------------------------------------
 // LowerStoreIndirCommon: a common logic to lower StoreIndir.
 //
@@ -7842,6 +8271,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
         }
 #endif
 
+        LowerStoreIndirCoalescing(ind);
         LowerStoreIndir(ind);
     }
 }

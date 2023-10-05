@@ -114,7 +114,7 @@ if (MSVC)
     # Debug build specific flags
     # The Ninja generator doesn't appear to have the default `/INCREMENTAL` that
     # the Visual Studio generator has. Therefore we will override the default for Visual Studio only.
-    add_link_options($<$<CONFIG:DEBUG>/INCREMENTAL:NO>)
+    add_link_options($<$<CONFIG:DEBUG>:/INCREMENTAL:NO>)
     add_link_options($<$<CONFIG:DEBUG>:/OPT:NOICF>)
     add_link_options($<$<CONFIG:DEBUG>:/OPT:NOREF>)
   endif (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
