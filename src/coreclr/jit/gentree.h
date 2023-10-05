@@ -1836,6 +1836,10 @@ public:
     // Sets the GTF flag equivalent for the regIndex'th register of a multi-reg node.
     void SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex);
 
+#ifdef TARGET_ARM64
+    bool NeedsConsecutiveRegisters() const;
+#endif
+
     // Last-use information for either GenTreeLclVar or GenTreeCopyOrReload nodes.
 private:
     GenTreeFlags GetLastUseBit(int regIndex) const;
@@ -3646,7 +3650,7 @@ public:
         }
         else
         {
-            gtOtherReg[regIndex - 1] = regNumberSmall(reg);
+            gtOtherReg[regIndex - 1] = (regNumberSmall)reg;
         }
     }
 
@@ -6085,15 +6089,66 @@ protected:
     NamedIntrinsic gtHWIntrinsicId;
 
 public:
-    regNumber GetOtherReg() const
+    //-----------------------------------------------------------
+    // GetRegNumByIdx: Get regNumber of i'th position.
+    //
+    // Arguments:
+    //    idx   -   register position.
+    //
+    // Return Value:
+    //    Returns regNumber assigned to i'th position.
+    //
+    regNumber GetRegNumByIdx(unsigned idx) const
     {
+#ifdef TARGET_ARM64
+        assert(idx < MAX_MULTIREG_COUNT);
+
+        if (idx == 0)
+        {
+            return GetRegNum();
+        }
+
+        if (NeedsConsecutiveRegisters())
+        {
+            assert(IsMultiRegNode());
+            return (regNumber)(GetRegNum() + idx);
+        }
+#endif
+        // should only be used to get otherReg
+        assert(idx == 1);
         return (regNumber)gtOtherReg;
     }
 
-    void SetOtherReg(regNumber reg)
+    //-----------------------------------------------------------
+    // SetRegNumByIdx: Set the regNumber for i'th position.
+    //
+    // Arguments:
+    //    reg   -   reg number
+    //    idx   -   register position.
+    //
+    // Return Value:
+    //    None.
+    //
+    void SetRegNumByIdx(regNumber reg, unsigned idx)
     {
+#ifdef TARGET_ARM64
+        assert(idx < MAX_MULTIREG_COUNT);
+
+        if (idx == 0)
+        {
+            SetRegNum(reg);
+            return;
+        }
+        if (NeedsConsecutiveRegisters())
+        {
+            assert(IsMultiRegNode());
+            assert(reg == (regNumber)(GetRegNum() + idx));
+            return;
+        }
+#endif
+        // should only be used to set otherReg
+        assert(idx == 1);
         gtOtherReg = (regNumberSmall)reg;
-        assert(gtOtherReg == reg);
     }
 
     GenTreeFlags GetRegSpillFlagByIdx(unsigned idx) const
@@ -9323,9 +9378,7 @@ inline regNumber GenTree::GetRegByIndex(int regIndex) const
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIs(GT_HWINTRINSIC))
     {
-        assert(regIndex == 1);
-        // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
-        return AsHWIntrinsic()->GetOtherReg();
+        return AsHWIntrinsic()->GetRegNumByIdx(regIndex);
     }
 #endif // FEATURE_HW_INTRINSICS
 

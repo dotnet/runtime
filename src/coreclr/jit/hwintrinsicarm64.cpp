@@ -1877,6 +1877,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_LoadVector64x2:
+        case NI_AdvSimd_LoadVector64x3:
+        case NI_AdvSimd_LoadVector64x4:
+        case NI_AdvSimd_Arm64_LoadVector128x2:
+        case NI_AdvSimd_Arm64_LoadVector128x3:
+        case NI_AdvSimd_Arm64_LoadVector128x4:
+            info.compNeedsConsecutiveRegisters = true;
+            FALLTHROUGH;
         case NI_AdvSimd_Arm64_LoadPairScalarVector64:
         case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
         case NI_AdvSimd_Arm64_LoadPairVector128:

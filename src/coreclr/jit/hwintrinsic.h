@@ -769,7 +769,17 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector128:
             case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            case NI_AdvSimd_LoadVector64x2:
+            case NI_AdvSimd_Arm64_LoadVector128x2:
                 return 2;
+
+            case NI_AdvSimd_LoadVector64x3:
+            case NI_AdvSimd_Arm64_LoadVector128x3:
+                return 3;
+
+            case NI_AdvSimd_LoadVector64x4:
+            case NI_AdvSimd_Arm64_LoadVector128x4:
+                return 4;
 #endif
 
 #ifdef TARGET_XARCH

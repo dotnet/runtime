@@ -155,9 +155,7 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 #ifdef FEATURE_HW_INTRINSICS
     else if (tree->OperIs(GT_HWINTRINSIC))
     {
-        assert(regIdx == 1);
-        // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
-        tree->AsHWIntrinsic()->SetOtherReg(reg);
+        tree->AsHWIntrinsic()->SetRegNumByIdx(reg, regIdx);
     }
 #endif // FEATURE_HW_INTRINSICS
     else if (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR))
