@@ -264,6 +264,7 @@
     <MSBuild Projects="@(ProjectReference)"
         Targets="CopyAllNativeProjectReferenceBinaries"
         Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
+        SkipNonexistentTargets="true"
         BuildInParallel="true" />
   </Target>
 
