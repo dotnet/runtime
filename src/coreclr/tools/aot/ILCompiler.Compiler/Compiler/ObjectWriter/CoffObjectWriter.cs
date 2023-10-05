@@ -31,7 +31,7 @@ namespace ILCompiler.ObjectWriter
 
         // Symbol table
         private List<CoffSymbolRecord> _symbols = new();
-        private Dictionary<string, uint> _symbolNameToIndex = new();
+        private Dictionary<string, uint> _symbolNameToIndex = new(StringComparer.Ordinal);
         private Dictionary<int, CoffSectionSymbol> _sectionNumberToComdatAuxRecord = new();
         private HashSet<string> _referencedMethods = new();
 

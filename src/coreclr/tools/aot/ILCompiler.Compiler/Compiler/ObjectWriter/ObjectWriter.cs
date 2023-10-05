@@ -36,12 +36,12 @@ namespace ILCompiler.ObjectWriter
         private byte _insPaddingByte;
 
         // Standard sections
-        private Dictionary<string, int> _sectionNameToSectionIndex = new();
+        private Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
         private List<ObjectWriterStream> _sectionIndexToStream = new();
         private List<List<SymbolicRelocation>> _sectionIndexToRelocations = new();
 
         // Symbol table
-        private Dictionary<string, SymbolDefinition> _definedSymbols = new();
+        private Dictionary<string, SymbolDefinition> _definedSymbols = new(StringComparer.Ordinal);
 
         // Debugging
         private UserDefinedTypeDescriptor _userDefinedTypeDescriptor;
