@@ -382,10 +382,10 @@ mono_ios_runtime_init (int argc, char** argv)
         argv_ext [argc] = strdup ("--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556");
         argc++;
 
-        mono_jit_parse_options (argc, copy_argv);
+        mono_jit_parse_options (argc, argv_ext);
         // The caller should invoke free_managed_args to free other items
-        free (copy_argv [argc - 1]);
-        free (copy_argv);
+        free (argv_ext [argc - 1]);
+        free (argv_ext);
     } else {
         mono_jit_parse_options (argc, argv);
     }
