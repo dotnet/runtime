@@ -25043,6 +25043,31 @@ GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fi
     }
     return fieldList;
 }
+
+GenTreeFieldList* Compiler::gtConvertParamOpToFieldList(GenTree* op, unsigned  fieldCount, CORINFO_CLASS_HANDLE clsHnd)
+{
+    LclVarDsc*           opVarDsc    = lvaGetDesc(op->AsLclVar());
+    unsigned             lclNum      = lvaGetLclNum(opVarDsc);
+    unsigned             fieldSize   = opVarDsc->lvSize() / fieldCount;
+    GenTreeFieldList*    fieldList   = new (this, GT_FIELD_LIST) GenTreeFieldList();
+    int                  offset      = 0;
+    unsigned sizeBytes = 0;
+    CORINFO_CLASS_HANDLE structType;
+
+    for (unsigned fieldId = 0; fieldId < fieldCount; fieldId++)
+    {
+        CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(clsHnd, fieldId);
+        JitType2PreciseVarType(info.compCompHnd->getFieldType(fieldHandle, &structType));
+        getBaseJitTypeAndSizeOfSIMDType(structType, &sizeBytes);
+        var_types simdType = getSIMDTypeForSize(sizeBytes);
+
+        GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, simdType, offset);
+        fieldList->AddField(this, fldNode, offset, simdType);
+
+        offset += fieldSize;
+    }
+    return fieldList;
+}
 #endif // TARGET_ARM64
 
 GenTree* Compiler::gtNewSimdWithLowerNode(
@@ -25192,6 +25217,13 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 
 #ifdef TARGET_ARM64
             case NI_AdvSimd_LoadAndInsertScalar:
+            case NI_AdvSimd_LoadAndInsertScalarx2:
+            case NI_AdvSimd_LoadAndInsertScalarx3:
+            case NI_AdvSimd_LoadAndInsertScalarx4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
+
                 addr = Op(3);
                 break;
 #endif // TARGET_ARM64
@@ -25552,6 +25584,7 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadPairVector64:
         case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
         case NI_AdvSimd_LoadVector64x2:
+        case NI_AdvSimd_LoadAndInsertScalarx2:
         case NI_AdvSimd_LoadAndReplicateToVector64x2:
             return compiler->typGetBlkLayout(16);
 
@@ -25561,17 +25594,22 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_LoadVector64x4:
         case NI_AdvSimd_LoadAndReplicateToVector64x4:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
+        case NI_AdvSimd_LoadAndInsertScalarx4:
             return compiler->typGetBlkLayout(32);
 
         case NI_AdvSimd_LoadVector64x3:
+        case NI_AdvSimd_LoadAndInsertScalarx3:
         case NI_AdvSimd_LoadAndReplicateToVector64x3:
             return compiler->typGetBlkLayout(24);
 
         case NI_AdvSimd_Arm64_LoadVector128x3:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
             return compiler->typGetBlkLayout(48);
 
         case NI_AdvSimd_Arm64_LoadVector128x4:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
             return compiler->typGetBlkLayout(64);
 

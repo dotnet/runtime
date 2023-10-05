@@ -2986,6 +2986,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Extract:
             case NI_AdvSimd_InsertScalar:
             case NI_AdvSimd_LoadAndInsertScalar:
+            case NI_AdvSimd_LoadAndInsertScalarx2:
+            case NI_AdvSimd_LoadAndInsertScalarx3:
+            case NI_AdvSimd_LoadAndInsertScalarx4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op2));
@@ -3117,6 +3123,14 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 unreached();
         }
     }
+
+    //if ((intrin.id == NI_AdvSimd_LoadAndInsertScalar) || (intrin.id == NI_AdvSimd_LoadAndInsertScalarx2) ||
+    //    (intrin.id == NI_AdvSimd_LoadAndInsertScalarx3) || (intrin.id == NI_AdvSimd_LoadAndInsertScalarx4) ||
+    //    (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx2) ||
+    //    (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx3) || (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx4))
+    //{
+    //    MakeSrcContained(node, intrin.op1);
+    //}
 }
 #endif // FEATURE_HW_INTRINSICS
 

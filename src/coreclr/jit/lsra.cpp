@@ -2374,6 +2374,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
                             loc);
                     foundDiff = true;
                 }
+                JITDUMP("Adding V%02u (%d) for RefPosition #%-3u\n", varNum, varIndex, currentRefPosition->rpNum);
                 VarSetOps::AddElemD(compiler, computedLive, varIndex);
             }
             else if (currentRefPosition->lastUse)
@@ -2389,6 +2390,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 
             if (currentRefPosition->refType == RefTypeDef || currentRefPosition->refType == RefTypeDummyDef)
             {
+                JITDUMP("Removing V%02u (%d) for RefPosition #%-3u\n", varNum, varIndex, currentRefPosition->rpNum);
                 VarSetOps::RemoveElemD(compiler, computedLive, varIndex);
             }
         }

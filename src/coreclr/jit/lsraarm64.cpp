@@ -1403,6 +1403,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_Insert:
                     case NI_AdvSimd_InsertScalar:
                     case NI_AdvSimd_LoadAndInsertScalar:
+                    case NI_AdvSimd_LoadAndInsertScalarx2:
+                    case NI_AdvSimd_LoadAndInsertScalarx3:
+                    case NI_AdvSimd_LoadAndInsertScalarx4:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
                     case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
                         needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
                         break;
@@ -1483,7 +1489,26 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             tgtPrefOp1 = !intrin.op1->isContained();
         }
 
-        if (intrinsicTree->OperIsMemoryLoadOrStore())
+        if ((intrin.id == NI_AdvSimd_LoadAndInsertScalar) || (intrin.id == NI_AdvSimd_LoadAndInsertScalarx2) ||
+            (intrin.id == NI_AdvSimd_LoadAndInsertScalarx3) || (intrin.id == NI_AdvSimd_LoadAndInsertScalarx4) ||
+            (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx2) ||
+            (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx3) ||
+            (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx4))
+        {
+            assert(intrin.op1->OperIs(GT_FIELD_LIST));
+            GenTreeFieldList* op1 = intrin.op1->AsFieldList();
+            assert(compiler->info.compNeedsConsecutiveRegisters);
+
+            for (GenTreeFieldList::Use& use : op1->Uses())
+            {
+                RefPosition*        restoreRefPos = nullptr;
+                RefPositionIterator prevRefPos    = refPositions.backPosition();
+
+                BuildDelayFreeUses(use.GetNode(), intrinsicTree);
+                srcCount++;
+            }
+        }
+        else if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
             srcCount += BuildAddrUses(intrin.op1);
         }
@@ -1580,6 +1605,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 buildInternalRegisterUses();
                 *pDstCount = 0;
                 break;
+            case NI_AdvSimd_LoadAndInsertScalarx2:
+            case NI_AdvSimd_LoadAndInsertScalarx3:
+            case NI_AdvSimd_LoadAndInsertScalarx4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
+                assert(intrin.op2 != nullptr);
+                assert(intrin.op3 != nullptr);
+                assert(isRMW);
+                srcCount += BuildOperandUses(intrin.op2);
+
+                assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                srcCount += BuildAddrUses(intrin.op3);
+                FALLTHROUGH;
             case NI_AdvSimd_LoadVector64x2:
             case NI_AdvSimd_LoadVector64x3:
             case NI_AdvSimd_LoadVector64x4:

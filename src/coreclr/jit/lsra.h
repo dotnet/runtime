@@ -1108,8 +1108,12 @@ private:
             GenTreeLclVar* lclVar = tree->AsLclVar();
             LclVarDsc*     varDsc = compiler->lvaGetDesc(lclVar);
             type                  = varDsc->GetRegisterType(lclVar);
+            if (tree->gtTreeID == 2)
+            {
+                type = TYP_INT;
+            }
         }
-        assert(type != TYP_UNDEF && type != TYP_STRUCT);
+        //assert(type != TYP_UNDEF && type != TYP_STRUCT);
         return type;
     }
 

@@ -1071,8 +1071,56 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
-            // We don't have generic multireg APIs
+#ifdef TARGET_ARM64
+            if ((intrinsic == NI_AdvSimd_LoadAndInsertScalar) ||
+                (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalar))
+            {
+                unsigned             fieldCount  = info.compCompHnd->getClassNumInstanceFields(sig->retTypeClass);
+                CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(sig->retTypeClass, 0);
+                CORINFO_CLASS_HANDLE structType;
+                CorInfoType          fieldType = info.compCompHnd->getFieldType(fieldHandle, &structType);
+                /*CORINFO_CLASS_HANDLE fieldClassHandle = info.compCompHnd->getFieldClass(fieldHandle);*/
+                simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(structType, &sizeBytes);
+                if (sizeBytes == 8)
+                {
+                    switch (fieldCount)
+                    {
+                        case 2:
+                            intrinsic = NI_AdvSimd_LoadAndInsertScalarx2;
+                            break;
+                        case 3:
+                            intrinsic = NI_AdvSimd_LoadAndInsertScalarx3;
+                            break;
+                        case 4:
+                            intrinsic = NI_AdvSimd_LoadAndInsertScalarx4;
+                            break;
+                        default:
+                            assert("unsupported");
+                    }
+                }
+                else
+                {
+                    assert(sizeBytes == 16);
+                    switch (fieldCount)
+                    {
+                        case 2:
+                            intrinsic = NI_AdvSimd_Arm64_LoadAndInsertScalarx2;
+                            break;
+                        case 3:
+                            intrinsic = NI_AdvSimd_Arm64_LoadAndInsertScalarx3;
+                            break;
+                        case 4:
+                            intrinsic = NI_AdvSimd_Arm64_LoadAndInsertScalarx4;
+                            break;
+                        default:
+                            assert("unsupported");
+                    }
+                }
+            }
+#else
             assert(sizeBytes == 0);
+#endif
+            
         }
         else
         {
@@ -1130,7 +1178,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
 #ifdef TARGET_ARM64
     if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar) ||
-        (intrinsic == NI_AdvSimd_LoadAndInsertScalar))
+        (intrinsic == NI_AdvSimd_LoadAndInsertScalar) || (intrinsic == NI_AdvSimd_LoadAndInsertScalarx2) ||
+        (intrinsic == NI_AdvSimd_LoadAndInsertScalarx3) || (intrinsic == NI_AdvSimd_LoadAndInsertScalarx4) ||
+        (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalarx2) ||
+        (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalarx3) || (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalarx4))
     {
         assert(sig->numArgs == 3);
         immOp = impStackTop(1).val;
