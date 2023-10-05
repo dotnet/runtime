@@ -495,12 +495,20 @@ namespace DebuggerTests
                     ("test.GetBoolNullable()", TBool(true)),
                     ("test.GetNull()", TBool(true)),
 
-                    ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
-                    ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
-                    ("test.GetDefaultAndRequiredParam(3, +2)", TNumber(5)),
-                    ("test.GetDefaultAndRequiredParam(3, -2)", TNumber(1)),
-                    ("test.GetDefaultAndRequiredParam(-123l, -1.1f)", TNumber("-124.1", isDecimal: true)), // long, float
-                    ("test.GetDefaultAndRequiredParam(-0.23)", TNumber("-32768.23", isDecimal: true)), // double, short
+                    ("test.SumDefaultAndRequiredParam(2)", TNumber(5)),
+                    ("test.SumDefaultAndRequiredParam(3, 2)", TNumber(5)),
+                    ("test.SumDefaultNegativeAndRequiredParamInts(3, +2)", TNumber(5)),
+                    ("test.SumDefaultNegativeAndRequiredParamInts(-3, -2)", TNumber(-5)),
+                    ("test.SumDefaultNegativeAndRequiredParamInts(-3)", TNumber(-6)), // default: -3
+                    ("test.SumDefaultNegativeAndRequiredParamLongInts(-1l, -2l)", TNumber(-3)),
+                    ("test.SumDefaultNegativeAndRequiredParamLongInts(-1l)", TNumber(-124)), // default: -123l
+                    ("test.SumDefaultNegativeAndRequiredParamFloats(-1.1f, -1.1f)", TNumber("-2.2", isDecimal: true)),
+                    ("test.SumDefaultNegativeAndRequiredParamFloats(-1.1f)", TNumber("-4.4", isDecimal: true)), // default: -3.3f
+                    // ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1, -0.2)", TNumber("-0.3", isDecimal: true)), // precision in double operations fails, received -0.30000000000000004
+                    // ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1)", TNumber("-3.3", isDecimal: true)), // default: -3.2, precision fails, received -3.3000000000000003
+                    // ("test.SumDefaultNegativeAndRequiredParamDoubles(0.1, 0.2)", TNumber("0.3", isDecimal: true)), // positive double precision is wrong too: received 0.30000000000000004
+                    // ("test.SumDefaultNegativeAndRequiredParamShortInts(-0.111, -0.456)", TNumber("-0.567", isDecimal: true)), // we have no way of testing it, debugger recognizes passed literals as integers and does not find the correct overload. We would need to cast to short and we don't support passing parameters with a cast.
+                    // ("test.SumDefaultNegativeAndRequiredParamShortInts(-0.111)", TNumber("-3.567", isDecimal: true)), // default: -32768
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))

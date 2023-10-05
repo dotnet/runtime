@@ -1995,9 +1995,12 @@ namespace DebuggerTests
 #nullable disable
 
             public bool GetNull(object param = null) => param == null ? true : false;
-            public int GetDefaultAndRequiredParam(int requiredParam, int optionalParam = 3) => requiredParam + optionalParam;
-            public float GetDefaultAndRequiredParam(long requiredParam, float optionalParam = 3.3f) => requiredParam + optionalParam;
-            public double GetDefaultAndRequiredParam(double requiredParam, short optionalParam = -32768) => requiredParam + optionalParam;
+            public int SumDefaultAndRequiredParam(int requiredParam, int optionalParam = 3) => requiredParam + optionalParam;
+            public int SumDefaultNegativeAndRequiredParamInts(int requiredParam, int optionalParam = -3) => requiredParam + optionalParam;
+            public long SumDefaultNegativeAndRequiredParamLongInts(long requiredParam, long optionalParam = -123) => requiredParam + optionalParam;
+            public float SumDefaultNegativeAndRequiredParamFloats(float requiredParam, float optionalParam = -3.3f) => requiredParam + optionalParam;
+            public double SumDefaultNegativeAndRequiredParamDoubles(double requiredParam, double optionalParam = -3.2) => requiredParam + optionalParam;
+            public double SumDefaultNegativeAndRequiredParamShortInts(short requiredParam, short optionalParam = -32768) => requiredParam + optionalParam;
             public string GetDefaultAndRequiredParamMixedTypes(string requiredParam, int optionalParamFirst = -1, bool optionalParamSecond = false) => $"{requiredParam}; {optionalParamFirst}; {optionalParamSecond}";
         }
 
