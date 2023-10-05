@@ -5291,7 +5291,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        if ((block->GetBBNext() != nullptr) && (block->GetBBNext()->isLoopAlign()))
+        if (!block->IsLast() && (block->GetBBNext()->isLoopAlign()))
         {
             // Loop alignment is disabled for cold blocks
             assert((block->bbFlags & BBF_COLD) == 0);

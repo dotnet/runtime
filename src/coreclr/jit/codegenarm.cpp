@@ -123,7 +123,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // we would have otherwise created retless calls.
     assert(block->isBBCallAlwaysPair());
 
-    assert(block->GetBBNext() != NULL);
+    assert(!block->IsLast());
     assert(block->GetBBNext()->KindIs(BBJ_ALWAYS));
     assert(block->GetBBNext()->bbJumpDest != NULL);
     assert(block->GetBBNext()->bbJumpDest->bbFlags & BBF_FINALLY_TARGET);

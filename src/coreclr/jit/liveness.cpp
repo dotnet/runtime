@@ -889,7 +889,7 @@ void Compiler::fgExtendDbgLifetimes()
         switch (block->GetBBJumpKind())
         {
             case BBJ_NONE:
-                PREFIX_ASSUME(block->GetBBNext() != nullptr);
+                PREFIX_ASSUME(!block->IsLast());
                 VarSetOps::UnionD(this, initVars, block->GetBBNext()->bbScope);
                 break;
 
@@ -903,14 +903,14 @@ void Compiler::fgExtendDbgLifetimes()
                 if (!(block->bbFlags & BBF_RETLESS_CALL))
                 {
                     assert(block->isBBCallAlwaysPair());
-                    PREFIX_ASSUME(block->GetBBNext() != nullptr);
+                    PREFIX_ASSUME(!block->IsLast());
                     VarSetOps::UnionD(this, initVars, block->GetBBNext()->bbScope);
                 }
                 VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
                 break;
 
             case BBJ_COND:
-                PREFIX_ASSUME(block->GetBBNext() != nullptr);
+                PREFIX_ASSUME(!block->IsLast());
                 VarSetOps::UnionD(this, initVars, block->GetBBNext()->bbScope);
                 VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
                 break;

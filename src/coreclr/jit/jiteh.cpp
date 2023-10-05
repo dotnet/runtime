@@ -4349,7 +4349,7 @@ bool Compiler::fgRelocateEHRegions()
  */
 void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 {
-    assert(block->GetBBPrev() != nullptr);
+    assert(!block->IsFirst());
 
     BasicBlock* bPrev = block->GetBBPrev();
 

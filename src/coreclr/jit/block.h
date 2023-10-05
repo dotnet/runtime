@@ -559,6 +559,16 @@ public:
         }
     }
 
+    bool IsFirst() const
+    {
+        return (bbPrev == nullptr);
+    }
+
+    bool IsLast() const
+    {
+        return (bbNext == nullptr);
+    }
+
     /* The following union describes the jump target(s) of this block */
     union {
         unsigned    bbJumpOffs; // PC offset (temporary only)
@@ -1454,8 +1464,8 @@ public:
     {
         assert(m_block != nullptr);
         // Check that we haven't been spliced out of the list.
-        assert((m_block->GetBBNext() == nullptr) || (m_block->GetBBNext()->GetBBPrev() == m_block));
-        assert((m_block->GetBBPrev() == nullptr) || (m_block->GetBBPrev()->GetBBNext() == m_block));
+        assert((m_block->IsLast()) || (m_block->GetBBNext()->GetBBPrev() == m_block));
+        assert((m_block->IsFirst()) || (m_block->GetBBPrev()->GetBBNext() == m_block));
 
         m_block = m_block->GetBBNext();
         return *this;

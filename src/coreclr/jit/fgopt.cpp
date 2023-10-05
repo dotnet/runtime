@@ -2569,7 +2569,7 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
     }
 #endif // DEBUG
 
-    noway_assert(block->GetBBPrev() != nullptr); // Can't use this function to remove the first block
+    noway_assert(!block->IsFirst()); // Can't use this function to remove the first block
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     assert(!block->isBBCallAlwaysPairTail()); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
@@ -4832,7 +4832,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #endif // FEATURE_EH_FUNCLETS
 
     // We can't relocate anything if we only have one block
-    if (fgFirstBB->GetBBNext() == nullptr)
+    if (fgFirstBB->IsLast())
     {
         return false;
     }
@@ -5666,7 +5666,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         // or if bEnd->bbNext is in a different try region
                         // then we cannot move the blocks
                         //
-                        if ((bEnd->GetBBNext() == nullptr) || !BasicBlock::sameTryRegion(startBlk, bEnd->GetBBNext()))
+                        if ((bEnd->IsLast()) || !BasicBlock::sameTryRegion(startBlk, bEnd->GetBBNext()))
                         {
                             goto CANNOT_MOVE;
                         }

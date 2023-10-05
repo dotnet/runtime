@@ -891,7 +891,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         assert(m_b2->KindIs(BBJ_COND));
         assert(m_b1->bbJumpDest == m_b2->bbJumpDest);
         assert(m_b1->GetBBNext() == m_b2);
-        assert(m_b2->GetBBNext() != nullptr);
+        assert(!m_b2->IsLast());
     }
 
     if (!optReturnBlock)

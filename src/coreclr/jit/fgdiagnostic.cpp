@@ -168,7 +168,7 @@ void Compiler::fgDebugCheckUpdate()
 
             // We are allowed to have a branch from a hot 'block' to a cold 'bbNext'
             //
-            if ((block->GetBBNext() != nullptr) && fgInDifferentRegions(block, block->GetBBNext()))
+            if (!block->IsLast() && fgInDifferentRegions(block, block->GetBBNext()))
             {
                 doAssertOnJumpToNextBlock = false;
             }
@@ -1214,7 +1214,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 // Invisible edge for bbNext chain
                 //
-                if (bSource->GetBBNext() != nullptr)
+                if (!bSource->IsLast())
                 {
                     fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB " [style=\"invis\", weight=25];\n", bSource->bbNum,
                             bSource->GetBBNext()->bbNum);
@@ -2790,7 +2790,7 @@ void Compiler::fgDebugCheckBBNumIncreasing()
 {
     for (BasicBlock* const block : Blocks())
     {
-        assert(block->GetBBNext() == nullptr || (block->bbNum < block->GetBBNext()->bbNum));
+        assert(block->IsLast() || (block->bbNum < block->GetBBNext()->bbNum));
     }
 }
 
@@ -2866,7 +2866,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         if (checkBBNum)
         {
             // Check that bbNum is sequential
-            assert(block->GetBBNext() == nullptr || (block->bbNum + 1 == block->GetBBNext()->bbNum));
+            assert(block->IsLast() || (block->bbNum + 1 == block->GetBBNext()->bbNum));
         }
 
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
@@ -3704,7 +3704,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
 // ensure that bbNext and bbPrev are consistent
 void Compiler::fgDebugCheckBlockLinks()
 {
-    assert(fgFirstBB->GetBBPrev() == nullptr);
+    assert(fgFirstBB->IsFirst());
 
     for (BasicBlock* const block : Blocks())
     {

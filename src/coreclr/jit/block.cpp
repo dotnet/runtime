@@ -1509,7 +1509,7 @@ bool BasicBlock::isBBCallAlwaysPair() const
         assert(!(this->bbFlags & BBF_RETLESS_CALL));
 #endif
         // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
-        assert(this->GetBBNext() != nullptr);
+        assert(!this->IsLast());
         assert(this->GetBBNext()->KindIs(BBJ_ALWAYS));
         assert(this->GetBBNext()->bbFlags & BBF_KEEP_BBJ_ALWAYS);
         assert(this->GetBBNext()->isEmpty());

@@ -743,7 +743,7 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
             {
                 if (predBlock->KindIs(BBJ_NONE) && (predBlock->GetBBNext() == optLoopTable[loopInd].lpEntry) &&
                     (predBlock->countOfInEdges() == 1) && (predBlock->firstStmt() == nullptr) &&
-                    (predBlock->GetBBPrev() != nullptr) && predBlock->GetBBPrev()->bbFallsThrough())
+                    !predBlock->IsFirst() && predBlock->GetBBPrev()->bbFallsThrough())
                 {
                     initBlockOk = true;
                 }
@@ -1151,7 +1151,7 @@ bool Compiler::optExtractInitTestIncr(
         // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
         // little harder for the possible loop initialization statement.
         if (initBlock->KindIs(BBJ_NONE) && (initBlock->GetBBNext() == top) && (initBlock->countOfInEdges() == 1) &&
-            (initBlock->GetBBPrev() != nullptr) && initBlock->GetBBPrev()->bbFallsThrough())
+            !initBlock->IsFirst() && initBlock->GetBBPrev()->bbFallsThrough())
         {
             initBlock = initBlock->GetBBPrev();
             phdrStmt  = initBlock->firstStmt();
@@ -1924,7 +1924,7 @@ private:
                     isFirstVisit = true;
                 }
 
-                if (isFirstVisit && (predBlock->GetBBNext() != nullptr) &&
+                if (isFirstVisit && !predBlock->IsLast() &&
                     (PositionNum(predBlock->GetBBNext()) == predBlock->bbNum))
                 {
                     // We've created a new block immediately after `predBlock` to
@@ -2503,7 +2503,7 @@ void Compiler::optFindNaturalLoops()
 
     LoopSearch search(this);
 
-    for (BasicBlock* head = fgFirstBB; head->GetBBNext() != nullptr; head = head->GetBBNext())
+    for (BasicBlock* head = fgFirstBB; !head->IsLast(); head = head->GetBBNext())
     {
         BasicBlock* top = head->GetBBNext();
 

@@ -330,7 +330,7 @@ void CodeGen::genCodeForBBlist()
         //
         // Note: We need to have set compCurBB before calling emitAddLabel
         //
-        if ((block->GetBBPrev() != nullptr) && block->GetBBPrev()->KindIs(BBJ_COND) &&
+        if (!block->IsFirst() && block->GetBBPrev()->KindIs(BBJ_COND) &&
             (block->bbWeight != block->GetBBPrev()->bbWeight))
         {
             JITDUMP("Adding label due to BB weight difference: BBJ_COND " FMT_BB " with weight " FMT_WT
@@ -519,7 +519,7 @@ void CodeGen::genCodeForBBlist()
 #endif // DEBUG
 
 #if defined(DEBUG)
-        if (block->GetBBNext() == nullptr)
+        if (block->IsLast())
         {
 // Unit testing of the emitter: generate a bunch of instructions into the last block
 // (it's as good as any, but better than the prologue, which can only be a single instruction
@@ -547,10 +547,10 @@ void CodeGen::genCodeForBBlist()
 
         /* Is this the last block, and are there any open scopes left ? */
 
-        bool isLastBlockProcessed = (block->GetBBNext() == nullptr);
+        bool isLastBlockProcessed = (block->IsLast());
         if (block->isBBCallAlwaysPair())
         {
-            isLastBlockProcessed = (block->GetBBNext()->GetBBNext() == nullptr);
+            isLastBlockProcessed = (block->GetBBNext()->IsLast());
         }
 
         if (compiler->opts.compDbgInfo && isLastBlockProcessed)
@@ -615,7 +615,7 @@ void CodeGen::genCodeForBBlist()
             // Note: we may be generating a few too many NOPs for the case of call preceding an epilog. Technically,
             // if the next block is a BBJ_RETURN, an epilog will be generated, but there may be some instructions
             // generated before the OS epilog starts, such as a GS cookie check.
-            if ((block->GetBBNext() == nullptr) || !BasicBlock::sameEHRegion(block, block->GetBBNext()))
+            if ((block->IsLast()) || !BasicBlock::sameEHRegion(block, block->GetBBNext()))
             {
                 // We only need the NOP if we're not going to generate any more code as part of the block end.
 
@@ -636,7 +636,7 @@ void CodeGen::genCodeForBBlist()
                         break;
 
                     case BBJ_NONE:
-                        if (block->GetBBNext() == nullptr)
+                        if (block->IsLast())
                         {
                             // Call immediately before the end of the code; we should never get here    .
                             instGen(INS_BREAKPOINT); // This should never get executed
@@ -679,7 +679,7 @@ void CodeGen::genCodeForBBlist()
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if ((block->GetBBNext() == nullptr) || (block->GetBBNext()->bbFlags & BBF_FUNCLET_BEG) ||
+                if ((block->IsLast()) || (block->GetBBNext()->bbFlags & BBF_FUNCLET_BEG) ||
                     !BasicBlock::sameEHRegion(block, block->GetBBNext()) ||
                     (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->GetBBNext())) ||
                     block->GetBBNext() == compiler->fgFirstColdBlock)
@@ -783,7 +783,7 @@ void CodeGen::genCodeForBBlist()
                 {
                     GetEmitter()->emitSetLoopBackEdge(block->bbJumpDest);
 
-                    if (block->GetBBNext() != nullptr)
+                    if (!block->IsLast())
                     {
                         JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->GetBBNext()->bbNum);
                         block->GetBBNext()->bbFlags |= BBF_HAS_LABEL;
@@ -818,7 +818,7 @@ void CodeGen::genCodeForBBlist()
             GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS)));
         }
 
-        if ((block->GetBBNext() != nullptr) && (block->GetBBNext()->isLoopAlign()))
+        if (!block->IsLast() && (block->GetBBNext()->isLoopAlign()))
         {
             if (compiler->opts.compJitHideAlignBehindJmp)
             {

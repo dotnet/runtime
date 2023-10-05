@@ -446,13 +446,13 @@ void CodeGen::genMarkLabelsForCodegen()
         JITDUMP("  " FMT_BB " : try begin\n", HBtab->ebdTryBeg->bbNum);
         JITDUMP("  " FMT_BB " : hnd begin\n", HBtab->ebdHndBeg->bbNum);
 
-        if (HBtab->ebdTryLast->GetBBNext() != nullptr)
+        if (!HBtab->ebdTryLast->IsLast())
         {
             HBtab->ebdTryLast->GetBBNext()->bbFlags |= BBF_HAS_LABEL;
             JITDUMP("  " FMT_BB " : try end\n", HBtab->ebdTryLast->GetBBNext()->bbNum);
         }
 
-        if (HBtab->ebdHndLast->GetBBNext() != nullptr)
+        if (!HBtab->ebdHndLast->IsLast())
         {
             HBtab->ebdHndLast->GetBBNext()->bbFlags |= BBF_HAS_LABEL;
             JITDUMP("  " FMT_BB " : hnd end\n", HBtab->ebdHndLast->GetBBNext()->bbNum);
@@ -5210,7 +5210,7 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     assert(block != nullptr);
     const VARSET_TP& gcrefVarsArg(GetEmitter()->emitThisGCrefVars);
-    bool             last = (block->GetBBNext() == nullptr);
+    bool             last = (block->IsLast());
     GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg, last);
 }
 
@@ -5257,7 +5257,7 @@ void CodeGen::genReserveFuncletEpilog(BasicBlock* block)
 
     JITDUMP("Reserving funclet epilog IG for block " FMT_BB "\n", block->bbNum);
 
-    bool last = (block->GetBBNext() == nullptr);
+    bool last = (block->IsLast());
     GetEmitter()->emitCreatePlaceholderIG(IGPT_FUNCLET_EPILOG, block, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                           gcInfo.gcRegByrefSetCur, last);
 }

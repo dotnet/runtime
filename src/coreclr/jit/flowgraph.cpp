@@ -1578,7 +1578,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     BasicBlock* faultBB = fgNewBBafter(BBJ_EHFAULTRET, tryLastBB, false);
 
     assert(tryLastBB->GetBBNext() == faultBB);
-    assert(faultBB->GetBBNext() == nullptr);
+    assert(faultBB->IsLast());
     assert(faultBB == fgLastBB);
 
     faultBB->bbRefs = 1;
@@ -2154,7 +2154,7 @@ private:
         BasicBlock* newReturnBB = comp->fgNewBBinRegion(BBJ_RETURN);
         comp->fgReturnCount++;
 
-        noway_assert(newReturnBB->GetBBNext() == nullptr);
+        noway_assert(newReturnBB->IsLast());
 
         JITDUMP("\n newReturnBB [" FMT_BB "] created\n", newReturnBB->bbNum);
 
@@ -3009,7 +3009,7 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
 
 #endif // FEATURE_EH_FUNCLETS
 
-    assert(fgLastBB->GetBBNext() == nullptr);
+    assert(fgLastBB->IsLast());
 
     return fgLastBB;
 }
@@ -3078,7 +3078,7 @@ BasicBlock* Compiler::fgEndBBAfterMainFunction()
 
 #endif // FEATURE_EH_FUNCLETS
 
-    assert(fgLastBB->GetBBNext() == nullptr);
+    assert(fgLastBB->IsLast());
 
     return nullptr;
 }
@@ -3486,7 +3486,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         // Cold section is 5 bytes in size.
         // Ignore if stress-splitting.
         //
-        if (!forceSplit && firstColdBlock->GetBBNext() == nullptr)
+        if (!forceSplit && firstColdBlock->IsLast())
         {
             // If the size of the cold block is 7 or less
             // then we will keep it in the Hot section.

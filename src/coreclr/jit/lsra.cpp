@@ -1484,7 +1484,7 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             count++;
 
             BasicBlock* prevReportedBlock = bb->GetBBPrev();
-            if (bb->GetBBPrev() != nullptr && bb->GetBBPrev()->isBBCallAlwaysPairTail())
+            if (!bb->IsFirst() && bb->GetBBPrev()->isBBCallAlwaysPairTail())
             {
                 // For callf+always pair we generate the code for the always
                 // block in genCallFinally and skip it, so we don't report

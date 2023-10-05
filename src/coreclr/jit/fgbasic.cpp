@@ -4980,7 +4980,7 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     if (fgLastBB == bEnd)
     {
         fgLastBB = bPrev;
-        noway_assert(fgLastBB->GetBBNext() == nullptr);
+        noway_assert(fgLastBB->IsLast());
     }
 
     // If bEnd was the first Cold basic block update fgFirstColdBlock
@@ -5514,7 +5514,7 @@ bool Compiler::fgRenumberBlocks()
             block->bbNum = num;
         }
 
-        if (block->GetBBNext() == nullptr)
+        if (block->IsLast())
         {
             fgLastBB  = block;
             fgBBcount = num;
@@ -5637,7 +5637,7 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
     {
         printf("Relocated block%s [" FMT_BB ".." FMT_BB "] inserted after " FMT_BB "%s\n", (bStart == bEnd) ? "" : "s",
                bStart->bbNum, bEnd->bbNum, insertAfterBlk->bbNum,
-               (insertAfterBlk->GetBBNext() == nullptr) ? " at the end of method" : "");
+               (insertAfterBlk->IsLast()) ? " at the end of method" : "");
     }
 #endif // DEBUG
 
@@ -5650,7 +5650,7 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
     if (insertAfterBlk == fgLastBB)
     {
         fgLastBB = bEnd;
-        noway_assert(fgLastBB->GetBBNext() == nullptr);
+        noway_assert(fgLastBB->IsLast());
     }
 }
 
@@ -5723,7 +5723,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 
 #if !defined(FEATURE_EH_FUNCLETS)
     // In the funclets case, we still need to set some information on the handler blocks
-    if (bLast->GetBBNext() == NULL)
+    if (bLast->IsLast())
     {
         INDEBUG(reason = "region is already at the end of the method";)
         goto FAILURE;
@@ -6210,7 +6210,7 @@ void Compiler::fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk)
     if (fgLastBB == insertAfterBlk)
     {
         fgLastBB = newBlk;
-        assert(fgLastBB->GetBBNext() == nullptr);
+        assert(fgLastBB->IsLast());
     }
 }
 
