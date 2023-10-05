@@ -9,7 +9,7 @@ if(CLR_CMAKE_HOST_WIN32)
         set_property(DIRECTORY PROPERTY CLR_EH_CONTINUATION OFF)
     endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
-    target_link_options(clretwrc PRIVATE "/NOENTRY")
+    add_link_options(/NOENTRY)
 endif(CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=clretwrc.dll)

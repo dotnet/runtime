@@ -35,7 +35,6 @@ function(add_pgo TargetName)
                 endif(CMAKE_CROSSCOMPILING AND CMAKE_C_COMPILER_ID MATCHES "Clang")
                 if(LD_GNU) # Only use gold when it wouldn't change the LD_<LINKER> value
                     target_link_options(${TargetName} PRIVATE "-fuse-ld=gold")
-                    set(FUSE_LD "-fuse-ld=gold")
                 endif()
             endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
         endif(CLR_CMAKE_HOST_WIN32)

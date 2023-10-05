@@ -112,13 +112,14 @@ if (MSVC)
 
   if (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
     # Debug build specific flags
-    # The Ninja generator doesn't appear to have the default `/INCREMENTAL:ON` that
+    # The Ninja generator doesn't appear to have the default `/INCREMENTAL:NO` that
     # the Visual Studio generator has. Therefore we will override the default for Visual Studio only.
+    add_link_options($<$<CONFIG:DEBUG>/INCREMENTAL:NO>)
     add_link_options($<$<CONFIG:DEBUG>:/OPT:NOICF>)
+    add_link_options($<$<CONFIG:DEBUG>:/OPT:NOREF>)
   endif (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
-  # Options for all configs
-  add_link_options(/INCREMENTAL:NO>)
-  add_link_options(/OPT:REF>)
+  # Options for all but DEBUG
+  add_link_options($<$<CONFIG:CHECKED,RELWITHDEBINFO,RELEASE>:/INCREMENTAL:NO>)
 
   # Checked build specific flags
   add_link_options($<$<CONFIG:CHECKED>:/OPT:NOICF>)
@@ -127,7 +128,7 @@ if (MSVC)
   add_link_options($<$<CONFIG:RELEASE,RELWITHDEBINFO>:/OPT:ICF>)
 
   # Set LTCG for RELEASE and RELWITHDEBINFO builds that are compatible
-  set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} $<$<AND:$<NOT:$<LINK_LANGUAGE:RC>>,$<CONFIG:RELEASE,RELWITHDEBINFO>>:/LTCG>")
+  set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} $<$<AND:$<NOT:$<LINK_LANGUAGE:RC>>,$<CONFIG:RELEASE,RELWITHDEBINFO>>:/LTCG>")
 
 elseif (CLR_CMAKE_HOST_UNIX)
   # Set the values to display when interactively configuring CMAKE_BUILD_TYPE
