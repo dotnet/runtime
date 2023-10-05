@@ -81,21 +81,22 @@ if (MSVC)
     set(WINDOWS_SUBSYSTEM_VERSION 6.03) #windows subsystem - arm64 minimum is 6.03
   endif ()
 
-  # Do not create Side-by-Side Assembly Manifest
-  add_link_options(/MANIFEST:NO)
-  # can handle addresses larger than 2 gigabytes
-  add_link_options(/LARGEADDRESSAWARE)
   #shrink pdb size
   add_link_options(/PDBCOMPRESS)
 
   add_link_options(/DEBUG)
   add_link_options(/DEBUGTYPE:CV,FIXUP)
-  add_link_options(/IGNORE:4197,4013,4254,4070,4221)
-  add_link_options(/SUBSYSTEM:WINDOWS,${WINDOWS_SUBSYSTEM_VERSION})
+
+  # Do not create Side-by-Side Assembly Manifest
+  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:"/MANIFEST:NO">)
+  # can handle addresses larger than 2 gigabytes
+  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/LARGEADDRESSAWARE>)
+
+  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/IGNORE:4197,4013,4254,4070,4221>)
+  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/SUBSYSTEM:WINDOWS,${WINDOWS_SUBSYSTEM_VERSION}>)
 
   set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221")
 
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:/PDBCOMPRESS>)
   # For sanitized builds, we bump up the stack size to 8MB to match behavior on Unix platforms.
   # Sanitized builds can use significantly more stack space than non-sanitized builds due to instrumentation.
   # We don't want to change the default stack size for all builds, as that will likely cause confusion and will
