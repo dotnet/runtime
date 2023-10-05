@@ -764,6 +764,15 @@ HARDWARE_INTRINSIC(Sha256,        HashUpdate2,                                  
 HARDWARE_INTRINSIC(Sha256,        ScheduleUpdate0,                                                  16,      2,     false,  {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_sha256su0,      INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_HasRMWSemantics)
 HARDWARE_INTRINSIC(Sha256,        ScheduleUpdate1,                                                  16,      3,     false,  {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_sha256su1,      INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_HasRMWSemantics)
 
+
+// ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+//                 ISA            Function name                                              SIMD size  NumArg  EncodesExtraTypeArg                                                                                            Instructions                                                                                        Category                           Flags
+//                                                                                                                          {TYP_BYTE,           TYP_UBYTE,          TYP_SHORT,          TYP_USHORT,         TYP_INT,            TYP_UINT,           TYP_LONG,           TYP_ULONG,          TYP_FLOAT,          TYP_DOUBLE}
+// ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+//  SVE Intrinsics
+HARDWARE_INTRINSIC(SVE_Arm64,     UnzipEven,                                                        -1,      2,      true,  {INS_uzp1,           INS_uzp1,           INS_uzp1,           INS_uzp1,           INS_uzp1,           INS_uzp1,           INS_uzp1,           INS_uzp1,           INS_uzp1,           INS_uzp1},        HW_Category_SVE,                  HW_Flag_NoFlag)
+
+
 #endif // FEATURE_HW_INTRINSIC
 
 #undef HARDWARE_INTRINSIC

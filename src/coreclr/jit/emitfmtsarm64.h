@@ -220,6 +220,8 @@ IF_DEF(DV_3E,  IS_NONE, NONE) // DV_3E  ........XX.mmmmm ......nnnnnddddd      V
 IF_DEF(DV_3EI, IS_NONE, NONE) // DV_3EI ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by element)
 IF_DEF(DV_3F,  IS_NONE, NONE) // DV_3F  ...........mmmmm ......nnnnnddddd      Qd Sn Vm   (Qd used as both source and destination)
 IF_DEF(DV_3G,  IS_NONE, NONE) // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd     Vd Vn Vm imm (vector)
+IF_DEF(DV_3H,  IS_NONE, NONE) // DV_3H  ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (SVE vector)
+IF_DEF(DV_3I,  IS_NONE, NONE) // DV_3I  ........XX..mmmm .......nnnn.dddd      Pd Pn Pm   (SVE predicate)
 
 IF_DEF(DV_4A,  IS_NONE, NONE) // DV_4A  .........X.mmmmm .aaaaannnnnddddd      Vd Vn Vm Va (scalar)
 

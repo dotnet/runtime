@@ -924,6 +924,30 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg3()));
             break;
 
+        case IF_DV_3H: // DV_3H  ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (SVE vector)
+            // Copied this from IF_DV_3E!
+            assert(isValidVectorElemsize(id->idOpSize()));
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isSVEVectorRegister(id->idReg1()));
+            assert(isSVEVectorRegister(id->idReg2()));
+            assert(isSVEVectorRegister(id->idReg3()));
+            elemsize = id->idOpSize();
+            index    = emitGetInsSC(id);
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, index));
+            break;
+
+        case IF_DV_3I: // DV_3I  ........XX..mmmm .......nnnn.dddd      Pd Pn Pm   (SVE predicate)
+            // Copied this from IF_DV_3E and modified!
+            assert(isValidVectorElemsize(id->idOpSize()));
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isSVEPredicateRegister(id->idReg1()));
+            assert(isSVEPredicateRegister(id->idReg2()));
+            assert(isSVEPredicateRegister(id->idReg3()));
+            elemsize = id->idOpSize();
+            index    = emitGetInsSC(id);
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, index));
+            break;
+
         case IF_DV_4A: // DR_4A   .........X.mmmmm .aaaaannnnnddddd      Rd Rn Rm Ra (scalar)
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isVectorRegister(id->idReg1()));
@@ -1020,6 +1044,8 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_3EI: // DV_3EI  ........XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by element)
         case IF_DV_3F:  // DV_3F   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3G:  // DV_3G   .Q.........mmmmm .iiii.nnnnnddddd      Vd Vn Vm imm (vector)
+        case IF_DV_3H:  // DV_3H   ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (SVE vector)
+        case IF_DV_3I:  // DV_3I   ........XX..mmmm .......nnnn.dddd      Pd Pn Pm   (SVE predicate)
         case IF_DV_4A:  // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
             // Tracked GC pointers cannot be placed into the SIMD registers.
             return false;
@@ -1725,6 +1751,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode3H[3] = {IF_DR_3A, IF_DV_3A, IF_DV_3AI};
     const static insFormat formatEncode3I[3] = {IF_DR_2E, IF_DR_2F, IF_DV_2M};
     const static insFormat formatEncode3J[3] = {IF_LS_2D, IF_LS_3F, IF_LS_2E};
+    const static insFormat formatEncode3K[3] = {IF_LS_3A, IF_LS_3H, IF_LS_3I};
     const static insFormat formatEncode2A[2] = {IF_DR_2E, IF_DR_2F};
     const static insFormat formatEncode2B[2] = {IF_DR_3A, IF_DR_3B};
     const static insFormat formatEncode2C[2] = {IF_DR_3A, IF_DI_2D};
@@ -2040,6 +2067,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 3; index++)
             {
                 if (fmt == formatEncode3J[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
+        case IF_EN3K:
+            for (index = 0; index < 3; index++)
+            {
+                if (fmt == formatEncode3K[index])
                 {
                     encoding_found = true;
                     break;
@@ -11748,6 +11786,26 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_DV_3H: // DV_3H  ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (SVE vector)
+            code     = emitInsCode(ins, fmt);
+            elemsize = id->idOpSize();
+            code |= insEncodeElemsize(elemsize);   // XX
+            code |= insEncodeReg_Zd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Zn(id->idReg2()); // nnnnn
+            code |= insEncodeReg_Zm(id->idReg3()); // mmmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_DV_3I: // DV_3I  ........XX..mmmm .......nnnn.dddd      Pd Pn Pm   (SVE predicate)
+            code     = emitInsCode(ins, fmt);
+            elemsize = id->idOpSize();
+            code |= insEncodeElemsize(elemsize);   // XX
+            code |= insEncodeReg_Pd(id->idReg1()); // dddd
+            code |= insEncodeReg_Pn(id->idReg2()); // nnnn
+            code |= insEncodeReg_Pm(id->idReg3()); // mmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_DV_4A: // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
             code     = emitInsCode(ins, fmt);
             elemsize = id->idOpSize();
@@ -13926,6 +13984,20 @@ void emitter::emitDispInsHelp(
             emitDispImm(emitGetInsSC(id), false);
             break;
 
+        case IF_DV_3H: // DV_3H  ........XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (SVE vector)
+            emitDispSVEVectorReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispSVEVectorReg(id->idReg2(), id->idInsOpt(), true);
+            emitDispSVEVectorReg(id->idReg3(), id->idInsOpt(), true);
+            emitDispImm(emitGetInsSC(id), false);
+            break;
+
+        case IF_DV_3I: // DV_3I  ........XX..mmmm .......nnnn.dddd      Pd Pn Pm   (SVE predicate)
+            emitDispSVEPredicateReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispSVEPredicateReg(id->idReg2(), id->idInsOpt(), true);
+            emitDispSVEPredicateReg(id->idReg3(), id->idInsOpt(), true);
+            emitDispImm(emitGetInsSC(id), false);
+            break;
+
         case IF_DV_4A: // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Va Vn Vm (scalar)
             emitDispReg(id->idReg1(), size, true);
             emitDispReg(id->idReg2(), size, true);
@@ -15890,6 +15962,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_DV_3G: // ext
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DV_3H: // uzp1
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_DV_3I: // uzp1
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
