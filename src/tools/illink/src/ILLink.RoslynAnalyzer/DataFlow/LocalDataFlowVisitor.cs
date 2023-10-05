@@ -76,13 +76,18 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 			// If not, the BranchValue represents a return or throw value associated with the FallThroughSuccessor of this block.
 			// (ConditionalSuccessor == null iff ConditionKind == None).
-			// If we get here, we should be analyzing a method body, not an attribute instance since attributes can't have throws or return statements
-			// Field/property initializers also can't have throws or return statements.
-			Debug.Assert (OwningSymbol is IMethodSymbol);
+			// If we get here, we should be analyzing code in a method or field/property initializer,
+			// not an attribute instance, since attributes can't have throws or return statements
+			Debug.Assert (OwningSymbol is IMethodSymbol or IFieldSymbol or IPropertySymbol,
+				$"{OwningSymbol.GetType ()}: {branchValueOperation.Syntax.GetLocation ().GetLineSpan ()}");
 
 			// The BranchValue for a thrown value is not involved in dataflow tracking.
 			if (block.Block.FallThroughSuccessor?.Semantics == ControlFlowBranchSemantics.Throw)
 				return;
+
+			// Field/property initializers can't have return statements.
+			Debug.Assert (OwningSymbol is IMethodSymbol,
+				$"{OwningSymbol.GetType ()}: {branchValueOperation.Syntax.GetLocation ().GetLineSpan ()}");
 
 			// Return statements with return values are represented in the control flow graph as
 			// a branch value operation that computes the return value.
@@ -125,9 +130,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 			if (local.IsConst)
 				return false;
-
-			var declaringSymbol = (IMethodSymbol) local.ContainingSymbol;
-			return !ReferenceEquals (declaringSymbol, OwningSymbol);
+			Debug.Assert (local.ContainingSymbol is IMethodSymbol or IFieldSymbol, // backing field for property initializers
+				$"{local.ContainingSymbol.GetType ()}: {localReference.Syntax.GetLocation ().GetLineSpan ()}");
+			return !ReferenceEquals (local.ContainingSymbol, OwningSymbol);
 		}
 
 		TValue GetLocal (ILocalReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
@@ -190,6 +195,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 						// For now, just don't warn. https://github.com/dotnet/linker/issues/2731
 						break;
 					}
+					// Even if the property has a set method, if the assignment takes place in a property initializer,
+					// the write becomes a direct write to the underlying field. This should be treated the same as
+					// the case where there is no set method.
+					if (OwningSymbol is IPropertySymbol && (ControlFlowGraph.OriginalOperation is not IAttributeOperation))
+						break;
 
 					// Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
 					ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue> ();
@@ -442,7 +452,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				return HandleDelegateCreation (lambda.Symbol, instance, operation);
 			}
 
-			Debug.Assert (operation.Target is IMethodReferenceOperation);
+			Debug.Assert (operation.Target is IMethodReferenceOperation or IFieldReferenceOperation,
+				$"{operation.Target.GetType ()}: {operation.Syntax.GetLocation ().GetLineSpan ()}");
 			if (operation.Target is not IMethodReferenceOperation methodReference)
 				return TopValue;
 
