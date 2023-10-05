@@ -1128,6 +1128,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NET48_$(_BuildConfig)
+                  extraHelixArguments: /p:BuildTargetFramework=net48
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
