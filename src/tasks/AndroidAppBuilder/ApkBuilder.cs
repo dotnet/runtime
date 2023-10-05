@@ -393,6 +393,9 @@ public partial class ApkBuilder
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
             ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
 
+        if (!string.IsNullOrEmpty(ProjectName) && ProjectName.Contains('-'))
+            ProjectName = ProjectName.Replace("-", "_");
+
         string packageId = $"net.dot.{ProjectName}";
 
         File.WriteAllText(javaActivityPath,
