@@ -285,7 +285,15 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 foreach (string nupkg in Directory.EnumerateFiles(_workloadCachePath))
                     Log.LogMessage(MessageImportance.Low, $"Found {nupkg}");
-                return RunWorkloadInstallCommand(req, nugetConfigPath, $"--from-cache {_workloadCachePath}");
+                try
+                {
+                    return RunWorkloadInstallCommand(req, nugetConfigPath, $"--from-cache {_workloadCachePath}");
+                } catch {
+                    Log.LogMessage(MessageImportance.Low, $"Failed to install from-cache");
+                    foreach (string nupkg in Directory.EnumerateFiles(_workloadCachePath))
+                        Log.LogMessage(MessageImportance.Low, $"Failed, found {nupkg}");
+                    throw;
+                }
             }
         }
 
