@@ -2231,13 +2231,13 @@ namespace Internal.JitInterface
                     return TryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
                 }
 
-                int targetPtrSize = _compilation.TypeSystemContext.Target.PointerSize;
-
                 PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
                 if (preinitManager.IsPreinitialized(owningType))
                 {
                     TypePreinit.ISerializableValue value = preinitManager
                         .GetPreinitializationInfo(owningType).GetFieldValue(field);
+
+                    int targetPtrSize = _compilation.TypeSystemContext.Target.PointerSize;
 
                     if (value == null)
                     {
