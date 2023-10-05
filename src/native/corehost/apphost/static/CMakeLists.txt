@@ -98,17 +98,17 @@ add_definitions(-DFEATURE_STATIC_HOST=1)
 
 if(CLR_CMAKE_TARGET_WIN32)
     # Disable manifest generation into the file .exe on Windows
-    add_link_options("/MANIFEST:NO")
+    add_link_options(/MANIFEST:NO)
 
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
-    add_link_options("/INCREMENTAL:NO")
+    add_link_options(/INCREMENTAL:NO)
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
-    add_link_options("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
+    add_link_options(/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll)
 
     # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
-    add_link_options("/DELAYLOAD:version.dll")
+    add_link_options(/DELAYLOAD:version.dll)
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)

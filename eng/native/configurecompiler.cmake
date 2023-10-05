@@ -88,7 +88,7 @@ if (MSVC)
   add_link_options(/DEBUGTYPE:CV,FIXUP)
 
   # Do not create Side-by-Side Assembly Manifest
-  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:"/MANIFEST:NO">)
+  add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/MANIFEST:NO>)
   # can handle addresses larger than 2 gigabytes
   add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:/LARGEADDRESSAWARE>)
 
