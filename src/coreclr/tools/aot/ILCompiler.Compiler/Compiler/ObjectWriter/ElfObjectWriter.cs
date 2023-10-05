@@ -492,8 +492,6 @@ namespace ILCompiler.ObjectWriter
                             {
                                 currentSection = _objectFile.Sections[++sectionIndex];
                             }
-
-                            Debug.Assert(currentSection.Flags.HasFlag(ElfSectionFlags.Executable));
                             symbolIndex = sectionToSymbolIndex[currentSection];
                         }
 
