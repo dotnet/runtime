@@ -156,7 +156,7 @@ namespace System
         [InlineArray(85)]
         private struct HashState
         {
-            uint _x;
+            private uint _x;
         }
     }
 }
