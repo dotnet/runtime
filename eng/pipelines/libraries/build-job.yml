@@ -29,8 +29,6 @@ parameters:
   pool: ''
   # Run tests as part of the build job (instead of running them in a separate job)
   runTests: false
-  # Package up the test builds so they can be sent to Helix
-  useHelix: true
   testScope: ''
 
 jobs:
@@ -66,18 +64,12 @@ jobs:
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - _subset: tools+libs+libs.tests
-        - ${{ if and(eq(parameters.runTests, false), eq(parameters.useHelix, false)) }}:
+        - ${{ if eq(parameters.runTests, false) }}:
           - _subset: tools+libs
         - _buildAction: ''
-        - _additionalBuildArguments: ''
+        - _additionalBuildArguments: '/p:ArchiveTests=true'
         - ${{ parameters.variables }}
 
-        # Tests only run for 'net48' build-jobs
-        # Only pass -test for when we aren't running tests using Helix.
-        - ${{ if and(eq(parameters.runTests, true), eq(parameters.useHelix, false)) }}:
-          - _buildAction: -restore -build -test
-        - ${{ if eq(parameters.useHelix, true) }}:
-          - _additionalBuildArguments: /p:ArchiveTests=true
 
         - ${{ parameters.variables }}
 
@@ -123,7 +115,7 @@ jobs:
               displayName: Build Assets
 
           # Upload test assets if we are sending tests to Helix and not running them directly in this job.
-          - ${{ if and(eq(parameters.runTests, false), eq(parameters.useHelix, true)) }}:
+          - ${{ if and(eq(parameters.runTests, false)) }}:
             - template: /eng/pipelines/common/upload-artifact-step.yml
               parameters:
                 rootFolder: $(Build.SourcesDirectory)/artifacts/helix
@@ -134,7 +126,7 @@ jobs:
                 artifactName: $(librariesTestsArtifactName)
                 displayName: Test Assets
 
-        - ${{ if and(eq(parameters.runTests, true), eq(parameters.useHelix, true)) }}:
+        - ${{ if and(eq(parameters.runTests, true)) }}:
           - template: /eng/pipelines/libraries/helix.yml
             parameters:
               osGroup: ${{ parameters.osGroup }}
