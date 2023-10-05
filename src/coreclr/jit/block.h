@@ -702,7 +702,25 @@ struct BasicBlock : private LIR::Range
     // a block corresponding to an exit from the try of a try/finally.
     bool isBBCallAlwaysPairTail() const;
 
+private:
     BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
+
+public:
+    BBjumpKinds GetBBJumpKind() const
+    {
+        return bbJumpKind;
+    }
+
+    void SetBBJumpKind(BBjumpKinds kind DEBUG_ARG(Compiler* comp))
+    {
+#ifdef DEBUG
+        // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
+        // TODO: Change assert to check if comp is in appropriate optimization phase to use BBJ_NONE
+        // (right now, this assertion does the null check to avoid unused variable warnings)
+        assert((kind != BBJ_NONE) || (comp != nullptr));
+#endif // DEBUG
+        bbJumpKind = kind;
+    }
 
     /* The following union describes the jump target(s) of this block */
     union {
@@ -1556,7 +1574,7 @@ inline BBArrayIterator BBSwitchTargetList::end() const
 inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
-    switch (block->bbJumpKind)
+    switch (block->GetBBJumpKind())
     {
         case BBJ_THROW:
         case BBJ_RETURN:

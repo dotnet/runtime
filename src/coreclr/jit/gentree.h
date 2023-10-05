@@ -1836,6 +1836,10 @@ public:
     // Sets the GTF flag equivalent for the regIndex'th register of a multi-reg node.
     void SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex);
 
+#ifdef TARGET_ARM64
+    bool NeedsConsecutiveRegisters() const;
+#endif
+
     // Last-use information for either GenTreeLclVar or GenTreeCopyOrReload nodes.
 private:
     GenTreeFlags GetLastUseBit(int regIndex) const;
@@ -1852,12 +1856,18 @@ public:
     // Returns true if it is a GT_COPY or GT_RELOAD of a multi-reg call node
     inline bool IsCopyOrReloadOfMultiRegCall() const;
 
-    bool OperRequiresAsgFlag();
+    bool OperRequiresAsgFlag() const;
 
-    bool OperRequiresCallFlag(Compiler* comp);
+    bool OperRequiresCallFlag(Compiler* comp) const;
 
-    bool OperMayThrow(Compiler* comp);
     ExceptionSetFlags OperExceptions(Compiler* comp);
+    bool OperMayThrow(Compiler* comp);
+
+    bool OperRequiresGlobRefFlag(Compiler* comp) const;
+
+    bool OperSupportsOrderingSideEffect() const;
+
+    GenTreeFlags OperEffects(Compiler* comp);
 
     unsigned GetScaleIndexMul();
     unsigned GetScaleIndexShf();
@@ -2150,6 +2160,12 @@ public:
     {
         assert((sourceFlags & ~GTF_ALL_EFFECT) == 0);
         gtFlags |= sourceFlags;
+    }
+
+    void SetHasOrderingSideEffect()
+    {
+        assert(OperSupportsOrderingSideEffect());
+        gtFlags |= GTF_ORDER_SIDEEFF;
     }
 
     inline bool IsCnsIntOrI() const;
@@ -3504,6 +3520,11 @@ public:
         return m_ssaNum.IsComposite();
     }
 
+    bool HasSsaIdentity() const
+    {
+        return !m_ssaNum.IsInvalid();
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeLclVarCommon() : GenTreeUnOp()
     {
@@ -3629,7 +3650,7 @@ public:
         }
         else
         {
-            gtOtherReg[regIndex - 1] = regNumberSmall(reg);
+            gtOtherReg[regIndex - 1] = (regNumberSmall)reg;
         }
     }
 
@@ -6068,15 +6089,66 @@ protected:
     NamedIntrinsic gtHWIntrinsicId;
 
 public:
-    regNumber GetOtherReg() const
+    //-----------------------------------------------------------
+    // GetRegNumByIdx: Get regNumber of i'th position.
+    //
+    // Arguments:
+    //    idx   -   register position.
+    //
+    // Return Value:
+    //    Returns regNumber assigned to i'th position.
+    //
+    regNumber GetRegNumByIdx(unsigned idx) const
     {
+#ifdef TARGET_ARM64
+        assert(idx < MAX_MULTIREG_COUNT);
+
+        if (idx == 0)
+        {
+            return GetRegNum();
+        }
+
+        if (NeedsConsecutiveRegisters())
+        {
+            assert(IsMultiRegNode());
+            return (regNumber)(GetRegNum() + idx);
+        }
+#endif
+        // should only be used to get otherReg
+        assert(idx == 1);
         return (regNumber)gtOtherReg;
     }
 
-    void SetOtherReg(regNumber reg)
+    //-----------------------------------------------------------
+    // SetRegNumByIdx: Set the regNumber for i'th position.
+    //
+    // Arguments:
+    //    reg   -   reg number
+    //    idx   -   register position.
+    //
+    // Return Value:
+    //    None.
+    //
+    void SetRegNumByIdx(regNumber reg, unsigned idx)
     {
+#ifdef TARGET_ARM64
+        assert(idx < MAX_MULTIREG_COUNT);
+
+        if (idx == 0)
+        {
+            SetRegNum(reg);
+            return;
+        }
+        if (NeedsConsecutiveRegisters())
+        {
+            assert(IsMultiRegNode());
+            assert(reg == (regNumber)(GetRegNum() + idx));
+            return;
+        }
+#endif
+        // should only be used to set otherReg
+        assert(idx == 1);
         gtOtherReg = (regNumberSmall)reg;
-        assert(gtOtherReg == reg);
     }
 
     GenTreeFlags GetRegSpillFlagByIdx(unsigned idx) const
@@ -6249,6 +6321,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
+    bool OperRequiresGlobRefFlag() const;
 
     unsigned GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
@@ -7175,6 +7248,14 @@ struct GenTreeIndir : public GenTreeOp
     bool IsUnaligned() const
     {
         return (gtFlags & GTF_IND_UNALIGNED) != 0;
+    }
+
+    // True if this indirection is invariant.
+    bool IsInvariantLoad() const
+    {
+        bool isInvariant = (gtFlags & GTF_IND_INVARIANT) != 0;
+        assert(!isInvariant || OperIs(GT_IND, GT_BLK));
+        return isInvariant;
     }
 
 #if DEBUGGABLE_GENTREE
@@ -9297,9 +9378,7 @@ inline regNumber GenTree::GetRegByIndex(int regIndex) const
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIs(GT_HWINTRINSIC))
     {
-        assert(regIndex == 1);
-        // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
-        return AsHWIntrinsic()->GetOtherReg();
+        return AsHWIntrinsic()->GetRegNumByIdx(regIndex);
     }
 #endif // FEATURE_HW_INTRINSICS
 

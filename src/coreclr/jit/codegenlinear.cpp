@@ -330,7 +330,7 @@ void CodeGen::genCodeForBBlist()
         //
         // Note: We need to have set compCurBB before calling emitAddLabel
         //
-        if ((block->bbPrev != nullptr) && (block->bbPrev->bbJumpKind == BBJ_COND) &&
+        if ((block->bbPrev != nullptr) && block->bbPrev->KindIs(BBJ_COND) &&
             (block->bbWeight != block->bbPrev->bbWeight))
         {
             JITDUMP("Adding label due to BB weight difference: BBJ_COND " FMT_BB " with weight " FMT_WT
@@ -619,7 +619,7 @@ void CodeGen::genCodeForBBlist()
             {
                 // We only need the NOP if we're not going to generate any more code as part of the block end.
 
-                switch (block->bbJumpKind)
+                switch (block->GetBBJumpKind())
                 {
                     case BBJ_ALWAYS:
                     case BBJ_THROW:
@@ -662,7 +662,7 @@ void CodeGen::genCodeForBBlist()
 
         /* Do we need to generate a jump or return? */
 
-        switch (block->bbJumpKind)
+        switch (block->GetBBJumpKind())
         {
             case BBJ_RETURN:
                 genExitCode(block);
@@ -812,10 +812,10 @@ void CodeGen::genCodeForBBlist()
             assert(ShouldAlignLoops());
             assert(!block->isBBCallAlwaysPairTail());
 #if FEATURE_EH_CALLFINALLY_THUNKS
-            assert(block->bbJumpKind != BBJ_CALLFINALLY);
+            assert(!block->KindIs(BBJ_CALLFINALLY));
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->bbJumpKind == BBJ_ALWAYS));
+            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS)));
         }
 
         if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
@@ -1211,13 +1211,8 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // Reset spilled flag, since we are going to load a local variable from its home location.
             unspillTree->gtFlags &= ~GTF_SPILLED;
 
-            GenTreeLclVar* lcl         = unspillTree->AsLclVar();
-            LclVarDsc*     varDsc      = compiler->lvaGetDesc(lcl);
-            var_types      unspillType = varDsc->GetRegisterType(lcl);
-            assert(unspillType != TYP_UNDEF);
-
-// TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            GenTreeLclVar* lcl    = unspillTree->AsLclVar();
+            LclVarDsc*     varDsc = compiler->lvaGetDesc(lcl);
 
             // Pick type to reload register from stack with. Note that in
             // general, the type of 'lcl' does not have any relation to the
@@ -1241,19 +1236,11 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // relies on the normalization to have happened here as part of
             // unspilling.
             //
-            if (varDsc->lvNormalizeOnLoad())
+            var_types unspillType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
+
+            if (varTypeIsGC(lcl))
             {
-                unspillType = varDsc->TypeGet();
-            }
-            else
-            {
-                // Potentially narrower -- see if we should widen.
-                var_types lclLoadType = varDsc->GetStackSlotHomeType();
-                assert(lclLoadType != TYP_UNDEF);
-                if (genTypeSize(unspillType) < genTypeSize(lclLoadType))
-                {
-                    unspillType = lclLoadType;
-                }
+                unspillType = lcl->TypeGet();
             }
 
 #if defined(TARGET_LOONGARCH64)
@@ -1261,11 +1248,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             {
                 unspillType = unspillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
             }
-#endif
-#elif defined(TARGET_ARM)
-// No normalizing for ARM
-#else
-            NYI("Unspilling not implemented for this target architecture.");
 #endif
 
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
@@ -2633,7 +2615,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 //
 void CodeGen::genCodeForJcc(GenTreeCC* jcc)
 {
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
     assert(jcc->OperIs(GT_JCC));
 
     inst_JCC(jcc->gtCondition, compiler->compCurBB->bbJumpDest);

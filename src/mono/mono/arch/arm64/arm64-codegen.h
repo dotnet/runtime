@@ -2289,6 +2289,7 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 
 /* NEON :: modified immediate */
 #define arm_neon_mimm_opcode(p, q, op, cmode, o2, imm, rd) arm_neon_opcode_1reg ((p), (q), 0b00001111000000000000010000000000 | (op) << 29 | (cmode) << 12 | (o2) << 11 | (imm & 0b11100000) << 11 | (imm & 0b11111) << 5, (rd))
+#define arm_neon_movi_b(p, width, rd, imm) arm_neon_mimm_opcode ((p), (width), 0, 0b1110, 0, imm, rd)
 
 #define ARM_IMM_FONE (0b01110000)
 #define arm_neon_fmov_imm(p, width, type, rd, imm) arm_neon_mimm_opcode ((p), (width), (type), 0b1111, 0b0, (imm), (rd))

@@ -1095,7 +1095,7 @@ DONE:
 
         // assert(compCurBB is not a catch, finally or filter block);
         // assert(compCurBB is not a try block protected by a finally block);
-        assert(!isExplicitTailCall || compCurBB->bbJumpKind == BBJ_RETURN);
+        assert(!isExplicitTailCall || compCurBB->KindIs(BBJ_RETURN));
 
         // Ask VM for permission to tailcall
         if (canTailCall)
@@ -1271,10 +1271,10 @@ DONE:
             // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
             // instrumentation.
             //
-            if (compCurBB->bbJumpKind != BBJ_RETURN)
+            if (!compCurBB->KindIs(BBJ_RETURN))
             {
                 BasicBlock* const successor = compCurBB->GetUniqueSucc();
-                assert(successor->bbJumpKind == BBJ_RETURN);
+                assert(successor->KindIs(BBJ_RETURN));
                 successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
                 optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
             }
@@ -2937,8 +2937,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // Add an ordering dependency between the bounds check and
                 // forming the byref to prevent these from being reordered. The
                 // JIT is not allowed to create arbitrary illegal byrefs.
-                boundsCheck->gtFlags |= GTF_ORDER_SIDEEFF;
-                result->gtFlags |= GTF_ORDER_SIDEEFF;
+                boundsCheck->SetHasOrderingSideEffect();
+                result->SetHasOrderingSideEffect();
                 retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
 
                 break;

@@ -120,7 +120,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
-        else if (BBJ_SWITCH == block->bbJumpKind)
+        else if (BBJ_SWITCH == block->GetBBJumpKind())
         {
             // We don't want to deal with all the outgoing edges of a switch block.
             //
@@ -254,15 +254,15 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         BasicBlock*   topFallThrough     = nullptr;
         unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
 
-        if (top->bbJumpKind == BBJ_COND)
+        if (top->KindIs(BBJ_COND))
         {
             topFallThrough     = top->bbNext;
             lpIndexFallThrough = topFallThrough->bbNatLoopNum;
         }
 
         BasicBlock* poll          = fgNewBBafter(BBJ_NONE, top, true);
-        bottom                    = fgNewBBafter(top->bbJumpKind, poll, true);
-        BBjumpKinds   oldJumpKind = top->bbJumpKind;
+        bottom                    = fgNewBBafter(top->GetBBJumpKind(), poll, true);
+        BBjumpKinds   oldJumpKind = top->GetBBJumpKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
 
         // Update block flags
@@ -372,7 +372,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 #endif
 
         top->bbJumpDest = bottom;
-        top->bbJumpKind = BBJ_COND;
+        top->SetBBJumpKind(BBJ_COND DEBUG_ARG(this));
 
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
@@ -1287,7 +1287,7 @@ void Compiler::fgLoopCallMark()
 
     for (BasicBlock* const block : Blocks())
     {
-        switch (block->bbJumpKind)
+        switch (block->GetBBJumpKind())
         {
             case BBJ_COND:
             case BBJ_CALLFINALLY:
@@ -1728,7 +1728,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     // non-exceptional cases
     for (BasicBlock* const block : Blocks())
     {
-        if (block->bbJumpKind == BBJ_RETURN)
+        if (block->KindIs(BBJ_RETURN))
         {
             fgCreateMonitorTree(lvaMonAcquired, info.compThisArg, block, false /*exit*/);
         }
@@ -1772,7 +1772,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     }
 #endif
 
-    if (block->bbJumpKind == BBJ_RETURN && block->lastStmt()->GetRootNode()->gtOper == GT_RETURN)
+    if (block->KindIs(BBJ_RETURN) && block->lastStmt()->GetRootNode()->gtOper == GT_RETURN)
     {
         GenTreeUnOp* retNode = block->lastStmt()->GetRootNode()->AsUnOp();
         GenTree*     retExpr = retNode->gtOp1;
@@ -1821,7 +1821,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(genReturnBB != nullptr);
     assert(genReturnBB != block);
     assert(fgReturnCount <= 1); // We have a single return for synchronized methods
-    assert(block->bbJumpKind == BBJ_RETURN);
+    assert(block->KindIs(BBJ_RETURN));
     assert((block->bbFlags & BBF_HAS_JMP) == 0);
     assert(block->hasTryIndex());
     assert(!block->hasHndIndex());
@@ -1837,7 +1837,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
-    block->bbJumpKind = BBJ_ALWAYS;
+    block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
     block->bbJumpDest = genReturnBB;
     fgAddRefPred(genReturnBB, block);
 
@@ -1949,7 +1949,7 @@ bool Compiler::fgMoreThanOneReturnBlock()
 
     for (BasicBlock* const block : Blocks())
     {
-        if (block->bbJumpKind == BBJ_RETURN)
+        if (block->KindIs(BBJ_RETURN))
         {
             retCnt++;
             if (retCnt > 1)
@@ -2309,7 +2309,7 @@ private:
 
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
-                    returnBlock->bbJumpKind = BBJ_ALWAYS;
+                    returnBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
                     returnBlock->bbJumpDest = constReturnBlock;
                     comp->fgAddRefPred(constReturnBlock, returnBlock);
 
@@ -2596,7 +2596,7 @@ PhaseStatus Compiler::fgAddInternal()
 
     for (BasicBlock* block = fgFirstBB; block != lastBlockBeforeGenReturns->bbNext; block = block->bbNext)
     {
-        if ((block->bbJumpKind == BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
+        if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {
             merger.Record(block);
         }
@@ -3125,7 +3125,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
             // It's a jump from outside the handler; add it to the newHead preds list and remove
             // it from the block preds list.
 
-            switch (predBlock->bbJumpKind)
+            switch (predBlock->GetBBJumpKind())
             {
                 case BBJ_CALLFINALLY:
                     noway_assert(predBlock->bbJumpDest == block);
@@ -3451,7 +3451,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // so the code size for block needs be large
                     // enough to make it worth our while
                     //
-                    if ((lblk == nullptr) || (lblk->bbJumpKind != BBJ_COND) || (fgGetCodeEstimate(block) >= 8))
+                    if ((lblk == nullptr) || !lblk->KindIs(BBJ_COND) || (fgGetCodeEstimate(block) >= 8))
                     {
                         // This block is now a candidate for first cold block
                         // Also remember the predecessor to this block
@@ -3503,7 +3503,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         //
         if (prevToFirstColdBlock->bbFallsThrough())
         {
-            switch (prevToFirstColdBlock->bbJumpKind)
+            switch (prevToFirstColdBlock->GetBBJumpKind())
             {
                 default:
                     noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
@@ -3523,7 +3523,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // This is a slightly more complicated case, because we will
                     // probably need to insert a block to jump to the cold section.
                     //
-                    if (firstColdBlock->isEmpty() && (firstColdBlock->bbJumpKind == BBJ_ALWAYS))
+                    if (firstColdBlock->isEmpty() && firstColdBlock->KindIs(BBJ_ALWAYS))
                     {
                         // We can just use this block as the transitionBlock
                         firstColdBlock = firstColdBlock->bbNext;
@@ -3548,7 +3548,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // convert it to BBJ_ALWAYS to force an explicit jump.
 
                     prevToFirstColdBlock->bbJumpDest = firstColdBlock;
-                    prevToFirstColdBlock->bbJumpKind = BBJ_ALWAYS;
+                    prevToFirstColdBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                     break;
             }
         }
@@ -3981,7 +3981,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
     (((src)->bbNum < (dst)->bbNum) || (((src)->bbFlags | (dst)->bbFlags) & BBF_GC_SAFE_POINT))
 
             bool partiallyInterruptible = true;
-            switch (block->bbJumpKind)
+            switch (block->GetBBJumpKind())
             {
                 case BBJ_COND:
                 case BBJ_ALWAYS:
