@@ -12,7 +12,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// Simple User-application of System.Runtime.InteropServices.MarshalAsAttribute
     /// </summary>
-    public sealed record MarshalAsInfo(
+    public abstract record MarshalAsInfo(
         UnmanagedType UnmanagedType,
         CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding)
     {
@@ -21,18 +21,25 @@ namespace Microsoft.Interop
         internal const UnmanagedType UnmanagedType_LPUTF8Str = (UnmanagedType)0x30;
     }
 
+    public sealed record MarshalAsScalarInfo(
+        UnmanagedType UnmanagedType,
+        CharEncoding CharEncoding) : MarshalAsInfo(UnmanagedType, CharEncoding);
+
+    public sealed record MarshalAsArrayInfo(
+        UnmanagedType UnmanagedType,
+        CharEncoding CharEncoding,
+        UnmanagedType ArraySubType): MarshalAsInfo(UnmanagedType, CharEncoding);
+
     /// <summary>
-    /// This class suppports parsing a System.Runtime.InteropServices.MarshalAsAttribute.
+    /// This class suppports parsing a System.Runtime.InteropServices.MarshalAsAttribute into a <see cref="MarshalAsInfo"/>.
     /// </summary>
     public sealed class MarshalAsAttributeParser : IMarshallingInfoAttributeParser, IUseSiteAttributeParser
     {
-        private readonly Compilation _compilation;
         private readonly GeneratorDiagnosticsBag _diagnostics;
         private readonly DefaultMarshallingInfo _defaultInfo;
 
-        public MarshalAsAttributeParser(Compilation compilation, GeneratorDiagnosticsBag diagnostics, DefaultMarshallingInfo defaultInfo)
+        public MarshalAsAttributeParser(GeneratorDiagnosticsBag diagnostics, DefaultMarshallingInfo defaultInfo)
         {
-            _compilation = compilation;
             _diagnostics = diagnostics;
             _defaultInfo = defaultInfo;
         }
@@ -97,84 +104,9 @@ namespace Microsoft.Interop
                 }
             }
 
-            // We'll support the UnmanagedType.Interface option, but we'll explicitly
-            // exclude ComImport types as they will not work as expected
-            // unless they are migrated to [GeneratedComInterface].
-            if (unmanagedType == UnmanagedType.Interface)
-            {
-                if (type is INamedTypeSymbol { IsComImport: true })
-                {
-                    return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
-                }
-                return ComInterfaceMarshallingInfoProvider.CreateComInterfaceMarshallingInfo(_compilation, type);
-            }
-
-            if (isArrayType)
-            {
-                if (type is not IArrayTypeSymbol { ElementType: ITypeSymbol elementType })
-                {
-                    _diagnostics.ReportConfigurationNotSupported(attributeData, nameof(UnmanagedType), unmanagedType.ToString());
-                    return NoMarshallingInfo.Instance;
-                }
-
-                MarshallingInfo elementMarshallingInfo = NoMarshallingInfo.Instance;
-                if (elementUnmanagedType != (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize)
-                {
-                    if (elementType.SpecialType == SpecialType.System_String)
-                    {
-                        elementMarshallingInfo = CreateStringMarshallingInfo(elementType, elementUnmanagedType);
-                    }
-                    else if (elementUnmanagedType == UnmanagedType.Interface && elementType is not INamedTypeSymbol { IsComImport: true })
-                    {
-                        elementMarshallingInfo = ComInterfaceMarshallingInfoProvider.CreateComInterfaceMarshallingInfo(_compilation, elementType);
-                    }
-                    else
-                    {
-                        elementMarshallingInfo = new MarshalAsInfo(elementUnmanagedType, _defaultInfo.CharEncoding);
-                    }
-                }
-                else
-                {
-                    elementMarshallingInfo = marshallingInfoCallback(elementType, useSiteAttributes, indirectionDepth + 1);
-                }
-
-                CountInfo countInfo = NoCountInfo.Instance;
-
-                if (useSiteAttributes.TryGetUseSiteAttributeInfo(indirectionDepth, out UseSiteAttributeData useSiteAttributeData))
-                {
-                    countInfo = useSiteAttributeData.CountInfo;
-                }
-
-                return ArrayMarshallingInfoProvider.CreateArrayMarshallingInfo(_compilation, type, elementType, countInfo, elementMarshallingInfo);
-            }
-
-            if (type.SpecialType == SpecialType.System_String)
-            {
-                return CreateStringMarshallingInfo(type, unmanagedType);
-            }
-
-            return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
-        }
-
-        private MarshallingInfo CreateStringMarshallingInfo(
-            ITypeSymbol type,
-            UnmanagedType unmanagedType)
-        {
-            string? marshallerName = unmanagedType switch
-            {
-                UnmanagedType.BStr => TypeNames.BStrStringMarshaller,
-                UnmanagedType.LPStr => TypeNames.AnsiStringMarshaller,
-                UnmanagedType.LPTStr or UnmanagedType.LPWStr => TypeNames.Utf16StringMarshaller,
-                MarshalAsInfo.UnmanagedType_LPUTF8Str => TypeNames.Utf8StringMarshaller,
-                _ => null
-            };
-
-            if (marshallerName is null)
-            {
-                return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
-            }
-
-            return StringMarshallingInfoProvider.CreateStringMarshallingInfo(_compilation, type, marshallerName);
+            return isArrayType
+                ? new MarshalAsArrayInfo(unmanagedType, _defaultInfo.CharEncoding, elementUnmanagedType)
+                : new MarshalAsScalarInfo(unmanagedType, _defaultInfo.CharEncoding);
         }
     }
 }
