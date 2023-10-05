@@ -7907,6 +7907,9 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
 //    |  \--*  LCL_VAR   byref  V00
 //    \--*  CNS_INT   long  0x200000001
 //
+//   NOTE: Our memory model allows us to do this optimization, see Memory-model.md:
+//     * Adjacent non-volatile writes to the same location can be coalesced. (see Memory-model.md)
+//
 // Arguments:
 //    ind - the current STOREIND node
 //
@@ -8000,17 +8003,22 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             return;
         }
 
+        // At this point we know that we have two consecutive STOREINDs with the same base address,
+        // index and scale, the only variable thing is the offset (constant):
         const int offset = abs(prevData.offset - currData.offset);
 
-        // Offset has to match the size of the type.
+        // It's a duplicated store if the offset is 0.
+        // We can just remove the previous store and continue.
+        if (offset == 0)
+        {
+            BlockRange().Remove(std::move(prevIndRange));
+            continue;
+        }
+
+        // Otherwise, the offset has to match the size of the type.
+        // We don't support overlapping stores.
         if (offset != (int)genTypeSize(prevData.targetType))
         {
-            if (offset == 0)
-            {
-                // Duplicated store, just remove the previous one.
-                BlockRange().Remove(std::move(prevIndRange));
-                continue;
-            }
             return;
         }
 
