@@ -375,7 +375,7 @@ namespace System.Numerics
 
             if ((style & NumberStyles.AllowBinarySpecifier) != 0)
             {
-                return BinNumberToBigInteger(ref bigNumber, out result);
+                return BinaryNumberToBigInteger(ref bigNumber, out result);
             }
 
             return NumberToBigInteger(ref bigNumber, out result);
@@ -515,7 +515,7 @@ namespace System.Numerics
             }
         }
 
-        private static ParsingStatus BinNumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
+        private static ParsingStatus BinaryNumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
         {
             if (number.digits is null || number.digits.Length == 0)
             {
@@ -1112,7 +1112,7 @@ namespace System.Numerics
             }
         }
 
-        private static string? FormatBigIntegerToBin(bool targetSpan, BigInteger value, int digits, Span<char> destination, out int charsWritten, out bool spanSuccess)
+        private static string? FormatBigIntegerToBinary(bool targetSpan, BigInteger value, int digits, Span<char> destination, out int charsWritten, out bool spanSuccess)
         {
             // Get the bytes that make up the BigInteger.
             byte[]? arrayToReturnToPool = null;
@@ -1166,7 +1166,7 @@ namespace System.Numerics
                     // each byte is typically eight chars
                     sb = charsIncludeDigits > 512
                         ? new ValueStringBuilder(charsIncludeDigits)
-                        : new ValueStringBuilder(stackalloc char[512].Slice(0, charsIncludeDigits));
+                        : new ValueStringBuilder(stackalloc char[512]);
                 }
 
                 if (digits > charsForBits)
@@ -1237,7 +1237,7 @@ namespace System.Numerics
             }
             if (fmt == 'b' || fmt == 'B')
             {
-                return FormatBigIntegerToBin(targetSpan, value, digits, destination, out charsWritten, out spanSuccess);
+                return FormatBigIntegerToBinary(targetSpan, value, digits, destination, out charsWritten, out spanSuccess);
             }
 
             if (value._bits == null)

@@ -309,82 +309,82 @@ namespace System.Numerics.Tests
             // SimpleNumbers - Small
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(GetBinDigitSequence(1, 10, random), ns, true);
+                VerifyParseToString(GetBinaryDigitSequence(1, 10, random), ns, true);
             }
 
             // SimpleNumbers - Large
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(GetBinDigitSequence(100, 1000, random), ns, true);
+                VerifyParseToString(GetBinaryDigitSequence(100, 1000, random), ns, true);
             }
 
             // Leading White
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString("\u0009\u0009\u0009" + GetBinDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
-                VerifyParseToString("\u000A\u000A\u000A" + GetBinDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
-                VerifyParseToString("\u000B\u000B\u000B" + GetBinDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
-                VerifyParseToString("\u000C\u000C\u000C" + GetBinDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
-                VerifyParseToString("\u000D\u000D\u000D" + GetBinDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
-                VerifyParseToString("\u0020\u0020\u0020" + GetBinDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
+                VerifyParseToString("\u0009\u0009\u0009" + GetBinaryDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
+                VerifyParseToString("\u000A\u000A\u000A" + GetBinaryDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
+                VerifyParseToString("\u000B\u000B\u000B" + GetBinaryDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
+                VerifyParseToString("\u000C\u000C\u000C" + GetBinaryDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
+                VerifyParseToString("\u000D\u000D\u000D" + GetBinaryDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
+                VerifyParseToString("\u0020\u0020\u0020" + GetBinaryDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingWhite) != 0));
             }
 
             // Trailing White
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(GetBinDigitSequence(1, 100, random) + "\u0009\u0009\u0009", ns, FailureNotExpectedForTrailingWhite(ns, false));
-                VerifyParseToString(GetBinDigitSequence(1, 100, random) + "\u000A\u000A\u000A", ns, FailureNotExpectedForTrailingWhite(ns, false));
-                VerifyParseToString(GetBinDigitSequence(1, 100, random) + "\u000B\u000B\u000B", ns, FailureNotExpectedForTrailingWhite(ns, false));
-                VerifyParseToString(GetBinDigitSequence(1, 100, random) + "\u000C\u000C\u000C", ns, FailureNotExpectedForTrailingWhite(ns, false));
-                VerifyParseToString(GetBinDigitSequence(1, 100, random) + "\u000D\u000D\u000D", ns, FailureNotExpectedForTrailingWhite(ns, false));
-                VerifyParseToString(GetBinDigitSequence(1, 100, random) + "\u0020\u0020\u0020", ns, FailureNotExpectedForTrailingWhite(ns, true));
+                VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + "\u0009\u0009\u0009", ns, FailureNotExpectedForTrailingWhite(ns, false));
+                VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + "\u000A\u000A\u000A", ns, FailureNotExpectedForTrailingWhite(ns, false));
+                VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + "\u000B\u000B\u000B", ns, FailureNotExpectedForTrailingWhite(ns, false));
+                VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + "\u000C\u000C\u000C", ns, FailureNotExpectedForTrailingWhite(ns, false));
+                VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + "\u000D\u000D\u000D", ns, FailureNotExpectedForTrailingWhite(ns, false));
+                VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + "\u0020\u0020\u0020", ns, FailureNotExpectedForTrailingWhite(ns, true));
             }
 
             // Leading Sign
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(CultureInfo.CurrentCulture.NumberFormat.NegativeSign + GetBinDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingSign) != 0));
-                VerifyParseToString(CultureInfo.CurrentCulture.NumberFormat.PositiveSign + GetBinDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingSign) != 0));
+                VerifyParseToString(CultureInfo.CurrentCulture.NumberFormat.NegativeSign + GetBinaryDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingSign) != 0));
+                VerifyParseToString(CultureInfo.CurrentCulture.NumberFormat.PositiveSign + GetBinaryDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowLeadingSign) != 0));
             }
 
             // Trailing Sign
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(GetBinDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.NegativeSign, ns, ((ns & NumberStyles.AllowTrailingSign) != 0));
-                VerifyParseToString(GetBinDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.PositiveSign, ns, ((ns & NumberStyles.AllowTrailingSign) != 0));
+                VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.NegativeSign, ns, ((ns & NumberStyles.AllowTrailingSign) != 0));
+                VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.PositiveSign, ns, ((ns & NumberStyles.AllowTrailingSign) != 0));
             }
 
             // Parentheses
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString("(" + GetBinDigitSequence(1, 100, random) + ")", ns, ((ns & NumberStyles.AllowParentheses) != 0));
+                VerifyParseToString("(" + GetBinaryDigitSequence(1, 100, random) + ")", ns, ((ns & NumberStyles.AllowParentheses) != 0));
             }
 
             // Decimal Point - end
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(GetBinDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator, ns, ((ns & NumberStyles.AllowDecimalPoint) != 0));
+                VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator, ns, ((ns & NumberStyles.AllowDecimalPoint) != 0));
             }
 
             // Decimal Point - middle
             for (int i = 0; i < s_samples; i++)
             {
-                string digits = GetBinDigitSequence(1, 100, random);
+                string digits = GetBinaryDigitSequence(1, 100, random);
                 VerifyParseToString(digits + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator + "000", ns, ((ns & NumberStyles.AllowDecimalPoint) != 0), digits);
             }
 
             // Decimal Point - non-zero decimal
             for (int i = 0; i < s_samples; i++)
             {
-                string digits = GetBinDigitSequence(1, 100, random);
-                VerifyParseToString(digits + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator + GetBinDigitSequence(20, 25, random), ns, false, digits);
+                string digits = GetBinaryDigitSequence(1, 100, random);
+                VerifyParseToString(digits + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator + GetBinaryDigitSequence(20, 25, random), ns, false, digits);
             }
 
             // Exponent
             for (int i = 0; i < s_samples; i++)
             {
-                string digits = GetBinDigitSequence(1, 100, random);
-                string exp = GetBinDigitSequence(1, 3, random);
+                string digits = GetBinaryDigitSequence(1, 100, random);
+                string exp = GetBinaryDigitSequence(1, 3, random);
                 int expValue = int.Parse(exp);
                 string zeros = new string('0', expValue);
                 //Positive Exponents
@@ -411,19 +411,19 @@ namespace System.Numerics.Tests
             // Currency Symbol
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol + GetBinDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowCurrencySymbol) != 0));
+                VerifyParseToString(CultureInfo.CurrentCulture.NumberFormat.CurrencySymbol + GetBinaryDigitSequence(1, 100, random), ns, ((ns & NumberStyles.AllowCurrencySymbol) != 0));
             }
 
             // Bin Specifier
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(GetBinDigitSequence(1, 15, random), ns, ((ns & NumberStyles.AllowBinarySpecifier) != 0));
+                VerifyParseToString(GetBinaryDigitSequence(1, 15, random), ns, ((ns & NumberStyles.AllowBinarySpecifier) != 0));
             }
 
             // Invalid Chars
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(GetBinDigitSequence(1, 100, random) + GetRandomInvalidChar(random) + GetBinDigitSequence(1, 10, random), ns, false);
+                VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + GetRandomInvalidChar(random) + GetBinaryDigitSequence(1, 10, random), ns, false);
             }
         }
 
@@ -773,7 +773,7 @@ namespace System.Numerics.Tests
             return result;
         }
 
-        private static string GetBinDigitSequence(int min, int max, Random random)
+        private static string GetBinaryDigitSequence(int min, int max, Random random)
         {
             string result = string.Empty;
             int size = random.Next(min, max);
@@ -834,7 +834,7 @@ namespace System.Numerics.Tests
                 }
                 else if (isBinary)
                 {
-                    output = ConvertBinToDecimal(output);
+                    output = ConvertBinaryToDecimal(output);
                 }
                 while (output.StartsWith("0") & (output.Length > 1))
                 {
@@ -854,7 +854,7 @@ namespace System.Numerics.Tests
             return output;
         }
 
-        private static string ConvertBinToDecimal(string input)
+        private static string ConvertBinaryToDecimal(string input)
         {
             const int HexBlockSize = 4;
 
