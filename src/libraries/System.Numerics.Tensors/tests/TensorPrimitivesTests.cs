@@ -863,6 +863,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Exp_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -2316,6 +2317,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Sigmoid_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
