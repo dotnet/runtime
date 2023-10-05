@@ -9202,7 +9202,7 @@
                 <string id="RuntimePublisher.StatsOpcodeMessage" value="Stats" />
                 <string id="RuntimePublisher.ModuleRangeLoadOpcodeMessage" value="ModuleRangeLoad" />
                 <string id="RuntimePublisher.SetGCHandleOpcodeMessage" value="SetGCHandle" />
-                <string id="RuntimePublisher.DestroyGCHandleOpcodeMessage" value="DestoryGCHandle" />
+                <string id="RuntimePublisher.DestroyGCHandleOpcodeMessage" value="DestroyGCHandle" />
                 <string id="RuntimePublisher.TriggeredOpcodeMessage" value="Triggered" />
                 <string id="RuntimePublisher.PinObjectAtGCTimeOpcodeMessage" value="PinObjectAtGCTime" />
                 <string id="RuntimePublisher.IncreaseMemoryPressureOpcodeMessage" value="IncreaseMemoryPressure" />
@@ -9295,7 +9295,7 @@
                 <string id="PrivatePublisher.BGCAllocWaitEndOpcodeMessage" value="BGCAllocWaitStop" />
                 <string id="PrivatePublisher.FinalizeObjectOpcodeMessage" value="FinalizeObject" />
                 <string id="PrivatePublisher.SetGCHandleOpcodeMessage" value="SetGCHandle" />
-                <string id="PrivatePublisher.DestroyGCHandleOpcodeMessage" value="DestoryGCHandle" />
+                <string id="PrivatePublisher.DestroyGCHandleOpcodeMessage" value="DestroyGCHandle" />
                 <string id="PrivatePublisher.PinPlugAtGCTimeOpcodeMessage" value="PinPlugAtGCTime" />
                 <string id="PrivatePublisher.CCWRefCountChangeOpcodeMessage" value="CCWRefCountChange" />
                 <string id="PrivatePublisher.EEStartupStartOpcodeMessage" value="EEStartupStart" />
