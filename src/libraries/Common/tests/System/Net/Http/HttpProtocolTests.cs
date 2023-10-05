@@ -459,7 +459,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 using HttpClient client = CreateHttpClient();
 
-                using HttpResponseMessage response = await client.GetAsync(url).WaitAsync(TestHelper.PassingTestTimeout);
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Version = HttpVersion.Version11;
+
+                using HttpResponseMessage response = await client.SendAsync(TestAsync, request)
+                    .WaitAsync(TestHelper.PassingTestTimeout);
 
                 Assert.Equal(200, (int)response.StatusCode);
                 Assert.Equal("OK", response.ReasonPhrase);
