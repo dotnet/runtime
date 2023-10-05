@@ -3647,8 +3647,8 @@ The function returns the initial value pointed to by Target.
 
 --*/
 Define_InterlockMethod(
-    BYTE,
-    InterlockedExchange8(IN OUT BYTE volatile *Target, BYTE Value),
+    CHAR,
+    InterlockedExchange8(IN OUT CHAR volatile *Target, CHAR Value),
     InterlockedExchange8(Target, Value),
     __atomic_exchange_n(Target, Value, __ATOMIC_ACQ_REL)
 )
@@ -3698,8 +3698,8 @@ The return value is the initial value of the destination.
 
 --*/
 Define_InterlockMethod(
-    LONG,
-    InterlockedCompareExchange8(IN OUT BYTE volatile *Destination, IN BYTE Exchange, IN BYTE Comperand),
+    CHAR,
+    InterlockedCompareExchange8(IN OUT CHAR volatile *Destination, IN CHAR Exchange, IN CHAR Comperand),
     InterlockedCompareExchange8(Destination, Exchange, Comperand),
     __sync_val_compare_and_swap(
         Destination, /* The pointer to a variable whose value is to be compared with. */
@@ -3708,7 +3708,7 @@ Define_InterlockMethod(
 )
 
 Define_InterlockMethod(
-    LONG,
+    SHORT,
     InterlockedCompareExchange16(IN OUT SHORT volatile *Destination, IN SHORT Exchange, IN SHORT Comperand),
     InterlockedCompareExchange16(Destination, Exchange, Comperand),
     __sync_val_compare_and_swap(

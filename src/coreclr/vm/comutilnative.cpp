@@ -1508,7 +1508,7 @@ FCIMPL2(UINT8,COMInterlocked::Exchange8, UINT8 *location, UINT8 value)
         FCThrow(kNullReferenceException);
     }
 
-    return InterlockedExchange8((BYTE *) location, value);
+    return InterlockedExchange8((CHAR *) location, value);
 }
 FCIMPLEND
 

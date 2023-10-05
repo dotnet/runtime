@@ -31,29 +31,30 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include <intrin.h>
 
 static inline guint8
 mono_atomic_cas_u8 (volatile guint8 *dest, guint8 exch, guint8 comp)
 {
-	return InterlockedCompareExchange8 ((BYTE volatile *)dest, (LONG)exch, (LONG)comp);
+	return _InterlockedCompareExchange8 ((CHAR volatile *)dest, (LONG)exch, (LONG)comp);
 }
 
 static inline gint16
 mono_atomic_cas_i16 (volatile gint16 *dest, gint16 exch, gint16 comp)
 {
-	return InterlockedCompareExchange16 ((SHORT volatile *)dest, (LONG)exch, (LONG)comp);
+	return _InterlockedCompareExchange16 ((SHORT volatile *)dest, (LONG)exch, (LONG)comp);
 }
 
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
-	return InterlockedCompareExchange ((LONG volatile *)dest, (LONG)exch, (LONG)comp);
+	return _InterlockedCompareExchange ((LONG volatile *)dest, (LONG)exch, (LONG)comp);
 }
 
 static inline gint64
 mono_atomic_cas_i64 (volatile gint64 *dest, gint64 exch, gint64 comp)
 {
-	return InterlockedCompareExchange64 ((LONG64 volatile *)dest, (LONG64)exch, (LONG64)comp);
+	return _InterlockedCompareExchange64 ((LONG64 volatile *)dest, (LONG64)exch, (LONG64)comp);
 }
 
 static inline gpointer
@@ -101,25 +102,25 @@ mono_atomic_dec_i64 (volatile gint64 *dest)
 static inline guint8
 mono_atomic_xchg_u8 (volatile guint8 *dest, guint8 exch)
 {
-	return InterlockedExchange8 ((BYTE volatile *)dest, (LONG)exch);
+	return _InterlockedExchange8 ((CHAR volatile *)dest, (LONG)exch);
 }
 
 static inline gint16
 mono_atomic_xchg_i16 (volatile gint16 *dest, gint16 exch)
 {
-	return InterlockedExchange16 ((SHORT volatile *)dest, (LONG)exch);
+	return _InterlockedExchange16 ((SHORT volatile *)dest, (LONG)exch);
 }
 
 static inline gint32
 mono_atomic_xchg_i32 (volatile gint32 *dest, gint32 exch)
 {
-	return InterlockedExchange ((LONG volatile *)dest, (LONG)exch);
+	return _InterlockedExchange ((LONG volatile *)dest, (LONG)exch);
 }
 
 static inline gint64
 mono_atomic_xchg_i64 (volatile gint64 *dest, gint64 exch)
 {
-	return InterlockedExchange64 ((LONG64 volatile *)dest, (LONG64)exch);
+	return _InterlockedExchange64 ((LONG64 volatile *)dest, (LONG64)exch);
 }
 
 static inline gpointer
