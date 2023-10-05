@@ -1041,7 +1041,7 @@ namespace System.IO
                     Task.CompletedTask;
 
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-                TaskToAsyncResult.Begin(Task<int>.s_defaultResultTask, callback, state);
+                TaskToAsyncResult.Begin(TaskCache.CachedDefaultValueTask<int>.s_defaultResultTask, callback, state);
 
             public override int EndRead(IAsyncResult asyncResult) =>
                 TaskToAsyncResult.End<int>(asyncResult);

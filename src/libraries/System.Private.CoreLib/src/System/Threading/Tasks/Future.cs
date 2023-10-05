@@ -58,9 +58,6 @@ namespace System.Threading.Tasks
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}, Result = {DebuggerDisplayResultDescription}")]
     public class Task<TResult> : Task
     {
-        /// <summary>A cached task for default(TResult).</summary>
-        internal static readonly Task<TResult> s_defaultResultTask = TaskCache.CreateCacheableTask<TResult>(default);
-
         private static TaskFactory<TResult>? s_Factory;
 
         // The value itself, if set.

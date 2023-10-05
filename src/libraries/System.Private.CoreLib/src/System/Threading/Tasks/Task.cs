@@ -5274,7 +5274,7 @@ namespace System.Threading.Tasks
             if (result is null)
             {
                 // null reference types and default(Nullable<T>)
-                return Task<TResult>.s_defaultResultTask;
+                return TaskCache.CachedDefaultValueTask<TResult>.s_defaultResultTask;
             }
 
             // For Boolean, we cache all possible values.
@@ -5307,7 +5307,7 @@ namespace System.Threading.Tasks
                     (sizeof(TResult) == sizeof(ulong) && *(ulong*)&result == default) ||
                     (sizeof(TResult) == sizeof(UInt128) && *(UInt128*)&result == default))
                 {
-                    return Task<TResult>.s_defaultResultTask;
+                    return TaskCache.CachedDefaultValueTask<TResult>.s_defaultResultTask;
                 }
             }
 
