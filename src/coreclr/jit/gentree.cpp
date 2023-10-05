@@ -372,6 +372,9 @@ bool GenTree::IsNodeProperlySized() const
 //    src  - source tree, that replaces this.
 //    comp - the compiler instance to transfer annotations for arrays.
 //
+// Remarks:
+//    This should not be used for new code.
+//
 void GenTree::ReplaceWith(GenTree* src, Compiler* comp)
 {
     // The source may be big only if the target is also a big node
