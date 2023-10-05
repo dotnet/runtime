@@ -29,8 +29,9 @@
                                         ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv')) and
                                         '$(Scenario)' == 'WasmTestOnBrowser'">true</InstallChromeForTests>
     <InstallV8ForTests Condition="'$(InstallV8ForTests)' == '' and
-                                        ('$(ContinuousIntegrationBuild)' != 'true' or Exists('/.dockerenv')) and
-                                        ('$(Scenario)' == 'normal' or '$(Scenario)' == '')">true</InstallV8ForTests>
+                                        ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv')) and
+                                        ($([MSBuild]::IsOSPlatform('windows')) or $([MSBuild]::IsOSPlatform('linux')))"
+                                    >true</InstallV8ForTests>
 
     <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetRuntimePackNuGetsToBuild;_GetNugetsForAOT;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasmBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>

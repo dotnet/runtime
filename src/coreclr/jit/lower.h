@@ -312,6 +312,7 @@ private:
     void LowerStoreIndirCommon(GenTreeStoreInd* ind);
     void LowerIndir(GenTreeIndir* ind);
     void LowerStoreIndir(GenTreeStoreInd* node);
+    void LowerStoreIndirCoalescing(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
     bool TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
