@@ -7,6 +7,10 @@ namespace System.Formats.Cbor
 {
     public partial class CborWriter
     {
+        // Canonical NaN representations as per RFC 7049
+        private static readonly float CanonicalNaNSingle = CborHelpers.Int32BitsToSingle(0x7fc00000);
+        private static readonly double CanonicalNaNDouble = BitConverter.Int64BitsToDouble(0x7ff8000000000000);
+
         // Implements major type 7 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
         /// <summary>Writes a single-precision floating point number (major type 7).</summary>
@@ -59,7 +63,7 @@ namespace System.Formats.Cbor
         {
             if (float.IsNaN(value))
             {
-                value = CborHelpers.Int32BitsToSingle(0x7fc00000); // canonical NaN as per RFC 7049
+                value = CanonicalNaNSingle;
             }
             EnsureWriteCapacity(1 + sizeof(float));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional32BitData));
@@ -72,7 +76,7 @@ namespace System.Formats.Cbor
         {
             if (double.IsNaN(value))
             {
-                value = BitConverter.Int64BitsToDouble(0x7ff8000000000000); // canonical NaN as per RFC 7049
+                value = CanonicalNaNDouble;
             }
             EnsureWriteCapacity(1 + sizeof(double));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional64BitData));

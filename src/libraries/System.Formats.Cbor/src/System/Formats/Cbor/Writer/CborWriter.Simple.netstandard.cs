@@ -8,6 +8,9 @@ namespace System.Formats.Cbor
 {
     public partial class CborWriter
     {
+        // Canonical NaN representation as per RFC 7049
+        private const ushort CanonicalNaNHalf = 0x7e00;
+
         // Implements major type 7 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
         /// <summary>Writes a half-precision floating point number (major type 7).</summary>
@@ -21,7 +24,7 @@ namespace System.Formats.Cbor
         {
             if (HalfHelpers.HalfIsNaN(value))
             {
-                value = 0x7e00; // canonical NaN as per RFC 7049
+                value = CanonicalNaNHalf;
             }
             EnsureWriteCapacity(1 + sizeof(ushort));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional16BitData));
