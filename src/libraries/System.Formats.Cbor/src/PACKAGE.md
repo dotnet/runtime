@@ -33,21 +33,20 @@ Write and read an array:
 
 ```csharp
 var cborWriter = new CborWriter(CborConformanceMode.Lax);
-cborWriter.WriteStartArray(3);
-cborWriter.WriteInt32(1);
-cborWriter.WriteInt32(2);
-cborWriter.WriteInt32(3);
+cborWriter.WriteStartArray(5);
+for (var index = 0; index < 5; index++)
+{
+    cborWriter.WriteInt32(index);
+}
 cborWriter.WriteEndArray();
 
 var cborReader = new CborReader(cborWriter.Encode(), CborConformanceMode.Lax);
-Console.WriteLine(cborReader.ReadStartArray());
-// 3
-Console.WriteLine(cborReader.ReadInt32());
-// 1
-Console.WriteLine(cborReader.ReadInt32());
-// 2
-Console.WriteLine(cborReader.ReadInt32());
-// 3
+var arrayLength = cborReader.ReadStartArray();
+for (var index = 0; index < arrayLength; index++)
+{
+    Console.Write(cborReader.ReadInt32());
+}
+// 01234
 cborReader.ReadEndArray();
 ```
 
