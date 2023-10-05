@@ -33,6 +33,7 @@
       <_CoreClrBuildArg Condition="'$(PortableBuild)' != 'true'" Include="-portablebuild=false" />
       <_CoreClrBuildArg Condition="'$(KeepNativeSymbols)' != 'false'" Include="-keepnativesymbols" />
       <_CoreClrBuildArg Include="-os $(_BuildNativeTargetOS)" />
+      <_CoreClrBuildArg Condition="'$(CoreclrVerbose)' == 'true'" Include="-verbose" />
 
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and
                                    ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'x64') and
