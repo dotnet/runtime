@@ -330,8 +330,7 @@ void CodeGen::genCodeForBBlist()
         //
         // Note: We need to have set compCurBB before calling emitAddLabel
         //
-        if (!block->IsFirst() && block->Prev()->KindIs(BBJ_COND) &&
-            (block->bbWeight != block->Prev()->bbWeight))
+        if (!block->IsFirst() && block->Prev()->KindIs(BBJ_COND) && (block->bbWeight != block->Prev()->bbWeight))
         {
             JITDUMP("Adding label due to BB weight difference: BBJ_COND " FMT_BB " with weight " FMT_WT
                     " different from " FMT_BB " with weight " FMT_WT "\n",

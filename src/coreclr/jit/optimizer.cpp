@@ -1888,8 +1888,7 @@ private:
                         // otherwise the loop is still valid and this may be a (flow-wise) back-edge
                         // of an outer loop.  For the dominance test, if `predBlock` is a new block, use
                         // its unique predecessor since the dominator tree has info for that.
-                        BasicBlock* effectivePred =
-                            (predBlock->bbNum > oldBlockMaxNum ? predBlock->Prev() : predBlock);
+                        BasicBlock* effectivePred = (predBlock->bbNum > oldBlockMaxNum ? predBlock->Prev() : predBlock);
                         if (comp->fgDominate(entry, effectivePred))
                         {
                             // Outer loop back-edge
@@ -1924,8 +1923,7 @@ private:
                     isFirstVisit = true;
                 }
 
-                if (isFirstVisit && !predBlock->IsLast() &&
-                    (PositionNum(predBlock->Next()) == predBlock->bbNum))
+                if (isFirstVisit && !predBlock->IsLast() && (PositionNum(predBlock->Next()) == predBlock->bbNum))
                 {
                     // We've created a new block immediately after `predBlock` to
                     // reconnect what was fall-through.  Mark it as in-loop also;

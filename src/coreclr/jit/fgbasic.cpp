@@ -5060,8 +5060,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
         else if (bPrev->KindIs(BBJ_ALWAYS) && block->NextIs(bPrev->bbJumpDest) &&
-                 !(bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) && (block != fgFirstColdBlock) &&
-                 !block->IsLastHotBlock(this))
+                 !(bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) && (block != fgFirstColdBlock) && !block->IsLastHotBlock(this))
         {
             // previous block is a BBJ_ALWAYS to the next block: change to BBJ_NONE.
             // Note that we don't do it if bPrev follows a BBJ_CALLFINALLY block (BBF_KEEP_BBJ_ALWAYS),
@@ -5455,8 +5454,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
             // If bSrc is an unconditional branch to the next block
             // then change it to a BBJ_NONE block
             //
-            if (bSrc->KindIs(BBJ_ALWAYS) && !(bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) &&
-                bSrc->NextIs(bSrc->bbJumpDest))
+            if (bSrc->KindIs(BBJ_ALWAYS) && !(bSrc->bbFlags & BBF_KEEP_BBJ_ALWAYS) && bSrc->NextIs(bSrc->bbJumpDest))
             {
                 bSrc->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                 JITDUMP("Changed an unconditional jump from " FMT_BB " to the next block " FMT_BB

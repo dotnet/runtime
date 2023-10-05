@@ -3428,8 +3428,7 @@ void Compiler::fgVerifyHandlerTab()
     {
         BasicBlock* blockEnd;
 
-        for (block = HBtab->ebdTryBeg, blockEnd = HBtab->ebdTryLast->Next(); block != blockEnd;
-             block = block->Next())
+        for (block = HBtab->ebdTryBeg, blockEnd = HBtab->ebdTryLast->Next(); block != blockEnd; block = block->Next())
         {
             if (blockTryIndex[block->bbNum] == 0)
             {
@@ -3437,8 +3436,7 @@ void Compiler::fgVerifyHandlerTab()
             }
         }
 
-        for (block                    = (HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg),
-            blockEnd                  = HBtab->ebdHndLast->Next();
+        for (block = (HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg), blockEnd = HBtab->ebdHndLast->Next();
              block != blockEnd; block = block->Next())
         {
             if (blockHndIndex[block->bbNum] == 0)

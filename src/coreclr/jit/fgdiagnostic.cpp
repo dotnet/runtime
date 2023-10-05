@@ -1685,7 +1685,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                             childCount++;
 
                             bbCur      = child->m_bbEnd->Next(); // Next, output blocks after this child.
-                            child      = child->m_rgnNext;            // Move to the next child, if any.
+                            child      = child->m_rgnNext;       // Move to the next child, if any.
                             childCurBB = (child == nullptr) ? nullptr : child->m_bbStart;
                         }
                     }
@@ -1745,8 +1745,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     if (ehDsc->HasFilter())
                     {
                         sprintf_s(name, sizeof(name), "EH#%u filter", XTnum);
-                        rgnGraph.Insert(name, RegionGraph::RegionType::EH, ehDsc->ebdFilter,
-                                        ehDsc->ebdHndBeg->Prev());
+                        rgnGraph.Insert(name, RegionGraph::RegionType::EH, ehDsc->ebdFilter, ehDsc->ebdHndBeg->Prev());
                     }
                 }
             }

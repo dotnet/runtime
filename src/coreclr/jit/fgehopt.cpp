@@ -419,8 +419,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // Try must be a callalways pair of blocks.
         if (!firstTryBlock->NextIs(lastTryBlock))
         {
-            JITDUMP("EH#%u block " FMT_BB " not last block in try; skipping.\n", XTnum,
-                    firstTryBlock->Next()->bbNum);
+            JITDUMP("EH#%u block " FMT_BB " not last block in try; skipping.\n", XTnum, firstTryBlock->Next()->bbNum);
             XTnum++;
             continue;
         }
@@ -436,8 +435,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         bool        verifiedSingleCallfinally  = true;
         ehGetCallFinallyBlockRange(XTnum, &firstCallFinallyRangeBlock, &endCallFinallyRangeBlock);
 
-        for (BasicBlock* block = firstCallFinallyRangeBlock; block != endCallFinallyRangeBlock;
-             block             = block->Next())
+        for (BasicBlock* block = firstCallFinallyRangeBlock; block != endCallFinallyRangeBlock; block = block->Next())
         {
             if (block->KindIs(BBJ_CALLFINALLY) && (block->bbJumpDest == firstHandlerBlock))
             {
