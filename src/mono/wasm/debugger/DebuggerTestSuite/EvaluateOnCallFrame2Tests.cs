@@ -504,9 +504,8 @@ namespace DebuggerTests
                     ("test.SumDefaultNegativeAndRequiredParamLongInts(-1l)", TNumber(-124)), // default: -123l
                     ("test.SumDefaultNegativeAndRequiredParamFloats(-1.1f, -1.1f)", TNumber("-2.2", isDecimal: true)),
                     ("test.SumDefaultNegativeAndRequiredParamFloats(-1.1f)", TNumber("-4.4", isDecimal: true)), // default: -3.3f
-                    // ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1, -0.2)", TNumber("-0.3", isDecimal: true)), // precision in double operations fails, received -0.30000000000000004
-                    // ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1)", TNumber("-3.3", isDecimal: true)), // default: -3.2, precision fails, received -3.3000000000000003
-                    // ("test.SumDefaultNegativeAndRequiredParamDoubles(0.1, 0.2)", TNumber("0.3", isDecimal: true)), // positive double precision is wrong too: received 0.30000000000000004
+                    ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1, -0.2)", TNumber("-0.30000000000000004", isDecimal: true)), // expected result for doubles copied from coreclr response
+                    ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1)", TNumber("-3.3000000000000003", isDecimal: true)), // default: -3.2
                     // ("test.SumDefaultNegativeAndRequiredParamShortInts(-0.111, -0.456)", TNumber("-0.567", isDecimal: true)), // we have no way of testing it, debugger recognizes passed literals as integers and does not find the correct overload. We would need to cast to short and we don't support passing parameters with a cast.
                     // ("test.SumDefaultNegativeAndRequiredParamShortInts(-0.111)", TNumber("-3.567", isDecimal: true)), // default: -32768
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
