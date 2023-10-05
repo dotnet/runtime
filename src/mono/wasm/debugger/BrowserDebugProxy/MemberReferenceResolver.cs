@@ -410,16 +410,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var typeInfo = await context.SdbAgent.GetTypeInfo(valueType.TypeId, token);
                         if (valueType.InlineArray == null)
                         {
-                            try
-                            {
-                                JObject vtResult = await InvokeGetItemOnJObject(rootObject, valueType.TypeId, objectId, elementIdxInfo, token);
-                                if (vtResult != null)
-                                    return vtResult;
-                            }
-                            catch (Exception)
-                            {
-                                logger.LogDebug($"Failed indexing '{objectId.Value}' with an indexer.");
-                            }
+                            JObject vtResult = await InvokeGetItemOnJObject(rootObject, valueType.TypeId, objectId, elementIdxInfo, token);
+                            if (vtResult != null)
+                                return vtResult;
                         }
                         if (int.TryParse(elementIdxInfo.ElementIdxStr, out elementIdx) && elementIdx >= 0 && elementIdx < valueType.InlineArray.Count)
                             return (JObject)valueType.InlineArray[elementIdx]["value"];
@@ -552,21 +545,20 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 MethodInfoWithDebugInformation methodInfo = await context.SdbAgent.GetMethodInfo(methodIds[i], token);
                 ParameterInfo[] paramInfo = methodInfo.GetParametersInfo();
-                if (paramInfo.Length == elementIdxInfo.DimensionsCount)
+                if (paramInfo.Length != elementIdxInfo.DimensionsCount)
+                    continue;
+                try
                 {
-                    try
-                    {
-                        if (!CheckParametersCompatibility(paramInfo, elementIdxInfo.Indexers))
-                            continue;
-                        ArraySegment<byte> buffer = await WriteIndexObjectAsIndices(objectId, elementIdxInfo.Indexers, paramInfo);
-                        JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
-                            return (JObject)getItemRetObj["value"];
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogDebug($"Attempt number {i + 1} out of {methodIds.Length} of invoking method {methodInfo.Name} with parameter named {paramInfo[0].Name} on type {type} failed. Method Id = {methodIds[i]}.\nInner exception: {ex}.");
+                    if (!CheckParametersCompatibility(paramInfo, elementIdxInfo.Indexers))
                         continue;
-                    }
+                    ArraySegment<byte> buffer = await WriteIndexObjectAsIndices(objectId, elementIdxInfo.Indexers, paramInfo);
+                    JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
+                    return (JObject)getItemRetObj["value"];
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug($"Attempt number {i + 1} out of {methodIds.Length} of invoking method {methodInfo.Name} with parameter named {paramInfo[0].Name} on type {type} failed. Method Id = {methodIds[i]}.\nInner exception: {ex}.");
+                    continue;
                 }
             }
             return null;
