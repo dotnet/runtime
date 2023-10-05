@@ -477,7 +477,7 @@ async function instantiate_wasm_module(
 
         if (runtimeHelpers.loadedMemorySnapshotSize) {
             try {
-                const wasmMemory = Module.getMemory();
+                const wasmMemory = runtimeHelpers.getMemory();
 
                 // .grow() takes a delta compared to the previous size
                 wasmMemory.grow((runtimeHelpers.loadedMemorySnapshotSize! - wasmMemory.buffer.byteLength + 65535) >>> 16);

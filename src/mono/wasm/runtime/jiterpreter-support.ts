@@ -177,7 +177,7 @@ export class WasmBuilder {
     }
 
     getWasmImports(): WebAssembly.Imports {
-        const memory = (<any>Module).getMemory();
+        const memory = runtimeHelpers.getMemory();
         mono_assert(memory instanceof WebAssembly.Memory, () => `expected heap import to be WebAssembly.Memory but was ${memory}`);
 
         const result: any = {
@@ -1507,10 +1507,10 @@ export function copyIntoScratchBuffer(src: NativePointer, size: number): NativeP
 
 export function getWasmFunctionTable(module?: any) {
     const theModule = (<any>Module || module);
-    mono_assert (theModule, "Module not available yet");
-    mono_assert (theModule["asm"], "Module['asm'] not available yet");
+    mono_assert(theModule, "Module not available yet");
+    mono_assert(theModule["asm"], "Module['asm'] not available yet");
     if (!wasmTable)
-        wasmTable = Module.getWasmIndirectFunctionTable();
+        wasmTable = runtimeHelpers.getWasmIndirectFunctionTable();
     if (!wasmTable)
         throw new Error("Module did not export the indirect function table");
     return wasmTable;

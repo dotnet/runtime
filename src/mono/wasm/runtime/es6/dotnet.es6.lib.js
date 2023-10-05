@@ -22,7 +22,6 @@ function setup(linkerSetup) {
         fetch: globalThis.fetch,
         ENVIRONMENT_IS_WORKER,
         require,
-        updateMemoryViews,
         pthreadReplacements,
         scriptDirectory,
         noExitRuntime
@@ -38,7 +37,6 @@ function setup(linkerSetup) {
 
     ENVIRONMENT_IS_WORKER = dotnet_replacements.ENVIRONMENT_IS_WORKER;
     Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
-    updateMemoryViews = dotnet_replacements.updateMemoryViews;
     noExitRuntime = dotnet_replacements.noExitRuntime;
     fetch = dotnet_replacements.fetch;
     require = dotnet_replacements.require;
@@ -51,6 +49,9 @@ function setup(linkerSetup) {
     Module.__dotnet_runtime.passEmscriptenInternals({
         isPThread: ENVIRONMENT_IS_PTHREAD,
         quit_, ExitStatus,
+        updateMemoryViews,
+        getMemory: () => { return wasmMemory; },
+        getWasmIndirectFunctionTable: () => { return wasmTable; },
         ...linkerSetup
     });
 
