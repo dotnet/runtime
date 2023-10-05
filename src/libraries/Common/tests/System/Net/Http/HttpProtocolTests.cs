@@ -266,10 +266,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Version = HttpVersion.Version11;
-
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(TestAsync, request);
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(TestAsync, url);
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         getResponseTask,
@@ -360,10 +357,7 @@ namespace System.Net.Http.Functional.Tests
                     Task ignoredServerTask = server.AcceptConnectionSendCustomResponseAndCloseAsync(
                         responseString + "\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
 
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Version = HttpVersion.Version11;
-
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(TestAsync, request));
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(TestAsync, url));
                 }
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
@@ -459,10 +453,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using HttpClient client = CreateHttpClient();
 
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Version = HttpVersion.Version11;
-
-                using HttpResponseMessage response = await client.SendAsync(TestAsync, request)
+                using HttpResponseMessage response = await client.GetAsync(TestAsync, url)
                     .WaitAsync(TestHelper.PassingTestTimeout);
 
                 Assert.Equal(200, (int)response.StatusCode);

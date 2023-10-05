@@ -719,7 +719,7 @@ namespace System.Net.Http.Functional.Tests
 
         protected Task<HttpResponseMessage> SendAsync(HttpMessageInvoker invoker, HttpRequestMessage request, CancellationToken cancellationToken = default) =>
             TestHttpMessageInvoker ?
-            invoker.SendAsync(request, cancellationToken) :
+            (TestAsync ? invoker.SendAsync(request, cancellationToken) : Task.Run(() => invoker.Send(request, cancellationToken))) :
             ((HttpClient)invoker).SendAsync(TestAsync, request, cancellationToken);
 
         protected HttpMessageInvoker CreateHttpMessageInvoker(HttpMessageHandler? handler = null) =>
