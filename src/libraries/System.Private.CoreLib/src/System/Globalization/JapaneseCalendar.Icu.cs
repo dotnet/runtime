@@ -86,15 +86,10 @@ namespace System.Globalization
             }
             else
             {
-                string[]? abbrevEraNames;
-                if (!CalendarData.EnumCalendarInfo("ja", CalendarId.JAPAN, CalendarDataType.AbbrevEraNames, out abbrevEraNames))
+                if (!CalendarData.EnumCalendarInfo("ja", CalendarId.JAPAN, CalendarDataType.AbbrevEraNames, out abbrevEnglishEraNames!))
                 {
                     // Failed to get English names. fallback to hardcoded data.
                     abbrevEnglishEraNames = s_abbreviatedEnglishEraNames;
-                }
-                else
-                {
-                    abbrevEnglishEraNames = abbrevEraNames ?? s_abbreviatedEnglishEraNames;
                 }
             }
 #else
