@@ -8004,20 +8004,19 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         }
 
         // At this point we know that we have two consecutive STOREINDs with the same base address,
-        // index and scale, the only variable thing is the offset (constant):
-        const int offset = abs(prevData.offset - currData.offset);
+        // index and scale, the only variable thing is the offset (constant)
 
-        // It's a duplicated store if the offset is 0.
-        // We can just remove the previous store and continue.
-        if (offset == 0)
+        // The same offset means that we're storing to the same location of the same width.
+        // Just remove the previous store then.
+        if (prevData.offset == currData.offset)
         {
             BlockRange().Remove(std::move(prevIndRange));
             continue;
         }
 
-        // Otherwise, the offset has to match the size of the type.
+        // Otherwise, the difference between two offsets has to match the size of the type.
         // We don't support overlapping stores.
-        if (offset != (int)genTypeSize(prevData.targetType))
+        if (abs(prevData.offset - currData.offset) != (int)genTypeSize(prevData.targetType))
         {
             return;
         }
