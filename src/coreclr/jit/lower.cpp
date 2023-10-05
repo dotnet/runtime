@@ -8040,10 +8040,12 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             }
 
             // Check whether the combined indir is still aligned.
-            bool isCombinedIndirAtomic = (min(prevData.offset, currData.offset) % (genTypeSize(ind) * 2)) == 0;
-#ifdef TARGET_ARM64
-            if (ind->TypeIs(TYP_LONG, TYP_REF))
+            bool isCombinedIndirAtomic = (genTypeSize(ind) < TARGET_POINTER_SIZE) &&
+                                         (min(prevData.offset, currData.offset) % (genTypeSize(ind) * 2)) == 0;
+
+            if (genTypeSize(ind) == TARGET_POINTER_SIZE)
             {
+#ifdef TARGET_ARM64
                 // Per Arm Architecture Reference Manual for A-profile architecture:
                 //
                 // * Writes from SIMD and floating-point registers of a 128-bit value that is 64-bit aligned in memory
@@ -8054,8 +8056,8 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 // And we assume on ARM64 TYP_LONG/TYP_REF are always 64-bit aligned, otherwise
                 // we're already doing a load that has no atomicity guarantees.
                 isCombinedIndirAtomic = true;
-            }
 #endif
+            }
 
             if (!isCombinedIndirAtomic)
             {
