@@ -2112,7 +2112,7 @@ namespace System.Numerics.Tensors
         private static float GetFirstNaN(Vector128<float> vector)
         {
             Debug.Assert(!Vector128.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return vector[BitOperations.TrailingZeroCount((~Vector128.Equals(vector, vector)).ExtractMostSignificantBits())];
+            return vector.GetElement(BitOperations.TrailingZeroCount((~Vector128.Equals(vector, vector)).ExtractMostSignificantBits()));
         }
 
         /// <summary>Finds and returns the first NaN value in <paramref name="vector"/>.</summary>
@@ -2120,7 +2120,7 @@ namespace System.Numerics.Tensors
         private static float GetFirstNaN(Vector256<float> vector)
         {
             Debug.Assert(!Vector256.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return vector[BitOperations.TrailingZeroCount((~Vector256.Equals(vector, vector)).ExtractMostSignificantBits())];
+            return vector.GetElement(BitOperations.TrailingZeroCount((~Vector256.Equals(vector, vector)).ExtractMostSignificantBits()));
         }
 
 #if NET8_0_OR_GREATER
@@ -2129,7 +2129,7 @@ namespace System.Numerics.Tensors
         private static float GetFirstNaN(Vector512<float> vector)
         {
             Debug.Assert(!Vector512.EqualsAll(vector, vector), "Expected vector to contain a NaN");
-            return vector[BitOperations.TrailingZeroCount((~Vector512.Equals(vector, vector)).ExtractMostSignificantBits())];
+            return vector.GetElement(BitOperations.TrailingZeroCount((~Vector512.Equals(vector, vector)).ExtractMostSignificantBits()));
         }
 #endif
 

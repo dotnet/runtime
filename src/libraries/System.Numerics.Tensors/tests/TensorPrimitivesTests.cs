@@ -87,8 +87,8 @@ namespace System.Numerics.Tensors.Tests
             // Normals
             yield return UInt32ToSingle(0x0080_0000);
             yield return UInt32ToSingle(0x8080_0000);
-            yield return UInt32ToSingle(0x7F7F_FFFF);
-            yield return UInt32ToSingle(0x8F7F_FFFF);
+            yield return UInt32ToSingle(0x7F7F_FFFF); // MaxValue
+            yield return UInt32ToSingle(0xFF7F_FFFF); // MinValue
         }
 
         /// <summary>
