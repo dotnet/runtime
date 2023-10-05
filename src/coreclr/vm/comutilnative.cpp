@@ -1556,7 +1556,7 @@ FCIMPL3(UINT8, COMInterlocked::CompareExchange8, UINT8* location, UINT8 value, U
         FCThrow(kNullReferenceException);
     }
 
-    return InterlockedCompareExchange8((BYTE*)location, value, comparand);
+    return InterlockedCompareExchange8((CHAR*)location, value, comparand);
 }
 FCIMPLEND
 
