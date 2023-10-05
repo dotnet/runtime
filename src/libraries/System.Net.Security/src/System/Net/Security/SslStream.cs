@@ -717,7 +717,7 @@ namespace System.Net.Security
             }
         }
 
-        private static unsafe PoolingPointerMemoryManager RentPointerMemoryManager(ref PoolingPointerMemoryManager? field, void* pointer, int length)
+        private static unsafe PoolingPointerMemoryManager RentPointerMemoryManager(ref PoolingPointerMemoryManager? field, byte* pointer, int length)
         {
             // we get null when called for the first-time, or concurrent read or write operation
             var manager = Interlocked.Exchange(ref field, null) ?? new PoolingPointerMemoryManager();
@@ -958,14 +958,14 @@ namespace System.Net.Security
         // The memory ponted to by the intenal poiner is assumed to be externally pinned (or naive memory).
         internal sealed unsafe class PoolingPointerMemoryManager : MemoryManager<byte>
         {
-            private void* _pointer;
+            private byte* _pointer;
             private int _length;
 
             protected override void Dispose(bool disposing)
             {
             }
 
-            public void Reset(void* pointer, int length)
+            public void Reset(byte* pointer, int length)
             {
                 _pointer = pointer;
                 _length = length;
@@ -979,7 +979,7 @@ namespace System.Net.Security
             public override MemoryHandle Pin(int elementIndex = 0)
             {
                 // memory assumed to be pinned already
-                return new MemoryHandle(_pointer, default, null);
+                return new MemoryHandle(_pointer + elementIndex, default, null);
             }
 
             public override void Unpin()
