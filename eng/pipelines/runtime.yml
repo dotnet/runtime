@@ -426,6 +426,10 @@ extends:
             - publish: $(Build.SourcesDirectory)/artifacts/bin/coreclr
               displayName: Publish CrossDacs for diagnostics
               artifact: CoreCLRCrossDacArtifacts
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
       # Build Mono AOT offset headers once, for consumption elsewhere
       # Only when mono changed
