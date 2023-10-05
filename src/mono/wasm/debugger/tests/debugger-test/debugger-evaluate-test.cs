@@ -1996,6 +1996,8 @@ namespace DebuggerTests
 
             public bool GetNull(object param = null) => param == null ? true : false;
             public int GetDefaultAndRequiredParam(int requiredParam, int optionalParam = 3) => requiredParam + optionalParam;
+            public float GetDefaultAndRequiredParam(long requiredParam, float optionalParam = 3.3f) => requiredParam + optionalParam;
+            public double GetDefaultAndRequiredParam(double requiredParam, short optionalParam = -32768) => requiredParam + optionalParam;
             public string GetDefaultAndRequiredParamMixedTypes(string requiredParam, int optionalParamFirst = -1, bool optionalParamSecond = false) => $"{requiredParam}; {optionalParamFirst}; {optionalParamSecond}";
         }
 

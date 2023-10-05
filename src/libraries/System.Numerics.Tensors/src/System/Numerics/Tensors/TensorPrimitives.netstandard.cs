@@ -97,7 +97,7 @@ namespace System.Numerics.Tensors
 
             float result;
 
-            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count)
+            if (Vector.IsHardwareAccelerated && load.CanVectorize && x.Length >= Vector<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
 
@@ -298,11 +298,13 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
             int i = 0, oneVectorFromEnd;
 
-            if (Vector.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated && op.CanVectorize)
             {
                 oneVectorFromEnd = x.Length - Vector<float>.Count;
                 if (oneVectorFromEnd >= 0)
@@ -320,7 +322,11 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex));
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex)));
                     }
 
                     return;
@@ -350,6 +356,9 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+            ValidateInputOutputSpanNonOverlapping(y, destination);
+
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float yRef = ref MemoryMarshal.GetReference(y);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
@@ -374,8 +383,12 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex),
-                                                                        AsVector(ref yRef, lastVectorIndex));
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex),
+                                      AsVector(ref yRef, lastVectorIndex)));
                     }
 
                     return;
@@ -399,6 +412,8 @@ namespace System.Numerics.Tensors
             {
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
+
+            ValidateInputOutputSpanNonOverlapping(x, destination);
 
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
@@ -424,8 +439,11 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex),
-                                                                        yVec);
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex), yVec));
                     }
 
                     return;
@@ -456,6 +474,10 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+            ValidateInputOutputSpanNonOverlapping(y, destination);
+            ValidateInputOutputSpanNonOverlapping(z, destination);
+
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float yRef = ref MemoryMarshal.GetReference(y);
             ref float zRef = ref MemoryMarshal.GetReference(z);
@@ -482,9 +504,13 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex),
-                                                                        AsVector(ref yRef, lastVectorIndex),
-                                                                        AsVector(ref zRef, lastVectorIndex));
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex),
+                                      AsVector(ref yRef, lastVectorIndex),
+                                      AsVector(ref zRef, lastVectorIndex)));
                     }
 
                     return;
@@ -516,6 +542,9 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+            ValidateInputOutputSpanNonOverlapping(y, destination);
+
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float yRef = ref MemoryMarshal.GetReference(y);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
@@ -543,9 +572,13 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex),
-                                                                        AsVector(ref yRef, lastVectorIndex),
-                                                                        zVec);
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex),
+                                      AsVector(ref yRef, lastVectorIndex),
+                                      zVec));
                     }
 
                     return;
@@ -577,6 +610,9 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_DestinationTooShort();
             }
 
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+            ValidateInputOutputSpanNonOverlapping(z, destination);
+
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float zRef = ref MemoryMarshal.GetReference(z);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
@@ -604,9 +640,13 @@ namespace System.Numerics.Tensors
                     if (i != x.Length)
                     {
                         int lastVectorIndex = x.Length - Vector<float>.Count;
-                        AsVector(ref dRef, lastVectorIndex) = op.Invoke(AsVector(ref xRef, lastVectorIndex),
-                                                                        yVec,
-                                                                        AsVector(ref zRef, lastVectorIndex));
+                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
+                        dest = Vector.ConditionalSelect(
+                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            dest,
+                            op.Invoke(AsVector(ref xRef, lastVectorIndex),
+                                      yVec,
+                                      AsVector(ref zRef, lastVectorIndex)));
                     }
 
                     return;
@@ -845,6 +885,7 @@ namespace System.Numerics.Tensors
 
         private readonly struct NegateOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => -x;
             public Vector<float> Invoke(Vector<float> x) => -x;
         }
@@ -863,24 +904,67 @@ namespace System.Numerics.Tensors
 
         private readonly struct IdentityOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => x;
             public Vector<float> Invoke(Vector<float> x) => x;
         }
 
         private readonly struct SquaredOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => x * x;
             public Vector<float> Invoke(Vector<float> x) => x * x;
         }
 
         private readonly struct AbsoluteOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => MathF.Abs(x);
             public Vector<float> Invoke(Vector<float> x) => Vector.Abs(x);
         }
 
+        private readonly struct ExpOperator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+
+            public float Invoke(float x) => MathF.Exp(x);
+
+            public Vector<float> Invoke(Vector<float> x)
+            {
+                // Vectorizing requires shift left support, which is .NET 7 or later
+                throw new NotImplementedException();
+            }
+        }
+
+        private readonly struct LogOperator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+
+            public float Invoke(float x) => MathF.Log(x);
+
+            public Vector<float> Invoke(Vector<float> x)
+            {
+                // Vectorizing requires shift right support, which is .NET 7 or later
+                throw new NotImplementedException();
+            }
+        }
+
+        private readonly struct Log2Operator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+
+            public float Invoke(float x) => Log2(x);
+
+            public Vector<float> Invoke(Vector<float> x)
+            {
+                // Vectorizing requires shift right support, which is .NET 7 or later
+                throw new NotImplementedException();
+            }
+        }
+
         private interface IUnaryOperator
         {
+            bool CanVectorize { get; }
             float Invoke(float x);
             Vector<float> Invoke(Vector<float> x);
         }

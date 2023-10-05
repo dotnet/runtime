@@ -960,7 +960,7 @@ void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** be
 
 bool Compiler::ehCallFinallyInCorrectRegion(BasicBlock* blockCallFinally, unsigned finallyIndex)
 {
-    assert(blockCallFinally->bbJumpKind == BBJ_CALLFINALLY);
+    assert(blockCallFinally->KindIs(BBJ_CALLFINALLY));
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(finallyIndex < compHndBBtabCount);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
@@ -2276,7 +2276,7 @@ bool Compiler::fgNormalizeEHCase2()
 
                             // Change pred branches.
                             //
-                            if (predBlock->bbJumpKind != BBJ_NONE)
+                            if (!predBlock->KindIs(BBJ_NONE))
                             {
                                 fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
                             }
@@ -3506,7 +3506,7 @@ void Compiler::fgVerifyHandlerTab()
         }
 
         // Check for legal block types
-        switch (block->bbJumpKind)
+        switch (block->GetBBJumpKind())
         {
             case BBJ_EHFINALLYRET:
             {
@@ -4056,12 +4056,12 @@ void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
 
     for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        if (predBlock->bbJumpKind == BBJ_ALWAYS && predBlock->bbJumpDest == block)
+        if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->bbJumpDest == block)
         {
             BasicBlock* pPrev = predBlock->bbPrev;
             if (pPrev != nullptr)
             {
-                if (pPrev->bbJumpKind == BBJ_CALLFINALLY)
+                if (pPrev->KindIs(BBJ_CALLFINALLY))
                 {
                     // We found a BBJ_CALLFINALLY / BBJ_ALWAYS that still points to this finally target
                     return;
@@ -4113,7 +4113,7 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
                ((xtab->ebdHndBeg->bbNext == block) &&
                 (xtab->ebdHndBeg->bbFlags & BBF_INTERNAL))); // After we've already inserted a header block, and we're
                                                              // trying to decide how to split up the predecessor edges.
-        if (predBlock->bbJumpKind == BBJ_CALLFINALLY)
+        if (predBlock->KindIs(BBJ_CALLFINALLY))
         {
             assert(predBlock->bbJumpDest == block);
 
@@ -4184,7 +4184,7 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
         // The block is a handler. Check if the pred block is from its filter. We only need to
         // check the end filter flag, as there is only a single filter for any handler, and we
         // already know predBlock is a predecessor of block.
-        if (predBlock->bbJumpKind == BBJ_EHFILTERRET)
+        if (predBlock->KindIs(BBJ_EHFILTERRET))
         {
             assert(!xtab->InHndRegionBBRange(predBlock));
             return false;
@@ -4413,7 +4413,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             {
                 BasicBlock* bFilterLast = HBtab->BBFilterLast();
                 assert(bFilterLast != nullptr);
-                assert(bFilterLast->bbJumpKind == BBJ_EHFILTERRET);
+                assert(bFilterLast->KindIs(BBJ_EHFILTERRET));
                 assert(bFilterLast->bbJumpDest == block);
 #ifdef DEBUG
                 if (verbose)
