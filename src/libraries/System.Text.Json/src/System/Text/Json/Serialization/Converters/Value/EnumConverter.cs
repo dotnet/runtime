@@ -107,10 +107,10 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
 #if NETCOREAPP
-                if (TryParseEnumCore(ref reader, options, out T value))
+                if (TryParseEnumCore(ref reader, out T value))
 #else
                 string? enumString = reader.GetString();
-                if (TryParseEnumCore(enumString, options, out T value))
+                if (TryParseEnumCore(enumString, out T value))
 #endif
                 {
                     return value;
@@ -271,9 +271,9 @@ namespace System.Text.Json.Serialization.Converters
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
 #if NETCOREAPP
-            bool success = TryParseEnumCore(ref reader, options, out T value);
+            bool success = TryParseEnumCore(ref reader, out T value);
 #else
-            bool success = TryParseEnumCore(reader.GetString(), options, out T value);
+            bool success = TryParseEnumCore(reader.GetString(), out T value);
 #endif
 
             if (!success)
@@ -284,7 +284,7 @@ namespace System.Text.Json.Serialization.Converters
             return value;
         }
 
-        internal override unsafe void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             ulong key = ConvertToUInt64(value);
 
@@ -357,9 +357,15 @@ namespace System.Text.Json.Serialization.Converters
 #pragma warning restore 8500
         }
 
+        private bool TryParseEnumCore(
 #if NETCOREAPP
-        private bool TryParseEnumCore(ref Utf8JsonReader reader, JsonSerializerOptions options, out T value)
+            ref Utf8JsonReader reader,
+#else
+            string? source,
+#endif
+            out T value)
         {
+#if NETCOREAPP
             char[]? rentedBuffer = null;
             int bufferLength = reader.ValueLength;
 
@@ -369,44 +375,30 @@ namespace System.Text.Json.Serialization.Converters
 
             int charsWritten = reader.CopyString(charBuffer);
             ReadOnlySpan<char> source = charBuffer.Slice(0, charsWritten);
+#endif
 
             bool success;
             T result;
             if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0 || !JsonHelpers.IntegerRegex.IsMatch(source))
             {
                 // Try parsing case sensitive first
-                success = Enum.TryParse(source, out result) || Enum.TryParse(source, ignoreCase: true, out result);
+                success = Enum.TryParse(source, out value) || Enum.TryParse(source, ignoreCase: true, out value);
             }
             else
             {
                 success = false;
-                result = default;
+                value = default;
             }
 
+#if NETCOREAPP
             if (rentedBuffer != null)
             {
                 charBuffer.Slice(0, charsWritten).Clear();
                 ArrayPool<char>.Shared.Return(rentedBuffer);
             }
-
-            value = result;
-            return success;
-        }
-#else
-        private bool TryParseEnumCore(string? enumString, JsonSerializerOptions _, out T value)
-        {
-            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0 && JsonHelpers.IntegerRegex.IsMatch(enumString))
-            {
-                value = default;
-                return false;
-            }
-
-            // Try parsing case sensitive first
-            bool success = Enum.TryParse(enumString, out T result) || Enum.TryParse(enumString, ignoreCase: true, out result);
-            value = result;
-            return success;
-        }
 #endif
+            return success;
+        }
 
         private T ReadEnumUsingNamingPolicy(string? enumString)
         {
