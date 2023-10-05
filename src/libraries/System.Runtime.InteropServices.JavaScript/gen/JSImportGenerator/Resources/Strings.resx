@@ -136,7 +136,7 @@
     <value>Specified type is not supported by source-generated JavaScript interop.</value>
   </data>
   <data name="TypeNotSupportedMessageReturnWithDetails" xml:space="preserve">
-    <value>{0} The generated source will not handle marshalling of the return value of method '{1}'.</value>
+    <value>{0} The generated source will not handle marshalling of the return value of method '{1}'. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
     <comment>{0} is a message containing additional details about what is not supported
 {1} is the name of the method</comment>
   </data>
@@ -144,21 +144,21 @@
     <value>Type is not supported by source-generated JavaScript interop.</value>
   </data>
   <data name="TypeNotSupportedMessageParameter" xml:space="preserve">
-    <value>The type '{0}' is not supported by source-generated JavaScript interop. The generated source will not handle marshalling of parameter '{1}'.</value>
+    <value>The type '{0}' is not supported by source-generated JavaScript interop. The generated source will not handle marshalling of parameter '{1}'. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
   <data name="TypeNotSupportedMessageReturn" xml:space="preserve">
-    <value>The type '{0}' is not supported by source-generated JavaScript interop. The generated source will not handle marshalling of the return value of method '{1}'.</value>
+    <value>The type '{0}' is not supported by source-generated JavaScript interop. The generated source will not handle marshalling of the return value of method '{1}'. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
   <data name="TypeNotSupportedMessageParameterWithDetails" xml:space="preserve">
-    <value>{0} The generated source will not handle marshalling of parameter '{1}'.</value>
+    <value>{0} The generated source will not handle marshalling of parameter '{1}'. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
     <comment>{0} is a message containing additional details about what is not supported
 {1} is the name of the parameter</comment>
   </data>
   <data name="ConfigurationNotSupportedMessageReturn" xml:space="preserve">
-    <value>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated JavaScript interop.</value>
+    <value>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated JavaScript interop. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
   <data name="ConfigurationNotSupportedMessageParameter" xml:space="preserve">
-    <value>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated JavaScript interop.</value>
+    <value>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated JavaScript interop. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
   <data name="InvalidJSImportAttributeUsageTitle" xml:space="preserve">
     <value>Invalid 'JSImportAttribute' usage</value>
@@ -167,10 +167,10 @@
     <value>Invalid 'JSExportAttribute' usage</value>
   </data>
   <data name="InvalidJSImportAttributedMethodSignatureMessage" xml:space="preserve">
-    <value>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'JSImportAttribute'. JavaScript interop source generation will ignore method '{0}'.</value>
+    <value>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'JSImportAttribute'. JavaScript interop source generation will ignore method '{0}'. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
   <data name="InvalidJSExportAttributedMethodSignatureMessage" xml:space="preserve">
-    <value>Method '{0}' should be 'static', non-partial and non-generic when marked with 'JSExportAttribute'. JavaScript interop source generation will ignore method '{0}'.</value>
+    <value>Method '{0}' should be 'static', non-partial and non-generic when marked with 'JSExportAttribute'. JavaScript interop source generation will ignore method '{0}'. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
   <data name="InvalidJSImportAttributedMethodDescription" xml:space="preserve">
     <value>Methods marked with 'JSImportAttribute' should be 'static', 'partial', and non-generic. JavaScript interop source generation will ignore methods that are non-'static', non-'partial', or generic.</value>
@@ -179,7 +179,7 @@
     <value>Methods marked with 'JSImportAttribute' should be 'static', non-partial, and non-generic. JavaScript interop source generation will ignore methods that are non-'static', 'partial', or generic.</value>
   </data>
   <data name="InvalidAttributedMethodContainingTypeMissingModifiersMessage" xml:space="preserve">
-    <value>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. JavaScript interop source generation will ignore method '{0}'.</value>
+    <value>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. JavaScript interop source generation will ignore method '{0}'. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
   <data name="DiscardOnlyVoid" xml:space="preserve">
     <value>'JSType.Discard' could be only used with void return argument.</value>
@@ -212,18 +212,18 @@
     <value>JSImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
   </data>
   <data name="JSImportRequiresAllowUnsafeBlocksMessage" xml:space="preserve">
-    <value>JSImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+    <value>JSImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
   <data name="JSImportRequiresAllowUnsafeBlocksTitle" xml:space="preserve">
-    <value>JSImportAttribute requires unsafe code.</value>
+    <value>JSImportAttribute requires unsafe code. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
   <data name="JSExportRequiresAllowUnsafeBlocksDescription" xml:space="preserve">
     <value>JSExportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
   </data>
   <data name="JSExportRequiresAllowUnsafeBlocksMessage" xml:space="preserve">
-    <value>JSExportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
+    <value>JSExportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
   <data name="JSExportRequiresAllowUnsafeBlocksTitle" xml:space="preserve">
-    <value>JSExportAttribute requires unsafe code.</value>
+    <value>JSExportAttribute requires unsafe code. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
   </data>
 </root>

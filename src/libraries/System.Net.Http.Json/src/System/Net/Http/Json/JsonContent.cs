@@ -32,11 +32,27 @@ namespace System.Net.Http.Json
             Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
         }
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="JsonContent"/> class that will contain the <paramref name="inputValue"/> serialized as JSON.
+        /// </summary>
+        /// <typeparam name="T">The type of the value to serialize.</typeparam>
+        /// <param name="inputValue">The value to serialize.</param>
+        /// <param name="mediaType">The media type to use for the content.</param>
+        /// <param name="options">Options to control the behavior during serialization, the default options are <see cref="JsonSerializerDefaults.Web"/>.</param>
+        /// <returns>A <see cref="JsonContent"/> instance.</returns>
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => Create(inputValue, JsonHelpers.GetJsonTypeInfo(typeof(T), options), mediaType);
 
+        /// <summary>
+        /// Creates a new instance of the <see cref="JsonContent"/> class that will contain the <paramref name="inputValue"/> serialized as JSON.
+        /// </summary>
+        /// <param name="inputValue">The value to serialize.</param>
+        /// <param name="inputType">The type of the value to serialize.</param>
+        /// <param name="mediaType">The media type to use for the content.</param>
+        /// <param name="options">Options to control the behavior during serialization, the default options are <see cref="JsonSerializerDefaults.Web"/>.</param>
+        /// <returns>A <see cref="JsonContent"/> instance.</returns>
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
@@ -47,16 +63,29 @@ namespace System.Net.Http.Json
             return new JsonContent(inputValue, JsonHelpers.GetJsonTypeInfo(inputType, options), mediaType);
         }
 
-        public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo,
-            MediaTypeHeaderValue? mediaType = null)
+        /// <summary>
+        /// Creates a new instance of the <see cref="JsonContent"/> class that will contain the <paramref name="inputValue"/> serialized as JSON.
+        /// </summary>
+        /// <typeparam name="T">The type of the value to serialize.</typeparam>
+        /// <param name="inputValue">The value to serialize.</param>
+        /// <param name="jsonTypeInfo">The JsonTypeInfo used to control the serialization behavior.</param>
+        /// <param name="mediaType">The media type to use for the content.</param>
+        /// <returns>A <see cref="JsonContent"/> instance.</returns>
+        public static JsonContent Create<T>(T? inputValue, JsonTypeInfo<T> jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
         {
             ThrowHelper.ThrowIfNull(jsonTypeInfo);
 
             return new JsonContent(inputValue, jsonTypeInfo, mediaType);
         }
 
-        public static JsonContent Create(object? inputValue, JsonTypeInfo jsonTypeInfo,
-            MediaTypeHeaderValue? mediaType = null)
+        /// <summary>
+        /// Creates a new instance of the <see cref="JsonContent"/> class that will contain the <paramref name="inputValue"/> serialized as JSON.
+        /// </summary>
+        /// <param name="inputValue">The value to serialize.</param>
+        /// <param name="jsonTypeInfo">The JsonTypeInfo used to control the serialization behavior.</param>
+        /// <param name="mediaType">The media type to use for the content.</param>
+        /// <returns>A <see cref="JsonContent"/> instance.</returns>
+        public static JsonContent Create(object? inputValue, JsonTypeInfo jsonTypeInfo, MediaTypeHeaderValue? mediaType = null)
         {
             ThrowHelper.ThrowIfNull(jsonTypeInfo);
             EnsureTypeCompatibility(inputValue, jsonTypeInfo.Type);

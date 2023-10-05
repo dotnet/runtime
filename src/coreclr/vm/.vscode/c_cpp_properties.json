@@ -57,8 +57,6 @@
                 "FEATURE_ICASTABLE",
                 "FEATURE_INTEROP_DEBUGGING",
                 "FEATURE_ISYM_READER",
-                "FEATURE_MANAGED_ETW",
-                "FEATURE_MANAGED_ETW_CHANNELS",
                 "FEATURE_MULTICASTSTUB_AS_IL",
                 "FEATURE_MULTICOREJIT",
                 "FEATURE_PERFTRACING=1",

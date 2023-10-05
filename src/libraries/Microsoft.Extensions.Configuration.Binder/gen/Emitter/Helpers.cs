@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -135,30 +134,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string Value = nameof(Value);
             }
 
-            private bool ShouldEmitBindingExtensions() =>
-                ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Any) ||
-                ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.Any) ||
-                ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Any);
+            private bool ShouldEmitMethods(MethodsToGen methods) => (_interceptorInfo.MethodsToGen & methods) != 0;
 
-            private void EmitInterceptsLocationAnnotations(Enum generatedBindingOverload)
+            private void EmitInterceptsLocationAnnotations(MethodsToGen overload)
             {
+                IEnumerable<InvocationLocationInfo>? infoList = _interceptorInfo.GetInfo(overload);
+                bool interceptsCalls = infoList is not null;
+
                 // The only time a generated binding method won't have any locations to
                 // intercept is when either of these methods are used as helpers for
                 // other generated OptionsBuilder or ServiceCollection binding extensions.
-                bool interceptsCalls = _sourceGenSpec.InterceptionInfo.TryGetValue(generatedBindingOverload, out List<InterceptorLocationInfo>? infoList);
                 Debug.Assert(interceptsCalls ||
-                    generatedBindingOverload is MethodsToGen_Extensions_ServiceCollection.Configure_T_name_BinderOptions ||
-                    generatedBindingOverload is MethodsToGen_Extensions_OptionsBuilder.Bind_T_BinderOptions);
+                    overload is MethodsToGen.ServiceCollectionExt_Configure_T_name_BinderOptions ||
+                    overload is MethodsToGen.OptionsBuilderExt_Bind_T_BinderOptions);
 
                 if (interceptsCalls)
                 {
-                    EmitInterceptsLocationAnnotations(infoList);
+                    EmitInterceptsLocationAnnotations(infoList!);
                 }
             }
 
-            private void EmitInterceptsLocationAnnotations(List<InterceptorLocationInfo> infoList)
+            private void EmitInterceptsLocationAnnotations(IEnumerable<InvocationLocationInfo> infoList)
             {
-                foreach (InterceptorLocationInfo info in infoList)
+                foreach (InvocationLocationInfo info in infoList)
                 {
                     _writer.WriteLine($@"[{Identifier.InterceptsLocation}(@""{info.FilePath}"", {info.LineNumber}, {info.CharacterNumber})]");
                 }
