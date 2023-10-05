@@ -2217,7 +2217,7 @@ public:
 
     bool IsCall() const
     {
-        return OperGet() == GT_CALL;
+        return OperIs(GT_CALL);
     }
     inline bool IsHelperCall();
 

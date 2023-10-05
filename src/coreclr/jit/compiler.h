@@ -4898,6 +4898,7 @@ public:
 
     void fgLocalVarLivenessInit();
 
+    template <bool lowered>
     void fgPerNodeLocalVarLiveness(GenTree* node);
     void fgPerBlockLocalVarLiveness();
 
@@ -4909,7 +4910,7 @@ public:
 
     void fgLiveVarAnalysis(bool updateInternalOnly = false);
 
-    void fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call);
+    void fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call);
 
     void fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node);
     bool fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
