@@ -103,8 +103,8 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             var handler = new WinHttpHandler();
             using (var client = new HttpClient(handler))
             {
-                var triggerResponseWrite = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                var triggerRequestWait = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var triggerResponseWrite = new TaskCompletionSource<bool>();
+                var triggerRequestWait = new TaskCompletionSource<bool>();
 
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
@@ -116,13 +116,16 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                         await triggerResponseWrite.Task;
                     });
 
-                    AggregateException ag = await Assert.ThrowsAsync<AggregateException>(async () =>
+                    HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(async () =>
                     {
                         Task<HttpResponseMessage> t = client.GetAsync(url);
                         await triggerRequestWait.Task;
-                        t.Wait();
+                        var message = await t;
+                        var _ = message.Content;
                     });
-                    Assert.IsType<HttpRequestException>(ag.InnerException);
+                    Assert.IsType<IOException>(ex.InnerException);
+                    Assert.NotNull(ex.InnerException.InnerException);
+                    Assert.Contains("The operation timed out", ex.InnerException.InnerException.Message);
 
                     triggerResponseWrite.SetResult(true);
                 });
