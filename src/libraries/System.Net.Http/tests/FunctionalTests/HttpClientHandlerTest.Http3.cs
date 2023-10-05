@@ -319,12 +319,15 @@ namespace System.Net.Http.Functional.Tests
 
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
 
+            TaskCompletionSource<bool> taskCompletionSource = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+
             Task serverTask = Task.Run(async () =>
             {
                 await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
                 await connection.CloseAsync(GeneralProtocolError);
+                await taskCompletionSource.Task;
             });
 
             Task clientTask = Task.Run(async () =>
@@ -339,6 +342,7 @@ namespace System.Net.Http.Functional.Tests
                 };
 
                 await AssertProtocolErrorAsync(GeneralProtocolError, () => client.SendAsync(request));
+                taskCompletionSource.SetResult(true);
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
