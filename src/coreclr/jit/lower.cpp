@@ -7920,13 +7920,6 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         return;
     }
 
-    // For now, we require the current STOREIND to have LEA (previous store may not have it)
-    // So we can easily adjust the offset, consider making it more flexible in future.
-    if (!ind->Addr()->OperIs(GT_LEA))
-    {
-        return;
-    }
-
     // TODO-ARM64-CQ: enable TYP_REF if we find a case where it's beneficial.
     // The algorithm does support TYP_REF (with null value), but it seems to be not worth
     // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
@@ -8007,8 +8000,23 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             return;
         }
 
-        // Offset has to match the size of the type. We don't support the same or overlapping offsets.
-        if (abs(prevData.offset - currData.offset) != (int)genTypeSize(prevData.targetType))
+        const int offset = abs(prevData.offset - currData.offset);
+
+        // Offset has to match the size of the type.
+        if (offset != (int)genTypeSize(prevData.targetType))
+        {
+            if (offset == 0)
+            {
+                // Duplicated store, just remove the previous one.
+                BlockRange().Remove(std::move(prevIndRange));
+                continue;
+            }
+            return;
+        }
+
+        // For now, we require the current STOREIND to have LEA (previous store may not have it)
+        // So we can easily adjust the offset, consider making it more flexible in future.
+        if (!ind->Addr()->OperIs(GT_LEA))
         {
             return;
         }
