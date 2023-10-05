@@ -223,5 +223,12 @@ namespace System.Security.Cryptography
             Debug.Assert(padWritten == bytesWritten);
             return true;
         }
+
+        internal delegate bool UniversalOneShotCallback(
+            ILiteSymmetricCipher cipher,
+            PaddingMode paddingMode,
+            ReadOnlySpan<byte> source,
+            Span<byte> destination,
+            out int bytesWritten);
     }
 }

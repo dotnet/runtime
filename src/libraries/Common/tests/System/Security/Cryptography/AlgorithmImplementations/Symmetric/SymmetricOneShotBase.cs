@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Security.Cryptography;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
@@ -569,6 +570,226 @@ namespace System.Security.Cryptography.Tests
                 Assert.False(success, nameof(alg.TryDecryptCfb));
                 Assert.True(destination.IndexOf(plaintextByte) < 0, "does not contain plaintext data");
                 Assert.Equal(0, bytesWritten);
+            }
+        }
+
+        [ConditionalTheory]
+        [InlineData(CipherMode.ECB)]
+        [InlineData(CipherMode.CBC)]
+        [InlineData(CipherMode.CFB)]
+        public void TryEncryptOneShot_KeyChange(CipherMode mode)
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                if (alg is RC2 && mode == CipherMode.CFB)
+                {
+                    throw new SkipTestException("RC2 does not support CFB.");
+                }
+
+                alg.Key = Key;
+
+                ReadOnlySpan<byte> plaintext = "hello world"u8;
+                Span<byte> destinationBuffer = stackalloc byte[32];
+                int bytesWritten;
+
+                bool result = mode switch
+                {
+                    CipherMode.ECB => alg.TryEncryptEcb(plaintext, destinationBuffer, PaddingMode.PKCS7, out bytesWritten),
+                    CipherMode.CBC => alg.TryEncryptCbc(plaintext, IV, destinationBuffer, out bytesWritten, PaddingMode.PKCS7),
+                    CipherMode.CFB => alg.TryEncryptCfb(plaintext, IV, destinationBuffer, out bytesWritten, PaddingMode.PKCS7, feedbackSizeInBits: 8),
+                    _ => throw new NotImplementedException(),
+                };
+
+                Assert.True(result, "TryEncrypt");
+                byte[] ciphertext1 = destinationBuffer.Slice(0, bytesWritten).ToArray();
+
+                alg.GenerateKey();
+
+                result = mode switch
+                {
+                    CipherMode.ECB => alg.TryEncryptEcb(plaintext, destinationBuffer, PaddingMode.PKCS7, out bytesWritten),
+                    CipherMode.CBC => alg.TryEncryptCbc(plaintext, IV, destinationBuffer, out bytesWritten, PaddingMode.PKCS7),
+                    CipherMode.CFB => alg.TryEncryptCfb(plaintext, IV, destinationBuffer, out bytesWritten, PaddingMode.PKCS7, feedbackSizeInBits: 8),
+                    _ => throw new NotImplementedException(),
+                };
+
+                Assert.True(result, "TryEncrypt");
+                byte[] ciphertext2 = destinationBuffer.Slice(0, bytesWritten).ToArray();
+                Assert.NotEqual(ciphertext1, ciphertext2);
+
+            }
+        }
+
+        [ConditionalTheory]
+        [InlineData(CipherMode.ECB)]
+        [InlineData(CipherMode.CBC)]
+        [InlineData(CipherMode.CFB)]
+        public void TryDecryptOneShot_KeyChange(CipherMode mode)
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                if (alg is RC2 && mode == CipherMode.CFB)
+                {
+                    throw new SkipTestException("RC2 does not support CFB.");
+                }
+
+                alg.Key = Key;
+
+                ReadOnlySpan<byte> ciphertext = stackalloc byte[alg.BlockSize / 8];
+                Span<byte> destinationBuffer = stackalloc byte[32];
+                int bytesWritten;
+
+                bool result = mode switch
+                {
+                    CipherMode.ECB => alg.TryDecryptEcb(ciphertext, destinationBuffer, PaddingMode.None, out bytesWritten),
+                    CipherMode.CBC => alg.TryDecryptCbc(ciphertext, IV, destinationBuffer, out bytesWritten, PaddingMode.None),
+                    CipherMode.CFB => alg.TryDecryptCfb(ciphertext, IV, destinationBuffer, out bytesWritten, PaddingMode.None, feedbackSizeInBits: 8),
+                    _ => throw new NotImplementedException(),
+                };
+
+                Assert.True(result, "TryDecrypt");
+                byte[] plaintext1 = destinationBuffer.Slice(0, bytesWritten).ToArray();
+
+                alg.GenerateKey();
+
+                result = mode switch
+                {
+                    CipherMode.ECB => alg.TryDecryptEcb(ciphertext, destinationBuffer, PaddingMode.None, out bytesWritten),
+                    CipherMode.CBC => alg.TryDecryptCbc(ciphertext, IV, destinationBuffer, out bytesWritten, PaddingMode.None),
+                    CipherMode.CFB => alg.TryDecryptCfb(ciphertext, IV, destinationBuffer, out bytesWritten, PaddingMode.None, feedbackSizeInBits: 8),
+                    _ => throw new NotImplementedException(),
+                };
+
+                Assert.True(result, "TryDecrypt");
+                byte[] plaintext2 = destinationBuffer.Slice(0, bytesWritten).ToArray();
+                Assert.NotEqual(plaintext1, plaintext2);
+
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(CipherMode.ECB)]
+        [InlineData(CipherMode.CBC)]
+        [InlineData(CipherMode.CFB)]
+        public void TryDecryptOneShot_Multithreaded(CipherMode mode)
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                if (alg is RC2 && mode == CipherMode.CFB)
+                {
+                    throw new SkipTestException("RC2 does not support CFB.");
+                }
+
+                alg.Key = Key;
+
+                // The more blocks the operation uses the more likely a race conditional will occur. 10k bytes results
+                // in the race occuring almost immediately if there is an actual race condition.
+                ReadOnlySpan<byte> plaintext = ByteArrayFilledWith(0xCC, 1024 * 10);
+                byte[] ciphertext = new byte[plaintext.Length];
+                int bytesWritten;
+
+                bool result = mode switch
+                {
+                    CipherMode.ECB => alg.TryEncryptEcb(plaintext, ciphertext, PaddingMode.None, out bytesWritten),
+                    CipherMode.CBC => alg.TryEncryptCbc(plaintext, IV, ciphertext, out bytesWritten, PaddingMode.None),
+                    CipherMode.CFB => alg.TryEncryptCfb(plaintext, IV, ciphertext, out bytesWritten, PaddingMode.None, feedbackSizeInBits: 8),
+                    _ => throw new NotImplementedException(),
+                };
+
+                Assert.True(result, "TryEncrypt");
+                Assert.Equal(ciphertext.Length, bytesWritten);
+
+                Thread t1 = new Thread(ThreadCallback);
+                Thread t2 = new Thread(ThreadCallback);
+                t1.Start((alg, IV, ciphertext, mode));
+                t2.Start((alg, IV, ciphertext, mode));
+                t1.Join();
+                t2.Join();
+
+                static void ThreadCallback(object state)
+                {
+                    (SymmetricAlgorithm alg, byte[] iv, byte[] ciphertext, CipherMode mode) = ((SymmetricAlgorithm, byte[], byte[], CipherMode))state;
+                    Span<byte> plaintext = new byte[ciphertext.Length];
+
+                    for (int i = 0; i < 100; i++)
+                    {
+                        int bytesWritten;
+                        bool result = mode switch
+                        {
+                            CipherMode.ECB => alg.TryDecryptEcb(ciphertext, plaintext, PaddingMode.None, out bytesWritten),
+                            CipherMode.CBC => alg.TryDecryptCbc(ciphertext, iv, plaintext, out bytesWritten, PaddingMode.None),
+                            CipherMode.CFB => alg.TryDecryptCfb(ciphertext, iv, plaintext, out bytesWritten, PaddingMode.None, feedbackSizeInBits: 8),
+                            _ => throw new NotImplementedException(),
+                        };
+
+                        Assert.True(result, "TryDecrypt");
+                        Assert.Equal(plaintext.Length, bytesWritten);
+                        AssertExtensions.FilledWith<byte>(0xCC, plaintext);
+                    }
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(CipherMode.ECB)]
+        [InlineData(CipherMode.CBC)]
+        [InlineData(CipherMode.CFB)]
+        public void TryEncryptOneShot_Multithreaded(CipherMode mode)
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                if (alg is RC2 && mode == CipherMode.CFB)
+                {
+                    throw new SkipTestException("RC2 does not support CFB.");
+                }
+
+                alg.Key = Key;
+
+                // The more blocks the operation uses the more likely a race conditional will occur. 10k bytes results
+                // in the race occuring almost immediately if there is an actual race condition.
+                ReadOnlySpan<byte> ciphertext = ByteArrayFilledWith(0xCC, 1024 * 10);
+                byte[] plaintext = new byte[ciphertext.Length];
+                int bytesWritten;
+
+                bool result = mode switch
+                {
+                    CipherMode.ECB => alg.TryDecryptEcb(ciphertext, plaintext, PaddingMode.None, out bytesWritten),
+                    CipherMode.CBC => alg.TryDecryptCbc(ciphertext, IV, plaintext, out bytesWritten, PaddingMode.None),
+                    CipherMode.CFB => alg.TryDecryptCfb(ciphertext, IV, plaintext, out bytesWritten, PaddingMode.None, feedbackSizeInBits: 8),
+                    _ => throw new NotImplementedException(),
+                };
+
+                Assert.True(result, "TryDecrypt");
+                Assert.Equal(ciphertext.Length, bytesWritten);
+
+                Thread t1 = new Thread(ThreadCallback);
+                Thread t2 = new Thread(ThreadCallback);
+                t1.Start((alg, IV, plaintext, mode));
+                t2.Start((alg, IV, plaintext, mode));
+                t1.Join();
+                t2.Join();
+
+                static void ThreadCallback(object state)
+                {
+                    (SymmetricAlgorithm alg, byte[] iv, byte[] plaintext, CipherMode mode) = ((SymmetricAlgorithm, byte[], byte[], CipherMode))state;
+                    Span<byte> ciphertext = new byte[plaintext.Length];
+
+                    for (int i = 0; i < 100; i++)
+                    {
+                        int bytesWritten;
+                        bool result = mode switch
+                        {
+                            CipherMode.ECB => alg.TryEncryptEcb(plaintext, ciphertext, PaddingMode.None, out bytesWritten),
+                            CipherMode.CBC => alg.TryEncryptCbc(plaintext, iv, ciphertext, out bytesWritten, PaddingMode.None),
+                            CipherMode.CFB => alg.TryEncryptCfb(plaintext, iv, ciphertext, out bytesWritten, PaddingMode.None, feedbackSizeInBits: 8),
+                            _ => throw new NotImplementedException(),
+                        };
+
+                        Assert.True(result, "TryEncrypt");
+                        Assert.Equal(ciphertext.Length, bytesWritten);
+                        AssertExtensions.FilledWith<byte>(0xCC, ciphertext);
+                    }
+                }
             }
         }
 
