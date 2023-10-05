@@ -126,7 +126,7 @@ export type LoaderHelpers = {
 
     afterConfigLoaded: PromiseAndController<MonoConfig>,
     allDownloadsQueued: PromiseAndController<void>,
-    wasmDownloadPromise: PromiseAndController<AssetEntryInternal>,
+    wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
     memorySnapshotSkippedOrDone: PromiseAndController<void>,
 

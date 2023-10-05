@@ -17,7 +17,7 @@ import { strings_init, utf8ToString } from "./strings";
 import { init_managed_exports } from "./managed-exports";
 import { cwraps_internal } from "./exports-internal";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
-import { instantiate_wasm_asset, wait_for_all_assets } from "./assets";
+import { wait_for_all_assets } from "./assets";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
@@ -465,17 +465,12 @@ async function instantiate_wasm_module(
         await runtimeHelpers.beforePreInit.promise;
         Module.addRunDependency("instantiate_wasm_module");
 
-        const wasmFeaturePromise = ensureUsedWasmFeatures();
+        await ensureUsedWasmFeatures();
 
         replace_linker_placeholders(imports);
-        const assetToLoad = await loaderHelpers.wasmDownloadPromise.promise;
-
-        await wasmFeaturePromise;
-        await instantiate_wasm_asset(assetToLoad, imports, successCallback);
-        assetToLoad.pendingDownloadInternal = null as any; // GC
-        assetToLoad.pendingDownload = null as any; // GC
-        assetToLoad.buffer = null as any; // GC
-        assetToLoad.moduleExports = null as any; // GC
+        const compiledModule = await loaderHelpers.wasmCompilePromise.promise;
+        const compiledInstance = await WebAssembly.instantiate(compiledModule, imports);
+        successCallback(compiledInstance, compiledModule);
 
         mono_log_debug("instantiate_wasm_module done");
 
