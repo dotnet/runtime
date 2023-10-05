@@ -802,12 +802,19 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static UInt128 LeadingZeroCount(UInt128 value)
+            => (uint)value.LeadingZeroCount();
+
+        /// <summary>Computes the number of leading zero bits in this value.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int LeadingZeroCount()
         {
+            UInt128 value = this;
+
             if (value._upper == 0)
             {
-                return 64 + ulong.LeadingZeroCount(value._lower);
+                return 64 + BitOperations.LeadingZeroCount(value._lower);
             }
-            return ulong.LeadingZeroCount(value._upper);
+            return BitOperations.LeadingZeroCount(value._upper);
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
@@ -951,7 +958,7 @@ namespace System
         int IBinaryInteger<UInt128>.GetShortestBitLength()
         {
             UInt128 value = this;
-            return (Size * 8) - BitOperations.LeadingZeroCount(value);
+            return (Size * 8) - value.LeadingZeroCount();
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
@@ -1158,7 +1165,7 @@ namespace System
                 Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 2), (uint)(quotient._upper >> 00));
                 Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 3), (uint)(quotient._upper >> 32));
 
-                Span<uint> left = new Span<uint>(pLeft, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(quotient) / 32));
+                Span<uint> left = new Span<uint>(pLeft, (Size / sizeof(uint)) - (quotient.LeadingZeroCount() / 32));
 
                 // Repeat the same operation with the divisor
 
@@ -1170,7 +1177,7 @@ namespace System
                 Unsafe.WriteUnaligned(ref *(byte*)(pRight + 2), (uint)(divisor._upper >> 00));
                 Unsafe.WriteUnaligned(ref *(byte*)(pRight + 3), (uint)(divisor._upper >> 32));
 
-                Span<uint> right = new Span<uint>(pRight, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(divisor) / 32));
+                Span<uint> right = new Span<uint>(pRight, (Size / sizeof(uint)) - (divisor.LeadingZeroCount() / 32));
 
                 Span<uint> rawBits = stackalloc uint[Size / sizeof(uint)];
                 rawBits.Clear();

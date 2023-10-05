@@ -742,12 +742,19 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static Int128 LeadingZeroCount(Int128 value)
+            => value.LeadingZeroCount();
+
+        /// <summary>Computes the number of leading zero bits in this value.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int LeadingZeroCount()
         {
+            Int128 value = this;
+
             if (value._upper == 0)
             {
-                return 64 + ulong.LeadingZeroCount(value._lower);
+                return 64 + BitOperations.LeadingZeroCount(value._lower);
             }
-            return ulong.LeadingZeroCount(value._upper);
+            return BitOperations.LeadingZeroCount(value._upper);
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
@@ -946,11 +953,11 @@ namespace System
 
             if (IsPositive(value))
             {
-                return (Size * 8) - BitOperations.LeadingZeroCount(value);
+                return (Size * 8) - value.LeadingZeroCount();
             }
             else
             {
-                return (Size * 8) + 1 - BitOperations.LeadingZeroCount(~value);
+                return (Size * 8) + 1 - (~value).LeadingZeroCount();
             }
         }
 
