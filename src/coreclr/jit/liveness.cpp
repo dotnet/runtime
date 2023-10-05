@@ -365,7 +365,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             }
         }
 
-        for (block = fgFirstBB; block; block = block->GetBBNext())
+        for (block = fgFirstBB; block; block = block->Next())
         {
             // Strictly speaking, the assignments for the "Def" cases aren't necessary here.
             // The empty set would do as well.  Use means "use-before-def", so as long as that's
@@ -407,7 +407,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
     // memory that is not a GC Heap def.
     byrefStatesMatchGcHeapStates = true;
 
-    for (block = fgFirstBB; block; block = block->GetBBNext())
+    for (block = fgFirstBB; block; block = block->Next())
     {
         VarSetOps::ClearD(this, fgCurUseSet);
         VarSetOps::ClearD(this, fgCurDefSet);
@@ -890,7 +890,7 @@ void Compiler::fgExtendDbgLifetimes()
         {
             case BBJ_NONE:
                 PREFIX_ASSUME(!block->IsLast());
-                VarSetOps::UnionD(this, initVars, block->GetBBNext()->bbScope);
+                VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
                 break;
 
             case BBJ_ALWAYS:
@@ -904,14 +904,14 @@ void Compiler::fgExtendDbgLifetimes()
                 {
                     assert(block->isBBCallAlwaysPair());
                     PREFIX_ASSUME(!block->IsLast());
-                    VarSetOps::UnionD(this, initVars, block->GetBBNext()->bbScope);
+                    VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
                 }
                 VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
                 break;
 
             case BBJ_COND:
                 PREFIX_ASSUME(!block->IsLast());
-                VarSetOps::UnionD(this, initVars, block->GetBBNext()->bbScope);
+                VarSetOps::UnionD(this, initVars, block->Next()->bbScope);
                 VarSetOps::UnionD(this, initVars, block->bbJumpDest->bbScope);
                 break;
 
@@ -1305,11 +1305,11 @@ class LiveVarAnalysis
             m_memoryLiveIn  = emptyMemoryKindSet;
             m_memoryLiveOut = emptyMemoryKindSet;
 
-            for (BasicBlock* block = m_compiler->fgLastBB; block; block = block->GetBBPrev())
+            for (BasicBlock* block = m_compiler->fgLastBB; block; block = block->Prev())
             {
                 // sometimes block numbers are not monotonically increasing which
                 // would cause us not to identify backedges
-                if (!block->IsLast() && block->GetBBNext()->bbNum <= block->bbNum)
+                if (!block->IsLast() && block->Next()->bbNum <= block->bbNum)
                 {
                     m_hasPossibleBackEdge = true;
                 }

@@ -847,7 +847,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     var_types tempLclType = temp->TypeGet();
 
     BasicBlock* defaultBB   = jumpTab[jumpCnt - 1];
-    BasicBlock* followingBB = originalSwitchBB->GetBBNext();
+    BasicBlock* followingBB = originalSwitchBB->Next();
 
     /* Is the number of cases right for a test and jump switch? */
     const bool fFirstCaseFollows = (followingBB == jumpTab[0]);
@@ -1064,7 +1064,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // There is a fall-through to the following block. In the loop
             // above, we deleted all the predecessor edges from the switch.
             // In this case, we need to add one back.
-            comp->fgAddRefPred(currentBlock->GetBBNext(), currentBlock);
+            comp->fgAddRefPred(currentBlock->Next(), currentBlock);
         }
 
         if (!fUsedAfterDefaultCondBlock)

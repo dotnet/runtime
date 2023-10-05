@@ -7482,7 +7482,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // block removal on it.
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
-        block->bbJumpDest = fgFirstBB->GetBBNext();
+        block->bbJumpDest = fgFirstBB->Next();
     }
 
     // Finish hooking things up.
@@ -13154,7 +13154,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
              * Remove the conditional statement */
 
             noway_assert(cond->gtOper == GT_CNS_INT);
-            noway_assert((block->GetBBNext()->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
+            noway_assert((block->Next()->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
             if (condTree != cond)
             {
@@ -13181,7 +13181,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 /* JTRUE 1 - transform the basic block into a BBJ_ALWAYS */
                 block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                 bTaken    = block->bbJumpDest;
-                bNotTaken = block->GetBBNext();
+                bNotTaken = block->Next();
             }
             else
             {
@@ -13196,7 +13196,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 /* JTRUE 0 - transform the basic block into a BBJ_NONE   */
                 block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
-                bTaken    = block->GetBBNext();
+                bTaken    = block->Next();
                 bNotTaken = block->bbJumpDest;
             }
 
@@ -13253,24 +13253,24 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     switch (bUpdated->GetBBJumpKind())
                     {
                         case BBJ_NONE:
-                            edge         = fgGetPredForBlock(bUpdated->GetBBNext(), bUpdated);
+                            edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetBBNext());
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
                             break;
 
                         case BBJ_COND:
-                            edge         = fgGetPredForBlock(bUpdated->GetBBNext(), bUpdated);
+                            edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetBBNext());
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
                             FALLTHROUGH;
 
                         case BBJ_ALWAYS:
                             edge         = fgGetPredForBlock(bUpdated->bbJumpDest, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetBBNext());
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
                             break;
 
                         default:
@@ -13925,7 +13925,7 @@ void Compiler::fgMorphBlocks()
             }
         }
 
-        block = block->GetBBNext();
+        block = block->Next();
     } while (block != nullptr);
 
     // We are done with the global morphing phase

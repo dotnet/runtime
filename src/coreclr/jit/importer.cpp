@@ -1953,7 +1953,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 
                 impPushOnStack(tree, typeInfo(clsHnd));
 
-                return hndBlk->GetBBNext();
+                return hndBlk->Next();
             }
         }
 
@@ -7305,7 +7305,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (block->KindIs(BBJ_COND))
                     {
                         JITDUMP(FMT_BB " both branches and falls through to " FMT_BB ", changing to BBJ_NONE\n",
-                                block->bbNum, block->GetBBNext()->bbNum);
+                                block->bbNum, block->Next()->bbNum);
                         fgRemoveRefPred(block->bbJumpDest, block);
                         block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                     }
@@ -7371,14 +7371,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         if (foldedJumpKind == BBJ_NONE)
                         {
-                            JITDUMP("\nThe block falls through into the next " FMT_BB "\n", block->GetBBNext()->bbNum);
+                            JITDUMP("\nThe block falls through into the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->bbJumpDest, block);
                         }
                         else
                         {
                             JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
                                     block->bbJumpDest->bbNum);
-                            fgRemoveRefPred(block->GetBBNext(), block);
+                            fgRemoveRefPred(block->Next(), block);
                         }
                         block->SetBBJumpKind(foldedJumpKind DEBUG_ARG(this));
                     }
@@ -7551,7 +7551,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (block->KindIs(BBJ_COND))
                     {
                         JITDUMP(FMT_BB " both branches and falls through to " FMT_BB ", changing to BBJ_NONE\n",
-                                block->bbNum, block->GetBBNext()->bbNum);
+                                block->bbNum, block->Next()->bbNum);
                         fgRemoveRefPred(block->bbJumpDest, block);
                         block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                     }
@@ -11289,12 +11289,12 @@ SPILLSTACK:
 
                 /* Note if the next block has more than one ancestor */
 
-                multRef |= block->GetBBNext()->bbRefs;
+                multRef |= block->Next()->bbRefs;
 
                 /* Does the next block have temps assigned? */
 
-                baseTmp  = block->GetBBNext()->bbStkTempsIn;
-                tgtBlock = block->GetBBNext();
+                baseTmp  = block->Next()->bbStkTempsIn;
+                tgtBlock = block->Next();
 
                 if (baseTmp != NO_BASE_TMP)
                 {
@@ -11315,9 +11315,9 @@ SPILLSTACK:
                 break;
 
             case BBJ_NONE:
-                multRef |= block->GetBBNext()->bbRefs;
-                baseTmp  = block->GetBBNext()->bbStkTempsIn;
-                tgtBlock = block->GetBBNext();
+                multRef |= block->Next()->bbRefs;
+                baseTmp  = block->Next()->bbStkTempsIn;
+                tgtBlock = block->Next();
                 break;
 
             case BBJ_SWITCH:
@@ -12119,7 +12119,7 @@ void Compiler::impImport()
 
         if (entryBlock->KindIs(BBJ_NONE))
         {
-            entryBlock = entryBlock->GetBBNext();
+            entryBlock = entryBlock->Next();
         }
         else if (opts.IsOSR() && entryBlock->KindIs(BBJ_ALWAYS))
         {
@@ -12253,7 +12253,7 @@ void Compiler::impFixPredLists()
                         continue;
                     }
 
-                    BasicBlock* const continuation = predBlock->GetBBNext();
+                    BasicBlock* const continuation = predBlock->Next();
                     fgAddRefPred(continuation, finallyBlock);
 
                     if (!added)

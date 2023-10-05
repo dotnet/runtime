@@ -676,7 +676,7 @@ private:
                 if (!condTree->IsIntegralConst(0))
                 {
                     block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_compiler));
-                    m_compiler->fgRemoveRefPred(block->GetBBNext(), block);
+                    m_compiler->fgRemoveRefPred(block->Next(), block);
                 }
                 else
                 {
@@ -819,7 +819,7 @@ PhaseStatus Compiler::fgInline()
             }
         }
 
-        block = block->GetBBNext();
+        block = block->Next();
 
     } while (block);
 
@@ -840,7 +840,7 @@ PhaseStatus Compiler::fgInline()
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
         }
 
-        block = block->GetBBNext();
+        block = block->Next();
 
     } while (block);
 
@@ -1548,10 +1548,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         InlineeCompiler->fgFirstBB->bbRefs--;
 
         // Insert inlinee's blocks into inliner's block list.
-        topBlock->SetBBNext(InlineeCompiler->fgFirstBB);
+        topBlock->SetNext(InlineeCompiler->fgFirstBB);
         fgRemoveRefPred(bottomBlock, topBlock);
         fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
-        InlineeCompiler->fgLastBB->SetBBNext(bottomBlock);
+        InlineeCompiler->fgLastBB->SetNext(bottomBlock);
 
         //
         // Add inlinee's block count to inliner's.

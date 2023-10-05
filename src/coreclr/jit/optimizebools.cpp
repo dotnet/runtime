@@ -848,7 +848,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         }
         else
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->GetBBNext(), m_b2);
+            edge2 = m_comp->fgGetPredForBlock(m_b2->Next(), m_b2);
 
             m_comp->fgRemoveRefPred(m_b1->bbJumpDest, m_b1);
 
@@ -900,7 +900,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         //
         // Replace pred 'm_b2' for 'm_b2->bbNext' with 'm_b1'
         // Remove  pred 'm_b2' for 'm_b2->bbJumpDest'
-        m_comp->fgReplacePred(m_b2->GetBBNext(), m_b2, m_b1);
+        m_comp->fgReplacePred(m_b2->Next(), m_b2, m_b1);
         m_comp->fgRemoveRefPred(m_b2->bbJumpDest, m_b2);
     }
 
@@ -1463,7 +1463,7 @@ PhaseStatus Compiler::optOptimizeBools()
         numPasses++;
         change = false;
 
-        for (BasicBlock* b1 = fgFirstBB; b1 != nullptr; b1 = retry ? b1 : b1->GetBBNext())
+        for (BasicBlock* b1 = fgFirstBB; b1 != nullptr; b1 = retry ? b1 : b1->Next())
         {
             retry = false;
 
@@ -1476,7 +1476,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             // If there is no next block, we're done
 
-            BasicBlock* b2 = b1->GetBBNext();
+            BasicBlock* b2 = b1->Next();
             if (b2 == nullptr)
             {
                 break;

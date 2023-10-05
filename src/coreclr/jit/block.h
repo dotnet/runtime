@@ -531,12 +531,12 @@ public:
         bbJumpKind = kind;
     }
 
-    BasicBlock* GetBBPrev() const
+    BasicBlock* Prev() const
     {
         return bbPrev;
     }
 
-    void SetBBPrev(BasicBlock* prev)
+    void SetPrev(BasicBlock* prev)
     {
         bbPrev = prev;
         if (prev)
@@ -545,12 +545,12 @@ public:
         }
     }
 
-    BasicBlock* GetBBNext() const
+    BasicBlock* Next() const
     {
         return bbNext;
     }
 
-    void SetBBNext(BasicBlock* next)
+    void SetNext(BasicBlock* next)
     {
         bbNext = next;
         if (next)
@@ -1476,10 +1476,10 @@ public:
     {
         assert(m_block != nullptr);
         // Check that we haven't been spliced out of the list.
-        assert((m_block->IsLast()) || m_block->GetBBNext()->PrevIs(m_block));
-        assert((m_block->IsFirst()) || m_block->GetBBPrev()->NextIs(m_block));
+        assert((m_block->IsLast()) || m_block->Next()->PrevIs(m_block));
+        assert((m_block->IsFirst()) || m_block->Prev()->NextIs(m_block));
 
-        m_block = m_block->GetBBNext();
+        m_block = m_block->Next();
         return *this;
     }
 
@@ -1542,7 +1542,7 @@ public:
 
     BasicBlockIterator end() const
     {
-        return BasicBlockIterator(m_end->GetBBNext()); // walk until we see the block *following* the `m_end` block
+        return BasicBlockIterator(m_end->Next()); // walk until we see the block *following* the `m_end` block
     }
 };
 
@@ -1637,13 +1637,13 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             break;
 
         case BBJ_NONE:
-            m_succs[0] = block->GetBBNext();
+            m_succs[0] = block->Next();
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;
 
         case BBJ_COND:
-            m_succs[0] = block->GetBBNext();
+            m_succs[0] = block->Next();
             m_begin    = &m_succs[0];
 
             // If both fall-through and branch successors are identical, then only include

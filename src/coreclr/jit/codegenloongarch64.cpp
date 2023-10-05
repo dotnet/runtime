@@ -1520,7 +1520,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
     GetEmitter()->emitIns_J(INS_bl, block->bbJumpDest);
 
-    BasicBlock* const nextBlock = block->GetBBNext();
+    BasicBlock* const nextBlock = block->Next();
 
     if (block->bbFlags & BBF_RETLESS_CALL)
     {

@@ -170,7 +170,7 @@ void CodeGen::genCodeForBBlist()
 
     BasicBlock* block;
 
-    for (block = compiler->fgFirstBB; block != nullptr; block = block->GetBBNext())
+    for (block = compiler->fgFirstBB; block != nullptr; block = block->Next())
     {
 
 #ifdef DEBUG
@@ -319,7 +319,7 @@ void CodeGen::genCodeForBBlist()
             }
 #endif
             // We should never have a block that falls through into the Cold section
-            noway_assert(!block->GetBBPrev()->bbFallsThrough());
+            noway_assert(!block->Prev()->bbFallsThrough());
 
             needLabel = true;
         }
@@ -330,12 +330,12 @@ void CodeGen::genCodeForBBlist()
         //
         // Note: We need to have set compCurBB before calling emitAddLabel
         //
-        if (!block->IsFirst() && block->GetBBPrev()->KindIs(BBJ_COND) &&
-            (block->bbWeight != block->GetBBPrev()->bbWeight))
+        if (!block->IsFirst() && block->Prev()->KindIs(BBJ_COND) &&
+            (block->bbWeight != block->Prev()->bbWeight))
         {
             JITDUMP("Adding label due to BB weight difference: BBJ_COND " FMT_BB " with weight " FMT_WT
                     " different from " FMT_BB " with weight " FMT_WT "\n",
-                    block->GetBBPrev()->bbNum, block->GetBBPrev()->bbWeight, block->bbNum, block->bbWeight);
+                    block->Prev()->bbNum, block->Prev()->bbWeight, block->bbNum, block->bbWeight);
             needLabel = true;
         }
 
@@ -550,7 +550,7 @@ void CodeGen::genCodeForBBlist()
         bool isLastBlockProcessed = (block->IsLast());
         if (block->isBBCallAlwaysPair())
         {
-            isLastBlockProcessed = (block->GetBBNext()->IsLast());
+            isLastBlockProcessed = (block->Next()->IsLast());
         }
 
         if (compiler->opts.compDbgInfo && isLastBlockProcessed)
@@ -615,7 +615,7 @@ void CodeGen::genCodeForBBlist()
             // Note: we may be generating a few too many NOPs for the case of call preceding an epilog. Technically,
             // if the next block is a BBJ_RETURN, an epilog will be generated, but there may be some instructions
             // generated before the OS epilog starts, such as a GS cookie check.
-            if ((block->IsLast()) || !BasicBlock::sameEHRegion(block, block->GetBBNext()))
+            if ((block->IsLast()) || !BasicBlock::sameEHRegion(block, block->Next()))
             {
                 // We only need the NOP if we're not going to generate any more code as part of the block end.
 
@@ -679,9 +679,9 @@ void CodeGen::genCodeForBBlist()
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if ((block->IsLast()) || (block->GetBBNext()->bbFlags & BBF_FUNCLET_BEG) ||
-                    !BasicBlock::sameEHRegion(block, block->GetBBNext()) ||
-                    (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->GetBBNext())) ||
+                if ((block->IsLast()) || (block->Next()->bbFlags & BBF_FUNCLET_BEG) ||
+                    !BasicBlock::sameEHRegion(block, block->Next()) ||
+                    (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
                     block->IsLastHotBlock(compiler))
                 {
                     instGen(INS_BREAKPOINT); // This should never get executed
@@ -785,8 +785,8 @@ void CodeGen::genCodeForBBlist()
 
                     if (!block->IsLast())
                     {
-                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->GetBBNext()->bbNum);
-                        block->GetBBNext()->bbFlags |= BBF_HAS_LABEL;
+                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
+                        block->Next()->bbFlags |= BBF_HAS_LABEL;
                     }
                 }
 #endif // FEATURE_LOOP_ALIGN
@@ -818,7 +818,7 @@ void CodeGen::genCodeForBBlist()
             GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS)));
         }
 
-        if (!block->IsLast() && (block->GetBBNext()->isLoopAlign()))
+        if (!block->IsLast() && (block->Next()->isLoopAlign()))
         {
             if (compiler->opts.compJitHideAlignBehindJmp)
             {

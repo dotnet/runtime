@@ -290,7 +290,7 @@ bool ProfileSynthesis::IsLoopExitEdge(FlowEdge* edge)
 //
 void ProfileSynthesis::AssignLikelihoodNext(BasicBlock* block)
 {
-    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->GetBBNext(), block);
+    FlowEdge* const edge = m_comp->fgGetPredForBlock(block->Next(), block);
     edge->setLikelihood(1.0);
 }
 
@@ -317,7 +317,7 @@ void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 {
     BasicBlock* const jump = block->bbJumpDest;
-    BasicBlock* const next = block->GetBBNext();
+    BasicBlock* const next = block->Next();
 
     // Watch for degenerate case
     //
@@ -1221,7 +1221,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(SimpleLoop* loop)
                             exitBlock->bbNum, exitEdge->getLikelihood());
 
                     BasicBlock* const jump               = exitBlock->bbJumpDest;
-                    BasicBlock* const next               = exitBlock->GetBBNext();
+                    BasicBlock* const next               = exitBlock->Next();
                     FlowEdge* const   jumpEdge           = m_comp->fgGetPredForBlock(jump, exitBlock);
                     FlowEdge* const   nextEdge           = m_comp->fgGetPredForBlock(next, exitBlock);
                     weight_t const    exitLikelihood     = (missingExitWeight + currentExitWeight) / exitBlockWeight;

@@ -129,7 +129,7 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
             *ppStartLoc = new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndBeg));
             *ppEndLoc   = HBtab->ebdHndLast->IsLast()
                             ? nullptr
-                            : new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndLast->GetBBNext()));
+                            : new (this, CMK_UnwindInfo) emitLocation(ehEmitCookie(HBtab->ebdHndLast->Next()));
         }
     }
 }

@@ -80,7 +80,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
     // Walk through the blocks and hunt for a block that needs a GC Poll
     //
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->GetBBNext())
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
     {
         compCurBB = block;
 
@@ -256,7 +256,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         if (top->KindIs(BBJ_COND))
         {
-            topFallThrough     = top->GetBBNext();
+            topFallThrough     = top->Next();
             lpIndexFallThrough = topFallThrough->bbNatLoopNum;
         }
 
@@ -384,7 +384,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         switch (oldJumpKind)
         {
             case BBJ_NONE:
-                fgReplacePred(bottom->GetBBNext(), top, bottom);
+                fgReplacePred(bottom->Next(), top, bottom);
                 break;
             case BBJ_RETURN:
             case BBJ_THROW:
@@ -393,7 +393,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             case BBJ_COND:
                 // replace predecessor in the fall through block.
                 noway_assert(!bottom->IsLast());
-                fgReplacePred(bottom->GetBBNext(), top, bottom);
+                fgReplacePred(bottom->Next(), top, bottom);
 
                 // fall through for the jump target
                 FALLTHROUGH;
@@ -1562,7 +1562,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     // Create a block for the start of the try region, where the monitor enter call
     // will go.
     BasicBlock* const tryBegBB  = fgSplitBlockAtEnd(fgFirstBB);
-    BasicBlock* const tryNextBB = tryBegBB->GetBBNext();
+    BasicBlock* const tryNextBB = tryBegBB->Next();
     BasicBlock* const tryLastBB = fgLastBB;
 
     // If we have profile data the new block will inherit the next block's weight
@@ -1633,7 +1633,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         // to point to the new try handler.
 
         BasicBlock* tmpBB;
-        for (tmpBB = tryBegBB->GetBBNext(); tmpBB != faultBB; tmpBB = tmpBB->GetBBNext())
+        for (tmpBB = tryBegBB->Next(); tmpBB != faultBB; tmpBB = tmpBB->Next())
         {
             if (!tmpBB->hasTryIndex())
             {
@@ -2594,7 +2594,7 @@ PhaseStatus Compiler::fgAddInternal()
 
     // Visit the BBJ_RETURN blocks and merge as necessary.
 
-    for (BasicBlock* block = fgFirstBB; !lastBlockBeforeGenReturns->NextIs(block); block = block->GetBBNext())
+    for (BasicBlock* block = fgFirstBB; !lastBlockBeforeGenReturns->NextIs(block); block = block->Next())
     {
         if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {
@@ -3004,7 +3004,7 @@ BasicBlock* Compiler::fgLastBBInMainFunction()
 
     if (fgFirstFuncletBB != nullptr)
     {
-        return fgFirstFuncletBB->GetBBPrev();
+        return fgFirstFuncletBB->Prev();
     }
 
 #endif // FEATURE_EH_FUNCLETS
@@ -3062,7 +3062,7 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
 /*****************************************************************************************************
  *
  *  Function to return the first basic block after the main part of the function. With funclets, it is
- *  the block of the first funclet.  Otherwise it is NULL if there are no funclets (fgLastBB->GetBBNext()).
+ *  the block of the first funclet.  Otherwise it is NULL if there are no funclets (fgLastBB->Next()).
  *  This is equivalent to fgLastBBInMainFunction()->bbNext
  *  An exclusive end of the main method.
  */
@@ -3302,7 +3302,7 @@ PhaseStatus Compiler::fgCreateFunclets()
 //
 bool Compiler::fgFuncletsAreCold()
 {
-    for (BasicBlock* block = fgFirstFuncletBB; block != nullptr; block = block->GetBBNext())
+    for (BasicBlock* block = fgFirstFuncletBB; block != nullptr; block = block->Next())
     {
         if (!block->isRunRarely())
         {
@@ -3365,7 +3365,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
 
     if (forceSplit)
     {
-        firstColdBlock       = fgFirstBB->GetBBNext();
+        firstColdBlock       = fgFirstBB->Next();
         prevToFirstColdBlock = fgFirstBB;
         JITDUMP("JitStressProcedureSplitting is enabled: Splitting after the first basic block\n");
     }
@@ -3373,7 +3373,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
     {
         bool inFuncletSection = false;
 
-        for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->GetBBNext())
+        for (lblk = nullptr, block = fgFirstBB; block != nullptr; lblk = block, block = block->Next())
         {
             bool blockMustBeInHotSection = false;
 
@@ -3413,7 +3413,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                         if (fgFuncletsAreCold())
                         {
                             firstColdBlock       = fgFirstFuncletBB;
-                            prevToFirstColdBlock = fgFirstFuncletBB->GetBBPrev();
+                            prevToFirstColdBlock = fgFirstFuncletBB->Prev();
                         }
 
                         break;
@@ -3515,7 +3515,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     //
                     assert(prevToFirstColdBlock->isBBCallAlwaysPair());
                     firstColdBlock =
-                        firstColdBlock->GetBBNext(); // Note that this assignment could make firstColdBlock == nullptr
+                        firstColdBlock->Next(); // Note that this assignment could make firstColdBlock == nullptr
                     break;
 
                 case BBJ_COND:
@@ -3526,7 +3526,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     if (firstColdBlock->isEmpty() && firstColdBlock->KindIs(BBJ_ALWAYS))
                     {
                         // We can just use this block as the transitionBlock
-                        firstColdBlock = firstColdBlock->GetBBNext();
+                        firstColdBlock = firstColdBlock->Next();
                         // Note that this assignment could make firstColdBlock == NULL
                     }
                     else
@@ -3554,7 +3554,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         }
     }
 
-    for (block = firstColdBlock; block != nullptr; block = block->GetBBNext())
+    for (block = firstColdBlock; block != nullptr; block = block->Next())
     {
         block->bbFlags |= BBF_COLD;
         block->unmarkLoopAlign(this DEBUG_ARG("Loop alignment disabled for cold blocks"));

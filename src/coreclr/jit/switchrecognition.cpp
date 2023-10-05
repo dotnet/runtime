@@ -26,7 +26,7 @@ PhaseStatus Compiler::optSwitchRecognition()
 // a series of ccmp instruction (see ifConvert phase).
 #ifdef TARGET_XARCH
     bool modified = false;
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->GetBBNext())
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
     {
         // block->KindIs(BBJ_COND) check is for better throughput.
         if (block->KindIs(BBJ_COND) && !block->isRunRarely() && optSwitchDetectAndConvert(block))
@@ -95,8 +95,8 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                 }
 
                 *isReversed   = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *blockIfTrue  = *isReversed ? block->GetBBNext() : block->bbJumpDest;
-                *blockIfFalse = *isReversed ? block->bbJumpDest : block->GetBBNext();
+                *blockIfTrue  = *isReversed ? block->Next() : block->bbJumpDest;
+                *blockIfFalse = *isReversed ? block->bbJumpDest : block->Next();
 
                 if (block->NextIs(block->bbJumpDest) || (block->bbJumpDest == block))
                 {
@@ -166,7 +166,7 @@ bool Compiler::optSwitchDetectAndConvert(BasicBlock* firstBlock)
         const BasicBlock* prevBlock = firstBlock;
 
         // Now walk the next blocks and see if they are basically the same type of test
-        for (const BasicBlock* currBb = firstBlock->GetBBNext(); currBb != nullptr; currBb = currBb->GetBBNext())
+        for (const BasicBlock* currBb = firstBlock->Next(); currBb != nullptr; currBb = currBb->Next())
         {
             GenTree*    currVariableNode = nullptr;
             ssize_t     currCns          = 0;
@@ -309,7 +309,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     const BasicBlock* lastBlock = firstBlock;
     for (int i = 0; i < testsCount - 1; i++)
     {
-        lastBlock = lastBlock->GetBBNext();
+        lastBlock = lastBlock->Next();
     }
 
     BasicBlock* blockIfTrue  = nullptr;
@@ -338,11 +338,11 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     gtUpdateStmtSideEffects(firstBlock->lastStmt());
 
     // Unlink and remove the whole chain of conditional blocks
-    BasicBlock* blockToRemove = firstBlock->GetBBNext();
+    BasicBlock* blockToRemove = firstBlock->Next();
     fgRemoveRefPred(blockToRemove, firstBlock);
     while (!lastBlock->NextIs(blockToRemove))
     {
-        BasicBlock* nextBlock = blockToRemove->GetBBNext();
+        BasicBlock* nextBlock = blockToRemove->Next();
         fgRemoveBlock(blockToRemove, true);
         blockToRemove = nextBlock;
     }
@@ -356,7 +356,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     firstBlock->bbJumpSwt->bbsCount      = jumpCount + 1;
     firstBlock->bbJumpSwt->bbsHasDefault = true;
     firstBlock->bbJumpSwt->bbsDstTab     = jmpTab;
-    firstBlock->SetBBNext(isReversed ? blockIfTrue : blockIfFalse);
+    firstBlock->SetNext(isReversed ? blockIfTrue : blockIfFalse);
 
     // Splitting doesn't work well with jump-tables currently
     opts.compProcedureSplitting = false;

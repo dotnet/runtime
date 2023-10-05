@@ -1800,7 +1800,7 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     // that block; this is one of those cases.  This could be fixed fairly easily; for example,
     // we could add a dummy nop block after the (cloned) loop bottom, in the same handler scope as the
     // loop.  This is just a corner to cut to get this working faster.
-    BasicBlock* bbAfterLoop = loop.lpBottom->GetBBNext();
+    BasicBlock* bbAfterLoop = loop.lpBottom->Next();
     if (bbAfterLoop != nullptr && bbIsHandlerBeg(bbAfterLoop))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Next block after bottom is a handler start.\n", loopInd);
@@ -2074,7 +2074,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     {
         assert(b->KindIs(BBJ_COND));
 
-        BasicBlock* x = b->GetBBNext();
+        BasicBlock* x = b->Next();
         if (x != nullptr)
         {
             JITDUMP("Create branch around cloned loop\n");
@@ -2188,7 +2188,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         switch (newblk->GetBBJumpKind())
         {
             case BBJ_NONE:
-                fgAddRefPred(newblk->GetBBNext(), newblk);
+                fgAddRefPred(newblk->Next(), newblk);
                 break;
 
             case BBJ_ALWAYS:
@@ -2197,7 +2197,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
                 break;
 
             case BBJ_COND:
-                fgAddRefPred(newblk->GetBBNext(), newblk);
+                fgAddRefPred(newblk->Next(), newblk);
                 fgAddRefPred(newblk->bbJumpDest, newblk);
                 break;
 
@@ -2268,8 +2268,8 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // Add the fall-through path pred (either to T/E for fall-through from conditions to fast path,
     // or H2 if branch to E of fast path).
     assert(condLast->KindIs(BBJ_COND));
-    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->GetBBNext()->bbNum);
-    fgAddRefPred(condLast->GetBBNext(), condLast);
+    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->Next()->bbNum);
+    fgAddRefPred(condLast->Next(), condLast);
 
     // Don't unroll loops that we've cloned -- the unroller expects any loop it should unroll to
     // initialize the loop counter immediately before entering the loop, but we've left a shared
@@ -2921,8 +2921,8 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
 
     // Check for (4)
     //
-    BasicBlock* const hotSuccessor  = guard->OperIs(GT_EQ) ? typeTestBlock->bbJumpDest : typeTestBlock->GetBBNext();
-    BasicBlock* const coldSuccessor = guard->OperIs(GT_EQ) ? typeTestBlock->GetBBNext() : typeTestBlock->bbJumpDest;
+    BasicBlock* const hotSuccessor  = guard->OperIs(GT_EQ) ? typeTestBlock->bbJumpDest : typeTestBlock->Next();
+    BasicBlock* const coldSuccessor = guard->OperIs(GT_EQ) ? typeTestBlock->Next() : typeTestBlock->bbJumpDest;
 
     if (!hotSuccessor->hasProfileWeight() || !coldSuccessor->hasProfileWeight())
     {

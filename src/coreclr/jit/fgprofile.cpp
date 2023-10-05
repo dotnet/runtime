@@ -963,7 +963,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 {
                     // This block should be the only pred of the continuation.
                     //
-                    BasicBlock* const target = block->GetBBNext();
+                    BasicBlock* const target = block->Next();
                     assert(!BlockSetOps::IsMember(this, marked, target->bbNum));
                     visitor->VisitTreeEdge(block, target);
                     stack.Push(target);
@@ -3363,7 +3363,7 @@ void EfficientEdgeCountReconstructor::Solve()
         // The ideal solver order is likely reverse postorder over the depth-first spanning tree.
         // We approximate it here by running from last node to first.
         //
-        for (BasicBlock* block = m_comp->fgLastBB; (block != nullptr); block = block->GetBBPrev())
+        for (BasicBlock* block = m_comp->fgLastBB; (block != nullptr); block = block->Prev())
         {
             BlockInfo* const info = BlockToInfo(block);
 
@@ -4413,7 +4413,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
         weight  = 0;
         iterations++;
 
-        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->GetBBNext())
+        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
         {
             if (!bDst->hasProfileWeight() && (bDst->bbPreds != nullptr))
             {
@@ -4431,7 +4431,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     // Does this block flow into only one other block
                     if (bSrc->KindIs(BBJ_NONE))
                     {
-                        bOnlyNext = bSrc->GetBBNext();
+                        bOnlyNext = bSrc->Next();
                     }
                     else if (bSrc->KindIs(BBJ_ALWAYS))
                     {
@@ -4452,7 +4452,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 // Does this block flow into only one other block
                 if (bDst->KindIs(BBJ_NONE))
                 {
-                    bOnlyNext = bDst->GetBBNext();
+                    bOnlyNext = bDst->Next();
                 }
                 else if (bDst->KindIs(BBJ_ALWAYS))
                 {
@@ -4582,7 +4582,7 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
         //
         while (firstILBlock->bbFlags & BBF_INTERNAL)
         {
-            firstILBlock = firstILBlock->GetBBNext();
+            firstILBlock = firstILBlock->Next();
         }
     }
 
@@ -4655,7 +4655,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
     JITDUMP("Initial weight assignments\n\n");
 
     // Now we will compute the initial m_edgeWeightMin and m_edgeWeightMax values
-    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->GetBBNext())
+    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
     {
         weight_t bDstWeight = bDst->bbWeight;
 
@@ -4746,7 +4746,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
         hasIncompleteEdgeWeights = false;
 
         JITDUMP("\n -- step 1 --\n");
-        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->GetBBNext())
+        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
         {
             for (FlowEdge* const edge : bDst->PredEdges())
             {
@@ -4767,7 +4767,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     }
                     else
                     {
-                        otherDst = bSrc->GetBBNext();
+                        otherDst = bSrc->Next();
                     }
                     otherEdge = fgGetPredForBlock(otherDst, bSrc);
 
@@ -4842,7 +4842,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
 
         JITDUMP("\n -- step 2 --\n");
 
-        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->GetBBNext())
+        for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
         {
             weight_t bDstWeight = bDst->bbWeight;
 

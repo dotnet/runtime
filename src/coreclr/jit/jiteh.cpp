@@ -32,7 +32,7 @@ BasicBlock* EHblkDsc::BBFilterLast()
     noway_assert(ebdHndBeg != nullptr);
 
     // The last block of the filter is the block immediately preceding the first block of the handler.
-    return ebdHndBeg->GetBBPrev();
+    return ebdHndBeg->Prev();
 }
 
 BasicBlock* EHblkDsc::ExFlowBlock()
@@ -107,7 +107,7 @@ bool EHblkDsc::HasFinallyOrFaultHandler()
 
 bool EHblkDsc::InBBRange(BasicBlock* pBlk, BasicBlock* pStart, BasicBlock* pEnd)
 {
-    for (BasicBlock* pWalk = pStart; pWalk != pEnd; pWalk = pWalk->GetBBNext())
+    for (BasicBlock* pWalk = pStart; pWalk != pEnd; pWalk = pWalk->Next())
     {
         if (pWalk == pBlk)
         {
@@ -119,7 +119,7 @@ bool EHblkDsc::InBBRange(BasicBlock* pBlk, BasicBlock* pStart, BasicBlock* pEnd)
 
 bool EHblkDsc::InTryRegionBBRange(BasicBlock* pBlk)
 {
-    return InBBRange(pBlk, ebdTryBeg, ebdTryLast->GetBBNext());
+    return InBBRange(pBlk, ebdTryBeg, ebdTryLast->Next());
 }
 
 bool EHblkDsc::InFilterRegionBBRange(BasicBlock* pBlk)
@@ -129,7 +129,7 @@ bool EHblkDsc::InFilterRegionBBRange(BasicBlock* pBlk)
 
 bool EHblkDsc::InHndRegionBBRange(BasicBlock* pBlk)
 {
-    return InBBRange(pBlk, ebdHndBeg, ebdHndLast->GetBBNext());
+    return InBBRange(pBlk, ebdHndBeg, ebdHndLast->Next());
 }
 
 unsigned EHblkDsc::ebdGetEnclosingRegionIndex(bool* inTryRegion)
@@ -836,7 +836,7 @@ void Compiler::ehUpdateForDeletedBlock(BasicBlock* block)
         return;
     }
 
-    BasicBlock* bPrev = block->GetBBPrev();
+    BasicBlock* bPrev = block->Prev();
     assert(bPrev != nullptr);
 
     ehUpdateLastBlocks(block, bPrev);
@@ -865,7 +865,7 @@ bool Compiler::ehCanDeleteEmptyBlock(BasicBlock* block)
 
     if (ehIsBlockEHLast(block))
     {
-        BasicBlock* bPrev = block->GetBBPrev();
+        BasicBlock* bPrev = block->Prev();
         if ((bPrev != nullptr) && ehIsBlockEHLast(bPrev))
         {
             return false;
@@ -941,18 +941,18 @@ void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** be
         if (inTryRegion)
         {
             *begBlk = ehDsc->ebdTryBeg;
-            *endBlk = ehDsc->ebdTryLast->GetBBNext();
+            *endBlk = ehDsc->ebdTryLast->Next();
         }
         else
         {
             *begBlk = ehDsc->ebdHndBeg;
-            *endBlk = ehDsc->ebdHndLast->GetBBNext();
+            *endBlk = ehDsc->ebdHndLast->Next();
         }
     }
 #else  // !FEATURE_EH_CALLFINALLY_THUNKS
     EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
     *begBlk         = ehDsc->ebdTryBeg;
-    *endBlk         = ehDsc->ebdTryLast->GetBBNext();
+    *endBlk         = ehDsc->ebdTryLast->Next();
 #endif // !FEATURE_EH_CALLFINALLY_THUNKS
 }
 
@@ -1320,10 +1320,10 @@ void Compiler::fgSkipRmvdBlocks(EHblkDsc* handlerTab)
     bLast = nullptr;
 
     // Find the first non-removed block after the 'try' region to end our iteration.
-    bEnd = handlerTab->ebdTryLast->GetBBNext();
+    bEnd = handlerTab->ebdTryLast->Next();
     while ((bEnd != nullptr) && (bEnd->bbFlags & BBF_REMOVED))
     {
-        bEnd = bEnd->GetBBNext();
+        bEnd = bEnd->Next();
     }
 
     // Update bLast to account for any removed blocks
@@ -1335,7 +1335,7 @@ void Compiler::fgSkipRmvdBlocks(EHblkDsc* handlerTab)
             bLast = block;
         }
 
-        block = block->GetBBNext();
+        block = block->Next();
 
         if (block == bEnd)
         {
@@ -1349,10 +1349,10 @@ void Compiler::fgSkipRmvdBlocks(EHblkDsc* handlerTab)
     bLast = nullptr;
 
     // Find the first non-removed block after the handler region to end our iteration.
-    bEnd = handlerTab->ebdHndLast->GetBBNext();
+    bEnd = handlerTab->ebdHndLast->Next();
     while ((bEnd != nullptr) && (bEnd->bbFlags & BBF_REMOVED))
     {
-        bEnd = bEnd->GetBBNext();
+        bEnd = bEnd->Next();
     }
 
     // Update bLast to account for any removed blocks
@@ -1364,7 +1364,7 @@ void Compiler::fgSkipRmvdBlocks(EHblkDsc* handlerTab)
             bLast = block;
         }
 
-        block = block->GetBBNext();
+        block = block->Next();
         if (block == bEnd)
         {
             break;
@@ -2295,7 +2295,7 @@ bool Compiler::fgNormalizeEHCase2()
                         // outwards in enclosing try index order, and we'll get to them later.
 
                         // Move the insert block backwards, to the one we just inserted.
-                        insertBeforeBlk = insertBeforeBlk->GetBBPrev();
+                        insertBeforeBlk = insertBeforeBlk->Prev();
                         assert(insertBeforeBlk == newTryStart);
 
                         modified = true;
@@ -3428,8 +3428,8 @@ void Compiler::fgVerifyHandlerTab()
     {
         BasicBlock* blockEnd;
 
-        for (block = HBtab->ebdTryBeg, blockEnd = HBtab->ebdTryLast->GetBBNext(); block != blockEnd;
-             block = block->GetBBNext())
+        for (block = HBtab->ebdTryBeg, blockEnd = HBtab->ebdTryLast->Next(); block != blockEnd;
+             block = block->Next())
         {
             if (blockTryIndex[block->bbNum] == 0)
             {
@@ -3438,8 +3438,8 @@ void Compiler::fgVerifyHandlerTab()
         }
 
         for (block                    = (HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg),
-            blockEnd                  = HBtab->ebdHndLast->GetBBNext();
-             block != blockEnd; block = block->GetBBNext())
+            blockEnd                  = HBtab->ebdHndLast->Next();
+             block != blockEnd; block = block->Next())
         {
             if (blockHndIndex[block->bbNum] == 0)
             {
@@ -3467,8 +3467,8 @@ void Compiler::fgVerifyHandlerTab()
 
                 BasicBlock* blockEnd;
                 for (block                    = (HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg),
-                    blockEnd                  = HBtab->ebdHndLast->GetBBNext();
-                     block != blockEnd; block = block->GetBBNext())
+                    blockEnd                  = HBtab->ebdHndLast->Next();
+                     block != blockEnd; block = block->Next())
                 {
                     if (blockTryIndex[block->bbNum] == 0)
                     {
@@ -4060,7 +4060,7 @@ void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
     {
         if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->bbJumpDest == block)
         {
-            BasicBlock* pPrev = predBlock->GetBBPrev();
+            BasicBlock* pPrev = predBlock->Prev();
             if (pPrev != nullptr)
             {
                 if (pPrev->KindIs(BBJ_CALLFINALLY))
@@ -4351,7 +4351,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 {
     assert(!block->IsFirst());
 
-    BasicBlock* bPrev = block->GetBBPrev();
+    BasicBlock* bPrev = block->Prev();
 
     bPrev->copyEHRegion(block);
 
@@ -4468,7 +4468,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 
 void Compiler::fgExtendEHRegionAfter(BasicBlock* block)
 {
-    BasicBlock* newBlk = block->GetBBNext();
+    BasicBlock* newBlk = block->Next();
     assert(newBlk != nullptr);
 
     newBlk->copyEHRegion(block);

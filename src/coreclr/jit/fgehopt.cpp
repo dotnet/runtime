@@ -140,7 +140,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 
         while (currentBlock != endCallFinallyRangeBlock)
         {
-            BasicBlock* nextBlock = currentBlock->GetBBNext();
+            BasicBlock* nextBlock = currentBlock->Next();
 
             if (currentBlock->KindIs(BBJ_CALLFINALLY) && (currentBlock->bbJumpDest == firstBlock))
             {
@@ -151,7 +151,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 // the finally is empty.
                 noway_assert(currentBlock->isBBCallAlwaysPair());
 
-                BasicBlock* const leaveBlock          = currentBlock->GetBBNext();
+                BasicBlock* const leaveBlock          = currentBlock->Next();
                 BasicBlock* const postTryFinallyBlock = leaveBlock->bbJumpDest;
 
                 JITDUMP("Modifying callfinally " FMT_BB " leave " FMT_BB " finally " FMT_BB " continuation " FMT_BB
@@ -172,7 +172,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 // Delete the leave block, which should be marked as
                 // keep always and have the sole finally block as a pred.
                 assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
-                nextBlock = leaveBlock->GetBBNext();
+                nextBlock = leaveBlock->Next();
                 fgRemoveRefPred(leaveBlock, firstBlock);
                 leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
                 fgRemoveBlock(leaveBlock, /* unreachable */ true);
@@ -398,7 +398,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         if (firstTryBlock != lastTryBlock)
         {
             JITDUMP("EH#%u first try block " FMT_BB " not only block in try; skipping.\n", XTnum,
-                    firstTryBlock->GetBBNext()->bbNum);
+                    firstTryBlock->Next()->bbNum);
             XTnum++;
             continue;
         }
@@ -420,7 +420,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         if (!firstTryBlock->NextIs(lastTryBlock))
         {
             JITDUMP("EH#%u block " FMT_BB " not last block in try; skipping.\n", XTnum,
-                    firstTryBlock->GetBBNext()->bbNum);
+                    firstTryBlock->Next()->bbNum);
             XTnum++;
             continue;
         }
@@ -437,7 +437,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         ehGetCallFinallyBlockRange(XTnum, &firstCallFinallyRangeBlock, &endCallFinallyRangeBlock);
 
         for (BasicBlock* block = firstCallFinallyRangeBlock; block != endCallFinallyRangeBlock;
-             block             = block->GetBBNext())
+             block             = block->Next())
         {
             if (block->KindIs(BBJ_CALLFINALLY) && (block->bbJumpDest == firstHandlerBlock))
             {
@@ -450,7 +450,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     break;
                 }
 
-                block = block->GetBBNext();
+                block = block->Next();
             }
         }
 
@@ -468,7 +468,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         callFinally->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
 
         // Identify the leave block and the continuation
-        BasicBlock* const leave        = callFinally->GetBBNext();
+        BasicBlock* const leave        = callFinally->Next();
         BasicBlock* const continuation = leave->bbJumpDest;
 
         // (2) Cleanup the leave so it can be deleted by subsequent opts
@@ -731,14 +731,14 @@ PhaseStatus Compiler::fgCloneFinally()
         BasicBlock* const lastBlock  = HBtab->ebdHndLast;
         assert(firstBlock != nullptr);
         assert(lastBlock != nullptr);
-        BasicBlock* nextBlock       = lastBlock->GetBBNext();
+        BasicBlock* nextBlock       = lastBlock->Next();
         unsigned    regionBBCount   = 0;
         unsigned    regionStmtCount = 0;
         bool        hasFinallyRet   = false;
         bool        isAllRare       = true;
         bool        hasSwitch       = false;
 
-        for (const BasicBlock* block = firstBlock; block != nextBlock; block = block->GetBBNext())
+        for (const BasicBlock* block = firstBlock; block != nextBlock; block = block->Next())
         {
             if (block->KindIs(BBJ_SWITCH))
             {
@@ -806,7 +806,7 @@ PhaseStatus Compiler::fgCloneFinally()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() == XTnum);
         assert(bbInTryRegions(XTnum, lastTryBlock));
-        BasicBlock* const beforeTryBlock = firstTryBlock->GetBBPrev();
+        BasicBlock* const beforeTryBlock = firstTryBlock->Prev();
 
         BasicBlock* normalCallFinallyBlock   = nullptr;
         BasicBlock* normalCallFinallyReturn  = nullptr;
@@ -815,7 +815,7 @@ PhaseStatus Compiler::fgCloneFinally()
         const bool  usingProfileWeights      = fgIsUsingProfileWeights();
         weight_t    currentWeight            = BB_ZERO_WEIGHT;
 
-        for (BasicBlock* block = lastTryBlock; block != beforeTryBlock; block = block->GetBBPrev())
+        for (BasicBlock* block = lastTryBlock; block != beforeTryBlock; block = block->Prev())
         {
 #if FEATURE_EH_CALLFINALLY_THUNKS
             // Blocks that transfer control to callfinallies are usually
@@ -825,7 +825,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             if (block->KindIs(BBJ_NONE) && (block == lastTryBlock))
             {
-                jumpDest = block->GetBBNext();
+                jumpDest = block->Next();
             }
             else if (block->KindIs(BBJ_ALWAYS))
             {
@@ -855,7 +855,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             // Found a block that invokes the finally.
             //
-            BasicBlock* const finallyReturnBlock  = jumpDest->GetBBNext();
+            BasicBlock* const finallyReturnBlock  = jumpDest->Next();
             BasicBlock* const postTryFinallyBlock = finallyReturnBlock->bbJumpDest;
             bool              isUpdate            = false;
 
@@ -969,7 +969,7 @@ PhaseStatus Compiler::fgCloneFinally()
             BasicBlock* firstCallFinallyBlock = nullptr;
 
             for (BasicBlock* block = firstCallFinallyRangeBlock; block != endCallFinallyRangeBlock;
-                 block             = block->GetBBNext())
+                 block             = block->Next())
             {
                 if (block->isBBCallAlwaysPair())
                 {
@@ -989,7 +989,7 @@ PhaseStatus Compiler::fgCloneFinally()
             // but only if it's targeted by the last block in the try range.
             if (firstCallFinallyBlock != normalCallFinallyBlock)
             {
-                BasicBlock* const placeToMoveAfter = firstCallFinallyBlock->GetBBPrev();
+                BasicBlock* const placeToMoveAfter = firstCallFinallyBlock->Prev();
 
                 if (placeToMoveAfter->KindIs(BBJ_ALWAYS) && (placeToMoveAfter->bbJumpDest == normalCallFinallyBlock))
                 {
@@ -997,7 +997,7 @@ PhaseStatus Compiler::fgCloneFinally()
                             normalCallFinallyBlock->bbNum, firstCallFinallyBlock->bbNum);
 
                     BasicBlock* const firstToMove = normalCallFinallyBlock;
-                    BasicBlock* const lastToMove  = normalCallFinallyBlock->GetBBNext();
+                    BasicBlock* const lastToMove  = normalCallFinallyBlock->Next();
 
                     fgUnlinkRange(firstToMove, lastToMove);
                     fgMoveBlocksAfter(firstToMove, lastToMove, placeToMoveAfter);
@@ -1045,7 +1045,7 @@ PhaseStatus Compiler::fgCloneFinally()
         unsigned        cloneBBCount   = 0;
         weight_t const  originalWeight = firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
 
-        for (BasicBlock* block = firstBlock; block != nextBlock; block = block->GetBBNext())
+        for (BasicBlock* block = firstBlock; block != nextBlock; block = block->Next())
         {
             BasicBlock* newBlock;
 
@@ -1129,7 +1129,7 @@ PhaseStatus Compiler::fgCloneFinally()
         // Redirect any branches within the newly-cloned
         // finally, and any finally returns to jump to the return
         // point.
-        for (BasicBlock* block = firstBlock; block != nextBlock; block = block->GetBBNext())
+        for (BasicBlock* block = firstBlock; block != nextBlock; block = block->Next())
         {
             BasicBlock* newBlock = blockMap[block];
 
@@ -1161,13 +1161,13 @@ PhaseStatus Compiler::fgCloneFinally()
 
         while (currentBlock != endCallFinallyRangeBlock)
         {
-            BasicBlock* nextBlockToScan = currentBlock->GetBBNext();
+            BasicBlock* nextBlockToScan = currentBlock->Next();
 
             if (currentBlock->isBBCallAlwaysPair())
             {
                 if (currentBlock->bbJumpDest == firstBlock)
                 {
-                    BasicBlock* const leaveBlock          = currentBlock->GetBBNext();
+                    BasicBlock* const leaveBlock          = currentBlock->Next();
                     BasicBlock* const postTryFinallyBlock = leaveBlock->bbJumpDest;
 
                     // Note we must retarget all callfinallies that have this
@@ -1191,7 +1191,7 @@ PhaseStatus Compiler::fgCloneFinally()
                         // Delete the leave block, which should be marked as
                         // keep always.
                         assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
-                        nextBlock = leaveBlock->GetBBNext();
+                        nextBlock = leaveBlock->Next();
 
                         // All preds should be BBJ_EHFINALLYRETs from the finally.
                         for (BasicBlock* const leavePred : leaveBlock->PredBlocks())
@@ -1239,8 +1239,8 @@ PhaseStatus Compiler::fgCloneFinally()
 
             // Change all BBJ_EHFINALLYRET to BBJ_EHFAULTRET in the now-fault region.
             BasicBlock* const hndBegIter = HBtab->ebdHndBeg;
-            BasicBlock* const hndEndIter = HBtab->ebdHndLast->GetBBNext();
-            for (BasicBlock* block = hndBegIter; block != hndEndIter; block = block->GetBBNext())
+            BasicBlock* const hndEndIter = HBtab->ebdHndLast->Next();
+            for (BasicBlock* block = hndBegIter; block != hndEndIter; block = block->Next())
             {
                 if (block->KindIs(BBJ_EHFINALLYRET))
                 {
@@ -1471,7 +1471,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
                 {
                     if (succBlock->isEmpty())
                     {
-                        BasicBlock* const succSuccBlock = succBlock->GetBBNext();
+                        BasicBlock* const succSuccBlock = succBlock->Next();
 
                         // case (d)
                         if (succSuccBlock->bbFlags & BBF_CLONED_FINALLY_BEGIN)
@@ -1622,7 +1622,7 @@ void Compiler::fgAddFinallyTargetFlags()
     {
         if (block->isBBCallAlwaysPair())
         {
-            BasicBlock* const leave        = block->GetBBNext();
+            BasicBlock* const leave        = block->Next();
             BasicBlock* const continuation = leave->bbJumpDest;
 
             if ((continuation->bbFlags & BBF_FINALLY_TARGET) == 0)
@@ -1791,7 +1791,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
         BasicBlock* const beginHandlerBlock = HBtab->ebdHndBeg;
 
         for (BasicBlock* currentBlock = firstCallFinallyRangeBlock; currentBlock != endCallFinallyRangeBlock;
-             currentBlock             = currentBlock->GetBBNext())
+             currentBlock             = currentBlock->Next())
         {
             // Ignore "retless" callfinallys (where the finally doesn't return).
             if (currentBlock->isBBCallAlwaysPair() && (currentBlock->bbJumpDest == beginHandlerBlock))
@@ -1805,7 +1805,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
                 callFinallyCount++;
 
                 // Locate the continuation
-                BasicBlock* const leaveBlock        = currentBlock->GetBBNext();
+                BasicBlock* const leaveBlock        = currentBlock->Next();
                 BasicBlock* const continuationBlock = leaveBlock->bbJumpDest;
 
                 // If this is the first time we've seen this
@@ -1838,7 +1838,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
         // sure they all jump to the appropriate canonical
         // callfinally.
         for (BasicBlock* currentBlock = firstCallFinallyRangeBlock; currentBlock != endCallFinallyRangeBlock;
-             currentBlock             = currentBlock->GetBBNext())
+             currentBlock             = currentBlock->Next())
         {
             bool merged = fgRetargetBranchesToCanonicalCallFinally(currentBlock, beginHandlerBlock, continuationMap);
             didMerge    = didMerge || merged;
@@ -1923,7 +1923,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
 
     // Ok, this is a callfinally that invokes the right handler.
     // Get its continuation.
-    BasicBlock* const leaveBlock        = callFinally->GetBBNext();
+    BasicBlock* const leaveBlock        = callFinally->Next();
     BasicBlock* const continuationBlock = leaveBlock->bbJumpDest;
 
     // Find the canonical callfinally for that continuation.
@@ -1958,7 +1958,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
 
         canonicalCallFinally->setBBProfileWeight(newCanonicalWeight);
 
-        BasicBlock* const canonicalLeaveBlock = canonicalCallFinally->GetBBNext();
+        BasicBlock* const canonicalLeaveBlock = canonicalCallFinally->Next();
 
         weight_t const canonicalLeaveWeight =
             canonicalLeaveBlock->hasProfileWeight() ? canonicalLeaveBlock->bbWeight : BB_ZERO_WEIGHT;
@@ -2101,7 +2101,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // Walk blocks from last to first so that any branches we
     // introduce to the canonical blocks end up lexically forward
     // and there is less jumbled flow to sort out later.
-    for (BasicBlock* block = fgLastBB; block != nullptr; block = block->GetBBPrev())
+    for (BasicBlock* block = fgLastBB; block != nullptr; block = block->Prev())
     {
         // Workaround: don't consider try entry blocks as candidates
         // for merging; if the canonical throw is later in the same try,

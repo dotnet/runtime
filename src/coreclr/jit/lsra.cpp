@@ -1028,7 +1028,7 @@ void LinearScan::setBlockSequence()
         // For layout order, simply use bbNext
         if (isTraversalLayoutOrder())
         {
-            nextBlock = block->GetBBNext();
+            nextBlock = block->Next();
             continue;
         }
 
@@ -1483,15 +1483,15 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             varDsc->SetRegNum(newRegNum);
             count++;
 
-            BasicBlock* prevReportedBlock = bb->GetBBPrev();
-            if (!bb->IsFirst() && bb->GetBBPrev()->isBBCallAlwaysPairTail())
+            BasicBlock* prevReportedBlock = bb->Prev();
+            if (!bb->IsFirst() && bb->Prev()->isBBCallAlwaysPairTail())
             {
                 // For callf+always pair we generate the code for the always
                 // block in genCallFinally and skip it, so we don't report
                 // anything for it (it has only trivial instructions, so that
                 // does not matter much). So whether we need to rehome or not
                 // depends on what we reported at the end of the callf block.
-                prevReportedBlock = bb->GetBBPrev()->GetBBPrev();
+                prevReportedBlock = bb->Prev()->Prev();
             }
 
             if (prevReportedBlock != nullptr && VarSetOps::IsMember(compiler, prevReportedBlock->bbLiveOut, varIndex))
@@ -2548,7 +2548,7 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                 {
                     // Special handling to improve matching on backedges.
                     BasicBlock* otherBlock =
-                        predBlock->NextIs(block) ? predBlock->bbJumpDest : predBlock->GetBBNext();
+                        predBlock->NextIs(block) ? predBlock->bbJumpDest : predBlock->Next();
                     noway_assert(otherBlock != nullptr);
                     if (isBlockVisited(otherBlock) && !blockInfo[otherBlock->bbNum].hasEHBoundaryIn)
                     {

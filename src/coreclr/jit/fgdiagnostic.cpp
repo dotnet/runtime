@@ -82,7 +82,7 @@ void Compiler::fgDebugCheckUpdate()
 
     BasicBlock* prev;
     BasicBlock* block;
-    for (prev = nullptr, block = fgFirstBB; block != nullptr; prev = block, block = block->GetBBNext())
+    for (prev = nullptr, block = fgFirstBB; block != nullptr; prev = block, block = block->Next())
     {
         /* no unreachable blocks */
 
@@ -168,7 +168,7 @@ void Compiler::fgDebugCheckUpdate()
 
             // We are allowed to have a branch from a hot 'block' to a cold 'bbNext'
             //
-            if (!block->IsLast() && fgInDifferentRegions(block, block->GetBBNext()))
+            if (!block->IsLast() && fgInDifferentRegions(block, block->Next()))
             {
                 doAssertOnJumpToNextBlock = false;
             }
@@ -199,7 +199,7 @@ void Compiler::fgDebugCheckUpdate()
 
         /* no un-compacted blocks */
 
-        if (fgCanCompactBlocks(block, block->GetBBNext()))
+        if (fgCanCompactBlocks(block, block->Next()))
         {
             noway_assert(!"Found un-compacted blocks!");
         }
@@ -889,7 +889,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                                       "ALWAYS",       "LEAVE",       "CALLFINALLY", "COND",  "SWITCH"};
 
     BasicBlock* block;
-    for (block = fgFirstBB, blockOrdinal = 1; block != nullptr; block = block->GetBBNext(), blockOrdinal++)
+    for (block = fgFirstBB, blockOrdinal = 1; block != nullptr; block = block->Next(), blockOrdinal++)
     {
         if (createDotFile)
         {
@@ -1091,7 +1091,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     {
         unsigned    edgeNum = 1;
         BasicBlock* bTarget;
-        for (bTarget = fgFirstBB; bTarget != nullptr; bTarget = bTarget->GetBBNext())
+        for (bTarget = fgFirstBB; bTarget != nullptr; bTarget = bTarget->Next())
         {
             double targetWeightDivisor;
             if (bTarget->bbWeight == BB_ZERO_WEIGHT)
@@ -1217,7 +1217,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 if (!bSource->IsLast())
                 {
                     fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB " [style=\"invis\", weight=25];\n", bSource->bbNum,
-                            bSource->GetBBNext()->bbNum);
+                            bSource->Next()->bbNum);
                 }
             }
 
@@ -1641,7 +1641,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 
                     bool        needIndent = true;
                     BasicBlock* bbCur      = rgn->m_bbStart;
-                    BasicBlock* bbEnd      = rgn->m_bbEnd->GetBBNext();
+                    BasicBlock* bbEnd      = rgn->m_bbEnd->Next();
                     Region*     child      = rgn->m_rgnChild;
                     BasicBlock* childCurBB = (child == nullptr) ? nullptr : child->m_bbStart;
 
@@ -1660,7 +1660,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         {
                             fprintf(file, "%*s" FMT_BB ";", needIndent ? indent : 0, "", bbCur->bbNum);
                             needIndent = false;
-                            bbCur      = bbCur->GetBBNext();
+                            bbCur      = bbCur->Next();
                         }
 
                         if (bbCur == bbEnd)
@@ -1684,7 +1684,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 
                             childCount++;
 
-                            bbCur      = child->m_bbEnd->GetBBNext(); // Next, output blocks after this child.
+                            bbCur      = child->m_bbEnd->Next(); // Next, output blocks after this child.
                             child      = child->m_rgnNext;            // Move to the next child, if any.
                             childCurBB = (child == nullptr) ? nullptr : child->m_bbStart;
                         }
@@ -1746,7 +1746,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     {
                         sprintf_s(name, sizeof(name), "EH#%u filter", XTnum);
                         rgnGraph.Insert(name, RegionGraph::RegionType::EH, ehDsc->ebdFilter,
-                                        ehDsc->ebdHndBeg->GetBBPrev());
+                                        ehDsc->ebdHndBeg->Prev());
                     }
                 }
             }
@@ -2257,7 +2257,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 
     int ibcColWidth = 0;
 
-    for (BasicBlock* block = firstBlock; block != nullptr; block = block->GetBBNext())
+    for (BasicBlock* block = firstBlock; block != nullptr; block = block->Next())
     {
         if (block->hasProfileWeight())
         {
@@ -2343,7 +2343,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         // First, do some checking on the bbPrev links
         if (!block->IsFirst())
         {
-            if (!block->GetBBPrev()->NextIs(block))
+            if (!block->Prev()->NextIs(block))
             {
                 printf("bad prev link\n");
             }
@@ -2451,7 +2451,7 @@ void Compiler::fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock)
 {
     // Note that typically we have already called fgDispBasicBlocks()
     // so we don't need to print the preds and succs again here.
-    for (BasicBlock* block = firstBlock; block != nullptr; block = block->GetBBNext())
+    for (BasicBlock* block = firstBlock; block != nullptr; block = block->Next())
     {
         fgDumpBlock(block);
 
@@ -2606,7 +2606,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     // is marked as "returning" to the BBJ_ALWAYS block following the BBJ_CALLFINALLY
     // block that does a local call to the finally. This BBJ_ALWAYS is within
     // the try region protected by the finally (for x86, ARM), but that's ok.
-    BasicBlock* prevBlock = block->GetBBPrev();
+    BasicBlock* prevBlock = block->Prev();
     if (prevBlock->KindIs(BBJ_CALLFINALLY) && block->KindIs(BBJ_ALWAYS) && blockPred->KindIs(BBJ_EHFINALLYRET))
     {
         return true;
@@ -2732,7 +2732,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
     BasicBlock* endBlk;
     comp->ehGetCallFinallyBlockRange(hndIndex, &begBlk, &endBlk);
 
-    for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->GetBBNext())
+    for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
     {
         if (!bcall->KindIs(BBJ_CALLFINALLY) || bcall->bbJumpDest != finBeg)
         {
@@ -2790,7 +2790,7 @@ void Compiler::fgDebugCheckBBNumIncreasing()
 {
     for (BasicBlock* const block : Blocks())
     {
-        assert(block->IsLast() || (block->bbNum < block->GetBBNext()->bbNum));
+        assert(block->IsLast() || (block->bbNum < block->Next()->bbNum));
     }
 }
 
@@ -2866,7 +2866,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         if (checkBBNum)
         {
             // Check that bbNum is sequential
-            assert(block->IsLast() || (block->bbNum + 1 == block->GetBBNext()->bbNum));
+            assert(block->IsLast() || (block->bbNum + 1 == block->Next()->bbNum));
         }
 
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
@@ -3714,7 +3714,7 @@ void Compiler::fgDebugCheckBlockLinks()
         }
         else
         {
-            assert(block->GetBBNext()->PrevIs(block));
+            assert(block->Next()->PrevIs(block));
         }
 
         if (block->IsFirst())
@@ -3723,7 +3723,7 @@ void Compiler::fgDebugCheckBlockLinks()
         }
         else
         {
-            assert(block->GetBBPrev()->NextIs(block));
+            assert(block->Prev()->NextIs(block));
         }
 
         // If this is a switch, check that the tables are consistent.

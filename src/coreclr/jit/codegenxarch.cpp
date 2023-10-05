@@ -205,7 +205,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
-    BasicBlock* const nextBlock = block->GetBBNext();
+    BasicBlock* const nextBlock = block->Next();
 
 #if defined(FEATURE_EH_FUNCLETS)
     // Generate a call to the finally, like this:
