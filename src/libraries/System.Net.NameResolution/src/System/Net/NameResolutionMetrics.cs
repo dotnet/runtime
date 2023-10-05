@@ -19,9 +19,19 @@ namespace System.Net
 
         public static bool IsEnabled() => s_lookupDuration.Enabled;
 
-        public static void AfterResolution(TimeSpan duration, string hostName)
+        public static void AfterResolution(TimeSpan duration, string hostName, string? errorType)
         {
-            s_lookupDuration.Record(duration.TotalSeconds, KeyValuePair.Create("dns.question.name", (object?)hostName));
+            var hostNameTag = KeyValuePair.Create("dns.question.name", (object?)hostName);
+
+            if (errorType is null)
+            {
+                s_lookupDuration.Record(duration.TotalSeconds, hostNameTag);
+            }
+            else
+            {
+                var errorTypeTag = KeyValuePair.Create("error.type", (object?)errorType);
+                s_lookupDuration.Record(duration.TotalSeconds, hostNameTag, errorTypeTag);
+            }
         }
     }
 }
