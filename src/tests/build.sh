@@ -283,7 +283,7 @@ handle_arguments_local() {
             ;;
 
         standalone|-standalone)
-            BuildAsStandalone=true
+            export BuildAsStandalone=true
             ;;
 
         excludemonofailures|-excludemonofailures)
