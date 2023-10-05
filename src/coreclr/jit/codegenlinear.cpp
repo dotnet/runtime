@@ -546,10 +546,14 @@ void CodeGen::genCodeForBBlist()
 
         /* Is this the last block, and are there any open scopes left ? */
 
-        bool isLastBlockProcessed = (block->IsLast());
+        bool isLastBlockProcessed;
         if (block->isBBCallAlwaysPair())
         {
-            isLastBlockProcessed = (block->Next()->IsLast());
+            isLastBlockProcessed = block->Next()->IsLast();
+        }
+        else
+        {
+            isLastBlockProcessed = block->IsLast();
         }
 
         if (compiler->opts.compDbgInfo && isLastBlockProcessed)
@@ -614,7 +618,7 @@ void CodeGen::genCodeForBBlist()
             // Note: we may be generating a few too many NOPs for the case of call preceding an epilog. Technically,
             // if the next block is a BBJ_RETURN, an epilog will be generated, but there may be some instructions
             // generated before the OS epilog starts, such as a GS cookie check.
-            if ((block->IsLast()) || !BasicBlock::sameEHRegion(block, block->Next()))
+            if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()))
             {
                 // We only need the NOP if we're not going to generate any more code as part of the block end.
 
@@ -678,7 +682,7 @@ void CodeGen::genCodeForBBlist()
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if ((block->IsLast()) || (block->Next()->bbFlags & BBF_FUNCLET_BEG) ||
+                if (block->IsLast() || (block->Next()->bbFlags & BBF_FUNCLET_BEG) ||
                     !BasicBlock::sameEHRegion(block, block->Next()) ||
                     (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
                     block->IsLastHotBlock(compiler))
@@ -817,7 +821,7 @@ void CodeGen::genCodeForBBlist()
             GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS)));
         }
 
-        if (!block->IsLast() && (block->Next()->isLoopAlign()))
+        if (!block->IsLast() && block->Next()->isLoopAlign())
         {
             if (compiler->opts.compJitHideAlignBehindJmp)
             {
@@ -948,7 +952,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     {
         // We only have 'GTF_SPILL' and 'GTF_SPILLED' on a def of a write-thru lclVar
         // or a single-def var that is to be spilled at its definition.
-        assert((varDsc->IsAlwaysAliveInMemory()) && ((tree->gtFlags & GTF_VAR_DEF) != 0));
+        assert(varDsc->IsAlwaysAliveInMemory() && ((tree->gtFlags & GTF_VAR_DEF) != 0));
     }
 
     if (needsSpill)

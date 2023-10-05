@@ -10550,7 +10550,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
         nsep = true;
     }
 
-    if ((id->idIsDspReloc()) && (id->idIns() != INS_i_jmp))
+    if (id->idIsDspReloc() && (id->idIns() != INS_i_jmp))
     {
         if (nsep)
         {

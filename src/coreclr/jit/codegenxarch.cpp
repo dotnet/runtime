@@ -8248,7 +8248,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
 
     // For now, we only support the "push" case; we will push a full slot for the first field of each slot
     // within the struct.
-    assert((putArgStk->isPushKind()) && !preAdjustedStack && m_pushStkArg);
+    assert(putArgStk->isPushKind() && !preAdjustedStack && m_pushStkArg);
 
     // If we have pre-adjusted the stack and are simply storing the fields in order, set the offset to 0.
     // (Note that this mode is not currently being used.)

@@ -5666,7 +5666,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         // or if bEnd->bbNext is in a different try region
                         // then we cannot move the blocks
                         //
-                        if ((bEnd->IsLast()) || !BasicBlock::sameTryRegion(startBlk, bEnd->Next()))
+                        if (bEnd->IsLast() || !BasicBlock::sameTryRegion(startBlk, bEnd->Next()))
                         {
                             goto CANNOT_MOVE;
                         }

@@ -3235,7 +3235,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             regArgTab[regArgNum + i].writeThru = (varDsc->lvIsInReg() && varDsc->lvLiveInOutOfHndlr);
 
             /* mark stack arguments since we will take care of those first */
-            regArgTab[regArgNum + i].stackArg = (varDsc->lvIsInReg()) ? false : true;
+            regArgTab[regArgNum + i].stackArg = varDsc->lvIsInReg() ? false : true;
 
             /* If it goes on the stack or in a register that doesn't hold
              * an argument anymore -> CANNOT form a circular dependency */
@@ -5210,8 +5210,8 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     assert(block != nullptr);
     const VARSET_TP& gcrefVarsArg(GetEmitter()->emitThisGCrefVars);
-    bool             last = (block->IsLast());
-    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg, last);
+    GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, gcrefVarsArg, gcrefRegsArg, byrefRegsArg,
+                                          block->IsLast());
 }
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -5257,9 +5257,8 @@ void CodeGen::genReserveFuncletEpilog(BasicBlock* block)
 
     JITDUMP("Reserving funclet epilog IG for block " FMT_BB "\n", block->bbNum);
 
-    bool last = (block->IsLast());
     GetEmitter()->emitCreatePlaceholderIG(IGPT_FUNCLET_EPILOG, block, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                          gcInfo.gcRegByrefSetCur, last);
+                                          gcInfo.gcRegByrefSetCur, block->IsLast());
 }
 
 #endif // FEATURE_EH_FUNCLETS
@@ -5812,7 +5811,7 @@ void CodeGen::genFnProlog()
     {
         excludeMask |= RBM_PINVOKE_FRAME;
 
-        assert((!compiler->opts.ShouldUsePInvokeHelpers()) || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!compiler->opts.ShouldUsePInvokeHelpers() || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!compiler->opts.ShouldUsePInvokeHelpers())
         {
             excludeMask |= (RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH);

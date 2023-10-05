@@ -871,7 +871,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             }
 
             int curCns = pRange->uLimit.cns;
-            int limCns = (limit.IsBinOpArray()) ? limit.cns : 0;
+            int limCns = limit.IsBinOpArray() ? limit.cns : 0;
 
             // Incoming limit doesn't tighten the existing upper limit.
             if (limCns >= curCns)

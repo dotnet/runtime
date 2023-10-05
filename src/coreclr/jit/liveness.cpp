@@ -288,7 +288,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
             if ((call->IsUnmanaged() || call->IsTailCallViaJitHelper()) && compMethodRequiresPInvokeFrame())
             {
-                assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+                assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
                 if (!opts.ShouldUsePInvokeHelpers() && !call->IsSuppressGCTransition())
                 {
                     // Get the FrameRoot local and mark it as used.
@@ -493,7 +493,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
 
         if (block->KindIs(BBJ_RETURN) && compMethodRequiresPInvokeFrame())
         {
-            assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+            assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
             if (!opts.ShouldUsePInvokeHelpers())
             {
                 // 32-bit targets always pop the frame in the epilog.
@@ -1391,7 +1391,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     // This ensure that this variable is kept alive at the tail-call
     if (call->IsTailCallViaJitHelper() && compMethodRequiresPInvokeFrame())
     {
-        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             // Get the FrameListRoot local and make it live.
@@ -1412,7 +1412,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     if (call->IsUnmanaged() && compMethodRequiresPInvokeFrame())
     {
         // Get the FrameListRoot local and make it live.
-        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers() && !call->IsSuppressGCTransition())
         {
             LclVarDsc* frameVarDsc = lvaGetDesc(info.compLvFrameListRoot);

@@ -1478,8 +1478,8 @@ public:
     {
         assert(m_block != nullptr);
         // Check that we haven't been spliced out of the list.
-        assert((m_block->IsLast()) || m_block->Next()->PrevIs(m_block));
-        assert((m_block->IsFirst()) || m_block->Prev()->NextIs(m_block));
+        assert(m_block->IsLast() || m_block->Next()->PrevIs(m_block));
+        assert(m_block->IsFirst() || m_block->Prev()->NextIs(m_block));
 
         m_block = m_block->Next();
         return *this;
