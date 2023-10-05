@@ -295,4 +295,3 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 }
-}
