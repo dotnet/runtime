@@ -106,7 +106,7 @@ private:
 //              B3: GT_RETURN (BBJ_RETURN)
 //              B4: GT_RETURN (BBJ_RETURN)
 //
-//      Case 2: if B1.bbJumpDest == B2->GetBBNext(), it transforms
+//      Case 2: if B2->NextIs(B1.bbJumpDest), it transforms
 //          B1 : brtrue(t1, B3)
 //          B2 : brtrue(t2, Bx)
 //          B3 :
@@ -136,7 +136,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
         m_sameTarget = true;
     }
-    else if (m_b1->bbJumpDest == m_b2->GetBBNext())
+    else if (m_b2->NextIs(m_b1->bbJumpDest))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, B3)
@@ -480,13 +480,13 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_t3 = nullptr;
 
     bool foundEndOfOrConditions = false;
-    if ((m_b1->GetBBNext() == m_b2) && (m_b1->bbJumpDest == m_b2->GetBBNext()))
+    if (m_b1->NextIs(m_b2) && m_b2->NextIs(m_b1->bbJumpDest))
     {
         // Found the end of two (or more) conditions being ORed together.
         // The final condition has been inverted.
         foundEndOfOrConditions = true;
     }
-    else if ((m_b1->GetBBNext() == m_b2) && (m_b1->bbJumpDest == m_b2->bbJumpDest))
+    else if (m_b1->NextIs(m_b2) && (m_b1->bbJumpDest == m_b2->bbJumpDest))
     {
         // Found two conditions connected together.
     }
@@ -882,7 +882,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         m_b1->bbJumpSwt = m_b2->bbJumpSwt;
 #endif
         assert(m_b2->KindIs(BBJ_RETURN));
-        assert(m_b1->GetBBNext() == m_b2);
+        assert(m_b1->NextIs(m_b2));
         assert(m_b3 != nullptr);
     }
     else
@@ -890,7 +890,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_COND));
         assert(m_b1->bbJumpDest == m_b2->bbJumpDest);
-        assert(m_b1->GetBBNext() == m_b2);
+        assert(m_b1->NextIs(m_b2));
         assert(!m_b2->IsLast());
     }
 
@@ -1494,7 +1494,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             if (b2->KindIs(BBJ_COND))
             {
-                if ((b1->bbJumpDest != b2->bbJumpDest) && (b1->bbJumpDest != b2->GetBBNext()))
+                if ((b1->bbJumpDest != b2->bbJumpDest) && !b2->NextIs(b1->bbJumpDest))
                 {
                     continue;
                 }

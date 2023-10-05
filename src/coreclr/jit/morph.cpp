@@ -13421,7 +13421,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                 {
-                    if (curJump != block->GetBBNext())
+                    if (!block->NextIs(curJump))
                     {
                         // transform the basic block into a BBJ_ALWAYS
                         block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));

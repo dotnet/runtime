@@ -417,7 +417,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const callFinally = firstTryBlock;
 
         // Try must be a callalways pair of blocks.
-        if (firstTryBlock->GetBBNext() != lastTryBlock)
+        if (!firstTryBlock->NextIs(lastTryBlock))
         {
             JITDUMP("EH#%u block " FMT_BB " not last block in try; skipping.\n", XTnum,
                     firstTryBlock->GetBBNext()->bbNum);
@@ -1008,7 +1008,7 @@ PhaseStatus Compiler::fgCloneFinally()
                     fgVerifyHandlerTab();
 #endif // DEBUG
 
-                    assert(nextBlock == lastBlock->GetBBNext());
+                    assert(lastBlock->NextIs(nextBlock));
 
                     // Update where the callfinally range begins, since we might
                     // have altered this with callfinally rearrangement, and/or
@@ -1064,9 +1064,9 @@ PhaseStatus Compiler::fgCloneFinally()
 
                 // If the clone ends up just after the finally, adjust
                 // the stopping point for finally traversal.
-                if (newBlock->GetBBNext() == nextBlock)
+                if (newBlock->NextIs(nextBlock))
                 {
-                    assert(newBlock->GetBBPrev() == lastBlock);
+                    assert(newBlock->PrevIs(lastBlock));
                     nextBlock = newBlock;
                 }
             }
@@ -2215,7 +2215,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
                 case BBJ_COND:
                 {
                     // Flow to non canonical block could be via fall through or jump or both.
-                    if (predBlock->GetBBNext() == nonCanonicalBlock)
+                    if (predBlock->NextIs(nonCanonicalBlock))
                     {
                         fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
                     }
@@ -2291,7 +2291,7 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                                   BasicBlock* canonicalBlock,
                                                   FlowEdge*   predEdge)
 {
-    assert(predBlock->GetBBNext() == nonCanonicalBlock);
+    assert(predBlock->NextIs(nonCanonicalBlock));
 
     BasicBlock* const newBlock = fgNewBBafter(BBJ_ALWAYS, predBlock, true);
 

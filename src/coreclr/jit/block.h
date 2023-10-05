@@ -569,6 +569,16 @@ public:
         return (bbNext == nullptr);
     }
 
+    bool PrevIs(BasicBlock* block) const
+    {
+        return (bbPrev == block);
+    }
+
+    bool NextIs(BasicBlock* block) const
+    {
+        return (bbNext == block);
+    }
+
     bool IsLastHotBlock(Compiler* compiler) const;
 
     /* The following union describes the jump target(s) of this block */
@@ -1466,8 +1476,8 @@ public:
     {
         assert(m_block != nullptr);
         // Check that we haven't been spliced out of the list.
-        assert((m_block->IsLast()) || (m_block->GetBBNext()->GetBBPrev() == m_block));
-        assert((m_block->IsFirst()) || (m_block->GetBBPrev()->GetBBNext() == m_block));
+        assert((m_block->IsLast()) || m_block->GetBBNext()->PrevIs(m_block));
+        assert((m_block->IsFirst()) || m_block->GetBBPrev()->NextIs(m_block));
 
         m_block = m_block->GetBBNext();
         return *this;
@@ -1638,7 +1648,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 
             // If both fall-through and branch successors are identical, then only include
             // them once in the iteration (this is the same behavior as NumSucc()/GetSucc()).
-            if (block->bbJumpDest == block->GetBBNext())
+            if (block->NextIs(block->bbJumpDest))
             {
                 m_end = &m_succs[1];
             }

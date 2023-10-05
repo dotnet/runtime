@@ -7298,7 +7298,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("invalid type for brtrue/brfalse");
                 }
 
-                if (opts.OptimizationEnabled() && (block->bbJumpDest == block->GetBBNext()))
+                if (opts.OptimizationEnabled() && block->NextIs(block->bbJumpDest))
                 {
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
@@ -7544,7 +7544,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp((genActualType(op1) == genActualType(op2)) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
                           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
-                if (opts.OptimizationEnabled() && (block->bbJumpDest == block->GetBBNext()))
+                if (opts.OptimizationEnabled() && block->NextIs(block->bbJumpDest))
                 {
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
@@ -7630,7 +7630,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                         {
-                            if (curJump != block->GetBBNext())
+                            if (!block->NextIs(curJump))
                             {
                                 // transform the basic block into a BBJ_ALWAYS
                                 block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
@@ -11135,7 +11135,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
 
                 // push catch arg the stack, spill to a temp if necessary
                 // Note: can update HBtab->ebdFilter!
-                const bool isSingleBlockFilter = (filterBB->GetBBNext() == hndBegBB);
+                const bool isSingleBlockFilter = (filterBB->NextIs(hndBegBB));
                 filterBB = impPushCatchArgOnStack(filterBB, impGetObjectClass(), isSingleBlockFilter);
 
                 impImportBlockPending(filterBB);

@@ -2548,7 +2548,7 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                 {
                     // Special handling to improve matching on backedges.
                     BasicBlock* otherBlock =
-                        (block == predBlock->GetBBNext()) ? predBlock->bbJumpDest : predBlock->GetBBNext();
+                        predBlock->NextIs(block) ? predBlock->bbJumpDest : predBlock->GetBBNext();
                     noway_assert(otherBlock != nullptr);
                     if (isBlockVisited(otherBlock) && !blockInfo[otherBlock->bbNum].hasEHBoundaryIn)
                     {

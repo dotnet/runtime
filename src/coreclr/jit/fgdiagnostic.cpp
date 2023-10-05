@@ -176,7 +176,7 @@ void Compiler::fgDebugCheckUpdate()
 
         if (doAssertOnJumpToNextBlock)
         {
-            if (block->bbJumpDest == block->GetBBNext())
+            if (block->NextIs(block->bbJumpDest))
             {
                 noway_assert(!"Unnecessary jump to the next block!");
             }
@@ -2201,7 +2201,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             /* brace matching editor workaround to compensate for the following line: { */
             printf("} ");
         }
-        if (HBtab->HasFilter() && block->GetBBNext() == HBtab->ebdHndBeg)
+        if (HBtab->HasFilter() && block->NextIs(HBtab->ebdHndBeg))
         {
             cnt += 2;
             /* brace matching editor workaround to compensate for the following line: { */
@@ -2341,9 +2341,9 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
     for (BasicBlock* block : *fgBBOrder)
     {
         // First, do some checking on the bbPrev links
-        if (block->GetBBPrev())
+        if (!block->IsFirst())
         {
-            if (block->GetBBPrev()->GetBBNext() != block)
+            if (!block->GetBBPrev()->NextIs(block))
             {
                 printf("bad prev link\n");
             }
@@ -2663,11 +2663,11 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
     switch (blockPred->GetBBJumpKind())
     {
         case BBJ_COND:
-            assert(blockPred->GetBBNext() == block || blockPred->bbJumpDest == block);
+            assert(blockPred->NextIs(block) || blockPred->bbJumpDest == block);
             return true;
 
         case BBJ_NONE:
-            assert(blockPred->GetBBNext() == block);
+            assert(blockPred->NextIs(block));
             return true;
 
         case BBJ_CALLFINALLY:
@@ -2739,7 +2739,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
             continue;
         }
 
-        if (block == bcall->GetBBNext())
+        if (bcall->NextIs(block))
         {
             return true;
         }
@@ -2761,7 +2761,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
                 continue;
             }
 
-            if (block != bcall->GetBBNext())
+            if (!bcall->NextIs(block))
             {
                 continue;
             }
@@ -3708,22 +3708,22 @@ void Compiler::fgDebugCheckBlockLinks()
 
     for (BasicBlock* const block : Blocks())
     {
-        if (block->GetBBNext())
-        {
-            assert(block->GetBBNext()->GetBBPrev() == block);
-        }
-        else
+        if (block->IsLast())
         {
             assert(block == fgLastBB);
         }
-
-        if (block->GetBBPrev())
+        else
         {
-            assert(block->GetBBPrev()->GetBBNext() == block);
+            assert(block->GetBBNext()->PrevIs(block));
+        }
+
+        if (block->IsFirst())
+        {
+            assert(block == fgFirstBB);
         }
         else
         {
-            assert(block == fgFirstBB);
+            assert(block->GetBBPrev()->NextIs(block));
         }
 
         // If this is a switch, check that the tables are consistent.
@@ -4799,7 +4799,7 @@ void Compiler::fgDebugCheckLoopTable()
             else
             {
                 assert(h->KindIs(BBJ_NONE));
-                assert(h->GetBBNext() == e);
+                assert(h->NextIs(e));
                 assert(loop.lpTop == e);
                 assert(loop.lpIsTopEntry());
             }

@@ -1526,17 +1526,17 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
-                if (block->GetBBNext())
+                if (block->IsLast())
+                {
+                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
+                    block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                }
+                else
                 {
                     JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
                             block->bbNum, bottomBlock->bbNum);
                     block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                     block->bbJumpDest = bottomBlock;
-                }
-                else
-                {
-                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                    block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                 }
 
                 fgAddRefPred(bottomBlock, block);

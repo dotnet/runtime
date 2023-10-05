@@ -98,7 +98,7 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                 *blockIfTrue  = *isReversed ? block->GetBBNext() : block->bbJumpDest;
                 *blockIfFalse = *isReversed ? block->bbJumpDest : block->GetBBNext();
 
-                if ((block->GetBBNext() == block->bbJumpDest) || (block->bbJumpDest == block))
+                if (block->NextIs(block->bbJumpDest) || (block->bbJumpDest == block))
                 {
                     // Ignoring weird cases like a condition jumping to itself
                     return false;
@@ -340,7 +340,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     // Unlink and remove the whole chain of conditional blocks
     BasicBlock* blockToRemove = firstBlock->GetBBNext();
     fgRemoveRefPred(blockToRemove, firstBlock);
-    while (blockToRemove != lastBlock->GetBBNext())
+    while (!lastBlock->NextIs(blockToRemove))
     {
         BasicBlock* nextBlock = blockToRemove->GetBBNext();
         fgRemoveBlock(blockToRemove, true);

@@ -392,7 +392,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
                 break;
             case BBJ_COND:
                 // replace predecessor in the fall through block.
-                noway_assert(bottom->GetBBNext());
+                noway_assert(!bottom->IsLast());
                 fgReplacePred(bottom->GetBBNext(), top, bottom);
 
                 // fall through for the jump target
@@ -1577,7 +1577,7 @@ void Compiler::fgAddSyncMethodEnterExit()
     assert(!tryLastBB->bbFallsThrough());
     BasicBlock* faultBB = fgNewBBafter(BBJ_EHFAULTRET, tryLastBB, false);
 
-    assert(tryLastBB->GetBBNext() == faultBB);
+    assert(tryLastBB->NextIs(faultBB));
     assert(faultBB->IsLast());
     assert(faultBB == fgLastBB);
 
@@ -2594,7 +2594,7 @@ PhaseStatus Compiler::fgAddInternal()
 
     // Visit the BBJ_RETURN blocks and merge as necessary.
 
-    for (BasicBlock* block = fgFirstBB; block != lastBlockBeforeGenReturns->GetBBNext(); block = block->GetBBNext())
+    for (BasicBlock* block = fgFirstBB; !lastBlockBeforeGenReturns->NextIs(block); block = block->GetBBNext())
     {
         if (block->KindIs(BBJ_RETURN) && ((block->bbFlags & BBF_HAS_JMP) == 0))
         {

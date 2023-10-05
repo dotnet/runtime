@@ -1309,7 +1309,7 @@ class LiveVarAnalysis
             {
                 // sometimes block numbers are not monotonically increasing which
                 // would cause us not to identify backedges
-                if (block->GetBBNext() && block->GetBBNext()->bbNum <= block->bbNum)
+                if (!block->IsLast() && block->GetBBNext()->bbNum <= block->bbNum)
                 {
                     m_hasPossibleBackEdge = true;
                 }

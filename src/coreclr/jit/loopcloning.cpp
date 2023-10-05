@@ -2245,14 +2245,14 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     assert(context->HasBlockConditions(loopInd));
     assert(h->KindIs(BBJ_NONE));
-    assert(h->GetBBNext() == h2);
+    assert(h->NextIs(h2));
 
     // If any condition is false, go to slowHead (which branches or falls through to e2).
     BasicBlock* e2      = nullptr;
     bool        foundIt = blockMap->Lookup(loop.lpEntry, &e2);
     assert(foundIt && e2 != nullptr);
 
-    if (slowHead->GetBBNext() != e2)
+    if (!slowHead->NextIs(e2))
     {
         // We can't just fall through to the slow path entry, so make it an unconditional branch.
         assert(slowHead->KindIs(BBJ_NONE)); // This is how we created it above.

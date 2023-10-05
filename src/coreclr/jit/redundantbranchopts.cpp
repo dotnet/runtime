@@ -1143,7 +1143,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
 
         // Note if the true or false pred is the fall through pred.
         //
-        if (predBlock->GetBBNext() == block)
+        if (predBlock->NextIs(block))
         {
             JITDUMP(FMT_BB " is the fall-through pred\n", predBlock->bbNum);
             assert(jti.m_fallThroughPred == nullptr);
@@ -1403,7 +1403,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
 
         // Note if the true or false pred is the fall through pred.
         //
-        if (predBlock->GetBBNext() == block)
+        if (predBlock->NextIs(block))
         {
             JITDUMP(FMT_BB " is the fall-through pred\n", predBlock->bbNum);
             assert(jti.m_fallThroughPred == nullptr);

@@ -530,7 +530,7 @@ void BlockCountInstrumentor::RelocateProbes()
 
                 // Handle case where we had a fall through critical edge
                 //
-                if (pred->GetBBNext() == intermediary)
+                if (pred->NextIs(intermediary))
                 {
                     m_comp->fgRemoveRefPred(pred, block);
                     m_comp->fgAddRefPred(intermediary, block);
@@ -4761,7 +4761,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     weight_t    diff;
                     FlowEdge*   otherEdge;
                     BasicBlock* otherDst;
-                    if (bSrc->GetBBNext() == bDst)
+                    if (bSrc->NextIs(bDst))
                     {
                         otherDst = bSrc->bbJumpDest;
                     }

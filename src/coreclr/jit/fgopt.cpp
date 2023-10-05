@@ -1916,7 +1916,7 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         return false;
     }
 
-    noway_assert(block->GetBBNext() == bNext);
+    noway_assert(block->NextIs(bNext));
 
     if (!block->KindIs(BBJ_NONE))
     {
@@ -2029,7 +2029,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     noway_assert((block->bbFlags & BBF_REMOVED) == 0);
     noway_assert(block->KindIs(BBJ_NONE));
 
-    noway_assert(bNext == block->GetBBNext());
+    noway_assert(block->NextIs(bNext));
     noway_assert(bNext != nullptr);
     noway_assert((bNext->bbFlags & BBF_REMOVED) == 0);
     noway_assert(bNext->countOfInEdges() == 1 || block->isEmpty());
@@ -2627,7 +2627,7 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 //
 void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 {
-    noway_assert(block->KindIs(BBJ_COND) && block->bbJumpDest == block->GetBBNext());
+    noway_assert(block->KindIs(BBJ_COND) && block->NextIs(block->bbJumpDest));
     assert(compRationalIRForm == block->IsLIR());
 
     FlowEdge* flow = fgGetPredForBlock(block->GetBBNext(), block);
@@ -2914,7 +2914,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             // A GOTO cannot be to the next block since that
             // should have been fixed by the  optimization above
             // An exception is made for a jump from Hot to Cold
-            noway_assert(block->bbJumpDest != block->GetBBNext() || block->isBBCallAlwaysPairTail() ||
+            noway_assert(!block->NextIs(block->bbJumpDest) || block->isBBCallAlwaysPairTail() ||
                          fgInDifferentRegions(block, block->GetBBNext()));
 
             /* Cannot remove the first BB */
@@ -3323,7 +3323,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         return true;
     }
-    else if (block->bbJumpSwt->bbsCount == 2 && block->bbJumpSwt->bbsDstTab[1] == block->GetBBNext())
+    else if ((block->bbJumpSwt->bbsCount == 2) && block->NextIs(block->bbJumpSwt->bbsDstTab[1]))
     {
         /* Use a BBJ_COND(switchVal==0) for a switch with only one
            significant clause besides the default clause, if the
@@ -3826,8 +3826,8 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
 {
     assert(block->KindIs(BBJ_COND, BBJ_ALWAYS));
     assert(block->bbJumpDest == bNext);
-    assert(block->GetBBNext() == bNext);
-    assert(block->GetBBPrev() == bPrev);
+    assert(block->NextIs(bNext));
+    assert(block->PrevIs(bPrev));
 
     if (block->KindIs(BBJ_ALWAYS))
     {
@@ -4026,7 +4026,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         return false;
     }
 
-    if (bDest->bbJumpDest != bJump->GetBBNext())
+    if (!bJump->NextIs(bDest->bbJumpDest))
     {
         return false;
     }
@@ -5211,7 +5211,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             /* (bPrev is known to be a normal block at this point) */
             if (!isRare)
             {
-                if ((bDest == block->GetBBNext()) && block->KindIs(BBJ_RETURN) && bPrev->KindIs(BBJ_ALWAYS))
+                if (block->NextIs(bDest) && block->KindIs(BBJ_RETURN) && bPrev->KindIs(BBJ_ALWAYS))
                 {
                     // This is a common case with expressions like "return Expr1 && Expr2" -- move the return
                     // to establish fall-through.
@@ -5309,7 +5309,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 
 #if defined(FEATURE_EH_FUNCLETS)
                 // Check if we've reached the funclets region, at the end of the function
-                if (fgFirstFuncletBB == bEnd->GetBBNext())
+                if (bEnd->NextIs(fgFirstFuncletBB))
                 {
                     break;
                 }
@@ -5396,7 +5396,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             bPrev2 = block;
             while (bPrev2 != nullptr)
             {
-                if (bPrev2->GetBBNext() == bDest)
+                if (bPrev2->NextIs(bDest))
                 {
                     break;
                 }
@@ -5579,7 +5579,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         noway_assert(!bEnd->KindIs(BBJ_CALLFINALLY) || (bEnd->bbFlags & BBF_RETLESS_CALL));
 
         // bStartPrev must be set to the block that precedes bStart
-        noway_assert(bStartPrev->GetBBNext() == bStart);
+        noway_assert(bStartPrev->NextIs(bStart));
 
         // Since we will be unlinking [bStart..bEnd],
         // we need to compute and remember if bStart is in each of
@@ -5719,7 +5719,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         fgIsForwardBranch(bEnd, bPrev))
                     {
                         // Set nearBlk to be the block in [startBlk..endBlk]
-                        // such that nearBlk->GetBBNext() == bEnd->JumpDest
+                        // such that nearBlk->NextIs(bEnd->JumpDest)
                         // if no such block exists then set nearBlk to NULL
                         nearBlk = startBlk;
                         jumpBlk = bEnd;
@@ -5731,7 +5731,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                             if (nearBlk != bPrev)
                             {
                                 // Check if nearBlk satisfies our requirement
-                                if (nearBlk->GetBBNext() == bEnd->bbJumpDest)
+                                if (nearBlk->NextIs(bEnd->bbJumpDest))
                                 {
                                     break;
                                 }
@@ -5784,7 +5784,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                     /* relink [bStart .. bEnd] into the flow graph */
 
                     bPrev->SetBBNext(bStart);
-                    if (bEnd->GetBBNext())
+                    if (!bEnd->IsLast())
                     {
                         bEnd->GetBBNext()->SetBBPrev(bEnd);
                     }
@@ -5880,7 +5880,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             else
             {
                 noway_assert(insertAfterBlk == bPrev);
-                noway_assert(insertAfterBlk->GetBBNext() == block);
+                noway_assert(insertAfterBlk->NextIs(block));
 
                 /* Set the new jump dest for bPrev to the rarely run or uncommon block(s) */
                 bPrev->bbJumpDest = block;
@@ -6176,7 +6176,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 {
                     // case (a)
                     //
-                    const bool isJumpAroundEmpty = (bNext->GetBBNext() == bDest);
+                    const bool isJumpAroundEmpty = bNext->NextIs(bDest);
 
                     // case (b)
                     //
@@ -6241,7 +6241,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         {
                             // We don't expect bDest to already be right after bNext.
                             //
-                            assert(bDest != bNext->GetBBNext());
+                            assert(!bNext->NextIs(bDest));
 
                             JITDUMP("\nMoving " FMT_BB " after " FMT_BB " to enable reversal\n", bDest->bbNum,
                                     bNext->bbNum);
@@ -6483,7 +6483,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 
             if (block->isEmpty())
             {
-                assert(bPrev == block->GetBBPrev());
+                assert(block->PrevIs(bPrev));
                 if (fgOptimizeEmptyBlock(block))
                 {
                     change   = true;
@@ -7067,7 +7067,7 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     // ternaries in C#).
     // The logic below could be generalized to BBJ_SWITCH, but this currently
     // has almost no CQ benefit but does have a TP impact.
-    if (!block->KindIs(BBJ_COND) || (block->GetBBNext() == block->bbJumpDest))
+    if (!block->KindIs(BBJ_COND) || block->NextIs(block->bbJumpDest))
     {
         return false;
     }

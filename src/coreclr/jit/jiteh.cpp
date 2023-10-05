@@ -2281,7 +2281,7 @@ bool Compiler::fgNormalizeEHCase2()
                                 fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
                             }
 
-                            if ((predBlock->GetBBNext() == newTryStart) && predBlock->bbFallsThrough())
+                            if (predBlock->NextIs(newTryStart) && predBlock->bbFallsThrough())
                             {
                                 fgRemoveRefPred(insertBeforeBlk, predBlock);
                                 fgAddRefPred(newTryStart, predBlock);
@@ -4112,7 +4112,7 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
     if (xtab->HasFinallyHandler())
     {
         assert((xtab->ebdHndBeg == block) || // The normal case
-               ((xtab->ebdHndBeg->GetBBNext() == block) &&
+               (xtab->ebdHndBeg->NextIs(block) &&
                 (xtab->ebdHndBeg->bbFlags & BBF_INTERNAL))); // After we've already inserted a header block, and we're
                                                              // trying to decide how to split up the predecessor edges.
         if (predBlock->KindIs(BBJ_CALLFINALLY))

@@ -741,7 +741,7 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
             bool initBlockOk = (predBlock == initBlock);
             if (!initBlockOk)
             {
-                if (predBlock->KindIs(BBJ_NONE) && (predBlock->GetBBNext() == optLoopTable[loopInd].lpEntry) &&
+                if (predBlock->KindIs(BBJ_NONE) && predBlock->NextIs(optLoopTable[loopInd].lpEntry) &&
                     (predBlock->countOfInEdges() == 1) && (predBlock->firstStmt() == nullptr) &&
                     !predBlock->IsFirst() && predBlock->GetBBPrev()->bbFallsThrough())
                 {
@@ -1150,7 +1150,7 @@ bool Compiler::optExtractInitTestIncr(
         // If we are rebuilding the loop table, we would already have the pre-header block introduced
         // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
         // little harder for the possible loop initialization statement.
-        if (initBlock->KindIs(BBJ_NONE) && (initBlock->GetBBNext() == top) && (initBlock->countOfInEdges() == 1) &&
+        if (initBlock->KindIs(BBJ_NONE) && initBlock->NextIs(top) && (initBlock->countOfInEdges() == 1) &&
             !initBlock->IsFirst() && initBlock->GetBBPrev()->bbFallsThrough())
         {
             initBlock = initBlock->GetBBPrev();
@@ -1394,7 +1394,7 @@ void Compiler::optCheckPreds()
                     }
                     FALLTHROUGH;
                 case BBJ_NONE:
-                    noway_assert(bb->GetBBNext() == block);
+                    noway_assert(bb->NextIs(block));
                     break;
                 case BBJ_EHFILTERRET:
                 case BBJ_ALWAYS:
@@ -1961,7 +1961,7 @@ private:
             // This must be a block we inserted to connect fall-through after moving blocks.
             // To determine if it's in the loop or not, use the number of its unique predecessor
             // block.
-            assert(block->bbPreds->getSourceBlock() == block->GetBBPrev());
+            assert(block->PrevIs(block->bbPreds->getSourceBlock()));
             assert(block->bbPreds->getNextPredEdge() == nullptr);
             return block->GetBBPrev()->bbNum;
         }
@@ -3032,7 +3032,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
             //
             BasicBlock* const t = optLoopTable[loopInd].lpTop;
             assert(siblingB->KindIs(BBJ_COND));
-            assert(siblingB->GetBBNext() == t);
+            assert(siblingB->NextIs(t));
 
             JITDUMP(FMT_LP " head " FMT_BB " is also " FMT_LP " bottom\n", loopInd, h->bbNum, sibling);
 
@@ -3206,7 +3206,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     // Because of this, introducing a block before t automatically gives us
     // the right flow out of h.
     //
-    assert(h->GetBBNext() == t);
+    assert(h->NextIs(t));
     assert(h->bbFallsThrough());
     assert(h->KindIs(BBJ_NONE, BBJ_COND));
     if (h->KindIs(BBJ_COND))
@@ -3330,8 +3330,8 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
         }
     }
 
-    assert(h->GetBBNext() == newT);
-    assert(newT->GetBBNext() == t);
+    assert(h->NextIs(newT));
+    assert(newT->NextIs(t));
 
     // With the Option::Current we are changing which block is loop top.
     // Make suitable updates.
@@ -3361,7 +3361,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
              childLoop = optLoopTable[childLoop].lpSibling)
         {
             if ((optLoopTable[childLoop].lpEntry == origE) && (optLoopTable[childLoop].lpHead == h) &&
-                newT->KindIs(BBJ_NONE) && (newT->GetBBNext() == origE))
+                newT->KindIs(BBJ_NONE) && newT->NextIs(origE))
             {
                 optUpdateLoopHead(childLoop, h, newT);
 
@@ -4359,7 +4359,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 // Note: we can't use the loop.LoopBlocks() iterator, as it captures loop.lpBottom->bbNext at the
                 // beginning of iteration, and we insert blocks before that. So we need to evaluate lpBottom->bbNext
                 // every iteration.
-                for (BasicBlock* block = loop.lpTop; block != loop.lpBottom->GetBBNext(); block = block->GetBBNext())
+                for (BasicBlock* block = loop.lpTop; !loop.lpBottom->NextIs(block); block = block->GetBBNext())
                 {
                     BasicBlock* newBlock = insertAfter =
                         fgNewBBafter(block->GetBBJumpKind(), insertAfter, /*extendRegion*/ true);
@@ -4478,7 +4478,7 @@ PhaseStatus Compiler::optUnrollLoops()
                 //
                 for (BasicBlock* succ : block->Succs(this))
                 {
-                    if ((block == bottom) && (succ == bottom->GetBBNext()))
+                    if ((block == bottom) && bottom->NextIs(succ))
                     {
                         continue;
                     }
@@ -4860,7 +4860,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     BasicBlock* const bTop = bTest->bbJumpDest;
 
-    if (bTop != block->GetBBNext())
+    if (!block->NextIs(bTop))
     {
         return false;
     }
@@ -7987,7 +7987,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
 //
 void Compiler::fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top)
 {
-    assert(newHead->GetBBNext() == top);
+    assert(newHead->NextIs(top));
     assert(!fgIsFirstBlockOfFilterOrHandler(top));
 
     if ((top->bbFlags & BBF_TRY_BEG) != 0)
@@ -8200,7 +8200,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         {
             // Allow for either the fall-through or branch to target 'entry'.
             BasicBlock* skipLoopBlock;
-            if (head->GetBBNext() == entry)
+            if (head->NextIs(entry))
             {
                 skipLoopBlock = head->bbJumpDest;
             }
@@ -8302,7 +8302,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             case BBJ_NONE:
                 // This 'entry' predecessor that isn't dominated by 'entry' must be outside the loop,
                 // meaning it must be fall-through to 'entry', and we must have a top-entry loop.
-                noway_assert((entry == top) && (predBlock == head) && (predBlock->GetBBNext() == preHead));
+                noway_assert((entry == top) && (predBlock == head) && predBlock->NextIs(preHead));
                 fgRemoveRefPred(entry, predBlock);
                 fgAddRefPred(preHead, predBlock);
                 break;
@@ -8311,11 +8311,11 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 if (predBlock->bbJumpDest == entry)
                 {
                     predBlock->bbJumpDest = preHead;
-                    noway_assert(predBlock->GetBBNext() != preHead);
+                    noway_assert(!predBlock->NextIs(preHead));
                 }
                 else
                 {
-                    noway_assert((entry == top) && (predBlock == head) && (predBlock->GetBBNext() == preHead));
+                    noway_assert((entry == top) && (predBlock == head) && predBlock->NextIs(preHead));
                 }
                 fgRemoveRefPred(entry, predBlock);
                 fgAddRefPred(preHead, predBlock);
