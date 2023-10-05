@@ -9,17 +9,9 @@ parameters:
   isOfficialBuild: false
   runtimeVariant: ''
   platform: ''
-
-  # When set to a non-empty value (Debug / Release), it determines the runtime's
-  # build configuration to use for building libraries and tests. Setting this
-  # property implies a dependency of this job on the appropriate runtime build
-  # and is used to construct the name of the Azure artifact representing
-  # runtime build to use for building the libraries and library tests.
-  liveRuntimeBuildConfig: ''
-  runtimeFlavor: 'coreclr'
+  testScope: ''
 
   timeoutInMinutes: 150
-  preBuildSteps: []
   container: ''
   condition: true
   dependOnEvaluatePaths: false
@@ -27,9 +19,6 @@ parameters:
   shouldContinueOnError: false
   variables: {}
   pool: ''
-  # Run tests as part of the build job (instead of running them in a separate job)
-  runTests: false
-  testScope: ''
 
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
@@ -41,11 +30,9 @@ jobs:
       crossBuild: ${{ parameters.crossBuild }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
-      liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
-      runTests: ${{ parameters.runTests }}
+      runTests: false
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-      preBuildSteps: ${{ parameters.preBuildSteps }}
       container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
       dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
@@ -56,27 +43,14 @@ jobs:
       name: build
       displayName: 'Build'
 
-      ${{ if and(ne(parameters.liveRuntimeBuildConfig, ''), eq(parameters.runTests, true)) }}:
-        dependsOn:
-        # Use full product dependency for test runs
-        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
-
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - _subset: tools+libs+libs.tests
-        - ${{ if eq(parameters.runTests, false) }}:
-          - _subset: tools+libs
         - _buildAction: ''
         - _additionalBuildArguments: '/p:ArchiveTests=true'
         - ${{ parameters.variables }}
 
-
-        - ${{ parameters.variables }}
-
       steps:
-        - ${{ if eq(parameters.isOfficialBuild, true) }}:
-          - template: /eng/pipelines/common/restore-internal-tools.yml
-
         - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
           - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
@@ -99,43 +73,26 @@ jobs:
               df -h
             displayName: Disk Usage after Build
 
-        - ${{ if eq(parameters.runTests, false) }}:
-          - template: /eng/pipelines/libraries/prepare-for-bin-publish.yml
-            parameters:
-              isOfficialBuild: ${{ parameters.isOfficialBuild }}
+        - template: /eng/pipelines/libraries/prepare-for-bin-publish.yml
 
-          - template: /eng/pipelines/common/upload-artifact-step.yml
-            parameters:
-              rootFolder: $(Build.ArtifactStagingDirectory)/artifacts
-              includeRootFolder: false
-              archiveType: $(archiveType)
-              archiveExtension: $(archiveExtension)
-              tarCompression: $(tarCompression)
-              artifactName: $(librariesBuildArtifactName)
-              displayName: Build Assets
+        - template: /eng/pipelines/common/upload-artifact-step.yml
+          parameters:
+            rootFolder: $(Build.ArtifactStagingDirectory)/artifacts
+            includeRootFolder: false
+            archiveType: $(archiveType)
+            archiveExtension: $(archiveExtension)
+            tarCompression: $(tarCompression)
+            artifactName: $(librariesBuildArtifactName)
+            displayName: Build Assets
 
-          # Upload test assets if we are sending tests to Helix and not running them directly in this job.
-          - ${{ if and(eq(parameters.runTests, false)) }}:
-            - template: /eng/pipelines/common/upload-artifact-step.yml
-              parameters:
-                rootFolder: $(Build.SourcesDirectory)/artifacts/helix
-                includeRootFolder: true
-                archiveType: $(archiveType)
-                archiveExtension: $(archiveExtension)
-                tarCompression: $(tarCompression)
-                artifactName: $(librariesTestsArtifactName)
-                displayName: Test Assets
-
-        - ${{ if and(eq(parameters.runTests, true)) }}:
-          - template: /eng/pipelines/libraries/helix.yml
-            parameters:
-              osGroup: ${{ parameters.osGroup }}
-              targetRid: ${{ parameters.targetRid }}
-              archType: ${{ parameters.archType }}
-              buildConfig: ${{ parameters.buildConfig }}
-              helixQueues: ${{ parameters.helixQueues }}
-              testScope: ${{ parameters.testScope }}
-              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
-              extraHelixArguments: $(_extraHelixArguments)
+        # Upload test assets
+        # We'll pull them down in another job to send to Helix
+        - template: /eng/pipelines/common/upload-artifact-step.yml
+          parameters:
+            rootFolder: $(Build.SourcesDirectory)/artifacts/helix
+            includeRootFolder: true
+            archiveType: $(archiveType)
+            archiveExtension: $(archiveExtension)
+            tarCompression: $(tarCompression)
+            artifactName: $(librariesTestsArtifactName)
+            displayName: Test Assets

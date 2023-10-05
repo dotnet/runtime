@@ -658,15 +658,16 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-              condition: >-
-                or(
-                eq(variables['librariesContainsChange'], true),
-                eq(variables['monoContainsChange'], true),
-                eq(variables['isRollingBuild'], true))
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  condition: >-
+                    or(
+                    eq(variables['librariesContainsChange'], true),
+                    eq(variables['monoContainsChange'], true),
+                    eq(variables['isRollingBuild'], true))
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
@@ -1614,8 +1615,6 @@ extends:
           - SourceBuild_centos8_x64
           jobParameters:
             nameSuffix: centos8SourceBuild
-            extraStepsParameters:
-              name: SourceBuildPackages
             timeoutInMinutes: 95
             condition: eq(variables['isRollingBuild'], true)
 
@@ -1628,7 +1627,5 @@ extends:
           - SourceBuild_banana24_x64
           jobParameters:
             nameSuffix: banana24SourceBuild
-            extraStepsParameters:
-              name: SourceBuildPackages
             timeoutInMinutes: 95
             condition: eq(variables['isRollingBuild'], true)
