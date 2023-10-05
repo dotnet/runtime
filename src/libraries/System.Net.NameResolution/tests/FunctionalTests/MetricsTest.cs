@@ -14,7 +14,7 @@ namespace System.Net.NameResolution.Tests
 {
     public class MetricsTest
     {
-        private const string DnsLookupDuration = "dns.lookups.duration";
+        private const string DnsLookupDuration = "dns.lookup.duration";
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ResolveValidHostName_MetricsRecorded()

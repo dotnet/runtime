@@ -13,7 +13,7 @@ namespace System.Net
         private static readonly Meter s_meter = new("System.Net.NameResolution");
 
         private static readonly Histogram<double> s_lookupDuration = s_meter.CreateHistogram<double>(
-            name: "dns.lookups.duration",
+            name: "dns.lookup.duration",
             unit: "s",
             description: "Measures the time taken to perform a DNS lookup.");
 
