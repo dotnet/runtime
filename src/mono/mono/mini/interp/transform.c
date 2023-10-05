@@ -4783,6 +4783,19 @@ is_ip_protected (MonoMethodHeader *header, int offset)
 }
 
 static gboolean
+should_insert_seq_point (TransformData *td)
+{
+	//following the CoreCLR's algorithm for adding the sequence points
+	if ((*td->ip == CEE_NOP) ||
+		(*td->ip == CEE_CALLVIRT) ||
+		(*td->ip == CEE_CALLI) ||
+		(*td->ip == CEE_CALL) ||
+		(GPTRDIFF_TO_INT (td->sp - td->stack) == 0))
+		return TRUE;
+	return FALSE;
+}
+
+static gboolean
 generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error)
 {
 	int mt, i32;
@@ -5087,15 +5100,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			WRITE64_INS (td->last_ins, 0, &counter);
 		}
 
-		if (G_UNLIKELY (generate_enc_seq_points_without_debug_info))
-		{
-			if ((*td->ip == CEE_NOP) ||
-				(*td->ip == CEE_CALLVIRT) ||
-				(*td->ip == CEE_CALLI) ||
-				(*td->ip == CEE_CALL) ||
-				(GPTRDIFF_TO_INT (td->sp - td->stack) == 0))
+		if (G_UNLIKELY (generate_enc_seq_points_without_debug_info) && should_insert_seq_point (td))
 			last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
-		}
+
 		switch (*td->ip) {
 		case CEE_NOP:
 			/* lose it */
@@ -5365,7 +5372,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if (!interp_transform_call (td, method, NULL, generic_context, constrained_class, readonly, error, TRUE, save_last_error, tailcall))
 				goto exit;
 
-			if (need_seq_point && !generate_seq_points_without_debug_info) {
+			if (need_seq_point && !generate_enc_seq_points_without_debug_info) {
 				// check if it is a nested call and remove the MONO_INST_NONEMPTY_STACK of the last breakpoint, only for non native methods
 				if (!(method->flags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 					if (emitted_funccall_seq_point)	{
