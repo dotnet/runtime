@@ -4984,7 +4984,7 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     }
 
     // If bEnd was the first Cold basic block update fgFirstColdBlock
-    if (fgFirstColdBlock == bEnd)
+    if (bEnd->IsFirstColdBlock(this))
     {
         fgFirstColdBlock = bPrev->Next();
     }
@@ -5060,7 +5060,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
         else if (bPrev->KindIs(BBJ_ALWAYS) && block->NextIs(bPrev->bbJumpDest) &&
-                 !(bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) && (block != fgFirstColdBlock) && !block->IsLastHotBlock(this))
+                 !(bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) && !block->IsFirstColdBlock(this) && !block->IsLastHotBlock(this))
         {
             // previous block is a BBJ_ALWAYS to the next block: change to BBJ_NONE.
             // Note that we don't do it if bPrev follows a BBJ_CALLFINALLY block (BBF_KEEP_BBJ_ALWAYS),
@@ -5070,7 +5070,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         }
 
         // If this is the first Cold basic block update fgFirstColdBlock
-        if (block == fgFirstColdBlock)
+        if (block->IsFirstColdBlock(this))
         {
             fgFirstColdBlock = block->Next();
         }
@@ -5168,7 +5168,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         }
 
         // If this is the first Cold basic block update fgFirstColdBlock
-        if (block == fgFirstColdBlock)
+        if (block->IsFirstColdBlock(this))
         {
             fgFirstColdBlock = block->Next();
         }

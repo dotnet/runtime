@@ -310,7 +310,7 @@ void CodeGen::genCodeForBBlist()
         //
         bool needLabel = (block->bbFlags & BBF_HAS_LABEL) != 0;
 
-        if (block == compiler->fgFirstColdBlock)
+        if (block->IsFirstColdBlock(compiler))
         {
 #ifdef DEBUG
             if (compiler->verbose)
@@ -354,7 +354,7 @@ void CodeGen::genCodeForBBlist()
                                                              gcInfo.gcRegByrefSetCur, false DEBUG_ARG(block));
         }
 
-        if (block == compiler->fgFirstColdBlock)
+        if (block->IsFirstColdBlock(compiler))
         {
             // We require the block that starts the Cold section to have a label
             noway_assert(block->bbEmitCookie);

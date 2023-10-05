@@ -202,6 +202,21 @@ bool BasicBlock::IsLastHotBlock(Compiler* compiler) const
 }
 
 //------------------------------------------------------------------------
+// IsFirstColdBlock: see if this is the first block in the cold section
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+// Returns:
+//    true if this is fgFirstColdBlock
+//    (fgFirstColdBlock is null if there is no cold code)
+//
+bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
+{
+    return (this == compiler->fgFirstColdBlock);
+}
+
+//------------------------------------------------------------------------
 // checkPredListOrder: see if pred list is properly ordered
 //
 // Returns:

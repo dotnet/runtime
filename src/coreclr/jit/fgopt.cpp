@@ -6171,7 +6171,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     bNext->KindIs(BBJ_ALWAYS) &&    // The next block is a BBJ_ALWAYS block
                     bNext->isEmpty() &&             // and it is an empty block
                     (bNext != bNext->bbJumpDest) && // special case for self jumps
-                    (bDest != fgFirstColdBlock) &&
+                    !bDest->IsFirstColdBlock(this) &&
                     (!fgInDifferentRegions(block, bDest))) // do not cross hot/cold sections
                 {
                     // case (a)
@@ -6331,7 +6331,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                         bNext->unmarkLoopAlign(this DEBUG_ARG("Optimized jump"));
 
                         // If this is the first Cold basic block update fgFirstColdBlock
-                        if (bNext == fgFirstColdBlock)
+                        if (bNext->IsFirstColdBlock(this))
                         {
                             fgFirstColdBlock = bNext->Next();
                         }

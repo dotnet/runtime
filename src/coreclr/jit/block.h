@@ -581,6 +581,8 @@ public:
 
     bool IsLastHotBlock(Compiler* compiler) const;
 
+    bool IsFirstColdBlock(Compiler* compiler) const;
+
     /* The following union describes the jump target(s) of this block */
     union {
         unsigned    bbJumpOffs; // PC offset (temporary only)
