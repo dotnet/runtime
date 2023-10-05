@@ -2000,7 +2000,8 @@ namespace DebuggerTests
             public long SumDefaultNegativeAndRequiredParamLongInts(long requiredParam, long optionalParam = -123) => requiredParam + optionalParam;
             public float SumDefaultNegativeAndRequiredParamFloats(float requiredParam, float optionalParam = -3.3f) => requiredParam + optionalParam;
             public double SumDefaultNegativeAndRequiredParamDoubles(double requiredParam, double optionalParam = -3.2) => requiredParam + optionalParam;
-            public double SumDefaultNegativeAndRequiredParamShortInts(short requiredParam, short optionalParam = -32768) => requiredParam + optionalParam;
+            public short SumDefaultNegativeAndRequiredParamShortInt(short requiredParam, short optionalParam = -32768) => (short)(requiredParam + optionalParam);
+            public short GetDefaultNegativeShortInt(short optionalParam = -32768) => optionalParam;
             public string GetDefaultAndRequiredParamMixedTypes(string requiredParam, int optionalParamFirst = -1, bool optionalParamSecond = false) => $"{requiredParam}; {optionalParamFirst}; {optionalParamSecond}";
         }
 

@@ -506,8 +506,10 @@ namespace DebuggerTests
                     ("test.SumDefaultNegativeAndRequiredParamFloats(-1.1f)", TNumber("-4.4", isDecimal: true)), // default: -3.3f
                     ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1, -0.2)", TNumber("-0.30000000000000004", isDecimal: true)), // expected result for doubles copied from coreclr response
                     ("test.SumDefaultNegativeAndRequiredParamDoubles(-0.1)", TNumber("-3.3000000000000003", isDecimal: true)), // default: -3.2
-                    // ("test.SumDefaultNegativeAndRequiredParamShortInts(-0.111, -0.456)", TNumber("-0.567", isDecimal: true)), // we have no way of testing it, debugger recognizes passed literals as integers and does not find the correct overload. We would need to cast to short and we don't support passing parameters with a cast.
-                    // ("test.SumDefaultNegativeAndRequiredParamShortInts(-0.111)", TNumber("-3.567", isDecimal: true)), // default: -32768
+                    // ("test.SumDefaultNegativeAndRequiredParamShortInts(-1, -123)", TNumber(-124)), // we have no way of testing it, debugger recognizes passed literals as integers and does not find the correct overload. We would need to cast to short and we don't support passing parameters with a cast.
+                    // ("test.SumDefaultNegativeAndRequiredParamShortInts(-10000)", TNumber(-42769)), // default: -32768
+                    // ("test.GetDefaultNegativeShortInt(-123)", TNumber(-123)),
+                    ("test.GetDefaultNegativeShortInt()", TNumber(-32768)), // default: -32768
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))
