@@ -520,13 +520,13 @@ public:
         return bbJumpKind;
     }
 
-    void SetBBJumpKind(BBjumpKinds kind DEBUG_ARG(Compiler* comp))
+    void SetBBJumpKind(BBjumpKinds kind DEBUG_ARG(Compiler* compiler))
     {
 #ifdef DEBUG
         // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
-        // TODO: Change assert to check if comp is in appropriate optimization phase to use BBJ_NONE
+        // TODO: Change assert to check if compiler is in appropriate optimization phase to use BBJ_NONE
         // (right now, this assertion does the null check to avoid unused variable warnings)
-        assert((kind != BBJ_NONE) || (comp != nullptr));
+        assert((kind != BBJ_NONE) || (compiler != nullptr));
 #endif // DEBUG
         bbJumpKind = kind;
     }
@@ -568,6 +568,8 @@ public:
     {
         return (bbNext == nullptr);
     }
+
+    bool IsLastHotBlock(Compiler* compiler) const;
 
     /* The following union describes the jump target(s) of this block */
     union {

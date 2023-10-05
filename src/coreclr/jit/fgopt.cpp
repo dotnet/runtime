@@ -2936,7 +2936,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             }
 
             // can't allow fall through into cold code
-            if (block->GetBBNext() == fgFirstColdBlock)
+            if (block->IsLastHotBlock(this))
             {
                 break;
             }

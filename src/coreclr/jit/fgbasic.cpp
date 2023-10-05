@@ -5061,7 +5061,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         }
         else if (bPrev->KindIs(BBJ_ALWAYS) && bPrev->bbJumpDest == block->GetBBNext() &&
                  !(bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) && (block != fgFirstColdBlock) &&
-                 (block->GetBBNext() != fgFirstColdBlock))
+                 !block->IsLastHotBlock(this))
         {
             // previous block is a BBJ_ALWAYS to the next block: change to BBJ_NONE.
             // Note that we don't do it if bPrev follows a BBJ_CALLFINALLY block (BBF_KEEP_BBJ_ALWAYS),

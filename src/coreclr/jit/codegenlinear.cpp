@@ -682,7 +682,7 @@ void CodeGen::genCodeForBBlist()
                 if ((block->IsLast()) || (block->GetBBNext()->bbFlags & BBF_FUNCLET_BEG) ||
                     !BasicBlock::sameEHRegion(block, block->GetBBNext()) ||
                     (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->GetBBNext())) ||
-                    block->GetBBNext() == compiler->fgFirstColdBlock)
+                    block->IsLastHotBlock(compiler))
                 {
                     instGen(INS_BREAKPOINT); // This should never get executed
                 }

@@ -187,6 +187,21 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
 }
 
 //------------------------------------------------------------------------
+// IsLastHotBlock: see if this is the last block before the cold section
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+// Returns:
+//    true if the next block is fgFirstColdBlock
+//    (if fgFirstColdBlock is null, this call is equivalent to IsLast())
+//
+bool BasicBlock::IsLastHotBlock(Compiler* compiler) const
+{
+    return (bbNext == compiler->fgFirstColdBlock);
+}
+
+//------------------------------------------------------------------------
 // checkPredListOrder: see if pred list is properly ordered
 //
 // Returns:
