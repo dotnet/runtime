@@ -230,12 +230,15 @@ namespace System.Net.Sockets
 
             int startTimeMs = Environment.TickCount;
 
-            // An event was successfully dequeued, and there may be more events to process. Schedule a work item to parallelize
-            // processing of events, before processing more events. Following this, it is the responsibility of the new work
-            // item and the epoll thread to schedule more work items as necessary. The parallelization may be necessary here if
-            // the user callback as part of handling the event blocks for some reason that may have a dependency on other queued
-            // socket events.
-            ScheduleToProcessEvents();
+            if (!eventQueue.IsEmpty)
+            {
+                // An event was successfully dequeued, and there may be more events to process. Schedule a work item to parallelize
+                // processing of events, before processing more events. Following this, it is the responsibility of the new work
+                // item and the epoll thread to schedule more work items as necessary. The parallelization may be necessary here if
+                // the user callback as part of handling the event blocks for some reason that may have a dependency on other queued
+                // socket events.
+                ScheduleToProcessEvents();
+            }
 
             while (true)
             {

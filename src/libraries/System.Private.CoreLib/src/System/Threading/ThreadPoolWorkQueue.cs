@@ -1110,12 +1110,15 @@ namespace System.Threading
                 return;
             }
 
-            // An work item was successfully dequeued, and there may be more work items to process. Schedule a work item to
-            // parallelize processing of work items, before processing more work items. Following this, it is the responsibility
-            // of the new work item and the poller thread to schedule more work items as necessary. The parallelization may be
-            // necessary here if the user callback as part of handling the work item blocks for some reason that may have a
-            // dependency on other queued work items.
-            ScheduleForProcessing();
+            if (!_workItems.IsEmpty)
+            {
+                // An work item was successfully dequeued, and there may be more work items to process. Schedule a work item to
+                // parallelize processing of work items, before processing more work items. Following this, it is the responsibility
+                // of the new work item and the poller thread to schedule more work items as necessary. The parallelization may be
+                // necessary here if the user callback as part of handling the work item blocks for some reason that may have a
+                // dependency on other queued work items.
+                ScheduleForProcessing();
+            }
 
             ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.threadLocals!;
             Debug.Assert(tl != null);
