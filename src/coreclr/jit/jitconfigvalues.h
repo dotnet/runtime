@@ -191,8 +191,9 @@ CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0) // Dump i
                                                                        // disassembled.
 CONFIG_INTEGER(JitDisasmSpilled, W("JitDisasmSpilled"), 0)      // Display native code when any register spilling occurs
 CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees for specified method
-CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 requests
-CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Only dump OSR requests for this offset
+CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 jit compilations
+CONFIG_INTEGER(JitDumpOSR, W("JitDumpOSR"), 1)                  // Dump OSR jit compilations
+CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Dump only OSR jit compilations with this offset
 CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))

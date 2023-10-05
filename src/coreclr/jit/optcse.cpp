@@ -3336,14 +3336,13 @@ public:
                     if (attempt > 32)
                     {
                         doCSE = false;
-                        JITDUMP("CSE " FMT_CSE " attempt %u disabled, out side of mask range\n", candidate.CseIndex(),
-                                attempt, doCSE ? "allowed" : "disabled");
+                        JITDUMP(FMT_CSE " attempt %u disabled, out of mask range\n", candidate.CseIndex(), attempt);
                     }
                     else
                     {
                         doCSE = ((1 << attempt) & ((unsigned)JitConfig.JitCSEMask())) != 0;
-                        JITDUMP("CSE " FMT_CSE " attempt %u %s mask 0x%0x: %s\n", candidate.CseIndex(), attempt,
-                                doCSE ? "allowed" : "disabled", JitConfig.JitCSEMask());
+                        JITDUMP(FMT_CSE " attempt %u mask 0x%08x: %s\n", candidate.CseIndex(), attempt,
+                                JitConfig.JitCSEMask(), doCSE ? "allowed" : "disabled");
                     }
                 }
             }
