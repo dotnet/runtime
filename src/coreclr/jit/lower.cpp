@@ -8114,7 +8114,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
 #if defined(TARGET_AMD64)
             case TYP_SIMD16:
-                if (comp->getPreferredVectorByteLength() >= 32))
+                if (comp->getPreferredVectorByteLength() >= 32)
                 {
                     newType = TYP_SIMD32;
                     break;
