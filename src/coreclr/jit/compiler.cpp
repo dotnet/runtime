@@ -5229,10 +5229,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         INDEBUG(sprintf_s(debugPart, 128, ", hash=0x%08x%s", info.compMethodHash(), compGetStressMessage()));
 
         char metricPart[128] = {0};
+#ifdef DEBUG
         if (JitConfig.JitMetrics() > 0)
         {
-            INDEBUG(sprintf_s(metricPart, 128, ", perfScore=%.2f, numCse=%u", info.compPerfScore, optCSEcount));
+            sprintf_s(metricPart, 128, ", perfScore=%.2f, numCse=%u", info.compPerfScore, optCSEcount);
         }
+#endif
 
         const bool hasProf = fgHaveProfileData();
         printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s%s]\n", methodsCompiled, fullName,

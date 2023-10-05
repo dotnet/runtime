@@ -398,10 +398,10 @@ CONFIG_INTEGER(JitCSEHash, W("JitCSEHash"), 0)
 // ...etc...
 // FFFFFFFF : do all the CSEs normally done
 CONFIG_INTEGER(JitCSEMask, W("JitCSEMask"), 0)
-#endif
 
 // Enable metric output in jit disasm & elsewhere
 CONFIG_INTEGER(JitMetrics, W("JitMetrics"), 0)
+#endif
 
 ///
 /// JIT
