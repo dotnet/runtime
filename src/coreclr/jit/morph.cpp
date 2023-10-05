@@ -5086,7 +5086,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
     {
         // A non-null context here implies our [+ some offset] parent is an indirection, one that
         // will implicitly null-check the produced address.
-        addExplicitNullCheck = (mac == nullptr) || fgIsBigOffset(mac->TotalOffset + fieldOffset);
+        addExplicitNullCheck = (mac == nullptr) || fgIsBigOffset(mac->m_totalOffset + fieldOffset);
 
         // The transformation here turns a value dependency (FIELD_ADDR being a
         // known non-null operand) into a control-flow dependency (introducing
@@ -5098,14 +5098,14 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         {
             if (mac != nullptr)
             {
-                mac->Consumer->SetHasOrderingSideEffect();
+                mac->m_user->SetHasOrderingSideEffect();
             }
         }
         else
         {
             // We can elide the null check only by letting it happen as part of
             // the consuming indirection, so it is no longer non-faulting.
-            mac->Consumer->gtFlags &= ~GTF_IND_NONFAULTING;
+            mac->m_user->gtFlags &= ~GTF_IND_NONFAULTING;
         }
     }
 
@@ -8966,18 +8966,18 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         if (tree->OperIsIndir()) // TODO-CQ: add more operators here (e. g. atomics).
         {
             // Communicate to FIELD_ADDR morphing that the parent is an indirection.
-            indMac.Consumer = tree->AsIndir();
-            mac             = &indMac;
+            indMac.m_user = tree->AsIndir();
+            mac           = &indMac;
         }
         // For additions, if we already have a context, keep track of whether all offsets added
         // to the address are constant, and their sum does not overflow.
         else if ((mac != nullptr) && tree->OperIs(GT_ADD) && op2->IsCnsIntOrI())
         {
-            ClrSafeInt<size_t> offset(mac->TotalOffset);
+            ClrSafeInt<size_t> offset(mac->m_totalOffset);
             offset += op2->AsIntCon()->IconValue();
             if (!offset.IsOverflow())
             {
-                mac->TotalOffset = offset.Value();
+                mac->m_totalOffset = offset.Value();
             }
             else
             {

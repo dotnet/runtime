@@ -5917,8 +5917,8 @@ private:
     // small; hence the other fields of MorphAddrContext.
     struct MorphAddrContext
     {
-        GenTreeIndir* Consumer = nullptr; // Indirection using this address.
-        size_t        TotalOffset = 0;    // Sum of offsets between the top-level indirection and here (current context).
+        GenTreeIndir* m_user = nullptr;  // Indirection using this address.
+        size_t        m_totalOffset = 0; // Sum of offsets between the top-level indirection and here (current context).
     };
 
 #ifdef FEATURE_SIMD
