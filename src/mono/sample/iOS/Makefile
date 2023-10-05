@@ -6,6 +6,7 @@ TARGET?=iossimulator
 DEPLOY_AND_RUN?=true
 APP_SANDBOX?=false
 STRIP_DEBUG_SYMBOLS?=false # only used when measuring SOD via build-appbundle make target
+HYBRID_GLOBALIZATION?=false
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
 #If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
@@ -34,6 +35,7 @@ build-appbundle: clean appbuilder
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	/p:DeployAndRun=false \
+	/p:HybridGlobalization=$(HYBRID_GLOBALIZATION) \
 	/bl
 
 run: clean appbuilder

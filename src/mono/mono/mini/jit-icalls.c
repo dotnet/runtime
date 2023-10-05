@@ -544,7 +544,7 @@ mono_imul_ovf (gint32 a, gint32 b)
 		return 0;
 	}
 
-	return res;
+	return GINT64_TO_INT32 (res);
 }
 
 gint32
@@ -559,7 +559,7 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 		return 0;
 	}
 
-	return res;
+	return GUINT64_TO_INT32 (res);
 }
 
 gint32
@@ -574,7 +574,7 @@ mono_imul_ovf_un_oom (guint32 a, guint32 b)
 		return 0;
 	}
 
-	return res;
+	return GUINT64_TO_INT32 (res);
 }
 #endif
 
@@ -1685,6 +1685,22 @@ mono_throw_invalid_program (const char *msg)
 {
 	ERROR_DECL (error);
 	mono_error_set_invalid_program (error, "Invalid IL due to: %s", msg);
+	mono_error_set_pending_exception (error);
+}
+
+void
+mono_throw_type_load (MonoClass* klass)
+{
+	ERROR_DECL (error);
+
+	if (G_UNLIKELY(!klass)) {
+		mono_error_set_generic_error (error, "System", "TypeLoadException", "");
+	} else {
+		char* klass_name = mono_type_get_full_name (klass);
+		mono_error_set_type_load_class (error, klass, "Attempting to load invalid type '%s'.", klass_name);
+		g_free (klass_name);
+	}
+	
 	mono_error_set_pending_exception (error);
 }
 

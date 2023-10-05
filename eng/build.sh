@@ -32,7 +32,7 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
   echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
-  echo "                                  linux-musl, linux-bionic or haiku."
+  echo "                                  linux-musl, linux-bionic, tizen, or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -67,8 +67,8 @@ usage()
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net8.0 or net48."
-  echo "                             [Default: net8.0]"
+  echo "  --framework (-f)           Build framework: net9.0 or net48."
+  echo "                             [Default: net9.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -522,6 +522,11 @@ while [[ $# > 0 ]]; do
       sanitizers="${opt/#-fsanitize=/}" # -fsanitize=address => address
       arguments="$arguments /p:EnableNativeSanitizers=$sanitizers"
       shift 2
+      ;;
+
+      -verbose)
+      arguments="$arguments /p:CoreclrVerbose=true"
+      shift 1
       ;;
 
       *)

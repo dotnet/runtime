@@ -1212,27 +1212,6 @@ ves_array_calculate_index (MonoArray *ao, stackval *sp, gboolean safe)
 }
 
 static MonoException*
-ves_array_get (InterpFrame *frame, stackval *sp, stackval *retval, MonoMethodSignature *sig, gboolean safe)
-{
-	MonoObject *o = sp->data.o;
-	MonoArray *ao = (MonoArray *) o;
-	MonoClass *ac = o->vtable->klass;
-
-	g_assert (m_class_get_rank (ac) >= 1);
-
-	gint32 pos = ves_array_calculate_index (ao, sp + 1, safe);
-	if (pos == -1)
-		return mono_get_exception_index_out_of_range ();
-
-	gint32 esize = mono_array_element_size (ac);
-	gconstpointer ea = mono_array_addr_with_size_fast (ao, esize, pos);
-
-	MonoType *mt = sig->ret;
-	stackval_from_data (mt, retval, ea, FALSE);
-	return NULL;
-}
-
-static MonoException*
 ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArray *ao, gpointer *ret, stackval *sp, gboolean needs_typecheck)
 {
 	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
@@ -2728,21 +2707,8 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	interp_push_lmf (&ext, frame);
 
 	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
-#if JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL
-		/*
-		 * invoke jit_call_cb via a single indirect function call that dispatches to
-		 *  either a specialized JS implementation or a specialized WASM EH version
-		 * see jiterpreter-jit-call.ts and do-jit-call.wat
-		 * NOTE: the first argument must ALWAYS be jit_call_cb for the specialization.
-		 *  the actual implementation cannot verify this at runtime, so get it right
-		 * this is faster than mono_llvm_cpp_catch_exception by avoiding the use of
-		 *  emscripten invoke_vi to find and invoke jit_call_cb indirectly
-		 */
-		jiterpreter_do_jit_call (jit_call_cb, &cb_data, &thrown);
-#else
 		/* Catch the exception thrown by the native code using a try-catch */
 		mono_llvm_cpp_catch_exception (jit_call_cb, &cb_data, &thrown);
-#endif
 	} else {
 		jit_call_cb (&cb_data);
 	}

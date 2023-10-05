@@ -139,5 +139,33 @@ namespace System.Net.Http.Functional.Tests
                     }).ConfigureAwait(false);
                 });
         }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Windows, "DefaultCredentials are unsupported for NTLM on Unix / Managed implementation")]
+        public async Task DefaultHandler_FakeServer_DefaultCredentials()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+                    requestMessage.Version = new Version(1, 1);
+
+                    HttpMessageHandler handler = new HttpClientHandler() { Credentials = CredentialCache.DefaultCredentials };
+                    using (var client = new HttpClient(handler))
+                    {
+                        HttpResponseMessage response = await client.SendAsync(requestMessage);
+                        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                    }
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        var authHeader = "WWW-Authenticate: NTLM\r\n";
+                        await connection.SendResponseAsync(HttpStatusCode.Unauthorized, authHeader).ConfigureAwait(false);
+                        connection.CompleteRequestProcessing();
+                    }).ConfigureAwait(false);
+                });
+        }
     }
 }

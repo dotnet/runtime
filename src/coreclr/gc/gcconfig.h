@@ -83,6 +83,7 @@ public:
     INT_CONFIG   (BGCSpinCount,              "BGCSpinCount",              NULL,                                140,                "Specifies the bgc spin count")                                                           \
     INT_CONFIG   (BGCSpin,                   "BGCSpin",                   NULL,                                2,                  "Specifies the bgc spin time")                                                            \
     INT_CONFIG   (HeapCount,                 "GCHeapCount",               "System.GC.HeapCount",               0,                  "Specifies the number of server GC heaps")                                                 \
+    INT_CONFIG   (MaxHeapCount,              "GCMaxHeapCount",            "System.GC.MaxHeapCount",            0,                  "Specifies the max number of server GC heaps to adjust to")                                                 \
     INT_CONFIG   (Gen0Size,                  "GCgen0size",                NULL,                                0,                  "Specifies the smallest gen0 budget")                                                     \
     INT_CONFIG   (SegmentSize,               "GCSegmentSize",             NULL,                                0,                  "Specifies the managed heap segment size")                                                \
     INT_CONFIG   (LatencyMode,               "GCLatencyMode",             NULL,                                -1,                 "Specifies the GC latency mode - batch, interactive or low latency (note that the same "   \
@@ -179,7 +180,7 @@ public:
 enum HeapVerifyFlags {
     HEAPVERIFY_NONE             = 0,
     HEAPVERIFY_GC               = 1,   // Verify the heap at beginning and end of GC
-    HEAPVERIFY_BARRIERCHECK     = 2,   // Verify the brick table
+    HEAPVERIFY_BARRIERCHECK     = 2,   // Verify the assignment operations correctly went through write barrier code
     HEAPVERIFY_SYNCBLK          = 4,   // Verify sync block scanning
 
     // the following options can be used to mitigate some of the overhead introduced

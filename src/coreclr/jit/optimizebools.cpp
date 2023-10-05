@@ -587,7 +587,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 
     // Update the flow.
     m_comp->fgRemoveRefPred(m_b1->bbJumpDest, m_b1);
-    m_b1->bbJumpKind = BBJ_NONE;
+    m_b1->SetBBJumpKind(BBJ_NONE DEBUG_ARG(m_comp));
 
     // Fixup flags.
     m_b2->bbFlags |= (m_b1->bbFlags & BBF_COPY_PROPAGATE);
@@ -877,18 +877,18 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     if (optReturnBlock)
     {
         m_b1->bbJumpDest = nullptr;
-        m_b1->bbJumpKind = BBJ_RETURN;
+        m_b1->SetBBJumpKind(BBJ_RETURN DEBUG_ARG(m_comp));
 #ifdef DEBUG
         m_b1->bbJumpSwt = m_b2->bbJumpSwt;
 #endif
-        assert(m_b2->bbJumpKind == BBJ_RETURN);
+        assert(m_b2->KindIs(BBJ_RETURN));
         assert(m_b1->bbNext == m_b2);
         assert(m_b3 != nullptr);
     }
     else
     {
-        assert(m_b1->bbJumpKind == BBJ_COND);
-        assert(m_b2->bbJumpKind == BBJ_COND);
+        assert(m_b1->KindIs(BBJ_COND));
+        assert(m_b2->KindIs(BBJ_COND));
         assert(m_b1->bbJumpDest == m_b2->bbJumpDest);
         assert(m_b1->bbNext == m_b2);
         assert(m_b2->bbNext != nullptr);
@@ -1180,7 +1180,7 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
         return;
     }
 
-    assert(m_b1->bbJumpKind == BBJ_COND);
+    assert(m_b1->KindIs(BBJ_COND));
     Statement* const stmt = m_b1->lastStmt();
     GenTree* const   cond = stmt->GetRootNode();
 
@@ -1282,8 +1282,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     ssize_t ival2 = opr2->AsIntCon()->gtIconVal;
 
     // Is the value a boolean?
-    // We can either have a boolean expression (marked GTF_BOOLEAN) or
-    // a local variable that is marked as being boolean (lvIsBoolean)
+    // We can either have a boolean expression (marked GTF_BOOLEAN) or a constant 0/1.
 
     if (opr1->gtFlags & GTF_BOOLEAN)
     {
@@ -1292,18 +1291,6 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     else if ((opr1->gtOper == GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
     {
         pOptTest->isBool = true;
-    }
-    else if (opr1->gtOper == GT_LCL_VAR)
-    {
-        // is it a boolean local variable?
-
-        unsigned lclNum = opr1->AsLclVarCommon()->GetLclNum();
-        noway_assert(lclNum < m_comp->lvaCount);
-
-        if (m_comp->lvaTable[lclNum].lvIsBoolean)
-        {
-            pOptTest->isBool = true;
-        }
     }
 
     // Was our comparison against the constant 1 (i.e. true)
@@ -1482,7 +1469,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             // We're only interested in conditional jumps here
 
-            if (b1->bbJumpKind != BBJ_COND)
+            if (!b1->KindIs(BBJ_COND))
             {
                 continue;
             }
@@ -1505,7 +1492,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             // The next block needs to be a condition or return block.
 
-            if (b2->bbJumpKind == BBJ_COND)
+            if (b2->KindIs(BBJ_COND))
             {
                 if ((b1->bbJumpDest != b2->bbJumpDest) && (b1->bbJumpDest != b2->bbNext))
                 {
@@ -1530,7 +1517,7 @@ PhaseStatus Compiler::optOptimizeBools()
                 }
 #endif
             }
-            else if (b2->bbJumpKind == BBJ_RETURN)
+            else if (b2->KindIs(BBJ_RETURN))
             {
                 // Set b3 to b1 jump destination
                 BasicBlock* b3 = b1->bbJumpDest;
@@ -1544,7 +1531,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
                 // b3 must be RETURN type
 
-                if (b3->bbJumpKind != BBJ_RETURN)
+                if (!b3->KindIs(BBJ_RETURN))
                 {
                     continue;
                 }

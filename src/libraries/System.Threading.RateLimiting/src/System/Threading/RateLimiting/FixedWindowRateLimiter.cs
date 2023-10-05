@@ -173,17 +173,7 @@ namespace System.Threading.RateLimiting
                             Debug.Assert(_queueCount >= 0);
                             if (!oldestRequest.TrySetResult(FailedLease))
                             {
-                                if (!oldestRequest.QueueCountModified)
-                                {
-                                    // We already updated the queue count, the Cancel code is about to run or running and waiting on our lock,
-                                    // tell Cancel not to do anything
-                                    oldestRequest.QueueCountModified = true;
-                                }
-                                else
-                                {
-                                    // Updating queue count was handled by the cancellation code, don't double count
-                                    _queueCount += oldestRequest.Count;
-                                }
+                                _queueCount += oldestRequest.Count;
                             }
                             else
                             {
@@ -340,19 +330,10 @@ namespace System.Threading.RateLimiting
 
                         if (!nextPendingRequest.TrySetResult(SuccessfulLease))
                         {
-                            // Queued item was canceled so add count back, permits weren't acquired
+                            // Queued item was canceled so add count back
                             _permitCount += nextPendingRequest.Count;
-                            if (!nextPendingRequest.QueueCountModified)
-                            {
-                                // We already updated the queue count, the Cancel code is about to run or running and waiting on our lock,
-                                // tell Cancel not to do anything
-                                nextPendingRequest.QueueCountModified = true;
-                            }
-                            else
-                            {
-                                // Updating queue count was handled by the cancellation code, don't double count
-                                _queueCount += nextPendingRequest.Count;
-                            }
+                            // Updating queue count is handled by the cancellation code
+                            _queueCount += nextPendingRequest.Count;
                         }
                         else
                         {
@@ -454,9 +435,6 @@ namespace System.Threading.RateLimiting
             private readonly CancellationToken _cancellationToken;
             private CancellationTokenRegistration _cancellationTokenRegistration;
 
-            // Update under the limiter lock and only if the queue count was updated by the calling code
-            public bool QueueCountModified { get; set; }
-
             // this field is used only by the disposal mechanics and never shared between threads
             private RequestRegistration? _next;
 
@@ -487,14 +465,7 @@ namespace System.Threading.RateLimiting
                     var limiter = (FixedWindowRateLimiter)registration.Task.AsyncState!;
                     lock (limiter.Lock)
                     {
-                        // Queuing and replenishing code might modify the _queueCount, since there is no guarantee of when the cancellation
-                        // code runs and we only want to update the _queueCount once, we set a bool (under a lock) so either method
-                        // can update the count and not double count.
-                        if (!registration.QueueCountModified)
-                        {
-                            limiter._queueCount -= registration.Count;
-                            registration.QueueCountModified = true;
-                        }
+                        limiter._queueCount -= registration.Count;
                     }
                 }
             }

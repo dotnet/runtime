@@ -26,7 +26,14 @@ internal sealed class CommonConfiguration
     public string? RuntimeConfigPath { get; private set; }
 
     private string? hostArg;
+    private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+    {
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        PropertyNameCaseInsensitive = true
+    };
 
+    public static JsonSerializerOptions JsonOptions => s_jsonOptions;
     public static CommonConfiguration FromCommandLineArguments(string[] args) => new CommonConfiguration(args);
 
     private CommonConfiguration(string[] args)
@@ -62,12 +69,7 @@ internal sealed class CommonConfiguration
 
         RuntimeConfig? rconfig = JsonSerializer.Deserialize<RuntimeConfig>(
                                                 File.ReadAllText(RuntimeConfigPath),
-                                                new JsonSerializerOptions(JsonSerializerDefaults.Web)
-                                                {
-                                                    AllowTrailingCommas = true,
-                                                    ReadCommentHandling = JsonCommentHandling.Skip,
-                                                    PropertyNameCaseInsensitive = true
-                                                });
+                                                JsonOptions);
         if (rconfig == null)
             throw new CommandLineException($"Failed to deserialize {RuntimeConfigPath}");
 

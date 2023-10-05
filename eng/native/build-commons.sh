@@ -311,7 +311,7 @@ while :; do
 
     lowerI="$(echo "${1/--/-}" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
-        -\?|-h|--help)
+        -\?|-h|-help)
             usage
             exit 1
             ;;

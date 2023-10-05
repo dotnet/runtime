@@ -22,12 +22,25 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public static DiagnosticContext CreateDisabled () => new () { Location = null };
 
+		public Diagnostic CreateDiagnostic (DiagnosticId id, params string[] args)
+		{
+			return Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), Location, args);
+		}
+
+		public void AddDiagnostic (Diagnostic diagnostic)
+		{
+			if (Location == null)
+				return;
+
+			Diagnostics.Add (diagnostic);
+		}
+
 		public partial void AddDiagnostic (DiagnosticId id, params string[] args)
 		{
 			if (Location == null)
 				return;
 
-			Diagnostics.Add (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), Location, args));
+			Diagnostics.Add (CreateDiagnostic (id, args));
 		}
 
 		public partial void AddDiagnostic (DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)

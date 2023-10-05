@@ -1110,7 +1110,6 @@ Range RangeCheck::GetRangeFromType(var_types type)
 {
     switch (type)
     {
-        case TYP_BOOL:
         case TYP_UBYTE:
             return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, BYTE_MAX));
         case TYP_BYTE:

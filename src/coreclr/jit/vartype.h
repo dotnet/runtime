@@ -126,7 +126,6 @@ inline var_types varTypeToSigned(T vt)
     {
         switch (type)
         {
-            case TYP_BOOL:
             case TYP_UBYTE:
                 return TYP_BYTE;
             case TYP_USHORT:
@@ -204,7 +203,7 @@ inline bool varTypeIsEnregisterable(T vt)
 template <class T>
 inline bool varTypeIsByte(T vt)
 {
-    return (TypeGet(vt) >= TYP_BOOL) && (TypeGet(vt) <= TYP_UBYTE);
+    return (TypeGet(vt) == TYP_BYTE) || (TypeGet(vt) == TYP_UBYTE);
 }
 
 template <class T>
@@ -216,7 +215,7 @@ inline bool varTypeIsShort(T vt)
 template <class T>
 inline bool varTypeIsSmall(T vt)
 {
-    return (TypeGet(vt) >= TYP_BOOL) && (TypeGet(vt) <= TYP_USHORT);
+    return (TypeGet(vt) >= TYP_BYTE) && (TypeGet(vt) <= TYP_USHORT);
 }
 
 template <class T>
@@ -238,13 +237,13 @@ inline bool varTypeIsIntOrI(T vt)
 template <class T>
 inline bool genActualTypeIsInt(T vt)
 {
-    return ((TypeGet(vt) >= TYP_BOOL) && (TypeGet(vt) <= TYP_UINT));
+    return ((TypeGet(vt) >= TYP_BYTE) && (TypeGet(vt) <= TYP_UINT));
 }
 
 template <class T>
 inline bool genActualTypeIsIntOrI(T vt)
 {
-    return ((TypeGet(vt) >= TYP_BOOL) && (TypeGet(vt) <= TYP_U_IMPL));
+    return ((TypeGet(vt) >= TYP_BYTE) && (TypeGet(vt) <= TYP_U_IMPL));
 }
 
 template <class T>

@@ -792,9 +792,6 @@ bool BasicBlock::IsLIR() const
 //------------------------------------------------------------------------
 // firstStmt: Returns the first statement in the block
 //
-// Arguments:
-//    None.
-//
 // Return Value:
 //    The first statement in the block's bbStmtList.
 //
@@ -804,10 +801,18 @@ Statement* BasicBlock::firstStmt() const
 }
 
 //------------------------------------------------------------------------
-// lastStmt: Returns the last statement in the block
+// hasSingleStmt: Returns true if block has a single statement
 //
-// Arguments:
-//    None.
+// Return Value:
+//    true if block has a single statement, false otherwise
+//
+bool BasicBlock::hasSingleStmt() const
+{
+    return (firstStmt() != nullptr) && (firstStmt() == lastStmt());
+}
+
+//------------------------------------------------------------------------
+// lastStmt: Returns the last statement in the block
 //
 // Return Value:
 //    The last statement in the block's bbStmtList.
@@ -1414,7 +1419,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
     /* Record the jump kind in the block */
 
-    block->bbJumpKind = jumpKind;
+    block->SetBBJumpKind(jumpKind DEBUG_ARG(this));
 
     if (jumpKind == BBJ_THROW)
     {
@@ -1494,9 +1499,9 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 bool BasicBlock::isBBCallAlwaysPair() const
 {
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (this->bbJumpKind == BBJ_CALLFINALLY)
+    if (this->KindIs(BBJ_CALLFINALLY))
 #else
-    if ((this->bbJumpKind == BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
+    if (this->KindIs(BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
 #endif
     {
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -1505,7 +1510,7 @@ bool BasicBlock::isBBCallAlwaysPair() const
 #endif
         // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
         assert(this->bbNext != nullptr);
-        assert(this->bbNext->bbJumpKind == BBJ_ALWAYS);
+        assert(this->bbNext->KindIs(BBJ_ALWAYS));
         assert(this->bbNext->bbFlags & BBF_KEEP_BBJ_ALWAYS);
         assert(this->bbNext->isEmpty());
 
