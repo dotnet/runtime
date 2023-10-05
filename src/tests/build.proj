@@ -148,6 +148,13 @@
       <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
     </ItemGroup>
+    <ItemGroup Condition="'$(MonoFullAot)' == 'true' and '$(TargetOS)' == 'linux'">
+      <MonoAotOption Include="as-name=clang" />
+      <MonoAotOption Include="as-options='-c -x assembler'" />
+      <MonoAotOption Include="tool-prefix=''" />
+      <MonoAotOption Include="ld-name=clang" />
+      <MonoAotOption Include="ld-options='-fuse-ld=lld'" />
+    </ItemGroup>
     <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64'">
       <MonoAotOption Include="mattr=crc" />
       <MonoAotOption Include="mattr=crypto" />

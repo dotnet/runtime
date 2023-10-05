@@ -240,8 +240,11 @@ typedef struct MonoAotOptions {
 	gboolean allow_errors;
 	char *tool_prefix;
 	char *as_prefix;
+	char *as_name;
+	char *as_options;
 	char *ld_flags;
 	char *ld_name;
+	char *ld_options;
 	char *mtriple;
 	char *llvm_path;
 	char *temp_path;
@@ -8881,10 +8884,16 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
 		} else if (str_begins_with (arg, "as-prefix=")) {
 			opts->as_prefix = g_strdup (arg + strlen ("as-prefix="));
+		} else if (str_begins_with (arg, "as-name=")) {
+			opts->as_name = g_strdup (arg + strlen ("as-name="));
+		} else if (str_begins_with (arg, "as-options=")) {
+			opts->as_options = g_strdup (arg + strlen ("as-options="));
 		} else if (str_begins_with (arg, "ld-flags=")) {
 			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));
 		} else if (str_begins_with (arg, "ld-name=")) {
 			opts->ld_name = g_strdup (arg + strlen ("ld-name="));
+		} else if (str_begins_with (arg, "ld-options=")) {
+			opts->ld_options = g_strdup (arg + strlen ("ld-options="));
 		} else if (str_begins_with (arg, "soft-debug")) {
 			opts->soft_debug = TRUE;
 		// Intentionally undocumented x2-- deprecated
@@ -13201,8 +13210,6 @@ compile_asm (MonoAotCompile *acfg)
 
 #ifdef TARGET_WIN32_MSVC
 #define AS_OPTIONS "--target=x86_64-pc-windows-msvc -c -x assembler"
-#elif defined(TARGET_LINUX)
-#define AS_OPTIONS "-c -x assembler"
 #elif defined(TARGET_AMD64) && !defined(TARGET_MACH)
 #define AS_OPTIONS "--64"
 #elif defined(TARGET_POWERPC64)
@@ -13221,8 +13228,6 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_NAME "clang"
 #elif defined(TARGET_WIN32_MSVC)
 #define AS_NAME "clang.exe"
-#elif defined(TARGET_LINUX)
-#define AS_NAME "clang"
 #else
 #define AS_NAME "as"
 #endif
@@ -13236,9 +13241,6 @@ compile_asm (MonoAotCompile *acfg)
 #if defined(__ppc__) && defined(TARGET_MACH)
 #define LD_NAME "gcc"
 #define LD_OPTIONS "-dynamiclib -Wl,-Bsymbolic"
-#elif defined(TARGET_LINUX)
-#define LD_NAME "clang"
-#define LD_OPTIONS "-fuse-ld=lld --shared"
 #elif defined(TARGET_AMD64) && defined(TARGET_MACH)
 #define LD_NAME "clang"
 #define LD_OPTIONS "--shared"
@@ -13294,8 +13296,16 @@ compile_asm (MonoAotCompile *acfg)
 #ifdef TARGET_OSX
 	g_string_append (acfg->as_args, "-c -x assembler ");
 #endif
+	const char *as_binary_name = acfg->aot_opts.as_name;
+	if (as_binary_name == NULL) {
+		as_binary_name = AS_NAME;
+	}
+	const char *as_options = acfg->aot_opts.as_options;
+	if (as_options == NULL) {
+		as_options = AS_OPTIONS;
+	}
 
-	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
+	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, as_binary_name, as_options,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (objfile), wrap_path (acfg->tmpfname));
 	aot_printf (acfg, "Executing the native assembler: %s\n", command);
@@ -13306,7 +13316,7 @@ compile_asm (MonoAotCompile *acfg)
 	}
 
 	if (acfg->llvm && !acfg->llvm_owriter) {
-		command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
+		command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, as_binary_name, as_options,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (acfg->llvm_ofile), wrap_path (acfg->llvm_sfile));
 		aot_printf (acfg, "Executing the native assembler: %s\n", command);
@@ -13355,16 +13365,21 @@ compile_asm (MonoAotCompile *acfg)
 
 	str = g_string_new ("");
 	const char *ld_binary_name = acfg->aot_opts.ld_name;
+
+	const char *ld_options = acfg->aot_opts.ld_options;
+	if (ld_options == NULL) {
+		ld_options = LD_OPTIONS;
+	}
 #if defined(LD_NAME)
 	if (ld_binary_name == NULL) {
 		ld_binary_name = LD_NAME;
 	}
 	if (acfg->aot_opts.tool_prefix)
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, ld_options);
 	else if (acfg->aot_opts.llvm_only)
 		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
 	else
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, ld_options);
 #else
 	if (ld_binary_name == NULL) {
 		ld_binary_name = "ld";
@@ -13373,7 +13388,7 @@ compile_asm (MonoAotCompile *acfg)
 	// Default (linux)
 	if (acfg->aot_opts.tool_prefix)
 		/* Cross compiling */
-		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, ld_options);
 	else if (acfg->aot_opts.llvm_only)
 		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
 	else
@@ -14304,8 +14319,11 @@ aot_opts_free (MonoAotOptions *aot_opts)
 	g_free (aot_opts->dedup_include);
 	g_free (aot_opts->tool_prefix);
 	g_free (aot_opts->as_prefix);
+	g_free (aot_opts->as_name);
+	g_free (aot_opts->as_options);
 	g_free (aot_opts->ld_flags);
 	g_free (aot_opts->ld_name);
+	g_free (aot_opts->ld_options);
 	g_free (aot_opts->mtriple);
 	g_free (aot_opts->llvm_path);
 	g_free (aot_opts->temp_path);
