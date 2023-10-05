@@ -742,14 +742,12 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static Int128 LeadingZeroCount(Int128 value)
-            => value.LeadingZeroCount();
+            => LeadingZeroCountAsInt32(value);
 
         /// <summary>Computes the number of leading zero bits in this value.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int LeadingZeroCount()
+        private static int LeadingZeroCountAsInt32(Int128 value)
         {
-            Int128 value = this;
-
             if (value._upper == 0)
             {
                 return 64 + BitOperations.LeadingZeroCount(value._lower);
@@ -953,11 +951,11 @@ namespace System
 
             if (IsPositive(value))
             {
-                return (Size * 8) - value.LeadingZeroCount();
+                return (Size * 8) - LeadingZeroCountAsInt32(value);
             }
             else
             {
-                return (Size * 8) + 1 - (~value).LeadingZeroCount();
+                return (Size * 8) + 1 - LeadingZeroCountAsInt32(~value);
             }
         }
 
