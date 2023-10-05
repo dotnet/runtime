@@ -254,22 +254,32 @@ WszCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     );
 
-#if defined(HOST_X86) && defined(_MSC_VER)
+#if defined(_MSC_VER)
 
 //
-// Windows SDK does not use intrinsics on x86. Redefine the interlocked operations to use intrinsics.
+// Redefine the interlocked operations to intrinsics
+// to avoid missing InterlockedCompareExchange8 and Windows 8 requirement.
 //
 
 #include "intrin.h"
 
-#define InterlockedIncrement            _InterlockedIncrement
-#define InterlockedDecrement            _InterlockedDecrement
 #define InterlockedExchange8            _InterlockedExchange8
 #define InterlockedCompareExchange8     _InterlockedCompareExchange8
 #define InterlockedExchange16           _InterlockedExchange16
 #define InterlockedCompareExchange16    _InterlockedCompareExchange16
 #define InterlockedExchange             _InterlockedExchange
 #define InterlockedCompareExchange      _InterlockedCompareExchange
+
+#endif // _MSC_VER
+
+#if defined(HOST_X86) && defined(_MSC_VER)
+
+//
+// Windows SDK does not use intrinsics on x86. Redefine the interlocked operations to use intrinsics.
+//
+
+#define InterlockedIncrement            _InterlockedIncrement
+#define InterlockedDecrement            _InterlockedDecrement
 #define InterlockedExchangeAdd          _InterlockedExchangeAdd
 #define InterlockedCompareExchange64    _InterlockedCompareExchange64
 #define InterlockedAnd                  _InterlockedAnd

@@ -54,7 +54,7 @@ mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 static inline gint64
 mono_atomic_cas_i64 (volatile gint64 *dest, gint64 exch, gint64 comp)
 {
-	return _InterlockedCompareExchange64 ((LONG64 volatile *)dest, (LONG64)exch, (LONG64)comp);
+	return InterlockedCompareExchange64 ((LONG64 volatile *)dest, (LONG64)exch, (LONG64)comp);
 }
 
 static inline gpointer
@@ -120,7 +120,7 @@ mono_atomic_xchg_i32 (volatile gint32 *dest, gint32 exch)
 static inline gint64
 mono_atomic_xchg_i64 (volatile gint64 *dest, gint64 exch)
 {
-	return _InterlockedExchange64 ((LONG64 volatile *)dest, (LONG64)exch);
+	return InterlockedExchange64 ((LONG64 volatile *)dest, (LONG64)exch);
 }
 
 static inline gpointer
