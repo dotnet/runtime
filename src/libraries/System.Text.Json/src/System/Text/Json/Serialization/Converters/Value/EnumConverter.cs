@@ -323,38 +323,39 @@ namespace System.Text.Json.Serialization.Converters
                 return;
             }
 
-#pragma warning disable 8500 // address of managed type
             switch (s_enumTypeCode)
             {
+                // Use Unsafe.As instead of raw pointers for .NET Standard support.
+                // https://github.com/dotnet/runtime/issues/84895
+
                 case TypeCode.Int32:
-                    writer.WritePropertyName(*(int*)&value);
+                    writer.WritePropertyName(Unsafe.As<T, int>(ref value));
                     break;
                 case TypeCode.UInt32:
-                    writer.WritePropertyName(*(uint*)&value);
+                    writer.WritePropertyName(Unsafe.As<T, uint>(ref value));
                     break;
                 case TypeCode.UInt64:
-                    writer.WritePropertyName(*(ulong*)&value);
+                    writer.WritePropertyName(Unsafe.As<T, ulong>(ref value));
                     break;
                 case TypeCode.Int64:
-                    writer.WritePropertyName(*(long*)&value);
+                    writer.WritePropertyName(Unsafe.As<T, long>(ref value));
                     break;
                 case TypeCode.Int16:
-                    writer.WritePropertyName(*(short*)&value);
+                    writer.WritePropertyName(Unsafe.As<T, short>(ref value));
                     break;
                 case TypeCode.UInt16:
-                    writer.WritePropertyName(*(ushort*)&value);
+                    writer.WritePropertyName(Unsafe.As<T, ushort>(ref value));
                     break;
                 case TypeCode.Byte:
-                    writer.WritePropertyName(*(byte*)&value);
+                    writer.WritePropertyName(Unsafe.As<T, byte>(ref value));
                     break;
                 case TypeCode.SByte:
-                    writer.WritePropertyName(*(sbyte*)&value);
+                    writer.WritePropertyName(Unsafe.As<T, sbyte>(ref value));
                     break;
                 default:
                     ThrowHelper.ThrowJsonException();
                     break;
             }
-#pragma warning restore 8500
         }
 
         private bool TryParseEnumCore(
@@ -378,7 +379,6 @@ namespace System.Text.Json.Serialization.Converters
 #endif
 
             bool success;
-            T result;
             if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0 || !JsonHelpers.IntegerRegex.IsMatch(source))
             {
                 // Try parsing case sensitive first
