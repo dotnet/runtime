@@ -5087,7 +5087,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			WRITE64_INS (td->last_ins, 0, &counter);
 		}
 
-		if (generate_enc_seq_points_without_debug_info)
+		if (G_UNLIKELY (generate_enc_seq_points_without_debug_info))
 		{
 			if ((*td->ip == CEE_NOP) ||
 				(*td->ip == CEE_CALLVIRT) ||

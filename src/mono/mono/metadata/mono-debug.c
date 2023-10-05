@@ -1133,7 +1133,7 @@ mono_bool
 mono_debug_generate_enc_seq_points_without_debug_info (MonoDebugMethodInfo *minfo)
 {
 	MonoImage* img = m_class_get_image (minfo->method->klass);
-	if (img->has_updates) {
+	if (G_UNLIKELY (img->has_updates)) {
 		guint32 idx = mono_metadata_token_index (minfo->method->token);
 		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
 		if (mdie == NULL)
