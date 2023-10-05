@@ -7928,13 +7928,11 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         return;
     }
 
-    // TODO-ARM64-CQ: revisit TYP_REF if we find a case where it's beneficial.
+    // TODO-ARM64-CQ: enable TYP_REF if we find a case where it's beneficial.
     // The algorithm does support TYP_REF (with null value), but it seems to be not worth
     // it on ARM64 where it's pretty efficient to do "stp xzr, xzr, [addr]" to clear two
-    // items at once. Although, it may be profitable to do "stp q0, q0, [addr]"
-    //
-    // Other types are added for better throughput to early out.
-    if (ind->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT, TYP_FLOAT, TYP_DOUBLE))
+    // items at once. Although, it may be profitable to do "stp q0, q0, [addr]".
+    if (!varTypeIsIntegral(ind) && !varTypeIsSIMD(ind))
     {
         return;
     }
@@ -8041,20 +8039,10 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 return;
             }
 
-            const int ptrAlignOffset = min(prevData.offset, currData.offset) % genTypeSize(ind);
-
-#ifdef TARGET_XARCH
-            // Check whether data can be guaranteed to be in a cache line.
-            // Only AMD/Intel can guarantee that unaligned writes are atomic if they don't cross the
-            // cache line boundary.
-            if ((ptrAlignOffset + genTypeSize(ind) * 2) > TARGET_POINTER_SIZE)
-            {
-                // NOTE: We can use SIMD if we can assume 16-bytes alignment (on Intel/AMD cpus with AVX+),
-                // but it's very unlikely we can detect that from surrounding code since GC only offers 8-bytes one.
-                return;
-            }
-#elif defined(TARGET_ARM64)
-            if ((ptrAlignOffset == 0) && ind->TypeIs(TYP_LONG, TYP_REF))
+            // Check whether the combined indir is still aligned.
+            bool isCombinedIndirAtomic = (min(prevData.offset, currData.offset) % (genTypeSize(ind) * 2)) == 0;
+#ifdef TARGET_ARM64
+            if (ind->TypeIs(TYP_LONG, TYP_REF))
             {
                 // Per Arm Architecture Reference Manual for A-profile architecture:
                 //
@@ -8063,15 +8051,16 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 //
                 // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null)
                 //
-                // Actually, we probably don't even need "ptrAlignOffset == 0" check, if the IND<LONG/REF> is
-                // not naturally aligned then it's no longer atomic anyway regardless whether it crosses
-                // the cache line boundary or not.
+                // And we assume on ARM64 TYP_LONG/TYP_REF are always 64-bit aligned, otherwise
+                // we're already doing a load that has no atomicity guarantees.
+                isCombinedIndirAtomic = true;
             }
-            else
+#endif
+
+            if (!isCombinedIndirAtomic)
             {
                 return;
             }
-#endif // TARGET_ARM64
         }
 
         // Since we're merging two stores of the same type, the new type is twice wider.
@@ -8161,6 +8150,9 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         // Delete previous STOREIND entirely
         BlockRange().Remove(std::move(prevIndRange));
 
+        // It's not expected to be contained yet, but just in case...
+        ind->Data()->ClearContained();
+
         // We know it's always LEA for now
         GenTreeAddrMode* addr = ind->Addr()->AsAddrMode();
 
@@ -8191,8 +8183,6 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             memcpy(newCns.i8 + oldWidth, upperCns, oldWidth);
 
             ind->Data()->AsVecCon()->gtSimdVal = newCns;
-            ind->Data()->ClearContained();
-            ind->gtFlags |= GTF_IND_UNALIGNED;
             continue;
         }
 #endif
@@ -8220,7 +8210,6 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             BlockRange().InsertAfter(ind->Data(), vecCns);
             BlockRange().Remove(ind->Data());
             ind->gtOp2 = vecCns;
-            ind->gtFlags |= GTF_IND_UNALIGNED;
             continue;
         }
 #endif // TARGET_64BIT && FEATURE_HW_INTRINSICS
@@ -8234,10 +8223,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_IN_BYTE)));
         JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
 
-        // It's not expected to be contained yet, but just in case...
-        ind->Data()->ClearContained();
         ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
-        ind->gtFlags |= GTF_IND_UNALIGNED;
         if (genTypeSize(oldType) == 1)
         {
             // A mark for future foldings that this IND doesn't need to be atomic.
