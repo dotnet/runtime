@@ -3140,7 +3140,7 @@ protected:
         WRAPPER_NO_CONTRACT;
         if (IsFieldMarshal(m_dwMarshalFlags))
         {
-            ILCodeLabel* pHasManagedValueLabel = pHasManagedValueLabel = pslILEmit->NewCodeLabel();
+            ILCodeLabel* pHasManagedValueLabel = pslILEmit->NewCodeLabel();
             pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
             pslILEmit->EmitBRTRUE(pHasManagedValueLabel);
             pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
@@ -3156,7 +3156,7 @@ protected:
         WRAPPER_NO_CONTRACT;
         if (IsFieldMarshal(m_dwMarshalFlags))
         {
-            ILCodeLabel* pHasManagedValueLabel = pHasManagedValueLabel = pslILEmit->NewCodeLabel();
+            ILCodeLabel* pHasManagedValueLabel = pslILEmit->NewCodeLabel();
             pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
             pslILEmit->EmitBRTRUE(pHasManagedValueLabel);
             pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
