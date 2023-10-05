@@ -1,4 +1,11 @@
 <Project>
+  <PropertyGroup Condition="'$(UsingMicrosoftNoTargetsSdk)' == 'true' or
+                            '$(UsingMicrosoftDotNetSharedFrameworkSdk)' == 'true' or
+                            '$(MSBuildProjectExtension)' == '.pkgproj' or
+                            '$(UsingMicrosoftTraversalSdk)' == 'true'">
+    <!-- Explicitly disable running analyzers to avoid trying to discover the correct ILLink tool pack for a project that has no sources. -->
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
   <PropertyGroup>
     <!-- Disable analyzers in sourcebuild -->
     <RunAnalyzers Condition="'$(DotNetBuildFromSource)' == 'true'">false</RunAnalyzers>
