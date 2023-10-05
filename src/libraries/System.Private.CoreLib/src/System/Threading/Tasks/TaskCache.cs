@@ -44,7 +44,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// A cached task for default(TResult).
         /// </summary>
-        internal static class CachedDefaultValueTask<TResult>
+        internal static class CachedDefaultTask<TResult>
         {
             internal static readonly Task<TResult> s_defaultResultTask = CreateCacheableTask<TResult>(default);
         }
