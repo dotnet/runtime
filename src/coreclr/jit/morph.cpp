@@ -9917,8 +9917,7 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
         // Check for a misaligned floating point indirection.
         GenTree*       effAddr = addr->gtEffectiveVal(true);
         target_ssize_t offset;
-        FieldSeq*      fldSeq;
-        gtPeelOffsets(&effAddr, &offset, &fldSeq);
+        gtPeelOffsets(&effAddr, &offset);
 
         if (((offset % genTypeSize(TYP_FLOAT)) != 0) ||
             (effAddr->IsCnsIntOrI() && ((effAddr->AsIntConCommon()->IconValue() % genTypeSize(TYP_FLOAT)) != 0)))
