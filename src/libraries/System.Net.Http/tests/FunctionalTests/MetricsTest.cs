@@ -717,10 +717,17 @@ namespace System.Net.Http.Functional.Tests
             base.Dispose(disposing);
         }
 
-        protected Task<HttpResponseMessage> SendAsync(HttpMessageInvoker invoker, HttpRequestMessage request, CancellationToken cancellationToken = default) =>
-            TestHttpMessageInvoker ?
-            invoker.SendAsync(request, cancellationToken) :
-            ((HttpClient)invoker).SendAsync(TestAsync, request, cancellationToken);
+        protected Task<HttpResponseMessage> SendAsync(HttpMessageInvoker invoker, HttpRequestMessage request, CancellationToken cancellationToken = default)
+        {
+            if (TestHttpMessageInvoker)
+            {
+                return TestAsync
+                    ? invoker.SendAsync(request, cancellationToken)
+                    : Task.Run(() => invoker.Send(request, cancellationToken));
+            }
+
+            return ((HttpClient)invoker).SendAsync(TestAsync, request, cancellationToken);
+        }
 
         protected HttpMessageInvoker CreateHttpMessageInvoker(HttpMessageHandler? handler = null) =>
             TestHttpMessageInvoker ?
