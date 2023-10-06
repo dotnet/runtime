@@ -27,26 +27,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [InlineData(false)]
         public void LoadLibrary(bool no_runtimeconfig)
         {
-            // make a copy of the shared state because we will modify it
-            using (var testState = sharedState.Copy())
+            // make a copy of a portion of the shared state because we will modify it
+            using (var app = sharedState.IjwApp.Copy())
             {
                 string [] args = {
                     "ijwhost",
-                    testState.IjwLibraryPath,
+                    app.AppDll,
                     "NativeEntryPoint"
                 };
                 if (no_runtimeconfig)
                 {
-                    File.Delete(testState.IjwLibraryRuntimeConfigPath);
+                    File.Delete(app.RuntimeConfigJson);
                 }
 
-                CommandResult result = testState.CreateNativeHostCommand(args, testState.RepoDirectories.BuiltDotnet)
+                CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.RepoDirectories.BuiltDotnet)
                     .Execute();
 
                 if (no_runtimeconfig)
                 {
                     result.Should().Fail()
-                        .And.HaveStdErrContaining($"Expected active runtime context because runtimeconfig.json [{testState.IjwLibraryRuntimeConfigPath}] does not exist.");
+                        .And.HaveStdErrContaining($"Expected active runtime context because runtimeconfig.json [{app.RuntimeConfigJson}] does not exist.");
                 }
                 else
                 {
@@ -60,22 +60,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void LoadLibraryWithoutRuntimeConfigButActiveRuntime()
         {
-            // make a copy of the shared state because we will modify it
-            using (var testState = sharedState.Copy())
+            // make a copy of a portion of the shared state because we will modify it
+            using (var app = sharedState.IjwApp.Copy())
             {
                 // construct runtimeconfig.json
-                var startupConfigPath = Path.Combine(Path.GetDirectoryName(testState.IjwLibraryRuntimeConfigPath),"host.runtimeconfig.json");
+                var startupConfigPath = Path.Combine(Path.GetDirectoryName(app.RuntimeConfigJson),"host.runtimeconfig.json");
                 string [] args = {
                     "ijwhost",
-                    testState.IjwLibraryPath,
+                    app.AppDll,
                     "NativeEntryPoint",
-                    testState.HostFxrPath, // optional 4th and 5th arguments that tell nativehost to start the runtime before loading the C++/CLI library
+                    sharedState.HostFxrPath, // optional 4th and 5th arguments that tell nativehost to start the runtime before loading the C++/CLI library
                     startupConfigPath
                 };
 
-                File.Move(testState.IjwLibraryRuntimeConfigPath, startupConfigPath);
+                File.Move(app.RuntimeConfigJson, startupConfigPath);
 
-                CommandResult result = testState.CreateNativeHostCommand(args, testState.RepoDirectories.BuiltDotnet)
+                CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.RepoDirectories.BuiltDotnet)
                     .Execute();
 
                 result.Should().Pass()
@@ -91,7 +91,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         {
             string [] args = {
                 "ijwhost",
-                sharedState.IjwLibraryPath,
+                sharedState.IjwApp.AppDll,
                 "NativeEntryPoint"
             };
             TestProjectFixture fixture = selfContained ? sharedState.ManagedHostFixture_SelfContained : sharedState.ManagedHostFixture_FrameworkDependent;
@@ -110,41 +110,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public class SharedTestState : SharedTestStateBase
         {
             public string HostFxrPath { get; }
-            public string IjwLibraryPath { get; }
-            public string IjwLibraryRuntimeConfigPath { get; }
             public TestProjectFixture ManagedHostFixture_FrameworkDependent { get; }
             public TestProjectFixture ManagedHostFixture_SelfContained { get; }
+            public TestApp IjwApp {get;}
 
             public SharedTestState()
-                :this(null)
-            {}
-
-            private SharedTestState(SharedTestState other = null)
             {
                 var dotNet = new Microsoft.DotNet.Cli.Build.DotNetCli(RepoDirectories.BuiltDotnet);
                 HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
-
-                string folder = Path.Combine(BaseDirectory, other==null?"ijw":"ijw_copy");
-
-                // make sure we start with a clean slate
-                if (Directory.Exists(folder))
-                {
-                    Directory.Delete(folder);
-                }
-                Directory.CreateDirectory(folder);
-
+                string folder = Path.Combine(BaseDirectory, "ijw");
+                IjwApp = new TestApp(folder, "ijw");
                 // Copy over ijwhost
                 string ijwhostName = "ijwhost.dll";
                 File.Copy(Path.Combine(RepoDirectories.HostArtifacts, ijwhostName), Path.Combine(folder, ijwhostName));
 
                 // Copy over the C++/CLI test library
                 string ijwLibraryName = "ijw.dll";
-                IjwLibraryPath = Path.Combine(folder, ijwLibraryName);
-                File.Copy(Path.Combine(RepoDirectories.HostTestArtifacts, ijwLibraryName), IjwLibraryPath);
+                File.Copy(Path.Combine(RepoDirectories.HostTestArtifacts, ijwLibraryName), Path.Combine(folder, ijwLibraryName));
 
                 // Create a runtimeconfig.json for the C++/CLI test library
-                IjwLibraryRuntimeConfigPath =  Path.Combine(folder, "ijw.runtimeconfig.json");
-                new RuntimeConfig(IjwLibraryRuntimeConfigPath)
+                new RuntimeConfig(Path.Combine(folder, "ijw.runtimeconfig.json"))
                     .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, RepoDirectories.MicrosoftNETCoreAppVersion))
                     .Save();
 
@@ -164,12 +149,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 base.Dispose(disposing);
             }
-
-            public SharedTestState Copy()
-            {
-                return new SharedTestState(this);
-            }
-
         }
     }
 }
