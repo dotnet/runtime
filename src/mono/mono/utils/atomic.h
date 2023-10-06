@@ -70,6 +70,10 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
   /* on Android-armv7 ATOMIC_INT_LOCK_FREE == 1, not 2 */
 #  if defined(HOST_ARM64)
 #    define MONO_USE_C11_ATOMIC 1
+#  elif defined(USE_GCC_ATOMIC_OPS)
+#    define MONO_USE_GCC_ATOMIC 1
+#  else
+#    define MONO_USE_EMULATED_ATOMIC 1
 #  endif
 #elif defined(HOST_LINUX)
   /* FIXME: probably need arch checks */
