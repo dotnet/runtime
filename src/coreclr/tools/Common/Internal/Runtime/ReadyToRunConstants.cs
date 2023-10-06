@@ -377,6 +377,9 @@ namespace Internal.ReadyToRunConstants
         // GVM lookup helper
         GVMLookupForSlot,
 
+        // Interface lookup helper
+        InterfaceLookupForSlot,
+
         // TypedReference
         TypeHandleToRuntimeType,
         GetRefAny,

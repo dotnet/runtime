@@ -8,6 +8,7 @@ using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Numerics;
+using Internal.Runtime;
 
 namespace System.Runtime
 {
@@ -121,6 +122,40 @@ namespace System.Runtime
         {
             Value v = LookupOrAdd(context, signature);
             return RawCalliHelper.Call<object>(v._result, arg, v._auxResult);
+        }
+
+        public static unsafe IntPtr InterfaceLookupForSlot(object obj, IntPtr slot)
+        {
+            // TODO: do something more optimal for monomorphic case
+
+            if (TryGetFromCache((IntPtr)obj.GetMethodTable(), slot, out var v))
+                return v._result;
+
+            return InterfaceLookupForSlotSlow(obj, slot);
+        }
+
+        private static unsafe IntPtr InterfaceLookupForSlotSlow(object obj, IntPtr slot)
+        {
+            // TODO: this is wrong for IDynIntfCastable
+
+            Value v = CacheMiss((IntPtr)obj.GetMethodTable(), slot,
+                    (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
+                    {
+                        var pInterfaceType = *(MethodTable**)signature;
+
+                        ushort slotNumber = 0;
+                        for (nint* pMaybeSlotNumber = ((nint*)signature) + 1; ; pMaybeSlotNumber++)
+                        {
+                            if (*pMaybeSlotNumber == 0)
+                            {
+                                slotNumber = checked((ushort)*(pMaybeSlotNumber + 1));
+                                break;
+                            }
+                        }
+
+                        return RuntimeImports.RhResolveDispatch(contextObject, new EETypePtr(pInterfaceType), slotNumber);
+                    }, obj);
+            return v._result;
         }
 
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)

@@ -284,6 +284,10 @@ namespace ILCompiler
                     methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeLoaderExports").GetKnownMethod("GVMLookupForSlot", null);
                     break;
 
+                case ReadyToRunHelper.InterfaceLookupForSlot:
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeLoaderExports").GetKnownMethod("InterfaceLookupForSlot", null);
+                    break;
+
                 case ReadyToRunHelper.TypeHandleToRuntimeType:
                     methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers", "TypeHandleToRuntimeTypeMaybeNull");
                     break;

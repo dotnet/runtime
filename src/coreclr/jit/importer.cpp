@@ -2736,6 +2736,12 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
             impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
         call = gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
     }
+    else if (isInterface && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        GenTree* dispatchCell =
+            impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_GLOBAL_PTR, pCallInfo->hMethod);
+        call = gtNewHelperCallNode(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, dispatchCell);
+    }
 
 #ifdef FEATURE_READYTORUN
     else if (opts.IsReadyToRun())

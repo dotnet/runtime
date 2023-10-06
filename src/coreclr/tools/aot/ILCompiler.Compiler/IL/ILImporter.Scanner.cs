@@ -698,6 +698,8 @@ namespace Internal.IL
                 {
                     _dependencies.Add(_factory.InterfaceDispatchCell(method), reason);
                 }
+
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.InterfaceLookupForSlot), reason);
             }
             else if (_compilation.HasFixedSlotVTable(method.OwningType))
             {
