@@ -58,30 +58,56 @@ namespace System.Numerics.Tensors.Tests
             return (ax < ay) || float.IsNaN(ax) || (ax == ay && *(int*)&x < 0) ? x : y;
         }
 
-        private static unsafe int SingleToInt32(float f) => *(int*)&f;
+        private static unsafe float UInt32ToSingle(uint i) => *(float*)&i;
 
-        private static unsafe float Int32ToSingle(int i) => *(float*)&i;
-
-        private static float AnotherSingleNaN = Int32ToSingle(-8388607);
-
-        /// <summary>Loads a variety of special values (e.g. NaN) into random positions in <paramref name="x"/>.</summary>
-        private static void SetSpecialValues(Span<float> x)
+        /// <summary>Gets a variety of special values (e.g. NaN).</summary>
+        private static IEnumerable<float> GetSpecialValues()
         {
             // NaN
-            x[s_random.Next(x.Length)] = float.NaN;
-            x[s_random.Next(x.Length)] = AnotherSingleNaN;
+            yield return UInt32ToSingle(0xFFC0_0000); // -qNaN / float.NaN
+            yield return UInt32ToSingle(0xFFFF_FFFF); // -qNaN / all-bits-set
+            yield return UInt32ToSingle(0x7FC0_0000); // +qNaN
+            yield return UInt32ToSingle(0xFFA0_0000); // -sNaN
+            yield return UInt32ToSingle(0x7FA0_0000); // +sNaN
 
             // +Infinity, -Infinity
-            x[s_random.Next(x.Length)] = float.PositiveInfinity;
-            x[s_random.Next(x.Length)] = float.NegativeInfinity;
+            yield return float.PositiveInfinity;
+            yield return float.NegativeInfinity;
 
             // +Zero, -Zero
-            x[s_random.Next(x.Length)] = +0.0f;
-            x[s_random.Next(x.Length)] = -0.0f;
+            yield return +0.0f;
+            yield return -0.0f;
 
-            // +Epsilon, -Epsilon
-            x[s_random.Next(x.Length)] = +float.Epsilon;
-            x[s_random.Next(x.Length)] = -float.Epsilon;
+            // Subnormals
+            yield return +float.Epsilon;
+            yield return -float.Epsilon;
+            yield return UInt32ToSingle(0x007F_FFFF);
+            yield return UInt32ToSingle(0x807F_FFFF);
+
+            // Normals
+            yield return UInt32ToSingle(0x0080_0000);
+            yield return UInt32ToSingle(0x8080_0000);
+            yield return UInt32ToSingle(0x7F7F_FFFF); // MaxValue
+            yield return UInt32ToSingle(0xFF7F_FFFF); // MinValue
+        }
+
+        /// <summary>
+        /// Runs the specified action for each special value. Before the action is invoked,
+        /// the value is stored into a random position in <paramref name="x"/>, and the original
+        /// value is subsequently restored.
+        /// </summary>
+        private static void RunForEachSpecialValue(Action action, BoundedMemory<float> x)
+        {
+            foreach (float value in GetSpecialValues())
+            {
+                int pos = s_random.Next(x.Length);
+                float orig = x[pos];
+                x[pos] = value;
+
+                action();
+
+                x[pos] = orig;
+            }
         }
 
         /// <summary>
@@ -95,7 +121,7 @@ namespace System.Numerics.Tensors.Tests
             // NaNs
             pos = s_random.Next(x.Length);
             x[pos] = float.NaN;
-            y[pos] = AnotherSingleNaN;
+            y[pos] = UInt32ToSingle(0x7FC0_0000);
 
             // +Infinity, -Infinity
             pos = s_random.Next(x.Length);
@@ -837,6 +863,24 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
+        public static void Exp_SpecialValues(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
+
+            RunForEachSpecialValue(() =>
+            {
+                TensorPrimitives.Exp(x, destination);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    Assert.Equal(MathF.Exp(x[i]), destination[i], Tolerance);
+                }
+            }, x);
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
         public static void Exp_ThrowsForTooShortDestination(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -1073,13 +1117,14 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            SetSpecialValues(x);
-
-            TensorPrimitives.Log(x, destination);
-            for (int i = 0; i < tensorLength; i++)
+            RunForEachSpecialValue(() =>
             {
-                Assert.Equal(MathF.Log(x[i]), destination[i], Tolerance);
-            }
+                TensorPrimitives.Log(x, destination);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    Assert.Equal(MathF.Log(x[i]), destination[i], Tolerance);
+                }
+            }, x);
         }
 
         [Theory]
@@ -1139,13 +1184,14 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
             using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            SetSpecialValues(x);
-
-            TensorPrimitives.Log2(x, destination);
-            for (int i = 0; i < tensorLength; i++)
+            RunForEachSpecialValue(() =>
             {
-                Assert.Equal(MathF.Log(x[i], 2), destination[i], Tolerance);
-            }
+                TensorPrimitives.Log2(x, destination);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    Assert.Equal(MathF.Log(x[i], 2), destination[i], Tolerance);
+                }
+            }, x);
         }
 
         [Theory]
@@ -2271,12 +2317,20 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        public static void Sigmoid_ThrowsForTooShortDestination(int tensorLength)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
+        public static void Sigmoid_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
-            using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength);
 
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Sigmoid(x, destination));
+            RunForEachSpecialValue(() =>
+            {
+                TensorPrimitives.Sigmoid(x, destination);
+                for (int i = 0; i < tensorLength; i++)
+                {
+                    Assert.Equal(1f / (1f + MathF.Exp(-x[i])), destination[i], Tolerance);
+                }
+            }, x);
         }
 
         [Theory]
@@ -2309,6 +2363,16 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(expectedResult[i], dest[i], Tolerance);
             }
             Assert.Equal(originalLast, dest[dest.Length - 1]);
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void Sigmoid_ThrowsForTooShortDestination(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
+
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.Sigmoid(x, destination));
         }
 
         [Fact]
@@ -2410,16 +2474,6 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TensorLengths))]
-        public static void SoftMax_ThrowsForTooShortDestination(int tensorLength)
-        {
-            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
-            using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
-
-            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.SoftMax(x, destination));
-        }
-
-        [Theory]
         [InlineData(new float[] { 3, 1, .2f }, new float[] { 0.8360188f, 0.11314284f, 0.05083836f })]
         [InlineData(new float[] { 3, 4, 1 }, new float[] { 0.2594f, 0.705384f, 0.0351f })]
         [InlineData(new float[] { 5, 3 }, new float[] { 0.8807f, 0.1192f })]
@@ -2447,6 +2501,16 @@ namespace System.Numerics.Tensors.Tests
             {
                 Assert.Equal(expectedResult[i], dest[i], Tolerance);
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(TensorLengths))]
+        public static void SoftMax_ThrowsForTooShortDestination(int tensorLength)
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
+            using BoundedMemory<float> destination = CreateTensor(tensorLength - 1);
+
+            AssertExtensions.Throws<ArgumentException>("destination", () => TensorPrimitives.SoftMax(x, destination));
         }
 
         [Fact]
