@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Threading;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -10,6 +11,7 @@ namespace System.Security.Cryptography
     internal sealed partial class RC2Implementation : RC2
     {
         private const int BitsPerByte = 8;
+        private ILiteSymmetricCipher? _encryptCbcLiteHash, _decryptCbcLiteHash, _encryptEcbLiteHash, _decryptEcbLiteHash;
 
         public override int EffectiveKeySize
         {
@@ -54,6 +56,21 @@ namespace System.Security.Cryptography
             Key = RandomNumberGenerator.GetBytes(KeySize / BitsPerByte);
         }
 
+        protected sealed override void Dispose(bool disposing)
+        {
+            InvalidateOneShotAlgorithms();
+            base.Dispose(disposing);
+        }
+
+        public override byte[] Key
+        {
+            set
+            {
+                base.Key = value;
+                InvalidateOneShotAlgorithms();
+            }
+        }
+
         private UniversalCryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
             ArgumentNullException.ThrowIfNull(rgbKey);
@@ -85,22 +102,16 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length))
-                throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
-
-            Debug.Assert(EffectiveKeySize == KeySize);
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
+            return OneShotTransformation(
+                ref _decryptEcbLiteHash,
                 CipherMode.ECB,
-                Key,
-                iv: null,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                encrypting: false);
-
-            using (cipher)
-            {
-                return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
-            }
+                iv: default,
+                encrypting: false,
+                paddingMode,
+                ciphertext,
+                destination,
+                UniversalCryptoOneShot.OneShotDecrypt,
+                out bytesWritten);
         }
 
         protected override bool TryEncryptEcbCore(
@@ -109,22 +120,16 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length))
-                throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
-
-            Debug.Assert(EffectiveKeySize == KeySize);
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
+            return OneShotTransformation(
+                ref _encryptEcbLiteHash,
                 CipherMode.ECB,
-                Key,
                 iv: default,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                encrypting: true);
-
-            using (cipher)
-            {
-                return UniversalCryptoOneShot.OneShotEncrypt(cipher, paddingMode, plaintext, destination, out bytesWritten);
-            }
+                encrypting: true,
+                paddingMode,
+                plaintext,
+                destination,
+                UniversalCryptoOneShot.OneShotEncrypt,
+                out bytesWritten);
         }
 
         protected override bool TryEncryptCbcCore(
@@ -134,22 +139,16 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length))
-                throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
-
-            Debug.Assert(EffectiveKeySize == KeySize);
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
+            return OneShotTransformation(
+                ref _encryptCbcLiteHash,
                 CipherMode.CBC,
-                Key,
                 iv,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                encrypting: true);
-
-            using (cipher)
-            {
-                return UniversalCryptoOneShot.OneShotEncrypt(cipher, paddingMode, plaintext, destination, out bytesWritten);
-            }
+                encrypting: true,
+                paddingMode,
+                plaintext,
+                destination,
+                UniversalCryptoOneShot.OneShotEncrypt,
+                out bytesWritten);
         }
 
         protected override bool TryDecryptCbcCore(
@@ -159,22 +158,16 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-            if (!ValidKeySize(Key.Length))
-                throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
-
-            Debug.Assert(EffectiveKeySize == KeySize);
-            ILiteSymmetricCipher cipher = CreateLiteCipher(
+            return OneShotTransformation(
+                ref _decryptCbcLiteHash,
                 CipherMode.CBC,
-                Key,
                 iv,
-                blockSize: BlockSize / BitsPerByte,
-                paddingSize: BlockSize / BitsPerByte,
-                encrypting: false);
-
-            using (cipher)
-            {
-                return UniversalCryptoOneShot.OneShotDecrypt(cipher, paddingMode, ciphertext, destination, out bytesWritten);
-            }
+                encrypting: false,
+                paddingMode,
+                ciphertext,
+                destination,
+                UniversalCryptoOneShot.OneShotDecrypt,
+                out bytesWritten);
         }
 
         protected override bool TryDecryptCfbCore(
@@ -219,6 +212,61 @@ namespace System.Security.Cryptography
 
             int keySizeBits = keySizeBytes << 3;
             return keySizeBits.IsLegalSize(LegalKeySizes);
+        }
+
+        private bool OneShotTransformation(
+            ref ILiteSymmetricCipher? cipherCache,
+            CipherMode cipherMode,
+            ReadOnlySpan<byte> iv,
+            bool encrypting,
+            PaddingMode paddingMode,
+            ReadOnlySpan<byte> source,
+            Span<byte> destination,
+            UniversalCryptoOneShot.UniversalOneShotCallback callback,
+            out int bytesWritten)
+        {
+            // Ensures we have a zero feedback size.
+            Debug.Assert(cipherMode is CipherMode.CBC or CipherMode.ECB);
+
+            if (!ValidKeySize(Key.Length))
+                throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
+
+            // Try grabbing a cached instance.
+            ILiteSymmetricCipher? cipher = Interlocked.Exchange(ref cipherCache, null);
+
+            if (cipher is null)
+            {
+                // If there is no cached instance available, create one. This also sets the initialization vector during creation.
+                cipher = CreateLiteCipher(
+                    cipherMode,
+                    Key,
+                    iv,
+                    blockSize: BlockSize / BitsPerByte,
+                    paddingSize: BlockSize / BitsPerByte,
+                    encrypting);
+            }
+            else
+            {
+                // If we did grab a cached instance, put it back in to a working state. This needs to happen even for ECB
+                // since lite ciphers do not reset after the final transformation automatically.
+                cipher.Reset(iv);
+            }
+
+            bool result = callback(cipher, paddingMode, source, destination, out bytesWritten);
+
+            // Try making this instance available to use again later. If another thread put one there, dispose of it.
+            cipher = Interlocked.Exchange(ref cipherCache, cipher);
+            cipher?.Dispose();
+
+            return result;
+        }
+
+        private void InvalidateOneShotAlgorithms()
+        {
+            Interlocked.Exchange(ref _encryptCbcLiteHash, null)?.Dispose();
+            Interlocked.Exchange(ref _decryptCbcLiteHash, null)?.Dispose();
+            Interlocked.Exchange(ref _encryptEcbLiteHash, null)?.Dispose();
+            Interlocked.Exchange(ref _decryptEcbLiteHash, null)?.Dispose();
         }
     }
 }

@@ -43,7 +43,7 @@ namespace System.Security.Cryptography
 
         protected sealed override void Dispose(bool disposing)
         {
-            InvalidOneShotAlgorithms();
+            InvalidateOneShotAlgorithms();
             base.Dispose(disposing);
         }
 
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography
             set
             {
                 base.Key = value;
-                InvalidOneShotAlgorithms();
+                InvalidateOneShotAlgorithms();
             }
         }
 
@@ -267,7 +267,7 @@ namespace System.Security.Cryptography
             return result;
         }
 
-        private void InvalidOneShotAlgorithms()
+        private void InvalidateOneShotAlgorithms()
         {
             Interlocked.Exchange(ref _encryptCbcLiteHash, null)?.Dispose();
             Interlocked.Exchange(ref _decryptCbcLiteHash, null)?.Dispose();
