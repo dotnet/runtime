@@ -7,6 +7,7 @@
 // as opposed to testExcplicitOverride2.il, in this case the overridden method is also generic.
 
 using System;
+using Xunit;
 
 public interface I<T>
 {
@@ -25,7 +26,8 @@ public class C : I<String>
 
 public class Test_testExplicitOverride
 {
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		try
 		{

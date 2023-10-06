@@ -77,7 +77,7 @@ struct DotNetRuntimeDebugHeader
     // This counter can be incremented to indicate breaking changes
     // This field must be encoded little endian, regardless of the typical endianness of
     // the machine
-    const uint16_t MajorVersion = 3;
+    const uint16_t MajorVersion = 4;
 
     // This counter can be incremented to indicate back-compatible changes
     // This field must be encoded little endian, regardless of the typical endianness of
@@ -269,7 +269,7 @@ extern "C" void PopulateDebugHeaders()
 
     static_assert(MethodTable::Flags::EETypeKindMask         == 0x00030000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
     static_assert(MethodTable::Flags::HasFinalizerFlag       == 0x00100000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
-    static_assert(MethodTable::Flags::HasPointersFlag        == 0x00200000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
+    static_assert(MethodTable::Flags::HasPointersFlag        == 0x01000000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
     static_assert(MethodTable::Flags::GenericVarianceFlag    == 0x00800000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
     static_assert(MethodTable::Flags::IsGenericFlag          == 0x02000000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
     static_assert(MethodTable::Flags::ElementTypeMask        == 0x7C000000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");

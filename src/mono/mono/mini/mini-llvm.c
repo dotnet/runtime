@@ -49,7 +49,7 @@
 #define TARGET_WIN32_MSVC
 #endif
 
-#if LLVM_API_VERSION < 1100
+#if LLVM_API_VERSION < 1400
 #error "The version of the mono llvm repository is too old."
 #endif
 
@@ -6007,7 +6007,23 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 							retval = LLVMBuildInsertValue (builder, retval, element, i, "setret_simd_vtype_in_reg");
 						}
 					} else {
-						LLVMValueRef addr = build_ptr_cast (builder, addresses [ins->sreg1]->value, pointer_type (ret_type));
+						/*
+						 * To handle valuetypes smaller than i64, create a buffer, save the result there, and
+						 * load it into registers.
+						 */
+						LLVMValueRef buf = build_alloca_llvm_type_name (ctx, pointer_type (ret_type), 0, "ret_buf");
+						emit_memset (ctx, buf, LLVMSizeOf (ret_type), 1);
+
+						int width = mono_type_size (sig->ret, NULL);
+						LLVMValueRef args [] = {
+							buf,
+							addresses [ins->sreg1]->value,
+							const_int32 (width),
+							LLVMConstInt (LLVMInt1Type (), 0, FALSE)
+						};
+						call_intrins (ctx, INTRINS_MEMCPY, args, "");
+
+						LLVMValueRef addr = build_ptr_cast (builder, buf, pointer_type (ret_type));
 						for (int i = 0; i < 2; ++i) {
 							if (linfo->ret.pair_storage [i] == LLVMArgInIReg) {
 								LLVMValueRef indexes [2], part_addr;
@@ -6682,7 +6698,7 @@ MONO_RESTORE_WARNING
 		case OP_X86_LDIVREM: {
 			const LLVMTypeRef part_type = ins->opcode==OP_X86_IDIVREM ? LLVMInt32Type () : LLVMInt64Type ();
 			const LLVMTypeRef full_type = ins->opcode==OP_X86_IDIVREM ? LLVMInt64Type () : LLVMInt128Type ();
-			const LLVMValueRef shift_amount =  ins->opcode==OP_X86_IDIVREM ? const_int32 (32) : const_int32 (64);
+			const LLVMValueRef shift_amount =  LLVMBuildZExt (builder, ins->opcode==OP_X86_IDIVREM ? const_int32 (32) : const_int32 (64), full_type, "");
 
 			LLVMValueRef dividend_low = LLVMBuildZExt (builder, convert (ctx, lhs, part_type), full_type, "");
 			LLVMValueRef dividend_high = LLVMBuildSExt (builder, convert (ctx, rhs, part_type), full_type, "");
@@ -6698,7 +6714,7 @@ MONO_RESTORE_WARNING
 		case OP_X86_LDIVREMU: {
 			const LLVMTypeRef part_type = ins->opcode==OP_X86_IDIVREMU ? LLVMInt32Type () : LLVMInt64Type ();
 			const LLVMTypeRef full_type = ins->opcode==OP_X86_IDIVREMU ? LLVMInt64Type () : LLVMInt128Type ();
-			const LLVMValueRef shift_amount =  ins->opcode==OP_X86_IDIVREMU ? const_int32 (32) : const_int32 (64);
+			const LLVMValueRef shift_amount =  LLVMBuildZExt (builder, ins->opcode==OP_X86_IDIVREMU ? const_int32 (32) : const_int32 (64), full_type, "");
 
 			LLVMValueRef dividend_low = LLVMBuildZExt (builder, convert (ctx, lhs, part_type), full_type, "");
 			LLVMValueRef dividend_high = LLVMBuildZExt (builder, convert (ctx, rhs, part_type), full_type, "");
@@ -7796,10 +7812,10 @@ MONO_RESTORE_WARNING
 				LLVMTypeRef etype = type_to_llvm_type (ctx, t);
 
 				if (!addresses [ins->sreg1]) {
-					addresses [ins->sreg1] = create_address (ctx->module, build_named_alloca (ctx, t, "llvm_outarg_vt"), etype);
+					g_assert (!addresses [ins->dreg]);
+					addresses [ins->dreg] = create_address (ctx->module, build_named_alloca (ctx, t, "llvm_outarg_vt"), etype);
 					g_assert (values [ins->sreg1]);
-					LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], etype), addresses [ins->sreg1]->value);
-					addresses [ins->dreg] = addresses [ins->sreg1];
+					LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], etype), addresses [ins->dreg]->value);
 				} else if (ainfo->storage == LLVMArgVtypeAddr || values [ins->sreg1] == addresses [ins->sreg1]->value) {
 					/* LLVMArgVtypeByRef/LLVMArgVtypeAddr, have to make a copy */
 					addresses [ins->dreg] = build_alloca_address (ctx, t);
@@ -7850,11 +7866,7 @@ MONO_RESTORE_WARNING
 
 				indexes [0] = const_int32 (0);
 				indexes [1] = const_int32 (0);
-#if LLVM_API_VERSION >= 1400
 				LLVMSetInitializer (ref_var, LLVMConstGEP2 (name_var_type, name_var, indexes, 2));
-#else
-				LLVMSetInitializer (ref_var, LLVMConstGEP (name_var, indexes, 2));
-#endif
 				LLVMSetLinkage (ref_var, LLVMPrivateLinkage);
 				LLVMSetExternallyInitialized (ref_var, TRUE);
 				LLVMSetSection (ref_var, "__DATA, __objc_selrefs, literal_pointers, no_dead_strip");
@@ -13489,11 +13501,7 @@ add_types (MonoLLVMModule *module)
 void
 mono_llvm_init (gboolean enable_jit)
 {
-#if LLVM_API_VERSION >= 1400
 	ptr_t = mono_llvm_get_ptr_type ();
-#else
-	ptr_t = NULL;
-#endif
 
 	intrin_types [0][0] = i1_t = LLVMInt8Type ();
 	intrin_types [0][1] = i2_t = LLVMInt16Type ();

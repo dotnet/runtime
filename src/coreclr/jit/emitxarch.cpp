@@ -5485,6 +5485,13 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     {
         assert(!src->isContained()); // there must be one non-contained src
 
+        if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
+        {
+            GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
+            emitIns_S_R(ins, attr, src->GetRegNum(), lclVar->GetLclNum(), lclVar->GetLclOffs());
+            return;
+        }
+
         // ind, reg
         id = emitNewInstrAmd(attr, offset);
         emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
@@ -7607,7 +7614,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 #ifdef DEBUG
     // Mark the catch return
-    if (emitComp->compCurBB->bbJumpKind == BBJ_EHCATCHRET)
+    if (emitComp->compCurBB->KindIs(BBJ_EHCATCHRET))
     {
         id->idDebugOnlyInfo()->idCatchRet = true;
     }
@@ -8602,9 +8609,14 @@ void emitter::emitIns_SIMD_R_R_R_R(
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
         emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
-        // Ensure we aren't overwriting op2 or oop3 (which should be REG_XMM0)
+        // Ensure we aren't overwriting op2 or op3 (which should be REG_XMM0)
         assert((op2Reg != targetReg) || (op1Reg == targetReg));
-        assert(targetReg != REG_XMM0);
+
+        // If targetReg == REG_XMM0, it means that op3 was last use and we decided to
+        // reuse REG_XMM0 for destination i.e. targetReg. In such case, make sure
+        // that XMM0 value after the (op3Reg -> XMM0) move done above is not
+        // overwritten by op1Reg.
+        assert((targetReg != REG_XMM0) || (op1Reg == op3Reg));
 
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_R(ins, attr, targetReg, op2Reg);
@@ -9209,7 +9221,7 @@ void emitter::emitIns_J(instruction ins,
 
 #ifdef DEBUG
     // Mark the finally call
-    if (ins == INS_call && emitComp->compCurBB->bbJumpKind == BBJ_CALLFINALLY)
+    if (ins == INS_call && emitComp->compCurBB->KindIs(BBJ_CALLFINALLY))
     {
         id->idDebugOnlyInfo()->idFinallyCall = true;
     }
@@ -10538,7 +10550,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
         nsep = true;
     }
 
-    if ((id->idIsDspReloc()) && (id->idIns() != INS_i_jmp))
+    if (id->idIsDspReloc() && (id->idIns() != INS_i_jmp))
     {
         if (nsep)
         {

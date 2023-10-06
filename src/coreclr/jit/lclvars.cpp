@@ -4014,7 +4014,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     /* Is this a call to unmanaged code ? */
     if (tree->IsCall() && compMethodRequiresPInvokeFrame())
     {
-        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             /* Get the special variable descriptor */
@@ -4098,7 +4098,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
             {
                 bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-                bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+                bool bbIsReturn = block->KindIs(BBJ_RETURN);
                 // TODO: Zero-inits in LSRA are created with below condition. But if filter out based on that condition
                 // we filter a lot of interesting variables that would benefit otherwise with EH var enregistration.
                 // bool needsExplicitZeroInit = !varDsc->lvIsParam && (info.compInitMem ||
@@ -4146,7 +4146,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         // Check that the LCL_VAR node has the same type as the underlying variable, save a few mismatches we allow.
         assert(tree->TypeIs(varDsc->TypeGet(), genActualType(varDsc)) ||
-               (tree->TypeIs(TYP_I_IMPL) && (varDsc->TypeGet() == TYP_BYREF)) || // Created for spill clique import.
                (tree->TypeIs(TYP_BYREF) && (varDsc->TypeGet() == TYP_I_IMPL)) || // Created by inliner substitution.
                (tree->TypeIs(TYP_INT) && (varDsc->TypeGet() == TYP_LONG)));      // Created by "optNarrowTree".
     }
@@ -4247,7 +4246,7 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     // If we have direct pinvokes, verify the frame list root local was set up properly
     if (compMethodRequiresPInvokeFrame())
     {
-        assert((!opts.ShouldUsePInvokeHelpers()) || (info.compLvFrameListRoot == BAD_VAR_NUM));
+        assert(!opts.ShouldUsePInvokeHelpers() || (info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!opts.ShouldUsePInvokeHelpers())
         {
             noway_assert(info.compLvFrameListRoot >= info.compLocalsCount && info.compLvFrameListRoot < lvaCount);

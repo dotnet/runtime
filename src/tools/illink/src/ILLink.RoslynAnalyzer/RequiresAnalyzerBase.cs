@@ -54,21 +54,6 @@ namespace ILLink.RoslynAnalyzer
 					CheckMatchingAttributesInInterfaces (symbolAnalysisContext, typeSymbol);
 				}, SymbolKind.NamedType);
 
-
-				context.RegisterSymbolAction (symbolAnalysisContext => {
-					var propertySymbol = (IPropertySymbol) symbolAnalysisContext.Symbol;
-					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Property)) {
-						CheckMatchingAttributesInOverrides (symbolAnalysisContext, propertySymbol);
-					}
-				}, SymbolKind.Property);
-
-				context.RegisterSymbolAction (symbolAnalysisContext => {
-					var eventSymbol = (IEventSymbol) symbolAnalysisContext.Symbol;
-					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event)) {
-						CheckMatchingAttributesInOverrides (symbolAnalysisContext, eventSymbol);
-					}
-				}, SymbolKind.Event);
-
 				context.RegisterOperationAction (operationContext => {
 					var methodInvocation = (IInvocationOperation) operationContext.Operation;
 					CheckCalledMember (operationContext, methodInvocation.TargetMethod, incompatibleMembers);
@@ -96,9 +81,6 @@ namespace ILLink.RoslynAnalyzer
 
 					if (usageInfo.HasFlag (ValueUsageInfo.Write) && prop.SetMethod != null)
 						CheckCalledMember (operationContext, prop.SetMethod, incompatibleMembers);
-
-					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Property))
-						CheckCalledMember (operationContext, prop, incompatibleMembers);
 				}, OperationKind.PropertyReference);
 
 				context.RegisterOperationAction (operationContext => {
@@ -114,9 +96,6 @@ namespace ILLink.RoslynAnalyzer
 
 					if (eventSymbol.RaiseMethod is IMethodSymbol eventRaiseMethod)
 						CheckCalledMember (operationContext, eventRaiseMethod, incompatibleMembers);
-
-					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event))
-						CheckCalledMember (operationContext, eventSymbol, incompatibleMembers);
 				}, OperationKind.EventReference);
 
 				context.RegisterOperationAction (operationContext => {
@@ -330,8 +309,8 @@ namespace ILLink.RoslynAnalyzer
 		{
 			bool member1CreatesRequirement = member1.DoesMemberRequire (RequiresAttributeName, out _);
 			bool member2CreatesRequirement = member2.DoesMemberRequire (RequiresAttributeName, out _);
-			bool member1FulfillsRequirement = member1.IsOverrideInRequiresScope (RequiresAttributeName);
-			bool member2FulfillsRequirement = member2.IsOverrideInRequiresScope (RequiresAttributeName);
+			bool member1FulfillsRequirement = member1.IsInRequiresScope (RequiresAttributeName);
+			bool member2FulfillsRequirement = member2.IsInRequiresScope (RequiresAttributeName);
 			return (member1CreatesRequirement && !member2FulfillsRequirement) || (member2CreatesRequirement && !member1FulfillsRequirement);
 		}
 

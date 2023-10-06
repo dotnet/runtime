@@ -244,6 +244,92 @@ inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsi
     return start <= value && value <= end;
 }
 
+#define HISTOGRAM_MAX_SIZE_COUNT 64
+
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+
+class Dumpable
+{
+public:
+    virtual void dump(FILE* output) = 0;
+};
+
+// Helper class to record and display a histogram of different values.
+// Usage like:
+// static unsigned s_buckets[] = { 1, 2, 5, 10, 0 }; // Must have terminating 0
+// static Histogram s_histogram(s_buckets);
+// ...
+// s_histogram.record(someValue);
+//
+// The histogram can later be dumped with the dump function, or automatically
+// be dumped on shutdown of the JIT library using the DumpOnShutdown helper
+// class (see below). It will display how many recorded values fell into each
+// of the buckets (<= 1, <= 2, <= 5, <= 10, > 10).
+class Histogram : public Dumpable
+{
+public:
+    Histogram(const unsigned* const sizeTable);
+
+    void dump(FILE* output);
+    void record(unsigned size);
+
+private:
+    unsigned              m_sizeCount;
+    const unsigned* const m_sizeTable;
+    LONG                  m_counts[HISTOGRAM_MAX_SIZE_COUNT];
+};
+
+// Helper class to record and display counts of node types. Use like:
+// static NodeCounts s_nodeCounts;
+// ...
+// s_nodeCounts.record(someNode->gtOper);
+//
+// The node counts can later be dumped with the dump function, or automatically
+// be dumped on shutdown of the JIT library using the DumpOnShutdown helper
+// class (see below). It will display output such as:
+// LCL_VAR              :   62221
+// CNS_INT              :   42139
+// COMMA                :     623
+// CAST                 :     460
+// ADD                  :     397
+// RSH                  :      72
+// NEG                  :       5
+// UDIV                 :       1
+//
+class NodeCounts : public Dumpable
+{
+public:
+    NodeCounts() : m_counts()
+    {
+    }
+
+    void dump(FILE* output);
+    void record(genTreeOps oper);
+
+private:
+    LONG m_counts[GT_COUNT];
+};
+
+// Helper class to register a Histogram or NodeCounts instance to automatically
+// be output to jitstdout when the JIT library is shutdown. Example usage:
+//
+// static NodeCounts s_nodeCounts;
+// static DumpOnShutdown d("Bounds check index node types", &s_nodeCounts);
+// ...
+// s_nodeCounts.record(...);
+//
+// Useful for quick ad-hoc investigations without having to manually go add
+// code into Compiler::compShutdown and expose the Histogram/NodeCount to that
+// function.
+class DumpOnShutdown
+{
+public:
+    DumpOnShutdown(const char* name, Dumpable* histogram);
+    static void DumpAll();
+};
+
+#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+
 /******************************************************************************************
  * Return the EH descriptor for the given region index.
  */
@@ -547,29 +633,29 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 
             BasicBlock* finBeg = ehDsc->ebdHndBeg;
 
-            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
             {
-                if ((bcall->bbJumpKind != BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
                 {
                     continue;
                 }
 
                 assert(bcall->isBBCallAlwaysPair());
 
-                RETURN_ON_ABORT(func(bcall->bbNext));
+                RETURN_ON_ABORT(func(bcall->Next()));
             }
 
             RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
 
-            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
             {
-                if ((bcall->bbJumpKind != BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
                 {
                     continue;
                 }
 
                 assert(bcall->isBBCallAlwaysPair());
-                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bcall->bbNext, func));
+                RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bcall->Next(), func));
             }
 
             break;
@@ -681,16 +767,16 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 
             BasicBlock* finBeg = ehDsc->ebdHndBeg;
 
-            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+            for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
             {
-                if ((bcall->bbJumpKind != BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
                 {
                     continue;
                 }
 
                 assert(bcall->isBBCallAlwaysPair());
 
-                RETURN_ON_ABORT(func(bcall->bbNext));
+                RETURN_ON_ABORT(func(bcall->Next()));
             }
 
             break;
@@ -3039,7 +3125,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
-    if (!(block->bbFlags & BBF_INTERNAL) || block->bbJumpKind != BBJ_THROW)
+    if (!(block->bbFlags & BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
     {
         return false;
     }
@@ -3138,7 +3224,7 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     fgRemoveBlockAsPred(block);
 
     // Update jump kind after the scrub.
-    block->bbJumpKind = BBJ_THROW;
+    block->SetBBJumpKind(BBJ_THROW DEBUG_ARG(this));
 
     // Any block with a throw is rare
     block->bbSetRunRarely();
@@ -3149,8 +3235,8 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     // Must do this after we update bbJumpKind of block.
     if (isCallAlwaysPair)
     {
-        BasicBlock* leaveBlk = block->bbNext;
-        noway_assert(leaveBlk->bbJumpKind == BBJ_ALWAYS);
+        BasicBlock* leaveBlk = block->Next();
+        noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
 
         // leaveBlk is now unreachable, so scrub the pred lists.
         leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;

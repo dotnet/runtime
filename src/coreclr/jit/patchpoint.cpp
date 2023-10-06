@@ -52,7 +52,7 @@ public:
         }
 
         int count = 0;
-        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->bbNext))
+        for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB->Next()))
         {
             if (block->bbFlags & BBF_PATCHPOINT)
             {
@@ -145,7 +145,7 @@ private:
         BasicBlock* helperBlock    = CreateAndInsertBasicBlock(BBJ_NONE, block);
 
         // Update flow and flags
-        block->bbJumpKind = BBJ_COND;
+        block->SetBBJumpKind(BBJ_COND DEBUG_ARG(compiler));
         block->bbJumpDest = remainderBlock;
         block->bbFlags |= BBF_INTERNAL;
 
@@ -233,7 +233,7 @@ private:
         }
 
         // Update flow
-        block->bbJumpKind = BBJ_THROW;
+        block->SetBBJumpKind(BBJ_THROW DEBUG_ARG(compiler));
         block->bbJumpDest = nullptr;
 
         // Add helper call
