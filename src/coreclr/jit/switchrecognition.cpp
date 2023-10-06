@@ -95,10 +95,10 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                 }
 
                 *isReversed   = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *blockIfTrue  = *isReversed ? block->Next() : block->bbJumpDest;
-                *blockIfFalse = *isReversed ? block->bbJumpDest : block->Next();
+                *blockIfTrue  = *isReversed ? block->Next() : block->GetJumpDest();
+                *blockIfFalse = *isReversed ? block->GetJumpDest() : block->Next();
 
-                if (block->NextIs(block->bbJumpDest) || (block->bbJumpDest == block))
+                if (block->JumpsToNext() || block->JumpsTo(block))
                 {
                     // Ignoring weird cases like a condition jumping to itself
                     return false;
@@ -319,8 +319,8 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert(isTest);
 
     // Convert firstBlock to a switch block
-    firstBlock->SetBBJumpKind(BBJ_SWITCH DEBUG_ARG(this));
-    firstBlock->bbJumpDest    = nullptr;
+    firstBlock->SetJumpKind(BBJ_SWITCH DEBUG_ARG(this));
+    firstBlock->SetJumpDest(nullptr);
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
 
@@ -351,11 +351,11 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
     const auto jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jumpCount + 1 /*default case*/];
 
-    fgHasSwitch                          = true;
-    firstBlock->bbJumpSwt                = new (this, CMK_BasicBlock) BBswtDesc;
-    firstBlock->bbJumpSwt->bbsCount      = jumpCount + 1;
-    firstBlock->bbJumpSwt->bbsHasDefault = true;
-    firstBlock->bbJumpSwt->bbsDstTab     = jmpTab;
+    fgHasSwitch = true;
+    firstBlock->SetJumpSwt(new (this, CMK_BasicBlock) BBswtDesc);
+    firstBlock->GetJumpSwt()->bbsCount      = jumpCount + 1;
+    firstBlock->GetJumpSwt()->bbsHasDefault = true;
+    firstBlock->GetJumpSwt()->bbsDstTab     = jmpTab;
     firstBlock->SetNext(isReversed ? blockIfTrue : blockIfFalse);
 
     // Splitting doesn't work well with jump-tables currently

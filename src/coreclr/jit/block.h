@@ -514,13 +514,20 @@ private:
 
     BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
 
+    /* The following union describes the jump target(s) of this block */
+    union {
+        unsigned    bbJumpOffs; // PC offset (temporary only)
+        BasicBlock* bbJumpDest; // basic block
+        BBswtDesc*  bbJumpSwt;  // switch descriptor
+    };
+
 public:
-    BBjumpKinds GetBBJumpKind() const
+    BBjumpKinds GetJumpKind() const
     {
         return bbJumpKind;
     }
 
-    void SetBBJumpKind(BBjumpKinds kind DEBUG_ARG(Compiler* compiler))
+    void SetJumpKind(BBjumpKinds kind DEBUG_ARG(Compiler* compiler))
     {
 #ifdef DEBUG
         // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
@@ -569,12 +576,12 @@ public:
         return (bbNext == nullptr);
     }
 
-    bool PrevIs(BasicBlock* block) const
+    bool PrevIs(const BasicBlock* block) const
     {
         return (bbPrev == block);
     }
 
-    bool NextIs(BasicBlock* block) const
+    bool NextIs(const BasicBlock* block) const
     {
         return (bbNext == block);
     }
@@ -583,12 +590,46 @@ public:
 
     bool IsFirstColdBlock(Compiler* compiler) const;
 
-    /* The following union describes the jump target(s) of this block */
-    union {
-        unsigned    bbJumpOffs; // PC offset (temporary only)
-        BasicBlock* bbJumpDest; // basic block
-        BBswtDesc*  bbJumpSwt;  // switch descriptor
-    };
+    unsigned GetJumpOffs() const
+    {
+        return bbJumpOffs;
+    }
+
+    void SetJumpOffs(unsigned jumpOffs)
+    {
+        bbJumpOffs = jumpOffs;
+    }
+
+    BasicBlock* GetJumpDest() const
+    {
+        return bbJumpDest;
+    }
+
+    void SetJumpDest(BasicBlock* jumpDest)
+    {
+        bbJumpDest = jumpDest;
+    }
+
+    bool JumpsTo(const BasicBlock* jumpDest) const
+    {
+        return (bbJumpDest == jumpDest);
+    }
+
+    bool JumpsToNext() const
+    {
+        return (bbJumpDest == bbNext);
+    }
+
+    BBswtDesc* GetJumpSwt() const
+    {
+        assert(KindIs(BBJ_SWITCH));
+        return bbJumpSwt;
+    }
+
+    void SetJumpSwt(BBswtDesc* jumpSwt)
+    {
+        bbJumpSwt = jumpSwt;
+    }
 
     BasicBlockFlags bbFlags;
 
@@ -1617,7 +1658,7 @@ inline BBArrayIterator BBSwitchTargetList::end() const
 inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
-    switch (block->GetBBJumpKind())
+    switch (block->GetJumpKind())
     {
         case BBJ_THROW:
         case BBJ_RETURN:
@@ -1633,7 +1674,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_LEAVE:
-            m_succs[0] = block->bbJumpDest;
+            m_succs[0] = block->GetJumpDest();
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;
@@ -1650,23 +1691,23 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 
             // If both fall-through and branch successors are identical, then only include
             // them once in the iteration (this is the same behavior as NumSucc()/GetSucc()).
-            if (block->NextIs(block->bbJumpDest))
+            if (block->JumpsToNext())
             {
                 m_end = &m_succs[1];
             }
             else
             {
-                m_succs[1] = block->bbJumpDest;
+                m_succs[1] = block->GetJumpDest();
                 m_end      = &m_succs[2];
             }
             break;
 
         case BBJ_SWITCH:
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
-            assert(block->bbJumpSwt != nullptr);
-            assert(block->bbJumpSwt->bbsDstTab != nullptr);
-            m_begin = block->bbJumpSwt->bbsDstTab;
-            m_end   = block->bbJumpSwt->bbsDstTab + block->bbJumpSwt->bbsCount;
+            assert(block->GetJumpSwt() != nullptr);
+            assert(block->GetJumpSwt()->bbsDstTab != nullptr);
+            m_begin = block->GetJumpSwt()->bbsDstTab;
+            m_end   = block->GetJumpSwt()->bbsDstTab + block->GetJumpSwt()->bbsCount;
             break;
 
         default:
