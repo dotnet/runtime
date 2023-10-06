@@ -16,6 +16,7 @@
 #include "threadsuspend.h"
 #include "typeparse.h"
 #include "typestring.h"
+#include "profilepriv.h"
 
 #ifdef FEATURE_PAL
 #include "pal.h"
@@ -3146,4 +3147,15 @@ extern "C" EXPORT_API gboolean EXPORT_CC unity_mono_method_is_inflated_specific(
 {
     GCX_PREEMP(); // temporary until we sort out our GC thread model
     return g_HostStruct->unity_mono_method_is_inflated_specific(method, klass);
+}
+
+extern "C" EXPORT_API void EXPORT_CC coreclr_unity_profiler_register(const CLSID* classId, const guint16* profilerDllPathUtf16)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    StoredProfilerNode *profilerData = new StoredProfilerNode();
+    profilerData->guid = *classId;
+    profilerData->path.Set(reinterpret_cast<LPCWSTR>(profilerDllPathUtf16));
+
+    g_profControlBlock.storedProfilers.InsertHead(profilerData);
 }
