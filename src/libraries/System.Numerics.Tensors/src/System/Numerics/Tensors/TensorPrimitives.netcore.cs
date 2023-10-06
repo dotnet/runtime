@@ -3081,7 +3081,6 @@ namespace System.Numerics.Tensors
             // If x < 0, then we use the identity
             //    tanhf(-x) = -tanhf(x)
 
-            private const uint V4_TANHF_ARG_MAX = 0x410AA123;
             private const uint V4_TANHF_SIGN_MASK = 0x7FFFFFFF;
 
             public static float Invoke(float x) => MathF.Tanh(x);
@@ -3090,40 +3089,18 @@ namespace System.Numerics.Tensors
             {
                 Vector128<uint> ux = x.AsUInt32();
                 Vector128<uint> sign = ux & Vector128.Create(~V4_TANHF_SIGN_MASK);
-
-                ux &= Vector128.Create(V4_TANHF_SIGN_MASK);
-                if (Vector128.GreaterThanAny(ux, Vector128.Create(V4_TANHF_ARG_MAX)))
-                {
-                    return Vector128.Create(
-                        MathF.Tanh(x.GetElement(0)),
-                        MathF.Tanh(x.GetElement(1)),
-                        MathF.Tanh(x.GetElement(2)),
-                        MathF.Tanh(x.GetElement(3)));
-                }
-
-                Vector128<float> y = ux.AsSingle();
+                Vector128<float> y = (ux & Vector128.Create(V4_TANHF_SIGN_MASK)).AsSingle();
                 Vector128<float> z = ExpOperator.Invoke(Vector128.Create(-2f) * y) - Vector128.Create(1f);
-                Vector128<uint> result = sign ^ (-z / (z + Vector128.Create(2f))).AsUInt32();
-
-                return result.AsSingle();
+                return (sign ^ (-z / (z + Vector128.Create(2f))).AsUInt32()).AsSingle();
             }
 
             public static Vector256<float> Invoke(Vector256<float> x)
             {
                 Vector256<uint> ux = x.AsUInt32();
                 Vector256<uint> sign = ux & Vector256.Create(~V4_TANHF_SIGN_MASK);
-
-                ux &= Vector256.Create(V4_TANHF_SIGN_MASK);
-                if (Vector256.GreaterThanAny(ux, Vector256.Create(V4_TANHF_ARG_MAX)))
-                {
-                    return Vector256.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
-                }
-
-                Vector256<float> y = ux.AsSingle();
+                Vector256<float> y = (ux & Vector256.Create(V4_TANHF_SIGN_MASK)).AsSingle();
                 Vector256<float> z = ExpOperator.Invoke(Vector256.Create(-2f) * y) - Vector256.Create(1f);
-                Vector256<uint> result = sign ^ (-z / (z + Vector256.Create(2f))).AsUInt32();
-
-                return result.AsSingle();
+                return (sign ^ (-z / (z + Vector256.Create(2f))).AsUInt32()).AsSingle();
             }
 
 #if NET8_0_OR_GREATER
@@ -3131,18 +3108,9 @@ namespace System.Numerics.Tensors
             {
                 Vector512<uint> ux = x.AsUInt32();
                 Vector512<uint> sign = ux & Vector512.Create(~V4_TANHF_SIGN_MASK);
-
-                ux &= Vector512.Create(V4_TANHF_SIGN_MASK);
-                if (Vector512.GreaterThanAny(ux, Vector512.Create(V4_TANHF_ARG_MAX)))
-                {
-                    return Vector512.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
-                }
-
-                Vector512<float> y = ux.AsSingle();
+                Vector512<float> y = (ux & Vector512.Create(V4_TANHF_SIGN_MASK)).AsSingle();
                 Vector512<float> z = ExpOperator.Invoke(Vector512.Create(-2f) * y) - Vector512.Create(1f);
-                Vector512<uint> result = sign ^ (-z / (z + Vector512.Create(2f))).AsUInt32();
-
-                return result.AsSingle();
+                return (sign ^ (-z / (z + Vector512.Create(2f))).AsUInt32()).AsSingle();
             }
 #endif
         }
