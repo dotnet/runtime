@@ -1270,6 +1270,12 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 1);
             srcCount = BuildBinaryUses(tree->AsOp());
             buildInternalIntRegisterDefForNode(tree);
+            if (!tree->AsIndexAddr()->Index()->TypeIs(TYP_I_IMPL) &&
+                !(isPow2(tree->AsIndexAddr()->gtElemSize) && (tree->AsIndexAddr()->gtElemSize <= 32768)))
+            {
+                // We're going to need a temp reg to widen the index.
+                buildInternalIntRegisterDefForNode(tree);
+            }
             buildInternalRegisterUses();
             BuildDef(tree);
             break;

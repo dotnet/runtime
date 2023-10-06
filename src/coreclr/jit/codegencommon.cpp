@@ -376,7 +376,7 @@ void CodeGen::genMarkLabelsForCodegen()
 
     for (BasicBlock* const block : compiler->Blocks())
     {
-        switch (block->bbJumpKind)
+        switch (block->GetBBJumpKind())
         {
             case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
             case BBJ_COND:
@@ -2256,7 +2256,7 @@ void CodeGen::genReportEH()
         {
             for (BasicBlock* const block : compiler->Blocks())
             {
-                if (block->bbJumpKind == BBJ_CALLFINALLY)
+                if (block->KindIs(BBJ_CALLFINALLY))
                 {
                     ++clonedFinallyCount;
                 }
@@ -2582,7 +2582,7 @@ void CodeGen::genReportEH()
         unsigned reportedClonedFinallyCount = 0;
         for (BasicBlock* const block : compiler->Blocks())
         {
-            if (block->bbJumpKind == BBJ_CALLFINALLY)
+            if (block->KindIs(BBJ_CALLFINALLY))
             {
                 UNATIVE_OFFSET hndBeg, hndEnd;
 

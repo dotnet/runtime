@@ -572,8 +572,8 @@ private:
             {
                 // There's no need for a new block here. We can just append to currBlock.
                 //
-                checkBlock             = currBlock;
-                checkBlock->bbJumpKind = BBJ_COND;
+                checkBlock = currBlock;
+                checkBlock->SetBBJumpKind(BBJ_COND DEBUG_ARG(compiler));
             }
             else
             {
@@ -652,7 +652,7 @@ private:
             if (isLastCheck && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) != 0))
             {
                 checkBlock->bbJumpDest = nullptr;
-                checkBlock->bbJumpKind = BBJ_NONE;
+                checkBlock->SetBBJumpKind(BBJ_NONE DEBUG_ARG(compiler));
                 return;
             }
 
@@ -1073,7 +1073,7 @@ private:
             //
             BasicBlock* const coldBlock = checkBlock->bbPrev;
 
-            if (coldBlock->bbJumpKind != BBJ_NONE)
+            if (!coldBlock->KindIs(BBJ_NONE))
             {
                 JITDUMP("Unexpected flow from cold path " FMT_BB "\n", coldBlock->bbNum);
                 return;
@@ -1081,7 +1081,7 @@ private:
 
             BasicBlock* const hotBlock = coldBlock->bbPrev;
 
-            if ((hotBlock->bbJumpKind != BBJ_ALWAYS) || (hotBlock->bbJumpDest != checkBlock))
+            if (!hotBlock->KindIs(BBJ_ALWAYS) || (hotBlock->bbJumpDest != checkBlock))
             {
                 JITDUMP("Unexpected flow from hot path " FMT_BB "\n", hotBlock->bbNum);
                 return;
@@ -1126,7 +1126,7 @@ private:
             // not fall through to the check block.
             //
             compiler->fgRemoveRefPred(checkBlock, coldBlock);
-            coldBlock->bbJumpKind = BBJ_ALWAYS;
+            coldBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(compiler));
             coldBlock->bbJumpDest = elseBlock;
             compiler->fgAddRefPred(elseBlock, coldBlock);
         }
