@@ -182,16 +182,20 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             il.LoadConstantR4(float.PositiveInfinity);
             il.LoadConstantR4(float.Epsilon);
 
-            AssertEx.Equal(new byte[]
+            var expectedEncoding = new byte[]
             {
                 (byte)ILOpCode.Ldc_r4, 0x00, 0x00, 0x00, 0x00,
                 (byte)ILOpCode.Ldc_r4, 0xFF, 0xFF, 0x7F, 0x7F,
                 (byte)ILOpCode.Ldc_r4, 0xFF, 0xFF, 0x7F, 0xFF,
-                (byte)ILOpCode.Ldc_r4, 0x00, 0x00, 0xC0, 0xFF,
+                (byte)ILOpCode.Ldc_r4, 0xCC, 0xCC, 0xCC, 0xCC,
                 (byte)ILOpCode.Ldc_r4, 0x00, 0x00, 0x80, 0xFF,
                 (byte)ILOpCode.Ldc_r4, 0x00, 0x00, 0x80, 0x7F,
                 (byte)ILOpCode.Ldc_r4, 0x01, 0x00, 0x00, 0x00
-            }, builder.ToArray());
+            };
+            // float.NaN may differ across architectures, in particular it's negative on x86 and positive elsewhere
+            expectedEncoding.WriteSingle(3 * (1 + 4) + 1, float.NaN);
+
+            AssertEx.Equal(expectedEncoding, builder.ToArray());
         }
 
         [Fact]
@@ -208,16 +212,20 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             il.LoadConstantR8(double.PositiveInfinity);
             il.LoadConstantR8(double.Epsilon);
 
-            AssertEx.Equal(new byte[]
+            var expectedEncoding = new byte[]
             {
                 (byte)ILOpCode.Ldc_r8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 (byte)ILOpCode.Ldc_r8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0x7F,
                 (byte)ILOpCode.Ldc_r8, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xEF, 0xFF,
-                (byte)ILOpCode.Ldc_r8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0xFF,
+                (byte)ILOpCode.Ldc_r8, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC,
                 (byte)ILOpCode.Ldc_r8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xFF,
                 (byte)ILOpCode.Ldc_r8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x7F,
                 (byte)ILOpCode.Ldc_r8, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-            }, builder.ToArray());
+            };
+            // double.NaN may differ across architectures, in particular it's negative on x86 and positive elsewhere
+            expectedEncoding.WriteDouble(3 * (1 + 8) + 1, double.NaN);
+
+            AssertEx.Equal(expectedEncoding, builder.ToArray());
         }
 
         [Fact]
