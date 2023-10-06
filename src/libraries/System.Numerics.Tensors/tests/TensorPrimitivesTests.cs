@@ -598,7 +598,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
-        [MemberData(nameof(VectorLengthAndIteratedRange), new object[] { -90f, 90f, 3f })]
+        [MemberData(nameof(VectorLengthAndIteratedRange), new object[] { -100f, 100f, 3f })]
         public static void Cosh_ValueRange(int vectorLength, float element)
         {
             float[] x = new float[vectorLength];

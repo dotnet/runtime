@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Security.Cryptography;
 
 namespace System.Numerics.Tensors
 {
@@ -3028,7 +3029,6 @@ namespace System.Numerics.Tensors
             // coshf = v/2 * exp(x - log(v)) where v = 0x1.0000e8p-1
 
             private const uint SIGN_MASK = 0x7FFFFFFF;
-            private const uint ARG_MAX = 0x42B2D4FC;
             private const uint LOGV = 0x3f317300;
             private const uint HALFV = 0x3f800074;
             private const uint INVV2 = 0x3e7ffe30;
@@ -3037,46 +3037,24 @@ namespace System.Numerics.Tensors
 
             public static Vector128<float> Invoke(Vector128<float> x)
             {
-                Vector128<uint> ux = x.AsUInt32() & Vector128.Create(SIGN_MASK);
-                if (Vector128.GreaterThanAny(ux, Vector128.Create(ARG_MAX)))
-                {
-                    return Vector128.Create(
-                        MathF.Cosh(x.GetElement(0)),
-                        MathF.Cosh(x.GetElement(1)),
-                        MathF.Cosh(x.GetElement(2)),
-                        MathF.Cosh(x.GetElement(3)));
-                }
-
-                Vector128<float> y = ux.AsSingle();
+                Vector128<float> y = (x.AsUInt32() & Vector128.Create(SIGN_MASK)).AsSingle();
                 Vector128<float> z = ExpOperator.Invoke(y - Vector128.Create(LOGV).AsSingle());
-                return Vector128.Create(HALFV).AsSingle() * (z + Vector128.Create(INVV2).AsSingle() * 1f / z);
+                return Vector128.Create(HALFV).AsSingle() * (z + (Vector128.Create(INVV2).AsSingle() / z));
             }
 
             public static Vector256<float> Invoke(Vector256<float> x)
             {
-                Vector256<uint> ux = x.AsUInt32() & Vector256.Create(SIGN_MASK);
-                if (Vector256.GreaterThanAny(ux, Vector256.Create(ARG_MAX)))
-                {
-                    return Vector256.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
-                }
-
-                Vector256<float> y = ux.AsSingle();
+                Vector256<float> y = (x.AsUInt32() & Vector256.Create(SIGN_MASK)).AsSingle();
                 Vector256<float> z = ExpOperator.Invoke(y - Vector256.Create(LOGV).AsSingle());
-                return Vector256.Create(HALFV).AsSingle() * (z + Vector256.Create(INVV2).AsSingle() * 1f / z);
+                return Vector256.Create(HALFV).AsSingle() * (z + (Vector256.Create(INVV2).AsSingle() / z));
             }
 
 #if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x)
             {
-                Vector512<uint> ux = x.AsUInt32() & Vector512.Create(SIGN_MASK);
-                if (Vector512.GreaterThanAny(ux, Vector512.Create(ARG_MAX)))
-                {
-                    return Vector512.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
-                }
-
-                Vector512<float> y = ux.AsSingle();
+                Vector512<float> y = (x.AsUInt32() & Vector512.Create(SIGN_MASK)).AsSingle();
                 Vector512<float> z = ExpOperator.Invoke(y - Vector512.Create(LOGV).AsSingle());
-                return Vector512.Create(HALFV).AsSingle() * (z + Vector512.Create(INVV2).AsSingle() * 1f / z);
+                return Vector512.Create(HALFV).AsSingle() * (z + (Vector512.Create(INVV2).AsSingle() / z));
             }
 #endif
         }
