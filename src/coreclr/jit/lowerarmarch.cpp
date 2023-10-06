@@ -3150,14 +3150,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 unreached();
         }
     }
-
-    //if ((intrin.id == NI_AdvSimd_LoadAndInsertScalar) || (intrin.id == NI_AdvSimd_LoadAndInsertScalarx2) ||
-    //    (intrin.id == NI_AdvSimd_LoadAndInsertScalarx3) || (intrin.id == NI_AdvSimd_LoadAndInsertScalarx4) ||
-    //    (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx2) ||
-    //    (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx3) || (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx4))
-    //{
-    //    MakeSrcContained(node, intrin.op1);
-    //}
 }
 #endif // FEATURE_HW_INTRINSICS
 
