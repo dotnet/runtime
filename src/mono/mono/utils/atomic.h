@@ -25,8 +25,8 @@ F/MonoDroid( 1568): shared runtime initialization error: Cannot load library: re
 Apple targets have historically being problematic, xcode 4.6 would miscompile the intrinsic.
 */
 
-/* Decide if we will use stdatomic.h */
-/*
+/* For each platform, decide what atomic implementation to use.
+ *
  * Generally, we can enable C11 atomics if the header is available and if all the primitive types we
  * care about (int, long, void*, long long) are lock-free.
  *
@@ -39,9 +39,21 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
  * long).  We might be able to use a GC-aware lock, for example.
  *
  */
-#if defined(_MSC_VER)
+#undef MONO_USE_C11_ATOMIC
+#undef MONO_USE_WIN32_ATOMIC
+#undef MONO_USE_GCC_ATOMIC
+#undef MONO_USE_EMULATED_ATOMIC
+
+#if defined(MONO_GENERATING_OFFSETS)
   /*
-   * we need two things:
+   * Hack: for the offsets tool, define MONO_USE_EMULATED_ATOMIC since it doesn't actually need to see
+   * the impementation, and the stdatomic ones cause problems on some Linux configurations where
+   * libclang sees the platform header, not the clang one.
+   */
+#  define MONO_USE_EMULATED_ATOMIC 1
+#elif defined(_MSC_VER) || defined(HOST_WIN32)
+  /*
+   * we need two things to switch to C11 atomics on Windows:
    *
    * 1. MSVC atomics support is not experimental, or we pass /experimental:c11atomics
    *
@@ -49,26 +61,29 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
    * stdatomic.h)
    *
    */
-#  undef MONO_USE_STDATOMIC
+#  define MONO_USE_WIN32_ATOMIC 1
 #elif defined(HOST_IOS) || defined(HOST_OSX) || defined(HOST_WATCHOS) || defined(HOST_TVOS)
-#  define MONO_USE_STDATOMIC 1
+#  define MONO_USE_C11_ATOMIC 1
 #elif defined(HOST_ANDROID)
   /* on Android-x86 ATOMIC_LONG_LONG_LOCK_FREE == 1, not 2 like we want. */
   /* on Andriod-x64 ATOMIC_LONG_LOCK_FREE == 1, not 2 */
   /* on Android-armv7 ATOMIC_INT_LOCK_FREE == 1, not 2 */
 #  if defined(HOST_ARM64)
-#    define MONO_USE_STDATOMIC 1
+#    define MONO_USE_C11_ATOMIC 1
 #  endif
 #elif defined(HOST_LINUX)
   /* FIXME: probably need arch checks */
-#  define MONO_USE_STDATOMIC 1
+#  define MONO_USE_C11_ATOMIC 1
 #elif defined(HOST_WASI) || defined(HOST_BROWSER)
-#  define MONO_USE_STDATOMIC 1
+#  define MONO_USE_C11_ATOMIC 1
+#elif defined(USE_GCC_ATOMIC_OPS)
+/* Prefer GCC atomic ops if the target supports it (see configure.ac). */
+#  define MONO_USE_GCC_ATOMIC 1
 #else
-#  undef MONO_USE_STDATOMIC
+#  define MONO_USE_EMULATED_ATOMIC 1
 #endif
 
-#ifdef MONO_USE_STDATOMIC
+#if defined(MONO_USE_C11_ATOMIC)
 
 #include<stdatomic.h>
 
@@ -280,7 +295,7 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 	atomic_store ((volatile _Atomic(gpointer) *)dst, val);
 }
 
-#elif defined(HOST_WIN32)
+#elif defined(MONO_USE_WIN32_ATOMIC)
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -459,8 +474,8 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 	InterlockedExchangePointer ((PVOID volatile *)dst, (PVOID)val);
 }
 
-/* Prefer GCC atomic ops if the target supports it (see configure.ac). */
-#elif defined(USE_GCC_ATOMIC_OPS)
+
+#elif defined(MONO_USE_GCC_ATOMIC)
 
 /*
  * As of this comment (August 2016), all current Clang versions get atomic
@@ -708,7 +723,7 @@ static inline void mono_atomic_store_i64(volatile gint64 *dst, gint64 val)
 	mono_atomic_xchg_i64 (dst, val);
 }
 
-#else
+#elif defined(MONO_USE_EMULATED_ATOMIC)
 
 #define WAPI_NO_ATOMIC_ASM
 
@@ -737,6 +752,8 @@ extern void mono_atomic_store_i32(volatile gint32 *dst, gint32 val);
 extern void mono_atomic_store_i64(volatile gint64 *dst, gint64 val);
 extern void mono_atomic_store_ptr(volatile gpointer *dst, gpointer val);
 
+#else
+#error one of MONO_USE_C11_ATOMIC, MONO_USE_WIN32_ATOMIC, MONO_USE_GCC_ATOMIC or MONO_USE_EMULATED_ATOMIC must be defined
 #endif
 
 #if SIZEOF_VOID_P == 4
