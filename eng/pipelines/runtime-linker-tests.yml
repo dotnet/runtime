@@ -108,7 +108,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             buildArgs: -s clr+libs+tools.illink -c $(_BuildConfig)
-            extraStepsTemplats:
+            postBuildSteps:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
 
       #

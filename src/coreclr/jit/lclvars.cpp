@@ -7569,6 +7569,14 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" tier0-frame");
     }
+    if (varDsc->lvIsHoist)
+    {
+        printf(" hoist");
+    }
+    if (varDsc->lvIsMultiDefCSE)
+    {
+        printf(" multi-def");
+    }
 
 #ifndef TARGET_64BIT
     if (varDsc->lvStructDoubleAlign)
