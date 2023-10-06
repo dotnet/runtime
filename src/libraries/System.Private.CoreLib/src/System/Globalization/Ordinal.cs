@@ -89,6 +89,9 @@ namespace System.Globalization
             nuint i = 0;
             TVector vec1;
             TVector vec2;
+            TVector loweringMask = TVector.Create(0x20);
+            TVector vecA = TVector.Create('a');
+            TVector vecZMinusA = TVector.Create('z' - 'a');
             do
             {
                 vec1 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
@@ -99,9 +102,18 @@ namespace System.Globalization
                     goto NON_ASCII;
                 }
 
-                if (!Utf16Utility.VectorOrdinalIgnoreCaseAscii(vec1, vec2))
+                TVector notEquals = ~TVector.Equals(vec1, vec2);
+
+                if (notEquals != TVector.Zero)
                 {
-                    return false;
+                    // not exact match
+
+                    vec1 |= loweringMask;
+                    vec2 |= loweringMask;
+                    if (TVector.GreaterThanAny((vec1 - vecA) & notEquals, vecZMinusA) || vec1 != vec2)
+                    {
+                        return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                    }
                 }
 
                 i += (nuint)TVector.Count;

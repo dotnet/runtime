@@ -278,41 +278,13 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
-        /// Returns true iff the TVector represents N ASCII UTF-16 characters in machine endianness.
+        /// Returns true iff the TVector represents ASCII UTF-16 characters in machine endianness.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool AllCharsInVectorAreAscii<TVector>(TVector vec)
             where TVector : struct, ISimdVector<TVector, ushort>
         {
             return (vec & TVector.Create(unchecked((ushort)~0x007F))) == TVector.Zero;
-        }
-
-        /// <summary>
-        /// Given two TVector that represent N ASCII UTF-16 characters each, returns true iff
-        /// the two inputs are equal using an ordinal case-insensitive comparison.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool VectorOrdinalIgnoreCaseAscii<TVector>(TVector vec1, TVector vec2)
-            where TVector : struct, ISimdVector<TVector, ushort>
-        {
-            // ASSUMPTION: Caller has validated that input values are ASCII.
-
-            // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'A'
-            TVector lowIndicator1 = TVector.Create(0x80 - 'A') + vec1;
-            TVector lowIndicator2 = TVector.Create(0x80 - 'A') + vec2;
-
-            // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'A' and <= 'Z'
-            TVector combIndicator1 =
-                TVector.LessThan(TVector.Create(unchecked((byte)(('Z' - 'A') - 0x80))), lowIndicator1);
-            TVector combIndicator2 =
-                TVector.LessThan(TVector.Create(unchecked((byte)(('Z' - 'A') - 0x80))), lowIndicator2);
-
-            // Convert both vectors to lower case by adding 0x20 bit for all [A-Z][a-z] characters
-            TVector lcVec1 = TVector.AndNot(TVector.Create(0x20), combIndicator1) + vec1;
-            TVector lcVec2 = TVector.AndNot(TVector.Create(0x20), combIndicator2) + vec2;
-
-            // Compare two lowercased vectors
-            return lcVec1 == lcVec2;
         }
     }
 }
