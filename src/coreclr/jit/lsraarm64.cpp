@@ -1416,6 +1416,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_ExtractVector64:
                     case NI_AdvSimd_ExtractVector128:
                     case NI_AdvSimd_StoreSelectedScalar:
+                    case NI_AdvSimd_StoreSelectedScalar64x2:
+                    case NI_AdvSimd_Arm64_StoreSelectedScalar128x2:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 
@@ -1558,6 +1560,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             case NI_AdvSimd_VectorTableLookup:
             case NI_AdvSimd_Arm64_VectorTableLookup:
+            {
                 assert(intrin.op2 != nullptr);
                 srcCount += BuildOperandUses(intrin.op2);
                 assert(dstCount == 1);
@@ -1565,9 +1568,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 BuildDef(intrinsicTree);
                 *pDstCount = 1;
                 break;
+            }
 
             case NI_AdvSimd_VectorTableLookupExtension:
             case NI_AdvSimd_Arm64_VectorTableLookupExtension:
+            {
                 assert(intrin.op2 != nullptr);
                 assert(intrin.op3 != nullptr);
                 assert(isRMW);
@@ -1578,14 +1583,35 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 BuildDef(intrinsicTree);
                 *pDstCount = 1;
                 break;
+            }
+
+            case NI_AdvSimd_StoreSelectedScalar64x2:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar128x2:
+            {
+                assert(intrin.op1 != nullptr);
+                assert(intrin.op3 != nullptr);
+                srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
+                if (!intrin.op3->isContainedIntOrIImmed())
+                {
+                    srcCount += BuildOperandUses(intrin.op3);
+                }
+                assert(dstCount == 0);
+                buildInternalRegisterUses();
+                *pDstCount = 0;
+                break;
+            }
+
             case NI_AdvSimd_StoreVector64x2:
             case NI_AdvSimd_Arm64_StoreVector128x2:
+            {
                 assert(intrin.op1 != nullptr);
                 srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
                 assert(dstCount == 0);
                 buildInternalRegisterUses();
                 *pDstCount = 0;
                 break;
+            }
+
             case NI_AdvSimd_LoadVector64x2:
             case NI_AdvSimd_LoadVector64x3:
             case NI_AdvSimd_LoadVector64x4:

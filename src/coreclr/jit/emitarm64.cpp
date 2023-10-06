@@ -5590,10 +5590,23 @@ void emitter::emitIns_R_R_I(
             isLdSt     = true;
             break;
 
+        case INS_st2:
+            assert(isVectorRegister(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+            assert(insOptsNone(opt));
+
+            reg2     = encodingSPtoZR(reg2);
+            elemsize = size;
+            assert(isValidVectorElemsize(elemsize));
+            assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+
+            // Load/Store single structure  base register
+            fmt = IF_LS_2F;
+            break;
+
         case INS_ld2:
         case INS_ld3:
         case INS_ld4:
-        case INS_st2:
         case INS_st3:
         case INS_st4:
             assert(opt != INS_OPTS_1D); // .1D format only permitted with LD1 & ST1

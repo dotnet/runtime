@@ -764,6 +764,26 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), op2Reg, op3Reg, op1Reg);
                 break;
 
+            case NI_AdvSimd_StoreSelectedScalar64x2:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar128x2:
+            {
+                assert(intrin.op2->OperIsFieldList());
+
+                GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
+                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                op2Reg                       = firstField->GetRegNum();
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int elementIndex = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, op2Reg, op1Reg, elementIndex, opt);
+                }
+                break;
+            }
+
             case NI_AdvSimd_StoreVector64x2:
             case NI_AdvSimd_Arm64_StoreVector128x2:
             {

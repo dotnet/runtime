@@ -3475,6 +3475,63 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe void StorePairScalarNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) => StorePairScalarNonTemporal(address, value1, value2);
 
             /// <summary>
+            /// void vst2_lane_s8 (int8_t * ptr, int8x16x2_t val, const int lane)
+            ///   A64: ST2 { Vt.16B, Vt+1.16B }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar128x2(byte* address, (Vector128<byte> value1, Vector128<byte> value2) value, [ConstantExpected(Max = (byte)(15))] byte index) => StoreSelectedScalar128x2(address, value, index);
+
+            /// <summary>
+            /// void vst2_lane_s8 (int8_t * ptr, int8x16x2_t val, const int lane)
+            ///   A64: ST2 { Vt.16B, Vt+1.16B }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar128x2(sbyte* address, (Vector128<sbyte> value1, Vector128<sbyte> value2) value, [ConstantExpected(Max = (byte)(15))] byte index) => StoreSelectedScalar128x2(address, value, index);
+
+            /// <summary>
+            /// void vst2_lane_s16 (int16_t * ptr, int16x8x2_t val, const int lane)
+            ///   A64: ST2 { Vt.8H, Vt+1.8H }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar128x2(short* address, (Vector128<short> value1, Vector128<short> value2) value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar128x2(address, value, index);
+
+            /// <summary>
+            /// void vst2_lane_s16 (int16_t * ptr, int16x8x2_t val, const int lane)
+            ///   A64: ST2 { Vt.8H, Vt+1.8H }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar128x2(ushort* address, (Vector128<ushort> value1, Vector128<ushort> value2) value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar128x2(address, value, index);
+
+            /// <summary>
+            /// void vst2_lane_s32 (int32_t * ptr, int32x4x2_t val, const int lane)
+            ///   A64: ST2 { Vt.4S, Vt+1.4S }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar128x2(int* address, (Vector128<int> value1, Vector128<int> value2) value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar128x2(address, value, index);
+
+            /// <summary>
+            /// void vst2_lane_s32 (int32_t * ptr, int32x4x2_t val, const int lane)
+            ///   A64: ST2 { Vt.4S, Vt+1.4S }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar128x2(uint* address, (Vector128<uint> value1, Vector128<uint> value2) value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar128x2(address, value, index);
+
+            /// <summary>
+            ///   A64: ST2 { Vt.2D, Vt+1.2D }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar128x2(long* address, (Vector128<long> value1, Vector128<long> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar128x2(address, value, index);
+
+            /// <summary>
+            ///   A64: ST2 { Vt.2D, Vt+1.2D }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar128x2(ulong* address, (Vector128<ulong> value1, Vector128<ulong> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar128x2(address, value, index);
+
+            /// <summary>
+            /// void vst2_lane_f32 (float32_t * ptr, float32x2x2_t val, const int lane)
+            ///   A64: ST2 { Vt.4S, Vt+1.4S }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar128x2(float* address, (Vector128<float> value1, Vector128<float> value2) value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar128x2(address, value, index);
+
+            /// <summary>
+            ///   A64: ST2 { Vt.2D, Vt+1.2D }[index], [Xn]
+            /// </summary>
+            public static unsafe void StoreSelectedScalar128x2(double* address, (Vector128<double> value1, Vector128<double> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar128x2(address, value, index);
+
+            /// <summary>
             ///   A64: ST2 { Vn.16B, Vn+1.16B }, [Xn]
             /// </summary>
             public static unsafe void StoreVector128x2(byte* address, (Vector128<byte> Value1, Vector128<byte> Value2) value) => StoreVector128x2(address, value);
@@ -14993,6 +15050,41 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: ST1 { Vt.D }[index], [Xn]
         /// </summary>
         public static unsafe void StoreSelectedScalar(ulong* address, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
+
+        /// <summary>
+        ///   A64: ST2 { Vt.8B, Vt+1.8B }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar64x2(byte* address, (Vector64<byte> value1, Vector64<byte> value2) value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar64x2(address, value, index);
+
+        /// <summary>
+        ///   A64: ST2 { Vt.8B, Vt+1.8B }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar64x2(sbyte* address, (Vector64<sbyte> value1, Vector64<sbyte> value2) value, [ConstantExpected(Max = (byte)(7))] byte index) => StoreSelectedScalar64x2(address, value, index);
+
+        /// <summary>
+        ///   A64: ST2 { Vt.4H, Vt+1.4H }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar64x2(short* address, (Vector64<short> value1, Vector64<short> value2) value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar64x2(address, value, index);
+
+        /// <summary>
+        ///   A64: ST2 { Vt.4H, Vt+1.4H }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar64x2(ushort* address, (Vector64<ushort> value1, Vector64<ushort> value2) value, [ConstantExpected(Max = (byte)(3))] byte index) => StoreSelectedScalar64x2(address, value, index);
+
+        /// <summary>
+        ///   A64: ST2 { Vt.2S, Vt+1.2S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar64x2(int* address, (Vector64<int> value1, Vector64<int> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar64x2(address, value, index);
+
+        /// <summary>
+        ///   A64: ST2 { Vt.2S, Vt+1.2S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar64x2(uint* address, (Vector64<uint> value1, Vector64<uint> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar64x2(address, value, index);
+
+        /// <summary>
+        ///   A64: ST2 { Vt.2S, Vt+1.2S }[index], [Xn]
+        /// </summary>
+        public static unsafe void StoreSelectedScalar64x2(float* address, (Vector64<float> value1, Vector64<float> value2) value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar64x2(address, value, index);
 
         /// <summary>
         ///   A64: ST2 { Vn.8B, Vn+1.8B }, [Xn]
