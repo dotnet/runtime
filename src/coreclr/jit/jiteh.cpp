@@ -918,12 +918,12 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
 #endif
 }
 
-void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** begBlk, BasicBlock** endBlk)
+void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** startBlock, BasicBlock** lastBlock)
 {
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
-    assert(begBlk != nullptr);
-    assert(endBlk != nullptr);
+    assert(startBlock != nullptr);
+    assert(lastBlock != nullptr);
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
     bool     inTryRegion;
@@ -931,8 +931,8 @@ void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** be
 
     if (callFinallyRegionIndex == EHblkDsc::NO_ENCLOSING_INDEX)
     {
-        *begBlk = fgFirstBB;
-        *endBlk = fgEndBBAfterMainFunction();
+        *startBlock = fgFirstBB;
+        *lastBlock  = fgLastBBInMainFunction();
     }
     else
     {
@@ -940,19 +940,19 @@ void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** be
 
         if (inTryRegion)
         {
-            *begBlk = ehDsc->ebdTryBeg;
-            *endBlk = ehDsc->ebdTryLast->Next();
+            *startBlock = ehDsc->ebdTryBeg;
+            *lastBlock  = ehDsc->ebdTryLast;
         }
         else
         {
-            *begBlk = ehDsc->ebdHndBeg;
-            *endBlk = ehDsc->ebdHndLast->Next();
+            *startBlock = ehDsc->ebdHndBeg;
+            *lastBlock  = ehDsc->ebdHndLast;
         }
     }
 #else  // !FEATURE_EH_CALLFINALLY_THUNKS
     EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
-    *begBlk         = ehDsc->ebdTryBeg;
-    *endBlk         = ehDsc->ebdTryLast->Next();
+    *startBlock     = ehDsc->ebdTryBeg;
+    *lastBlock      = ehDsc->ebdTryLast;
 #endif // !FEATURE_EH_CALLFINALLY_THUNKS
 }
 

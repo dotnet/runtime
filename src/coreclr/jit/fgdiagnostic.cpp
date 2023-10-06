@@ -2035,8 +2035,40 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 break;
 
             case BBJ_EHFINALLYRET:
-                printf("%*s        (finret)", maxBlockNumWidth - 2, "");
+            {
+                printf("->");
+
+                int                    ehfWidth = 0;
+                const BBehfDesc* const ehfDesc  = block->GetJumpEhf();
+                if (ehfDesc == nullptr)
+                {
+                    printf(" ????");
+                    ehfWidth = 5;
+                }
+                else
+                {
+                    // Very early in compilation, we won't have fixed up the BBJ_EHFINALLYRET successors yet.
+
+                    const unsigned     jumpCnt = ehfDesc->bbeCount;
+                    BasicBlock** const jumpTab = ehfDesc->bbeSuccs;
+
+                    for (unsigned i = 0; i < jumpCnt; i++)
+                    {
+                        printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                        ehfWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits(jumpTab[i]->bbNum), 2);
+                    }
+                }
+
+                int singleBlockWidth = 1 /* space */ + 2 /* BB */ + maxBlockNumWidth;
+                if (ehfWidth < singleBlockWidth)
+                {
+                    // only if we didn't display anything or we displayeda small numbered block
+                    printf("%*s", singleBlockWidth - ehfWidth, "");
+                }
+
+                printf(" (finret)");
                 break;
+            }
 
             case BBJ_EHFAULTRET:
                 printf("%*s        (falret)", maxBlockNumWidth - 2, "");
@@ -2067,9 +2099,9 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             {
                 printf("->");
 
-                const BBswtDesc* const bbJumpSwt   = block->GetJumpSwt();
-                const unsigned         jumpCnt     = bbJumpSwt->bbsCount;
-                BasicBlock** const     jumpTab     = bbJumpSwt->bbsDstTab;
+                const BBswtDesc* const jumpSwt     = block->GetJumpSwt();
+                const unsigned         jumpCnt     = jumpSwt->bbsCount;
+                BasicBlock** const     jumpTab     = jumpSwt->bbsDstTab;
                 int                    switchWidth = 0;
 
                 for (unsigned i = 0; i < jumpCnt; i++)
@@ -2077,17 +2109,17 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                     printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
                     switchWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits(jumpTab[i]->bbNum), 2);
 
-                    const bool isDefault = bbJumpSwt->bbsHasDefault && (i == jumpCnt - 1);
+                    const bool isDefault = jumpSwt->bbsHasDefault && (i == jumpCnt - 1);
                     if (isDefault)
                     {
                         printf("[def]");
                         switchWidth += 5;
                     }
 
-                    const bool isDominant = bbJumpSwt->bbsHasDominantCase && (i == bbJumpSwt->bbsDominantCase);
+                    const bool isDominant = jumpSwt->bbsHasDominantCase && (i == jumpSwt->bbsDominantCase);
                     if (isDominant)
                     {
-                        printf("[dom(" FMT_WT ")]", bbJumpSwt->bbsDominantFraction);
+                        printf("[dom(" FMT_WT ")]", jumpSwt->bbsDominantFraction);
                         switchWidth += 10;
                     }
                 }
@@ -2727,18 +2759,13 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
     // block.  We can shorten the search by only looking in places where it is legal
     // to have a call to the finally.
 
-    BasicBlock* begBlk;
-    BasicBlock* endBlk;
-    comp->ehGetCallFinallyBlockRange(hndIndex, &begBlk, &endBlk);
+    BasicBlock* firstBlock;
+    BasicBlock* lastBlock;
+    comp->ehGetCallFinallyBlockRange(hndIndex, &firstBlock, &lastBlock);
 
-    for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
+    for (BasicBlock* const bcall : comp->Blocks(firstBlock, lastBlock))
     {
-        if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
-        {
-            continue;
-        }
-
-        if (bcall->NextIs(block))
+        if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->HasJumpTo(finBeg) && bcall->NextIs(block))
         {
             return true;
         }
@@ -2866,6 +2893,40 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         {
             // Check that bbNum is sequential
             assert(block->IsLast() || (block->bbNum + 1 == block->Next()->bbNum));
+        }
+
+        // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
+        // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will
+        // dynamically create the unique switch list.
+        if (block->KindIs(BBJ_SWITCH))
+        {
+            for (BasicBlock* const succBlock : block->Succs())
+            {
+                assert(succBlock->bbTraversalStamp == curTraversalStamp);
+            }
+
+            // Also check the unique successor set, if it exists. Make sure to NOT allocate it if it doesn't exist!
+            BlockToSwitchDescMap* switchMap = GetSwitchDescMap(/* createIfNull */ false);
+            if (switchMap != nullptr)
+            {
+                SwitchUniqueSuccSet sd;
+                if (switchMap->Lookup(block, &sd))
+                {
+                    for (unsigned i = 0; i < sd.numDistinctSuccs; i++)
+                    {
+                        const BasicBlock* const nonDuplicateSucc = sd.nonDuplicates[i];
+                        assert(nonDuplicateSucc != nullptr);
+                        assert(nonDuplicateSucc->bbTraversalStamp == curTraversalStamp);
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (BasicBlock* const succBlock : block->Succs(this))
+            {
+                assert(succBlock->bbTraversalStamp == curTraversalStamp);
+            }
         }
 
         // If the block is a BBJ_COND, a BBJ_SWITCH or a

@@ -2988,29 +2988,6 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
     return false;
 }
 
-/*****************************************************************************************************
- *
- *  Function to return the last basic block in the main part of the function. With funclets, it is
- *  the block immediately before the first funclet.
- *  An inclusive end of the main method.
- */
-
-BasicBlock* Compiler::fgLastBBInMainFunction()
-{
-#if defined(FEATURE_EH_FUNCLETS)
-
-    if (fgFirstFuncletBB != nullptr)
-    {
-        return fgFirstFuncletBB->Prev();
-    }
-
-#endif // FEATURE_EH_FUNCLETS
-
-    assert(fgLastBB->IsLast());
-
-    return fgLastBB;
-}
-
 //------------------------------------------------------------------------------
 // fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
 //
@@ -3056,14 +3033,30 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
     return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
 }
 
-/*****************************************************************************************************
- *
- *  Function to return the first basic block after the main part of the function. With funclets, it is
- *  the block of the first funclet.  Otherwise it is NULL if there are no funclets (fgLastBB->Next()).
- *  This is equivalent to fgLastBBInMainFunction()->bbNext
- *  An exclusive end of the main method.
- */
+//------------------------------------------------------------------------------
+// fgLastBBInMainFunction: Return the last basic block in the main part of the function.
+// With funclets, it is the block immediately before the first funclet.
+//
+BasicBlock* Compiler::fgLastBBInMainFunction()
+{
+#if defined(FEATURE_EH_FUNCLETS)
 
+    if (fgFirstFuncletBB != nullptr)
+    {
+        return fgFirstFuncletBB->Prev();
+    }
+
+#endif // FEATURE_EH_FUNCLETS
+
+    assert(fgLastBB->IsLast());
+    return fgLastBB;
+}
+
+//------------------------------------------------------------------------------
+// fgEndBBAfterMainFunction: Return the first basic block after the main part of the function.
+// With funclets, it is the block of the first funclet. Otherwise it is nullptr if there are no
+// funclets. This is equivalent to fgLastBBInMainFunction()->Next().
+//
 BasicBlock* Compiler::fgEndBBAfterMainFunction()
 {
 #if defined(FEATURE_EH_FUNCLETS)
@@ -3076,7 +3069,6 @@ BasicBlock* Compiler::fgEndBBAfterMainFunction()
 #endif // FEATURE_EH_FUNCLETS
 
     assert(fgLastBB->IsLast());
-
     return nullptr;
 }
 
