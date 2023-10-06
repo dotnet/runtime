@@ -324,7 +324,7 @@ set(VM_SOURCES_WKS
     finalizerthread.cpp
     frozenobjectheap.cpp
     gccover.cpp
-    gcenv.ee.static.cpp
+    gcenv.ee.cpp
     gcenv.ee.common.cpp
     gchelpers.cpp
     genanalysis.cpp
@@ -429,7 +429,6 @@ set(VM_HEADERS_WKS
     finalizerthread.h
     frozenobjectheap.h
     gcenv.h
-    gcenv.ee.h
     gcenv.os.h
     gchelpers.h
     ilmarshalers.h
@@ -524,12 +523,6 @@ if(FEATURE_EVENT_TRACE)
         eventtracepriv.h
         )
 endif(FEATURE_EVENT_TRACE)
-
-if(FEATURE_STANDALONE_GC)
-    list(APPEND VM_SOURCES_WKS
-        gcenv.ee.standalone.cpp
-        )
-endif(FEATURE_STANDALONE_GC)
 
 #
 # Targeted interop scenarios
