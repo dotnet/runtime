@@ -1197,13 +1197,18 @@ private:
 // Arguments:
 //   addr   - [in, out] The address node.
 //   offset - [out] The sum of offset peeled such that ADD(addr, offset) is equivalent to the original addr.
-//   fldSeq - [out] The combined field sequence for all the peeled offsets.
+//   fldSeq - [out, optional] The combined field sequence for all the peeled offsets.
 //
 void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq)
 {
     assert((*addr)->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
     *offset = 0;
-    *fldSeq = nullptr;
+
+    if (fldSeq != nullptr)
+    {
+        *fldSeq = nullptr;
+    }
+
     while (true)
     {
         if ((*addr)->OperIs(GT_ADD) && !(*addr)->gtOverflow())
@@ -1216,16 +1221,26 @@ void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** 
                 assert(op2->TypeIs(TYP_I_IMPL));
                 GenTreeIntCon* intCon = op2->AsIntCon();
                 *offset += (target_ssize_t)intCon->IconValue();
-                *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
-                *addr   = op1;
+
+                if (fldSeq != nullptr)
+                {
+                    *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
+                }
+
+                *addr = op1;
             }
             else if (op1->IsCnsIntOrI() && !op1->AsIntCon()->IsIconHandle())
             {
                 assert(op1->TypeIs(TYP_I_IMPL));
                 GenTreeIntCon* intCon = op1->AsIntCon();
                 *offset += (target_ssize_t)intCon->IconValue();
-                *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
-                *addr   = op2;
+
+                if (fldSeq != nullptr)
+                {
+                    *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
+                }
+
+                *addr = op2;
             }
             else
             {

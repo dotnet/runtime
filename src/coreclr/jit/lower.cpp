@@ -8400,8 +8400,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
         GenTree*       indirAddr = indir->Addr();
         target_ssize_t offs      = 0;
-        FieldSeq*      fieldSeq  = nullptr;
-        comp->gtPeelOffsets(&indirAddr, &offs, &fieldSeq);
+        comp->gtPeelOffsets(&indirAddr, &offs);
 
         bool checkLocal = indirAddr->OperIsLocal();
         if (checkLocal)
@@ -8434,8 +8433,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 GenTreeIndir*  store     = node->AsIndir();
                 GenTree*       storeAddr = store->Addr();
                 target_ssize_t storeOffs = 0;
-                FieldSeq*      fieldSeq  = nullptr;
-                comp->gtPeelOffsets(&storeAddr, &storeOffs, &fieldSeq);
+                comp->gtPeelOffsets(&storeAddr, &storeOffs);
 
                 bool distinct = (storeOffs + (target_ssize_t)store->Size() <= offs) ||
                                 (offs + (target_ssize_t)indir->Size() <= storeOffs);
