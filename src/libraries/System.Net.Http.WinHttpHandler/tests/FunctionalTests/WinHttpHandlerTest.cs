@@ -110,7 +110,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 {
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.SendResponseAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 16000\r\n\r\n");
+                        await connection.SendResponseAsync($"HTTP/1.1 200 OK\r\nContent-Length: 16000\r\n\r\n");
 
                         triggerRequestWait.SetResult(true);
                         await triggerResponseWrite.Task;
