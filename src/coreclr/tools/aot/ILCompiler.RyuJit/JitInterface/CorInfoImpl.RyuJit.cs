@@ -2168,7 +2168,7 @@ namespace Internal.JitInterface
                 fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE;
             }
 
-            if (field.IsInitOnly)
+            if (_compilation.IsInitOnly(field))
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_FINAL;
 
             pResult->fieldAccessor = fieldAccessor;
@@ -2224,7 +2224,7 @@ namespace Internal.JitInterface
             Debug.Assert(field.IsStatic);
 
 
-            if (!field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
+            if (!field.IsThreadStatic && _compilation.IsInitOnly(field) && field.OwningType is MetadataType owningType)
             {
                 if (field.HasRva)
                 {
@@ -2270,6 +2270,16 @@ namespace Internal.JitInterface
                                 new Span<byte>(&handle, targetPtrSize).CopyTo(new Span<byte>(buffer, targetPtrSize));
                                 return true;
                         }
+                    }
+                }
+                else if (!owningType.HasStaticConstructor)
+                {
+                    // (Effectively) read only field but no static constructor to set it: the value is default-initialized.
+                    int size = field.FieldType.GetElementSize().AsInt;
+                    if (size >= bufferSize && valueOffset <= size - bufferSize)
+                    {
+                        new Span<byte>(buffer, bufferSize).Clear();
+                        return true;
                     }
                 }
             }

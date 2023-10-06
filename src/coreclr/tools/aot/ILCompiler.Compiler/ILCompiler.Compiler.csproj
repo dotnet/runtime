@@ -421,6 +421,7 @@
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\NotReadOnlyFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PointerTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedFieldNode.cs" />
@@ -585,6 +586,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
+    <Compile Include="Compiler\ReadOnlyFieldPolicy.cs" />
     <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
