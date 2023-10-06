@@ -81,13 +81,27 @@ namespace System
             public T[] ToArray()
             {
                 if (_count == 0)
-                    return Array.Empty<T>();
-                if (_count == 1)
-                    return new T[1] { _item };
+                    return [];
 
-                Array.Resize(ref _items, _count);
-                _capacity = _count;
-                return _items!;
+                if (_count == 1)
+                    return [_item];
+
+                if (_count == _items!.Length)
+                    return _items;
+
+                return _items.AsSpan(0, _count).ToArray();
+            }
+
+            [UnscopedRef]
+            public readonly ReadOnlySpan<T> AsSpan()
+            {
+                if (_count == 0)
+                    return default;
+
+                if (_count == 1)
+                    return new ReadOnlySpan<T>(in _item);
+
+                return _items.AsSpan(0, _count);
             }
 
             public void CopyTo(object[] array, int index)
@@ -2826,7 +2840,7 @@ namespace System
                     }
 
                     // All the methods have the exact same name and sig so return the most derived one.
-                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.ToArray(), candidates.Count) as MethodInfo;
+                    return System.DefaultBinder.FindMostDerivedNewSlotMeth(candidates.AsSpan());
                 }
             }
 
@@ -2855,7 +2869,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.AsSpan(), types);
 
             binder ??= DefaultBinder;
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
@@ -2893,7 +2907,7 @@ namespace System
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
+                return System.DefaultBinder.ExactPropertyBinding(candidates.AsSpan(), returnType, types);
 
             binder ??= DefaultBinder;
             return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
