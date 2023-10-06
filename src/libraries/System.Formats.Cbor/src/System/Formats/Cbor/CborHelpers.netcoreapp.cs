@@ -59,9 +59,5 @@ namespace System.Formats.Cbor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void WriteDoubleBigEndian(Span<byte> destination, double value)
             => BinaryPrimitives.WriteDoubleBigEndian(destination, value);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Int32BitsToSingle(int value)
-            => BitConverter.Int32BitsToSingle(value);
     }
 }

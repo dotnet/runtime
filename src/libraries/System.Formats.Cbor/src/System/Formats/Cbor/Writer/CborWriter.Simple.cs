@@ -7,9 +7,9 @@ namespace System.Formats.Cbor
 {
     public partial class CborWriter
     {
-        // Canonical NaN representations as per RFC 7049
-        private static readonly float CanonicalNaNSingle = CborHelpers.Int32BitsToSingle(0x7fc00000);
-        private static readonly double CanonicalNaNDouble = BitConverter.Int64BitsToDouble(0x7ff8000000000000);
+        // CBOR RFC 8949 says: if NaN is an allowed value, and there is no intent to support NaN payloads or signaling NaNs, the protocol needs to pick a single representation, typically 0xf97e00. If that simple choice is not possible, specific attention will be needed for NaN handling.
+        // In this implementation "that simple choice is not possible" for CTAP2 mode (RequiresPreservingFloatPrecision), in which "representations of any floating-point values are not changed".
+        private const ushort PositiveQNaNBitsHalf = 0x7e00;
 
         // Implements major type 7 encoding per https://tools.ietf.org/html/rfc7049#section-2.1
 
@@ -61,10 +61,6 @@ namespace System.Formats.Cbor
         }
         private void WriteSingleCore(float value)
         {
-            if (float.IsNaN(value))
-            {
-                value = CanonicalNaNSingle;
-            }
             EnsureWriteCapacity(1 + sizeof(float));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional32BitData));
             CborHelpers.WriteSingleBigEndian(_buffer.AsSpan(_offset), value);
@@ -74,10 +70,6 @@ namespace System.Formats.Cbor
 
         private void WriteDoubleCore(double value)
         {
-            if (double.IsNaN(value))
-            {
-                value = CanonicalNaNDouble;
-            }
             EnsureWriteCapacity(1 + sizeof(double));
             WriteInitialByte(new CborInitialByte(CborMajorType.Simple, CborAdditionalInfo.Additional64BitData));
             CborHelpers.WriteDoubleBigEndian(_buffer.AsSpan(_offset), value);
