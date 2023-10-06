@@ -8219,68 +8219,61 @@ const int LDP_REORDERING_MAX_DISTANCE = 16;
 //
 bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
 {
-    if (!ind->TypeIs(TYP_INT, TYP_LONG, TYP_DOUBLE, TYP_SIMD16))
+    if (!ind->TypeIs(TYP_INT, TYP_LONG, TYP_DOUBLE, TYP_SIMD8, TYP_SIMD16) || ind->IsVolatile())
     {
         return false;
     }
 
-    target_ssize_t offs   = 0;
-    GenTree*       addr   = ind->Addr();
-    FieldSeq*      fldSeq = nullptr;
-    comp->gtPeelOffsets(&addr, &offs, &fldSeq);
+    target_ssize_t offs = 0;
+    GenTree*       addr = ind->Addr();
+    comp->gtPeelOffsets(&addr, &offs);
 
-    if (!addr->OperIsLocal())
+    if (!addr->OperIs(GT_LCL_VAR))
     {
         return false;
     }
-
-    bool result = false;
-
-    SavedIndir newInd;
-    newInd.Indir    = ind;
-    newInd.AddrBase = addr->AsLclVarCommon();
-    newInd.Offset   = offs;
 
     // Every indirection takes an expected 2+ nodes, so we only expect at most
     // half the reordering distance to be candidates for the optimization.
     int maxCount = min(m_blockIndirs.Height(), LDP_REORDERING_MAX_DISTANCE / 2);
     for (int i = 0; i < maxCount; i++)
     {
-        SavedIndir&   prev      = m_blockIndirs.TopRef(i);
+        SavedIndir& prev = m_blockIndirs.TopRef(i);
+        if (prev.AddrBase->GetLclNum() != addr->AsLclVar()->GetLclNum())
+        {
+            continue;
+        }
+
         GenTreeIndir* prevIndir = prev.Indir;
         if ((prevIndir == nullptr) || (prevIndir->TypeGet() != ind->TypeGet()))
         {
             continue;
         }
 
-        if (GenTree::Compare(addr, prev.AddrBase))
+        JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
+                Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), (unsigned)offs, (unsigned)prev.Offset);
+        if (abs(offs - prev.Offset) == genTypeSize(ind))
         {
-            JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
-                    Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), (unsigned)offs, (unsigned)prev.Offset);
-            if (abs(offs - prev.Offset) == genTypeSize(ind))
+            JITDUMP("  ..and they are amenable to ldp optimization\n");
+            if (TryMakeIndirsAdjacent(prevIndir, ind))
             {
-                JITDUMP("  ..and they are amenable to ldp optimization\n");
-                if (TryMakeIndirsAdjacent(prevIndir, newInd.Indir))
-                {
-                    // Do not let the previous one participate in
-                    // another instance; that can cause us to e.g. convert
-                    // *(x+4), *(x+0), *(x+8), *(x+12) =>
-                    // *(x+4), *(x+8), *(x+0), *(x+12)
-                    prev.Indir = nullptr;
-                    result     = true;
-                    break;
-                }
-                break;
+                // Do not let the previous one participate in
+                // another instance; that can cause us to e.g. convert
+                // *(x+4), *(x+0), *(x+8), *(x+12) =>
+                // *(x+4), *(x+8), *(x+0), *(x+12)
+                prev.Indir = nullptr;
+                return true;
             }
-            else
-            {
-                JITDUMP("  ..but at non-adjacent offset\n");
-            }
+            break;
+        }
+        else
+        {
+            JITDUMP("  ..but at non-adjacent offset\n");
         }
     }
 
-    m_blockIndirs.Push(newInd);
-    return result;
+    m_blockIndirs.Emplace(ind, addr->AsLclVar(), offs);
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -8288,20 +8281,14 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
 // to be adjacent to a previous indirection. If successful, perform the move.
 //
 // Arguments:
-//    ind   - Indirection to record and to try to move.
-//    next  - [out] Next node to lower. Only written if the optimization was successful.
+//    prevIndir - Previous indirection
+//    indir     - Indirection to try to move to be adjacent to 'prevIndir'
 //
 // Returns:
 //    True if the optimization was successful.
 //
 bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir)
 {
-    if ((indir->gtFlags & GTF_IND_VOLATILE) != 0)
-    {
-        JITDUMP("  ..but second indir is volatile\n");
-        return false;
-    }
-
     GenTree* cur = prevIndir;
     for (int i = 0; i < LDP_REORDERING_MAX_DISTANCE; i++)
     {
@@ -8365,7 +8352,8 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
         if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
         {
-            // Part of data flow of 'indir', so we will be moving past this node.
+            // 'cur' is part of data flow of 'indir', so we will be moving the
+            // currently recorded effects past 'cur'.
             if (m_scratchSideEffects.InterferesWith(comp, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
@@ -8478,7 +8466,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         }
     }
 
-    JITDUMP("Interference checks passed. Moving nodes that are not part of data flow tree\n\n",
+    JITDUMP("Interference checks passed. Moving nodes that are not part of data flow of [%06u]\n\n",
             Compiler::dspTreeID(indir));
 
     GenTree* previous = prevIndir;
@@ -8539,7 +8527,7 @@ void Lowering::UnmarkTree(GenTree* node)
     });
 }
 
-#endif
+#endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
 // TransformUnusedIndirection: change the opcode and the type of the unused indirection.

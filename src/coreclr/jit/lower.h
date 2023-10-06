@@ -572,9 +572,14 @@ private:
 #ifdef TARGET_ARM64
     struct SavedIndir
     {
-        GenTreeIndir*        Indir;
-        GenTreeLclVarCommon* AddrBase;
-        target_ssize_t       Offset;
+        GenTreeIndir*  Indir;
+        GenTreeLclVar* AddrBase;
+        target_ssize_t Offset;
+
+        SavedIndir(GenTreeIndir* indir, GenTreeLclVar* addrBase, target_ssize_t offset)
+            : Indir(indir), AddrBase(addrBase), Offset(offset)
+        {
+        }
     };
     ArrayStack<SavedIndir> m_blockIndirs;
 #endif
