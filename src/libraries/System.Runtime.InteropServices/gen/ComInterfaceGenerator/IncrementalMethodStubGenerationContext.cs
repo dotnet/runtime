@@ -7,8 +7,6 @@ using System;
 
 namespace Microsoft.Interop
 {
-    internal record struct FactoryKey(bool RuntimeMarshallingDisabled);
-
     internal abstract record GeneratedMethodContextBase(ManagedTypeInfo OriginalDefiningType, SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
     internal sealed record IncrementalMethodStubGenerationContext(
@@ -19,8 +17,7 @@ namespace Microsoft.Interop
         SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
         VirtualMethodIndexData VtableIndexData,
         MarshallingInfo ExceptionMarshallingInfo,
-        MarshallingGeneratorFactoryKey<FactoryKey> ManagedToUnmanagedGeneratorFactory,
-        MarshallingGeneratorFactoryKey<FactoryKey> UnmanagedToManagedGeneratorFactory,
+        EnvironmentFlags EnvironmentFlags,
         ManagedTypeInfo TypeKeyOwner,
         ManagedTypeInfo DeclaringType,
         SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics,

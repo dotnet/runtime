@@ -1953,7 +1953,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 
                 impPushOnStack(tree, typeInfo(clsHnd));
 
-                return hndBlk->bbNext;
+                return hndBlk->Next();
             }
         }
 
@@ -7298,14 +7298,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("invalid type for brtrue/brfalse");
                 }
 
-                if (opts.OptimizationEnabled() && (block->bbJumpDest == block->bbNext))
+                if (opts.OptimizationEnabled() && block->NextIs(block->bbJumpDest))
                 {
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
                     if (block->KindIs(BBJ_COND))
                     {
                         JITDUMP(FMT_BB " both branches and falls through to " FMT_BB ", changing to BBJ_NONE\n",
-                                block->bbNum, block->bbNext->bbNum);
+                                block->bbNum, block->Next()->bbNum);
                         fgRemoveRefPred(block->bbJumpDest, block);
                         block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                     }
@@ -7371,14 +7371,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         if (foldedJumpKind == BBJ_NONE)
                         {
-                            JITDUMP("\nThe block falls through into the next " FMT_BB "\n", block->bbNext->bbNum);
+                            JITDUMP("\nThe block falls through into the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->bbJumpDest, block);
                         }
                         else
                         {
                             JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
                                     block->bbJumpDest->bbNum);
-                            fgRemoveRefPred(block->bbNext, block);
+                            fgRemoveRefPred(block->Next(), block);
                         }
                         block->SetBBJumpKind(foldedJumpKind DEBUG_ARG(this));
                     }
@@ -7544,14 +7544,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp((genActualType(op1) == genActualType(op2)) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
                           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
-                if (opts.OptimizationEnabled() && (block->bbJumpDest == block->bbNext))
+                if (opts.OptimizationEnabled() && block->NextIs(block->bbJumpDest))
                 {
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
                     if (block->KindIs(BBJ_COND))
                     {
                         JITDUMP(FMT_BB " both branches and falls through to " FMT_BB ", changing to BBJ_NONE\n",
-                                block->bbNum, block->bbNext->bbNum);
+                                block->bbNum, block->Next()->bbNum);
                         fgRemoveRefPred(block->bbJumpDest, block);
                         block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                     }
@@ -7630,7 +7630,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                         {
-                            if (curJump != block->bbNext)
+                            if (!block->NextIs(curJump))
                             {
                                 // transform the basic block into a BBJ_ALWAYS
                                 block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
@@ -11135,7 +11135,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
 
                 // push catch arg the stack, spill to a temp if necessary
                 // Note: can update HBtab->ebdFilter!
-                const bool isSingleBlockFilter = (filterBB->bbNext == hndBegBB);
+                const bool isSingleBlockFilter = (filterBB->NextIs(hndBegBB));
                 filterBB = impPushCatchArgOnStack(filterBB, impGetObjectClass(), isSingleBlockFilter);
 
                 impImportBlockPending(filterBB);
@@ -11289,12 +11289,12 @@ SPILLSTACK:
 
                 /* Note if the next block has more than one ancestor */
 
-                multRef |= block->bbNext->bbRefs;
+                multRef |= block->Next()->bbRefs;
 
                 /* Does the next block have temps assigned? */
 
-                baseTmp  = block->bbNext->bbStkTempsIn;
-                tgtBlock = block->bbNext;
+                baseTmp  = block->Next()->bbStkTempsIn;
+                tgtBlock = block->Next();
 
                 if (baseTmp != NO_BASE_TMP)
                 {
@@ -11315,9 +11315,9 @@ SPILLSTACK:
                 break;
 
             case BBJ_NONE:
-                multRef |= block->bbNext->bbRefs;
-                baseTmp  = block->bbNext->bbStkTempsIn;
-                tgtBlock = block->bbNext;
+                multRef |= block->Next()->bbRefs;
+                baseTmp  = block->Next()->bbStkTempsIn;
+                tgtBlock = block->Next();
                 break;
 
             case BBJ_SWITCH:
@@ -12119,7 +12119,7 @@ void Compiler::impImport()
 
         if (entryBlock->KindIs(BBJ_NONE))
         {
-            entryBlock = entryBlock->bbNext;
+            entryBlock = entryBlock->Next();
         }
         else if (opts.IsOSR() && entryBlock->KindIs(BBJ_ALWAYS))
         {
@@ -12253,7 +12253,7 @@ void Compiler::impFixPredLists()
                         continue;
                     }
 
-                    BasicBlock* const continuation = predBlock->bbNext;
+                    BasicBlock* const continuation = predBlock->Next();
                     fgAddRefPred(continuation, finallyBlock);
 
                     if (!added)

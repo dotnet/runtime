@@ -314,10 +314,6 @@
       <Sha>736dabeca728ccf8b911d96d1b4c575b4d0db7d2</Sha>
       <SourceBuild RepoName="runtime" ManagedOnly="false" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="9.0.0-alpha.1.23470.17">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>736dabeca728ccf8b911d96d1b4c575b4d0db7d2</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.DotNet.ILCompiler" Version="9.0.0-alpha.1.23470.17">
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>736dabeca728ccf8b911d96d1b4c575b4d0db7d2</Sha>
@@ -402,9 +398,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23502.7">
+    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.23503.1">
       <Uri>https://github.com/dotnet/installer</Uri>
-      <Sha>ee7ccfc83a91c0acc385a45d15460efd1c1f44c1</Sha>
+      <Sha>b1a461bdca599a57ee454502015263c9896c8970</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

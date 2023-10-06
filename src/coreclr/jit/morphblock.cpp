@@ -792,13 +792,13 @@ void MorphCopyBlockHelper::MorphStructCases()
     }
 
 #if defined(TARGET_ARM)
-    if ((m_store->OperIsIndir()) && m_store->AsIndir()->IsUnaligned())
+    if (m_store->OperIsIndir() && m_store->AsIndir()->IsUnaligned())
     {
         JITDUMP(" store is unaligned");
         requiresCopyBlock = true;
     }
 
-    if ((m_src->OperIsIndir()) && m_src->AsIndir()->IsUnaligned())
+    if (m_src->OperIsIndir() && m_src->AsIndir()->IsUnaligned())
     {
         JITDUMP(" src is unaligned");
         requiresCopyBlock = true;

@@ -133,7 +133,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
         // these cannot cause transfer to the handler...)
         // TODO-Throughput: It would be nice if we could iterate just over the blocks in the try, via
         // something like:
-        //   for (BasicBlock* bb = ehblk->ebdTryBeg; bb != ehblk->ebdTryLast->bbNext; bb = bb->bbNext)
+        //   for (BasicBlock* bb = ehblk->ebdTryBeg; bb != ehblk->ebdTryLast->Next(); bb = bb->Next())
         //     (plus adding in any filter blocks outside the try whose exceptions are handled here).
         // That doesn't work, however: funclets have caused us to sometimes split the body of a try into
         // more than one sequence of contiguous blocks.  We need to find a better way to do this.
@@ -160,7 +160,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
                 if (enclosingDsc->HasFilter())
                 {
                     for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
-                         filterBlk             = filterBlk->bbNext)
+                         filterBlk             = filterBlk->Next())
                     {
                         res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
 
@@ -184,6 +184,36 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
         ehPreds->Set(blk, res);
     }
     return res;
+}
+
+//------------------------------------------------------------------------
+// IsLastHotBlock: see if this is the last block before the cold section
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+// Returns:
+//    true if the next block is fgFirstColdBlock
+//    (if fgFirstColdBlock is null, this call is equivalent to IsLast())
+//
+bool BasicBlock::IsLastHotBlock(Compiler* compiler) const
+{
+    return (bbNext == compiler->fgFirstColdBlock);
+}
+
+//------------------------------------------------------------------------
+// IsFirstColdBlock: see if this is the first block in the cold section
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+// Returns:
+//    true if this is fgFirstColdBlock
+//    (fgFirstColdBlock is null if there is no cold code)
+//
+bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
+{
+    return (this == compiler->fgFirstColdBlock);
 }
 
 //------------------------------------------------------------------------
@@ -1509,10 +1539,10 @@ bool BasicBlock::isBBCallAlwaysPair() const
         assert(!(this->bbFlags & BBF_RETLESS_CALL));
 #endif
         // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
-        assert(this->bbNext != nullptr);
-        assert(this->bbNext->KindIs(BBJ_ALWAYS));
-        assert(this->bbNext->bbFlags & BBF_KEEP_BBJ_ALWAYS);
-        assert(this->bbNext->isEmpty());
+        assert(!this->IsLast());
+        assert(this->Next()->KindIs(BBJ_ALWAYS));
+        assert(this->Next()->bbFlags & BBF_KEEP_BBJ_ALWAYS);
+        assert(this->Next()->isEmpty());
 
         return true;
     }
