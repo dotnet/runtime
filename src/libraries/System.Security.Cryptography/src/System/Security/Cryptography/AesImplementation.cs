@@ -9,7 +9,12 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class AesImplementation : Aes
     {
-        private ILiteSymmetricCipher? _encryptCbcLiteHash, _decryptCbcLiteHash, _encryptEcbLiteHash, _decryptEcbLiteHash;
+        private const int BitsPerByte = 8;
+
+        private ILiteSymmetricCipher? _encryptCbcLiteHash;
+        private ILiteSymmetricCipher? _decryptCbcLiteHash;
+        private ILiteSymmetricCipher? _encryptEcbLiteHash;
+        private ILiteSymmetricCipher? _decryptEcbLiteHash;
 
         public sealed override ICryptoTransform CreateDecryptor()
         {
@@ -274,7 +279,5 @@ namespace System.Security.Cryptography
             Interlocked.Exchange(ref _encryptEcbLiteHash, null)?.Dispose();
             Interlocked.Exchange(ref _decryptEcbLiteHash, null)?.Dispose();
         }
-
-        private const int BitsPerByte = 8;
     }
 }

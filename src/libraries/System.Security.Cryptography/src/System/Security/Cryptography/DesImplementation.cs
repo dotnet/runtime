@@ -11,7 +11,11 @@ namespace System.Security.Cryptography
     internal sealed partial class DesImplementation : DES
     {
         private const int BitsPerByte = 8;
-        private ILiteSymmetricCipher? _encryptCbcLiteHash, _decryptCbcLiteHash, _encryptEcbLiteHash, _decryptEcbLiteHash;
+
+        private ILiteSymmetricCipher? _encryptCbcLiteHash;
+        private ILiteSymmetricCipher? _decryptCbcLiteHash;
+        private ILiteSymmetricCipher? _encryptEcbLiteHash;
+        private ILiteSymmetricCipher? _decryptEcbLiteHash;
 
         public DesImplementation()
         {
