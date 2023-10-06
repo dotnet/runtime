@@ -3800,7 +3800,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     genConsumeAddress(addr);
     genConsumeRegs(data);
 
-    emitAttr dataSize = emitActualTypeSize(data);
+    emitAttr dataSize = emitTypeSize(data);
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
     {
@@ -3971,10 +3971,10 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     genConsumeRegs(data);
     genConsumeRegs(comparand);
 
+    emitAttr dataSize = emitTypeSize(data);
+
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
     {
-        emitAttr dataSize = emitActualTypeSize(data);
-
         // casal use the comparand as the target reg
         GetEmitter()->emitIns_Mov(INS_mov, dataSize, targetReg, comparandReg, /* canSkip */ true);
 
@@ -4053,7 +4053,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         }
 
         // The following instruction includes a acquire half barrier
-        GetEmitter()->emitIns_R_R(insLd, emitTypeSize(treeNode), targetReg, addrReg);
+        GetEmitter()->emitIns_R_R(insLd, dataSize, targetReg, addrReg);
 
         if (comparand->isContainedIntOrIImmed())
         {
@@ -4075,7 +4075,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         }
 
         // The following instruction includes a release half barrier
-        GetEmitter()->emitIns_R_R_R(insSt, emitTypeSize(treeNode), exResultReg, dataReg, addrReg);
+        GetEmitter()->emitIns_R_R_R(insSt, dataSize, exResultReg, dataReg, addrReg);
 
         GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
 
