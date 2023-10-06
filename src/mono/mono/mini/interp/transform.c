@@ -3696,6 +3696,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	int call_offset = -1;
 
+	StackInfo *sp_args = td->sp;
+
 	if (!td->optimized && op == -1) {
 		int param_offset;
 		if (num_args)
@@ -3776,9 +3778,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (num_sregs == 1)
 				interp_ins_set_sreg (td->last_ins, first_sreg);
 			else if (num_sregs == 2)
-				interp_ins_set_sregs2 (td->last_ins, first_sreg, td->sp [!has_dreg].local);
+				interp_ins_set_sregs2 (td->last_ins, first_sreg, sp_args [1].local);
 			else if (num_sregs == 3)
-				interp_ins_set_sregs3 (td->last_ins, first_sreg, td->sp [!has_dreg].local, td->sp [!has_dreg + 1].local);
+				interp_ins_set_sregs3 (td->last_ins, first_sreg, sp_args [1].local, sp_args [2].local);
 			else
 				g_error ("Unsupported opcode");
 		}
@@ -3798,7 +3800,16 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			interp_ins_set_dreg (td->last_ins, dreg);
 			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 			td->last_ins->data [0] = GUINT32_TO_UINT16 (params_stack_size);
-			td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
+			td->last_ins->data [1] = GUINT32_TO_UINT16 (csignature->param_count);
+			if (csignature->param_count) {
+				// Check if the first arg (after the delegate pointer) is simd
+				// In case the delegate represents static method with no target, the instruction
+				// needs to be able to access the actual arguments to continue with the call so it
+				// needs to know whether there is an empty stack slot between the delegate ptr and the
+				// rest of the args
+				gboolean first_arg_is_simd = td->locals [sp_args [1].local].flags & INTERP_LOCAL_FLAG_SIMD;
+				td->last_ins->data [2] = first_arg_is_simd ? MINT_SIMD_ALIGNMENT : MINT_STACK_SLOT_SIZE;
+			}
 		} else if (calli) {
 			MintICallSig icall_sig = MINT_ICALLSIG_MAX;
 #ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX
