@@ -373,8 +373,9 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using HttpClient client = CreateHttpClient();
+                client.Timeout = timeout;
 
-                using HttpResponseMessage response = await client.GetAsync(TestAsync, url).WaitAsync(timeout);
+                using HttpResponseMessage response = await client.GetAsync(TestAsync, url);
 
                 Assert.Equal(200, (int)response.StatusCode);
                 Assert.Equal("OK", response.ReasonPhrase);
