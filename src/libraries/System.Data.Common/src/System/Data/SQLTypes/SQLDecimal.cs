@@ -71,7 +71,8 @@ namespace System.Data.SqlTypes
         private const byte s_cNumeDivScaleMin = 6;     // Minimum result scale of numeric division
 
         // Array of multipliers for lAdjust and Ceiling/Floor.
-        private static ReadOnlySpan<uint> RgulShiftBase => new uint[9] {
+        private static ReadOnlySpan<uint> RgulShiftBase => // 9
+        [
             10,
             10 * 10,
             10 * 10 * 10,
@@ -81,7 +82,7 @@ namespace System.Data.SqlTypes
             10 * 10 * 10 * 10 * 10 * 10 * 10,
             10 * 10 * 10 * 10 * 10 * 10 * 10 * 10,
             10 * 10 * 10 * 10 * 10 * 10 * 10 * 10 * 10
-        };
+        ];
 
         #region DecimalHelperTableGenerator
         /*
@@ -130,7 +131,8 @@ namespace System.Data.SqlTypes
         #endregion
 
         #region DecimalHelperTable
-        private static ReadOnlySpan<uint> DecimalHelpersLo => new uint[] {
+        private static ReadOnlySpan<uint> DecimalHelpersLo =>
+        [
             0x0000000a, // precision:2, value:10
             0x00000064, // precision:3, value:100
             0x000003e8, // precision:4, value:1000
@@ -169,9 +171,10 @@ namespace System.Data.SqlTypes
             0x00000000, // precision:37, value:1000000000000000000000000000000000000
             0x00000000, // precision:38, value:10000000000000000000000000000000000000
             0x00000000, // precision:38+1, value:99999999999999999999999999999999999999+1
-        };
+        ];
 
-        private static ReadOnlySpan<uint> DecimalHelpersMid => new uint[] {
+        private static ReadOnlySpan<uint> DecimalHelpersMid =>
+        [
             0x00000000, // precision:2, value:10
             0x00000000, // precision:3, value:100
             0x00000000, // precision:4, value:1000
@@ -210,9 +213,10 @@ namespace System.Data.SqlTypes
             0xb34b9f10, // precision:37, value:1000000000000000000000000000000000000
             0x00f436a0, // precision:38, value:10000000000000000000000000000000000000
             0x098a2240, // precision:38+1, value:99999999999999999999999999999999999999+1
-        };
+        ];
 
-        private static ReadOnlySpan<uint> DecimalHelpersHi => new uint[] {
+        private static ReadOnlySpan<uint> DecimalHelpersHi =>
+        [
             0x00000000, // precision:2, value:10
             0x00000000, // precision:3, value:100
             0x00000000, // precision:4, value:1000
@@ -251,9 +255,10 @@ namespace System.Data.SqlTypes
             0x7bc90715, // precision:37, value:1000000000000000000000000000000000000
             0xd5da46d9, // precision:38, value:10000000000000000000000000000000000000
             0x5a86c47a, // precision:38+1, value:99999999999999999999999999999999999999+1
-        };
+        ];
 
-        private static ReadOnlySpan<uint> DecimalHelpersHiHi => new uint[] {
+        private static ReadOnlySpan<uint> DecimalHelpersHiHi =>
+        [
             0x00000000, // precision:2, value:10
             0x00000000, // precision:3, value:100
             0x00000000, // precision:4, value:1000
@@ -292,7 +297,7 @@ namespace System.Data.SqlTypes
             0x00c097ce, // precision:37, value:1000000000000000000000000000000000000
             0x0785ee10, // precision:38, value:10000000000000000000000000000000000000
             0x4b3b4ca8, // precision:38+1, value:99999999999999999999999999999999999999+1
-        };
+        ];
         #endregion
 
         // note that the algorithm covers a range from -5 to +4 from the initial index
@@ -1895,12 +1900,12 @@ namespace System.Data.SqlTypes
         //    10-19          2
         //    20-28          3
         //    29-38          4
-        private static ReadOnlySpan<byte> RgCLenFromPrec => new byte[] // rely on C# compiler optimization to eliminate allocation
-        {
+        private static ReadOnlySpan<byte> RgCLenFromPrec =>
+        [
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
             2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4,
             4, 4, 4, 4, 4, 4
-        };
+        ];
 
         private static byte CLenFromPrec(byte bPrec)
         {
