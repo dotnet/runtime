@@ -303,9 +303,9 @@ namespace System.Text.Unicode
 
             // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'A' and <= 'Z'
             TVector combIndicator1 =
-                TVector.LessThan(TVector.Create(unchecked((ushort)(('Z' - 'A') - 0x80))), lowIndicator1);
+                TVector.LessThan(TVector.Create(unchecked((byte)(('Z' - 'A') - 0x80))), lowIndicator1);
             TVector combIndicator2 =
-                TVector.LessThan(TVector.Create(unchecked((ushort)(('Z' - 'A') - 0x80))), lowIndicator2);
+                TVector.LessThan(TVector.Create(unchecked((byte)(('Z' - 'A') - 0x80))), lowIndicator2);
 
             // Convert both vectors to lower case by adding 0x20 bit for all [A-Z][a-z] characters
             TVector lcVec1 = TVector.AndNot(TVector.Create(0x20), combIndicator1) + vec1;
