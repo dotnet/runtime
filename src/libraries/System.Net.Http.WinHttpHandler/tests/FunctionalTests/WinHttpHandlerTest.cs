@@ -120,8 +120,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     {
                         Task<HttpResponseMessage> t = client.GetAsync(url);
                         await triggerRequestWait.Task;
-                        var message = await t;
-                        var _ = message.Content;
+                        var _ = await t;
                     });
                     Assert.IsType<IOException>(ex.InnerException);
                     Assert.NotNull(ex.InnerException.InnerException);
