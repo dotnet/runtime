@@ -255,7 +255,7 @@ void register_aot_modules (void);
 #endif
 
 void
-mono_ios_runtime_init (int argc, char** argv)
+mono_ios_runtime_init (void)
 {
 #if INVARIANT_GLOBALIZATION
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
@@ -375,20 +375,13 @@ mono_ios_runtime_init (int argc, char** argv)
     mono_set_crash_chaining (TRUE);
 
     if (wait_for_debugger) {
-        char** argv_ext = (char**) malloc ((argc + 1) * sizeof (char*));
-        // copy passed args
-        memcpy (argv_ext, argv, argc * sizeof (char*));
+        managed_argv = (char**) realloc (managed_argv, argi + 1);
         // add an extra arg
-        argv_ext [argc] = strdup ("--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556");
-        argc++;
-
-        mono_jit_parse_options (argc, argv_ext);
-        // The caller should invoke free_managed_args to free other items
-        free (argv_ext [argc - 1]);
-        free (argv_ext);
-    } else {
-        mono_jit_parse_options (argc, argv);
+        managed_argv [argi] = strdup ("--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556");
+        argi++;
     }
+
+    mono_jit_parse_options (argi, managed_argv);
 
     MonoDomain *domain = mono_jit_init_version ("dotnet.ios", "mobile");
     assert (domain);
