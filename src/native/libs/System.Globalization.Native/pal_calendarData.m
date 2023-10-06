@@ -283,13 +283,15 @@ int32_t GlobalizationNative_GetCalendarsNative(const char* localeName, CalendarI
         NSString *defaultCalendarIdentifier = [currentLocale calendarIdentifier];
         int32_t calendarCount = MIN(calendarIdentifiers.count, calendarsCapacity);
         int32_t calendarIndex = 0;
-        calendars[calendarIndex++] = GetCalendarId([defaultCalendarIdentifier UTF8String]);
+        CalendarId defaultCalendarId = GetCalendarId([defaultCalendarIdentifier UTF8String]);
+        // If the default calendar is not supported, return the Gregorian calendar as the default.
+        calendars[calendarIndex++] = defaultCalendarId == UNINITIALIZED_VALUE ? GREGORIAN : defaultCalendarId;
         for (int i = 0; i < calendarCount; i++)
         {
-            NSString *calendarIdentifier = calendarIdentifiers[i];
-            if (calendarIdentifier == defaultCalendarIdentifier)
+            CalendarId calendarId = GetCalendarId([calendarIdentifiers[i] UTF8String]);
+            if (calendarId == UNINITIALIZED_VALUE || calendarId == defaultCalendarId)
                 continue;
-            calendars[calendarIndex++] = GetCalendarId([calendarIdentifier UTF8String]);
+            calendars[calendarIndex++] = calendarId;
         }
         return calendarCount;
     }
