@@ -368,7 +368,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_ResponseHasNormalLineEndings_Success(string lineEnding)
         {
             // Using an unusually high timeout as this test can take a longer time to execute on busy CI machines.
-            TimeSpan timeout = TestHelper.PassingTestTimeout * 5;
+            TimeSpan timeout = TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds * 5);
 
             await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
