@@ -3331,9 +3331,9 @@ public:
                 if (m_pCompiler->info.compMethodHash() == (unsigned)JitConfig.JitCSEHash())
                 {
                     // We can only mask the first 32 CSE attempts, so suppress anything beyond that.
-                    // Note methods with > 32 CSEs are currently quite rare.
+                    // Note methods with >= 32 CSEs are currently quite rare.
                     //
-                    if (attempt > 32)
+                    if (attempt >= 32)
                     {
                         doCSE = false;
                         JITDUMP(FMT_CSE " attempt %u disabled, out of mask range\n", candidate.CseIndex(), attempt);
