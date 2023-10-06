@@ -148,7 +148,7 @@ namespace System.Numerics.Tensors
             // so we convert the VectorXx<float> to a VectorXx<uint>, and the caller then uses this twice, narrows the combination
             // into a VectorXx<ushort>, and then saves that out to the destination `ref Half` reinterpreted as `ref ushort`.
 
-            #pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/44948
+#pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/44948
             const uint MinExp = 0x3880_0000u; // Minimum exponent for rounding
             const uint Exponent126 = 0x3f00_0000u; // Exponent displacement #1
             const uint SingleBiasedExponentMask = 0x7F80_0000; // float.BiasedExponentMask; // Exponent mask
@@ -156,7 +156,7 @@ namespace System.Numerics.Tensors
             const float MaxHalfValueBelowInfinity = 65520.0f; // Maximum value that is not Infinity in Half
             const uint ExponentMask = 0x7C00; // Mask for exponent bits in Half
             const uint SingleSignMask = 0x8000_0000u; // float.SignMask; // Mask for sign bit in float
-            #pragma warning restore IDE0059
+#pragma warning restore IDE0059
 
             static Vector128<uint> SingleToHalfAsWidenedUInt32_Vector128(Vector128<float> value)
             {
@@ -463,13 +463,13 @@ namespace System.Numerics.Tensors
             // The VectorXx<uint> is created by reading a vector of Halfs as a VectorXx<short> then widened to two VectorXx<int>s and cast to VectorXx<uint>s.
             // We loop handling one input vector at a time, producing two output float vectors.
 
-            #pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/44948
+#pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/44948
             const uint ExponentLowerBound = 0x3880_0000u; // The smallest positive normal number in Half, converted to Single
             const uint ExponentOffset = 0x3800_0000u; // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
             const uint SingleSignMask = 0x8000_0000; // float.SignMask; // Mask for sign bit in Single
             const uint HalfExponentMask = 0x7C00; // Mask for exponent bits in Half
             const uint HalfToSingleBitsMask = 0x0FFF_E000; // Mask for bits in Single converted from Half
-            #pragma warning restore IDE0059
+#pragma warning restore IDE0059
 
             static Vector128<float> HalfAsWidenedUInt32ToSingle_Vector128(Vector128<uint> value)
             {
@@ -2993,17 +2993,6 @@ namespace System.Numerics.Tensors
 #endif
         }
 
-        /// <summary>MathF.Sinh(x)</summary>
-        private readonly struct SinhOperator : IUnaryOperator
-        {
-            public static float Invoke(float x) => MathF.Sinh(x);
-            public static Vector128<float> Invoke(Vector128<float> x) => (ExpOperator.Invoke(x) - ExpOperator.Invoke(-x)) / Vector128.Create(2f);
-            public static Vector256<float> Invoke(Vector256<float> x) => (ExpOperator.Invoke(x) - ExpOperator.Invoke(-x)) / Vector256.Create(2f);
-#if NET8_0_OR_GREATER
-            public static Vector512<float> Invoke(Vector512<float> x) => (ExpOperator.Invoke(x) - ExpOperator.Invoke(-x)) / Vector512.Create(2f);
-#endif
-        }
-
         /// <summary>MathF.Cosh(x)</summary>
         private readonly struct CoshOperator : IUnaryOperator
         {
@@ -3055,6 +3044,52 @@ namespace System.Numerics.Tensors
                 Vector512<float> y = (x.AsUInt32() & Vector512.Create(SIGN_MASK)).AsSingle();
                 Vector512<float> z = ExpOperator.Invoke(y - Vector512.Create(LOGV).AsSingle());
                 return Vector512.Create(HALFV).AsSingle() * (z + (Vector512.Create(INVV2).AsSingle() / z));
+            }
+#endif
+        }
+
+        /// <summary>MathF.Sinh(x)</summary>
+        private readonly struct SinhOperator : IUnaryOperator
+        {
+            // Same as cosh, but with `z -` rather than `z +`, and with the sign
+            // flipped on the result based on the sign of the input.
+
+            private const uint SIGN_MASK = 0x7FFFFFFF;
+            private const uint LOGV = 0x3f317300;
+            private const uint HALFV = 0x3f800074;
+            private const uint INVV2 = 0x3e7ffe30;
+
+            public static float Invoke(float x) => MathF.Sinh(x);
+
+            public static Vector128<float> Invoke(Vector128<float> x)
+            {
+                Vector128<uint> ux = x.AsUInt32();
+                Vector128<uint> sign = ux & Vector128.Create(~SIGN_MASK);
+                Vector128<float> y = (ux & Vector128.Create(SIGN_MASK)).AsSingle();
+                Vector128<float> z = ExpOperator.Invoke(y - Vector128.Create(LOGV).AsSingle());
+                Vector128<float> result = Vector128.Create(HALFV).AsSingle() * (z - (Vector128.Create(INVV2).AsSingle() / z));
+                return (sign ^ result.AsUInt32()).AsSingle();
+            }
+
+            public static Vector256<float> Invoke(Vector256<float> x)
+            {
+                Vector256<uint> ux = x.AsUInt32();
+                Vector256<uint> sign = ux & Vector256.Create(~SIGN_MASK);
+                Vector256<float> y = (ux & Vector256.Create(SIGN_MASK)).AsSingle();
+                Vector256<float> z = ExpOperator.Invoke(y - Vector256.Create(LOGV).AsSingle());
+                Vector256<float> result = Vector256.Create(HALFV).AsSingle() * (z - (Vector256.Create(INVV2).AsSingle() / z));
+                return (sign ^ result.AsUInt32()).AsSingle();
+            }
+
+#if NET8_0_OR_GREATER
+            public static Vector512<float> Invoke(Vector512<float> x)
+            {
+                Vector512<uint> ux = x.AsUInt32();
+                Vector512<uint> sign = ux & Vector512.Create(~SIGN_MASK);
+                Vector512<float> y = (ux & Vector512.Create(SIGN_MASK)).AsSingle();
+                Vector512<float> z = ExpOperator.Invoke(y - Vector512.Create(LOGV).AsSingle());
+                Vector512<float> result = Vector512.Create(HALFV).AsSingle() * (z - (Vector512.Create(INVV2).AsSingle() / z));
+                return (sign ^ result.AsUInt32()).AsSingle();
             }
 #endif
         }
