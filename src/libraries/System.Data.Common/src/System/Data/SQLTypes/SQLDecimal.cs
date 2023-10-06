@@ -922,7 +922,7 @@ namespace System.Data.SqlTypes
             AssertValid();
 
             // Make local copy of data to avoid modifying input.
-            Span<uint> rgulNumeric = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rgulNumeric = [_data1, _data2, _data3, _data4];
             int culLen = _bLen;
             Span<char> pszTmp = stackalloc char[s_NUMERIC_MAX_PRECISION + 1];   //Local Character buffer to hold
             pszTmp.Clear();                                                     //the decimal digits, from the
@@ -1281,8 +1281,8 @@ namespace System.Data.SqlTypes
             culOp1 = x._bLen;
             culOp2 = y._bLen;
 
-            Span<uint> rglData1 = stackalloc uint[4] { x._data1, x._data2, x._data3, x._data4 };
-            Span<uint> rglData2 = stackalloc uint[4] { y._data1, y._data2, y._data3, y._data4 };
+            Span<uint> rglData1 = [x._data1, x._data2, x._data3, x._data4];
+            Span<uint> rglData2 = [y._data1, y._data2, y._data3, y._data4];
 
             if (fOpSignPos)
             {
@@ -1467,8 +1467,8 @@ namespace System.Data.SqlTypes
 
             // II) Perform multiplication
 
-            ReadOnlySpan<uint> rglData1 = stackalloc uint[4] { x._data1, x._data2, x._data3, x._data4 };
-            ReadOnlySpan<uint> rglData2 = stackalloc uint[4] { y._data1, y._data2, y._data3, y._data4 };
+            ReadOnlySpan<uint> rglData1 = [x._data1, x._data2, x._data3, x._data4];
+            ReadOnlySpan<uint> rglData2 = [y._data1, y._data2, y._data3, y._data4];
 
             //Local buffer to hold the result of multiplication.
             //Longer than CReNumeBuf because full precision of multiplication is carried out
@@ -1701,8 +1701,8 @@ namespace System.Data.SqlTypes
 
             // Step2: Actual Computation
 
-            Span<uint> rgulData1 = stackalloc uint[4] { x._data1, x._data2, x._data3, x._data4 };
-            Span<uint> rgulData2 = stackalloc uint[4] { y._data1, y._data2, y._data3, y._data4 };
+            Span<uint> rgulData1 = [x._data1, x._data2, x._data3, x._data4];
+            Span<uint> rgulData2 = [y._data1, y._data2, y._data3, y._data4];
 
             // Buffers for arbitrary precision divide
             Span<uint> rgulR = stackalloc uint[s_cNumeMax + 1];
@@ -1809,7 +1809,7 @@ namespace System.Data.SqlTypes
             Debug.Assert(CLenFromPrec(_bPrec) >= _bLen, "CLenFromPrec(m_bPrec) >= m_bLen", "In AssertValid");
             Debug.Assert(_bLen <= s_cNumeMax, "m_bLen <= x_cNumeMax", "In AssertValid");
 
-            ReadOnlySpan<uint> rglData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+            ReadOnlySpan<uint> rglData = [_data1, _data2, _data3, _data4];
 
             // highest UI4 is non-0 unless value "zero"
             if (rglData[_bLen - 1] == 0)
@@ -2080,7 +2080,7 @@ namespace System.Data.SqlTypes
             }
             else
             {
-                Span<uint> rgulU = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+                Span<uint> rgulU = [_data1, _data2, _data3, _data4];
                 Prec = 0;
                 do
                 {
@@ -2111,7 +2111,7 @@ namespace System.Data.SqlTypes
             int iData;                  // which UI4 in this we are on
             int iDataMax = _bLen; // # of UI4s in this
 
-            Span<uint> rguiData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rguiData = [_data1, _data2, _data3, _data4];
 
             // Add, starting at the LS UI4 until out of UI4s or no carry
             iData = 0;
@@ -2156,7 +2156,7 @@ namespace System.Data.SqlTypes
             ulong dwlNextAccum = 0;   // accumulation past dwlAccum
             int iData;              // which UI4 in *This we are on.
 
-            Span<uint> rguiData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rguiData = [_data1, _data2, _data3, _data4];
 
             for (iData = 0; iData < iDataMax; iData++)
             {
@@ -2216,7 +2216,7 @@ namespace System.Data.SqlTypes
                 throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
 
             // Copy into array, so that we can iterate through the data
-            Span<uint> rguiData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rguiData = [_data1, _data2, _data3, _data4];
 
             // Start from the MS UI4 of quotient, divide by divisor, placing result
             //        in quotient and carrying the remainder.
@@ -2426,8 +2426,8 @@ namespace System.Data.SqlTypes
             if (culOp != culThis)
                 return (culThis > culOp) ? 1 : -1;
 
-            ReadOnlySpan<uint> rglData1 = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
-            ReadOnlySpan<uint> rglData2 = stackalloc uint[4] { snumOp._data1, snumOp._data2, snumOp._data3, snumOp._data4 };
+            ReadOnlySpan<uint> rglData1 = [_data1, _data2, _data3, _data4];
+            ReadOnlySpan<uint> rglData2 = [snumOp._data1, snumOp._data2, snumOp._data3, snumOp._data4];
 
             // Loop through numeric value checking each byte for differences.
             iData = culOp - 1;
