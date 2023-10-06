@@ -405,6 +405,31 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+      #
+      # Build CrossDacs
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          variables:
+            - name: _archParameter
+              value: -arch x64,x86,arm,arm64
+          jobParameters:
+            buildArgs: -s linuxdac+alpinedac -c Checked,$(_BuildConfig)
+            nameSuffix: CrossDac
+            isOfficialBuild: false
+            timeoutInMinutes: 60
+            postBuildSteps:
+            - publish: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+              displayName: Publish CrossDacs for diagnostics
+              artifact: CoreCLRCrossDacArtifacts
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
 
       # Build Mono AOT offset headers once, for consumption elsewhere
       # Only when mono changed
@@ -420,7 +445,7 @@ extends:
           - ios_arm64
           - maccatalyst_x64
           jobParameters:
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            isOfficialBuild: false
             # needed by crossaot
             condition: >-
               or(

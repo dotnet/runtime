@@ -239,6 +239,7 @@ while (($# > 0)); do
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
       echo "  --dotnetversions               Passed as '--dotnet-versions <value>' to the setup script"
       echo "  --alpine                       Set for runs on Alpine"
+      echo "  --llvm                         Set LLVM for Mono runs"
       echo "  --iosmono                      Set for ios Mono/Maui runs"
       echo "  --iosnativeaot                 Set for ios Native AOT runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
@@ -519,6 +520,7 @@ Write-PipelineSetVariable -name "Kind" -value "$kind" -is_multi_job_variable fal
 Write-PipelineSetVariable -name "_BuildConfig" -value "$_BuildConfig" -is_multi_job_variable false
 Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variable false
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
+Write-PipelineSetVariable -name "MonoAOT" -value "$monoaot" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSStripSymbols' -Value "$iosstripsymbols" -is_multi_job_variable false

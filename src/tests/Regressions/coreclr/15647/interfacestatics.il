@@ -6,7 +6,7 @@
 
 .assembly extern System.Runtime { }
 
-.class interface IFoo<T>
+.class public interface IFoo<T>
 {
   .field public static class [System.Runtime]System.Type O
 
@@ -39,7 +39,7 @@
   }
 }
 
-.method static hidebysig int32 Main()
+.method public static hidebysig int32 Main()
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
       01 00 00 00
