@@ -3279,7 +3279,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* op2 = impPopStack().val; // value
                 GenTree* op1 = impPopStack().val; // location
 
-                GenTree* node = new (this, GT_CMPXCHG) GenTreeCmpXchg(genActualType(callType), op1, op2, op3);
+                GenTree* node = new (this, GT_CMPXCHG) GenTreeCmpXchg(callType, op1, op2, op3);
 
                 node->AsCmpXchg()->gtOpLocation->gtFlags |= GTF_DONT_CSE;
                 retNode = node;
@@ -3329,7 +3329,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // on a local are probably pretty useless anyway, so we probably don't care.
 
                 op1 = gtNewOperNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
-                                    genActualType(callType), op1, op2);
+                                    callType, op1, op2);
                 op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
                 retNode = op1;
                 break;
