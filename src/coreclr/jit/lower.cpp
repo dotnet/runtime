@@ -8295,6 +8295,14 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         cur = cur->gtNext;
         if (cur == indir)
             break;
+
+        // We can reorder indirs with some calls, but introducing a LIR edge
+        // that spans a call can introduce spills (or callee-saves).
+        if (cur->IsCall() || (cur->OperIsStoreBlk() && (cur->AsBlk()->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper)))
+        {
+            JITDUMP("  ..but they are separated by node [%06u] that kills registers\n", Compiler::dspTreeID(cur));
+            return false;
+        }
     }
 
     if (cur != indir)
@@ -8343,13 +8351,6 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
     for (GenTree* cur = prevIndir->gtNext; cur != indir; cur = cur->gtNext)
     {
-        if (cur->IsCall() || (cur->OperIsStoreBlk() && (cur->AsBlk()->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper)))
-        {
-            JITDUMP("[Heuristic] Giving up due to node that kills registers [%06u]\n", Compiler::dspTreeID(cur));
-            UnmarkTree(indir);
-            return false;
-        }
-
         if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
         {
             // 'cur' is part of data flow of 'indir', so we will be moving the
