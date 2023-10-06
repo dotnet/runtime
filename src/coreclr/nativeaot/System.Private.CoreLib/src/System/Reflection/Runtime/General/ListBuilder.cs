@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Runtime.General
 {
@@ -49,6 +50,18 @@ namespace System.Reflection.Runtime.General
 #endif // DEBUG
 
             return _items;
+        }
+
+        [UnscopedRef]
+        public ReadOnlySpan<T> AsSpan()
+        {
+            if (_count == 0)
+                return default;
+
+            if (_count == 1)
+                return new ReadOnlySpan<T>(in _item);
+
+            return _items.AsSpan(0, _count);
         }
 
         public void CopyTo(object[] array, int index)
