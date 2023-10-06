@@ -8364,7 +8364,8 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         }
         else
         {
-            // Part of dataflow; add its effects.
+            // Not part of dataflow; add its effects that will move past
+            // 'indir'.
             m_scratchSideEffects.AddNode(comp, cur);
         }
     }
