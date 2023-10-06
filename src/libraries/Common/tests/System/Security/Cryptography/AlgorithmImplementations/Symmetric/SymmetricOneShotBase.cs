@@ -573,7 +573,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(CipherMode.ECB)]
         [InlineData(CipherMode.CBC)]
         [InlineData(CipherMode.CFB)]
@@ -620,7 +620,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(CipherMode.ECB)]
         [InlineData(CipherMode.CBC)]
         [InlineData(CipherMode.CFB)]
@@ -667,7 +667,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(CipherMode.ECB)]
         [InlineData(CipherMode.CBC)]
         [InlineData(CipherMode.CFB)]
@@ -730,7 +730,7 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(CipherMode.ECB)]
         [InlineData(CipherMode.CBC)]
         [InlineData(CipherMode.CFB)]
