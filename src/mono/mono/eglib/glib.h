@@ -723,10 +723,14 @@ G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
 void           g_log                  (const gchar *log_domain, GLogLevelFlags log_level, const gchar *format, ...);
 void           g_log_disabled         (const gchar *log_domain, GLogLevelFlags log_level, const char *file, int line);
 G_EXTERN_C // Used by MonoPosixHelper or MonoSupportW, at least.
-void           g_assertion_message    (const gchar *format, ...) G_ATTR_NORETURN;
-void           mono_assertion_message_disabled  (const char *file, int line) G_ATTR_NORETURN;
-void           mono_assertion_message  (const char *file, int line, const char *condition) G_ATTR_NORETURN;
-void           mono_assertion_message_unreachable (const char *file, int line) G_ATTR_NORETURN;
+G_ATTR_NORETURN void
+               g_assertion_message    (const gchar *format, ...);
+G_ATTR_NORETURN void
+               mono_assertion_message_disabled  (const char *file, int line);
+G_ATTR_NORETURN void
+               mono_assertion_message  (const char *file, int line, const char *condition);
+G_ATTR_NORETURN void
+               mono_assertion_message_unreachable (const char *file, int line);
 const char *   g_get_assertion_message (void);
 
 #ifndef DISABLE_ASSERT_MESSAGES
