@@ -123,9 +123,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				throw new NotImplementedException ($"Don't know how to check member of type {originalMember.GetType ()}");
 			}
 
-			// Filter out all members which are not from the main assembly
-			// The Kept attributes are "optional" for non-main assemblies
-			string mainModuleName = originalAssembly.Name.Name;
+            // Verify anything not in the main assembly
+            VerifyLinkingOfOtherAssemblies(this.originalAssembly);
+
+            // Filter out all members which are not from the main assembly
+            // The Kept attributes are "optional" for non-main assemblies
+            string mainModuleName = originalAssembly.Name.Name;
 			List<AssemblyQualifiedToken> externalMembers = linkedMembers.Where (m => GetModuleName (m.Value.Entity) != mainModuleName).Select (m => m.Key).ToList ();
 			foreach (var externalMember in externalMembers) {
 				linkedMembers.Remove (externalMember);
@@ -136,7 +139,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					false,
 					"Linked output includes unexpected member:\n  " +
 					string.Join ("\n  ", linkedMembers.Values.Select (e => e.Entity.GetDisplayName ())));
-		}
+        }
 
 		private void PopulateLinkedMembers ()
 		{
@@ -276,12 +279,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			static bool ShouldIncludeMethod (MethodDesc method) => ShouldIncludeType (method.OwningType) && ShouldIncludeEntityByDisplayName (method);
 		}
 
+        private static MetadataType? GetOwningType (TypeSystemEntity? entity)
+        {
+            return entity switch
+            {
+                MetadataType type => type.ContainingType as MetadataType,
+                MethodDesc method => method.OwningType as MetadataType,
+                PropertyPseudoDesc prop => prop.OwningType,
+                EventPseudoDesc e => e.OwningType,
+                _ => null
+            };
+        }
+
 		private static string? GetModuleName (TypeSystemEntity entity)
 		{
 			return entity switch {
 				MetadataType type => type.Module.ToString (),
-				MethodDesc { OwningType: MetadataType owningType } => owningType.Module.ToString (),
-				_ => null
+                _ => GetOwningType(entity)?.Module.ToString()
 			};
 		}
 
@@ -1310,38 +1324,38 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return GetActiveKeptDerivedAttributes (provider).Any ();
 		}
 
-		private void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original)
+		internal void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original)
 		{
 			var checks = BuildOtherAssemblyCheckTable (original);
 
-			// TODO
-			// For now disable the code below by simply removing all checks
-			checks.Clear ();
-
 			try {
 				foreach (var assemblyName in checks.Keys) {
-					var linkedAssembly = ResolveLinkedAssembly (assemblyName);
+					var linkedMembersInAssembly = ResolveLinkedMembersForAssembly (assemblyName);
+                    var originalTargetAssembly = ResolveOriginalsAssembly(assemblyName);
 					foreach (var checkAttrInAssembly in checks[assemblyName]) {
 						var attributeTypeName = checkAttrInAssembly.AttributeType.Name;
 
 						switch (attributeTypeName) {
 						case nameof (KeptAllTypesAndMembersInAssemblyAttribute):
-							VerifyKeptAllTypesAndMembersInAssembly (linkedAssembly);
+							VerifyKeptAllTypesAndMembersInAssembly (assemblyName, linkedMembersInAssembly);
 							continue;
 						case nameof (KeptAttributeInAssemblyAttribute):
-							VerifyKeptAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
+							// VerifyKeptAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
 							continue;
 						case nameof (RemovedAttributeInAssembly):
-							VerifyRemovedAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
+							// VerifyRemovedAttributeInAssembly (checkAttrInAssembly, linkedAssembly);
 							continue;
 						default:
 							break;
 						}
 
-						var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString ()!;
-						TypeDefinition? linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
+                        var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString ()!;
+                        var expectedType = originalTargetAssembly.MainModule.GetType(expectedTypeName);
+                        linkedMembersInAssembly.TryGetValue(new AssemblyQualifiedToken(expectedType), out LinkedEntity? linkedTypeEntity);
+                        MetadataType? linkedType = linkedTypeEntity?.Entity as MetadataType;
 
-						if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
+#if false
+                        if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
 							ExportedType? exportedType = linkedAssembly.MainModule.ExportedTypes
 									.FirstOrDefault (exported => exported.FullName == expectedTypeName);
 
@@ -1353,6 +1367,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 							linkedType = exportedType?.Resolve ();
 						}
+#endif
 
 						switch (attributeTypeName) {
 						case nameof (RemovedTypeInAssemblyAttribute):
@@ -1364,6 +1379,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							if (linkedType == null)
 								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
 							break;
+#if false
 						case nameof (RemovedInterfaceOnTypeInAssemblyAttribute):
 							if (linkedType == null)
 								Assert.Fail ($"Type `{expectedTypeName}' should have been kept in assembly {assemblyName}");
@@ -1416,11 +1432,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								Assert.Fail ($"Type `{expectedTypeName}` should have been kept in assembly {assemblyName}");
 							VerifyExpectedInstructionSequenceOnMemberInAssembly (checkAttrInAssembly, linkedType);
 							break;
-						default:
+                        default:
 							UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
 							break;
-						}
-					}
+#else
+                        default:
+                            break;
+#endif
+                        }
+                    }
 				}
 			} catch (AssemblyResolutionException e) {
 				Assert.Fail ($"Failed to resolve linked assembly `{e.AssemblyReference.Name}`.  It must not exist in the output.");
@@ -1712,54 +1732,62 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private void VerifyKeptReferencesInAssembly (CustomAttribute inAssemblyAttribute)
 		{
-			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
+#if false
+            var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
 			var expectedReferenceNames = ((CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[1].Value).Select (attr => (string) attr.Value).ToList ();
 			for (int i = 0; i < expectedReferenceNames.Count; i++)
 				if (expectedReferenceNames[i].EndsWith (".dll"))
 					expectedReferenceNames[i] = expectedReferenceNames[i].Substring (0, expectedReferenceNames[i].LastIndexOf ("."));
 
 			Assert.Equal (assembly.MainModule.AssemblyReferences.Select (asm => asm.Name), expectedReferenceNames);
+#endif
 		}
 
 		private void VerifyKeptResourceInAssembly (CustomAttribute inAssemblyAttribute)
 		{
-			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
+#if false
+            var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
 			var resourceName = inAssemblyAttribute.ConstructorArguments[1].Value.ToString ();
 
 			Assert.Contains (resourceName, assembly.MainModule.Resources.Select (r => r.Name));
+#endif
 		}
 
 		private void VerifyRemovedResourceInAssembly (CustomAttribute inAssemblyAttribute)
 		{
-			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
+#if false
+            var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ()!);
 			var resourceName = inAssemblyAttribute.ConstructorArguments[1].Value.ToString ();
 
 			Assert.DoesNotContain (resourceName, assembly.MainModule.Resources.Select (r => r.Name));
+#endif
 		}
 
-		private void VerifyKeptAllTypesAndMembersInAssembly (AssemblyDefinition linked)
+		private void VerifyKeptAllTypesAndMembersInAssembly (string assemblyName, Dictionary<AssemblyQualifiedToken, LinkedEntity> linkedMembers)
 		{
-			var original = ResolveOriginalsAssembly (linked.MainModule.Assembly.Name.Name);
+			var original = ResolveOriginalsAssembly (assemblyName);
 
 			if (original == null)
-				Assert.Fail ($"Failed to resolve original assembly {linked.MainModule.Assembly.Name.Name}");
+				Assert.Fail ($"Failed to resolve original assembly {assemblyName}");
 
-			var originalTypes = original.AllDefinedTypes ().ToDictionary (t => t.FullName);
-			var linkedTypes = linked.AllDefinedTypes ().ToDictionary (t => t.FullName);
+			var originalTypes = original.AllDefinedTypes ().ToDictionary (t => new AssemblyQualifiedToken(t));
+            var linkedTypes = linkedMembers.Where(t => t.Value.Entity is TypeDesc).ToDictionary();
 
 			var missingInLinked = originalTypes.Keys.Except (linkedTypes.Keys);
 
-			Assert.True (missingInLinked.Any (), $"Expected all types to exist in the linked assembly, but one or more were missing");
+			Assert.False (missingInLinked.Any (), $"Expected all types to exist in the linked assembly {assemblyName}, but one or more were missing");
 
 			foreach (var originalKvp in originalTypes) {
 				var linkedType = linkedTypes[originalKvp.Key];
+                TypeDesc linkedTypeDesc = (TypeDesc)linkedType.Entity;
 
-				var originalMembers = originalKvp.Value.AllMembers ().Select (m => m.FullName);
-				var linkedMembers = linkedType.AllMembers ().Select (m => m.FullName);
+                // NativeAOT field trimming is very different (it basically doesn't trim fields, not in the same way trimmer does)
+				var originalMembers = originalKvp.Value.AllMembers ().Where(m => m is not FieldDefinition).Select (m => new AssemblyQualifiedToken(m));
+                var linkedMembersOnType = linkedMembers.Where(t => GetOwningType(t.Value.Entity) == linkedTypeDesc).Select(t => t.Key);
 
-				var missingMembersInLinked = originalMembers.Except (linkedMembers);
+				var missingMembersInLinked = originalMembers.Except (linkedMembersOnType);
 
-				Assert.True (missingMembersInLinked.Any (), $"Expected all members of `{originalKvp.Key}`to exist in the linked assembly, but one or more were missing");
+				Assert.False (missingMembersInLinked.Any (), $"Expected all members of `{linkedTypeDesc.GetDisplayName()}`to exist in the linked assembly, but one or more were missing");
 			}
 		}
 
@@ -1795,6 +1823,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
 				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes.Where (IsTypeInOtherAssemblyAssertion)) {
 					var assemblyName = (string) attr.ConstructorArguments[0].Value;
+
+                    Tool? toolTarget = (Tool?)(int?)attr.GetPropertyValue("Tool");
+                    if (toolTarget is not null && !toolTarget.Value.HasFlag(Tool.NativeAot))
+                        continue;
+
 					if (!checks.TryGetValue (assemblyName, out List<CustomAttribute>? checksForAssembly))
 						checks[assemblyName] = checksForAssembly = new List<CustomAttribute> ();
 
@@ -1805,14 +1838,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return checks;
 		}
 
-		protected AssemblyDefinition ResolveLinkedAssembly (string assemblyName)
+		private Dictionary<AssemblyQualifiedToken, LinkedEntity> ResolveLinkedMembersForAssembly (string assemblyName)
 		{
-			//var cleanAssemblyName = assemblyName;
-			//if (assemblyName.EndsWith (".exe") || assemblyName.EndsWith (".dll"))
-			//cleanAssemblyName = System.IO.Path.GetFileNameWithoutExtension (assemblyName);
-			//return _linkedResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null), _linkedReaderParameters);
-			// TODO - adapt to Native AOT
-			return ResolveOriginalsAssembly (assemblyName);
+            var cleanAssemblyName = assemblyName;
+            if (assemblyName.EndsWith(".exe") || assemblyName.EndsWith(".dll"))
+                cleanAssemblyName = System.IO.Path.GetFileNameWithoutExtension(assemblyName);
+
+            return this.linkedMembers.Where(e => GetModuleName(e.Value.Entity) == cleanAssemblyName).ToDictionary();
 		}
 
 		protected AssemblyDefinition ResolveOriginalsAssembly (string assemblyName)

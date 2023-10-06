@@ -988,17 +988,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = 1f / (1f + MathF.Exp(-x[i]));
-            }
+            InvokeSpanIntoSpan<SigmoidOperator>(x, destination);
         }
 
         /// <summary>Computes the element-wise hyperbolic sine of each single-precision floating-point radian angle in the specified tensor.</summary>
@@ -1067,17 +1057,9 @@ namespace System.Numerics.Tensors
 
             ValidateInputOutputSpanNonOverlapping(x, destination);
 
-            float expSum = 0f;
+            float expSum = Aggregate<ExpOperator, AddOperator>(x);
 
-            for (int i = 0; i < x.Length; i++)
-            {
-                expSum += MathF.Exp(x[i]);
-            }
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MathF.Exp(x[i]) / expSum;
-            }
+            InvokeSpanScalarIntoSpan<ExpOperator, DivideOperator>(x, expSum, destination);
         }
 
         /// <summary>Computes the element-wise difference between single-precision floating-point numbers in the specified tensors.</summary>

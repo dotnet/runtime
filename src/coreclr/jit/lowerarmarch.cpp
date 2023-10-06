@@ -2789,7 +2789,7 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
     if (!varTypeIsIntegral(op))
         return nullptr;
 
-    if (op->gtFlags & GTF_SET_FLAGS)
+    if ((op->gtFlags & GTF_SET_FLAGS) != 0)
         return nullptr;
 
     if (op->gtOverflow())
@@ -2832,31 +2832,39 @@ GenTree* Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op)
     if (!genActualTypeIsInt(mul->gtOp1) || !genActualTypeIsInt(mul->gtOp2))
         return nullptr;
 
+    // The multiply must evaluate to the same thing if moved.
+    if (!IsInvariantInRange(mul, op))
+        return nullptr;
+
     // Create the new node and replace the original.
+    NamedIntrinsic intrinsicId =
+        op->OperIs(GT_ADD) ? NI_ArmBase_Arm64_MultiplyLongAdd : NI_ArmBase_Arm64_MultiplyLongSub;
+    GenTreeHWIntrinsic* outOp = comp->gtNewScalarHWIntrinsicNode(TYP_LONG, mul->gtOp1, mul->gtOp2, addVal, intrinsicId);
+    outOp->SetSimdBaseJitType(mul->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG);
+
+    BlockRange().InsertAfter(op, outOp);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(op, &use))
     {
-        NamedIntrinsic intrinsicId =
-            op->OperIs(GT_ADD) ? NI_ArmBase_Arm64_MultiplyLongAdd : NI_ArmBase_Arm64_MultiplyLongSub;
-        GenTreeHWIntrinsic* outOp =
-            comp->gtNewScalarHWIntrinsicNode(TYP_LONG, mul->gtOp1, mul->gtOp2, addVal, intrinsicId);
-        outOp->SetSimdBaseJitType(mul->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG);
-        op->ReplaceWith(outOp, comp);
+        use.ReplaceWith(outOp);
+    }
+    else
+    {
+        outOp->SetUnusedValue();
     }
 
-    // Delete the hanging MUL.
-    mul->gtOp1 = nullptr;
-    mul->gtOp2 = nullptr;
     BlockRange().Remove(mul);
+    BlockRange().Remove(op);
 
 #ifdef DEBUG
     JITDUMP("Converted to HW_INTRINSIC 'NI_ArmBase_Arm64_MultiplyLong[Add/Sub]'.\n");
-    if (comp->verbose)
-        comp->gtDispNodeName(op);
     JITDUMP(":\n");
-    DISPTREERANGE(BlockRange(), op);
+    DISPTREERANGE(BlockRange(), outOp);
     JITDUMP("\n");
 #endif
 
-    return op;
+    return outOp;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -2884,7 +2892,7 @@ GenTree* Lowering::TryLowerNegToMulLongOp(GenTreeOp* op)
     if (!varTypeIsIntegral(op))
         return nullptr;
 
-    if (op->gtFlags & GTF_SET_FLAGS)
+    if ((op->gtFlags & GTF_SET_FLAGS) != 0)
         return nullptr;
 
     GenTree* op1 = op->gtGetOp1();
@@ -2898,19 +2906,38 @@ GenTree* Lowering::TryLowerNegToMulLongOp(GenTreeOp* op)
     if (!genActualTypeIsInt(mul->gtOp1) || !genActualTypeIsInt(mul->gtOp2))
         return nullptr;
 
+    // The multiply must evaluate to the same thing if evaluated at 'op'.
+    if (!IsInvariantInRange(mul, op))
+        return nullptr;
+
     // Able to optimise, create the new node and replace the original.
+    GenTreeHWIntrinsic* outOp =
+        comp->gtNewScalarHWIntrinsicNode(TYP_LONG, mul->gtOp1, mul->gtOp2, NI_ArmBase_Arm64_MultiplyLongNeg);
+    outOp->SetSimdBaseJitType(mul->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG);
+
+    BlockRange().InsertAfter(op, outOp);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(op, &use))
     {
-        GenTreeHWIntrinsic* outOp =
-            comp->gtNewScalarHWIntrinsicNode(TYP_LONG, mul->gtOp1, mul->gtOp2, NI_ArmBase_Arm64_MultiplyLongNeg);
-        op->ReplaceWith(outOp, comp);
+        use.ReplaceWith(outOp);
+    }
+    else
+    {
+        outOp->SetUnusedValue();
     }
 
-    // Clean up hanging mul.
-    mul->gtOp1 = nullptr;
-    mul->gtOp2 = nullptr;
     BlockRange().Remove(mul);
+    BlockRange().Remove(op);
 
-    return op;
+#ifdef DEBUG
+    JITDUMP("Converted to HW_INTRINSIC 'NI_ArmBase_Arm64_MultiplyLongNeg'.\n");
+    JITDUMP(":\n");
+    DISPTREERANGE(BlockRange(), outOp);
+    JITDUMP("\n");
+#endif
+
+    return outOp;
 }
 #endif // TARGET_ARM64
 

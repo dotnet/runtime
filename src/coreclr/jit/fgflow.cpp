@@ -351,7 +351,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
                 assert(block->isBBCallAlwaysPair());
 
                 /* The block after the BBJ_CALLFINALLY block is not reachable */
-                bNext = block->bbNext;
+                bNext = block->Next();
 
                 /* bNext is an unreachable BBJ_ALWAYS block */
                 noway_assert(bNext->KindIs(BBJ_ALWAYS));
@@ -370,12 +370,12 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         case BBJ_NONE:
-            fgRemoveRefPred(block->bbNext, block);
+            fgRemoveRefPred(block->Next(), block);
             break;
 
         case BBJ_COND:
             fgRemoveRefPred(block->bbJumpDest, block);
-            fgRemoveRefPred(block->bbNext, block);
+            fgRemoveRefPred(block->Next(), block);
             break;
 
         case BBJ_EHFILTERRET:
@@ -401,7 +401,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
                 BasicBlock* finBeg = ehDsc->ebdHndBeg;
 
-                for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+                for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
                 {
                     if ((bcall->bbFlags & BBF_REMOVED) || !bcall->KindIs(BBJ_CALLFINALLY) ||
                         bcall->bbJumpDest != finBeg)
@@ -410,7 +410,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
                     }
 
                     assert(bcall->isBBCallAlwaysPair());
-                    fgRemoveRefPred(bcall->bbNext, block);
+                    fgRemoveRefPred(bcall->Next(), block);
                 }
             }
         }
@@ -468,7 +468,7 @@ void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock*
 
     BasicBlock* finBeg = ehDsc->ebdHndBeg;
 
-    for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+    for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
     {
         if (!bcall->KindIs(BBJ_CALLFINALLY) || bcall->bbJumpDest != finBeg)
         {
@@ -479,7 +479,7 @@ void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock*
 
         if (succNum == i)
         {
-            *bres = bcall->bbNext;
+            *bres = bcall->Next();
             return;
         }
         succNum++;

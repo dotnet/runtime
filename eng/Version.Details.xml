@@ -314,10 +314,6 @@
       <Sha>736dabeca728ccf8b911d96d1b4c575b4d0db7d2</Sha>
       <SourceBuild RepoName="runtime" ManagedOnly="false" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="9.0.0-alpha.1.23470.17">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>736dabeca728ccf8b911d96d1b4c575b4d0db7d2</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.DotNet.ILCompiler" Version="9.0.0-alpha.1.23470.17">
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>736dabeca728ccf8b911d96d1b4c575b4d0db7d2</Sha>

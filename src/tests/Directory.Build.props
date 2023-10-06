@@ -2,8 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
-    <!-- NativeAot tests rely on presence of ILLink targets, but don't actually run ILLink. -->
-    <UsingToolMicrosoftNetILLinkTasks Condition="'$(UsingToolMicrosoftNetILLinkTasks)' == ''">true</UsingToolMicrosoftNetILLinkTasks>
     <InstallV8ForTests>false</InstallV8ForTests>
   </PropertyGroup>
 
