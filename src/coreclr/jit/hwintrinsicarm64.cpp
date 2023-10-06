@@ -1956,27 +1956,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
             info.compNeedsConsecutiveRegisters = true;
+            assert(op1->TypeGet() == TYP_STRUCT);
 
-            if (op1->TypeGet() == TYP_STRUCT)
+            info.compNeedsConsecutiveRegisters = true;
+            unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(argClass);
+
+            if (!op1->OperIs(GT_LCL_VAR))
             {
-                info.compNeedsConsecutiveRegisters = true;
-                unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(argClass);
+                unsigned tmp = lvaGrabTemp(true DEBUGARG("LoadAndInsertScalar temp tree"));
 
-                if (!op1->OperIs(GT_LCL_VAR))
-                {
-                    unsigned tmp = lvaGrabTemp(true DEBUGARG("LoadAndInsertScalar temp tree"));
-
-                    impStoreTemp(tmp, op1, CHECK_SPILL_NONE);
-                    op1 = gtNewLclvNode(tmp, argType);
-                }
-
-                op1 = gtConvertParamOpToFieldList(op1, fieldCount, argClass);
-            }
-            else
-            {
-                assert(varTypeIsSIMD(op1->TypeGet()));
+                impStoreTemp(tmp, op1, CHECK_SPILL_NONE);
+                op1 = gtNewLclvNode(tmp, argType);
             }
 
+            op1     = gtConvertParamOpToFieldList(op1, fieldCount, argClass);
             op1     = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
             retNode = impStoreMultiRegValueToVar(op1, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;

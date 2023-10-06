@@ -1495,22 +1495,21 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             tgtPrefOp1 = !intrin.op1->isContained();
         }
 
-        if ((intrin.id == NI_AdvSimd_LoadAndInsertScalar) || (intrin.id == NI_AdvSimd_LoadAndInsertScalarx2) ||
-            (intrin.id == NI_AdvSimd_LoadAndInsertScalarx3) || (intrin.id == NI_AdvSimd_LoadAndInsertScalarx4) ||
+        if ((intrin.id == NI_AdvSimd_LoadAndInsertScalarx2) ||
+            (intrin.id == NI_AdvSimd_LoadAndInsertScalarx3) ||
+            (intrin.id == NI_AdvSimd_LoadAndInsertScalarx4) ||
             (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx2) ||
             (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx3) ||
             (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx4))
         {
+            assert(isRMW);
             assert(intrin.op1->OperIs(GT_FIELD_LIST));
             GenTreeFieldList* op1 = intrin.op1->AsFieldList();
             assert(compiler->info.compNeedsConsecutiveRegisters);
 
             for (GenTreeFieldList::Use& use : op1->Uses())
             {
-                RefPosition*        restoreRefPos = nullptr;
-                RefPositionIterator prevRefPos    = refPositions.backPosition();
-
-                BuildDelayFreeUses(use.GetNode(), intrinsicTree);
+                BuildDelayFreeUses(use.GetNode(), intrinsicTree);                
                 srcCount++;
             }
         }

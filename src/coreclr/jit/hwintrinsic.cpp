@@ -1174,10 +1174,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
 #ifdef TARGET_ARM64
     if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar) ||
-        (intrinsic == NI_AdvSimd_LoadAndInsertScalar) || (intrinsic == NI_AdvSimd_LoadAndInsertScalarx2) ||
-        (intrinsic == NI_AdvSimd_LoadAndInsertScalarx3) || (intrinsic == NI_AdvSimd_LoadAndInsertScalarx4) ||
-        (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalarx2) ||
-        (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalarx3) || (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalarx4))
+        ((intrinsic >= NI_AdvSimd_LoadAndInsertScalar) && (intrinsic == NI_AdvSimd_LoadAndInsertScalarx4)) ||
+        ((intrinsic >= NI_AdvSimd_Arm64_LoadAndInsertScalar) && (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalarx4)))
     {
         assert(sig->numArgs == 3);
         immOp = impStackTop(1).val;
