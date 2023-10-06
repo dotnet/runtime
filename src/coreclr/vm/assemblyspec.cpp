@@ -692,48 +692,50 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
     }
     CONTRACTL_END;
 
-    return (AssemblyBinding *) INVALIDENTRY;
+    GCX_COOP();
 
-    //UPTR key = (UPTR)pSpec->Hash();
+    UPTR key = (UPTR)pSpec->Hash();
 
-    //AssemblyBinder *pBinderForLookup = NULL;
-    //bool fGetBindingContextFromParent = true;
+    ASSEMBLYBINDERREF pBinderForLookup = NULL;
+    bool fGetBindingContextFromParent = true;
 
-    //// Check if the AssemblySpec already has specified its binding context. This will be set for assemblies that are
-    //// attempted to be explicitly bound using AssemblyLoadContext LoadFrom* methods.
-    //pBinderForLookup = pSpec->GetBinder();
+    // Check if the AssemblySpec already has specified its binding context. This will be set for assemblies that are
+    // attempted to be explicitly bound using AssemblyLoadContext LoadFrom* methods.
+    OBJECTHANDLE pBinderHandle = pSpec->GetBinder();
+    if (pBinderHandle != NULL)
+        pBinderForLookup = ObjectFromHandle(pSpec->GetBinder());
 
-    //if (pBinderForLookup != NULL)
-    //{
-    //    // We are working with the actual binding context in which the assembly was expected to be loaded.
-    //    // Thus, we don't need to get it from the parent assembly.
-    //    fGetBindingContextFromParent = false;
-    //}
+    if (pBinderForLookup != NULL)
+    {
+        // We are working with the actual binding context in which the assembly was expected to be loaded.
+        // Thus, we don't need to get it from the parent assembly.
+        fGetBindingContextFromParent = false;
+    }
 
-    //if (fGetBindingContextFromParent)
-    //{
-    //    pBinderForLookup = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
-    //    pSpec->SetBinder(pBinderForLookup);
-    //}
+    if (fGetBindingContextFromParent)
+    {
+        pBinderForLookup = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
+        pSpec->SetBinder(GetAppDomain()->CreateHandle(pBinderForLookup));
+    }
 
-    //if (pBinderForLookup)
-    //{
-    //    key = key ^ (UPTR)pBinderForLookup;
-    //}
+    if (pBinderForLookup != NULL)
+    {
+        key = key ^ (UPTR)(pBinderForLookup->GetHeader()->GetBits() | MASK_HASHCODE);
+    }
 
-    //AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(key, pSpec);
+    AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(key, pSpec);
 
-    //// Reset the binding context if one was originally never present in the AssemblySpec and we didnt find any entry
-    //// in the cache.
-    //if (fGetBindingContextFromParent)
-    //{
-    //    if (pEntry == (AssemblyBinding *) INVALIDENTRY)
-    //    {
-    //        pSpec->SetBinder(NULL);
-    //    }
-    //}
+    // Reset the binding context if one was originally never present in the AssemblySpec and we didnt find any entry
+    // in the cache.
+    if (fGetBindingContextFromParent)
+    {
+        if (pEntry == (AssemblyBinding *) INVALIDENTRY)
+        {
+            pSpec->SetBinder(NULL);
+        }
+    }
 
-    //return pEntry;
+    return pEntry;
 }
 
 BOOL AssemblySpecBindingCache::Contains(AssemblySpec *pSpec)
@@ -925,64 +927,68 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
     }
     CONTRACT_END;
 
-    //UPTR key = (UPTR)pSpec->Hash();
+    UPTR key = (UPTR)pSpec->Hash();
 
-    //AssemblyBinder* pBinderContextForLookup = pAssembly->GetPEAssembly()->GetAssemblyBinder();
-    //key = key ^ (UPTR)pBinderContextForLookup;
+    {
+        GCX_COOP();
 
-    //if (!pSpec->GetBinder())
-    //{
-    //    pSpec->SetBinder(pBinderContextForLookup);
-    //}
+        ASSEMBLYBINDERREF pBinderContextForLookup = pAssembly->GetPEAssembly()->GetAssemblyBinder();
 
-    //AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
+        key = key ^ (UPTR)(pBinderContextForLookup->GetHeader()->GetBits() | MASK_HASHCODE);
 
-    //if (entry == (AssemblyBinding *) INVALIDENTRY)
-    //{
-    //    AssemblyBindingHolder abHolder;
+        if (!pSpec->GetBinder())
+        {
+            pSpec->SetBinder(GetAppDomain()->CreateHandle(pBinderContextForLookup));
+        }
+    }
 
-    //    LoaderHeap* pHeap = m_pHeap;
-    //    if (pAssembly->IsCollectible())
-    //    {
-    //        pHeap = pAssembly->GetLoaderAllocator()->GetHighFrequencyHeap();
-    //    }
+    AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
 
-    //    entry = abHolder.CreateAssemblyBinding(pHeap);
-    //    entry->Init(pSpec,pAssembly->GetPEAssembly(),pAssembly,NULL,pHeap, abHolder.GetPamTracker());
+    if (entry == (AssemblyBinding *) INVALIDENTRY)
+    {
+        AssemblyBindingHolder abHolder;
 
-    //    m_map.InsertValue(key, entry);
+        LoaderHeap* pHeap = m_pHeap;
+        if (pAssembly->IsCollectible())
+        {
+            pHeap = pAssembly->GetLoaderAllocator()->GetHighFrequencyHeap();
+        }
 
-    //    abHolder.SuppressRelease();
+        entry = abHolder.CreateAssemblyBinding(pHeap);
+        entry->Init(pSpec,pAssembly->GetPEAssembly(),pAssembly,NULL,pHeap, abHolder.GetPamTracker());
 
-    //    STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreAssembly): Add cached entry (%p) with PEAssembly %p",entry,pAssembly->GetPEAssembly());
-    //    RETURN TRUE;
-    //}
-    //else
-    //{
-    //    if (!entry->IsError())
-    //    {
-    //        if (entry->GetAssembly() != NULL)
-    //        {
-    //            // OK if this is a duplicate
-    //            if (entry->GetAssembly() == pAssembly)
-    //                RETURN TRUE;
-    //        }
-    //        else
-    //        {
-    //            // OK if we have a matching PEAssembly
-    //            if (entry->GetFile() != NULL
-    //                && pAssembly->GetPEAssembly()->Equals(entry->GetFile()))
-    //            {
-    //                entry->SetAssembly(pAssembly);
-    //                RETURN TRUE;
-    //            }
-    //        }
-    //    }
+        m_map.InsertValue(key, entry);
 
-    //    // Invalid cache transition (see above note about state transitions)
-    //    RETURN FALSE;
-    //}
-    RETURN TRUE;
+        abHolder.SuppressRelease();
+
+        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreAssembly): Add cached entry (%p) with PEAssembly %p",entry,pAssembly->GetPEAssembly());
+        RETURN TRUE;
+    }
+    else
+    {
+        if (!entry->IsError())
+        {
+            if (entry->GetAssembly() != NULL)
+            {
+                // OK if this is a duplicate
+                if (entry->GetAssembly() == pAssembly)
+                    RETURN TRUE;
+            }
+            else
+            {
+                // OK if we have a matching PEAssembly
+                if (entry->GetFile() != NULL
+                    && pAssembly->GetPEAssembly()->Equals(entry->GetFile()))
+                {
+                    entry->SetAssembly(pAssembly);
+                    RETURN TRUE;
+                }
+            }
+        }
+
+        // Invalid cache transition (see above note about state transitions)
+        RETURN FALSE;
+    }
 }
 
 // Note that this routine may be called outside a lock, so may be racing with another thread.
@@ -1002,68 +1008,79 @@ BOOL AssemblySpecBindingCache::StorePEAssembly(AssemblySpec *pSpec, PEAssembly *
     }
     CONTRACT_END;
 
-    //UPTR key = (UPTR)pSpec->Hash();
+    GCX_COOP();
 
-    //AssemblyBinder* pBinderContextForLookup = pPEAssembly->GetAssemblyBinder();
-    //key = key ^ (UPTR)pBinderContextForLookup;
+    UPTR key = (UPTR)pSpec->Hash();
 
-    //if (!pSpec->GetBinder())
-    //{
-    //    pSpec->SetBinder(pBinderContextForLookup);
-    //}
+    ASSEMBLYBINDERREF pBinderContextForLookup = pPEAssembly->GetAssemblyBinder();
 
-    //AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
+    if (pBinderContextForLookup != NULL)
+    {
+        key = key ^ (UPTR)(pBinderContextForLookup->GetHeader()->GetBits() | MASK_HASHCODE);
+    }
 
-    //if (entry == (AssemblyBinding *) INVALIDENTRY)
-    //{
-    //    AssemblyBindingHolder abHolder;
+    if (!pSpec->GetBinder())
+    {
+        pSpec->SetBinder(GetAppDomain()->CreateHandle(pBinderContextForLookup));
+    }
 
-    //    LoaderHeap* pHeap = m_pHeap;
+    AssemblyBinding *entry = (AssemblyBinding *) m_map.LookupValue(key, pSpec);
 
-    //    if (pBinderContextForLookup != NULL)
-    //    {
-    //        LoaderAllocator* pLoaderAllocator = pBinderContextForLookup->GetLoaderAllocator();
+    if (entry == (AssemblyBinding *) INVALIDENTRY)
+    {
+        AssemblyBindingHolder abHolder;
 
-    //        // Assemblies loaded with AssemblyLoadContext need to use a different heap if
-    //        // marked as collectible
-    //        if (pLoaderAllocator)
-    //        {
-    //            pHeap = pLoaderAllocator->GetHighFrequencyHeap();
-    //        }
-    //    }
+        LoaderHeap* pHeap = m_pHeap;
 
-    //    entry = abHolder.CreateAssemblyBinding(pHeap);
+        if (pBinderContextForLookup != NULL)
+        {
+            GCPROTECT_BEGIN(pBinderContextForLookup);
 
-    //    entry->Init(pSpec, pPEAssembly,NULL,NULL,pHeap, abHolder.GetPamTracker());
+            MethodDescCallSite getLoaderAllocator(METHOD__BINDER_ASSEMBLYBINDER__GETLOADERALLOCATOR, &pBinderContextForLookup);
+            ARG_SLOT arg = ObjToArgSlot(pBinderContextForLookup);
+            LOADERALLOCATORREF pLoaderAllocator = (LOADERALLOCATORREF)getLoaderAllocator.Call_RetOBJECTREF(&arg);
+            
+            // Assemblies loaded with AssemblyLoadContext need to use a different heap if
+            // marked as collectible
+            if (pLoaderAllocator != NULL)
+            {
+                pHeap = pLoaderAllocator->GetNativeLoaderAllocator()->GetHighFrequencyHeap();
+            }
 
-    //    m_map.InsertValue(key, entry);
-    //    abHolder.SuppressRelease();
+            GCPROTECT_END();
+        }
 
-    //    STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly: Add cached entry (%p) with PEAssembly %p\n", entry, pPEAssembly);
+        entry = abHolder.CreateAssemblyBinding(pHeap);
 
-    //    RETURN TRUE;
-    //}
-    //else
-    //{
-    //    if (!entry->IsError())
-    //    {
-    //        // OK if this is a duplicate
-    //        if (entry->GetFile() != NULL
-    //            && pPEAssembly->Equals(entry->GetFile()))
-    //            RETURN TRUE;
-    //    }
-    //    else
-    //    if (entry->IsPostBindError())
-    //    {
-    //        // Another thread has reported what's going to happen later.
-    //        entry->ThrowIfError();
+        entry->Init(pSpec, pPEAssembly,NULL,NULL,pHeap, abHolder.GetPamTracker());
 
-    //    }
-    //    STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"Incompatible cached entry found (%p) when adding PEAssembly %p\n", entry, pPEAssembly);
-    //    // Invalid cache transition (see above note about state transitions)
-    //    RETURN FALSE;
-    //}
-    RETURN TRUE;
+        m_map.InsertValue(key, entry);
+        abHolder.SuppressRelease();
+
+        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly: Add cached entry (%p) with PEAssembly %p\n", entry, pPEAssembly);
+
+        RETURN TRUE;
+    }
+    else
+    {
+        if (!entry->IsError())
+        {
+            // OK if this is a duplicate
+            if (entry->GetFile() != NULL
+                && pPEAssembly->Equals(entry->GetFile()))
+                RETURN TRUE;
+        }
+        else
+        if (entry->IsPostBindError())
+        {
+            // Another thread has reported what's going to happen later.
+            entry->ThrowIfError();
+
+        }
+        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"Incompatible cached entry found (%p) when adding PEAssembly %p\n", entry, pPEAssembly);
+        // Invalid cache transition (see above note about state transitions)
+        RETURN FALSE;
+    }
 }
 
 BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pEx)
@@ -1079,58 +1096,60 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
     }
     CONTRACT_END;
 
-    //UPTR key = (UPTR)pSpec->Hash();
+    UPTR key = (UPTR)pSpec->Hash();
 
-    //AssemblyBinding *entry = LookupInternal(pSpec, TRUE);
-    //if (entry == (AssemblyBinding *) INVALIDENTRY)
-    //{
-    //    // TODO: Merge this with the failure lookup in the binder
-    //    //
-    //    // Since no entry was found for this assembly in any binding context, save the failure
-    //    // in the DefaultBinder context
-    //    AssemblyBinder* pBinderToSaveException = NULL;
-    //    pBinderToSaveException = pSpec->GetBinder();
-    //    if (pBinderToSaveException == NULL)
-    //    {
-    //        pBinderToSaveException = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
-    //        key = key ^ (UPTR)pBinderToSaveException;
-    //    }
-    //}
+    AssemblyBinding *entry = LookupInternal(pSpec, TRUE);
+    if (entry == (AssemblyBinding *) INVALIDENTRY)
+    {
+        // TODO: Merge this with the failure lookup in the binder
+        //
+        // Since no entry was found for this assembly in any binding context, save the failure
+        // in the DefaultBinder context
+        GCX_COOP();
 
-    //if (entry == (AssemblyBinding *) INVALIDENTRY) {
-    //    AssemblyBindingHolder abHolder;
-    //    entry = abHolder.CreateAssemblyBinding(m_pHeap);
+        ASSEMBLYBINDERREF pBinderToSaveException = NULL;
+        pBinderToSaveException = ObjectFromHandle(pSpec->GetBinder());
+        if (pBinderToSaveException == NULL)
+        {
+            pBinderToSaveException = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
 
-    //    entry->Init(pSpec,NULL,NULL,pEx,m_pHeap, abHolder.GetPamTracker());
+            key = key ^ (UPTR)(pBinderToSaveException->GetHeader()->GetBits() | MASK_HASHCODE);
+        }
+    }
 
-    //    m_map.InsertValue(key, entry);
-    //    abHolder.SuppressRelease();
+    if (entry == (AssemblyBinding *) INVALIDENTRY) {
+        AssemblyBindingHolder abHolder;
+        entry = abHolder.CreateAssemblyBinding(m_pHeap);
 
-    //    STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreException): Add cached entry (%p) with exception %p",entry,pEx);
-    //    RETURN TRUE;
-    //}
-    //else
-    //{
-    //    // OK if this is a duplicate
-    //    if (entry->IsError())
-    //    {
-    //        if (entry->GetHR() == pEx->GetHR())
-    //            RETURN TRUE;
-    //    }
-    //    else
-    //    {
-    //        // OK to transition to error if we don't have an Assembly yet
-    //        if (entry->GetAssembly() == NULL)
-    //        {
-    //            entry->InitException(pEx);
-    //            RETURN TRUE;
-    //        }
-    //    }
+        entry->Init(pSpec,NULL,NULL,pEx,m_pHeap, abHolder.GetPamTracker());
 
-    //    // Invalid cache transition (see above note about state transitions)
-    //    RETURN FALSE;
-    //}
-    RETURN TRUE;
+        m_map.InsertValue(key, entry);
+        abHolder.SuppressRelease();
+
+        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreException): Add cached entry (%p) with exception %p",entry,pEx);
+        RETURN TRUE;
+    }
+    else
+    {
+        // OK if this is a duplicate
+        if (entry->IsError())
+        {
+            if (entry->GetHR() == pEx->GetHR())
+                RETURN TRUE;
+        }
+        else
+        {
+            // OK to transition to error if we don't have an Assembly yet
+            if (entry->GetAssembly() == NULL)
+            {
+                entry->InitException(pEx);
+                RETURN TRUE;
+            }
+        }
+
+        // Invalid cache transition (see above note about state transitions)
+        RETURN FALSE;
+    }
 }
 
 BOOL AssemblySpecBindingCache::RemoveAssembly(DomainAssembly* pAssembly)

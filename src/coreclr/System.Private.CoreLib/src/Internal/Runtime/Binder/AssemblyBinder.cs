@@ -39,6 +39,7 @@ namespace Internal.Runtime.Binder
         protected AssemblyBinder()
         {
             m_isDefault = IsDefault;
+            _ = GetHashCode(); // Calculate hashcode for AssemblySpecBindingCache usage
         }
 
         public unsafe int BindAssemblyByName(void* pAssemblyNameData, out Assembly? assembly)

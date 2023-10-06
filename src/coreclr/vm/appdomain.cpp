@@ -1181,6 +1181,11 @@ void SystemDomain::Init()
             m_pSystemAssembly->GetDomainAssembly()->RegisterWithHostAssembly();
 
             GCPROTECT_END();
+
+            // Add CoreLib to AssemblyBindingCache
+            AssemblySpec spec;
+            spec.InitializeSpec(m_pSystemPEAssembly);
+            GetAppDomain()->AddAssemblyToCache(&spec, m_pSystemAssembly->GetDomainAssembly());
         }
     }
 
@@ -2850,16 +2855,20 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         result->EnsureLoadLevel(targetLevel);
 
     // Cache result in all cases, since found pPEAssembly could be from a different AssemblyRef than pIdentity
-    //if (pIdentity == NULL)
-    //{
-    //    AssemblySpec spec;
-    //    spec.InitializeSpec(result->GetPEAssembly());
-    //    GetAppDomain()->AddAssemblyToCache(&spec, result);
-    //}
-    //else
-    //{
-    //    GetAppDomain()->AddAssemblyToCache(pIdentity, result);
-    //}
+    if (!result->IsSystem())
+    {
+        // CoreLib bootstrap: this method is called before managed binder available
+        if (pIdentity == NULL)
+        {
+            AssemblySpec spec;
+            spec.InitializeSpec(result->GetPEAssembly());
+            GetAppDomain()->AddAssemblyToCache(&spec, result);
+        }
+        else
+        {
+            GetAppDomain()->AddAssemblyToCache(pIdentity, result);
+        }
+    }
 
     RETURN result;
 } // AppDomain::LoadDomainAssembly
