@@ -1447,7 +1447,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
     bool tgtPrefOp1 = false;
-
+    bool delayFreeMultiple = false;
     if (intrin.op1 != nullptr)
     {
         bool simdRegToSimdRegMove = false;
@@ -1481,6 +1481,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 simdRegToSimdRegMove = true;
                 break;
             }
+            case NI_AdvSimd_LoadAndInsertScalarx2:
+            case NI_AdvSimd_LoadAndInsertScalarx3:
+            case NI_AdvSimd_LoadAndInsertScalarx4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
+            {
+                delayFreeMultiple = true;
+                break;
+            }
 
             default:
             {
@@ -1495,12 +1505,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             tgtPrefOp1 = !intrin.op1->isContained();
         }
 
-        if ((intrin.id == NI_AdvSimd_LoadAndInsertScalarx2) ||
-            (intrin.id == NI_AdvSimd_LoadAndInsertScalarx3) ||
-            (intrin.id == NI_AdvSimd_LoadAndInsertScalarx4) ||
-            (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx2) ||
-            (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx3) ||
-            (intrin.id == NI_AdvSimd_Arm64_LoadAndInsertScalarx4))
+        if (delayFreeMultiple)
         {
             assert(isRMW);
             assert(intrin.op1->OperIs(GT_FIELD_LIST));
