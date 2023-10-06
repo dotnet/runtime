@@ -120,7 +120,7 @@ async function flush_node_streams() {
 function abort_promises(reason: any) {
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
-    loaderHelpers.wasmDownloadPromise.promise_control.reject(reason);
+    loaderHelpers.wasmCompilePromise.promise_control.reject(reason);
     loaderHelpers.runtimeModuleLoaded.promise_control.reject(reason);
     loaderHelpers.memorySnapshotSkippedOrDone.promise_control.reject(reason);
     if (runtimeHelpers.dotnetReady) {
@@ -174,6 +174,8 @@ function logOnExit(exit_code: number, reason: any) {
                     // tell xharness WasmTestMessagesProcessor we are done.
                     // note this sends last few bytes into the same WS
                     mono_log_info_no_prefix("WASM EXIT " + exit_code);
+                    consoleWebSocket.onclose = null;
+                    consoleWebSocket.close(1000, "exit_code:" + exit_code + ": " + reason);
                 }
                 else {
                     globalThis.setTimeout(stop_when_ws_buffer_empty, 100);

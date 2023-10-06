@@ -524,7 +524,6 @@ namespace DebuggerTests
             public int idx0;
             public int idx1;
 
-            // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
             public string this[char key] => "res_" + key;
             public string this[bool key] => key.ToString();
             public bool this[string key] => key.Length > 3;
@@ -532,12 +531,16 @@ namespace DebuggerTests
             public int this[float key] => (int)key;
             public int this[decimal key] => (int)key;
             public int this[Indexer indexer] => indexer.index;
+            public char this[char[] arr] => arr.Length == 0 ? '0' : arr[0];
+
+            public double this[int key1, double key2] => key1 + key2;
+            public string this[char key1, string key2, string key3] => $"{key1}-{key2}-{key3}";
 
             public void run()
             {
                 numList = new List<int> { 1, 2 };
                 textList = new List<string> { "1", "2" };
-                numArray = new int[] { 1, 2 };
+                numArray = new int[] { 1, 2, 0 };
                 textArray = new string[] { "1", "2" };
                 numArrayOfArrays = new int[][] { numArray, numArray };
                 numListOfLists = new List<List<int>> { numList, numList };
@@ -565,6 +568,7 @@ namespace DebuggerTests
             double aDouble = 2.34;
             decimal aDecimal = 3.34m;
             Indexer objIdx = new(index: 123);
+            char[] arr = new char[] { 't', 'e', 's', 't' };
         }
     }
 
@@ -1929,6 +1933,29 @@ namespace DebuggerTests
         }
     }
 
+    public static class FastCheck
+    {
+        public class InstanceClass
+        {
+            public int number = 123;
+        }
+
+        public class MemberClass
+        {
+            public int Method(InstanceClass ic) => ic.number;
+            public int Method(int num) => num;
+        }
+
+        public static void run()
+        {
+            int number = -123;
+            InstanceClass ic = new();
+            MemberClass mc = new();
+            EvaluateStaticFieldsInInstanceClass instance = new();
+            PrimitiveTypeMethods.TestClass instance2 = new();
+        }
+    }
+
     public static class DefaultParamMethods
     {
         public class TestClass
@@ -1969,6 +1996,8 @@ namespace DebuggerTests
 
             public bool GetNull(object param = null) => param == null ? true : false;
             public int GetDefaultAndRequiredParam(int requiredParam, int optionalParam = 3) => requiredParam + optionalParam;
+            public float GetDefaultAndRequiredParam(long requiredParam, float optionalParam = 3.3f) => requiredParam + optionalParam;
+            public double GetDefaultAndRequiredParam(double requiredParam, short optionalParam = -32768) => requiredParam + optionalParam;
             public string GetDefaultAndRequiredParamMixedTypes(string requiredParam, int optionalParamFirst = -1, bool optionalParamSecond = false) => $"{requiredParam}; {optionalParamFirst}; {optionalParamSecond}";
         }
 

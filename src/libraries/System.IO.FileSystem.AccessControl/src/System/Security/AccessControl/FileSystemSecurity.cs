@@ -121,7 +121,7 @@ namespace System.Security.AccessControl
             try
             {
                 AccessControlSections persistRules = GetAccessControlSectionsFromChanges();
-                base.Persist(fullPath, persistRules);
+                base.Persist(PathInternal.EnsureExtendedPrefixIfNeeded(fullPath), persistRules);
                 OwnerModified = GroupModified = AuditRulesModified = AccessRulesModified = false;
             }
             finally

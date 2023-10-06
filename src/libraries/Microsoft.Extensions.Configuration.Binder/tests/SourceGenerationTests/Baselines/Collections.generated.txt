@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClassWithCustomCollections = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CustomDictionary", "CustomList", "IReadOnlyList", "IReadOnlyDictionary" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClassWithCustomCollections = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "CustomDictionary", "CustomList", "ICustomDictionary", "ICustomCollection", "IReadOnlyList", "UnsupportedIReadOnlyDictionaryUnsupported", "IReadOnlyDictionary" });
 
         public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
         {
@@ -85,28 +85,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref List<int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            foreach (IConfigurationSection section in configuration.GetChildren())
-            {
-                if (section.Value is string value)
-                {
-                    instance.Add(ParseInt(value, () => section.Path));
-                }
-            }
-        }
-
-        public static void BindCore(IConfiguration configuration, ref ICollection<int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            foreach (IConfigurationSection section in configuration.GetChildren())
-            {
-                if (section.Value is string value)
-                {
-                    instance.Add(ParseInt(value, () => section.Path));
-                }
-            }
-        }
-
         public static void BindCore(IConfiguration configuration, ref IReadOnlyList<int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             if (instance is not ICollection<int> temp)
@@ -119,28 +97,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (section.Value is string value)
                 {
                     temp.Add(ParseInt(value, () => section.Path));
-                }
-            }
-        }
-
-        public static void BindCore(IConfiguration configuration, ref Dictionary<string, int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            foreach (IConfigurationSection section in configuration.GetChildren())
-            {
-                if (section.Value is string value)
-                {
-                    instance[section.Key] = ParseInt(value, () => section.Path);
-                }
-            }
-        }
-
-        public static void BindCore(IConfiguration configuration, ref IDictionary<string, int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
-        {
-            foreach (IConfigurationSection section in configuration.GetChildren())
-            {
-                if (section.Value is string value)
-                {
-                    instance[section.Key] = ParseInt(value, () => section.Path);
                 }
             }
         }
@@ -184,7 +140,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (AsConfigWithChildren(configuration.GetSection("IReadOnlyList")) is IConfigurationSection section7)
             {
                 IReadOnlyList<int>? temp9 = instance.IReadOnlyList;
-                temp9 = temp9 is null ? new List<int>() : new List<int>(temp9);
+                temp9 = temp9 is null ? (IReadOnlyList<int>)new List<int>() : (IReadOnlyList<int>)new List<int>(temp9);
                 BindCore(section7, ref temp9, defaultValueIfNotFound: false, binderOptions);
                 instance.IReadOnlyList = temp9;
             }
@@ -192,7 +148,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (AsConfigWithChildren(configuration.GetSection("IReadOnlyDictionary")) is IConfigurationSection section10)
             {
                 IReadOnlyDictionary<string, int>? temp12 = instance.IReadOnlyDictionary;
-                temp12 = temp12 is null ? new Dictionary<string, int>() : temp12.ToDictionary(pair => pair.Key, pair => pair.Value);
+                temp12 = temp12 is null ? (IReadOnlyDictionary<string, int>)new Dictionary<string, int>() : (IReadOnlyDictionary<string, int>)temp12.ToDictionary(pair => pair.Key, pair => pair.Value);
                 BindCore(section10, ref temp12, defaultValueIfNotFound: false, binderOptions);
                 instance.IReadOnlyDictionary = temp12;
             }

@@ -1744,6 +1744,10 @@ void Compiler::compShutdown()
 #endif // DEBUG
     jitprintf("   NYI:                 %u\n", fatal_NYI);
 #endif // MEASURE_FATAL
+
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+    DumpOnShutdown::DumpAll();
+#endif
 }
 
 /*****************************************************************************
@@ -1786,7 +1790,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compClassHnd   = compHnd->getMethodClass(methodHnd);
 
 #ifdef DEBUG
-    bRangeAllowStress = false;
+    compAllowStress = true;
 
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
@@ -1826,7 +1830,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     static ConfigMethodRange fJitStressRange;
     fJitStressRange.EnsureInit(JitConfig.JitStressRange());
     assert(!fJitStressRange.Error());
-    bRangeAllowStress = fJitStressRange.Contains(info.compMethodHash());
+    compAllowStress =
+        fJitStressRange.Contains(info.compMethodHash()) &&
+        (JitConfig.JitStressOnly().isEmpty() ||
+         JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args));
+
 #endif // DEBUG
 
     eeInfoInitialized = false;
@@ -3518,13 +3526,7 @@ unsigned Compiler::compStressAreaHash(compStressArea area)
 //
 bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weight)
 {
-    if (!bRangeAllowStress)
-    {
-        return false;
-    }
-
-    if (!JitConfig.JitStressOnly().isEmpty() &&
-        !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+    if (!compAllowStress)
     {
         return false;
     }
@@ -4319,23 +4321,14 @@ const char* Compiler::compGetStressMessage() const
     if ((JitConfig.JitStressModeNames() != nullptr) || (getJitStressLevel() > 0))
     {
         // Is the method being jitted excluded from stress via range?
-        if (bRangeAllowStress)
+        if (compAllowStress)
         {
-            // Or is it excluded via name?
-            if (!JitConfig.JitStressOnly().isEmpty() ||
-                !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-            {
-                // Not excluded -- stress can happen
-                stressMessage = " JitStress";
-            }
-            else
-            {
-                stressMessage = " NoJitStress(Only)";
-            }
+            // Not excluded -- stress can happen
+            stressMessage = " JitStress";
         }
         else
         {
-            stressMessage = " NoJitStress(Range)";
+            stressMessage = " NoJitStress";
         }
     }
 #endif // DEBUG
@@ -5282,7 +5275,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         }
 
         // If there is an unconditional jump (which is not part of callf/always pair)
-        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
@@ -5298,16 +5291,16 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
+        if (!block->IsLast() && block->Next()->isLoopAlign())
         {
             // Loop alignment is disabled for cold blocks
             assert((block->bbFlags & BBF_COLD) == 0);
-            BasicBlock* const loopTop              = block->bbNext;
+            BasicBlock* const loopTop              = block->Next();
             bool              isSpecialCallFinally = block->isBBCallAlwaysPairTail();
             bool              unmarkedLoopAlign    = false;
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
-            if (block->bbJumpKind == BBJ_CALLFINALLY)
+            if (block->KindIs(BBJ_CALLFINALLY))
             {
                 // It must be a retless BBJ_CALLFINALLY if we get here.
                 assert(!block->isBBCallAlwaysPair());
@@ -6386,9 +6379,9 @@ void Compiler::compCompileFinish()
                                            // Small methods cannot meaningfully have a big number of locals
                                            // or arguments. We always track arguments at the start of
                                            // the prolog which requires memory
-        (info.compLocalsCount <= 32) && (!opts.MinOpts()) && // We may have too many local variables, etc
-        (getJitStressLevel() == 0) &&                        // We need extra memory for stress
-        !opts.optRepeat &&                                   // We need extra memory to repeat opts
+        (info.compLocalsCount <= 32) && !opts.MinOpts() && // We may have too many local variables, etc
+        (getJitStressLevel() == 0) &&                      // We need extra memory for stress
+        !opts.optRepeat &&                                 // We need extra memory to repeat opts
         !compArenaAllocator->bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
                                                       // DirectAlloc
         // Factor of 2x is because data-structures are bigger under DEBUG
@@ -9621,7 +9614,7 @@ BasicBlock* dFindBlock(unsigned bbNum)
     BasicBlock* block = nullptr;
 
     dbBlock = nullptr;
-    for (block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (block = comp->fgFirstBB; block != nullptr; block = block->Next())
     {
         if (block->bbNum == bbNum)
         {

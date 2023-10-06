@@ -202,7 +202,7 @@ namespace System.Reflection
             GetPEKind(_impl, out peKind, out machine);
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override
         Type GetType(string className, bool throwOnError, bool ignoreCase)
         {

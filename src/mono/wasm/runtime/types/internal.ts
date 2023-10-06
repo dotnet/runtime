@@ -126,7 +126,7 @@ export type LoaderHelpers = {
 
     afterConfigLoaded: PromiseAndController<MonoConfig>,
     allDownloadsQueued: PromiseAndController<void>,
-    wasmDownloadPromise: PromiseAndController<AssetEntryInternal>,
+    wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
     memorySnapshotSkippedOrDone: PromiseAndController<void>,
 
@@ -202,6 +202,9 @@ export type RuntimeHelpers = {
     beforeOnRuntimeInitialized: PromiseAndController<void>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
+
+    featureWasmEh: boolean,
+    featureWasmSimd: boolean,
 
     //core
     stringify_as_error_with_stack?: (error: any) => string,
@@ -301,6 +304,7 @@ export type EmscriptenReplacements = {
     pthreadReplacements: PThreadReplacements | undefined | null
     scriptDirectory: string;
     noExitRuntime?: boolean;
+    ENVIRONMENT_IS_WORKER: boolean;
 }
 export interface ExitStatusError {
     new(status: number): any;
@@ -451,6 +455,7 @@ export declare interface EmscriptenModuleInternal {
     locateFile?: (path: string, prefix?: string) => string;
     mainScriptUrlOrBlob?: string;
     ENVIRONMENT_IS_PTHREAD?: boolean;
+    FS: any;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
     asm: any;
