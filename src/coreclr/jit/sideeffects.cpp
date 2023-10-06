@@ -430,7 +430,7 @@ bool AliasSet::InterferesWith(const NodeInfo& other) const
 // Returns:
 //    True if so.
 //
-bool AliasSet::WritesLocal(unsigned lclNum)
+bool AliasSet::WritesLocal(unsigned lclNum) const
 {
     return m_lclVarWrites.Contains(lclNum);
 }
