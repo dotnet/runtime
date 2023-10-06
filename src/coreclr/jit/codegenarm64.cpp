@@ -3822,8 +3822,19 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 break;
             }
             case GT_XCHG:
-                GetEmitter()->emitIns_R_R_R(INS_swpal, dataSize, dataReg, targetReg, addrReg);
+            {
+                instruction ins = INS_swpal;
+                if (dataSize == EA_1BYTE)
+                {
+                    ins = INS_swpalb;
+                }
+                else if (dataSize == EA_2BYTE)
+                {
+                    ins = INS_swpalh;
+                }
+                GetEmitter()->emitIns_R_R_R(ins, dataSize, dataReg, targetReg, addrReg);
                 break;
+            }
             case GT_XADD:
                 GetEmitter()->emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, (targetReg == REG_NA) ? REG_ZR : targetReg,
                                             addrReg);
@@ -3882,8 +3893,21 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         BasicBlock* labelRetry = genCreateTempLabel();
         genDefineTempLabel(labelRetry);
 
+        instruction insLd = INS_ldaxr;
+        instruction insSt = INS_stlxr;
+        if (dataSize == EA_1BYTE)
+        {
+            insLd = INS_ldaxrb;
+            insSt = INS_stlxrb;
+        }
+        else if (dataSize == EA_2BYTE)
+        {
+            insLd = INS_ldaxrh;
+            insSt = INS_stlxrh;
+        }
+
         // The following instruction includes a acquire half barrier
-        GetEmitter()->emitIns_R_R(INS_ldaxr, dataSize, loadReg, addrReg);
+        GetEmitter()->emitIns_R_R(insLd, dataSize, loadReg, addrReg);
 
         switch (treeNode->OperGet())
         {
@@ -3909,7 +3933,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         }
 
         // The following instruction includes a release half barrier
-        GetEmitter()->emitIns_R_R_R(INS_stlxr, dataSize, exResultReg, storeDataReg, addrReg);
+        GetEmitter()->emitIns_R_R_R(insSt, dataSize, exResultReg, storeDataReg, addrReg);
 
         GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
 
@@ -3958,7 +3982,16 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         noway_assert((addrReg != targetReg) || (targetReg == comparandReg));
         noway_assert((dataReg != targetReg) || (targetReg == comparandReg));
 
-        GetEmitter()->emitIns_R_R_R(INS_casal, dataSize, targetReg, dataReg, addrReg);
+        instruction ins = INS_casal;
+        if (dataSize == EA_1BYTE)
+        {
+            ins = INS_casalb;
+        }
+        else if (dataSize == EA_2BYTE)
+        {
+            ins = INS_casalh;
+        }
+        GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, dataReg, addrReg);
     }
     else
     {
@@ -3992,9 +4025,6 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
         gcInfo.gcMarkRegPtrVal(addrReg, addr->TypeGet());
 
-        // TODO-ARM64-CQ Use ARMv8.1 atomics if available
-        // https://github.com/dotnet/runtime/issues/8225
-
         // Emit code like this:
         //   retry:
         //     ldxr targetReg, [addrReg]
@@ -4009,8 +4039,21 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         BasicBlock* labelCompareFail = genCreateTempLabel();
         genDefineTempLabel(labelRetry);
 
+        instruction insLd = INS_ldaxr;
+        instruction insSt = INS_stlxr;
+        if (dataSize == EA_1BYTE)
+        {
+            insLd = INS_ldaxrb;
+            insSt = INS_stlxrb;
+        }
+        else if (dataSize == EA_2BYTE)
+        {
+            insLd = INS_ldaxrh;
+            insSt = INS_stlxrh;
+        }
+
         // The following instruction includes a acquire half barrier
-        GetEmitter()->emitIns_R_R(INS_ldaxr, emitTypeSize(treeNode), targetReg, addrReg);
+        GetEmitter()->emitIns_R_R(insLd, emitTypeSize(treeNode), targetReg, addrReg);
 
         if (comparand->isContainedIntOrIImmed())
         {
@@ -4032,7 +4075,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         }
 
         // The following instruction includes a release half barrier
-        GetEmitter()->emitIns_R_R_R(INS_stlxr, emitTypeSize(treeNode), exResultReg, dataReg, addrReg);
+        GetEmitter()->emitIns_R_R_R(insSt, emitTypeSize(treeNode), exResultReg, dataReg, addrReg);
 
         GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
 
