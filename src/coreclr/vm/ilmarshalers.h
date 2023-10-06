@@ -3138,39 +3138,33 @@ protected:
     void EmitClearNative(ILCodeStream* pslILEmit) override
     {
         WRAPPER_NO_CONTRACT;
-        ILCodeLabel* pNoManagedValueLabel = nullptr;
         if (IsFieldMarshal(m_dwMarshalFlags))
         {
-            pNoManagedValueLabel = pslILEmit->NewCodeLabel();
+            ILCodeLabel* pHasManagedValueLabel = pslILEmit->NewCodeLabel();
             pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
-            pslILEmit->EmitBRFALSE(pNoManagedValueLabel);
+            pslILEmit->EmitBRTRUE(pHasManagedValueLabel);
+            pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
+            EmitStoreManagedHomeAddr(pslILEmit);
+            pslILEmit->EmitLabel(pHasManagedValueLabel);
         }
 
         EmitCallMngdMarshalerMethod(pslILEmit, GetClearNativeMethod());
-
-        if (IsFieldMarshal(m_dwMarshalFlags))
-        {
-            pslILEmit->EmitLabel(pNoManagedValueLabel);
-        }
     }
 
     void EmitClearNativeContents(ILCodeStream* pslILEmit) override
     {
         WRAPPER_NO_CONTRACT;
-        ILCodeLabel* pNoManagedValueLabel = nullptr;
         if (IsFieldMarshal(m_dwMarshalFlags))
         {
-            pNoManagedValueLabel = pslILEmit->NewCodeLabel();
+            ILCodeLabel* pHasManagedValueLabel = pslILEmit->NewCodeLabel();
             pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
-            pslILEmit->EmitBRFALSE(pNoManagedValueLabel);
+            pslILEmit->EmitBRTRUE(pHasManagedValueLabel);
+            pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
+            EmitStoreManagedHomeAddr(pslILEmit);
+            pslILEmit->EmitLabel(pHasManagedValueLabel);
         }
 
         EmitCallMngdMarshalerMethod(pslILEmit, GetClearNativeContentsMethod());
-
-        if (IsFieldMarshal(m_dwMarshalFlags))
-        {
-            pslILEmit->EmitLabel(pNoManagedValueLabel);
-        }
     }
 
     bool NeedsClearCLR() override
