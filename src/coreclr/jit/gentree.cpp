@@ -25047,6 +25047,18 @@ GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fi
     return fieldList;
 }
 
+//------------------------------------------------------------------------
+// gtConvertParamOpToFieldList: Convert a operand that represents tuple of struct into
+//    field list, where each field represents a struct in the tuple.
+//
+// Arguments:
+//    op                  -- Operand to convert.
+//    fieldCount          -- Number of fields or rows present.
+//    clsHnd              -- Class handle of the tuple.
+//
+// Return Value:
+//    The GenTreeFieldList node.
+//
 GenTreeFieldList* Compiler::gtConvertParamOpToFieldList(GenTree* op, unsigned  fieldCount, CORINFO_CLASS_HANDLE clsHnd)
 {
     LclVarDsc*           opVarDsc    = lvaGetDesc(op->AsLclVar());
