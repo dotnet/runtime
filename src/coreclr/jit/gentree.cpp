@@ -25555,21 +25555,27 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadPairVector64:
         case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
         case NI_AdvSimd_LoadVector64x2:
+        case NI_AdvSimd_LoadAndReplicateToVector64x2:
             return compiler->typGetBlkLayout(16);
 
         case NI_AdvSimd_Arm64_LoadPairVector128:
         case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
         case NI_AdvSimd_Arm64_LoadVector128x2:
         case NI_AdvSimd_LoadVector64x4:
+        case NI_AdvSimd_LoadAndReplicateToVector64x4:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
             return compiler->typGetBlkLayout(32);
 
         case NI_AdvSimd_LoadVector64x3:
+        case NI_AdvSimd_LoadAndReplicateToVector64x3:
             return compiler->typGetBlkLayout(24);
 
         case NI_AdvSimd_Arm64_LoadVector128x3:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
             return compiler->typGetBlkLayout(48);
 
         case NI_AdvSimd_Arm64_LoadVector128x4:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
             return compiler->typGetBlkLayout(64);
 
 #endif // TARGET_ARM64

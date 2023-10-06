@@ -7907,6 +7907,9 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
 //    |  \--*  LCL_VAR   byref  V00
 //    \--*  CNS_INT   long  0x200000001
 //
+//   NOTE: Our memory model allows us to do this optimization, see Memory-model.md:
+//     * Adjacent non-volatile writes to the same location can be coalesced. (see Memory-model.md)
+//
 // Arguments:
 //    ind - the current STOREIND node
 //
@@ -7916,13 +7919,6 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 // unaligned accesses making this optimization questionable.
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if (!comp->opts.OptimizationEnabled())
-    {
-        return;
-    }
-
-    // For now, we require the current STOREIND to have LEA (previous store may not have it)
-    // So we can easily adjust the offset, consider making it more flexible in future.
-    if (!ind->Addr()->OperIs(GT_LEA))
     {
         return;
     }
@@ -8007,8 +8003,27 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             return;
         }
 
-        // Offset has to match the size of the type. We don't support the same or overlapping offsets.
+        // At this point we know that we have two consecutive STOREINDs with the same base address,
+        // index and scale, the only variable thing is the offset (constant)
+
+        // The same offset means that we're storing to the same location of the same width.
+        // Just remove the previous store then.
+        if (prevData.offset == currData.offset)
+        {
+            BlockRange().Remove(std::move(prevIndRange));
+            continue;
+        }
+
+        // Otherwise, the difference between two offsets has to match the size of the type.
+        // We don't support overlapping stores.
         if (abs(prevData.offset - currData.offset) != (int)genTypeSize(prevData.targetType))
+        {
+            return;
+        }
+
+        // For now, we require the current STOREIND to have LEA (previous store may not have it)
+        // So we can easily adjust the offset, consider making it more flexible in future.
+        if (!ind->Addr()->OperIs(GT_LEA))
         {
             return;
         }
