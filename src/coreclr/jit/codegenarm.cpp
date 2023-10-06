@@ -123,12 +123,12 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // we would have otherwise created retless calls.
     assert(block->isBBCallAlwaysPair());
 
-    assert(block->bbNext != NULL);
-    assert(block->bbNext->KindIs(BBJ_ALWAYS));
-    assert(block->bbNext->bbJumpDest != NULL);
-    assert(block->bbNext->bbJumpDest->bbFlags & BBF_FINALLY_TARGET);
+    assert(!block->IsLast());
+    assert(block->Next()->KindIs(BBJ_ALWAYS));
+    assert(block->Next()->bbJumpDest != NULL);
+    assert(block->Next()->bbJumpDest->bbFlags & BBF_FINALLY_TARGET);
 
-    bbFinallyRet = block->bbNext->bbJumpDest;
+    bbFinallyRet = block->Next()->bbJumpDest;
 
     // Load the address where the finally funclet should return into LR.
     // The funclet prolog/epilog will do "push {lr}" / "pop {pc}" to do the return.
@@ -143,7 +143,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // block is RETLESS.
     assert(!(block->bbFlags & BBF_RETLESS_CALL));
     assert(block->isBBCallAlwaysPair());
-    return block->bbNext;
+    return block->Next();
 }
 
 //------------------------------------------------------------------------
