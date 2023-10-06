@@ -8198,6 +8198,14 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 
 #ifdef TARGET_ARM64
 
+// Max distance that we will try to move an indirection backwards to become
+// adjacent to another indirection. As an empiric observation, increasing this
+// number to 32 for the smoke_tests collection resulted in 3684 -> 3796 cases
+// passing the distance check, but 82 out of these 112 extra cases were then
+// rejected due to interference. So 16 seems like a good number to balance the
+// throughput costs.
+const int LDP_REORDERING_MAX_DISTANCE = 16;
+
 //------------------------------------------------------------------------
 // OptimizeForLdp: Record information about an indirection, and try to optimize
 // it by moving it to be adjacent with a previous indirection such that they
@@ -8233,7 +8241,9 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
     newInd.AddrBase = addr->AsLclVarCommon();
     newInd.Offset   = offs;
 
-    int maxCount = min(m_blockIndirs.Height(), 8);
+    // Every indirection takes an expected 2+ nodes, so we only expect at most
+    // half the reordering distance to be candidates for the optimization.
+    int maxCount = min(m_blockIndirs.Height(), LDP_REORDERING_MAX_DISTANCE / 2);
     for (int i = 0; i < maxCount; i++)
     {
         SavedIndir&   prev      = m_blockIndirs.TopRef(i);
@@ -8264,7 +8274,7 @@ bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
             }
             else
             {
-                JITDUMP("  ..but at wrong offset\n");
+                JITDUMP("  ..but at non-adjacent offset\n");
             }
         }
     }
@@ -8293,7 +8303,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
     }
 
     GenTree* cur = prevIndir;
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < LDP_REORDERING_MAX_DISTANCE; i++)
     {
         cur = cur->gtNext;
         if (cur == indir)
@@ -8302,12 +8312,12 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
     if (cur != indir)
     {
-        JITDUMP("  ..but it is too far away\n");
+        JITDUMP("  ..but they are too far separated\n");
         return false;
     }
 
     JITDUMP(
-        "  ..and it is close by. Trying to move the following range (where * are nodes part of the data flow):\n\n");
+        "  ..and they are close. Trying to move the following range (where * are nodes part of the data flow):\n\n");
 #ifdef DEBUG
     bool     isClosed;
     GenTree* startDumpNode = BlockRange().GetTreeRange(prevIndir, &isClosed).FirstNode();
