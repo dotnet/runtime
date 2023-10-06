@@ -8199,11 +8199,11 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 #ifdef TARGET_ARM64
 
 // Max distance that we will try to move an indirection backwards to become
-// adjacent to another indirection. As an empiric observation, increasing this
-// number to 32 for the smoke_tests collection resulted in 3684 -> 3796 cases
-// passing the distance check, but 82 out of these 112 extra cases were then
-// rejected due to interference. So 16 seems like a good number to balance the
-// throughput costs.
+// adjacent to another indirection. As an empirical observation, increasing
+// this number to 32 for the smoke_tests collection resulted in 3684 -> 3796
+// cases passing the distance check, but 82 out of these 112 extra cases were
+// then rejected due to interference. So 16 seems like a good number to balance
+// the throughput costs.
 const int LDP_REORDERING_MAX_DISTANCE = 16;
 
 //------------------------------------------------------------------------
