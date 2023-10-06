@@ -384,7 +384,7 @@ namespace System.Net.Http.Functional.Tests
             async server =>
             {
                 await server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                    "HTTP/1.1 200 OK\nConnection: close\nDate: {DateTimeOffset.UtcNow:R}\nServer: TestServer\nContent-Length: 0\n\n".ReplaceLineEndings(lineEnding))
+                    "HTTP/1.1 200 OK\nConnection: close\nDate: {DateTimeOffset.UtcNow:R}\nServer: TestServer\nContent-Length: 0\n\n".Replace("\n", lineEnding))
                     .WaitAsync(timeout);
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
