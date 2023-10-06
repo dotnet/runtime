@@ -3017,33 +3017,32 @@ namespace System.Numerics.Tensors
             //
             // coshf = v/2 * exp(x - log(v)) where v = 0x1.0000e8p-1
 
-            private const uint SIGN_MASK = 0x7FFFFFFF;
-            private const uint LOGV = 0x3f317300;
-            private const uint HALFV = 0x3f800074;
-            private const uint INVV2 = 0x3e7ffe30;
+            private const float LOGV = 0.693161f;
+            private const float HALFV = 1.0000138f;
+            private const float INVV2 = 0.24999309f;
 
             public static float Invoke(float x) => MathF.Cosh(x);
 
             public static Vector128<float> Invoke(Vector128<float> x)
             {
-                Vector128<float> y = (x.AsUInt32() & Vector128.Create(SIGN_MASK)).AsSingle();
-                Vector128<float> z = ExpOperator.Invoke(y - Vector128.Create(LOGV).AsSingle());
-                return Vector128.Create(HALFV).AsSingle() * (z + (Vector128.Create(INVV2).AsSingle() / z));
+                Vector128<float> y = Vector128.Abs(x);
+                Vector128<float> z = ExpOperator.Invoke(y - Vector128.Create(LOGV));
+                return Vector128.Create(HALFV) * (z + (Vector128.Create(INVV2) / z));
             }
 
             public static Vector256<float> Invoke(Vector256<float> x)
             {
-                Vector256<float> y = (x.AsUInt32() & Vector256.Create(SIGN_MASK)).AsSingle();
-                Vector256<float> z = ExpOperator.Invoke(y - Vector256.Create(LOGV).AsSingle());
-                return Vector256.Create(HALFV).AsSingle() * (z + (Vector256.Create(INVV2).AsSingle() / z));
+                Vector256<float> y = Vector256.Abs(x);
+                Vector256<float> z = ExpOperator.Invoke(y - Vector256.Create(LOGV));
+                return Vector256.Create(HALFV) * (z + (Vector256.Create(INVV2) / z));
             }
 
 #if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x)
             {
-                Vector512<float> y = (x.AsUInt32() & Vector512.Create(SIGN_MASK)).AsSingle();
-                Vector512<float> z = ExpOperator.Invoke(y - Vector512.Create(LOGV).AsSingle());
-                return Vector512.Create(HALFV).AsSingle() * (z + (Vector512.Create(INVV2).AsSingle() / z));
+                Vector512<float> y = Vector512.Abs(x);
+                Vector512<float> z = ExpOperator.Invoke(y - Vector512.Create(LOGV));
+                return Vector512.Create(HALFV) * (z + (Vector512.Create(INVV2) / z));
             }
 #endif
         }
@@ -3055,40 +3054,37 @@ namespace System.Numerics.Tensors
             // flipped on the result based on the sign of the input.
 
             private const uint SIGN_MASK = 0x7FFFFFFF;
-            private const uint LOGV = 0x3f317300;
-            private const uint HALFV = 0x3f800074;
-            private const uint INVV2 = 0x3e7ffe30;
+            private const float LOGV = 0.693161f;
+            private const float HALFV = 1.0000138f;
+            private const float INVV2 = 0.24999309f;
 
             public static float Invoke(float x) => MathF.Sinh(x);
 
             public static Vector128<float> Invoke(Vector128<float> x)
             {
-                Vector128<uint> ux = x.AsUInt32();
-                Vector128<uint> sign = ux & Vector128.Create(~SIGN_MASK);
-                Vector128<float> y = (ux & Vector128.Create(SIGN_MASK)).AsSingle();
-                Vector128<float> z = ExpOperator.Invoke(y - Vector128.Create(LOGV).AsSingle());
-                Vector128<float> result = Vector128.Create(HALFV).AsSingle() * (z - (Vector128.Create(INVV2).AsSingle() / z));
+                Vector128<float> y = Vector128.Abs(x);
+                Vector128<float> z = ExpOperator.Invoke(y - Vector128.Create(LOGV));
+                Vector128<float> result = Vector128.Create(HALFV) * (z - (Vector128.Create(INVV2) / z));
+                Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~SIGN_MASK);
                 return (sign ^ result.AsUInt32()).AsSingle();
             }
 
             public static Vector256<float> Invoke(Vector256<float> x)
             {
-                Vector256<uint> ux = x.AsUInt32();
-                Vector256<uint> sign = ux & Vector256.Create(~SIGN_MASK);
-                Vector256<float> y = (ux & Vector256.Create(SIGN_MASK)).AsSingle();
-                Vector256<float> z = ExpOperator.Invoke(y - Vector256.Create(LOGV).AsSingle());
-                Vector256<float> result = Vector256.Create(HALFV).AsSingle() * (z - (Vector256.Create(INVV2).AsSingle() / z));
+                Vector256<float> y = Vector256.Abs(x);
+                Vector256<float> z = ExpOperator.Invoke(y - Vector256.Create(LOGV));
+                Vector256<float> result = Vector256.Create(HALFV) * (z - (Vector256.Create(INVV2) / z));
+                Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~SIGN_MASK);
                 return (sign ^ result.AsUInt32()).AsSingle();
             }
 
 #if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x)
             {
-                Vector512<uint> ux = x.AsUInt32();
-                Vector512<uint> sign = ux & Vector512.Create(~SIGN_MASK);
-                Vector512<float> y = (ux & Vector512.Create(SIGN_MASK)).AsSingle();
-                Vector512<float> z = ExpOperator.Invoke(y - Vector512.Create(LOGV).AsSingle());
-                Vector512<float> result = Vector512.Create(HALFV).AsSingle() * (z - (Vector512.Create(INVV2).AsSingle() / z));
+                Vector512<float> y = Vector512.Abs(x);
+                Vector512<float> z = ExpOperator.Invoke(y - Vector512.Create(LOGV));
+                Vector512<float> result = Vector512.Create(HALFV) * (z - (Vector512.Create(INVV2) / z));
+                Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SIGN_MASK);
                 return (sign ^ result.AsUInt32()).AsSingle();
             }
 #endif
@@ -3116,35 +3112,32 @@ namespace System.Numerics.Tensors
             // If x < 0, then we use the identity
             //    tanhf(-x) = -tanhf(x)
 
-            private const uint V4_TANHF_SIGN_MASK = 0x7FFFFFFF;
+            private const uint SIGN_MASK = 0x7FFFFFFF;
 
             public static float Invoke(float x) => MathF.Tanh(x);
 
             public static Vector128<float> Invoke(Vector128<float> x)
             {
-                Vector128<uint> ux = x.AsUInt32();
-                Vector128<uint> sign = ux & Vector128.Create(~V4_TANHF_SIGN_MASK);
-                Vector128<float> y = (ux & Vector128.Create(V4_TANHF_SIGN_MASK)).AsSingle();
+                Vector128<float> y = Vector128.Abs(x);
                 Vector128<float> z = ExpOperator.Invoke(Vector128.Create(-2f) * y) - Vector128.Create(1f);
+                Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~SIGN_MASK);
                 return (sign ^ (-z / (z + Vector128.Create(2f))).AsUInt32()).AsSingle();
             }
 
             public static Vector256<float> Invoke(Vector256<float> x)
             {
-                Vector256<uint> ux = x.AsUInt32();
-                Vector256<uint> sign = ux & Vector256.Create(~V4_TANHF_SIGN_MASK);
-                Vector256<float> y = (ux & Vector256.Create(V4_TANHF_SIGN_MASK)).AsSingle();
+                Vector256<float> y = Vector256.Abs(x);
                 Vector256<float> z = ExpOperator.Invoke(Vector256.Create(-2f) * y) - Vector256.Create(1f);
+                Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~SIGN_MASK);
                 return (sign ^ (-z / (z + Vector256.Create(2f))).AsUInt32()).AsSingle();
             }
 
 #if NET8_0_OR_GREATER
             public static Vector512<float> Invoke(Vector512<float> x)
             {
-                Vector512<uint> ux = x.AsUInt32();
-                Vector512<uint> sign = ux & Vector512.Create(~V4_TANHF_SIGN_MASK);
-                Vector512<float> y = (ux & Vector512.Create(V4_TANHF_SIGN_MASK)).AsSingle();
+                Vector512<float> y = Vector512.Abs(x);
                 Vector512<float> z = ExpOperator.Invoke(Vector512.Create(-2f) * y) - Vector512.Create(1f);
+                Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SIGN_MASK);
                 return (sign ^ (-z / (z + Vector512.Create(2f))).AsUInt32()).AsSingle();
             }
 #endif
