@@ -1799,6 +1799,156 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadPairVector128NonTemporal(ulong* address) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) LoadVector128x2(byte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) LoadVector128x2(sbyte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) LoadVector128x2(short* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2) LoadVector128x2(ushort* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2) LoadVector128x2(int* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2) LoadVector128x2(uint* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2) LoadVector128x2(long* address)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2) LoadVector128x2(ulong* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2) LoadVector128x2(float* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2) LoadVector128x2(double* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2, System.Runtime.Intrinsics.Vector128<byte> Value3) LoadVector128x3(byte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2, System.Runtime.Intrinsics.Vector128<sbyte> Value3) LoadVector128x3(sbyte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2, System.Runtime.Intrinsics.Vector128<short> Value3) LoadVector128x3(short* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2, System.Runtime.Intrinsics.Vector128<ushort> Value3) LoadVector128x3(ushort* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2, System.Runtime.Intrinsics.Vector128<int> Value3) LoadVector128x3(int* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2, System.Runtime.Intrinsics.Vector128<uint> Value3) LoadVector128x3(uint* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2, System.Runtime.Intrinsics.Vector128<long> Value3) LoadVector128x3(long* address)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2, System.Runtime.Intrinsics.Vector128<ulong> Value3) LoadVector128x3(ulong* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2, System.Runtime.Intrinsics.Vector128<float> Value3) LoadVector128x3(float* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2, System.Runtime.Intrinsics.Vector128<double> Value3) LoadVector128x3(double* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2, System.Runtime.Intrinsics.Vector128<byte> Value3, System.Runtime.Intrinsics.Vector128<byte> Value4) LoadVector128x4(byte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2, System.Runtime.Intrinsics.Vector128<sbyte> Value3, System.Runtime.Intrinsics.Vector128<sbyte> Value4) LoadVector128x4(sbyte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2, System.Runtime.Intrinsics.Vector128<short> Value3, System.Runtime.Intrinsics.Vector128<short> Value4) LoadVector128x4(short* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2, System.Runtime.Intrinsics.Vector128<ushort> Value3, System.Runtime.Intrinsics.Vector128<ushort> Value4) LoadVector128x4(ushort* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2, System.Runtime.Intrinsics.Vector128<int> Value3, System.Runtime.Intrinsics.Vector128<int> Value4) LoadVector128x4(int* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2, System.Runtime.Intrinsics.Vector128<uint> Value3, System.Runtime.Intrinsics.Vector128<uint> Value4) LoadVector128x4(uint* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2, System.Runtime.Intrinsics.Vector128<long> Value3, System.Runtime.Intrinsics.Vector128<long> Value4) LoadVector128x4(long* address)  { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D}, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2, System.Runtime.Intrinsics.Vector128<ulong> Value3, System.Runtime.Intrinsics.Vector128<ulong> Value4) LoadVector128x4(ulong* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2, System.Runtime.Intrinsics.Vector128<float> Value3, System.Runtime.Intrinsics.Vector128<float> Value4) LoadVector128x4(float* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2, System.Runtime.Intrinsics.Vector128<double> Value3, System.Runtime.Intrinsics.Vector128<double> Value4) LoadVector128x4(double* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FMAX Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -8376,6 +8526,111 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 Vt.2D, [Xn]
         /// </summary>
         public static unsafe Vector128<ulong> LoadVector128(ulong* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) LoadVector64x2(byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) LoadVector64x2(sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) LoadVector64x2(short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2) LoadVector64x2(ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadVector64x2(int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadVector64x2(uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadVector64x2(float* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2, System.Runtime.Intrinsics.Vector64<byte> Value3) LoadVector64x3(byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2, System.Runtime.Intrinsics.Vector64<sbyte> Value3) LoadVector64x3(sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2, System.Runtime.Intrinsics.Vector64<short> Value3) LoadVector64x3(short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2, System.Runtime.Intrinsics.Vector64<ushort> Value3) LoadVector64x3(ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2, System.Runtime.Intrinsics.Vector64<int> Value3) LoadVector64x3(int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2, System.Runtime.Intrinsics.Vector64<uint> Value3) LoadVector64x3(uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2, System.Runtime.Intrinsics.Vector64<float> Value3) LoadVector64x3(float* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2, System.Runtime.Intrinsics.Vector64<byte> Value3, System.Runtime.Intrinsics.Vector64<byte> Value4) LoadVector64x4(byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2, System.Runtime.Intrinsics.Vector64<sbyte> Value3, System.Runtime.Intrinsics.Vector64<sbyte> Value4) LoadVector64x4(sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2, System.Runtime.Intrinsics.Vector64<short> Value3, System.Runtime.Intrinsics.Vector64<short> Value4) LoadVector64x4(short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2, System.Runtime.Intrinsics.Vector64<ushort> Value3, System.Runtime.Intrinsics.Vector64<ushort> Value4) LoadVector64x4(ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2, System.Runtime.Intrinsics.Vector64<int> Value3, System.Runtime.Intrinsics.Vector64<int> Value4) LoadVector64x4(int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2, System.Runtime.Intrinsics.Vector64<uint> Value3, System.Runtime.Intrinsics.Vector64<uint> Value4) LoadVector64x4(uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2, System.Runtime.Intrinsics.Vector64<float> Value3, System.Runtime.Intrinsics.Vector64<float> Value4) LoadVector64x4(float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vmax_u8 (uint8x8_t a, uint8x8_t b)

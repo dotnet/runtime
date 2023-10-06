@@ -322,20 +322,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static void Exp(ReadOnlySpan<float> x, Span<float> destination)
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MathF.Exp(x[i]);
-            }
-        }
+        public static void Exp(ReadOnlySpan<float> x, Span<float> destination) =>
+            InvokeSpanIntoSpan<ExpOperator>(x, destination);
 
         /// <summary>Searches for the index of the largest single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -563,20 +551,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static void Log(ReadOnlySpan<float> x, Span<float> destination)
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MathF.Log(x[i]);
-            }
-        }
+        public static void Log(ReadOnlySpan<float> x, Span<float> destination) =>
+            InvokeSpanIntoSpan<LogOperator>(x, destination);
 
         /// <summary>Computes the element-wise base 2 logarithm of single-precision floating-point numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -598,20 +574,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static void Log2(ReadOnlySpan<float> x, Span<float> destination)
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = Log2(x[i]);
-            }
-        }
+        public static void Log2(ReadOnlySpan<float> x, Span<float> destination) =>
+            InvokeSpanIntoSpan<Log2Operator>(x, destination);
 
         /// <summary>Searches for the largest single-precision floating-point number in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -1024,17 +988,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = 1f / (1f + MathF.Exp(-x[i]));
-            }
+            InvokeSpanIntoSpan<SigmoidOperator>(x, destination);
         }
 
         /// <summary>Computes the element-wise hyperbolic sine of each single-precision floating-point radian angle in the specified tensor.</summary>
@@ -1103,17 +1057,9 @@ namespace System.Numerics.Tensors
 
             ValidateInputOutputSpanNonOverlapping(x, destination);
 
-            float expSum = 0f;
+            float expSum = Aggregate<ExpOperator, AddOperator>(x);
 
-            for (int i = 0; i < x.Length; i++)
-            {
-                expSum += MathF.Exp(x[i]);
-            }
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MathF.Exp(x[i]) / expSum;
-            }
+            InvokeSpanScalarIntoSpan<ExpOperator, DivideOperator>(x, expSum, destination);
         }
 
         /// <summary>Computes the element-wise difference between single-precision floating-point numbers in the specified tensors.</summary>

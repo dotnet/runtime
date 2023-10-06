@@ -5275,7 +5275,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         }
 
         // If there is an unconditional jump (which is not part of callf/always pair)
-        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
+        if (opts.compJitHideAlignBehindJmp && block->KindIs(BBJ_ALWAYS) && !block->isBBCallAlwaysPairTail())
         {
             // Track the lower weight blocks
             if (block->bbWeight < minBlockSoFar)
@@ -5291,16 +5291,16 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
             }
         }
 
-        if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
+        if (!block->IsLast() && block->Next()->isLoopAlign())
         {
             // Loop alignment is disabled for cold blocks
             assert((block->bbFlags & BBF_COLD) == 0);
-            BasicBlock* const loopTop              = block->bbNext;
+            BasicBlock* const loopTop              = block->Next();
             bool              isSpecialCallFinally = block->isBBCallAlwaysPairTail();
             bool              unmarkedLoopAlign    = false;
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
-            if (block->bbJumpKind == BBJ_CALLFINALLY)
+            if (block->KindIs(BBJ_CALLFINALLY))
             {
                 // It must be a retless BBJ_CALLFINALLY if we get here.
                 assert(!block->isBBCallAlwaysPair());
@@ -6379,9 +6379,9 @@ void Compiler::compCompileFinish()
                                            // Small methods cannot meaningfully have a big number of locals
                                            // or arguments. We always track arguments at the start of
                                            // the prolog which requires memory
-        (info.compLocalsCount <= 32) && (!opts.MinOpts()) && // We may have too many local variables, etc
-        (getJitStressLevel() == 0) &&                        // We need extra memory for stress
-        !opts.optRepeat &&                                   // We need extra memory to repeat opts
+        (info.compLocalsCount <= 32) && !opts.MinOpts() && // We may have too many local variables, etc
+        (getJitStressLevel() == 0) &&                      // We need extra memory for stress
+        !opts.optRepeat &&                                 // We need extra memory to repeat opts
         !compArenaAllocator->bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
                                                       // DirectAlloc
         // Factor of 2x is because data-structures are bigger under DEBUG
@@ -9614,7 +9614,7 @@ BasicBlock* dFindBlock(unsigned bbNum)
     BasicBlock* block = nullptr;
 
     dbBlock = nullptr;
-    for (block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (block = comp->fgFirstBB; block != nullptr; block = block->Next())
     {
         if (block->bbNum == bbNum)
         {

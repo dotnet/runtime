@@ -205,8 +205,6 @@
     <CompilerPlatformTestingVersion>1.1.2-beta1.23323.1</CompilerPlatformTestingVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>8.0.0-preview-20230918.1</MicrosoftPrivateIntellisenseVersion>
-    <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>9.0.0-alpha.1.23470.17</MicrosoftNETILLinkTasksVersion>
     <!-- Mono Cecil -->
     <MicrosoftDotNetCecilVersion>0.11.4-alpha.23476.1</MicrosoftDotNetCecilVersion>
     <!-- ILCompiler -->
@@ -253,7 +251,7 @@
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- installer version, for testing workloads -->
-    <MicrosoftDotnetSdkInternalVersion>9.0.100-alpha.1.23479.5</MicrosoftDotnetSdkInternalVersion>
+    <MicrosoftDotnetSdkInternalVersion>9.0.100-alpha.1.23503.1</MicrosoftDotnetSdkInternalVersion>
     <SdkVersionForWorkloadTesting>$(MicrosoftDotnetSdkInternalVersion)</SdkVersionForWorkloadTesting>
   </PropertyGroup>
 </Project>

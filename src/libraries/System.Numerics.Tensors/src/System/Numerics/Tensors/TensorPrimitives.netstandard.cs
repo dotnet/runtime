@@ -9,6 +9,8 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
+        /// <summary>Computes the cosine similarity between the two specified non-empty, equal-length tensors of single-precision floating-point numbers.</summary>
+        /// <remarks>Assumes arguments have already been validated to be non-empty and equal length.</remarks>
         private static float CosineSimilarityCore(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
         {
             // Compute the same as:
@@ -52,7 +54,7 @@ namespace System.Numerics.Tensors
                     Vector<float> xVec = AsVector(ref xRef, x.Length - Vector<float>.Count);
                     Vector<float> yVec = AsVector(ref yRef, x.Length - Vector<float>.Count);
 
-                    Vector<float> remainderMask = LoadRemainderMaskSingleVector(x.Length - i);
+                    Vector<float> remainderMask = CreateRemainderMaskSingleVector(x.Length - i);
                     xVec &= remainderMask;
                     yVec &= remainderMask;
 
@@ -85,10 +87,16 @@ namespace System.Numerics.Tensors
             return dotProduct / (MathF.Sqrt(xSumOfSquares) * MathF.Sqrt(ySumOfSquares));
         }
 
-        private static float Aggregate<TLoad, TAggregate>(
-            ReadOnlySpan<float> x, TLoad load = default, TAggregate aggregate = default)
-            where TLoad : struct, IUnaryOperator
-            where TAggregate : struct, IAggregationOperator
+        /// <summary>Performs an aggregation over all elements in <paramref name="x"/> to produce a single-precision floating-point value.</summary>
+        /// <typeparam name="TTransformOperator">Specifies the transform operation that should be applied to each element loaded from <paramref name="x"/>.</typeparam>
+        /// <typeparam name="TAggregationOperator">
+        /// Specifies the aggregation binary operation that should be applied to multiple values to aggregate them into a single value.
+        /// The aggregation is applied after the transform is applied to each element.
+        /// </typeparam>
+        private static float Aggregate<TTransformOperator, TAggregationOperator>(
+            ReadOnlySpan<float> x, TTransformOperator transformOp = default, TAggregationOperator aggregationOp = default)
+            where TTransformOperator : struct, IUnaryOperator
+            where TAggregationOperator : struct, IAggregationOperator
         {
             if (x.Length == 0)
             {
@@ -97,12 +105,12 @@ namespace System.Numerics.Tensors
 
             float result;
 
-            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count)
+            if (Vector.IsHardwareAccelerated && transformOp.CanVectorize && x.Length >= Vector<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
 
                 // Load the first vector as the initial set of results
-                Vector<float> resultVector = load.Invoke(AsVector(ref xRef, 0));
+                Vector<float> resultVector = transformOp.Invoke(AsVector(ref xRef, 0));
                 int oneVectorFromEnd = x.Length - Vector<float>.Count;
                 int i = Vector<float>.Count;
 
@@ -110,44 +118,50 @@ namespace System.Numerics.Tensors
                 // least one full vector left to process.
                 while (i <= oneVectorFromEnd)
                 {
-                    resultVector = aggregate.Invoke(resultVector, load.Invoke(AsVector(ref xRef, i)));
+                    resultVector = aggregationOp.Invoke(resultVector, transformOp.Invoke(AsVector(ref xRef, i)));
                     i += Vector<float>.Count;
                 }
 
                 // Process the last vector in the span, masking off elements already processed.
                 if (i != x.Length)
                 {
-                    resultVector = aggregate.Invoke(resultVector,
+                    resultVector = aggregationOp.Invoke(resultVector,
                         Vector.ConditionalSelect(
-                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
-                            new Vector<float>(aggregate.IdentityValue),
-                            load.Invoke(AsVector(ref xRef, x.Length - Vector<float>.Count))));
+                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            new Vector<float>(aggregationOp.IdentityValue),
+                            transformOp.Invoke(AsVector(ref xRef, x.Length - Vector<float>.Count))));
                 }
 
                 // Aggregate the lanes in the vector back into the scalar result
                 result = resultVector[0];
                 for (int f = 1; f < Vector<float>.Count; f++)
                 {
-                    result = aggregate.Invoke(result, resultVector[f]);
+                    result = aggregationOp.Invoke(result, resultVector[f]);
                 }
 
                 return result;
             }
 
             // Aggregate the remaining items in the input span.
-            result = load.Invoke(x[0]);
+            result = transformOp.Invoke(x[0]);
             for (int i = 1; i < x.Length; i++)
             {
-                result = aggregate.Invoke(result, load.Invoke(x[i]));
+                result = aggregationOp.Invoke(result, transformOp.Invoke(x[i]));
             }
 
             return result;
         }
 
-        private static float Aggregate<TBinary, TAggregate>(
-            ReadOnlySpan<float> x, ReadOnlySpan<float> y, TBinary binary = default, TAggregate aggregate = default)
-            where TBinary : struct, IBinaryOperator
-            where TAggregate : struct, IAggregationOperator
+        /// <summary>Performs an aggregation over all pair-wise elements in <paramref name="x"/> and <paramref name="y"/> to produce a single-precision floating-point value.</summary>
+        /// <typeparam name="TBinaryOperator">Specifies the binary operation that should be applied to the pair-wise elements loaded from <paramref name="x"/> and <paramref name="y"/>.</typeparam>
+        /// <typeparam name="TAggregationOperator">
+        /// Specifies the aggregation binary operation that should be applied to multiple values to aggregate them into a single value.
+        /// The aggregation is applied to the results of the binary operations on the pair-wise values.
+        /// </typeparam>
+        private static float Aggregate<TBinaryOperator, TAggregationOperator>(
+            ReadOnlySpan<float> x, ReadOnlySpan<float> y, TBinaryOperator binaryOp = default, TAggregationOperator aggregationOp = default)
+            where TBinaryOperator : struct, IBinaryOperator
+            where TAggregationOperator : struct, IAggregationOperator
         {
             Debug.Assert(x.Length == y.Length);
 
@@ -164,7 +178,7 @@ namespace System.Numerics.Tensors
             if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count)
             {
                 // Load the first vector as the initial set of results
-                Vector<float> resultVector = binary.Invoke(AsVector(ref xRef, 0), AsVector(ref yRef, 0));
+                Vector<float> resultVector = binaryOp.Invoke(AsVector(ref xRef, 0), AsVector(ref yRef, 0));
                 int oneVectorFromEnd = x.Length - Vector<float>.Count;
                 int i = Vector<float>.Count;
 
@@ -172,18 +186,18 @@ namespace System.Numerics.Tensors
                 // least one full vector left to process.
                 while (i <= oneVectorFromEnd)
                 {
-                    resultVector = aggregate.Invoke(resultVector, binary.Invoke(AsVector(ref xRef, i), AsVector(ref yRef, i)));
+                    resultVector = aggregationOp.Invoke(resultVector, binaryOp.Invoke(AsVector(ref xRef, i), AsVector(ref yRef, i)));
                     i += Vector<float>.Count;
                 }
 
                 // Process the last vector in the spans, masking off elements already processed.
                 if (i != x.Length)
                 {
-                    resultVector = aggregate.Invoke(resultVector,
+                    resultVector = aggregationOp.Invoke(resultVector,
                         Vector.ConditionalSelect(
-                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
-                            new Vector<float>(aggregate.IdentityValue),
-                            binary.Invoke(
+                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            new Vector<float>(aggregationOp.IdentityValue),
+                            binaryOp.Invoke(
                                 AsVector(ref xRef, x.Length - Vector<float>.Count),
                                 AsVector(ref yRef, x.Length - Vector<float>.Count))));
                 }
@@ -192,23 +206,28 @@ namespace System.Numerics.Tensors
                 result = resultVector[0];
                 for (int f = 1; f < Vector<float>.Count; f++)
                 {
-                    result = aggregate.Invoke(result, resultVector[f]);
+                    result = aggregationOp.Invoke(result, resultVector[f]);
                 }
 
                 return result;
             }
 
             // Aggregate the remaining items in the input span.
-            result = binary.Invoke(x[0], y[0]);
+            result = binaryOp.Invoke(x[0], y[0]);
             for (int i = 1; i < x.Length; i++)
             {
-                result = aggregate.Invoke(result, binary.Invoke(x[i], y[i]));
+                result = aggregationOp.Invoke(result, binaryOp.Invoke(x[i], y[i]));
             }
 
             return result;
         }
 
-        private static float MinMaxCore<TMinMax>(ReadOnlySpan<float> x, TMinMax minMax = default) where TMinMax : struct, IBinaryOperator
+        /// <remarks>
+        /// This is the same as <see cref="Aggregate{TTransformOperator, TAggregationOperator}(ReadOnlySpan{float}, TTransformOperator, TAggregationOperator)"/>
+        /// with an identity transform, except it early exits on NaN.
+        /// </remarks>
+        private static float MinMaxCore<TMinMaxOperator>(ReadOnlySpan<float> x, TMinMaxOperator op = default)
+            where TMinMaxOperator : struct, IBinaryOperator
         {
             if (x.IsEmpty)
             {
@@ -245,7 +264,7 @@ namespace System.Numerics.Tensors
                             goto Scalar;
                         }
 
-                        resultVector = minMax.Invoke(resultVector, current);
+                        resultVector = op.Invoke(resultVector, current);
                         i += Vector<float>.Count;
                     }
 
@@ -258,13 +277,13 @@ namespace System.Numerics.Tensors
                             goto Scalar;
                         }
 
-                        resultVector = minMax.Invoke(resultVector, current);
+                        resultVector = op.Invoke(resultVector, current);
                     }
 
                     // Aggregate the lanes in the vector to create the final scalar result.
                     for (int f = 0; f < Vector<float>.Count; f++)
                     {
-                        result = minMax.Invoke(result, resultVector[f]);
+                        result = op.Invoke(result, resultVector[f]);
                     }
 
                     return result;
@@ -283,12 +302,14 @@ namespace System.Numerics.Tensors
                     return current;
                 }
 
-                result = minMax.Invoke(result, current);
+                result = op.Invoke(result, current);
             }
 
             return result;
         }
 
+        /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
+        /// <typeparam name="TUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
         private static void InvokeSpanIntoSpan<TUnaryOperator>(
             ReadOnlySpan<float> x, Span<float> destination, TUnaryOperator op = default)
             where TUnaryOperator : struct, IUnaryOperator
@@ -304,7 +325,7 @@ namespace System.Numerics.Tensors
             ref float dRef = ref MemoryMarshal.GetReference(destination);
             int i = 0, oneVectorFromEnd;
 
-            if (Vector.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated && op.CanVectorize)
             {
                 oneVectorFromEnd = x.Length - Vector<float>.Count;
                 if (oneVectorFromEnd >= 0)
@@ -324,7 +345,7 @@ namespace System.Numerics.Tensors
                         int lastVectorIndex = x.Length - Vector<float>.Count;
                         ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
                         dest = Vector.ConditionalSelect(
-                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
                             dest,
                             op.Invoke(AsVector(ref xRef, lastVectorIndex)));
                     }
@@ -342,6 +363,13 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>
+        /// Performs an element-wise operation on <paramref name="x"/> and <paramref name="y"/>,
+        /// and writes the results to <paramref name="destination"/>.
+        /// </summary>
+        /// <typeparam name="TBinaryOperator">
+        /// Specifies the operation to perform on the pair-wise elements loaded from <paramref name="x"/> and <paramref name="y"/>.
+        /// </typeparam>
         private static void InvokeSpanSpanIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination, TBinaryOperator op = default)
             where TBinaryOperator : struct, IBinaryOperator
@@ -385,7 +413,7 @@ namespace System.Numerics.Tensors
                         int lastVectorIndex = x.Length - Vector<float>.Count;
                         ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
                         dest = Vector.ConditionalSelect(
-                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
                             dest,
                             op.Invoke(AsVector(ref xRef, lastVectorIndex),
                                       AsVector(ref yRef, lastVectorIndex)));
@@ -404,8 +432,32 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>
+        /// Performs an element-wise operation on <paramref name="x"/> and <paramref name="y"/>,
+        /// and writes the results to <paramref name="destination"/>.
+        /// </summary>
+        /// <typeparam name="TBinaryOperator">
+        /// Specifies the operation to perform on each element loaded from <paramref name="x"/> with <paramref name="y"/>.
+        /// </typeparam>
         private static void InvokeSpanScalarIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination, TBinaryOperator op = default)
+            where TBinaryOperator : struct, IBinaryOperator =>
+            InvokeSpanScalarIntoSpan<IdentityOperator, TBinaryOperator>(x, y, destination, default, op);
+
+        /// <summary>
+        /// Performs an element-wise operation on <paramref name="x"/> and <paramref name="y"/>,
+        /// and writes the results to <paramref name="destination"/>.
+        /// </summary>
+        /// <typeparam name="TTransformOperator">
+        /// Specifies the operation to perform on each element loaded from <paramref name="x"/>.
+        /// It is not used with <paramref name="y"/>.
+        /// </typeparam>
+        /// <typeparam name="TBinaryOperator">
+        /// Specifies the operation to perform on the transformed value from <paramref name="x"/> with <paramref name="y"/>.
+        /// </typeparam>
+        private static void InvokeSpanScalarIntoSpan<TTransformOperator, TBinaryOperator>(
+            ReadOnlySpan<float> x, float y, Span<float> destination, TTransformOperator xTransformOp = default, TBinaryOperator binaryOp = default)
+            where TTransformOperator : struct, IUnaryOperator
             where TBinaryOperator : struct, IBinaryOperator
         {
             if (x.Length > destination.Length)
@@ -419,7 +471,7 @@ namespace System.Numerics.Tensors
             ref float dRef = ref MemoryMarshal.GetReference(destination);
             int i = 0, oneVectorFromEnd;
 
-            if (Vector.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated && xTransformOp.CanVectorize)
             {
                 oneVectorFromEnd = x.Length - Vector<float>.Count;
                 if (oneVectorFromEnd >= 0)
@@ -428,7 +480,7 @@ namespace System.Numerics.Tensors
                     Vector<float> yVec = new(y);
                     do
                     {
-                        AsVector(ref dRef, i) = op.Invoke(AsVector(ref xRef, i),
+                        AsVector(ref dRef, i) = binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, i)),
                                                           yVec);
 
                         i += Vector<float>.Count;
@@ -441,9 +493,9 @@ namespace System.Numerics.Tensors
                         int lastVectorIndex = x.Length - Vector<float>.Count;
                         ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
                         dest = Vector.ConditionalSelect(
-                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
                             dest,
-                            op.Invoke(AsVector(ref xRef, lastVectorIndex), yVec));
+                            binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, lastVectorIndex)), yVec));
                     }
 
                     return;
@@ -453,13 +505,21 @@ namespace System.Numerics.Tensors
             // Loop handling one element at a time.
             while (i < x.Length)
             {
-                Unsafe.Add(ref dRef, i) = op.Invoke(Unsafe.Add(ref xRef, i),
+                Unsafe.Add(ref dRef, i) = binaryOp.Invoke(xTransformOp.Invoke(Unsafe.Add(ref xRef, i)),
                                                     y);
 
                 i++;
             }
         }
 
+        /// <summary>
+        /// Performs an element-wise operation on <paramref name="x"/>, <paramref name="y"/>, and <paramref name="z"/>,
+        /// and writes the results to <paramref name="destination"/>.
+        /// </summary>
+        /// <typeparam name="TTernaryOperator">
+        /// Specifies the operation to perform on the pair-wise elements loaded from <paramref name="x"/>, <paramref name="y"/>,
+        /// and <paramref name="z"/>.
+        /// </typeparam>
         private static void InvokeSpanSpanSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> z, Span<float> destination, TTernaryOperator op = default)
             where TTernaryOperator : struct, ITernaryOperator
@@ -506,7 +566,7 @@ namespace System.Numerics.Tensors
                         int lastVectorIndex = x.Length - Vector<float>.Count;
                         ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
                         dest = Vector.ConditionalSelect(
-                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
                             dest,
                             op.Invoke(AsVector(ref xRef, lastVectorIndex),
                                       AsVector(ref yRef, lastVectorIndex),
@@ -528,6 +588,14 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>
+        /// Performs an element-wise operation on <paramref name="x"/>, <paramref name="y"/>, and <paramref name="z"/>,
+        /// and writes the results to <paramref name="destination"/>.
+        /// </summary>
+        /// <typeparam name="TTernaryOperator">
+        /// Specifies the operation to perform on the pair-wise elements loaded from <paramref name="x"/> and <paramref name="y"/>
+        /// with <paramref name="z"/>.
+        /// </typeparam>
         private static void InvokeSpanSpanScalarIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, float z, Span<float> destination, TTernaryOperator op = default)
             where TTernaryOperator : struct, ITernaryOperator
@@ -574,7 +642,7 @@ namespace System.Numerics.Tensors
                         int lastVectorIndex = x.Length - Vector<float>.Count;
                         ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
                         dest = Vector.ConditionalSelect(
-                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
                             dest,
                             op.Invoke(AsVector(ref xRef, lastVectorIndex),
                                       AsVector(ref yRef, lastVectorIndex),
@@ -596,6 +664,14 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>
+        /// Performs an element-wise operation on <paramref name="x"/>, <paramref name="y"/>, and <paramref name="z"/>,
+        /// and writes the results to <paramref name="destination"/>.
+        /// </summary>
+        /// <typeparam name="TTernaryOperator">
+        /// Specifies the operation to perform on the pair-wise element loaded from <paramref name="x"/>, with <paramref name="y"/>,
+        /// and the element loaded from <paramref name="z"/>.
+        /// </typeparam>
         private static void InvokeSpanScalarSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, float y, ReadOnlySpan<float> z, Span<float> destination, TTernaryOperator op = default)
             where TTernaryOperator : struct, ITernaryOperator
@@ -642,7 +718,7 @@ namespace System.Numerics.Tensors
                         int lastVectorIndex = x.Length - Vector<float>.Count;
                         ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
                         dest = Vector.ConditionalSelect(
-                            Vector.Equals(LoadRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
+                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
                             dest,
                             op.Invoke(AsVector(ref xRef, lastVectorIndex),
                                       yVec,
@@ -664,27 +740,36 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>Loads a <see cref="Vector{Single}"/> that begins at the specified <paramref name="offset"/> from <paramref name="start"/>.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref Vector<float> AsVector(ref float start, int offset) =>
             ref Unsafe.As<float, Vector<float>>(
                 ref Unsafe.Add(ref start, offset));
 
+        /// <summary>Gets whether the specified <see cref="float"/> is negative.</summary>
         private static unsafe bool IsNegative(float f) => *(int*)&f < 0;
 
+        /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
         private static unsafe Vector<float> IsNegative(Vector<float> f) =>
             (Vector<float>)Vector.LessThan((Vector<int>)f, Vector<int>.Zero);
 
+        /// <summary>Gets the base 2 logarithm of <paramref name="x"/>.</summary>
         private static float Log2(float x) => MathF.Log(x, 2);
 
-        private static unsafe Vector<float> LoadRemainderMaskSingleVector(int validItems)
+        /// <summary>
+        /// Gets a vector mask that will be all-ones-set for the last <paramref name="count"/> elements
+        /// and zero for all other elements.
+        /// </summary>
+        private static unsafe Vector<float> CreateRemainderMaskSingleVector(int count)
         {
             Debug.Assert(Vector<float>.Count is 4 or 8 or 16);
 
             return AsVector(
                 ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
-                (validItems * 16) + (16 - Vector<float>.Count));
+                (count * 16) + (16 - Vector<float>.Count));
         }
 
+        /// <summary>x + y</summary>
         private readonly struct AddOperator : IAggregationOperator
         {
             public float Invoke(float x, float y) => x + y;
@@ -692,12 +777,14 @@ namespace System.Numerics.Tensors
             public float IdentityValue => 0;
         }
 
+        /// <summary>x - y</summary>
         private readonly struct SubtractOperator : IBinaryOperator
         {
             public float Invoke(float x, float y) => x - y;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y) => x - y;
         }
 
+        /// <summary>(x - y) * (x - y)</summary>
         private readonly struct SubtractSquaredOperator : IBinaryOperator
         {
             public float Invoke(float x, float y)
@@ -713,6 +800,7 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>x * y</summary>
         private readonly struct MultiplyOperator : IAggregationOperator
         {
             public float Invoke(float x, float y) => x * y;
@@ -720,12 +808,14 @@ namespace System.Numerics.Tensors
             public float IdentityValue => 1;
         }
 
+        /// <summary>x / y</summary>
         private readonly struct DivideOperator : IBinaryOperator
         {
             public float Invoke(float x, float y) => x / y;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y) => x / y;
         }
 
+        /// <summary>MathF.Max(x, y) (but without guaranteed NaN propagation)</summary>
         private readonly struct MaxOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -741,6 +831,7 @@ namespace System.Numerics.Tensors
                     Vector.Max(x, y));
         }
 
+        /// <summary>MathF.Max(x, y)</summary>
         private readonly struct MaxPropagateNaNOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -757,6 +848,7 @@ namespace System.Numerics.Tensors
                     x);
         }
 
+        /// <summary>Operator to get x or y based on which has the larger MathF.Abs (but NaNs may not be propagated)</summary>
         private readonly struct MaxMagnitudeOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -780,6 +872,7 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>Operator to get x or y based on which has the larger MathF.Abs</summary>
         private readonly struct MaxMagnitudePropagateNaNOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -804,6 +897,7 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>MathF.Min(x, y) (but NaNs may not be propagated)</summary>
         private readonly struct MinOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -819,6 +913,7 @@ namespace System.Numerics.Tensors
                     Vector.Min(x, y));
         }
 
+        /// <summary>MathF.Min(x, y)</summary>
         private readonly struct MinPropagateNaNOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -835,6 +930,7 @@ namespace System.Numerics.Tensors
                     x);
         }
 
+        /// <summary>Operator to get x or y based on which has the smaller MathF.Abs (but NaNs may not be propagated)</summary>
         private readonly struct MinMagnitudeOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -858,6 +954,7 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>Operator to get x or y based on which has the smaller MathF.Abs</summary>
         private readonly struct MinMagnitudePropagateNaNOperator : IBinaryOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -883,59 +980,113 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>-x</summary>
         private readonly struct NegateOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => -x;
             public Vector<float> Invoke(Vector<float> x) => -x;
         }
 
+        /// <summary>(x + y) * z</summary>
         private readonly struct AddMultiplyOperator : ITernaryOperator
         {
             public float Invoke(float x, float y, float z) => (x + y) * z;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y, Vector<float> z) => (x + y) * z;
         }
 
+        /// <summary>(x * y) + z</summary>
         private readonly struct MultiplyAddOperator : ITernaryOperator
         {
             public float Invoke(float x, float y, float z) => (x * y) + z;
             public Vector<float> Invoke(Vector<float> x, Vector<float> y, Vector<float> z) => (x * y) + z;
         }
 
+        /// <summary>x</summary>
         private readonly struct IdentityOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => x;
             public Vector<float> Invoke(Vector<float> x) => x;
         }
 
+        /// <summary>x * x</summary>
         private readonly struct SquaredOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => x * x;
             public Vector<float> Invoke(Vector<float> x) => x * x;
         }
 
+        /// <summary>MathF.Abs(x)</summary>
         private readonly struct AbsoluteOperator : IUnaryOperator
         {
+            public bool CanVectorize => true;
             public float Invoke(float x) => MathF.Abs(x);
             public Vector<float> Invoke(Vector<float> x) => Vector.Abs(x);
         }
 
+        private readonly struct ExpOperator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+            public float Invoke(float x) => MathF.Exp(x);
+            public Vector<float> Invoke(Vector<float> x) =>
+                // requires ShiftLeft (.NET 7+)
+                throw new NotImplementedException();
+        }
+
+        /// <summary>MathF.Log(x)</summary>
+        private readonly struct LogOperator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+            public float Invoke(float x) => MathF.Log(x);
+            public Vector<float> Invoke(Vector<float> x) =>
+                // requires ShiftRightArithmetic (.NET 7+)
+                throw new NotImplementedException();
+        }
+
+        /// <summary>MathF.Log2(x)</summary>
+        private readonly struct Log2Operator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+            public float Invoke(float x) => Log2(x);
+            public Vector<float> Invoke(Vector<float> x) =>
+                // requires ShiftRightArithmetic (.NET 7+)
+                throw new NotImplementedException();
+        }
+
+        /// <summary>1f / (1f + MathF.Exp(-x))</summary>
+        private readonly struct SigmoidOperator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+            public float Invoke(float x) => 1.0f / (1.0f + MathF.Exp(-x));
+            public Vector<float> Invoke(Vector<float> x) =>
+                // requires ShiftRightArithmetic (.NET 7+)
+                throw new NotImplementedException();
+        }
+
+        /// <summary>Operator that takes one input value and returns a single value.</summary>
         private interface IUnaryOperator
         {
+            bool CanVectorize { get; }
             float Invoke(float x);
             Vector<float> Invoke(Vector<float> x);
         }
 
+        /// <summary>Operator that takes two input values and returns a single value.</summary>
         private interface IBinaryOperator
         {
             float Invoke(float x, float y);
             Vector<float> Invoke(Vector<float> x, Vector<float> y);
         }
 
+        /// <summary><see cref="IBinaryOperator"/> that specializes horizontal aggregation of all elements in a vector.</summary>
         private interface IAggregationOperator : IBinaryOperator
         {
             float IdentityValue { get; }
         }
 
+        /// <summary>Operator that takes three input values and returns a single value.</summary>
         private interface ITernaryOperator
         {
             float Invoke(float x, float y, float z);
