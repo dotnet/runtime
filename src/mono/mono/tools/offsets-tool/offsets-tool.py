@@ -135,9 +135,6 @@ class OffsetsTool:
 			self.target_args += ["--target=aarch64-linux-gnu"]
 			self.target_args += ["--sysroot", args.sysroot]
 			self.target_args += ["-I", args.sysroot + "/include"]
-			clang_path = os.path.dirname(args.libclang)
-			## FIXME: Hack
-			self.target_args += ["-isystem", clang_path + "/../lib/clang/16/include"]
 			if args.prefixes:
 				for prefix in args.prefixes:
 					if not os.path.isdir (prefix):
