@@ -69,7 +69,7 @@ if (MSVC)
   add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
   # Load all imported DLLs from the System32 directory.
-  add_link_options(/DEPENDENTLOADFLAG:0x800)
+  add_link_options($<$<NOT:$<BOOL:${NO_SYSTEM32}>>:/DEPENDENTLOADFLAG:0x800>)
 
   # Linker flags
   #
