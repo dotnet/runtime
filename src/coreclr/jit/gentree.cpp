@@ -20231,16 +20231,16 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                         widenedSimdSize = 64;
 
                         // Vector512<ushort> widenedOp1 = Avx512BW.ConvertToVector512UInt16(op1)
-                        GenTree* widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic, simdBaseJitType,
-                                                       widenedSimdSize);
+                        GenTree* widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic,
+                                                                       simdBaseJitType, widenedSimdSize);
 
                         // Vector512<ushort> widenedOp2 = Avx512BW.ConvertToVector512UInt16(op2)
-                        GenTree* widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic, simdBaseJitType,
-                                                       widenedSimdSize);
+                        GenTree* widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic,
+                                                                       simdBaseJitType, widenedSimdSize);
 
                         // Vector512<ushort> widenedProduct = widenedOp1 * widenedOp2;
-                        GenTree* widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2, widenedSimdBaseJitType,
-                                                 widenedSimdSize);
+                        GenTree* widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2,
+                                                                     widenedSimdBaseJitType, widenedSimdSize);
 
                         // Vector256<byte> product = Avx512BW.ConvertToVector256Byte(widenedProduct)
                         return gtNewSimdHWIntrinsicNode(type, widenedProduct, narrowIntrinsic, widenedSimdBaseJitType,
@@ -20271,22 +20271,20 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                             widenedSimdSize = 32;
 
                             // Vector256<ushort> widenedOp1 = Avx2.ConvertToVector256Int16(op1).AsUInt16()
-                            GenTree* widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic, simdBaseJitType,
-                                                           widenedSimdSize);
+                            GenTree* widenedOp1 = gtNewSimdHWIntrinsicNode(widenedType, op1, widenIntrinsic,
+                                                                           simdBaseJitType, widenedSimdSize);
 
                             // Vector256<ushort> widenedOp2 = Avx2.ConvertToVector256Int16(op2).AsUInt16()
-                            GenTree* widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic, simdBaseJitType,
-                                                           widenedSimdSize);
+                            GenTree* widenedOp2 = gtNewSimdHWIntrinsicNode(widenedType, op2, widenIntrinsic,
+                                                                           simdBaseJitType, widenedSimdSize);
 
                             // Vector256<ushort> widenedProduct = widenedOp1 * widenedOp2
                             GenTree* widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2,
-                                                                         widenedSimdBaseJitType,
-                                                     widenedSimdSize);
+                                                                         widenedSimdBaseJitType, widenedSimdSize);
 
                             // Vector128<byte> product = Avx512BW.VL.ConvertToVector128Byte(widenedProduct)
                             return gtNewSimdHWIntrinsicNode(type, widenedProduct, narrowIntrinsic,
-                                                            widenedSimdBaseJitType,
-                                                            widenedSimdSize);
+                                                            widenedSimdBaseJitType, widenedSimdSize);
                         }
                         else
                         {
@@ -20313,8 +20311,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                             // Vector256<ushort> widenedProduct = widenedOp1 * widenedOp2
                             GenTree* widenedProduct = gtNewSimdBinOpNode(GT_MUL, widenedType, widenedOp1, widenedOp2,
-                                                                         widenedSimdBaseJitType,
-                                                     widenedSimdSize);
+                                                                         widenedSimdBaseJitType, widenedSimdSize);
 
                             // Vector256<ushort> vecCon1 = Vector256.Create(0x00FF00FF00FF00FF).AsUInt16()
                             GenTreeVecCon* vecCon1 = gtNewVconNode(widenedType);
@@ -20329,14 +20326,15 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                             // Vector256<short> maskedProduct = Avx2.And(widenedProduct, vecCon1).AsInt16()
                             GenTree* maskedProduct = gtNewSimdBinOpNode(GT_AND, widenedType, widenedProduct, vecCon1,
-                                                     widenedSimdBaseJitType,
-                                                     widenedSimdSize);
+                                                                        widenedSimdBaseJitType, widenedSimdSize);
                             GenTree* maskedProductDup = fgMakeMultiUse(&maskedProduct);
 
-                            // Vector256<ulong> packedProduct = Avx2.PackUnsignedSaturate(maskedProduct, maskedProduct).AsUInt64()
-                            GenTree* packedProduct = gtNewSimdHWIntrinsicNode(widenedType, maskedProduct, maskedProductDup,
-                                                           NI_AVX2_PackUnsignedSaturate,
-                                                           CORINFO_TYPE_UBYTE, widenedSimdSize);
+                            // Vector256<ulong> packedProduct = Avx2.PackUnsignedSaturate(maskedProduct,
+                            //                                                            maskedProduct).AsUInt64()
+                            GenTree* packedProduct =
+                                gtNewSimdHWIntrinsicNode(widenedType, maskedProduct, maskedProductDup,
+                                                         NI_AVX2_PackUnsignedSaturate, CORINFO_TYPE_UBYTE,
+                                                         widenedSimdSize);
 
                             CorInfoType permuteBaseJitType =
                                 (simdBaseType == TYP_BYTE) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
@@ -20344,7 +20342,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                             // Vector256<byte> shuffledProduct = Avx2.Permute4x64(w1, 0xD8).AsByte()
                             GenTree* shuffledProduct =
                                 gtNewSimdHWIntrinsicNode(widenedType, packedProduct, gtNewIconNode(SHUFFLE_WYZX),
-                                                           NI_AVX2_Permute4x64, permuteBaseJitType, widenedSimdSize);
+                                                         NI_AVX2_Permute4x64, permuteBaseJitType, widenedSimdSize);
 
                             // Vector128<byte> product = shuffledProduct.getLower()
                             return gtNewSimdGetLowerNode(type, shuffledProduct, simdBaseJitType, widenedSimdSize);
