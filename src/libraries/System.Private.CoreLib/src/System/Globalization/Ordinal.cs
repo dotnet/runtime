@@ -103,24 +103,46 @@ namespace System.Globalization
                 }
 
                 TVector notEquals = ~TVector.Equals(vec1, vec2);
-
-                if (notEquals != TVector.Zero)
+                if (!notEquals.Equals(TVector.Zero))
                 {
                     // not exact match
 
                     vec1 |= loweringMask;
                     vec2 |= loweringMask;
-                    if (TVector.GreaterThanAny((vec1 - vecA) & notEquals, vecZMinusA) || vec1 != vec2)
+                    if (TVector.GreaterThanAny((vec1 - vecA) & notEquals, vecZMinusA) || !vec1.Equals(vec2))
                     {
                         return false; // first input isn't in [A-Za-z], and not exact match of lowered
                     }
                 }
-
                 i += (nuint)TVector.Count;
             } while (i <= lengthToExamine);
 
-            // Use scalar path for trailing elements
-            return i == lengthU || EqualsIgnoreCase(ref Unsafe.Add(ref charA, i), ref Unsafe.Add(ref charB, i), (int)(lengthU - i));
+            // Handle trailing elements
+            if (i != lengthU)
+            {
+                i = lengthU - (nuint)TVector.Count;
+                vec1 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
+                vec2 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
+
+                if (!Utf16Utility.AllCharsInVectorAreAscii(vec1 | vec2))
+                {
+                    goto NON_ASCII;
+                }
+
+                TVector notEquals = ~TVector.Equals(vec1, vec2);
+                if (!notEquals.Equals(TVector.Zero))
+                {
+                    // not exact match
+
+                    vec1 |= loweringMask;
+                    vec2 |= loweringMask;
+                    if (TVector.GreaterThanAny((vec1 - vecA) & notEquals, vecZMinusA) || !vec1.Equals(vec2))
+                    {
+                        return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                    }
+                }
+            }
+            return true;
 
         NON_ASCII:
             if (Utf16Utility.AllCharsInVectorAreAscii(vec1) || Utf16Utility.AllCharsInVectorAreAscii(vec2))
