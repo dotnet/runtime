@@ -36,8 +36,10 @@ public class Thunks
         }
     }
 
+    // By default the ILTransform tool renames Main to TestEntryPoint but that doesn't work
+    // in this case because it uses reflection to enumerate method with names starting with "Test".
     [Fact]
-    public static void TestEntryPoint()
+    public static void EntryPoint()
     {
         MonoAPI.Tests.MonoAPISupport.Setup();
         RunTests (0, typeof (Thunks));
