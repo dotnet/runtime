@@ -215,11 +215,6 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
             return MathF.Sqrt(Aggregate<SubtractSquaredOperator, AddOperator>(x, y));
         }
 
@@ -282,15 +277,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static float Dot(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
-        {
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
-            return Aggregate<MultiplyOperator, AddOperator>(x, y);
-        }
+        public static float Dot(ReadOnlySpan<float> x, ReadOnlySpan<float> y) =>
+            Aggregate<MultiplyOperator, AddOperator>(x, y);
 
         /// <summary>Computes the element-wise result of raising <c>e</c> to the single-precision floating-point number powers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -910,11 +898,6 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
             return Aggregate<SubtractOperator, MultiplyOperator>(x, y);
         }
 
@@ -944,11 +927,6 @@ namespace System.Numerics.Tensors
             if (x.IsEmpty)
             {
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
-
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
             return Aggregate<AddOperator, MultiplyOperator>(x, y);
