@@ -55,7 +55,7 @@ namespace Internal.Runtime.Binder
         private static partial bool AppIsBundle();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Bundle_ProbeAppBundle", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial BundleFileLocation ProbeAppBundle(string path, [MarshalAs(UnmanagedType.Bool)] bool pathIsBundleRelative);
+        private static partial void ProbeAppBundle(string path, [MarshalAs(UnmanagedType.Bool)] bool pathIsBundleRelative, out BundleFileLocation result);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Bundle_GetAppBundleBasePath")]
         private static partial void GetAppBundleBasePath(StringHandleOnStack path);
@@ -273,7 +273,7 @@ namespace Internal.Runtime.Binder
             string sCoreLibSatellite = string.Empty;
 
             PathSource pathSource = PathSource.Bundle;
-            BundleFileLocation bundleFileLocation = ProbeAppBundle(relativePath, pathIsBundleRelative: true);
+            ProbeAppBundle(relativePath, pathIsBundleRelative: true, out BundleFileLocation bundleFileLocation);
             if (!bundleFileLocation.IsValid)
             {
                 sCoreLibSatellite = new string(systemDirectory);
@@ -473,7 +473,7 @@ namespace Internal.Runtime.Binder
         {
             int hr = HResults.S_OK;
 
-            BundleFileLocation bundleFileLocation = ProbeAppBundle(relativePath, pathIsBundleRelative: true);
+            ProbeAppBundle(relativePath, pathIsBundleRelative: true, out BundleFileLocation bundleFileLocation);
             if (!bundleFileLocation.IsValid)
             {
                 return hr;
@@ -688,7 +688,7 @@ namespace Internal.Runtime.Binder
                         GetAppBundleBasePath(new StringHandleOnStack(ref assemblyFilePath));
                         assemblyFilePath += assemblyFileName;
 
-                        BundleFileLocation bundleFileLocation = ProbeAppBundle(assemblyFileName, pathIsBundleRelative: true);
+                        ProbeAppBundle(assemblyFileName, pathIsBundleRelative: true, out BundleFileLocation bundleFileLocation);
                         if (bundleFileLocation.IsValid)
                         {
                             int hr = GetAssembly(assemblyFilePath, isInTPA: true, out tpaAssembly, bundleFileLocation);

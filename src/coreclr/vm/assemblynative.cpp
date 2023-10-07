@@ -1615,19 +1615,15 @@ extern "C" BOOL QCALLTYPE Bundle_AppIsBundle()
     return result;
 }
 
-extern "C" BundleFileLocation QCALLTYPE Bundle_ProbeAppBundle(LPCWSTR path, BOOL pathIsBundleRelative)
+extern "C" void QCALLTYPE Bundle_ProbeAppBundle(LPCWSTR path, BOOL pathIsBundleRelative, BundleFileLocation* result)
 {
     QCALL_CONTRACT;
 
-    BundleFileLocation result = BundleFileLocation::Invalid();
-
     BEGIN_QCALL;
 
-    result = Bundle::ProbeAppBundle(SString(path), pathIsBundleRelative);
+    *result = Bundle::ProbeAppBundle(SString(path), pathIsBundleRelative);
 
     END_QCALL;
-
-    return result;
 }
 
 extern "C" void QCALLTYPE Bundle_GetAppBundleBasePath(QCall::StringHandleOnStack path)

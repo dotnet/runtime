@@ -171,7 +171,7 @@ extern "C" INT_PTR QCALLTYPE PEAssembly_GetHostAssembly(PEAssembly * pPEAssembly
 
 extern "C" BOOL QCALLTYPE Bundle_AppIsBundle();
 
-extern "C" BundleFileLocation QCALLTYPE Bundle_ProbeAppBundle(LPCWSTR path, BOOL pathIsBundleRelative);
+extern "C" void QCALLTYPE Bundle_ProbeAppBundle(LPCWSTR path, BOOL pathIsBundleRelative, BundleFileLocation* result);
 
 extern "C" void QCALLTYPE Bundle_GetAppBundleBasePath(QCall::StringHandleOnStack path);
 #endif
