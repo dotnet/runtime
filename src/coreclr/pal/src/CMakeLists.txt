@@ -342,3 +342,6 @@ endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS
 install_clr (TARGETS coreclrpal DESTINATIONS lib)
+
+# .NET 9 experiment - enable PAL_PERF
+add_definitions(-DPAL_PERF)
