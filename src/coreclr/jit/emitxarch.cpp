@@ -12683,10 +12683,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else if (code & 0x00FF0000)
     {
-        if (size == EA_2BYTE)
+        if ((size == EA_2BYTE) && (ins == INS_cmpxchg))
         {
-            assert(ins == INS_cmpxchg);
-
             dst += emitOutputByte(dst, 0x66);
         }
 
@@ -13510,10 +13508,8 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else if (code & 0x00FF0000)
     {
-        if (size == EA_2BYTE)
+        if ((size == EA_2BYTE) && (ins == INS_cmpxchg))
         {
-            assert(ins == INS_cmpxchg);
-
             dst += emitOutputByte(dst, 0x66);
         }
 
