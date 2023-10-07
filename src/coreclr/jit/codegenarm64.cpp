@@ -3800,7 +3800,9 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     genConsumeAddress(addr);
     genConsumeRegs(data);
 
-    emitAttr dataSize = emitTypeSize(data);
+    assert(treeNode->OperIs(GT_XCHG) || !varTypeIsSmall(treeNode->TypeGet()));
+
+    emitAttr dataSize = emitActualTypeSize(data);
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
     {
@@ -3824,11 +3826,11 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
             case GT_XCHG:
             {
                 instruction ins = INS_swpal;
-                if (dataSize == EA_1BYTE)
+                if (varTypeIsByte(treeNode->TypeGet()))
                 {
                     ins = INS_swpalb;
                 }
-                else if (dataSize == EA_2BYTE)
+                else if (varTypeIsShort(treeNode->TypeGet()))
                 {
                     ins = INS_swpalh;
                 }
@@ -3895,12 +3897,12 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
         instruction insLd = INS_ldaxr;
         instruction insSt = INS_stlxr;
-        if (dataSize == EA_1BYTE)
+        if (varTypeIsByte(treeNode->TypeGet()))
         {
             insLd = INS_ldaxrb;
             insSt = INS_stlxrb;
         }
-        else if (dataSize == EA_2BYTE)
+        else if (varTypeIsShort(treeNode->TypeGet()))
         {
             insLd = INS_ldaxrh;
             insSt = INS_stlxrh;
@@ -3983,11 +3985,11 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         noway_assert((dataReg != targetReg) || (targetReg == comparandReg));
 
         instruction ins = INS_casal;
-        if (dataSize == EA_1BYTE)
+        if (varTypeIsByte(treeNode->TypeGet()))
         {
             ins = INS_casalb;
         }
-        else if (dataSize == EA_2BYTE)
+        else if (varTypeIsShort(treeNode->TypeGet()))
         {
             ins = INS_casalh;
         }
@@ -4041,12 +4043,12 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
         instruction insLd = INS_ldaxr;
         instruction insSt = INS_stlxr;
-        if (dataSize == EA_1BYTE)
+        if (varTypeIsByte(treeNode->TypeGet()))
         {
             insLd = INS_ldaxrb;
             insSt = INS_stlxrb;
         }
-        else if (dataSize == EA_2BYTE)
+        else if (varTypeIsShort(treeNode->TypeGet()))
         {
             insLd = INS_ldaxrh;
             insSt = INS_stlxrh;
