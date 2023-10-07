@@ -676,7 +676,7 @@ private:
                 if (!condTree->IsIntegralConst(0))
                 {
                     block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_compiler));
-                    m_compiler->fgRemoveRefPred(block->bbNext, block);
+                    m_compiler->fgRemoveRefPred(block->Next(), block);
                 }
                 else
                 {
@@ -819,7 +819,7 @@ PhaseStatus Compiler::fgInline()
             }
         }
 
-        block = block->bbNext;
+        block = block->Next();
 
     } while (block);
 
@@ -840,7 +840,7 @@ PhaseStatus Compiler::fgInline()
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
         }
 
-        block = block->bbNext;
+        block = block->Next();
 
     } while (block);
 
@@ -1526,17 +1526,17 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
-                if (block->bbNext)
+                if (block->IsLast())
+                {
+                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
+                    block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
+                }
+                else
                 {
                     JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
                             block->bbNum, bottomBlock->bbNum);
                     block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                     block->bbJumpDest = bottomBlock;
-                }
-                else
-                {
-                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                    block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                 }
 
                 fgAddRefPred(bottomBlock, block);
@@ -1548,10 +1548,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         InlineeCompiler->fgFirstBB->bbRefs--;
 
         // Insert inlinee's blocks into inliner's block list.
-        topBlock->setNext(InlineeCompiler->fgFirstBB);
+        topBlock->SetNext(InlineeCompiler->fgFirstBB);
         fgRemoveRefPred(bottomBlock, topBlock);
         fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
-        InlineeCompiler->fgLastBB->setNext(bottomBlock);
+        InlineeCompiler->fgLastBB->SetNext(bottomBlock);
 
         //
         // Add inlinee's block count to inliner's.

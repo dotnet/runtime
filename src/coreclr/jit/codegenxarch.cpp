@@ -205,7 +205,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 {
-    BasicBlock* const nextBlock = block->bbNext;
+    BasicBlock* const nextBlock = block->Next();
 
 #if defined(FEATURE_EH_FUNCLETS)
     // Generate a call to the finally, like this:
@@ -256,7 +256,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         BasicBlock* const jumpDest = nextBlock->bbJumpDest;
 
         // Now go to where the finally funclet needs to return to.
-        if ((jumpDest == nextBlock->bbNext) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
+        if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
         {
             // Fall-through.
             // TODO-XArch-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -8248,7 +8248,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
 
     // For now, we only support the "push" case; we will push a full slot for the first field of each slot
     // within the struct.
-    assert((putArgStk->isPushKind()) && !preAdjustedStack && m_pushStkArg);
+    assert(putArgStk->isPushKind() && !preAdjustedStack && m_pushStkArg);
 
     // If we have pre-adjusted the stack and are simply storing the fields in order, set the offset to 0.
     // (Note that this mode is not currently being used.)

@@ -1592,6 +1592,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AdvSimd_Arm64_LoadVector128x2:
             case NI_AdvSimd_Arm64_LoadVector128x3:
             case NI_AdvSimd_Arm64_LoadVector128x4:
+            case NI_AdvSimd_LoadAndReplicateToVector64x2:
+            case NI_AdvSimd_LoadAndReplicateToVector64x3:
+            case NI_AdvSimd_LoadAndReplicateToVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
             {
                 assert(intrin.op1 != nullptr);
                 BuildConsecutiveRegistersForDef(intrinsicTree, dstCount);

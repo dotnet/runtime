@@ -7511,7 +7511,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // block removal on it.
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
-        block->bbJumpDest = fgFirstBB->bbNext;
+        block->bbJumpDest = fgFirstBB->Next();
     }
 
     // Finish hooking things up.
@@ -9917,8 +9917,7 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
         // Check for a misaligned floating point indirection.
         GenTree*       effAddr = addr->gtEffectiveVal(true);
         target_ssize_t offset;
-        FieldSeq*      fldSeq;
-        gtPeelOffsets(&effAddr, &offset, &fldSeq);
+        gtPeelOffsets(&effAddr, &offset);
 
         if (((offset % genTypeSize(TYP_FLOAT)) != 0) ||
             (effAddr->IsCnsIntOrI() && ((effAddr->AsIntConCommon()->IconValue() % genTypeSize(TYP_FLOAT)) != 0)))
@@ -13177,7 +13176,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
              * Remove the conditional statement */
 
             noway_assert(cond->gtOper == GT_CNS_INT);
-            noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
+            noway_assert((block->Next()->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
             if (condTree != cond)
             {
@@ -13204,14 +13203,14 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 /* JTRUE 1 - transform the basic block into a BBJ_ALWAYS */
                 block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                 bTaken    = block->bbJumpDest;
-                bNotTaken = block->bbNext;
+                bNotTaken = block->Next();
             }
             else
             {
                 /* Unmark the loop if we are removing a backwards branch */
                 /* dest block must also be marked as a loop head and     */
                 /* We must be able to reach the backedge block           */
-                if ((block->bbJumpDest->isLoopHead()) && (block->bbJumpDest->bbNum <= block->bbNum) &&
+                if (block->bbJumpDest->isLoopHead() && (block->bbJumpDest->bbNum <= block->bbNum) &&
                     fgReachable(block->bbJumpDest, block))
                 {
                     optUnmarkLoopBlocks(block->bbJumpDest, block);
@@ -13219,7 +13218,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 /* JTRUE 0 - transform the basic block into a BBJ_NONE   */
                 block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
-                bTaken    = block->bbNext;
+                bTaken    = block->Next();
                 bNotTaken = block->bbJumpDest;
             }
 
@@ -13276,24 +13275,24 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     switch (bUpdated->GetBBJumpKind())
                     {
                         case BBJ_NONE:
-                            edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
+                            edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
                             break;
 
                         case BBJ_COND:
-                            edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
+                            edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
                             FALLTHROUGH;
 
                         case BBJ_ALWAYS:
                             edge         = fgGetPredForBlock(bUpdated->bbJumpDest, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
                             break;
 
                         default:
@@ -13444,7 +13443,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                 {
-                    if (curJump != block->bbNext)
+                    if (!block->NextIs(curJump))
                     {
                         // transform the basic block into a BBJ_ALWAYS
                         block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
@@ -13948,7 +13947,7 @@ void Compiler::fgMorphBlocks()
             }
         }
 
-        block = block->bbNext;
+        block = block->Next();
     } while (block != nullptr);
 
     // We are done with the global morphing phase

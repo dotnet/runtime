@@ -105,7 +105,7 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
                 <Exec>varIndex++</Exec>
                 <Exec>bbLiveInMap = bbLiveInMap >> 1</Exec>
               </Loop>
-            <Exec>block = block->bbNext</Exec>
+            <Exec>block = block->Next()</Exec>
           </Loop>
         </CustomListItems>
         <Item Name="outVarToRegMaps">"OutVarToRegMaps"</Item>
@@ -124,7 +124,7 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
                 <Exec>varIndex++</Exec>
                 <Exec>bbLiveInMap = bbLiveInMap >> 1</Exec>
               </Loop>
-            <Exec>block = block->bbNext</Exec>
+            <Exec>block = block->Next()</Exec>
           </Loop>
         </CustomListItems>
         <Item Name="AvailableRegs mask">this-&gt;m_AvailableRegs</Item>

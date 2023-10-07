@@ -7,6 +7,7 @@
     <NoWarn>$(NoWarn);CS8002</NoWarn>
     <!-- FSharp.Core: Could not find embedded resource 'FSharpOptimizationCompressedData.FSharp.Core' to remove in assembly 'FSharp.Core'. See https://github.com/dotnet/fsharp/pull/14395 -->
     <NoWarn>$(NoWarn);IL2040</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">
