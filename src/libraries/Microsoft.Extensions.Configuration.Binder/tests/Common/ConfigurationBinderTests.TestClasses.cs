@@ -112,19 +112,26 @@ namespace Microsoft.Extensions
 
         public record RecordWhereParametersHaveDefaultValue(string Name, string Address, int Age = 42);
 
-        public record ClassWhereParametersHaveDefaultValue
+        public class ClassWhereParametersHaveDefaultValue
         {
             public string? Name { get; }
             public string Address { get; }
             public int Age { get; }
+            public float F { get;}
+            public double D { get;}
+            public decimal M { get;}
 
-            public ClassWhereParametersHaveDefaultValue(string? name, string address, int age = 42)
+            public ClassWhereParametersHaveDefaultValue(string? name, string address, int age = 42, float f = 42.0f, double d = 3.14159, decimal m = 3.1415926535897932384626433M)
             {
                 Name = name;
                 Address = address;
                 Age = age;
+                F = f;
+                D = d;
+                M = m;
             }
         }
+
 
         public class ClassWithPrimaryCtor(string color, int length)
         {

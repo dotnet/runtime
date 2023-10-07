@@ -1972,6 +1972,34 @@ namespace System.Text.Json.Serialization.Tests
             MyTuple.Item4.Verify();
         }
     }
+    public class Class_With_Parameters_Default_Values
+    {
+        public int I { get; }
+        public float F { get;}
+        public double D { get;}
+        public decimal M { get;}
+
+        public Class_With_Parameters_Default_Values(int i = 21, float f = 42.0f, double d = 3.14159, decimal m = 3.1415926535897932384626433M)
+        {
+            I = i;
+            F = f;
+            D = d;
+            M = m;
+        }
+        public void Initialize() { }
+
+        public static readonly string s_json = @"{}";
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
+
+        public void Verify()
+        {
+            Assert.Equal(21, I);
+            Assert.Equal(42.0f, F);
+            Assert.Equal(3.14159, D);
+            Assert.Equal(1415926535897932384626433M, M);
+        }
+    }
 
     public class Point_MembersHave_JsonPropertyName : ITestClass
     {
