@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitBlankLineIfRequired();
                 EmitStartBlock($"public static object? {nameof(MethodsToGen_CoreBindingHelper.GetCore)}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, Action<{Identifier.BinderOptions}>? {Identifier.configureOptions})");
 
-                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration, _emitThrowIfNullMethod);
 
                 _writer.WriteLine($"{Identifier.BinderOptions}? {Identifier.binderOptions} = {Identifier.GetBinderOptions}({Identifier.configureOptions});");
                 _writer.WriteLine();
@@ -178,7 +178,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitBlankLineIfRequired();
                 EmitStartBlock($"public static object? {nameof(MethodsToGen_CoreBindingHelper.GetValueCore)}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, string {Identifier.key})");
 
-                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration, _emitThrowIfNullMethod);
                 _writer.WriteLine($@"{Identifier.IConfigurationSection} {Identifier.section} = {GetSectionFromConfigurationExpression(Identifier.key, addQuotes: false)};");
                 _writer.WriteLine();
 
@@ -224,7 +224,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitBlankLineIfRequired();
                 EmitStartBlock($"public static void {nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}({Identifier.IConfiguration} {Identifier.configuration}, object {Identifier.instance}, Type {Identifier.type}, {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureOptions})");
-                EmitCheckForNullArgument_WithBlankLine(Identifier.instance, voidReturn: true);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.instance, _emitThrowIfNullMethod, voidReturn: true);
                 EmitIConfigurationHasValueOrChildrenCheck(voidReturn: true);
                 _writer.WriteLine($"{Identifier.BinderOptions}? {Identifier.binderOptions} = {Identifier.GetBinderOptions}({Identifier.configureOptions});");
                 _writer.WriteLine();
@@ -475,16 +475,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitGetBinderOptionsHelper();
                 }
 
-                if (_bindingHelperInfo.TypesForGen_ParsePrimitive is { Count: not 0 } stringParsableTypes)
+                if (_emitEnumParseMethod)
                 {
-                    bool enumTypeExists = false;
-
-                    if (_sourceGenSpec.EmitEnumParseMethod)
-                    {
-                        _writer.WriteLine();
-                        EmitEnumParseMethod();
-                        _emitBlankLineBeforeNextStatement = true;
-                    }
+                    _writer.WriteLine();
+                    EmitEnumParseMethod();
+                    _emitBlankLineBeforeNextStatement = true;
                 }
             }
 
@@ -574,7 +569,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof(T)}}");
 
-                string parseEnumCall = _sourceGenSpec.EmitGenericParseEnum ? "Enum.Parse<T>(value, ignoreCase: true)" : "(T)Enum.Parse(typeof(T), value, ignoreCase: true)";
+                string parseEnumCall = _emitGenericParseEnum ? "Enum.Parse<T>(value, ignoreCase: true)" : "(T)Enum.Parse(typeof(T), value, ignoreCase: true)";
                 _writer.WriteLine($$"""
                     public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
                     {

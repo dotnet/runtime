@@ -229,7 +229,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _emitBlankLineBeforeNextStatement = true;
             }
 
-            private void EmitCheckForNullArgument_WithBlankLine(string paramName, bool voidReturn = false)
+            private void EmitCheckForNullArgument_WithBlankLine(string paramName, bool useThrowIfNullMethod, bool voidReturn = false)
             {
                 if (voidReturn)
                 {
@@ -242,7 +242,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    string throwIfNullExpr = _sourceGenSpec.EmitThrowIfNullMethod
+                    string throwIfNullExpr = useThrowIfNullMethod
                     ? $"ArgumentNullException.ThrowIfNull({paramName});"
                     : $$"""
                     if ({{paramName}} is null)
