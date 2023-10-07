@@ -292,6 +292,8 @@ typedef enum {
 	ArgValuetypeInReg,
 	ArgValuetypeAddrInIReg,
 	ArgValuetypeAddrOnStack,
+	/* SIMD value in SSE register */
+	ArgSIMDInSSEReg,
 	/* gsharedvt argument passed by addr */
 	ArgGSharedVtInReg,
 	ArgGSharedVtOnStack,

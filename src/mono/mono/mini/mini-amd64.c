@@ -674,6 +674,18 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		return;
 	}
 
+	/* Can't use mini_class_is_simd () here as we don't have access to a MonoCompile */
+	if (m_class_is_simd_type (klass) && struct_size == 16 && !sig->pinvoke && !is_return) {
+		if (*fr >= FLOAT_PARAM_REGS) {
+			pass_on_stack = TRUE;
+		} else {
+			ainfo->storage = ArgSIMDInSSEReg;
+			ainfo->reg = (guint8)*fr;
+			(*fr) ++;
+			return;
+		}
+	}
+
 	if (pass_on_stack) {
 		/* Always pass in memory */
 		ainfo->offset = GINT32_TO_INT16 (*stack_size);
@@ -1877,7 +1889,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			 * are volatile across calls.
 			 * FIXME: Optimize this.
 			 */
-			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInFloatSSEReg) || (ainfo->storage == ArgInDoubleSSEReg) || (ainfo->storage == ArgValuetypeInReg) || (ainfo->storage == ArgGSharedVtInReg))
+			if ((ainfo->storage == ArgInIReg) || (ainfo->storage == ArgInFloatSSEReg) || (ainfo->storage == ArgInDoubleSSEReg) || (ainfo->storage == ArgSIMDInSSEReg) || (ainfo->storage == ArgValuetypeInReg) || (ainfo->storage == ArgGSharedVtInReg))
 				inreg = FALSE;
 
 			ins->opcode = OP_REGOFFSET;
@@ -1886,6 +1898,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			case ArgInIReg:
 			case ArgInFloatSSEReg:
 			case ArgInDoubleSSEReg:
+			case ArgSIMDInSSEReg:
 			case ArgGSharedVtInReg:
 				if (inreg) {
 					ins->opcode = OP_REGVAR;
@@ -1933,14 +1946,23 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				ins->opcode = OP_REGOFFSET;
 				ins->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
-				offset = ALIGN_TO (offset, sizeof (target_mgreg_t));
+				int argsize, align;
+				if (ainfo->storage == ArgSIMDInSSEReg) {
+					argsize = 16;
+					align = 16;
+					offset = ALIGN_TO (offset, 16);
+				} else {
+					argsize = (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (target_mgreg_t) : sizeof (target_mgreg_t);
+					align = sizeof (target_mgreg_t);
+				}
+				offset = ALIGN_TO (offset, align);
 				if (cfg->arch.omit_fp) {
 					ins->inst_offset = offset;
-					offset += (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (target_mgreg_t) : sizeof (target_mgreg_t);
+					offset += argsize;
 					// Arguments are yet supported by the stack map creation code
 					//cfg->locals_max_stack_offset = MAX (cfg->locals_max_stack_offset, offset);
 				} else {
-					offset += (ainfo->storage == ArgValuetypeInReg) ? ainfo->nregs * sizeof (target_mgreg_t) : sizeof (target_mgreg_t);
+					offset += argsize;
 					ins->inst_offset = - offset;
 					//cfg->locals_min_stack_offset = MIN (cfg->locals_min_stack_offset, offset);
 				}
@@ -2027,7 +2049,15 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int re
 		MONO_ADD_INS (cfg->cbb, ins);
 
 		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, reg, TRUE);
+		break;
+	case ArgSIMDInSSEReg:
+		MONO_INST_NEW (cfg, ins, OP_XMOVE);
+		ins->dreg = alloc_xreg (cfg);
+		ins->sreg1 = tree->dreg;
+		ins->klass = tree->klass;
+		MONO_ADD_INS (cfg->cbb, ins);
 
+		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, reg, MONO_REG_SIMD);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -2171,10 +2201,9 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 
 		switch (ainfo->storage) {
 		case ArgInIReg:
-			linfo->args [i].storage = LLVMArgNormal;
-			break;
 		case ArgInDoubleSSEReg:
 		case ArgInFloatSSEReg:
+		case ArgSIMDInSSEReg:
 			linfo->args [i].storage = LLVMArgNormal;
 			break;
 		case ArgOnStack:
@@ -2318,6 +2347,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
+		case ArgSIMDInSSEReg:
 			add_outarg_reg (cfg, call, ainfo->storage, ainfo->reg, in);
 			break;
 		case ArgOnStack:
@@ -8093,6 +8123,9 @@ MONO_RESTORE_WARNING
 				break;
 			case ArgInDoubleSSEReg:
 				amd64_movsd_membase_reg (code, ins->inst_basereg, ins->inst_offset, ainfo->reg);
+				break;
+			case ArgSIMDInSSEReg:
+				amd64_sse_movups_membase_reg (code, ins->inst_basereg, ins->inst_offset, ainfo->reg);
 				break;
 			case ArgValuetypeInReg:
 				for (quad = 0; quad < 2; quad ++) {
