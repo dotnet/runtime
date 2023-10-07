@@ -183,8 +183,6 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyNative_GetPEImage)
     DllImportEntry(AssemblyNative_SetSymbolBytes)
     DllImportEntry(AssemblyNative_GetDefaultAssemblyBinder)
-    DllImportEntry(AssemblyNative_InitializeAssemblyLoadContext)
-    DllImportEntry(AssemblyNative_PrepareForAssemblyLoadContextRelease)
     DllImportEntry(AssemblyNative_LoadFromPath)
     DllImportEntry(AssemblyNative_LoadFromStream)
 #ifdef TARGET_WINDOWS
