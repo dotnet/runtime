@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #region Core binding extensions.
         public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
         {
-            ArgumentNullException.ThrowIfNull(configuration),
+            ArgumentNullException.ThrowIfNull(configuration);
 
             BinderOptions? binderOptions = GetBinderOptions(configureOptions);
 

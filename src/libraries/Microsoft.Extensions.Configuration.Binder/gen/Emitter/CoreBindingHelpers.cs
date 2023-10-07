@@ -481,6 +481,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitEnumParseMethod();
                     _emitBlankLineBeforeNextStatement = true;
                 }
+
+                if (_bindingHelperInfo.TypesForGen_ParsePrimitive is { Count: not 0 } stringParsableTypes)
+                {
+                    foreach (ParsableFromStringSpec type in stringParsableTypes)
+                    {
+                        if (type.StringParsableTypeKind is not StringParsableTypeKind.Enum)
+                        {
+                            EmitBlankLineIfRequired();
+                            EmitPrimitiveParseMethod(type);
+                        }
+                    }
+                }
             }
 
             private void EmitValidateConfigurationKeysMethod()

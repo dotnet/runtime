@@ -853,10 +853,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 foreach (var typeSymbol in _createdTypeSpecs.Keys)
                 {
-                    if (typeSymbol.TypeKind.HasFlag(TypeKind.Enum))
+                    if (IsEnum(typeSymbol))
                     {
                         _emitEnumParseMethod = true;
-                        _emitGenericParseEnum = typeSymbol.GetMembers("Parse").Any(m => m is IMethodSymbol methodSymbol && methodSymbol.IsGenericMethod);
+                        _emitGenericParseEnum = _typeSymbols.Enum.GetMembers("Parse").Any(m => m is IMethodSymbol methodSymbol && methodSymbol.IsGenericMethod);
+                        return;
                     }
                 }
             }
