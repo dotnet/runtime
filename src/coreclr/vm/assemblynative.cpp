@@ -1690,3 +1690,44 @@ extern "C" INT_PTR QCALLTYPE PEAssembly_GetHostAssembly(PEAssembly * pPEAssembly
 
     return result;
 }
+
+extern "C" BOOL QCALLTYPE Bundle_AppIsBundle()
+{
+    QCALL_CONTRACT;
+
+    BOOL result = FALSE;
+
+    BEGIN_QCALL;
+
+    result = Bundle::AppIsBundle();
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" BundleFileLocation QCALLTYPE Bundle_ProbeAppBundle(LPCWSTR path, BOOL pathIsBundleRelative)
+{
+    QCALL_CONTRACT;
+
+    BundleFileLocation result = BundleFileLocation::Invalid();
+
+    BEGIN_QCALL;
+
+    result = Bundle::ProbeAppBundle(SString(path), pathIsBundleRelative);
+
+    END_QCALL;
+
+    return result;
+}
+
+extern "C" void QCALLTYPE Bundle_GetAppBundleBasePath(QCall::StringHandleOnStack path)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    path.Set(Bundle::AppBundle->BasePath().GetUnicode());
+
+    END_QCALL;
+}

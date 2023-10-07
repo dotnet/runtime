@@ -28,6 +28,8 @@ namespace Internal.Runtime.Binder
         public long Size;
         public long Offset;
         public long UncompressedSize;
+
+        public readonly bool IsValid => Offset != 0;
     }
 
     internal static partial class AssemblyBinderCommon
@@ -46,6 +48,16 @@ namespace Internal.Runtime.Binder
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DomainAssembly_GetLoaderAllocator")]
         private static partial IntPtr DomainAssembly_GetLoaderAllocator(IntPtr pDomainAssembly);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Bundle_AppIsBundle")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool AppIsBundle();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Bundle_ProbeAppBundle", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial BundleFileLocation ProbeAppBundle(string path, [MarshalAs(UnmanagedType.Bool)] bool pathIsBundleRelative);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Bundle_GetAppBundleBasePath")]
+        private static partial void GetAppBundleBasePath(StringHandleOnStack path);
 
         public static bool IsCompatibleAssemblyVersion(AssemblyName requestedName, AssemblyName foundName)
         {
@@ -257,11 +269,17 @@ namespace Internal.Runtime.Binder
             // Satellite assembly's path:
             //   * Absolute path when looking for a file on disk
             //   * Bundle-relative path when looking within the single-file bundle.
+            string sCoreLibSatellite = string.Empty;
 
-            // PathSource pathSource = PathSource.Bundle;
-            // BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(relativePath, /*pathIsBundleRelative */ true);
-            PathSource pathSource = PathSource.ApplicationAssemblies;
-            string sCoreLibSatellite = new string(systemDirectory) + relativePath;
+            PathSource pathSource = PathSource.Bundle;
+            BundleFileLocation bundleFileLocation = ProbeAppBundle(relativePath, pathIsBundleRelative: true);
+            if (!bundleFileLocation.IsValid)
+            {
+                sCoreLibSatellite = new string(systemDirectory);
+                pathSource = PathSource.ApplicationAssemblies;
+            }
+
+            sCoreLibSatellite = Path.Combine(sCoreLibSatellite, relativePath);
 
             int hr = GetAssembly(sCoreLibSatellite, isInTPA: true, out assembly, default);
             if (hr < 0)
@@ -542,8 +560,44 @@ namespace Internal.Runtime.Binder
                 // The list of bundled assemblies is contained in the bundle manifest, and NOT in the TPA.
                 // Therefore the bundle is first probed using the assembly's simple name.
                 // If found, the assembly is loaded from the bundle.
+                if (AppIsBundle())
+                {
+                    // Search Assembly.ni.dll, then Assembly.dll
+                    // The Assembly.ni.dll paths are rare, and intended for supporting managed C++ R2R assemblies.
+                    ReadOnlySpan<string> candidates = ["ni.dll", ".dll"];
 
-                // if (Bundle::AppIsBundle())
+                    // Loop through the binding paths looking for a matching assembly
+                    foreach (string candidate in candidates)
+                    {
+                        string assemblyFileName = requestedAssemblyName.SimpleName + candidate;
+                        string? assemblyFilePath = string.Empty;
+                        GetAppBundleBasePath(new StringHandleOnStack(ref assemblyFilePath));
+                        assemblyFilePath += assemblyFileName;
+
+                        BundleFileLocation bundleFileLocation = ProbeAppBundle(assemblyFileName, pathIsBundleRelative: true);
+                        if (bundleFileLocation.IsValid)
+                        {
+                            int hr = GetAssembly(assemblyFilePath, isInTPA: true, out tpaAssembly, bundleFileLocation);
+
+                            NativeRuntimeEventSource.Log.KnownPathProbed(assemblyFilePath, (ushort)PathSource.Bundle, hr);
+
+                            if (hr != HResults.E_FILENOTFOUND)
+                            {
+                                // Any other error is fatal
+                                if (hr < 0) return hr;
+
+                                Debug.Assert(tpaAssembly != null);
+                                if (TestCandidateRefMatchesDef(requestedAssemblyName, tpaAssembly.AssemblyName, tpaListAssembly: true))
+                                {
+                                    // We have found the requested assembly match in the bundle with validation of the full-qualified name.
+                                    // Bind to it.
+                                    bindResult.SetResult(tpaAssembly);
+                                    return HResults.S_OK;
+                                }
+                            }
+                        }
+                    }
+                }
 
                 // Is assembly on TPA list?
                 Debug.Assert(applicationContext.TrustedPlatformAssemblyMap != null);
