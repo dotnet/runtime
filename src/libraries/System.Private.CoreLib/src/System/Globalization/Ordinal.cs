@@ -82,7 +82,6 @@ namespace System.Globalization
             where TVector : struct, ISimdVector<TVector, ushort>
         {
             Debug.Assert(length >= TVector.Count);
-            Debug.Assert(TVector.IsHardwareAccelerated);
 
             nuint lengthU = (nuint)length;
             nuint lengthToExamine = lengthU - (nuint)TVector.Count;
