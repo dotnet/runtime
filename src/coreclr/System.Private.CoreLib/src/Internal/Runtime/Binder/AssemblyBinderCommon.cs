@@ -8,6 +8,7 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Loader;
 using Internal.Runtime.Binder.Tracing;
 
@@ -468,7 +469,118 @@ namespace Internal.Runtime.Binder
             return boundAssemblyName.Equals(requestedAssemblyName, includeFlags);
         }
 
-        // TODO: BindSatelliteResource
+        private static int BindSatelliteResourceFromBundle(AssemblyName requestedAssemblyName, string relativePath, ref BindResult bindResult)
+        {
+            int hr = HResults.S_OK;
+
+            BundleFileLocation bundleFileLocation = ProbeAppBundle(relativePath, pathIsBundleRelative: true);
+            if (!bundleFileLocation.IsValid)
+            {
+                return hr;
+            }
+
+            hr = GetAssembly(relativePath, isInTPA: false, out Assembly? assembly, bundleFileLocation);
+
+            NativeRuntimeEventSource.Log.KnownPathProbed(relativePath, (ushort)PathSource.Bundle, hr);
+
+            // Missing files are okay and expected when probing
+            if (hr == HResults.E_FILENOTFOUND)
+            {
+                return HResults.S_OK;
+            }
+
+            bindResult.SetAttemptResult(hr, assembly);
+            if (hr < 0)
+                return hr;
+
+            Debug.Assert(assembly != null);
+            AssemblyName boundAssemblyName = assembly.AssemblyName;
+            if (TestCandidateRefMatchesDef(requestedAssemblyName, boundAssemblyName, tpaListAssembly: false))
+            {
+                bindResult.SetResult(assembly);
+                hr = HResults.S_OK;
+            }
+            else
+            {
+                hr = HResults.FUSION_E_REF_DEF_MISMATCH;
+            }
+
+            bindResult.SetAttemptResult(hr, assembly);
+            return hr;
+        }
+
+        private static int BindSatelliteResourceByProbingPaths(
+            List<string> resourceRoots,
+            AssemblyName requestedAssemblyName,
+            string relativePath,
+            ref BindResult bindResult,
+            PathSource pathSource)
+        {
+            foreach (string bindingPath in resourceRoots)
+            {
+                string fileName = Path.Combine(relativePath, bindingPath);
+                int hr = GetAssembly(fileName, isInTPA: false, out Assembly? assembly);
+                NativeRuntimeEventSource.Log.KnownPathProbed(fileName, (ushort)pathSource, hr);
+
+                // Missing files are okay and expected when probing
+                if (hr == HResults.E_FILENOTFOUND)
+                {
+                    return HResults.S_OK;
+                }
+
+                Debug.Assert(assembly != null);
+                AssemblyName boundAssemblyName = assembly.AssemblyName;
+                if (TestCandidateRefMatchesDef(requestedAssemblyName, boundAssemblyName, tpaListAssembly: false))
+                {
+                    bindResult.SetResult(assembly);
+                    hr = HResults.S_OK;
+                }
+                else
+                {
+                    hr = HResults.FUSION_E_REF_DEF_MISMATCH;
+                }
+
+                bindResult.SetAttemptResult(hr, assembly);
+                return hr;
+            }
+
+            // Up-stack expects S_OK when we don't find any candidate assemblies and no fatal error occurred (ie, no S_FALSE)
+            return HResults.S_OK;
+        }
+
+        private static int BindSatelliteResource(ApplicationContext applicationContext, AssemblyName requestedAssemblyName, ref BindResult bindResult)
+        {
+            Debug.Assert(!requestedAssemblyName.IsNeutralCulture);
+
+            string fileName = Path.Combine(requestedAssemblyName.CultureOrLanguage, requestedAssemblyName.SimpleName) + ".dll";
+
+            // Satellite resource probing strategy is to look:
+            //   * First within the single-file bundle
+            //   * Then under each of the Platform Resource Roots
+            //   * Then under each of the App Paths.
+            //
+            // During each search, if we find a platform resource file with matching file name, but whose ref-def didn't match,
+            // fall back to application resource lookup to handle case where a user creates resources with the same
+            // names as platform ones.
+
+            int hr = BindSatelliteResourceFromBundle(requestedAssemblyName, fileName, ref bindResult);
+
+            if (bindResult.Assembly != null || hr < 0)
+            {
+                return hr;
+            }
+
+            hr = BindSatelliteResourceByProbingPaths(applicationContext.PlatformResourceRoots, requestedAssemblyName, fileName, ref bindResult, PathSource.PlatformResourceRoots);
+
+            if (bindResult.Assembly != null || hr < 0)
+            {
+                return hr;
+            }
+
+            hr = BindSatelliteResourceByProbingPaths(applicationContext.AppPaths, requestedAssemblyName, fileName, ref bindResult, PathSource.AppPaths);
+
+            return hr;
+        }
 
         private static int BindAssemblyByProbingPaths(List<string> bindingPaths, AssemblyName requestedAssemblyName, out Assembly? result)
         {
@@ -547,9 +659,11 @@ namespace Internal.Runtime.Binder
         {
             bool fPartialMatchOnTpa = false;
 
-            if (requestedAssemblyName.IsNeutralCulture)
+            if (!requestedAssemblyName.IsNeutralCulture)
             {
-                // IF_FAIL_GO(BindSatelliteResource(pApplicationContext, pRequestedAssemblyName, pBindResult));
+                int hr = BindSatelliteResource(applicationContext, requestedAssemblyName, ref bindResult);
+                if (hr < 0)
+                    return hr;
             }
             else
             {

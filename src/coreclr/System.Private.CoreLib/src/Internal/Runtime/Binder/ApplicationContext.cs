@@ -32,7 +32,7 @@ namespace Internal.Runtime.Binder
 
         public object ContextCriticalSection { get; } = new object();
 
-        private readonly List<string> _platformResourceRoots = new List<string>();
+        public List<string> PlatformResourceRoots { get; } = new List<string>();
 
         public List<string> AppPaths { get; } = new List<string>();
 
@@ -255,7 +255,7 @@ namespace Internal.Runtime.Binder
                         throw new ArgumentException(nameof(pathName));
                     }
 
-                    _platformResourceRoots.Add(pathName);
+                    PlatformResourceRoots.Add(pathName);
                 }
 
                 //
