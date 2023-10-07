@@ -65,10 +65,6 @@ namespace System.Runtime.Loader
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MultiCoreJIT_InternalStartProfile", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void InternalStartProfile(string? profile, IntPtr ptrNativeAssemblyBinder);
 
-        // Foo
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void InternalStartProfile(string? profile, Internal.Runtime.Binder.AssemblyBinder ptrNativeAssemblyBinder);
-
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPath", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void LoadFromPath(ObjectHandleOnStack ptrNativeAssemblyBinder, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
@@ -227,7 +223,9 @@ namespace System.Runtime.Loader
         // Start profile optimization for the specified profile name.
         public void StartProfileOptimization(string? profile)
         {
-            InternalStartProfile(profile, _assemblyBinder);
+            // AssemblyBinder isn't supported in profiler implementation yet.
+            // See MulticoreJitProfilePlayer::LoadAssembly
+            InternalStartProfile(profile, IntPtr.Zero);
         }
 
         internal static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
