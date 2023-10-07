@@ -191,9 +191,14 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
         }
 
-        clsHnd = pResolvedToken->hClass;
-
+        clsHnd   = pResolvedToken->hClass;
         clsFlags = callInfo->classFlags;
+
+        // if clsHnd is an interface and method is static, try to get the actual implementation class
+        if ((clsFlags & CORINFO_FLG_INTERFACE) != 0 && (clsFlags & CORINFO_FLG_INTERFACE) != 0)
+        {
+            clsHnd = info.compCompHnd->getMethodClass(methHnd);
+        }
 
 #ifdef DEBUG
         // If this is a call to JitTestLabel.Mark, do "early inlining", and record the test attribute.
