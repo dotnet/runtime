@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 
 namespace System.Net
 {
+    [Obsolete(Obsoletions.AuthenticationManagerMessage, DiagnosticId = Obsoletions.AuthenticationManagerDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public class AuthenticationManager
     {
         private AuthenticationManager() { }

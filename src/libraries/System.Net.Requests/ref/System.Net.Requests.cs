@@ -6,6 +6,7 @@
 
 namespace System.Net
 {
+    [System.ObsoleteAttribute("AuthenticationManager is not supported. Methods will no-op or throw PlatformNotSupportedException.", DiagnosticId="SYSLIB0009", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
     public partial class AuthenticationManager
     {
         internal AuthenticationManager() { }
