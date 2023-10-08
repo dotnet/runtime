@@ -597,13 +597,15 @@ namespace System.Text
                 Debug.Assert(Vector128.IsHardwareAccelerated);
 
                 // We widen the utf8 param so we can compare it to utf16, this doubles how much of the utf16 vector we search
-                Vector128<byte> vecNarrow = Vector128.CreateScalarUnsafe(Unsafe.ReadUnaligned<ulong>(ref utf8)).AsByte();
-                if (!AllCharsInVectorAreAscii(vecNarrow))
+                ulong leftValues = Unsafe.ReadUnaligned<ulong>(ref utf8);
+                if (!AllBytesInUInt64AreAscii(leftValues))
                 {
                     return false;
                 }
 
+                Vector128<byte> vecNarrow = Vector128.CreateScalarUnsafe(leftValues).AsByte();
                 Vector128<ulong> vecWide = Vector128.WidenLower(vecNarrow).AsUInt64();
+
                 ulong right = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<ushort, byte>(ref utf16));
                 ulong rightNext = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<ushort, byte>(ref Unsafe.Add(ref utf16, sizeof(ulong) / 2)));
 
