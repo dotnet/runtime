@@ -6,7 +6,7 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90460 -->
-    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'tvos' and '$(TargetArch)' == 'arm64'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'tvos' and '$(TargetArchitecture)' == 'arm64'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StackTraceMetadata.cs" />

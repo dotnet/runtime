@@ -191,8 +191,9 @@ CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0) // Dump i
                                                                        // disassembled.
 CONFIG_INTEGER(JitDisasmSpilled, W("JitDisasmSpilled"), 0)      // Display native code when any register spilling occurs
 CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees for specified method
-CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 requests
-CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Only dump OSR requests for this offset
+CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 jit compilations
+CONFIG_INTEGER(JitDumpOSR, W("JitDumpOSR"), 1)                  // Dump OSR jit compilations
+CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Dump only OSR jit compilations with this offset
 CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
@@ -375,6 +376,32 @@ CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 #define CONST_CSE_ENABLE_ARM_NO_SHARING 2
 #define CONST_CSE_ENABLE_ALL 3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
+
+#if defined(DEBUG)
+// Allow fine-grained controls of CSEs done in a particular method
+//
+// Specify method that will respond to the CSEMask.
+// 0 means feature disabled and all methods run CSE normally.
+CONFIG_INTEGER(JitCSEHash, W("JitCSEHash"), 0)
+
+// Bitmask of allowed CSEs in methods specified by JitCSEHash.
+// These bits control the "cse attempts" made by normal jitting,
+// for the first 32 CSEs attempted (Note this is not the same as
+// the CSE candidate number, which reflects the order
+// in which CSEs were discovered).
+//
+// 0: do no CSEs
+// 1: do only the first CSE
+// 2: do only the second CSE
+// C: do only the third and fourth CSEs
+// F: do only the first four CSEs
+// ...etc...
+// FFFFFFFF : do all the CSEs normally done
+CONFIG_INTEGER(JitCSEMask, W("JitCSEMask"), 0)
+
+// Enable metric output in jit disasm & elsewhere
+CONFIG_INTEGER(JitMetrics, W("JitMetrics"), 0)
+#endif
 
 ///
 /// JIT

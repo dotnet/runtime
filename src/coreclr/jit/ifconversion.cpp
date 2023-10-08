@@ -83,7 +83,7 @@ public:
 bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
 {
     // Block should have a single successor or be a return.
-    if (!(block->GetUniqueSucc() != nullptr || (m_doElseConversion && (block->bbJumpKind == BBJ_RETURN))))
+    if (!(block->GetUniqueSucc() != nullptr || (m_doElseConversion && (block->KindIs(BBJ_RETURN)))))
     {
         return false;
     }
@@ -122,7 +122,7 @@ bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
 bool OptIfConversionDsc::IfConvertCheckThenFlow()
 {
     m_flowFound           = false;
-    BasicBlock* thenBlock = m_startBlock->bbNext;
+    BasicBlock* thenBlock = m_startBlock->Next();
 
     for (int thenLimit = 0; thenLimit < m_checkLimit; thenLimit++)
     {
@@ -137,7 +137,7 @@ bool OptIfConversionDsc::IfConvertCheckThenFlow()
         {
             // All the Then blocks up to m_finalBlock are in a valid flow.
             m_flowFound = true;
-            if (thenBlock->bbJumpKind == BBJ_RETURN)
+            if (thenBlock->KindIs(BBJ_RETURN))
             {
                 assert(m_finalBlock == nullptr);
                 m_mainOper = GT_RETURN;
@@ -385,7 +385,7 @@ void OptIfConversionDsc::IfConvertDump()
 {
     assert(m_startBlock != nullptr);
     m_comp->fgDumpBlock(m_startBlock);
-    for (BasicBlock* dumpBlock = m_startBlock->bbNext; dumpBlock != m_finalBlock;
+    for (BasicBlock* dumpBlock = m_startBlock->Next(); dumpBlock != m_finalBlock;
          dumpBlock             = dumpBlock->GetUniqueSucc())
     {
         m_comp->fgDumpBlock(dumpBlock);
@@ -553,7 +553,7 @@ void OptIfConversionDsc::IfConvertDump()
 bool OptIfConversionDsc::optIfConvert()
 {
     // Does the block end by branching via a JTRUE after a compare?
-    if (m_startBlock->bbJumpKind != BBJ_COND || m_startBlock->NumSucc() != 2)
+    if (!m_startBlock->KindIs(BBJ_COND) || m_startBlock->NumSucc() != 2)
     {
         return false;
     }
@@ -575,7 +575,7 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Check the Then and Else blocks have a single operation each.
-    if (!IfConvertCheckStmts(m_startBlock->bbNext, &m_thenOperation))
+    if (!IfConvertCheckStmts(m_startBlock->Next(), &m_thenOperation))
     {
         return false;
     }
@@ -742,8 +742,8 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Update the flow from the original block.
-    m_comp->fgRemoveAllRefPreds(m_startBlock->bbNext, m_startBlock);
-    m_startBlock->bbJumpKind = BBJ_ALWAYS;
+    m_comp->fgRemoveAllRefPreds(m_startBlock->Next(), m_startBlock);
+    m_startBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
 
 #ifdef DEBUG
     if (m_comp->verbose)
@@ -789,7 +789,7 @@ PhaseStatus Compiler::optIfConversion()
     {
         OptIfConversionDsc optIfConversionDsc(this, block);
         madeChanges |= optIfConversionDsc.optIfConvert();
-        block = block->bbPrev;
+        block = block->Prev();
     }
 #endif
 

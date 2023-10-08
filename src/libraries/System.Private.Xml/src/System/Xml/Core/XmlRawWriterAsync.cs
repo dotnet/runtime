@@ -118,8 +118,7 @@ namespace System.Xml
         // Forward call to WriteString(string).
         public override Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
         {
-            ReadOnlySpan<char> entity = stackalloc char[] { lowChar, highChar };
-            return WriteStringAsync(new string(entity));
+            return WriteStringAsync(new string([lowChar, highChar]));
         }
 
         // Forward call to WriteString(string).

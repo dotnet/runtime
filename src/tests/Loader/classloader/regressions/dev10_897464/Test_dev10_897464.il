@@ -6,7 +6,7 @@
 {
 }
 
-.assembly Test
+.assembly Test_dev10_897464
 {
   .hash algorithm 0x00008004
   .ver 1:0:0:0

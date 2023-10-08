@@ -497,6 +497,10 @@ namespace DebuggerTests
 
                     ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
                     ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
+                    ("test.GetDefaultAndRequiredParam(3, +2)", TNumber(5)),
+                    ("test.GetDefaultAndRequiredParam(3, -2)", TNumber(1)),
+                    ("test.GetDefaultAndRequiredParam(-123l, -1.1f)", TNumber("-124.1", isDecimal: true)), // long, float
+                    ("test.GetDefaultAndRequiredParam(-0.23)", TNumber("-32768.23", isDecimal: true)), // double, short
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\")", TString("a; -1; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23)", TString("a; 23; False")),
                     ("test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true)", TString("a; 23; True"))

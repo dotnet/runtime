@@ -34,7 +34,12 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName();
 		}
 
-		public static IEnumerable<object[]> LinkXml()
+        public static IEnumerable<object[]> Libraries()
+        {
+            return TestNamesBySuiteName();
+        }
+
+        public static IEnumerable<object[]> LinkXml()
 		{
 			return TestNamesBySuiteName();
 		}
