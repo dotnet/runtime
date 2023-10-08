@@ -4384,7 +4384,15 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
         instGen(INS_lock);
     }
 
-    GetEmitter()->emitIns_AR_R(ins, size, node->GetRegNum(), addr->GetRegNum(), 0);
+    regNumber targetReg = node->GetRegNum();
+    GetEmitter()->emitIns_AR_R(ins, size, targetReg, addr->GetRegNum(), 0);
+
+    if (varTypeIsSmall(node->TypeGet()))
+    {
+        instruction mov = varTypeIsSigned(node->TypeGet()) ? INS_movsx : INS_movzx;
+        GetEmitter()->emitIns_Mov(mov, size, targetReg, targetReg, /* canSkip */ false);
+    }
+
     genProduceReg(node);
 }
 
@@ -4400,6 +4408,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
 
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
+    emitAttr  size       = emitTypeSize(tree->TypeGet());
 
     GenTree* location  = tree->gtOpLocation;  // arg1
     GenTree* value     = tree->gtOpValue;     // arg2
@@ -4420,10 +4429,18 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     // location is Rm
     instGen(INS_lock);
 
-    GetEmitter()->emitIns_AR_R(INS_cmpxchg, emitTypeSize(targetType), value->GetRegNum(), location->GetRegNum(), 0);
+    GetEmitter()->emitIns_AR_R(INS_cmpxchg, size, value->GetRegNum(), location->GetRegNum(), 0);
 
     // Result is in RAX
-    inst_Mov(targetType, targetReg, REG_RAX, /* canSkip */ true);
+    if (varTypeIsSmall(tree->TypeGet()))
+    {
+        instruction mov = varTypeIsSigned(tree->TypeGet()) ? INS_movsx : INS_movzx;
+        GetEmitter()->emitIns_Mov(mov, size, targetReg, REG_RAX, /* canSkip */ false);
+    }
+    else
+    {
+        inst_Mov(targetType, targetReg, REG_RAX, /* canSkip */ true);
+    }
 
     genProduceReg(tree);
 }

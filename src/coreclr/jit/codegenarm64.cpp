@@ -3944,8 +3944,14 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
     }
 
-    if (treeNode->GetRegNum() != REG_NA)
+    if (targetReg != REG_NA)
     {
+        if (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet()))
+        {
+            instruction mov = varTypeIsShort(treeNode->TypeGet()) ? INS_sxth : INS_sxtb;
+            GetEmitter()->emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
+        }
+
         genProduceReg(treeNode);
     }
 }
@@ -4086,6 +4092,12 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         instGen_MemoryBarrier();
 
         gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
+    }
+
+    if (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet()))
+    {
+        instruction mov = varTypeIsShort(treeNode->TypeGet()) ? INS_sxth : INS_sxtb;
+        GetEmitter()->emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
     }
 
     genProduceReg(treeNode);
