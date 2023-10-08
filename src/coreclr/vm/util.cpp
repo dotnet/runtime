@@ -937,7 +937,7 @@ static int64_t GetPreciseTickCount()
 
 static void ReportLoadLibraryTime(LPCWSTR lpFileName, int64_t loadTime)
 {
-    int32_t loadLibraryCount = ::InterlockedAdd((long *)&s_loadLibraryCount, 1);
+    int32_t loadLibraryCount = ::InterlockedAdd((volatile int *)&s_loadLibraryCount, 1);
     int64_t totalTime = ::InterlockedAdd64(&s_loadLibraryTicks, loadTime);
     double frequency = (double)GetTimerFrequency();
     printf("\nLoadLibrary(%d: %S): %.6f seconds, %.6f total\n",
