@@ -131,10 +131,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return object.ReferenceEquals(this, o);
         }
 
-        public override int GetHashCode()
-        {
-            return InternalGetHashCode();
-        }
+        public abstract override int GetHashCode();
 
         public abstract string FullName { get; }
 
@@ -540,8 +537,6 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         public abstract TypeAttributes Attributes { get; }
-
-        protected abstract int InternalGetHashCode();
 
         public bool IsAbstract => (Attributes & TypeAttributes.Abstract) != 0;
 

@@ -154,7 +154,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
         public sealed override TypeAttributes Attributes => _typeDefinition.Flags;
 
-        protected sealed override int InternalGetHashCode()
+        public sealed override int GetHashCode()
         {
             return _typeDefinitionHandle.GetHashCode();
         }

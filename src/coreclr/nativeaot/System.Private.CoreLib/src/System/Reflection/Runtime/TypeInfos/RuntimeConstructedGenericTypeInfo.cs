@@ -187,7 +187,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override TypeAttributes Attributes => GenericTypeDefinitionTypeInfo.Attributes;
 
-        protected sealed override int InternalGetHashCode()
+        public sealed override int GetHashCode()
         {
             return _key.GetHashCode();
         }

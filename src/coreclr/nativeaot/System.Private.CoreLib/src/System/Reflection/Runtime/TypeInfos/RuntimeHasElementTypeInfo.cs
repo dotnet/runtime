@@ -149,7 +149,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        protected sealed override int InternalGetHashCode()
+        public sealed override int GetHashCode()
         {
             return _key.ElementType.GetHashCode();
         }
