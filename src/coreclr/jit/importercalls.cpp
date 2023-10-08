@@ -3291,9 +3291,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(callType != TYP_STRUCT);
                 assert(sig->numArgs == 2);
-                assert((genTypeSize(retType) > 4) || (ni == NI_System_Threading_Interlocked_Exchange));
 
                 var_types retType = JITtype2varType(sig->retType);
+                assert((genTypeSize(retType) > 4) || (ni == NI_System_Threading_Interlocked_Exchange));
+
                 if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
