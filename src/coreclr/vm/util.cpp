@@ -904,7 +904,7 @@ CLRUnmapViewOfFile(
 
 volatile static int64_t s_timerFrequency = 0;
 volatile static int64_t s_loadLibraryTicks = 0;
-volatile static uint32_t s_loadLibraryCount = 0;
+volatile static int32_t s_loadLibraryCount = 0;
 
 static int64_t GetTimerFrequency()
 {
@@ -937,7 +937,7 @@ static int64_t GetPreciseTickCount()
 
 static void ReportLoadLibraryTime(LPCWSTR lpFileName, int64_t loadTime)
 {
-    int32_t loadLibraryCount = ::InterlockedIncrement(&s_loadLibraryCount);
+    int32_t loadLibraryCount = ::InterlockedAdd((long *)&s_loadLibraryCount, 1);
     int64_t totalTime = ::InterlockedAdd64(&s_loadLibraryTicks, loadTime);
     double frequency = (double)GetTimerFrequency();
     printf("\nLoadLibrary(%d: %S): %.6f seconds, %.6f total\n",
