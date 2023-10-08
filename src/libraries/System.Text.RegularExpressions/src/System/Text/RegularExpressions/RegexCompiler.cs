@@ -1234,7 +1234,7 @@ namespace System.Text.RegularExpressions
             void EmitLiteralAfterAtomicLoop()
             {
                 Debug.Assert(_regexTree.FindOptimizations.LiteralAfterLoop is not null);
-                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = _regexTree.FindOptimizations.LiteralAfterLoop.Value;
+                (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal) target = _regexTree.FindOptimizations.LiteralAfterLoop.Value;
 
                 Debug.Assert(target.LoopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                 Debug.Assert(target.LoopNode.N == int.MaxValue);
@@ -1260,7 +1260,16 @@ namespace System.Text.RegularExpressions
                 {
                     Ldstr(literalString);
                     Call(s_stringAsSpanMethod);
-                    Call(s_spanIndexOfSpan);
+                    if (target.Literal.StringComparison is StringComparison.OrdinalIgnoreCase)
+                    {
+                        Ldc((int)target.Literal.StringComparison);
+                        Call(s_spanIndexOfSpanStringComparison);
+                    }
+                    else
+                    {
+                        Debug.Assert(target.Literal.StringComparison is StringComparison.Ordinal);
+                        Call(s_spanIndexOfSpan);
+                    }
                 }
                 else if (target.Literal.Chars is not char[] literalChars)
                 {
