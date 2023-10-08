@@ -5848,6 +5848,7 @@ void CodeGen::genFnProlog()
     const bool isOSRx64Root = false;
 #endif // TARGET_AMD64
 
+#ifndef TARGET_LOONGARCH64
     tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
 
     if (tempMask != RBM_NONE)
@@ -5869,6 +5870,7 @@ void CodeGen::genFnProlog()
             initReg  = genRegNumFromMask(tempMask);
         }
     }
+#endif
 
 #if defined(TARGET_AMD64)
     // For x64 OSR root frames, we can't use any as of yet unsaved
