@@ -9231,6 +9231,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cStmt,       dStmt          : Display a Statement (call gtDispStmt()).
  *      cTree,       dTree          : Display a tree (call gtDispTree()).
  *      cTreeLIR,    dTreeLIR       : Display a tree in LIR form (call gtDispLIRNode()).
+ *      cTreeRange,  dTreeRange     : Display a range of trees in LIR form (call gtDispLIRNode()).
  *      cTrees,      dTrees         : Display all the trees in a function (call fgDumpTrees()).
  *      cEH,         dEH            : Display the EH handler table (call fgDispHandlerTab()).
  *      cVar,        dVar           : Display a local variable given its number (call lvaDumpEntry()).
@@ -9245,202 +9246,221 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cCVarSet,    dCVarSet       : Display a "converted" VARSET_TP: the varset is assumed to be tracked variable
  *                                    indices. These are converted to variable numbers and sorted. (Calls
  *                                    dumpConvertedVarSet()).
- *      cLoop,       dLoop          : Display the blocks of a loop, including the trees.
- *      cTreeFlags,  dTreeFlags     : Display tree flags
+ *      cLoop,       dLoop          : Display the blocks of a loop, including the trees, given a loop number (call
+ *                                    optPrintLoopInfo()).
+ *      cLoopPtr,    dLoopPtr       : Display the blocks of a loop, including the trees, given a LoopDsc* (call
+ *                                    optPrintLoopInfo()).
+ *      cLoops,      dLoops         : Display the loop table (call optPrintLoopTable()).
+ *      cTreeFlags,  dTreeFlags     : Display tree flags for a specified tree.
  *
  * The following don't require a Compiler* to work:
  *      dRegMask                    : Display a regMaskTP (call dspRegMask(mask)).
  *      dBlockList                  : Display a BasicBlockList*.
+ *
+ * The following find an object in the IR and return it, as well as setting a global variable with the value that can
+ * be used in the debugger (e.g., in the watch window, or as a way to get an address for data breakpoints).
+ *      dFindTreeInTree             : Find a tree in a given tree, specifying a tree id. Sets `dbTree`.
+ *      dFindTree                   : Find a tree in the IR, specifying a tree id. Sets `dbTree` and `dbTreeBlock`.
+ *      dFindStmt                   : Find a Statement in the IR, specifying a statement id. Sets `dbStmt`.
+ *      dFindBlock                  : Find a block in the IR, specifying a block number. Sets `dbBlock`.
+ *      dFindLoop                   : Find a loop in the loop table, specifying a loop number. Sets `dbLoop`.
  */
 
-void cBlock(Compiler* comp, BasicBlock* block)
+// Make the debug helpers available (under #ifdef DEBUG) even though they are unreferenced. When the Microsoft
+// linker is using /OPT:REF, it throws away unreferenced COMDATs (typically functions). Using "/INCLUDE:symbol"
+// forces the linker to keep these anyway.
+//
+// Mark them `export "C"` so the names are not C++ name mangled. This makes it easier to refer to them in the
+// `/INCLUDE` switch, and potentially makes them easier to find by a debugger.
+//
+// On x64/arm64, "C" names are not decorated (mangled). However, on x86, the names are decorated for `__stdcall`
+// with a leading `_` and trailing `@N` for `N` bytes of arguments. To simplify, use __cdecl for x86. (Specifying
+// it for other platforms is a no-op.)
+
+#define JITDBGAPI extern "C"
+
+#if defined(_MSC_VER)
+
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
+
+// Functions which take a Compiler*
+#pragma comment(linker, "/include:cBlock")
+#pragma comment(linker, "/include:cBlocks")
+#pragma comment(linker, "/include:cBlocksV")
+#pragma comment(linker, "/include:cStmt")
+#pragma comment(linker, "/include:cTree")
+#pragma comment(linker, "/include:cTreeLIR")
+#pragma comment(linker, "/include:cTreeRange")
+#pragma comment(linker, "/include:cTrees")
+#pragma comment(linker, "/include:cEH")
+#pragma comment(linker, "/include:cVar")
+#pragma comment(linker, "/include:cVarDsc")
+#pragma comment(linker, "/include:cVars")
+#pragma comment(linker, "/include:cVarsFinal")
+#pragma comment(linker, "/include:cBlockPreds")
+#pragma comment(linker, "/include:cBlockSuccs")
+#pragma comment(linker, "/include:cReach")
+#pragma comment(linker, "/include:cDoms")
+#pragma comment(linker, "/include:cLiveness")
+#pragma comment(linker, "/include:cCVarSet")
+#pragma comment(linker, "/include:cLoop")
+#pragma comment(linker, "/include:cLoopPtr")
+#pragma comment(linker, "/include:cLoops")
+#pragma comment(linker, "/include:cTreeFlags")
+
+// Functions which call the c* functions getting Compiler* using `JitTls::GetCompiler()`
+#pragma comment(linker, "/include:dBlock")
+#pragma comment(linker, "/include:dBlocks")
+#pragma comment(linker, "/include:dBlocksV")
+#pragma comment(linker, "/include:dStmt")
+#pragma comment(linker, "/include:dTree")
+#pragma comment(linker, "/include:dTreeLIR")
+#pragma comment(linker, "/include:dTreeRange")
+#pragma comment(linker, "/include:dTrees")
+#pragma comment(linker, "/include:dEH")
+#pragma comment(linker, "/include:dVar")
+#pragma comment(linker, "/include:dVarDsc")
+#pragma comment(linker, "/include:dVars")
+#pragma comment(linker, "/include:dVarsFinal")
+#pragma comment(linker, "/include:dBlockPreds")
+#pragma comment(linker, "/include:dBlockSuccs")
+#pragma comment(linker, "/include:dReach")
+#pragma comment(linker, "/include:dDoms")
+#pragma comment(linker, "/include:dLiveness")
+#pragma comment(linker, "/include:dCVarSet")
+#pragma comment(linker, "/include:dLoop")
+#pragma comment(linker, "/include:dLoopPtr")
+#pragma comment(linker, "/include:dLoops")
+#pragma comment(linker, "/include:dTreeFlags")
+
+// Functions which don't require a Compiler*
+#pragma comment(linker, "/include:dRegMask")
+#pragma comment(linker, "/include:dBlockList")
+
+// Functions which search for objects in the IR
+#pragma comment(linker, "/include:dFindTreeInTree")
+#pragma comment(linker, "/include:dFindTree")
+#pragma comment(linker, "/include:dFindStmt")
+#pragma comment(linker, "/include:dFindBlock")
+#pragma comment(linker, "/include:dFindLoop")
+
+#elif defined(HOST_X86)
+
+// Functions which take a Compiler*
+#pragma comment(linker, "/include:_cBlock")
+#pragma comment(linker, "/include:_cBlocks")
+#pragma comment(linker, "/include:_cBlocksV")
+#pragma comment(linker, "/include:_cStmt")
+#pragma comment(linker, "/include:_cTree")
+#pragma comment(linker, "/include:_cTreeLIR")
+#pragma comment(linker, "/include:_cTreeRange")
+#pragma comment(linker, "/include:_cTrees")
+#pragma comment(linker, "/include:_cEH")
+#pragma comment(linker, "/include:_cVar")
+#pragma comment(linker, "/include:_cVarDsc")
+#pragma comment(linker, "/include:_cVars")
+#pragma comment(linker, "/include:_cVarsFinal")
+#pragma comment(linker, "/include:_cBlockPreds")
+#pragma comment(linker, "/include:_cBlockSuccs")
+#pragma comment(linker, "/include:_cReach")
+#pragma comment(linker, "/include:_cDoms")
+#pragma comment(linker, "/include:_cLiveness")
+#pragma comment(linker, "/include:_cCVarSet")
+#pragma comment(linker, "/include:_cLoop")
+#pragma comment(linker, "/include:_cLoopPtr")
+#pragma comment(linker, "/include:_cLoops")
+#pragma comment(linker, "/include:_cTreeFlags")
+
+// Functions which call the c* functions getting Compiler* using `JitTls:_:GetCompiler()`
+#pragma comment(linker, "/include:_dBlock")
+#pragma comment(linker, "/include:_dBlocks")
+#pragma comment(linker, "/include:_dBlocksV")
+#pragma comment(linker, "/include:_dStmt")
+#pragma comment(linker, "/include:_dTree")
+#pragma comment(linker, "/include:_dTreeLIR")
+#pragma comment(linker, "/include:_dTreeRange")
+#pragma comment(linker, "/include:_dTrees")
+#pragma comment(linker, "/include:_dEH")
+#pragma comment(linker, "/include:_dVar")
+#pragma comment(linker, "/include:_dVarDsc")
+#pragma comment(linker, "/include:_dVars")
+#pragma comment(linker, "/include:_dVarsFinal")
+#pragma comment(linker, "/include:_dBlockPreds")
+#pragma comment(linker, "/include:_dBlockSuccs")
+#pragma comment(linker, "/include:_dReach")
+#pragma comment(linker, "/include:_dDoms")
+#pragma comment(linker, "/include:_dLiveness")
+#pragma comment(linker, "/include:_dCVarSet")
+#pragma comment(linker, "/include:_dLoop")
+#pragma comment(linker, "/include:_dLoopPtr")
+#pragma comment(linker, "/include:_dLoops")
+#pragma comment(linker, "/include:_dTreeFlags")
+
+// Functions which don't require a Compiler*
+#pragma comment(linker, "/include:_dRegMask")
+#pragma comment(linker, "/include:_dBlockList")
+
+// Functions which search for objects in the IR
+#pragma comment(linker, "/include:_dFindTreeInTree")
+#pragma comment(linker, "/include:_dFindTree")
+#pragma comment(linker, "/include:_dFindStmt")
+#pragma comment(linker, "/include:_dFindBlock")
+#pragma comment(linker, "/include:_dFindLoop")
+
+#endif // HOST_*
+
+#endif // _MSC_VER
+
+JITDBGAPI void __cdecl cBlock(Compiler* comp, BasicBlock* block)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Block %u\n", sequenceNumber++);
     comp->fgTableDispBasicBlock(block);
 }
 
-void cBlocks(Compiler* comp)
+JITDBGAPI void __cdecl cBlocks(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Blocks %u\n", sequenceNumber++);
     comp->fgDispBasicBlocks();
 }
 
-void cBlocksV(Compiler* comp)
+JITDBGAPI void __cdecl cBlocksV(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *BlocksV %u\n", sequenceNumber++);
     comp->fgDispBasicBlocks(true);
 }
 
-void cStmt(Compiler* comp, Statement* statement)
+JITDBGAPI void __cdecl cStmt(Compiler* comp, Statement* statement)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Stmt %u\n", sequenceNumber++);
     comp->gtDispStmt(statement, ">>>");
 }
 
-void cTree(Compiler* comp, GenTree* tree)
+JITDBGAPI void __cdecl cTree(Compiler* comp, GenTree* tree)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Tree %u\n", sequenceNumber++);
     comp->gtDispTree(tree, nullptr, ">>>");
 }
 
-void cTreeLIR(Compiler* comp, GenTree* tree)
+JITDBGAPI void __cdecl cTreeLIR(Compiler* comp, GenTree* tree)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *TreeLIR %u\n", sequenceNumber++);
     comp->gtDispLIRNode(tree);
 }
 
-void cTrees(Compiler* comp)
+JITDBGAPI void __cdecl cTreeRange(Compiler* comp, GenTree* first, GenTree* last)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Trees %u\n", sequenceNumber++);
-    comp->fgDumpTrees(comp->fgFirstBB, nullptr);
-}
-
-void cEH(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *EH %u\n", sequenceNumber++);
-    comp->fgDispHandlerTab();
-}
-
-void cVar(Compiler* comp, unsigned lclNum)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Var %u\n", sequenceNumber++);
-    comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
-}
-
-void cVarDsc(Compiler* comp, LclVarDsc* varDsc)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *VarDsc %u\n", sequenceNumber++);
-    unsigned lclNum = comp->lvaGetLclNum(varDsc);
-    comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
-}
-
-void cVars(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Vars %u\n", sequenceNumber++);
-    comp->lvaTableDump();
-}
-
-void cVarsFinal(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Vars %u\n", sequenceNumber++);
-    comp->lvaTableDump(Compiler::FINAL_FRAME_LAYOUT);
-}
-
-void cBlockPreds(Compiler* comp, BasicBlock* block)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *BlockPreds %u\n", sequenceNumber++);
-    block->dspPreds();
-}
-
-void cBlockSuccs(Compiler* comp, BasicBlock* block)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *BlockSuccs %u\n", sequenceNumber++);
-    block->dspSuccs(comp);
-}
-
-void cReach(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Reach %u\n", sequenceNumber++);
-    comp->fgDispReach();
-}
-
-void cDoms(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Doms %u\n", sequenceNumber++);
-    comp->fgDispDoms();
-}
-
-void cLiveness(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Liveness %u\n", sequenceNumber++);
-    comp->fgDispBBLiveness();
-}
-
-void cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *CVarSet %u\n", sequenceNumber++);
-    dumpConvertedVarSet(comp, vars);
-    printf("\n"); // dumpConvertedVarSet() doesn't emit a trailing newline
-}
-
-void cLoop(Compiler* comp, unsigned loopNum)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Loop %u\n", sequenceNumber++);
-    comp->optPrintLoopInfo(loopNum, /* verbose */ true);
-    printf("\n");
-}
-
-void cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *LoopPtr %u\n", sequenceNumber++);
-    comp->optPrintLoopInfo(loop, /* verbose */ true);
-    printf("\n");
-}
-
-void cLoops(Compiler* comp)
-{
-    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== *Loops %u\n", sequenceNumber++);
-    comp->optPrintLoopTable();
-}
-
-void dBlock(BasicBlock* block)
-{
-    cBlock(JitTls::GetCompiler(), block);
-}
-
-void dBlocks()
-{
-    cBlocks(JitTls::GetCompiler());
-}
-
-void dBlocksV()
-{
-    cBlocksV(JitTls::GetCompiler());
-}
-
-void dStmt(Statement* statement)
-{
-    cStmt(JitTls::GetCompiler(), statement);
-}
-
-void dTree(GenTree* tree)
-{
-    cTree(JitTls::GetCompiler(), tree);
-}
-
-void dTreeLIR(GenTree* tree)
-{
-    cTreeLIR(JitTls::GetCompiler(), tree);
-}
-
-void dTreeRange(GenTree* first, GenTree* last)
-{
-    Compiler* comp = JitTls::GetCompiler();
-    GenTree*  cur  = first;
+    printf("===================================================================== *TreeRange %u\n", sequenceNumber++);
+    GenTree* cur = first;
     while (true)
     {
-        cTreeLIR(comp, cur);
+        comp->gtDispLIRNode(cur);
         if (cur == last)
             break;
 
@@ -9448,214 +9468,120 @@ void dTreeRange(GenTree* first, GenTree* last)
     }
 }
 
-void dTrees()
-{
-    cTrees(JitTls::GetCompiler());
-}
-
-void dEH()
-{
-    cEH(JitTls::GetCompiler());
-}
-
-void dVar(unsigned lclNum)
-{
-    cVar(JitTls::GetCompiler(), lclNum);
-}
-
-void dVarDsc(LclVarDsc* varDsc)
-{
-    cVarDsc(JitTls::GetCompiler(), varDsc);
-}
-
-void dVars()
-{
-    cVars(JitTls::GetCompiler());
-}
-
-void dVarsFinal()
-{
-    cVarsFinal(JitTls::GetCompiler());
-}
-
-void dBlockPreds(BasicBlock* block)
-{
-    cBlockPreds(JitTls::GetCompiler(), block);
-}
-
-void dBlockSuccs(BasicBlock* block)
-{
-    cBlockSuccs(JitTls::GetCompiler(), block);
-}
-
-void dReach()
-{
-    cReach(JitTls::GetCompiler());
-}
-
-void dDoms()
-{
-    cDoms(JitTls::GetCompiler());
-}
-
-void dLiveness()
-{
-    cLiveness(JitTls::GetCompiler());
-}
-
-void dCVarSet(VARSET_VALARG_TP vars)
-{
-    cCVarSet(JitTls::GetCompiler(), vars);
-}
-
-void dLoop(unsigned loopNum)
-{
-    cLoop(JitTls::GetCompiler(), loopNum);
-}
-
-void dLoopPtr(const Compiler::LoopDsc* loop)
-{
-    cLoopPtr(JitTls::GetCompiler(), loop);
-}
-
-void dLoops()
-{
-    cLoops(JitTls::GetCompiler());
-}
-
-void dRegMask(regMaskTP mask)
+JITDBGAPI void __cdecl cTrees(Compiler* comp)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
-    printf("===================================================================== dRegMask %u\n", sequenceNumber++);
-    dspRegMask(mask);
-    printf("\n"); // dspRegMask() doesn't emit a trailing newline
+    printf("===================================================================== *Trees %u\n", sequenceNumber++);
+    comp->fgDumpTrees(comp->fgFirstBB, nullptr);
 }
 
-void dBlockList(BasicBlockList* list)
+JITDBGAPI void __cdecl cEH(Compiler* comp)
 {
-    printf("WorkList: ");
-    while (list != nullptr)
-    {
-        printf(FMT_BB " ", list->block->bbNum);
-        list = list->next;
-    }
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *EH %u\n", sequenceNumber++);
+    comp->fgDispHandlerTab();
+}
+
+JITDBGAPI void __cdecl cVar(Compiler* comp, unsigned lclNum)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Var %u\n", sequenceNumber++);
+    comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
+}
+
+JITDBGAPI void __cdecl cVarDsc(Compiler* comp, LclVarDsc* varDsc)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *VarDsc %u\n", sequenceNumber++);
+    unsigned lclNum = comp->lvaGetLclNum(varDsc);
+    comp->lvaDumpEntry(lclNum, Compiler::FINAL_FRAME_LAYOUT);
+}
+
+JITDBGAPI void __cdecl cVars(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Vars %u\n", sequenceNumber++);
+    comp->lvaTableDump();
+}
+
+JITDBGAPI void __cdecl cVarsFinal(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Vars %u\n", sequenceNumber++);
+    comp->lvaTableDump(Compiler::FINAL_FRAME_LAYOUT);
+}
+
+JITDBGAPI void __cdecl cBlockPreds(Compiler* comp, BasicBlock* block)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *BlockPreds %u\n", sequenceNumber++);
+    block->dspPreds();
+}
+
+JITDBGAPI void __cdecl cBlockSuccs(Compiler* comp, BasicBlock* block)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *BlockSuccs %u\n", sequenceNumber++);
+    block->dspSuccs(comp);
+}
+
+JITDBGAPI void __cdecl cReach(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Reach %u\n", sequenceNumber++);
+    comp->fgDispReach();
+}
+
+JITDBGAPI void __cdecl cDoms(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Doms %u\n", sequenceNumber++);
+    comp->fgDispDoms();
+}
+
+JITDBGAPI void __cdecl cLiveness(Compiler* comp)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Liveness %u\n", sequenceNumber++);
+    comp->fgDispBBLiveness();
+}
+
+JITDBGAPI void __cdecl cCVarSet(Compiler* comp, VARSET_VALARG_TP vars)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *CVarSet %u\n", sequenceNumber++);
+    dumpConvertedVarSet(comp, vars);
+    printf("\n"); // dumpConvertedVarSet() doesn't emit a trailing newline
+}
+
+JITDBGAPI void __cdecl cLoop(Compiler* comp, unsigned loopNum)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Loop %u\n", sequenceNumber++);
+    comp->optPrintLoopInfo(loopNum, /* verbose */ true);
     printf("\n");
 }
 
-// Global variables available in debug mode.  That are set by debug APIs for finding
-// Trees, Stmts, and/or Blocks using id or bbNum.
-// That can be used in watch window or as a way to get address of fields for data break points.
-
-GenTree*    dbTree;
-Statement*  dbStmt;
-BasicBlock* dbTreeBlock;
-BasicBlock* dbBlock;
-
-// Debug APIs for finding Trees, Stmts, and/or Blocks.
-// As a side effect, they set the debug variables above.
-
-GenTree* dFindTree(GenTree* tree, unsigned id)
+JITDBGAPI void __cdecl cLoopPtr(Compiler* comp, const Compiler::LoopDsc* loop)
 {
-    if (tree == nullptr)
-    {
-        return nullptr;
-    }
-
-    if (tree->gtTreeID == id)
-    {
-        dbTree = tree;
-        return tree;
-    }
-
-    GenTree* child = nullptr;
-    tree->VisitOperands([&child, id](GenTree* operand) -> GenTree::VisitResult {
-        child = dFindTree(child, id);
-        return (child != nullptr) ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
-    });
-
-    return child;
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *LoopPtr %u\n", sequenceNumber++);
+    comp->optPrintLoopInfo(loop, /* verbose */ true);
+    printf("\n");
 }
 
-GenTree* dFindTree(unsigned id)
+JITDBGAPI void __cdecl cLoops(Compiler* comp)
 {
-    Compiler* comp = JitTls::GetCompiler();
-    GenTree*  tree;
-
-    dbTreeBlock = nullptr;
-    dbTree      = nullptr;
-
-    for (BasicBlock* const block : comp->Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            tree = dFindTree(stmt->GetRootNode(), id);
-            if (tree != nullptr)
-            {
-                dbTreeBlock = block;
-                return tree;
-            }
-        }
-    }
-
-    return nullptr;
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *Loops %u\n", sequenceNumber++);
+    comp->optPrintLoopTable();
 }
 
-Statement* dFindStmt(unsigned id)
+JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
 {
-    Compiler* comp = JitTls::GetCompiler();
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *TreeFlags %u\n", sequenceNumber++);
 
-    dbStmt = nullptr;
-
-    unsigned stmtId = 0;
-    for (BasicBlock* const block : comp->Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            stmtId++;
-            if (stmtId == id)
-            {
-                dbStmt = stmt;
-                return stmt;
-            }
-        }
-    }
-
-    return nullptr;
-}
-
-BasicBlock* dFindBlock(unsigned bbNum)
-{
-    Compiler*   comp  = JitTls::GetCompiler();
-    BasicBlock* block = nullptr;
-
-    dbBlock = nullptr;
-    for (block = comp->fgFirstBB; block != nullptr; block = block->Next())
-    {
-        if (block->bbNum == bbNum)
-        {
-            dbBlock = block;
-            break;
-        }
-    }
-
-    return block;
-}
-
-Compiler::LoopDsc* dFindLoop(unsigned loopNum)
-{
-    Compiler* comp = JitTls::GetCompiler();
-
-    if (loopNum >= comp->optLoopCount)
-    {
-        printf("loopNum %u out of range\n", loopNum);
-        return nullptr;
-    }
-
-    return &comp->optLoopTable[loopNum];
-}
-
-void cTreeFlags(Compiler* comp, GenTree* tree)
-{
     int chars = 0;
 
     if (tree->gtFlags != 0)
@@ -9882,7 +9808,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 
                 switch (handleKind)
                 {
-
                     case GTF_ICON_SCOPE_HDL:
 
                         chars += printf("[ICON_SCOPE_HDL]");
@@ -10214,9 +10139,254 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
     }
 }
 
-void dTreeFlags(GenTree* tree)
+JITDBGAPI void __cdecl dBlock(BasicBlock* block)
+{
+    cBlock(JitTls::GetCompiler(), block);
+}
+
+JITDBGAPI void __cdecl dBlocks()
+{
+    cBlocks(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dBlocksV()
+{
+    cBlocksV(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dStmt(Statement* statement)
+{
+    cStmt(JitTls::GetCompiler(), statement);
+}
+
+JITDBGAPI void __cdecl dTree(GenTree* tree)
+{
+    cTree(JitTls::GetCompiler(), tree);
+}
+
+JITDBGAPI void __cdecl dTreeLIR(GenTree* tree)
+{
+    cTreeLIR(JitTls::GetCompiler(), tree);
+}
+
+JITDBGAPI void __cdecl dTreeRange(GenTree* first, GenTree* last)
+{
+    cTreeRange(JitTls::GetCompiler(), first, last);
+}
+
+JITDBGAPI void __cdecl dTrees()
+{
+    cTrees(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dEH()
+{
+    cEH(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dVar(unsigned lclNum)
+{
+    cVar(JitTls::GetCompiler(), lclNum);
+}
+
+JITDBGAPI void __cdecl dVarDsc(LclVarDsc* varDsc)
+{
+    cVarDsc(JitTls::GetCompiler(), varDsc);
+}
+
+JITDBGAPI void __cdecl dVars()
+{
+    cVars(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dVarsFinal()
+{
+    cVarsFinal(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dBlockPreds(BasicBlock* block)
+{
+    cBlockPreds(JitTls::GetCompiler(), block);
+}
+
+JITDBGAPI void __cdecl dBlockSuccs(BasicBlock* block)
+{
+    cBlockSuccs(JitTls::GetCompiler(), block);
+}
+
+JITDBGAPI void __cdecl dReach()
+{
+    cReach(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dDoms()
+{
+    cDoms(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dLiveness()
+{
+    cLiveness(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dCVarSet(VARSET_VALARG_TP vars)
+{
+    cCVarSet(JitTls::GetCompiler(), vars);
+}
+
+JITDBGAPI void __cdecl dLoop(unsigned loopNum)
+{
+    cLoop(JitTls::GetCompiler(), loopNum);
+}
+
+JITDBGAPI void __cdecl dLoopPtr(const Compiler::LoopDsc* loop)
+{
+    cLoopPtr(JitTls::GetCompiler(), loop);
+}
+
+JITDBGAPI void __cdecl dLoops()
+{
+    cLoops(JitTls::GetCompiler());
+}
+
+JITDBGAPI void __cdecl dTreeFlags(GenTree* tree)
 {
     cTreeFlags(JitTls::GetCompiler(), tree);
+}
+
+JITDBGAPI void __cdecl dRegMask(regMaskTP mask)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== dRegMask %u\n", sequenceNumber++);
+    dspRegMask(mask);
+    printf("\n"); // dspRegMask() doesn't emit a trailing newline
+}
+
+JITDBGAPI void __cdecl dBlockList(BasicBlockList* list)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== dBlockList %u\n", sequenceNumber++);
+    while (list != nullptr)
+    {
+        printf(FMT_BB " ", list->block->bbNum);
+        list = list->next;
+    }
+    printf("\n");
+}
+
+// Global variables available in debug mode.  That are set by debug APIs for finding
+// Trees, Stmts, and/or Blocks using id or bbNum.
+// That can be used in watch window or as a way to get address of fields for data breakpoints.
+
+GenTree*           dbTree;
+Statement*         dbStmt;
+BasicBlock*        dbTreeBlock;
+BasicBlock*        dbBlock;
+Compiler::LoopDsc* dbLoop;
+
+// Debug APIs for finding Trees, Stmts, and/or Blocks.
+// As a side effect, they set the debug variables above.
+
+JITDBGAPI GenTree* __cdecl dFindTreeInTree(GenTree* tree, unsigned id)
+{
+    if (tree == nullptr)
+    {
+        return nullptr;
+    }
+
+    if (tree->gtTreeID == id)
+    {
+        dbTree = tree;
+        return tree;
+    }
+
+    GenTree* child = nullptr;
+    tree->VisitOperands([&child, id](GenTree* operand) -> GenTree::VisitResult {
+        child = dFindTreeInTree(child, id);
+        return (child != nullptr) ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+    });
+
+    return child;
+}
+
+JITDBGAPI GenTree* __cdecl dFindTree(unsigned id)
+{
+    Compiler* comp = JitTls::GetCompiler();
+
+    dbTreeBlock = nullptr;
+    dbTree      = nullptr;
+
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            GenTree* const tree = dFindTreeInTree(stmt->GetRootNode(), id);
+            if (tree != nullptr)
+            {
+                dbTreeBlock = block;
+                dbTree      = tree;
+                return tree;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+JITDBGAPI Statement* __cdecl dFindStmt(unsigned id)
+{
+    Compiler* comp = JitTls::GetCompiler();
+
+    dbStmt = nullptr;
+
+    unsigned stmtId = 0;
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            stmtId++;
+            if (stmtId == id)
+            {
+                dbStmt = stmt;
+                return stmt;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+JITDBGAPI BasicBlock* __cdecl dFindBlock(unsigned bbNum)
+{
+    Compiler* comp = JitTls::GetCompiler();
+
+    dbBlock = nullptr;
+
+    for (BasicBlock* const block : comp->Blocks())
+    {
+        if (block->bbNum == bbNum)
+        {
+            dbBlock = block;
+            return block;
+        }
+    }
+
+    return nullptr;
+}
+
+JITDBGAPI Compiler::LoopDsc* __cdecl dFindLoop(unsigned loopNum)
+{
+    Compiler* comp = JitTls::GetCompiler();
+    dbLoop         = nullptr;
+
+    if (loopNum >= comp->optLoopCount)
+    {
+        printf("loopNum %u out of range\n", loopNum);
+        return nullptr;
+    }
+
+    dbLoop = &comp->optLoopTable[loopNum];
+    return dbLoop;
 }
 
 #endif // DEBUG
