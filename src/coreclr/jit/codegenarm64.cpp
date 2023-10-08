@@ -3973,7 +3973,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     genConsumeRegs(data);
     genConsumeRegs(comparand);
 
-    emitAttr dataSize = emitTypeSize(data);
+    emitAttr dataSize = emitActualTypeSize(data);
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
     {

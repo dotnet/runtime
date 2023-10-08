@@ -36,13 +36,13 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 static inline guint8
 mono_atomic_cas_u8 (volatile guint8 *dest, guint8 exch, guint8 comp)
 {
-	return _InterlockedCompareExchange8 ((CHAR volatile *)dest, (LONG)exch, (LONG)comp);
+	return _InterlockedCompareExchange8 ((CHAR volatile *)dest, (CHAR)exch, (CHAR)comp);
 }
 
 static inline gint16
 mono_atomic_cas_i16 (volatile gint16 *dest, gint16 exch, gint16 comp)
 {
-	return _InterlockedCompareExchange16 ((SHORT volatile *)dest, (LONG)exch, (LONG)comp);
+	return _InterlockedCompareExchange16 ((SHORT volatile *)dest, (SHORT)exch, (SHORT)comp);
 }
 
 static inline gint32
@@ -102,13 +102,13 @@ mono_atomic_dec_i64 (volatile gint64 *dest)
 static inline guint8
 mono_atomic_xchg_u8 (volatile guint8 *dest, guint8 exch)
 {
-	return _InterlockedExchange8 ((CHAR volatile *)dest, (LONG)exch);
+	return _InterlockedExchange8 ((CHAR volatile *)dest, (CHAR)exch);
 }
 
 static inline gint16
 mono_atomic_xchg_i16 (volatile gint16 *dest, gint16 exch)
 {
-	return _InterlockedExchange16 ((SHORT volatile *)dest, (LONG)exch);
+	return _InterlockedExchange16 ((SHORT volatile *)dest, (SHORT)exch);
 }
 
 static inline gint32
@@ -138,7 +138,7 @@ mono_atomic_fetch_add_i32 (volatile gint32 *dest, gint32 add)
 static inline gint64
 mono_atomic_fetch_add_i64 (volatile gint64 *dest, gint64 add)
 {
-	return InterlockedExchangeAdd64 ((LONG64 volatile *)dest, (LONG)add);
+	return InterlockedExchangeAdd64 ((LONG64 volatile *)dest, (LONG64)add);
 }
 
 static inline gint8
@@ -204,7 +204,7 @@ static inline void
 mono_atomic_store_i16 (volatile gint16 *dst, gint16 val)
 {
 #if (_MSC_VER >= 1600)
-	InterlockedExchange16 ((SHORT volatile *)dst, (SHORT)val);
+	_InterlockedExchange16 ((SHORT volatile *)dst, (SHORT)val);
 #else
 	*dst = val;
 	mono_memory_barrier ();
@@ -214,7 +214,7 @@ mono_atomic_store_i16 (volatile gint16 *dst, gint16 val)
 static inline void
 mono_atomic_store_i32 (volatile gint32 *dst, gint32 val)
 {
-	InterlockedExchange ((LONG volatile *)dst, (LONG)val);
+	_InterlockedExchange ((LONG volatile *)dst, (LONG)val);
 }
 
 static inline void
@@ -512,8 +512,12 @@ static inline void mono_atomic_store_i64(volatile gint64 *dst, gint64 val)
 
 #define WAPI_NO_ATOMIC_ASM
 
-extern guint8 mono_atomic_cas_u8(volatile guint8 *dest, guint8 exch, guint8 comp);
-extern gint16 mono_atomic_cas_i16(volatile gint16 *dest, gint16 exch, gint16 comp);
+/* Fallbacks seem to not be used anymore, they should be removed
+ * or small type ones should be added in case we find a platform that still needs them.
+ * extern guint8 mono_atomic_cas_u8(volatile guint8 *dest, guint8 exch, guint8 comp);
+ * extern gint16 mono_atomic_cas_i16(volatile gint16 *dest, gint16 exch, gint16 comp);
+ * extern guint8 mono_atomic_xchg_u8(volatile guint8 *dest, guint8 exch);
+ * extern gint16 mono_atomic_xchg_i16(volatile gint16 *dest, gint16 exch); */
 extern gint32 mono_atomic_cas_i32(volatile gint32 *dest, gint32 exch, gint32 comp);
 extern gint64 mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp);
 extern gpointer mono_atomic_cas_ptr(volatile gpointer *dest, gpointer exch, gpointer comp);
@@ -523,8 +527,6 @@ extern gint32 mono_atomic_inc_i32(volatile gint32 *dest);
 extern gint64 mono_atomic_inc_i64(volatile gint64 *dest);
 extern gint32 mono_atomic_dec_i32(volatile gint32 *dest);
 extern gint64 mono_atomic_dec_i64(volatile gint64 *dest);
-extern guint8 mono_atomic_xchg_u8(volatile guint8 *dest, guint8 exch);
-extern gint16 mono_atomic_xchg_i16(volatile gint16 *dest, gint16 exch);
 extern gint32 mono_atomic_xchg_i32(volatile gint32 *dest, gint32 exch);
 extern gint64 mono_atomic_xchg_i64(volatile gint64 *dest, gint64 exch);
 extern gpointer mono_atomic_xchg_ptr(volatile gpointer *dest, gpointer exch);

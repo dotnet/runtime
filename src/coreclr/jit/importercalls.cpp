@@ -3251,12 +3251,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_CompareExchange:
             {
                 var_types retType = JITtype2varType(sig->retType);
-                if (TARGET_POINTER_SIZE < genTypeSize(retType))
+                if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
 #if defined(TARGET_RISCV64)
-                else if (4 > genTypeSize(retType))
+                else if (genTypeSize(retType) < 4)
                 {
                     break;
                 }
@@ -3291,14 +3291,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(callType != TYP_STRUCT);
                 assert(sig->numArgs == 2);
+                assert((genTypeSize(retType) > 4) || (ni == NI_System_Threading_Interlocked_Exchange));
 
                 var_types retType = JITtype2varType(sig->retType);
-                if (TARGET_POINTER_SIZE < genTypeSize(retType))
+                if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
 #if defined(TARGET_RISCV64)
-                else if (4 > genTypeSize(retType))
+                else if (genTypeSize(retType) < 4)
                 {
                     break;
                 }
