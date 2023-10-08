@@ -541,11 +541,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public abstract TypeAttributes Attributes { get; }
 
-        protected TypeCode GetTypeCodeImpl()
-        {
-            return ReflectionAugments.GetRuntimeTypeCode(this.ToType());
-        }
-
         protected abstract int InternalGetHashCode();
 
         public bool IsAbstract => (Attributes & TypeAttributes.Abstract) != 0;

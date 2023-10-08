@@ -10,6 +10,7 @@ using System.Reflection.Emit;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Runtime.CompilerServices;
+using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
@@ -375,6 +376,8 @@ namespace System
         protected override bool IsCOMObjectImpl() => false;
 
         protected override bool IsPrimitiveImpl() => _pUnderlyingEEType->IsPrimitive && !_pUnderlyingEEType->IsEnum;
+
+        protected override TypeCode GetTypeCodeImpl() => ReflectionAugments.GetRuntimeTypeCode(this);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
