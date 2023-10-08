@@ -930,7 +930,7 @@ static int64_t GetPreciseTickCount()
     return result;
 #else
     struct timespec ts;
-    timespec_get(&ts, TIME_UTC);
+    clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec * (1000 * 1000 * 1000) + ts.tv_nsec;
 #endif
 }
