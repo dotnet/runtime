@@ -286,10 +286,6 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
 
 #ifdef HOST_WINDOWS
 
-volatile static int64_t s_loadLibraryFrequency = 0;
-volatile static int64_t s_loadLibraryTicks = 0;
-volatile static int32_t s_loadLibraryCount = 0;
-
 HMODULE
 LoadLibraryExWrapper(
         LPCWSTR lpLibFileName,
@@ -315,24 +311,8 @@ LoadLibraryExWrapper(
         {
             LongFile::NormalizeDirectorySeparators(path);
 
-            int64_t frequency = s_loadLibraryFrequency;
-            if (frequency == 0)
-            {
-                QueryPerformanceFrequency((LARGE_INTEGER *)&frequency);
-                s_loadLibraryFrequency = frequency;
-            }
 
-            int64_t before;
-            QueryPerformanceCounter((LARGE_INTEGER *)&before);
             ret = LoadLibraryExW(path.GetUnicode(), hFile, dwFlags);
-            int64_t after;
-            QueryPerformanceCounter((LARGE_INTEGER *)&after);
-            int64_t loadTime = after - before;
-            int64_t totalTime = ::InterlockedAdd64(&s_loadLibraryTicks, loadTime);
-            printf("\nLoadLibrary(%S): %.6f seconds, %.6f total\n",
-                lpLibFileName,
-                loadTime / (double)s_loadLibraryFrequency, 
-                totalTime / (double)s_loadLibraryFrequency);
         }
 
         lastError = GetLastError();

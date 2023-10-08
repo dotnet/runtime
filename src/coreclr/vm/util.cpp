@@ -902,7 +902,50 @@ CLRUnmapViewOfFile(
     }
 }
 
+volatile static int64_t s_timerFrequency = 0;
+volatile static int64_t s_loadLibraryTicks = 0;
+volatile static uint32_t s_loadLibraryCount = 0;
 
+static int64_t GetTimerFrequency()
+{
+#if TARGET_WINDOWS
+    int64_t frequency = s_timerFrequency;
+    if (frequency == 0)
+    {
+        QueryPerformanceFrequency((LARGE_INTEGER *)&frequency);
+        s_timerFrequency = frequency;
+    }
+    return frequency;
+#else
+    // Use nanosecond frequency on Unix as corresponds to clock_gettime
+    return 1000 * 1000 * 1000;
+#endif
+}
+
+static int64_t GetPreciseTickCount()
+{
+#if TARGET_WINDOWS
+    int64_t result;
+    QueryPerformanceCounter((LARGE_INTEGER *)&result);
+    return result;
+#else
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    return ts.tv_sec * (1000 * 1000 * 1000) + ts.tv_nsec;
+#endif
+}
+
+static void ReportLoadLibraryTime(LPCWSTR lpFileName, int64_t loadTime)
+{
+    int32_t loadLibraryCount = ::InterlockedIncrement(&s_loadLibraryCount);
+    int64_t totalTime = ::InterlockedAdd64(&s_loadLibraryTicks, loadTime);
+    double frequency = (double)GetTimerFrequency();
+    printf("\nLoadLibrary(%d: %S): %.6f seconds, %.6f total\n",
+        loadLibraryCount,
+        lpFileName,
+        loadTime / frequency,
+        totalTime / frequency);
+}
 
 static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
 {
@@ -914,9 +957,13 @@ static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
     HMODULE hMod;
     ErrorModeHolder errorMode{};
     {
+        int64_t before = GetPreciseTickCount();
+
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
         hMod = WszLoadLibrary(lpLibFileName);
         *pLastError = GetLastError();
+        
+        ReportLoadLibraryTime(lpLibFileName, GetPreciseTickCount() - before);
     }
     return hMod;
 }
@@ -950,9 +997,13 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     HMODULE hMod;
     ErrorModeHolder errorMode{};
     {
+        int64_t before = GetPreciseTickCount();
+
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
         hMod = WszLoadLibrary(lpLibFileName, hFile, dwFlags);
         *pLastError = GetLastError();
+
+        ReportLoadLibraryTime(lpLibFileName, GetPreciseTickCount() - before);
     }
     return hMod;
 }
