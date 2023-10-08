@@ -50,8 +50,7 @@ namespace System.Text
 
             if (!Vector128.IsHardwareAccelerated || length < (uint)Vector128<TLeft>.Count)
             {
-                uint elementsPerLong = (uint)(sizeof(ulong) / sizeof(TLeft));
-                if (TLoader.Use64BitLoad && length >= elementsPerLong)
+                if (TLoader.Use64Bit && length >= (uint)(sizeof(ulong) / sizeof(TLeft)))
                 {
                     // First 4 - 7 short or 8 - 15 byte
                     if (!TLoader.EqualAndAscii64(ref left, ref right))
@@ -59,11 +58,11 @@ namespace System.Text
                         return false;
                     }
 
-                    if (length % elementsPerLong != 0)
+                    if (length % (uint)(sizeof(ulong) / sizeof(TLeft)) != 0)
                     {
                         // Remaining 1 - 3 short or 1 - 7 byte
-                        ref TLeft oneAwayFromLeftEnd = ref Unsafe.Add(ref left, length - elementsPerLong);
-                        ref TRight oneAwayFromRightEnd = ref Unsafe.Add(ref right, length - elementsPerLong);
+                        ref TLeft oneAwayFromLeftEnd = ref Unsafe.Add(ref left, length - (uint)(sizeof(ulong) / sizeof(TLeft)));
+                        ref TRight oneAwayFromRightEnd = ref Unsafe.Add(ref right, length - (uint)(sizeof(ulong) / sizeof(TLeft)));
                         if (!TLoader.EqualAndAscii64(ref oneAwayFromLeftEnd, ref oneAwayFromRightEnd))
                         {
                             return false;
@@ -111,7 +110,10 @@ namespace System.Text
                 if (length % (uint)Vector512<TLeft>.Count != 0)
                 {
                     ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref left, length - (uint)Vector512<TLeft>.Count);
-                    return TLoader.EqualAndAscii512(ref oneVectorAwayFromLeftEnd, ref oneVectorAwayFromRightEnd);
+                    if (!TLoader.EqualAndAscii512(ref oneVectorAwayFromLeftEnd, ref oneVectorAwayFromRightEnd))
+                    {
+                        return false;
+                    }
                 }
             }
             else if (Avx.IsSupported && length >= (uint)Vector256<TLeft>.Count)
@@ -141,7 +143,10 @@ namespace System.Text
                 if (length % (uint)Vector256<TLeft>.Count != 0)
                 {
                     ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref left, length - (uint)Vector256<TLeft>.Count);
-                    return TLoader.EqualAndAscii256(ref oneVectorAwayFromLeftEnd, ref oneVectorAwayFromRightEnd);
+                    if (!TLoader.EqualAndAscii256(ref oneVectorAwayFromLeftEnd, ref oneVectorAwayFromRightEnd))
+                    {
+                        return false;
+                    }
                 }
             }
             else
@@ -171,7 +176,10 @@ namespace System.Text
                 if (length % (uint)Vector128<TLeft>.Count != 0)
                 {
                     ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref left, length - (uint)Vector128<TLeft>.Count);
-                    return TLoader.EqualAndAscii128(ref oneVectorAwayFromLeftEnd, ref oneVectorAwayFromRightEnd);
+                    if (!TLoader.EqualAndAscii128(ref oneVectorAwayFromLeftEnd, ref oneVectorAwayFromRightEnd))
+                    {
+                        return false;
+                    }
                 }
             }
 
@@ -469,7 +477,7 @@ namespace System.Text
             static abstract nuint Count128 { get; }
             static abstract nuint Count256 { get; }
             static abstract nuint Count512 { get; }
-            static abstract bool Use64BitLoad { get; }
+            static abstract bool Use64Bit { get; }
             static abstract Vector128<TRight> Load128(ref TLeft ptr);
             static abstract Vector256<TRight> Load256(ref TLeft ptr);
             static abstract Vector512<TRight> Load512(ref TLeft ptr);
@@ -484,7 +492,7 @@ namespace System.Text
             public static nuint Count128 => (uint)Vector128<T>.Count;
             public static nuint Count256 => (uint)Vector256<T>.Count;
             public static nuint Count512 => (uint)Vector512<T>.Count;
-            public static bool Use64BitLoad => IntPtr.Size == 8;
+            public static bool Use64Bit => IntPtr.Size == 8;
             public static Vector128<T> Load128(ref T ptr) => Vector128.LoadUnsafe(ref ptr);
             public static Vector256<T> Load256(ref T ptr) => Vector256.LoadUnsafe(ref ptr);
             public static Vector512<T> Load512(ref T ptr) => Vector512.LoadUnsafe(ref ptr);
@@ -552,7 +560,7 @@ namespace System.Text
             public static nuint Count128 => sizeof(long);
             public static nuint Count256 => (uint)Vector128<byte>.Count;
             public static nuint Count512 => (uint)Vector256<byte>.Count;
-            public static bool Use64BitLoad => IntPtr.Size == 8 && Vector128.IsHardwareAccelerated;
+            public static bool Use64Bit => IntPtr.Size == 8 && Vector128.IsHardwareAccelerated;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<ushort> Load128(ref byte ptr)
@@ -600,7 +608,12 @@ namespace System.Text
                 ulong rightNext = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<ushort, byte>(ref Unsafe.Add(ref utf16, sizeof(ulong) / 2)));
 
                 // A branchless version of "leftLower != right || leftUpper != rightNext"
-                return ((vecWide[0] ^ right) | (vecWide[1] ^ rightNext)) == 0;
+                if (((vecWide[0] ^ right) | (vecWide[1] ^ rightNext)) != 0)
+                {
+                    return false;
+                }
+
+                return true;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -616,7 +629,12 @@ namespace System.Text
 
                 Vector128<ushort> notAsciiCharMask = (leftNotWidened & Vector128.Create((byte)0x80)).AsUInt16();
                 // A branchless version of "leftLower != right || leftUpper != rightNext || !AllCharsInVectorAreAscii"
-                return (notAsciiCharMask | (leftLower ^ right) | (leftUpper ^ rightNext)) == Vector128<ushort>.Zero;
+                if ((notAsciiCharMask | (leftLower ^ right) | (leftUpper ^ rightNext)) != Vector128<ushort>.Zero)
+                {
+                    return false;
+                }
+
+                return true;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -633,7 +651,12 @@ namespace System.Text
 
                 Vector256<ushort> notAsciiCharMask = (leftNotWidened & Vector256.Create((byte)0x80)).AsUInt16();
                 // A branchless version of "leftLower != right || leftUpper != rightNext || !AllCharsInVectorAreAscii"
-                return (notAsciiCharMask | (leftLower ^ right) | (leftUpper ^ rightNext)) == Vector256<ushort>.Zero;
+                if ((notAsciiCharMask | (leftLower ^ right) | (leftUpper ^ rightNext)) != Vector256<ushort>.Zero)
+                {
+                    return false;
+                }
+
+                return true;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -649,7 +672,12 @@ namespace System.Text
 
                 Vector512<ushort> notAsciiCharMask = (leftNotWidened & Vector512.Create((byte)0x80)).AsUInt16();
                 // A branchless version of "leftLower != right || leftUpper != rightNext || !AllCharsInVectorAreAscii"
-                return (notAsciiCharMask | (leftLower ^ right) | (leftUpper ^ rightNext)) == Vector512<ushort>.Zero;
+                if ((notAsciiCharMask | (leftLower ^ right) | (leftUpper ^ rightNext)) != Vector512<ushort>.Zero)
+                {
+                    return false;
+                }
+
+                return true;
             }
         }
     }
