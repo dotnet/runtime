@@ -903,7 +903,7 @@ CLRUnmapViewOfFile(
 }
 
 volatile static int64_t s_loadLibraryTicks = 0;
-volatile static long s_loadLibraryCount = 0;
+volatile static LONG s_loadLibraryCount = 0;
 
 static int64_t GetPreciseTickCount()
 {
