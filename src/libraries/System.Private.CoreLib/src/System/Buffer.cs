@@ -8,6 +8,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -128,7 +129,7 @@ namespace System
         }
 
         [Intrinsic] // Unrolled for small constant lengths
-        internal static void Memmove(ref byte dest, ref byte src, nuint len)
+        internal static unsafe void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
             if (((nuint)(nint)Unsafe.ByteOffset(ref src, ref dest) < len) || ((nuint)(nint)Unsafe.ByteOffset(ref dest, ref src) < len))
@@ -240,6 +241,41 @@ namespace System
             return;
 
         MCPY05:
+            // Misaligned access via SIMD is especially expensive on ARM64 on large data.
+            // 512 is an arbitrary threshold picked for Ampere and Apple M1.
+            //
+            // TODO: Consider doing the same on x86/AMD64 for V256 and V512
+#if HAS_CUSTOM_BLOCKS && TARGET_ARM64
+            if (len >= 512 && Vector128.IsHardwareAccelerated)
+            {
+                const nuint alignment = 16;
+
+                // Try to opportunistically align the destination below. The input isn't pinned, so the GC
+                // is free to move the references. We're therefore assuming that reads may still be unaligned.
+                //
+                // dest is more important to align than src because an unaligned store is more expensive
+                // than an unaligned load.
+                nuint misalignedElements = (nuint)Unsafe.AsPointer(ref dest) & (alignment - 1);
+                if (misalignedElements != 0)
+                {
+                    // E.g. if misalignedElements is 4, it means we need to use a scalar loop
+                    // for 16 - 4 = 12 elements till we're aligned to 16b boundary.
+                    misalignedElements = alignment - misalignedElements;
+                    nuint offset = 0;
+                    do
+                    {
+                        // For large misalignments on x64 we might want to use smaller SIMD here.
+                        Unsafe.Add(ref dest, offset) = Unsafe.Add(ref src, offset);
+                        offset++;
+                    }
+                    while (offset != misalignedElements);
+
+                    src = ref Unsafe.Add(ref src, misalignedElements);
+                    dest = ref Unsafe.Add(ref dest, misalignedElements);
+                    len -= misalignedElements;
+                }
+            }
+#endif
             // PInvoke to the native version when the copy length exceeds the threshold.
             if (len > MemmoveNativeThreshold)
             {
