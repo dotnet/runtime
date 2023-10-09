@@ -20,6 +20,7 @@ namespace System.Net.Quic.Tests
             : base(null!) { }
 
         //[ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Fact]
         public void SslKeyLogFile_IsCreatedAndFilled()
         {
             if (!RemoteExecutor.IsSupported)
