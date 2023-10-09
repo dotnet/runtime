@@ -46,10 +46,10 @@ namespace System.Reflection.Emit
             {
                 StackBehaviour.Pop0 or
                 StackBehaviour.Push0 => 0,
-                StackBehaviour.Pop1 or
-                StackBehaviour.Popi or
-                StackBehaviour.Popref or
-                StackBehaviour.Varpop => -1,
+                StackBehaviour.Pop1
+                or StackBehaviour.Popi
+                or StackBehaviour.Popref
+                or StackBehaviour.Varpop => -1,
                 StackBehaviour.Pop1_pop1 or
                 StackBehaviour.Popi_pop1 or
                 StackBehaviour.Popi_popi or
@@ -80,10 +80,7 @@ namespace System.Reflection.Emit
         {
             _currentStack += GetStackChangeFor(opCode.StackBehaviourPush) + GetStackChangeFor(opCode.StackBehaviourPop);
 
-            if (_currentStack > _maxStackSize)
-            {
-                _maxStackSize = _currentStack;
-            }
+            _maxStackSize = Math.Max(_maxStackSize, _currentStack);
         }
 
         public void EmitOpcode(OpCode opcode)
@@ -97,10 +94,7 @@ namespace System.Reflection.Emit
             UpdateStackSize(opcode);
         }
 
-        public override void Emit(OpCode opcode)
-        {
-            EmitOpcode(opcode);
-        }
+        public override void Emit(OpCode opcode) => EmitOpcode(opcode);
 
         public override void Emit(OpCode opcode, byte arg)
         {
