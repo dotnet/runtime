@@ -215,9 +215,9 @@ void EtwCallback(
         (context->RegistrationHandle == Microsoft_Windows_DotNETRuntimePrivateHandle) &&
         GCHeapUtilities::IsGCHeapInitialized())
     {
-        FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
+        FireEtwGCSettings_V1(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
                           GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(TRUE),
-                          GCHeapUtilities::IsServerHeap());
+                          GCHeapUtilities::IsServerHeap(), GetClrInstanceId());
         GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
     }
 }
