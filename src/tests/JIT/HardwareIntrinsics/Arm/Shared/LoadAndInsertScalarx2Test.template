@@ -130,14 +130,14 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             public {Op1VectorType}<{Op1BaseType}> _fld1;
             public {Op1VectorType}<{Op1BaseType}> _fld2;
-
-            private {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
-            private {Op1BaseType}[] _data2 = new {Op1BaseType}[Op1ElementCount];
-            public {Op1BaseType}[] _newData = new {Op1BaseType}[Op1ElementCount];
+            public {Op1BaseType}[] _newData;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
+                {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
+                {Op1BaseType}[] _data2 = new {Op1BaseType}[Op1ElementCount];
+                testStruct._newData = new {Op1BaseType}[Op1ElementCount];
 
                 for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
                 for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp1}; }
