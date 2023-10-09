@@ -79,9 +79,9 @@ namespace Microsoft.Extensions.Hosting
 
             var configuredDelaySeconds = configuration["shutdownDelaySeconds"];
             if (!string.IsNullOrEmpty(configuredDelaySeconds)
-                && int.TryParse(configuredDelaySeconds, NumberStyles.None, CultureInfo.InvariantCulture, out var delaySeconds))
+                && int.TryParse(configuredDelaySeconds, NumberStyles.None, CultureInfo.InvariantCulture, out seconds))
             {
-                ShutdownDelay = TimeSpan.FromSeconds(delaySeconds);
+                ShutdownDelay = TimeSpan.FromSeconds(seconds);
             }
 
             var servicesStartConcurrently = configuration["servicesStartConcurrently"];

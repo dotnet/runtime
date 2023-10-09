@@ -32,9 +32,10 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             if (HostOptions.ShutdownDelay.HasValue)
             {
+                Logger.LogInformation("Shutting down in {Delay}", HostOptions.ShutdownDelay.Value);
+
                 _shutdownDelayTimer = TimeProvider.CreateTimer(state =>
                 {
-                    Logger.LogInformation("Shutting down in {Delay}", HostOptions.ShutdownDelay.Value);
                     ((ConsoleLifetime)state!).ApplicationLifetime.StopApplication();
                 },
                 this,
