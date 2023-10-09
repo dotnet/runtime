@@ -916,9 +916,9 @@ static void ReportLoadLibraryTime(LPCWSTR lpFileName, int64_t loadTime)
 {
     long loadLibraryCount = ::InterlockedAdd(&s_loadLibraryCount, 1);
     int64_t totalTime = ::InterlockedAdd64(&s_loadLibraryTicks, loadTime);
-    printf("\nLoadLibrary(%d: %S): %.6f seconds, %.6f total\n",
+    printf("\nLoadLibrary(%ld: %S): %.6f seconds, %.6f total\n",
         loadLibraryCount,
-        lpFileName,
+        (wchar_t *)lpFileName,
         loadTime * 1e-9,
         totalTime * 1e-9);
 }
