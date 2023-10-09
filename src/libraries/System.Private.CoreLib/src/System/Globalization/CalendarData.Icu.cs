@@ -89,7 +89,15 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
 
             // NOTE: there are no 'user overrides' on Linux
-            int count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+            int count;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+                count = Interop.Globalization.GetCalendarsNative(localeName, calendars, calendars.Length);
+            else
+                count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+#else
+            count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+#endif
 
             // ensure there is at least 1 calendar returned
             if (count == 0 && calendars.Length > 0)

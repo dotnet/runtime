@@ -372,7 +372,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                     m_runtimeBaseAddress = baseAddress;
 
                     // explicit initialization for old gcc support; instead of just runtimeInfo { }
-                    RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { } };
+                    RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { }, .RuntimeVersion = { } };
                     if (ReadMemory((void*)(baseAddress + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
                     {
                         if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
@@ -494,7 +494,7 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
         // performance optimization.
         m_canUseProcVmReadSyscall = false;
         assert(m_fdMem != -1);
-        *read = pread64(m_fdMem, buffer, size, (off64_t)address);
+        *read = pread(m_fdMem, buffer, size, (off_t)address);
     }
 
     if (*read == (size_t)-1)

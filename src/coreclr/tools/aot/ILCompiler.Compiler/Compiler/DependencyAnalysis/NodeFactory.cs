@@ -319,6 +319,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new ReflectedTypeNode(type);
             });
 
+            _notReadOnlyFields = new NodeCache<FieldDesc, NotReadOnlyFieldNode>(field =>
+            {
+                return new NotReadOnlyFieldNode(field);
+            });
+
             _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
             {
                 return new GenericStaticBaseInfoNode(type);
@@ -996,6 +1001,12 @@ namespace ILCompiler.DependencyAnalysis
         public ReflectedTypeNode ReflectedType(TypeDesc type)
         {
             return _reflectedTypes.GetOrAdd(type);
+        }
+
+        private NodeCache<FieldDesc, NotReadOnlyFieldNode> _notReadOnlyFields;
+        public NotReadOnlyFieldNode NotReadOnlyField(FieldDesc field)
+        {
+            return _notReadOnlyFields.GetOrAdd(field);
         }
 
         private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;
