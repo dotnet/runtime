@@ -314,8 +314,7 @@ namespace Microsoft.Interop
                 new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
                 VirtualMethodIndexData.From(virtualMethodIndexData),
                 exceptionMarshallingInfo,
-                VtableIndexStubGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
-                VtableIndexStubGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
+                environment.EnvironmentFlags,
                 interfaceType,
                 interfaceType,
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
@@ -366,7 +365,7 @@ namespace Microsoft.Interop
         private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
-            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(methodStub);
+            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorFactory);
 
             return (
                 methodStub.ContainingSyntaxContext.AddContainingSyntax(
@@ -379,7 +378,7 @@ namespace Microsoft.Interop
         private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
-            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(methodStub);
+            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorFactory);
 
             return (
                 methodStub.ContainingSyntaxContext.AddContainingSyntax(
@@ -447,7 +446,7 @@ namespace Microsoft.Interop
                     .WithType(PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))))));
 
             return containingSyntax.WrapMembersInContainingSyntaxWithUnsafeModifier(
-                populateVtableMethod.WithBody(VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(vtableMethods, vtableParameter)));
+                populateVtableMethod.WithBody(VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(vtableMethods, vtableParameter, VtableIndexStubGeneratorHelpers.GetGeneratorFactory)));
         }
     }
 }

@@ -842,6 +842,11 @@ namespace Microsoft.Extensions
         {
             public int Value2 { get; set; }
         }
+        
+        internal class ClassWithAbstractProp
+        {
+            public AbstractBase AbstractProp { get; set; }
+        }
 
         internal class ClassWithAbstractCtorParam
         {

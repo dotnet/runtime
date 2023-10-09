@@ -802,14 +802,27 @@ public:
         if ((cycleImprovementPerInvoc > 0) &&
             ((cycleImprovementPerInvoc * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -sizeImprovement))
         {
-            JITDUMP("  Promoting replacement\n\n");
+            JITDUMP("  Promoting replacement (cycle improvement)\n\n");
+            return true;
+        }
+
+        // Similarly, even for a cycle-wise regression, if we see a large size
+        // wise improvement we may want to promote. The main case is where all
+        // uses are in blocks with bbWeight=0, but we still estimate a
+        // size-wise improvement.
+        const weight_t ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT = 0.01;
+
+        if ((sizeImprovement > 0) &&
+            ((sizeImprovement * ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT) >= -cycleImprovementPerInvoc))
+        {
+            JITDUMP("  Promoting replacement (size improvement)\n\n");
             return true;
         }
 
 #ifdef DEBUG
         if (comp->compStressCompile(Compiler::STRESS_PHYSICAL_PROMOTION_COST, 25))
         {
-            JITDUMP("  Promoting replacement due to stress\n\n");
+            JITDUMP("  Promoting replacement (stress)\n\n");
             return true;
         }
 #endif

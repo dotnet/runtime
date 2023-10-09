@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- This test requires process isolation as it monitors the number of JITted methods. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>

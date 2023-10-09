@@ -362,6 +362,7 @@ enum {
 	MONO_INST_MAX = 6
 };
 
+MONO_DISABLE_WARNING(4201) // nonstandard extension used: nameless struct/union
 typedef union MonoInstSpec { // instruction specification
 	struct {
 		char dest;
@@ -383,6 +384,7 @@ typedef union MonoInstSpec { // instruction specification
 	};
 	char bytes[MONO_INST_MAX];
 } MonoInstSpec;
+MONO_RESTORE_WARNING
 
 extern const char mini_ins_info[];
 extern const gint8 mini_ins_sreg_counts [];
@@ -2356,6 +2358,7 @@ MonoMethod*       mini_get_memset_method (void);
 int               mini_class_check_context_used (MonoCompile *cfg, MonoClass *klass);
 MonoRgctxAccess   mini_get_rgctx_access_for_method (MonoMethod *method);
 
+CompRelation      mono_opcode_to_cond_unchecked (int opcode);
 CompRelation      mono_opcode_to_cond (int opcode);
 CompType          mono_opcode_to_type (int opcode, int cmp_opcode);
 CompRelation      mono_negate_cond (CompRelation cond);

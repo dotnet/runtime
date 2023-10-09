@@ -948,33 +948,6 @@ namespace System.Runtime.InteropServices
                 out IntPtr inner);
 
             using ComHolder releaseIdentity = new ComHolder(identity);
-            if (flags.HasFlag(CreateObjectFlags.Unwrap))
-            {
-                ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
-                if (comInterfaceDispatch != null)
-                {
-                    // If we found a managed object wrapper in this ComWrappers instance
-                    // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
-                    // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
-                    //
-                    // A managed object can have multiple managed object wrappers, with a max of one per context.
-                    // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
-                    // managed object wrappers for A created with C1 and C2 respectively.
-                    // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
-                    // we will create a new wrapper. In this scenario, we'll only unwrap B2.
-                    object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
-                    if (_ccwTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
-                    {
-                        // The unwrapped object has a CCW in this context. Compare with identity
-                        // so we can see if it's the CCW for the unwrapped object in this context.
-                        if (unwrappedWrapperInThisContext.ComIp == identity)
-                        {
-                            retValue = unwrapped;
-                            return true;
-                        }
-                    }
-                }
-            }
 
             if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
@@ -1016,6 +989,33 @@ namespace System.Runtime.InteropServices
                             s_referenceTrackerNativeObjectWrapperCache.Add(referenceTrackerNativeObjectWrapper._nativeObjectWrapperWeakHandle);
                         }
                         return true;
+                    }
+                }
+                if (flags.HasFlag(CreateObjectFlags.Unwrap))
+                {
+                    ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
+                    if (comInterfaceDispatch != null)
+                    {
+                        // If we found a managed object wrapper in this ComWrappers instance
+                        // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
+                        // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
+                        //
+                        // A managed object can have multiple managed object wrappers, with a max of one per context.
+                        // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
+                        // managed object wrappers for A created with C1 and C2 respectively.
+                        // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
+                        // we will create a new wrapper. In this scenario, we'll only unwrap B2.
+                        object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
+                        if (_ccwTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
+                        {
+                            // The unwrapped object has a CCW in this context. Compare with identity
+                            // so we can see if it's the CCW for the unwrapped object in this context.
+                            if (unwrappedWrapperInThisContext.ComIp == identity)
+                            {
+                                retValue = unwrapped;
+                                return true;
+                            }
+                        }
                     }
                 }
             }

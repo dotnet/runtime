@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 /*RDawson - 11/2/200
 
   Check that methods marked either mdFinal, mdReuseSlot, mdNewSlot, or
@@ -11,7 +12,7 @@
 .assembly Bob{}
 .assembly extern mscorlib {}
 
-.class value sealed Foo extends [mscorlib]System.ValueType{
+.class public value sealed Foo extends [mscorlib]System.ValueType{
 	.method public virtual void Foo(){
 		ret
 	}
@@ -35,6 +36,9 @@
 }
 
 .method public static int32 main(){
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.locals (value class Foo)
 	.entrypoint
 	.maxstack 8
