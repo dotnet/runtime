@@ -7501,7 +7501,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     {
         // Todo: this may not look like a viable loop header.
         // Might need the moral equivalent of a scratch BB.
-        block->SetJumpDest(fgEntryBB);
+        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgEntryBB);
     }
     else
     {
@@ -7511,11 +7511,10 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // block removal on it.
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
-        block->SetJumpDest(fgFirstBB->Next());
+        block->SetJumpKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next());
     }
 
     // Finish hooking things up.
-    block->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
     fgAddRefPred(block->GetJumpDest(), block);
     block->bbFlags &= ~BBF_HAS_JMP;
 }
@@ -13447,8 +13446,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     if (!block->NextIs(curJump))
                     {
                         // transform the basic block into a BBJ_ALWAYS
-                        block->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-                        block->SetJumpDest(curJump);
+                        block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump);
                     }
                     else
                     {
@@ -14021,8 +14019,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         else
 #endif // !TARGET_X86
         {
-            block->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-            block->SetJumpDest(genReturnBB);
+            block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB);
             fgAddRefPred(genReturnBB, block);
             fgReturnCount--;
         }

@@ -319,8 +319,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert(isTest);
 
     // Convert firstBlock to a switch block
-    firstBlock->SetJumpKind(BBJ_SWITCH DEBUG_ARG(this));
-    firstBlock->SetJumpDest(nullptr);
+    firstBlock->SetJumpKindAndTarget(BBJ_SWITCH, new (this, CMK_BasicBlock) BBswtDesc);
     firstBlock->bbCodeOffsEnd = lastBlock->bbCodeOffsEnd;
     firstBlock->lastStmt()->GetRootNode()->ChangeOper(GT_SWITCH);
 
@@ -351,8 +350,7 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
     const auto jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jumpCount + 1 /*default case*/];
 
-    fgHasSwitch = true;
-    firstBlock->SetJumpSwt(new (this, CMK_BasicBlock) BBswtDesc);
+    fgHasSwitch                             = true;
     firstBlock->GetJumpSwt()->bbsCount      = jumpCount + 1;
     firstBlock->GetJumpSwt()->bbsHasDefault = true;
     firstBlock->GetJumpSwt()->bbsDstTab     = jmpTab;

@@ -1460,8 +1460,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 
             // Possibly defer this until after early out below.
             //
-            jti.m_fallThroughPred->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-            jti.m_fallThroughPred->SetJumpDest(jti.m_block);
+            jti.m_fallThroughPred->SetJumpKindAndTarget(BBJ_ALWAYS, jti.m_block);
             modifiedFlow = true;
         }
         else

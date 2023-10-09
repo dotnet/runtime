@@ -4651,9 +4651,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // the new BBJ_CALLFINALLY is in a different EH region, thus it can't just replace the BBJ_LEAVE,
                 // which might be in the middle of the "try". In most cases, the BBJ_ALWAYS will jump to the
                 // next block, and flow optimizations will remove it.
-                block->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                 fgRemoveRefPred(block->GetJumpDest(), block);
-                block->SetJumpDest(callBlock);
+                block->SetJumpKindAndTarget(BBJ_ALWAYS, callBlock);
                 fgAddRefPred(callBlock, block);
 
                 /* The new block will inherit this block's weight */
@@ -5024,11 +5023,10 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     }
 #endif // FEATURE_EH_FUNCLETS
 
-    block->SetJumpKind(BBJ_LEAVE DEBUG_ARG(this));
     fgInitBBLookup();
 
     fgRemoveRefPred(block->GetJumpDest(), block);
-    block->SetJumpDest(fgLookupBB(jmpAddr));
+    block->SetJumpKindAndTarget(BBJ_LEAVE, fgLookupBB(jmpAddr));
     fgAddRefPred(block->GetJumpDest(), block);
 
     // We will leave the BBJ_ALWAYS block we introduced. When it's reimported
@@ -7633,8 +7631,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             if (!block->NextIs(curJump))
                             {
                                 // transform the basic block into a BBJ_ALWAYS
-                                block->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-                                block->SetJumpDest(curJump);
+                                block->SetJumpKindAndTarget(BBJ_ALWAYS, curJump);
                             }
                             else
                             {

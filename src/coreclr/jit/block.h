@@ -527,15 +527,15 @@ public:
         return bbJumpKind;
     }
 
-    void SetJumpKind(BBjumpKinds kind DEBUG_ARG(Compiler* compiler))
+    void SetJumpKind(BBjumpKinds jumpKind DEBUG_ARG(Compiler* compiler))
     {
 #ifdef DEBUG
         // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
         // TODO: Change assert to check if compiler is in appropriate optimization phase to use BBJ_NONE
         // (right now, this assertion does the null check to avoid unused variable warnings)
-        assert((kind != BBJ_NONE) || (compiler != nullptr));
+        assert((jumpKind != BBJ_NONE) || (compiler != nullptr));
 #endif // DEBUG
-        bbJumpKind = kind;
+        bbJumpKind = jumpKind;
     }
 
     BasicBlock* Prev() const
@@ -610,6 +610,14 @@ public:
         bbJumpDest = jumpDest;
     }
 
+    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest)
+    {
+        assert(jumpDest != nullptr);
+        bbJumpKind = jumpKind;
+        bbJumpDest = jumpDest;
+        assert(KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+    }
+
     bool HasJumpTo(const BasicBlock* jumpDest) const
     {
         return (bbJumpDest == jumpDest);
@@ -628,6 +636,14 @@ public:
     void SetJumpSwt(BBswtDesc* jumpSwt)
     {
         bbJumpSwt = jumpSwt;
+    }
+
+    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BBswtDesc* jumpSwt)
+    {
+        assert(jumpKind == BBJ_SWITCH);
+        assert(jumpSwt != nullptr);
+        bbJumpKind = jumpKind;
+        bbJumpSwt  = jumpSwt;
     }
 
     BasicBlockFlags bbFlags;

@@ -1535,8 +1535,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 {
                     JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
                             block->bbNum, bottomBlock->bbNum);
-                    block->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-                    block->SetJumpDest(bottomBlock);
+                    block->SetJumpKindAndTarget(BBJ_ALWAYS, bottomBlock);
                 }
 
                 fgAddRefPred(bottomBlock, block);

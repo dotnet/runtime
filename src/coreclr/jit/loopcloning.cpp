@@ -2048,8 +2048,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     {
         assert(h->KindIs(BBJ_ALWAYS));
         assert(h->HasJumpTo(loop.lpEntry));
-        h2->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-        h2->SetJumpDest(loop.lpEntry);
+        h2->SetJumpKindAndTarget(BBJ_ALWAYS, loop.lpEntry);
     }
 
     fgReplacePred(loop.lpEntry, h, h2);
@@ -2256,8 +2255,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     {
         // We can't just fall through to the slow path entry, so make it an unconditional branch.
         assert(slowHead->KindIs(BBJ_NONE)); // This is how we created it above.
-        slowHead->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-        slowHead->SetJumpDest(e2);
+        slowHead->SetJumpKindAndTarget(BBJ_ALWAYS, e2);
     }
 
     fgAddRefPred(e2, slowHead);

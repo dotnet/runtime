@@ -1787,8 +1787,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     GenTree* const jumpIfEntryStateZero = gtNewOperNode(GT_JTRUE, TYP_VOID, compareEntryStateToZero);
                     fgNewStmtAtBeg(fromBlock, jumpIfEntryStateZero);
 
-                    fromBlock->SetJumpKind(BBJ_COND DEBUG_ARG(this));
-                    fromBlock->SetJumpDest(toBlock);
+                    fromBlock->SetJumpKindAndTarget(BBJ_COND, toBlock);
                     fgAddRefPred(toBlock, fromBlock);
                     newBlock->inheritWeight(fromBlock);
 
@@ -3310,8 +3309,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         }
 
         // Change the switch jump into a BBJ_ALWAYS
-        block->SetJumpDest(block->GetJumpSwt()->bbsDstTab[0]);
-        block->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+        block->SetJumpKindAndTarget(BBJ_ALWAYS, block->GetJumpSwt()->bbsDstTab[0]);
         if (jmpCnt > 1)
         {
             for (unsigned i = 1; i < jmpCnt; ++i)
@@ -3375,8 +3373,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             fgSetStmtSeq(switchStmt);
         }
 
-        block->SetJumpDest(block->GetJumpSwt()->bbsDstTab[0]);
-        block->SetJumpKind(BBJ_COND DEBUG_ARG(this));
+        block->SetJumpKindAndTarget(BBJ_COND, block->GetJumpSwt()->bbsDstTab[0]);
 
         JITDUMP("After:\n");
         DISPNODE(switchTree);
@@ -3787,8 +3784,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 
     // Fix up block's flow
     //
-    block->SetJumpKind(BBJ_COND DEBUG_ARG(this));
-    block->SetJumpDest(target->GetJumpDest());
+    block->SetJumpKindAndTarget(BBJ_COND, target->GetJumpDest());
     fgAddRefPred(block->GetJumpDest(), block);
     fgRemoveRefPred(target, block);
 
@@ -4231,8 +4227,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->bbFlags |= bDest->bbFlags & BBF_COPY_PROPAGATE;
 
-    bJump->SetJumpKind(BBJ_COND DEBUG_ARG(this));
-    bJump->SetJumpDest(bDest->Next());
+    bJump->SetJumpKindAndTarget(BBJ_COND, bDest->Next());
 
     /* Update bbRefs and bbPreds */
 
@@ -4392,8 +4387,7 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Wire up the new control flow.
         //
-        block->SetJumpKind(BBJ_COND DEBUG_ARG(this));
-        block->SetJumpDest(dominantTarget);
+        block->SetJumpKindAndTarget(BBJ_COND, dominantTarget);
         FlowEdge* const blockToTargetEdge   = fgAddRefPred(dominantTarget, block);
         FlowEdge* const blockToNewBlockEdge = newBlock->bbPreds;
         assert(blockToNewBlockEdge->getSourceBlock() == block);
@@ -6169,7 +6163,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     (bNext->bbRefs == 1) &&      // No other block jumps to bNext
                     bNext->KindIs(BBJ_ALWAYS) && // The next block is a BBJ_ALWAYS block
                     bNext->isEmpty() &&          // and it is an empty block
-                    !bNext->HasJumpTo(bNext) &&    // special case for self jumps
+                    !bNext->HasJumpTo(bNext) &&  // special case for self jumps
                     !bDest->IsFirstColdBlock(this) &&
                     !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
                 {
@@ -6975,8 +6969,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Fix up the flow.
                 //
-                predBlock->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-                predBlock->SetJumpDest(crossJumpTarget);
+                predBlock->SetJumpKindAndTarget(BBJ_ALWAYS, crossJumpTarget);
 
                 fgRemoveRefPred(block, predBlock);
                 fgAddRefPred(crossJumpTarget, predBlock);

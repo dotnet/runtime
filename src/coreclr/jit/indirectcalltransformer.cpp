@@ -1126,8 +1126,7 @@ private:
             // not fall through to the check block.
             //
             compiler->fgRemoveRefPred(checkBlock, coldBlock);
-            coldBlock->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(compiler));
-            coldBlock->SetJumpDest(elseBlock);
+            coldBlock->SetJumpKindAndTarget(BBJ_ALWAYS, elseBlock);
             compiler->fgAddRefPred(elseBlock, coldBlock);
         }
 

@@ -4017,8 +4017,7 @@ void Compiler::fgFixEntryFlowForOSR()
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->KindIs(BBJ_NONE));
     fgRemoveRefPred(fgFirstBB->Next(), fgFirstBB);
-    fgFirstBB->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-    fgFirstBB->SetJumpDest(fgOSREntryBB);
+    fgFirstBB->SetJumpKindAndTarget(BBJ_ALWAYS, fgOSREntryBB);
     FlowEdge* const edge = fgAddRefPred(fgOSREntryBB, fgFirstBB);
     edge->setLikelihood(1.0);
 
@@ -5256,8 +5255,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     if (block->KindIs(BBJ_ALWAYS))
                     {
                         /* bPrev now becomes a BBJ_ALWAYS */
-                        bPrev->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-                        bPrev->SetJumpDest(succBlock);
+                        bPrev->SetJumpKindAndTarget(BBJ_ALWAYS, succBlock);
                     }
                     break;
 
@@ -5378,8 +5376,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
             {
 
                 case BBJ_NONE:
-                    bSrc->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-                    bSrc->SetJumpDest(bDst);
+                    bSrc->SetJumpKindAndTarget(BBJ_ALWAYS, bDst);
                     JITDUMP("Block " FMT_BB " ended with a BBJ_NONE, Changed to an unconditional jump to " FMT_BB "\n",
                             bSrc->bbNum, bSrc->GetJumpDest()->bbNum);
                     break;
