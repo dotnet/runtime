@@ -3623,7 +3623,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         impAppendTree(gtUnusedValNode(*val3), CHECK_SPILL_ALL, impCurStmtDI);
                     }
 
-                    switch (info.oper1)
+                    // cast in switch clause is needed for old gcc
+                    switch ((TernaryLogicOperKind)info.oper1)
                     {
                         case TernaryLogicOperKind::Select:
                         {
