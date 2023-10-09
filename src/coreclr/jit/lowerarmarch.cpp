@@ -1609,12 +1609,10 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     for (N = 1; N < argCnt - 1; N++)
     {
-        opN = node->Op(N + 1);
-        idx = comp->gtNewIconNode(N);
-        BlockRange().InsertBefore(opN, idx);
-
+        opN  = node->Op(N + 1);
+        idx  = comp->gtNewIconNode(N);
         tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, opN, NI_AdvSimd_Insert, simdBaseJitType, simdSize);
-        BlockRange().InsertAfter(opN, tmp1);
+        BlockRange().InsertBefore(node, idx, tmp1);
         LowerNode(tmp1);
     }
 
@@ -1623,7 +1621,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     // For the last insert, we will reuse the existing node and so handle it here, outside the loop.
     opN = node->Op(argCnt);
     idx = comp->gtNewIconNode(N);
-    BlockRange().InsertBefore(opN, idx);
+    BlockRange().InsertBefore(node, idx);
 
     node->ResetHWIntrinsicId(NI_AdvSimd_Insert, comp, tmp1, idx, opN);
 
