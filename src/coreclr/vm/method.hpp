@@ -56,16 +56,17 @@ EXTERN_C VOID STDCALL NDirectImportThunk();
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
 
-enum class AsyncThunkType
+enum class AsyncMethodType
 {
-    NotAThunk,
+    NotAsync,
     TaskToAsync,
-    AsyncToTask
+    AsyncToTask,
+    Async
 };
 
-struct AsyncThunkData
+struct AsyncMethodData
 {
-    AsyncThunkType type;
+    AsyncMethodType type;
     Signature sig;
 };
 
@@ -152,8 +153,8 @@ enum MethodDescClassification
     // Has slot for native code
     mdcHasNativeCodeSlot                = 0x0020,
 
-    // IsAsyncThunkMethod
-    mdcIsAsyncThunkMethod               = 0x0040,
+    // HasAsyncMethodData
+    mdcHasAsyncMethodData               = 0x0040,
 
     // Method is static
     mdcStatic                           = 0x0080,
@@ -1405,8 +1406,8 @@ public:
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
 
     PTR_PCODE GetAddrOfNativeCodeSlot();
-    AsyncThunkData *GetAddrOfAsyncThunkData();
-    const AsyncThunkData& GetAsyncThunkData() { _ASSERTE(IsAsyncThunkMethod()); return *GetAddrOfAsyncThunkData(); }
+    AsyncMethodData *GetAddrOfAsyncMethodData();
+    const AsyncMethodData& GetAsyncMethodData() { _ASSERTE(IsAsyncThunkMethod()); return *GetAddrOfAsyncMethodData(); }
 
     BOOL MayHaveNativeCode();
 
@@ -1719,15 +1720,29 @@ public:
     inline bool IsAsyncThunkMethod()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcIsAsyncThunkMethod) != 0;
+        if (!HasAsyncMethodData())
+            return false;
+        auto asyncType = GetAddrOfAsyncMethodData()->type;
+        return asyncType == AsyncMethodType::AsyncToTask || asyncType == AsyncMethodType::TaskToAsync;
     }
 
-    bool IsAsync2Method();
+    inline bool IsAsync2Method()
+    {
+        if (!HasAsyncMethodData())
+            return false;
+        auto asyncType = GetAddrOfAsyncMethodData()->type;
+        return asyncType == AsyncMethodType::Async || asyncType == AsyncMethodType::AsyncToTask;
+    }
 
-    inline void SetIsAsyncThunkMethod()
+    inline bool HasAsyncMethodData()
+    {
+        return (m_wFlags & mdcHasAsyncMethodData) != 0;
+    }
+
+    inline void SetHasAsyncMethodData()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcIsAsyncThunkMethod;
+        m_wFlags |= mdcHasAsyncMethodData;
     }
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -2192,7 +2207,7 @@ public:
                                         DWORD classification,
                                         BOOL fNonVtableSlot,
                                         BOOL fNativeCodeSlot,
-                                        BOOL fAsyncThunkData,
+                                        BOOL fAsyncMethodData,
                                         MethodTable *initialMT,
                                         class AllocMemTracker *pamTracker);
 

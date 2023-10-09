@@ -958,7 +958,7 @@ private:
             DWORD dwImplAttrs,
             DWORD dwRVA,
             Signature sig,
-            AsyncThunkType thunkType,
+            AsyncMethodType thunkType,
             MethodClassification type,
             METHOD_IMPL_TYPE implType);
 
@@ -1062,10 +1062,20 @@ private:
         GetRVA() const
             { LIMITED_METHOD_CONTRACT; return m_dwRVA; }
 
-        AsyncThunkType GetAsyncThunkType() const
+        bool IsAsyncThunk() const
+        {
+            return GetAsyncMethodType() == AsyncMethodType::AsyncToTask || GetAsyncMethodType() == AsyncMethodType::TaskToAsync;
+        }
+
+        void SetIsAsync2Method()
+        {
+            m_asyncMethodType = AsyncMethodType::Async;
+        }
+
+        AsyncMethodType GetAsyncMethodType() const
         {
             LIMITED_METHOD_CONTRACT;
-            return m_asyncThunkType;
+            return m_asyncMethodType;
         }
 
         bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
@@ -1079,7 +1089,7 @@ private:
         DWORD             m_dwImplAttrs;
         DWORD             m_dwRVA;
         MethodClassification  m_type;               // Specific MethodDesc flavour
-        AsyncThunkType m_asyncThunkType;
+        AsyncMethodType m_asyncMethodType;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
         bmtMDMethod*      m_asyncOtherVariant = NULL;
@@ -1211,26 +1221,6 @@ private:
         // Returns the MethodDesc* associated with this method.
         MethodDesc *
         GetMethodDesc() const;
-
-/*        bmtMethodHandle GetAsyncOtherVariant() const
-        {
-            if (IsRTMethod())
-            {
-                bmtRTMethod *pRTMethod = AsRTMethod();
-                MethodDesc *pMD = pRTMethod->GetMethodDesc();
-                MethodDesc *pRTOtherMethod = pMD->GetAsyncOtherVariant();
-                _ASSERTE(pRTOtherMethod != NULL);
-                _ASSERTE(pRTOtherMethod->IsAsyncThunkMethod() || pRTMethod->GetMethodDesc()->IsAsyncThunkMethod());
-                _ASSERTE(FALSE);
-            }
-            else
-            {
-                bmtMDMethod* pMDOtherVariant = AsMDMethod()->GetAsyncOtherVariant();
-                _ASSERTE(pMDOtherVariant != NULL);
-                _ASSERTE(pMDOtherVariant->GetAsyncThunkType() != AsyncThunkType::NotAThunk || AsMDMethod()->GetAsyncThunkType() != AsyncThunkType::NotAThunk);
-                return pMDOtherVariant;
-            }
-        }*/
 
     protected:
         //-----------------------------------------------------------------------------------------
@@ -2700,7 +2690,7 @@ private:
         IMDInternalImport * pIMDII,  // Needed for NDirect, EEImpl(Delegate) cases
         LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
         Signature           sig, // Only needed for the async thunk (Async2 Thunk) case
-        AsyncThunkType      thunkType
+        AsyncMethodType      thunkType
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodName)
         COMMA_INDEBUG(LPCUTF8             pszDebugClassName)
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodSignature));

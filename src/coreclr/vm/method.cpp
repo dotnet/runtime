@@ -91,14 +91,14 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
     METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
     METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot)),
 
-    METHOD_DESC_SIZES(sizeof(AsyncThunkData)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(AsyncThunkData)),
-    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(AsyncThunkData)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(AsyncThunkData)),
-    METHOD_DESC_SIZES(sizeof(NativeCodeSlot) + sizeof(AsyncThunkData)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot) + sizeof(AsyncThunkData)),
-    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(AsyncThunkData)),
-    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(AsyncThunkData)),
+    METHOD_DESC_SIZES(sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
+    METHOD_DESC_SIZES(sizeof(NonVtableSlot) + sizeof(MethodImpl) + sizeof(NativeCodeSlot) + sizeof(AsyncMethodData)),
 };
 
 #ifndef FEATURE_COMINTEROP
@@ -134,7 +134,7 @@ SIZE_T MethodDesc::SizeOf()
         | mdcHasNonVtableSlot
         | mdcMethodImpl
         | mdcHasNativeCodeSlot
-        | mdcIsAsyncThunkMethod)];
+        | mdcHasAsyncMethodData)];
 
     return size;
 }
@@ -407,7 +407,7 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
     }
     if (IsAsyncThunkMethod())
     {
-        Signature sig = GetAsyncThunkData().sig;
+        Signature sig = GetAsyncMethodData().sig;
         *ppSig = sig.GetRawSig();
         *pcSig = sig.GetRawSigLen();
         return;
@@ -986,15 +986,15 @@ PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
 }
 
 //*******************************************************************************
-AsyncThunkData* MethodDesc::GetAddrOfAsyncThunkData()
+AsyncMethodData* MethodDesc::GetAddrOfAsyncMethodData()
 {
     WRAPPER_NO_CONTRACT;
 
-    _ASSERTE(IsAsyncThunkMethod());
+    _ASSERTE(IsAsyncThunkMethod() || IsAsync2Method());
 
     SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot |  mdcMethodImpl | mdcHasNativeCodeSlot)];
 
-    return (AsyncThunkData*)(dac_cast<TADDR>(this) + size);
+    return (AsyncMethodData*)(dac_cast<TADDR>(this) + size);
 }
 
 //*******************************************************************************
@@ -1711,7 +1711,7 @@ MethodDesc* MethodDesc::StripMethodInstantiation()
 
 //*******************************************************************************
 MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDescCount,
-    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, BOOL fAsyncThunkData, MethodTable *pInitialMT, AllocMemTracker *pamTracker)
+    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, BOOL fAsyncMethodData, MethodTable *pInitialMT, AllocMemTracker *pamTracker)
 {
     CONTRACT(MethodDescChunk *)
     {
@@ -1735,8 +1735,8 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
     if (fNativeCodeSlot)
         oneSize += sizeof(MethodDesc::NativeCodeSlot);
 
-    if (fAsyncThunkData)
-        oneSize += sizeof(AsyncThunkData);
+    if (fAsyncMethodData)
+        oneSize += sizeof(AsyncMethodData);
 
     _ASSERTE((oneSize & MethodDesc::ALIGNMENT_MASK) == 0);
 
@@ -1778,8 +1778,8 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
                 pMD->SetHasNonVtableSlot();
             if (fNativeCodeSlot)
                 pMD->SetHasNativeCodeSlot();
-            if (fAsyncThunkData)
-                pMD->SetIsAsyncThunkMethod();
+            if (fAsyncMethodData)
+                pMD->SetHasAsyncMethodData();
 
             _ASSERTE(pMD->SizeOf() == oneSize);
 

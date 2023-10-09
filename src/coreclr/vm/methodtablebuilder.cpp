@@ -1030,7 +1030,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_dwImplAttrs(dwImplAttrs),
       m_dwRVA(dwRVA),
       m_type(type),
-      m_asyncThunkType(AsyncThunkType::NotAThunk),
+      m_asyncMethodType(AsyncMethodType::NotAsync),
       m_implType(implType),
       m_methodSig(pOwningType->GetModule(),
                   tok,
@@ -1056,7 +1056,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
     DWORD dwImplAttrs,
     DWORD dwRVA,
     Signature sig,
-    AsyncThunkType thunkType,
+    AsyncMethodType thunkType,
     MethodClassification type,
     METHOD_IMPL_TYPE implType)
     : m_pOwningType(pOwningType),
@@ -1064,7 +1064,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_dwImplAttrs(dwImplAttrs),
       m_dwRVA(dwRVA),
       m_type(type),
-      m_asyncThunkType(thunkType),
+      m_asyncMethodType(thunkType),
       m_implType(implType),
       m_methodSig(pOwningType->GetModule(),
                   tok,
@@ -3547,12 +3547,18 @@ MethodTableBuilder::EnumerateClassMethods()
                     dwMethodRVA,
                     type,
                     implType);
+
+                if ((asyncMethodType == AsyncTaskMethod::Async2MethodThatCannotBeImplementedByTask) || (asyncMethodType == AsyncTaskMethod::Async2Method))
+                {
+                    pNewMethod->SetIsAsync2Method();
+                }
+
                 pDeclaredMethod = pNewMethod;
             }
             else
             {
                 ULONG cAsyncThunkMemberSignature = cMemberSignature;
-                AsyncThunkType thunkType;
+                AsyncMethodType thunkType;
                 ULONG originalTokenOffsetFromAsyncDetailsOffset;
                 ULONG newTokenOffsetFromAsyncDetailsOffset;
                 ULONG originalPrefixSize;
@@ -3565,7 +3571,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     cAsyncThunkMemberSignature += 2;
                     originalTokenOffsetFromAsyncDetailsOffset = 1;
                     newTokenOffsetFromAsyncDetailsOffset = 2;
-                    thunkType = AsyncThunkType::AsyncToTask;
+                    thunkType = AsyncMethodType::AsyncToTask;
                     originalPrefixSize = 1;
                     newPrefixSize = 2;
                     originalSuffixSize = 0;
@@ -3576,7 +3582,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     cAsyncThunkMemberSignature -= 2;
                     originalTokenOffsetFromAsyncDetailsOffset = 2;
                     newTokenOffsetFromAsyncDetailsOffset = 1;
-                    thunkType = AsyncThunkType::TaskToAsync;
+                    thunkType = AsyncMethodType::TaskToAsync;
                     originalPrefixSize = 2;
                     newPrefixSize = 1;
                     originalSuffixSize = 1;
@@ -5482,8 +5488,8 @@ MethodTableBuilder::InitNewMethodDesc(
     if (NeedsNativeCodeSlot(pMethod))
         pNewMD->SetHasNativeCodeSlot();
 
-    if (pMethod->GetAsyncThunkType() != AsyncThunkType::NotAThunk)
-        pNewMD->SetIsAsyncThunkMethod();
+    if (pMethod->GetAsyncMethodType() != AsyncMethodType::NotAsync)
+        pNewMD->SetHasAsyncMethodData();
 
     // Now we know the classification we can allocate the correct type of
     // method desc and perform any classification specific initialization.
@@ -5513,7 +5519,7 @@ MethodTableBuilder::InitNewMethodDesc(
 #endif // _DEBUG
 
     Signature sig;
-    if (pMethod->GetAsyncThunkType() != AsyncThunkType::NotAThunk)
+    if (pMethod->IsAsyncThunk())
     {
         sig = pMethod->GetMethodSignature().GetSignatureClass();
     }
@@ -5529,7 +5535,7 @@ MethodTableBuilder::InitNewMethodDesc(
                    GetMDImport(),
                    pName,
                    sig,
-                   pMethod->GetAsyncThunkType()
+                   pMethod->GetAsyncMethodType()
                    COMMA_INDEBUG(pszDebugMethodNameCopy)
                    COMMA_INDEBUG(GetDebugClassName())
                    COMMA_INDEBUG("") // FIX this happens on global methods, give better info
@@ -5936,7 +5942,7 @@ MethodTableBuilder::ProcessInexactMethodImpls()
             continue;
         }
 
-        AsyncVariantLookup asyncVariantOfDeclToFind = it->GetAsyncThunkType() == AsyncThunkType::NotAThunk ? AsyncVariantLookup::MatchingAsyncVariant : AsyncVariantLookup::AsyncOtherVariant;
+        AsyncVariantLookup asyncVariantOfDeclToFind = !it->IsAsyncThunk() ? AsyncVariantLookup::MatchingAsyncVariant : AsyncVariantLookup::AsyncOtherVariant;
 
         // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
@@ -6079,7 +6085,7 @@ MethodTableBuilder::ProcessMethodImpls()
             continue;
         }
 
-        AsyncVariantLookup asyncVariantOfDeclToFind = it->GetAsyncThunkType() == AsyncThunkType::NotAThunk ? AsyncVariantLookup::MatchingAsyncVariant : AsyncVariantLookup::AsyncOtherVariant;
+        AsyncVariantLookup asyncVariantOfDeclToFind = !it->IsAsyncThunk() ? AsyncVariantLookup::MatchingAsyncVariant : AsyncVariantLookup::AsyncOtherVariant;
 
         // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
@@ -6431,7 +6437,7 @@ MethodTableBuilder::InitMethodDesc(
     IMDInternalImport * pIMDII,     // Needed for NDirect, EEImpl(Delegate) cases
     LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
     Signature           sig, // Only needed for the Async2 Thunk case
-    AsyncThunkType      thunkType
+    AsyncMethodType      thunkType
     COMMA_INDEBUG(LPCUTF8 pszDebugMethodName)
     COMMA_INDEBUG(LPCUTF8 pszDebugClassName)
     COMMA_INDEBUG(LPCUTF8 pszDebugMethodSignature)
@@ -6600,9 +6606,9 @@ MethodTableBuilder::InitMethodDesc(
 #endif // !_DEBUG
         pNewMD->SetSynchronized();
 
-    if (thunkType != AsyncThunkType::NotAThunk)
+    if (thunkType != AsyncMethodType::NotAsync)
     {
-        AsyncThunkData* pThunkData = pNewMD->GetAddrOfAsyncThunkData();
+        AsyncMethodData* pThunkData = pNewMD->GetAddrOfAsyncMethodData();
         pThunkData->sig = sig;
         pThunkData->type = thunkType;
     }
@@ -7342,8 +7348,8 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         if (NeedsNativeCodeSlot(*it))
             size += sizeof(MethodDesc::NativeCodeSlot);
         
-        if (it->GetAsyncThunkType() != AsyncThunkType::NotAThunk)
-            size += sizeof(AsyncThunkData);
+        if (it->GetAsyncMethodType() != AsyncMethodType::NotAsync)
+            size += sizeof(AsyncMethodData);
 
         // See comment in AllocAndInitMethodDescChunk
         if (NeedsTightlyBoundUnboxingStub(*it))
