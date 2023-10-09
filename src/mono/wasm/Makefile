@@ -88,7 +88,7 @@ build-tasks:
 	$(DOTNET) build $(TOP)/src/tasks/tasks.proj /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
 
 build-packages:
-	rm $(TOP)/artifacts/packages/$(CONFIG)/Shipping/*.nupkg
+	rm -f $(TOP)/artifacts/packages/$(CONFIG)/Shipping/*.nupkg
 	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.packages+mono.manifests+packs.product -os browser -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
 clean:
@@ -111,7 +111,7 @@ run-browser-tests-%:
 	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 build-runtime-tests:
-	$(TOP)/src/tests/build.sh -mono os browser wasm $(CONFIG)
+	$(TOP)/src/tests/build.sh -mono os browser wasm $(CONFIG) $(MSBUILD_ARGS)
 
 build-debugger-tests-helix:
 	$(DOTNET) build -restore -bl:$(LOG_PATH)/Wasm.Debugger.Tests.binlog \

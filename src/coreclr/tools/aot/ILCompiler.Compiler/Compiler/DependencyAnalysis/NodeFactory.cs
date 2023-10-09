@@ -319,6 +319,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new ReflectedTypeNode(type);
             });
 
+            _notReadOnlyFields = new NodeCache<FieldDesc, NotReadOnlyFieldNode>(field =>
+            {
+                return new NotReadOnlyFieldNode(field);
+            });
+
             _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
             {
                 return new GenericStaticBaseInfoNode(type);
@@ -458,12 +463,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _typesWithMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
             {
-                return new TypeMetadataNode(type, includeCustomAttributes: true);
-            });
-
-            _typesWithMetadataWithoutCustomAttributes = new NodeCache<MetadataType, TypeMetadataNode>(type =>
-            {
-                return new TypeMetadataNode(type, includeCustomAttributes: false);
+                return new TypeMetadataNode(type);
             });
 
             _methodsWithMetadata = new NodeCache<MethodDesc, MethodMetadataNode>(method =>
@@ -1003,6 +1003,12 @@ namespace ILCompiler.DependencyAnalysis
             return _reflectedTypes.GetOrAdd(type);
         }
 
+        private NodeCache<FieldDesc, NotReadOnlyFieldNode> _notReadOnlyFields;
+        public NotReadOnlyFieldNode NotReadOnlyField(FieldDesc field)
+        {
+            return _notReadOnlyFields.GetOrAdd(field);
+        }
+
         private NodeCache<MetadataType, GenericStaticBaseInfoNode> _genericStaticBaseInfos;
         internal GenericStaticBaseInfoNode GenericStaticBaseInfo(MetadataType type)
         {
@@ -1159,16 +1165,6 @@ namespace ILCompiler.DependencyAnalysis
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _typesWithMetadata.GetOrAdd(type);
-        }
-
-        private NodeCache<MetadataType, TypeMetadataNode> _typesWithMetadataWithoutCustomAttributes;
-
-        internal TypeMetadataNode TypeMetadataWithoutCustomAttributes(MetadataType type)
-        {
-            // These are only meaningful for UsageBasedMetadataManager. We should not have them
-            // in the dependency graph otherwise.
-            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
-            return _typesWithMetadataWithoutCustomAttributes.GetOrAdd(type);
         }
 
         private NodeCache<MethodDesc, MethodMetadataNode> _methodsWithMetadata;

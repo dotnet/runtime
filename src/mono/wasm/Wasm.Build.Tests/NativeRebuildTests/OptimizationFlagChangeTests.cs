@@ -23,7 +23,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
     public static IEnumerable<object?[]> FlagsOnlyChangeData(bool aot)
         => ConfigWithAOTData(aot, config: "Release").Multiply(
                     new object[] { /*cflags*/ "/p:EmccCompileOptimizationFlag=-O1", /*ldflags*/ "" },
-                    new object[] { /*cflags*/ "",                                   /*ldflags*/ "/p:EmccLinkOptimizationFlag=-O0" }
+                    new object[] { /*cflags*/ "",                                   /*ldflags*/ "/p:EmccLinkOptimizationFlag=-O1" }
         ).WithRunHosts(RunHost.Chrome).UnwrapItemsAsArrays();
 
     [Theory]

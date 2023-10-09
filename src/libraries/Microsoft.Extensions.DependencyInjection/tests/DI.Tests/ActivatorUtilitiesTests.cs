@@ -245,6 +245,100 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 #if NETCOREAPP
         [InlineData(false)]
 #endif
+        public void CreateFactory_CreatesFactoryMethod_KeyedParams(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory = ActivatorUtilities.CreateFactory<ClassWithAKeyedBKeyedC>(Type.EmptyTypes);
+
+                var services = new ServiceCollection();
+                services.AddSingleton(new A());
+                services.AddKeyedSingleton("b", new B());
+                services.AddKeyedSingleton("c", new C());
+                using var provider = services.BuildServiceProvider();
+                ClassWithAKeyedBKeyedC item = factory(provider, null);
+
+                Assert.IsType<ObjectFactory<ClassWithAKeyedBKeyedC>>(factory);
+                Assert.NotNull(item.A);
+                Assert.NotNull(item.B);
+                Assert.NotNull(item.C);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_CreatesFactoryMethod_KeyedParams_5Types(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory = ActivatorUtilities.CreateFactory<ClassWithAKeyedBKeyedCSZ>(Type.EmptyTypes);
+
+                var services = new ServiceCollection();
+                services.AddSingleton(new A());
+                services.AddKeyedSingleton("b", new B());
+                services.AddKeyedSingleton("c", new C());
+                services.AddSingleton(new S());
+                services.AddSingleton(new Z());
+                using var provider = services.BuildServiceProvider();
+                ClassWithAKeyedBKeyedCSZ item = factory(provider, null);
+
+                Assert.IsType<ObjectFactory<ClassWithAKeyedBKeyedCSZ>>(factory);
+                Assert.NotNull(item.A);
+                Assert.NotNull(item.B);
+                Assert.NotNull(item.C);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_CreatesFactoryMethod_KeyedParams_1Injected(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory = ActivatorUtilities.CreateFactory<ClassWithAKeyedBKeyedC>(new Type[] { typeof(A) });
+
+                var services = new ServiceCollection();
+                services.AddKeyedSingleton("b", new B());
+                services.AddKeyedSingleton("c", new C());
+                using var provider = services.BuildServiceProvider();
+                ClassWithAKeyedBKeyedC item = factory(provider, new object?[] { new A() });
+
+                Assert.IsType<ObjectFactory<ClassWithAKeyedBKeyedC>>(factory);
+                Assert.NotNull(item.A);
+                Assert.NotNull(item.B);
+                Assert.NotNull(item.C);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
         public void CreateFactory_RemoteExecutor_CreatesFactoryMethod(bool useDynamicCode)
         {
             var options = new RemoteInvokeOptions();
@@ -527,6 +621,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     internal class S { }
     internal class Z { }
 
+    internal class ClassWithAKeyedBKeyedC : ClassWithABC
+    {
+        public ClassWithAKeyedBKeyedC(A a, [FromKeyedServices("b")] B b, [FromKeyedServices("c")] C c)
+            : base(a, b, c)
+        { }
+    }
+
     internal class ClassWithABCS : ClassWithABC
     {
         public S S { get; }
@@ -538,6 +639,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     {
         public Z Z { get; }
         public ClassWithABCSZ(A a, B b, C c, S s, Z z) : base(a, b, c, s) { Z = z; }
+    }
+
+    internal class ClassWithAKeyedBKeyedCSZ : ClassWithABCSZ
+    {
+        public ClassWithAKeyedBKeyedCSZ(A a, [FromKeyedServices("b")] B b, [FromKeyedServices("c")] C c, S s, Z z)
+            : base(a, b, c, s, z)
+        { }
     }
 
     internal class ClassWithABC_FirstConstructorWithAttribute : ClassWithABC

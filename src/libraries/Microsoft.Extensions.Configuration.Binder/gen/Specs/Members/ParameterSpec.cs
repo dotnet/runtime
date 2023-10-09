@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record ParameterSpec : MemberSpec
+    public sealed record ParameterSpec : MemberSpec
     {
         public ParameterSpec(IParameterSymbol parameter) : base(parameter)
         {
@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (parameter.HasExplicitDefaultValue)
             {
-                string formatted = SymbolDisplay.FormatPrimitive(parameter.ExplicitDefaultValue, quoteStrings: true, useHexadecimalNumbers: false);
+                string formatted = SymbolDisplay.FormatPrimitive(parameter.ExplicitDefaultValue!, quoteStrings: true, useHexadecimalNumbers: false);
                 if (formatted is not "null")
                 {
                     DefaultValueExpr = formatted;
@@ -25,6 +25,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ErrorOnFailedBinding = true;
             }
         }
+
+        public bool ErrorOnFailedBinding { get; private set; }
 
         public RefKind RefKind { get; }
 

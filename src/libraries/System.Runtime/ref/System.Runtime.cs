@@ -11032,11 +11032,11 @@ namespace System.Reflection
         public virtual System.Reflection.AssemblyName[] GetReferencedAssemblies() { throw null; }
         public virtual System.Reflection.Assembly GetSatelliteAssembly(System.Globalization.CultureInfo culture) { throw null; }
         public virtual System.Reflection.Assembly GetSatelliteAssembly(System.Globalization.CultureInfo culture, System.Version? version) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual System.Type? GetType(string name) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual System.Type? GetType(string name, bool throwOnError) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual System.Type? GetType(string name, bool throwOnError, bool ignoreCase) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public virtual System.Type[] GetTypes() { throw null; }
@@ -11859,11 +11859,11 @@ namespace System.Reflection
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual void GetPEKind(out System.Reflection.PortableExecutableKinds peKind, out System.Reflection.ImageFileMachine machine) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual System.Type? GetType(string className) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual System.Type? GetType(string className, bool ignoreCase) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual System.Type? GetType(string className, bool throwOnError, bool ignoreCase) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public virtual System.Type[] GetTypes() { throw null; }
@@ -13405,6 +13405,7 @@ namespace System.Runtime.InteropServices
         LoongArch64 = 6,
         Armv6 = 7,
         Ppc64le = 8,
+        RiscV64 = 9,
     }
     public enum CharSet
     {

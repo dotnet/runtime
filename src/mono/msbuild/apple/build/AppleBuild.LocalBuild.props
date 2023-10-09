@@ -65,8 +65,8 @@
     <IlcSdkPath>$([MSBuild]::NormalizeDirectory('$(BuildBaseDir)', 'aotsdk'))</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackLibDir)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
-    <ILLinkTargetsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', 'build', 'Microsoft.NET.ILLink.targets'))</ILLinkTargetsPath>
-    <ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', 'tools', '$(_NetCoreAppToolCurrent)', 'ILLink.Tasks.dll'))</ILLinkTasksAssembly>
+    <ILLinkTargetsPath>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', '$(_NetCoreAppToolCurrent)', 'build', 'Microsoft.NET.ILLink.targets'))</ILLinkTargetsPath>
+    <ILLinkTasksAssembly>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'microsoft.net.illink.tasks', '$(_NetCoreAppToolCurrent)', 'ILLink.Tasks.dll'))</ILLinkTasksAssembly>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
   </PropertyGroup>

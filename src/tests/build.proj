@@ -633,8 +633,7 @@
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and !$(MonoAot) and !$(MonoFullAot)" >
 
     <PropertyGroup>
-      <CrossgenDir>$(__BinDir)</CrossgenDir>
-      <CrossgenDir Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)'">$(CrossgenDir)\$(BuildArchitecture)</CrossgenDir>
+      <CrossgenDir>$(__BinDir)\$(BuildArchitecture)</CrossgenDir>
 
       <CrossgenOutputDir>$(__TestIntermediatesDir)\crossgen.out</CrossgenOutputDir>
 
@@ -655,7 +654,7 @@
       <CrossgenCmd Condition="'$(__CompositeBuildMode)' == ''">$(CrossgenCmd) --crossgen2-parallelism 1</CrossgenCmd>
 
       <CrossgenCmd>$(CrossgenCmd) --verify-type-and-field-layout</CrossgenCmd>
-      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(CrossgenDir)\crossgen2\crossgen2.dll"</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(CrossgenDir)\crossgen2\tools\crossgen2.dll"</CrossgenCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Compiling framework using Crossgen2: $(CrossgenCmd)" />

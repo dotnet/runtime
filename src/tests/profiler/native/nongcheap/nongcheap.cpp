@@ -29,6 +29,8 @@ HRESULT NonGcHeapProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 
 HRESULT STDMETHODCALLTYPE NonGcHeapProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
 {
+    SHUTDOWNGUARD();
+    
     COR_PRF_GC_GENERATION_RANGE gen;
     HRESULT hr = pCorProfilerInfo->GetObjectGeneration(objectId, &gen);
 

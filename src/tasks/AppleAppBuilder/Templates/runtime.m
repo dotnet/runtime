@@ -375,9 +375,13 @@ mono_ios_runtime_init (void)
     mono_set_crash_chaining (TRUE);
 
     if (wait_for_debugger) {
-        char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556" };
-        mono_jit_parse_options (1, options);
+        managed_argv = (char**) realloc (managed_argv, argi + 1);
+        // add an extra arg
+        managed_argv [argi] = strdup ("--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556");
+        argi++;
     }
+
+    mono_jit_parse_options (argi, managed_argv);
 
     MonoDomain *domain = mono_jit_init_version ("dotnet.ios", "mobile");
     assert (domain);

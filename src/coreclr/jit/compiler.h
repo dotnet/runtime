@@ -42,7 +42,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitexpandarray.h"
 #include "tinyarray.h"
 #include "valuenum.h"
-#include "jittelemetry.h"
 #include "namedintrinsiclist.h"
 #ifdef LATE_DISASM
 #include "disasm.h"
@@ -639,6 +638,8 @@ public:
 
 #ifdef DEBUG
     unsigned char lvClassInfoUpdated : 1; // true if this var has updated class handle or exactness
+    unsigned char lvIsHoist : 1;          // CSE temp for a hoisted tree
+    unsigned char lvIsMultiDefCSE : 1;    // CSE temp for a multi-def CSE
 #endif
 
     unsigned char lvImplicitlyReferenced : 1; // true if there are non-IR references to this local (prolog, epilog, gc,
@@ -3045,7 +3046,7 @@ public:
     bool gtStoreDefinesField(
         LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
 
-    void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq);
+    void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq = nullptr);
 
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
@@ -4240,7 +4241,6 @@ private:
     void impImportBlockCode(BasicBlock* block);
 
     void impReimportMarkBlock(BasicBlock* block);
-    void impReimportMarkSuccessors(BasicBlock* block);
 
     void impVerifyEHBlock(BasicBlock* block, bool isTryStart);
 
@@ -5103,6 +5103,9 @@ public:
     // Assign the proper value number to the tree
     void fgValueNumberTreeConst(GenTree* tree);
 
+    // If the constant has a field sequence associated with it, then register 
+    void fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree);
+
     // If the VN store has been initialized, reassign the
     // proper value number to the constant tree.
     void fgUpdateConstTreeValueNumber(GenTree* tree);
@@ -5916,8 +5919,8 @@ private:
     // small; hence the other fields of MorphAddrContext.
     struct MorphAddrContext
     {
-        size_t m_totalOffset = 0;     // Sum of offsets between the top-level indirection and here (current context).
-        bool   m_used        = false; // Whether this context was used to elide a null check.
+        GenTreeIndir* m_user = nullptr;  // Indirection using this address.
+        size_t        m_totalOffset = 0; // Sum of offsets between the top-level indirection and here (current context).
     };
 
 #ifdef FEATURE_SIMD
@@ -6326,8 +6329,10 @@ private:
 
 public:
     PhaseStatus optOptimizeBools();
+    PhaseStatus optSwitchRecognition();
+    bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, GenTree* nodeToTest);
+    bool optSwitchDetectAndConvert(BasicBlock* firstBlock);
 
-public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
     PhaseStatus optOptimizeLayout(); // Optimize the BasicBlock layout of the method
@@ -6479,7 +6484,7 @@ public:
         // Returns "true" iff this is a "top entry" loop.
         bool lpIsTopEntry() const
         {
-            if (lpHead->bbNext == lpEntry)
+            if (lpHead->NextIs(lpEntry))
             {
                 assert(lpHead->bbFallsThrough());
                 assert(lpTop == lpEntry);
@@ -6978,9 +6983,10 @@ protected:
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
-    unsigned optCSECandidateCount; // Count of CSE's candidates
+    unsigned optCSECandidateCount; // Count of CSE candidates
     unsigned optCSEstart;          // The first local variable number that is a CSE
-    unsigned optCSEcount;          // The total count of CSE's introduced.
+    unsigned optCSEattempt;        // The number of CSEs attempted so far.
+    unsigned optCSEcount;          // The total count of CSEs introduced.
     weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
 
     bool optIsCSEcandidate(GenTree* tree);
@@ -8727,6 +8733,7 @@ private:
     // Get preferred alignment of SIMD type.
     int getSIMDTypeAlignment(var_types simdType);
 
+public:
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
     uint32_t getVectorTByteLength()
@@ -8927,7 +8934,6 @@ private:
         return emitTypeSize(TYP_SIMD8);
     }
 
-public:
     // Returns the codegen type for a given SIMD size.
     static var_types getSIMDTypeForSize(unsigned size)
     {
@@ -9354,7 +9360,7 @@ public:
     // State information - which phases have completed?
     // These are kept together for easy discoverability
 
-    bool    bRangeAllowStress;
+    bool    compAllowStress;
     bool    compCodeGenDone;
     int64_t compNumStatementLinksTraversed; // # of links traversed while doing debug checks
     bool    fgNormalizeEHDone;              // Has the flowgraph EH normalization phase been done?
@@ -9894,6 +9900,7 @@ public:
         STRESS_MODE(NO_OLD_PROMOTION) /* Do not use old promotion */                            \
         STRESS_MODE(PHYSICAL_PROMOTION) /* Use physical promotion */                            \
         STRESS_MODE(PHYSICAL_PROMOTION_COST)                                                    \
+        STRESS_MODE(UNWIND) /* stress unwind info; e.g., create function fragments */           \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -10350,7 +10357,7 @@ public:
                   InlineInfo*           inlineInfo);
     void compDone();
 
-    static void compDisplayStaticSizes(FILE* fout);
+    static void compDisplayStaticSizes();
 
     //------------ Some utility functions --------------
 
@@ -10802,22 +10809,8 @@ public:
     void RecordNowayAssert(const char* filename, unsigned line, const char* condStr);
 #endif // MEASURE_NOWAY
 
-#ifndef FEATURE_TRACELOGGING
     // Should we actually fire the noway assert body and the exception handler?
     bool compShouldThrowOnNoway();
-#else  // FEATURE_TRACELOGGING
-    // Should we actually fire the noway assert body and the exception handler?
-    bool compShouldThrowOnNoway(const char* filename, unsigned line);
-
-    // Telemetry instance to use per method compilation.
-    JitTelemetry compJitTelemetry;
-
-    // Get common parameters that have to be logged with most telemetry data.
-    void compGetTelemetryDefaults(const char** assemblyName,
-                                  const char** scopeName,
-                                  const char** methodName,
-                                  unsigned*    methodHash);
-#endif // !FEATURE_TRACELOGGING
 
 #ifdef DEBUG
 private:

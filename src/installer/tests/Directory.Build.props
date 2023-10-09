@@ -11,7 +11,8 @@
     <InternalNupkgCacheDir>$(ArtifactsObjDir)ExtraNupkgsForTestRestore\</InternalNupkgCacheDir>
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
     <TestInfraTargetFramework>$(NetCoreAppToolCurrent)</TestInfraTargetFramework>
-    <TestRunnerAdditionalArguments>--filter category!=failing -v detailed</TestRunnerAdditionalArguments>
+    <TestCaseFilter>category!=failing</TestCaseFilter>
+    <TestRunnerAdditionalArguments>--filter $(TestCaseFilter) -v detailed</TestRunnerAdditionalArguments>
     <!-- Enable crash and hang dumps -->
     <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --blame-crash-dump-type full</TestRunnerAdditionalArguments>
     <TestRunnerAdditionalArguments>$(TestRunnerAdditionalArguments) --blame-hang-timeout 5m --blame-hang-dump-type full</TestRunnerAdditionalArguments>

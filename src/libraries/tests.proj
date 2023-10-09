@@ -54,6 +54,11 @@
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'" >
+    <!-- https://github.com/dotnet/runtime/issues/91676 -->
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-minimal-config\Wasm.Browser.Config.Sample.csproj" />
+  </ItemGroup>
 
   <!-- wasm EAT/AOT -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(EnableAggressiveTrimming)' == 'true'">
@@ -336,7 +341,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.Platforms\tests\Microsoft.NETCore.Platforms.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
 
     <!-- This test is disabled via an assembly-level attribute in source. We exclude it here to avoid queuing/running a work item entirely.
@@ -366,6 +370,12 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates\tests\System.Security.Cryptography.X509Certificates.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Cose\tests\System.Security.Cryptography.Cose.Tests.csproj" />
+    <!-- https://github.com/dotnet/runtime/issues/91538 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj" />
+    <!-- https://github.com/dotnet/runtime/issues/91593 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels\tests\System.Threading.Channels.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread' and '$(RunDisabledWasmTests)' != 'true'">
@@ -407,10 +417,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' != 'true'">
-    <!-- https://github.com/dotnet/runtime/issues/83167 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors\tests\System.Numerics.Vectors.Tests.csproj"
-                       Condition="'$(TargetArchitecture)' == 'arm64'" />
-
     <!-- https://github.com/dotnet/runtime/issues/72908 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext\tests\System.Reflection.MetadataLoadContext.Tests.csproj" />
 
@@ -427,6 +433,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\RefEmitLoadContext\System.Runtime.Loader.RefEmitLoadContext.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\System.Runtime.Loader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\CoreCLR\System.Reflection.CoreCLR.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.HostFactoryResolver\tests\Microsoft.Extensions.HostFactoryResolver.Tests.csproj" />
 
     <!-- Most of these need tagging as "requires Ref.Emit". Not much interesting things left to run. Low priority. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.Lightweight\tests\System.Reflection.Emit.Lightweight.Tests.csproj" />

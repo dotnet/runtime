@@ -372,6 +372,9 @@ bool GenTree::IsNodeProperlySized() const
 //    src  - source tree, that replaces this.
 //    comp - the compiler instance to transfer annotations for arrays.
 //
+// Remarks:
+//    This should not be used for new code.
+//
 void GenTree::ReplaceWith(GenTree* src, Compiler* comp)
 {
     // The source may be big only if the target is also a big node
@@ -481,9 +484,11 @@ void GenTree::ReportOperBashing(FILE* f)
 
 #if MEASURE_NODE_SIZE
 
-void GenTree::DumpNodeSizes(FILE* fp)
+void GenTree::DumpNodeSizes()
 {
     // Dump the sizes of the various GenTree flavors
+
+    FILE* fp = jitstdout();
 
     fprintf(fp, "Small tree node size = %zu bytes\n", TREE_NODE_SZ_SMALL);
     fprintf(fp, "Large tree node size = %zu bytes\n", TREE_NODE_SZ_LARGE);
@@ -869,7 +874,7 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
     assert(!isContained());
     if (!IsMultiRegNode())
     {
-        return (IsValue()) ? 1 : 0;
+        return IsValue() ? 1 : 0;
     }
     else if (IsMultiRegCall())
     {
@@ -1030,6 +1035,19 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
     assert(!"GetMultiRegCount called with non-multireg node");
     return 1;
 }
+
+#ifdef TARGET_ARM64
+//-----------------------------------------------------------------------------------
+// NeedsConsecutiveRegisters: Checks if this tree node needs consecutive registers
+//
+// Return Value:
+//     Returns if the tree needs consecutive registers.
+//
+bool GenTree::NeedsConsecutiveRegisters() const
+{
+    return HWIntrinsicInfo::NeedsConsecutiveRegisters(AsHWIntrinsic()->GetHWIntrinsicId());
+}
+#endif
 
 //---------------------------------------------------------------
 // gtGetContainedRegMask: Get the reg mask of the node including
@@ -1425,7 +1443,7 @@ bool CallArg::IsUserArg() const
 void CallArg::CheckIsStruct()
 {
     GenTree* node = GetNode();
-    if (AbiInfo.IsStruct)
+    if (varTypeIsStruct(GetSignatureType()))
     {
         if (!varTypeIsStruct(node) && !node->OperIs(GT_FIELD_LIST))
         {
@@ -3436,7 +3454,7 @@ AGAIN:
                     hash += tree->AsHWIntrinsic()->GetSimdBaseType();
                     hash += tree->AsHWIntrinsic()->GetSimdSize();
                     hash += tree->AsHWIntrinsic()->GetAuxiliaryType();
-                    hash += tree->AsHWIntrinsic()->GetOtherReg();
+                    hash += tree->AsHWIntrinsic()->GetRegByIndex(1);
                     break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -6729,7 +6747,7 @@ GenTree* GenTree::gtGetParent(GenTree*** pUse)
 //                       of the children's flags.
 //
 
-bool GenTree::OperRequiresAsgFlag()
+bool GenTree::OperRequiresAsgFlag() const
 {
     switch (OperGet())
     {
@@ -6767,8 +6785,7 @@ bool GenTree::OperRequiresAsgFlag()
 // OperRequiresCallFlag : Check whether the operation requires GTF_CALL flag regardless
 //                        of the children's flags.
 //
-
-bool GenTree::OperRequiresCallFlag(Compiler* comp)
+bool GenTree::OperRequiresCallFlag(Compiler* comp) const
 {
     switch (gtOper)
     {
@@ -7022,6 +7039,160 @@ bool GenTree::OperMayThrow(Compiler* comp)
     }
 
     return OperExceptions(comp) != ExceptionSetFlags::None;
+}
+
+//------------------------------------------------------------------------------
+// OperRequiresGlobRefFlag : Check whether the operation requires GTF_GLOB_REF
+//                           flag regardless of the children's flags.
+//
+// Arguments:
+//    comp - Compiler instance
+//
+// Return Value:
+//    True if the given operator requires GTF_GLOB_REF
+//
+// Remarks:
+//    Globally visible stores and loads, as well as some equivalently modeled
+//    operations, require the GLOB_REF flag to be set on the node.
+//
+//    This function is only valid after local morph when we know which locals
+//    are address exposed, and the flag in gtFlags is only kept valid after
+//    morph has run. Before local morph the property can be conservatively
+//    approximated for locals with lvHasLdAddrOp.
+//
+bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
+{
+    switch (OperGet())
+    {
+        case GT_LCL_VAR:
+        case GT_LCL_FLD:
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+            return comp->lvaGetDesc(AsLclVarCommon())->IsAddressExposed();
+
+        case GT_IND:
+        case GT_BLK:
+            if (AsIndir()->IsInvariantLoad())
+            {
+                return false;
+            }
+            FALLTHROUGH;
+
+        case GT_STOREIND:
+        case GT_STORE_BLK:
+        case GT_STORE_DYN_BLK:
+        case GT_XADD:
+        case GT_XORR:
+        case GT_XAND:
+        case GT_XCHG:
+        case GT_LOCKADD:
+        case GT_CMPXCHG:
+        case GT_MEMORYBARRIER:
+        case GT_KEEPALIVE:
+            return true;
+
+        case GT_CALL:
+            return AsCall()->HasSideEffects(comp, /* ignoreExceptions */ true);
+
+        case GT_ALLOCOBJ:
+            return AsAllocObj()->gtHelperHasSideEffects;
+
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+            return AsHWIntrinsic()->OperRequiresGlobRefFlag();
+#endif // FEATURE_HW_INTRINSICS
+
+        default:
+            assert(!OperRequiresCallFlag(comp) || OperIs(GT_INTRINSIC));
+            assert((!OperIsIndir() || OperIs(GT_NULLCHECK)) && !OperRequiresAsgFlag());
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+// OperSupportsOrderingSideEffect : Check whether the operation supports the
+// GTF_ORDER_SIDEEFF flag.
+//
+// Return Value:
+//   True if the given operator supports GTF_ORDER_SIDEEFF.
+//
+// Remarks:
+//   A node will still have this flag set if an operand has it set, even if the
+//   parent does not support it. This situation indicates that reordering the
+//   parent may be ok as long as it does not break ordering dependencies of the
+//   operand.
+//
+bool GenTree::OperSupportsOrderingSideEffect() const
+{
+    if (TypeIs(TYP_BYREF))
+    {
+        // Forming byrefs may only be legal due to previous checks.
+        return true;
+    }
+
+    switch (OperGet())
+    {
+        case GT_BOUNDS_CHECK:
+        case GT_IND:
+        case GT_BLK:
+        case GT_STOREIND:
+        case GT_NULLCHECK:
+        case GT_STORE_BLK:
+        case GT_STORE_DYN_BLK:
+        case GT_XADD:
+        case GT_XORR:
+        case GT_XAND:
+        case GT_XCHG:
+        case GT_LOCKADD:
+        case GT_CMPXCHG:
+        case GT_MEMORYBARRIER:
+        case GT_CATCH_ARG:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+// OperEffects: Compute effect flags that are relevant to this node only,
+// excluding its children.
+//
+// Arguments:
+//    comp -  Compiler instance
+//
+// Return Value:
+//    The effect flags.
+//
+GenTreeFlags GenTree::OperEffects(Compiler* comp)
+{
+    GenTreeFlags flags = gtFlags & GTF_ALL_EFFECT;
+
+    if (((flags & GTF_ASG) != 0) && !OperRequiresAsgFlag())
+    {
+        flags &= ~GTF_ASG;
+    }
+
+    if (((flags & GTF_CALL) != 0) && !OperRequiresCallFlag(comp))
+    {
+        flags &= ~GTF_CALL;
+    }
+
+    if (((flags & GTF_EXCEPT) != 0) && !OperMayThrow(comp))
+    {
+        flags &= ~GTF_EXCEPT;
+    }
+
+    if (((flags & GTF_GLOB_REF) != 0) && !OperRequiresGlobRefFlag(comp))
+    {
+        flags &= ~GTF_GLOB_REF;
+    }
+
+    if (((flags & GTF_ORDER_SIDEEFF) != 0) && !OperSupportsOrderingSideEffect())
+    {
+        flags &= ~GTF_ORDER_SIDEEFF;
+    }
+
+    return flags;
 }
 
 //-----------------------------------------------------------------------------------
@@ -8175,7 +8346,7 @@ void Compiler::gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlag
     }
     if ((indirFlags & GTF_IND_VOLATILE) != 0)
     {
-        indir->gtFlags |= GTF_ORDER_SIDEEFF;
+        indir->SetHasOrderingSideEffect();
     }
 }
 
@@ -10478,7 +10649,13 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     printf("%c", (flags & GTF_SET_FLAGS) ? 'S' : '-');
     ++charsDisplayed;
 #endif
-    printf("%c", (flags & GTF_SPILLED) ? 'z' : (flags & GTF_SPILL) ? 'Z' : '-');
+
+    // Both GTF_SPILL and GTF_SPILLED: '#'
+    //               Only GTF_SPILLED: 'z'
+    //                 Only GTF_SPILL: 'Z'
+    printf("%c", ((flags & (GTF_SPILL | GTF_SPILLED)) == (GTF_SPILL | GTF_SPILLED))
+                     ? '#'
+                     : ((flags & GTF_SPILLED) ? 'z' : ((flags & GTF_SPILL) ? 'Z' : '-')));
 
     return charsDisplayed;
 }
@@ -10613,11 +10790,11 @@ void Compiler::gtDispNodeName(GenTree* tree)
     {
         GenTreeAddrMode* lea = tree->AsAddrMode();
         bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), " %s(", name);
-        if (lea->Base() != nullptr)
+        if (lea->HasBase())
         {
             bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), "b+");
         }
-        if (lea->Index() != nullptr)
+        if (lea->HasIndex())
         {
             bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), "(i*%d)+", lea->gtScale);
         }
@@ -11033,8 +11210,8 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             printf("%c", (flags & GTF_UNSIGNED      ) ? 'U' :
                          (flags & GTF_BOOLEAN       ) ? 'B' : '-');
             printf("%c", (flags & GTF_SET_FLAGS     ) ? 'S' : '-');
-            printf("%c", (flags & GTF_SPILLED       ) ? 'z' : '-');
-            printf("%c", (flags & GTF_SPILL         ) ? 'Z' : '-');
+            printf("%c", ((flags & (GTF_SPILL | GTF_SPILLED)) == (GTF_SPILL | GTF_SPILLED)) ? '#' : ((flags &
+           GTF_SPILLED) ? 'z' : ((flags & GTF_SPILL) ? 'Z' : '-')));
         */
     }
 
@@ -11056,7 +11233,8 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         {
             const size_t bufLength = msgLength - 1;
             msg                    = reinterpret_cast<char*>(_alloca(bufLength * sizeof(char)));
-            sprintf_s(const_cast<char*>(msg), bufLength, "t%d = %s", tree->gtTreeID, hasOperands ? "" : " ");
+            sprintf_s(const_cast<char*>(msg), bufLength, "%c%d = %s", tree->IsUnusedValue() ? 'u' : 't', tree->gtTreeID,
+                      hasOperands ? "" : " ");
         }
     }
 
@@ -11261,7 +11439,7 @@ unsigned Compiler::gtDispMultiRegCount(GenTree* tree)
 // gtDispRegVal: Print the register(s) defined by the given node
 //
 // Arguments:
-//    tree  -  Gentree node whose registers we want to print
+//    tree  -  GenTree node whose registers we want to print
 //
 void Compiler::gtDispRegVal(GenTree* tree)
 {
@@ -15867,8 +16045,8 @@ INTEGRAL_OVF:
     //       was successful - instead use one of the operands, e.g. op1.
 
     // Don't fold overflow operations if not global morph phase.
-    // The reason for this is that this optimization is replacing a gentree node
-    // with another new gentree node. Say a GT_CALL(arglist) has one 'arg'
+    // The reason for this is that this optimization is replacing a GenTree node
+    // with another new GenTree node. Say a GT_CALL(arglist) has one 'arg'
     // involving overflow arithmetic.  During assertion prop, it is possible
     // that the 'arg' could be constant folded and the result could lead to an
     // overflow.  In such a case 'arg' will get replaced with GT_COMMA node
@@ -19634,8 +19812,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
     }
     else
     {
-        assert(op2->TypeIs(type, simdBaseType, genActualType(simdBaseType)) ||
-               (op2->TypeIs(TYP_SIMD12) && type == TYP_SIMD16));
+        assert((genActualType(op2) == genActualType(type)) || (genActualType(op2) == genActualType(simdBaseType)) ||
+               (op2->TypeIs(TYP_SIMD12) && (type == TYP_SIMD16)));
     }
 
     NamedIntrinsic intrinsic = NI_Illegal;
@@ -25336,6 +25514,15 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
     return false;
 }
 
+//------------------------------------------------------------------------------
+// OperRequiresGlobRefFlag : Check whether the operation requires GTF_GLOB_REF
+//                           flag regardless of the children's flags.
+//
+bool GenTreeHWIntrinsic::OperRequiresGlobRefFlag() const
+{
+    return OperIsMemoryLoad() || OperRequiresAsgFlag() || OperRequiresCallFlag();
+}
+
 //------------------------------------------------------------------------
 // GetLayout: Get the layout for this TYP_STRUCT HWI node.
 //
@@ -25367,11 +25554,30 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
         case NI_AdvSimd_Arm64_LoadPairVector64:
         case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+        case NI_AdvSimd_LoadVector64x2:
+        case NI_AdvSimd_LoadAndReplicateToVector64x2:
             return compiler->typGetBlkLayout(16);
 
         case NI_AdvSimd_Arm64_LoadPairVector128:
         case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+        case NI_AdvSimd_Arm64_LoadVector128x2:
+        case NI_AdvSimd_LoadVector64x4:
+        case NI_AdvSimd_LoadAndReplicateToVector64x4:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
             return compiler->typGetBlkLayout(32);
+
+        case NI_AdvSimd_LoadVector64x3:
+        case NI_AdvSimd_LoadAndReplicateToVector64x3:
+            return compiler->typGetBlkLayout(24);
+
+        case NI_AdvSimd_Arm64_LoadVector128x3:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+            return compiler->typGetBlkLayout(48);
+
+        case NI_AdvSimd_Arm64_LoadVector128x4:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+            return compiler->typGetBlkLayout(64);
+
 #endif // TARGET_ARM64
 
         default:
@@ -25408,7 +25614,7 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
 {
     return (op1->TypeGet() == op2->TypeGet()) && (op1->GetHWIntrinsicId() == op2->GetHWIntrinsicId()) &&
            (op1->GetSimdBaseType() == op2->GetSimdBaseType()) && (op1->GetSimdSize() == op2->GetSimdSize()) &&
-           (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && (op1->GetOtherReg() == op2->GetOtherReg()) &&
+           (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && (op1->GetRegByIndex(1) == op2->GetRegByIndex(1)) &&
            OperandsAreEqual(op1, op2);
 }
 

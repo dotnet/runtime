@@ -31,6 +31,20 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
+		[MemberData(nameof(TestDatabase.InlineArrays), MemberType = typeof(TestDatabase))]
+		public void InlineArrays(string t)
+		{
+			Run(t);
+		}
+
+        [Theory]
+        [MemberData(nameof(TestDatabase.Libraries), MemberType = typeof(TestDatabase))]
+        public void Libraries(string t)
+        {
+            Run(t);
+        }
+
+        [Theory]
 		[MemberData (nameof (TestDatabase.LinkXml), MemberType = typeof (TestDatabase))]
 		public void LinkXml (string t)
 		{
