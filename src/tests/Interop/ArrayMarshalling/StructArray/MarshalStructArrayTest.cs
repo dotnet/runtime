@@ -51,12 +51,6 @@ public struct StructWithObjectArrayField
     public object[] objs;
 }
 
-public static unsafe class MarshalStructArrayNative
-{
-    [DllImport(nameof(MarshalStructArrayNative))]
-    public static extern void ForwardToCallback(StructWithObjectArrayField[] arr, delegate* unmanaged<void*, void> cb);
-}
-
 public sealed unsafe class SimpleComWrappers : ComWrappers
 {
     private static readonly ComInterfaceEntry* customIUnknown = CreateCustomIUnknownInterfaceEntry();
