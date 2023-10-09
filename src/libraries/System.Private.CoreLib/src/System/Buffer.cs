@@ -245,7 +245,7 @@ namespace System
             // 512 is an arbitrary threshold picked for Ampere and Apple M1.
             //
             // TODO: Consider doing the same on x86/AMD64 for V256 and V512
-#if HAS_CUSTOM_BLOCKS && TARGET_ARM64
+#if HAS_CUSTOM_BLOCKS
             if (Vector128.IsHardwareAccelerated && len >= 512)
             {
                 // Try to opportunistically align the destination below. The input isn't pinned, so the GC
@@ -253,25 +253,11 @@ namespace System
                 //
                 // dest is more important to align than src because an unaligned store is more expensive
                 // than an unaligned load.
-                nuint misalignedElements = (nuint)Unsafe.AsPointer(ref dest) & (Vector128.Size - 1);
-                if (misalignedElements != 0)
-                {
-                    // E.g. if misalignedElements is 4, it means we need to use a scalar loop
-                    // for 16 - 4 = 12 elements till we're aligned to 16b boundary.
-                    misalignedElements = Vector128.Size - misalignedElements;
-                    nuint offset = 0;
-                    do
-                    {
-                        // For large misalignment on x64 we might want to use smaller SIMD here.
-                        Unsafe.Add(ref dest, offset) = Unsafe.Add(ref src, offset);
-                        offset++;
-                    }
-                    while (offset != misalignedElements);
-
-                    src = ref Unsafe.Add(ref src, misalignedElements);
-                    dest = ref Unsafe.Add(ref dest, misalignedElements);
-                    len -= misalignedElements;
-                }
+                nuint misalignedElements = Vector128.Size - (nuint)Unsafe.AsPointer(ref dest) & (Vector128.Size - 1);
+                Unsafe.As<byte, Block16>(ref dest) = Unsafe.As<byte, Block16>(ref src);
+                src = ref Unsafe.Add(ref src, misalignedElements);
+                dest = ref Unsafe.Add(ref dest, misalignedElements);
+                len -= misalignedElements;
             }
 #endif
             // PInvoke to the native version when the copy length exceeds the threshold.
