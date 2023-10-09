@@ -1071,7 +1071,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
-            assert(sizeBytes == 0);           
+            assert(sizeBytes == 0);
         }
 
 #ifdef TARGET_ARM64

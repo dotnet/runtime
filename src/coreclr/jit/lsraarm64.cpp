@@ -1446,7 +1446,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // is not allocated the same register as the target.
     const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
-    bool tgtPrefOp1 = false;
+    bool tgtPrefOp1        = false;
     bool delayFreeMultiple = false;
     if (intrin.op1 != nullptr)
     {
@@ -1514,7 +1514,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             for (GenTreeFieldList::Use& use : op1->Uses())
             {
-                BuildDelayFreeUses(use.GetNode(), intrinsicTree);                
+                BuildDelayFreeUses(use.GetNode(), intrinsicTree);
                 srcCount++;
             }
         }

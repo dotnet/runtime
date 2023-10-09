@@ -25059,14 +25059,14 @@ GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fi
 // Return Value:
 //    The GenTreeFieldList node.
 //
-GenTreeFieldList* Compiler::gtConvertParamOpToFieldList(GenTree* op, unsigned  fieldCount, CORINFO_CLASS_HANDLE clsHnd)
+GenTreeFieldList* Compiler::gtConvertParamOpToFieldList(GenTree* op, unsigned fieldCount, CORINFO_CLASS_HANDLE clsHnd)
 {
-    LclVarDsc*           opVarDsc    = lvaGetDesc(op->AsLclVar());
-    unsigned             lclNum      = lvaGetLclNum(opVarDsc);
-    unsigned             fieldSize   = opVarDsc->lvSize() / fieldCount;
-    GenTreeFieldList*    fieldList   = new (this, GT_FIELD_LIST) GenTreeFieldList();
-    int                  offset      = 0;
-    unsigned sizeBytes = 0;
+    LclVarDsc*           opVarDsc  = lvaGetDesc(op->AsLclVar());
+    unsigned             lclNum    = lvaGetLclNum(opVarDsc);
+    unsigned             fieldSize = opVarDsc->lvSize() / fieldCount;
+    GenTreeFieldList*    fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
+    int                  offset    = 0;
+    unsigned             sizeBytes = 0;
     CORINFO_CLASS_HANDLE structType;
 
     for (unsigned fieldId = 0; fieldId < fieldCount; fieldId++)
