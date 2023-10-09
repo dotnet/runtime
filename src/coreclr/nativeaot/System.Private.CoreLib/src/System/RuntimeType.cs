@@ -187,17 +187,6 @@ namespace System
             return Enum.GetValuesAsUnderlyingType(this);
         }
 
-        object ICloneable.Clone()
-            => this;
-
-        public override bool IsSecurityCritical => true;
-        public override bool IsSecuritySafeCritical => false;
-        public override bool IsSecurityTransparent => false;
-
-        public override Type UnderlyingSystemType => this;
-
-        public override Type? ReflectedType => DeclaringType;
-
         public override RuntimeTypeHandle TypeHandle
             => new RuntimeTypeHandle(_pUnderlyingEEType);
 
@@ -256,6 +245,26 @@ namespace System
 
                 return null;
             }
+        }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        public override Type[] GetInterfaces()
+        {
+            MethodTable* pUnderlyingEEType = _pUnderlyingEEType;
+
+            if (pUnderlyingEEType->IsGenericTypeDefinition)
+                return GetRuntimeTypeInfo().GetInterfaces();
+
+            int count = pUnderlyingEEType->NumInterfaces;
+            if (count == 0)
+                return EmptyTypes;
+
+            Type[] result = new Type[count];
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = GetTypeFromMethodTable(pUnderlyingEEType->InterfaceMap[i]);
+            }
+            return result;
         }
 
         public override bool IsTypeDefinition
@@ -317,6 +326,8 @@ namespace System
         public override GenericParameterAttributes GenericParameterAttributes => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         public override Type[] GetGenericParameterConstraints() => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
+        protected override bool IsPrimitiveImpl() => _pUnderlyingEEType->IsPrimitive && !_pUnderlyingEEType->IsEnum;
+
         public override bool IsSZArray
             => _pUnderlyingEEType->ElementType == EETypeElementType.SzArray;
 
@@ -331,15 +342,6 @@ namespace System
 
         public override bool IsUnmanagedFunctionPointer
             => _pUnderlyingEEType->IsUnmanagedFunctionPointer;
-
-        public override Type[] GetFunctionPointerCallingConventions()
-        {
-            if (!IsFunctionPointer)
-                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
-
-            // Requires a modified type to return the modifiers.
-            return EmptyTypes;
-        }
 
         public override Type[] GetFunctionPointerParameterTypes()
         {
@@ -360,7 +362,6 @@ namespace System
                 result[i] = GetTypeFromMethodTable(parameterTypes[i]);
             }
             return result;
-
         }
 
         public override Type GetFunctionPointerReturnType()
@@ -371,13 +372,35 @@ namespace System
             return GetTypeFromMethodTable(_pUnderlyingEEType->FunctionPointerReturnType);
         }
 
-        protected override TypeAttributes GetAttributeFlagsImpl() => GetRuntimeTypeInfo().Attributes;
+        //
+        // Implementation shared with MetadataType
+        //
+
+        object ICloneable.Clone() => this;
+
+        public override bool IsSecurityCritical => true;
+        public override bool IsSecuritySafeCritical => false;
+        public override bool IsSecurityTransparent => false;
+
+        public override Type UnderlyingSystemType => this;
+
+        public override Type? DeclaringType => GetRuntimeTypeInfo().DeclaringType;
+        public override Type? ReflectedType => DeclaringType;
 
         protected override bool IsCOMObjectImpl() => false;
 
-        protected override bool IsPrimitiveImpl() => _pUnderlyingEEType->IsPrimitive && !_pUnderlyingEEType->IsEnum;
-
         protected override TypeCode GetTypeCodeImpl() => ReflectionAugments.GetRuntimeTypeCode(this);
+
+        protected override TypeAttributes GetAttributeFlagsImpl() => GetRuntimeTypeInfo().Attributes;
+
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            if (!IsFunctionPointer)
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+
+            // Requires a modified type to return the modifiers.
+            return EmptyTypes;
+        }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
@@ -443,26 +466,6 @@ namespace System
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase)
             => GetRuntimeTypeInfo().GetInterface(name, ignoreCase);
-
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type[] GetInterfaces()
-        {
-            MethodTable* pUnderlyingEEType = _pUnderlyingEEType;
-
-            if (pUnderlyingEEType->IsGenericTypeDefinition)
-                return GetRuntimeTypeInfo().GetInterfaces();
-
-            int count = pUnderlyingEEType->NumInterfaces;
-            if (count == 0)
-                return EmptyTypes;
-
-            Type[] result = new Type[count];
-            for (int i = 0; i < result.Length; i++)
-            {
-                result[i] = GetTypeFromMethodTable(pUnderlyingEEType->InterfaceMap[i]);
-            }
-            return result;
-        }
 
         public override bool IsDefined(Type attributeType, bool inherit)
             => GetRuntimeTypeInfo().IsDefined(attributeType, inherit);
