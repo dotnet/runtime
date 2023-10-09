@@ -38,7 +38,7 @@ The main types provided by this library are:
 
 * `Microsoft.Extensions.FileSystemGlobbing.Matcher`
 
-## Addtional Documentation
+## Additional Documentation
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
