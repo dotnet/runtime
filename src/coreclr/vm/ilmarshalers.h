@@ -3138,32 +3138,12 @@ protected:
     void EmitClearNative(ILCodeStream* pslILEmit) override
     {
         WRAPPER_NO_CONTRACT;
-        if (IsFieldMarshal(m_dwMarshalFlags))
-        {
-            ILCodeLabel* pHasManagedValueLabel = pslILEmit->NewCodeLabel();
-            pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
-            pslILEmit->EmitBRTRUE(pHasManagedValueLabel);
-            pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
-            EmitStoreManagedHomeAddr(pslILEmit);
-            pslILEmit->EmitLabel(pHasManagedValueLabel);
-        }
-
         EmitCallMngdMarshalerMethod(pslILEmit, GetClearNativeMethod());
     }
 
     void EmitClearNativeContents(ILCodeStream* pslILEmit) override
     {
         WRAPPER_NO_CONTRACT;
-        if (IsFieldMarshal(m_dwMarshalFlags))
-        {
-            ILCodeLabel* pHasManagedValueLabel = pslILEmit->NewCodeLabel();
-            pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
-            pslILEmit->EmitBRTRUE(pHasManagedValueLabel);
-            pslILEmit->EmitLDARG(StructMarshalStubs::MANAGED_STRUCT_ARGIDX);
-            EmitStoreManagedHomeAddr(pslILEmit);
-            pslILEmit->EmitLabel(pHasManagedValueLabel);
-        }
-
         EmitCallMngdMarshalerMethod(pslILEmit, GetClearNativeContentsMethod());
     }
 
