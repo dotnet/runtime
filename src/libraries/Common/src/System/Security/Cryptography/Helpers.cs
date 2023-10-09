@@ -48,7 +48,7 @@ namespace Internal.Cryptography
             return src switch
             {
                 null => null,
-                [] => src,
+                { Length: 0 } => src,
                 _ => (byte[])src.Clone(),
             };
         }
