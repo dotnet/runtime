@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
@@ -139,12 +140,102 @@ namespace Microsoft.Extensions.Hosting.Tests
             }, new RemoteInvokeOptions() { TimeOut = 30_000, ExpectedExitCode = expectedExitCode }); // give a 30 second time out, so if this does hang, it doesn't hang for the full timeout
         }
 
+        /// <summary>
+        /// Tests that when a shutdown delay is provided, shutdown is delayed by the specified amount.
+        /// </summary>
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData(SIGTERM)]
+        [InlineData(SIGINT)]
+        [InlineData(SIGQUIT)]
+        public async Task EnsureTheShutdownCanBeDelayed(int signal)
+        {
+            var timeProvider = new ManualTimeProvider();
+            var shutdownDelay = TimeSpan.FromSeconds(15);
+            using var remoteHandle = RemoteExecutor.Invoke(async () =>
+            {
+                await Host.CreateDefaultBuilder()
+                    .ConfigureHostOptions(o => o.ShutdownDelay = shutdownDelay)
+                    .ConfigureServices((hostContext, services) =>
+                    {
+                        services.RemoveAll<TimeProvider>();
+                        services.AddSingleton<TimeProvider>(timeProvider);
+                    })
+                    .RunConsoleAsync();
+            }, new RemoteInvokeOptions() { Start = false, ExpectedExitCode = 0 });
+
+            remoteHandle.Process.StartInfo.RedirectStandardOutput = true;
+            remoteHandle.Process.Start();
+
+            // wait for the host process to start
+            string line;
+            while ((line = remoteHandle.Process.StandardOutput.ReadLine()).EndsWith("Started"))
+            {
+                await Task.Delay(20);
+            }
+
+            // send the signal to the process
+            kill(remoteHandle.Process.Id, signal);
+
+            Assert.Equal(timeProvider.Timer.DueTime, shutdownDelay);
+
+
+            timeProvider.Timer.Fire();
+
+            remoteHandle.Process.WaitForExit();
+
+            string processOutput = remoteHandle.Process.StandardOutput.ReadToEnd();
+            Assert.Equal(0, remoteHandle.Process.ExitCode);
+        }
+
         private class EnsureEnvironmentExitDoesntHangWorker : BackgroundService
         {
             protected override Task ExecuteAsync(CancellationToken stoppingToken)
             {
                 Environment.Exit(125);
                 return Task.CompletedTask;
+            }
+        }
+
+        // A timer that can be fired on demand
+        private class ManualTimer : ITimer
+        {
+            TimerCallback _callback;
+            private object? _state;
+
+            public ManualTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+            {
+                _callback = callback;
+                _state = state;
+                DueTime = dueTime;
+            }
+
+            public TimeSpan DueTime { get; private set; }
+
+            public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+
+            public void Fire()
+
+
+            {
+                _callback?.Invoke(_state);
+                IsFired = true;
+            }
+
+            public bool IsFired { get; set; }
+
+            public void Dispose() { }
+            public ValueTask DisposeAsync () { return default; }
+        }
+
+        private class ManualTimeProvider : TimeProvider
+        {
+            public ManualTimer Timer { get; set; }
+
+            public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+            {
+                Timer = new ManualTimer(callback, state, dueTime, period);
+                return Timer;
             }
         }
     }
