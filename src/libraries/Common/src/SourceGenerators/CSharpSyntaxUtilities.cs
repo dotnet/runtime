@@ -10,7 +10,7 @@ namespace SourceGenerators;
 
 internal static class CSharpSyntaxUtilities
 {
-    // Standard format for double and single on non-inbox frameworks.
+    // Standard format for double and single on non-inbox frameworks to ensure value is round-trippable.
     public const string DoubleFormatString = "G17";
     public const string SingleFormatString = "G9";
 
@@ -20,12 +20,6 @@ internal static class CSharpSyntaxUtilities
         if (value == null)
         {
             return $"default({type.FullyQualifiedName})";
-        }
-
-        if (type.TypeKind is TypeKind.Enum)
-        {
-            // Return the numeric value.
-            return FormatNumber();
         }
 
         switch (value)
@@ -50,11 +44,8 @@ internal static class CSharpSyntaxUtilities
                 return "float.NaN";
             case float @float:
                 return $"{@float.ToString(SingleFormatString, CultureInfo.InvariantCulture)}F";
-            case decimal.MaxValue:
-                return "decimal.MaxValue";
-            case decimal.MinValue:
-                return "decimal.MinValue";
             case decimal @decimal:
+                // we do not need to specify a format string for decimal as it's default is round-trippable on all frameworks.
                 return $"{@decimal.ToString(CultureInfo.InvariantCulture)}M";
             case bool @bool:
                 return @bool ? "true" : "false";
