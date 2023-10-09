@@ -26,8 +26,10 @@ namespace System.IO.Ports
                     string[] result = serialKey.GetValueNames();
                     for (int i = 0; i < result.Length; i++)
                     {
-                        // Replace the name in the array with its value.
-                        result[i] = (string)serialKey.GetValue(result[i]);
+                        // Replace the name in the array with its value, trimming at the first null character if it exists
+                        var temp = (string)serialKey.GetValue(result[i]);
+                        var end = temp.IndexOf('\0');
+                        result[i] = temp.Substring(0, end < 0 ? temp.Length : end);
                     }
                     return result;
                 }
