@@ -68,24 +68,10 @@ public static unsafe class MarshalStructArrayNative
 
 public sealed unsafe class SimpleComWrappers : ComWrappers
 {
-    private static readonly ComInterfaceEntry* s_fakeVtable = CreateVtableEntry();
-
-    // Create a vtable for a fake interface just so we have at least one to provide to ComWrappers.
-    private static ComInterfaceEntry* CreateVtableEntry()
-    {
-        ComInterfaceEntry* entry = (ComInterfaceEntry*)NativeMemory.AllocZeroed((nuint)sizeof(ComInterfaceEntry));
-        entry->IID = Guid.NewGuid();
-        nint* vtable = (nint*)NativeMemory.Alloc((nuint)(sizeof(void*) * 4));
-        GetIUnknownImpl(out vtable[0], out vtable[1], out vtable[2]);
-        vtable[3] = (nint)(delegate* unmanaged<nint, int>)&NativeMethodImpl;
-        entry->Vtable = (nint)vtable;
-        return entry;
-    }
-
     protected override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
     {
-        count = 1;
-        return s_fakeVtable;
+        count = 0;
+        return null;
     }
 
     protected override object? CreateObject(nint externalComObject, CreateObjectFlags flags)
