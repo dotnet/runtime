@@ -59,34 +59,34 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedFormattedString, d.ToString("HH:mm:ss", dtfi));
         }
 
-        // [Theory]
-        // [MemberData(nameof(DateTimeFormatInfo_TestData))]
-        // public void NativeCalendarName_Get_ReturnsExpected(DateTimeFormatInfo dtfi, Calendar calendar, string nativeCalendarName)
-        // {
-        //     try
-        //     {
-        //         dtfi.Calendar = calendar;
+        [Theory]
+        [MemberData(nameof(DateTimeFormatInfo_TestData))]
+        public void NativeCalendarName_Get_ReturnsExpected(DateTimeFormatInfo dtfi, Calendar calendar, string nativeCalendarName)
+        {
+            try
+            {
+                dtfi.Calendar = calendar;
 
-        //         if (PlatformDetection.IsNotUsingLimitedCultures)
-        //         {
-        //             // Mobile / Browser ICU doesn't contain NativeCalendarName,
-        //             Assert.Equal(nativeCalendarName, dtfi.NativeCalendarName);
-        //         }
-        //     }
-        //     catch
-        //     {
-        //         if (PlatformDetection.IsNlsGlobalization)
-        //         {
-        //             // Persian calendar is recently supported as one of the optional calendars for fa-IR
-        //             Assert.True(calendar is PersianCalendar, "Exception can occur only with PersianCalendar");
-        //         }
-        //         else // !PlatformDetection.IsNlsGlobalization
-        //         {
-        //             Assert.True(calendar is HijriCalendar || calendar is UmAlQuraCalendar || calendar is ThaiBuddhistCalendar ||
-        //                         calendar is HebrewCalendar || calendar is KoreanCalendar, "failed to set the calendar on DTFI");
-        //         }
-        //     }
-        // }
+                if (PlatformDetection.IsNotUsingLimitedCultures)
+                {
+                    // Mobile / Browser ICU doesn't contain NativeCalendarName,
+                    Assert.Equal(nativeCalendarName, dtfi.NativeCalendarName);
+                }
+            }
+            catch
+            {
+                if (PlatformDetection.IsNlsGlobalization)
+                {
+                    // Persian calendar is recently supported as one of the optional calendars for fa-IR
+                    Assert.True(calendar is PersianCalendar, "Exception can occur only with PersianCalendar");
+                }
+                else // !PlatformDetection.IsNlsGlobalization
+                {
+                    Assert.True(calendar is HijriCalendar || calendar is UmAlQuraCalendar || calendar is ThaiBuddhistCalendar ||
+                                calendar is HebrewCalendar || calendar is KoreanCalendar, "failed to set the calendar on DTFI");
+                }
+            }
+        }
 
         [Theory]
         [MemberData(nameof(CultureNames_TestData))]
@@ -138,78 +138,78 @@ namespace System.Globalization.Tests
             }
         }
 
-        // [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
-        // public void Months_GetHebrew_ReturnsExpected()
-        // {
-        //     CultureInfo ci = new CultureInfo("he-IL");
-        //     ci.DateTimeFormat.Calendar = new HebrewCalendar();
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        public void Months_GetHebrew_ReturnsExpected()
+        {
+            CultureInfo ci = new CultureInfo("he-IL");
+            ci.DateTimeFormat.Calendar = new HebrewCalendar();
 
-        //     Assert.Equal(13, ci.DateTimeFormat.MonthNames.Length);
-        //     Assert.Equal(13, ci.DateTimeFormat.MonthGenitiveNames.Length);
-        //     Assert.Equal(13, ci.DateTimeFormat.AbbreviatedMonthNames.Length);
-        //     Assert.Equal(13, ci.DateTimeFormat.AbbreviatedMonthGenitiveNames.Length);
+            Assert.Equal(13, ci.DateTimeFormat.MonthNames.Length);
+            Assert.Equal(13, ci.DateTimeFormat.MonthGenitiveNames.Length);
+            Assert.Equal(13, ci.DateTimeFormat.AbbreviatedMonthNames.Length);
+            Assert.Equal(13, ci.DateTimeFormat.AbbreviatedMonthGenitiveNames.Length);
 
-        //     DateTime dt = ci.DateTimeFormat.Calendar.ToDateTime(5779, 1, 1, 0, 0, 0, 0); // leap year
-        //     for (int i = 0; i < 13; i++)
-        //     {
-        //         string formatted = dt.ToString(ci.DateTimeFormat.LongDatePattern, ci);
-        //         Assert.Equal(dt, DateTime.ParseExact(formatted, ci.DateTimeFormat.LongDatePattern, ci));
-        //         dt = ci.DateTimeFormat.Calendar.AddMonths(dt, 1);
-        //     }
+            DateTime dt = ci.DateTimeFormat.Calendar.ToDateTime(5779, 1, 1, 0, 0, 0, 0); // leap year
+            for (int i = 0; i < 13; i++)
+            {
+                string formatted = dt.ToString(ci.DateTimeFormat.LongDatePattern, ci);
+                Assert.Equal(dt, DateTime.ParseExact(formatted, ci.DateTimeFormat.LongDatePattern, ci));
+                dt = ci.DateTimeFormat.Calendar.AddMonths(dt, 1);
+            }
 
-        //     dt = ci.DateTimeFormat.Calendar.ToDateTime(5778, 1, 1, 0, 0, 0, 0); // non leap year
-        //     for (int i = 0; i < 12; i++)
-        //     {
-        //         string formatted = dt.ToString(ci.DateTimeFormat.LongDatePattern, ci);
-        //         Assert.Equal(dt, DateTime.ParseExact(formatted, ci.DateTimeFormat.LongDatePattern, ci));
-        //         dt = ci.DateTimeFormat.Calendar.AddMonths(dt, 1);
-        //     }
-        // }
+            dt = ci.DateTimeFormat.Calendar.ToDateTime(5778, 1, 1, 0, 0, 0, 0); // non leap year
+            for (int i = 0; i < 12; i++)
+            {
+                string formatted = dt.ToString(ci.DateTimeFormat.LongDatePattern, ci);
+                Assert.Equal(dt, DateTime.ParseExact(formatted, ci.DateTimeFormat.LongDatePattern, ci));
+                dt = ci.DateTimeFormat.Calendar.AddMonths(dt, 1);
+            }
+        }
 
-        // [Fact]
-        // public void TestFirstYearOfJapaneseEra()
-        // {
-        //     DateTimeFormatInfo jpnFormat = new CultureInfo("ja-JP").DateTimeFormat;
-        //     jpnFormat.Calendar = new JapaneseCalendar();
+        [Fact]
+        public void TestFirstYearOfJapaneseEra()
+        {
+            DateTimeFormatInfo jpnFormat = new CultureInfo("ja-JP").DateTimeFormat;
+            jpnFormat.Calendar = new JapaneseCalendar();
 
-        //     string pattern = "gg yyyy'\u5E74' MM'\u6708' dd'\u65E5'";
-        //     DateTime dt = new DateTime(1989, 01, 08); // Start of Heisei Era
+            string pattern = "gg yyyy'\u5E74' MM'\u6708' dd'\u65E5'";
+            DateTime dt = new DateTime(1989, 01, 08); // Start of Heisei Era
 
-        //     string formattedDateWithGannen = "\u5E73\u6210 \u5143\u5E74 01\u6708 08\u65E5";
+            string formattedDateWithGannen = "\u5E73\u6210 \u5143\u5E74 01\u6708 08\u65E5";
 
-        //     string formattedDate = dt.ToString(pattern, jpnFormat);
+            string formattedDate = dt.ToString(pattern, jpnFormat);
 
-        //     Assert.True(DateTime.TryParseExact(formattedDate, pattern, jpnFormat, DateTimeStyles.None, out DateTime parsedDate));
-        //     Assert.Equal(dt, parsedDate);
+            Assert.True(DateTime.TryParseExact(formattedDate, pattern, jpnFormat, DateTimeStyles.None, out DateTime parsedDate));
+            Assert.Equal(dt, parsedDate);
 
-        //     // If the formatting with Gan-nen is supported, then parsing should succeed. otherwise parsing should fail.
-        //     Assert.True(formattedDate.IndexOf("\u5143", StringComparison.Ordinal) >= 0 ==
-        //                 DateTime.TryParseExact(formattedDateWithGannen, pattern, jpnFormat, DateTimeStyles.None, out parsedDate),
-        //                 $"Parsing '{formattedDateWithGannen}' result should match if '{formattedDate}' has Gan-nen symbol"
-        //     );
-        // }
+            // If the formatting with Gan-nen is supported, then parsing should succeed. otherwise parsing should fail.
+            Assert.True(formattedDate.IndexOf("\u5143", StringComparison.Ordinal) >= 0 ==
+                        DateTime.TryParseExact(formattedDateWithGannen, pattern, jpnFormat, DateTimeStyles.None, out parsedDate),
+                        $"Parsing '{formattedDateWithGannen}' result should match if '{formattedDate}' has Gan-nen symbol"
+            );
+        }
 
-        // [Fact]
-        // public void JapaneseAbbreviatedEnglishEraNamesTest()
-        // {
-        //     string [] eraNames = { "M", "T", "S", "H", "R" };
+        [Fact]
+        public void JapaneseAbbreviatedEnglishEraNamesTest()
+        {
+            string [] eraNames = { "M", "T", "S", "H", "R" };
 
-        //     var ci = new CultureInfo("ja-JP") { DateTimeFormat = { Calendar = new JapaneseCalendar() }};
+            var ci = new CultureInfo("ja-JP") { DateTimeFormat = { Calendar = new JapaneseCalendar() }};
 
-        //     int eraNumber = ci.DateTimeFormat.GetEra("Q");
-        //     if (eraNumber == 4 || eraNumber == 5)
-        //     {
-        //         // Skip the test on Windows versions which have wrong Japanese Era information.
-        //         // Windows at some point used "Q" as fake era name before getting the official name.
-        //         return;
-        //     }
+            int eraNumber = ci.DateTimeFormat.GetEra("Q");
+            if (eraNumber == 4 || eraNumber == 5)
+            {
+                // Skip the test on Windows versions which have wrong Japanese Era information.
+                // Windows at some point used "Q" as fake era name before getting the official name.
+                return;
+            }
 
-        //     int numberOfErasToTest = Math.Min(eraNames.Length, ci.DateTimeFormat.Calendar.Eras.Length);
-        //     for (int i = 0; i < numberOfErasToTest; i++)
-        //     {
-        //         Assert.Equal(i + 1, ci.DateTimeFormat.GetEra(eraNames[i]));
-        //     }
-        // }
+            int numberOfErasToTest = Math.Min(eraNames.Length, ci.DateTimeFormat.Calendar.Eras.Length);
+            for (int i = 0; i < numberOfErasToTest; i++)
+            {
+                Assert.Equal(i + 1, ci.DateTimeFormat.GetEra(eraNames[i]));
+            }
+        }
 
         [Fact]
         public void TestFrenchCanadaTimeFormat()

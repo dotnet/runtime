@@ -173,7 +173,7 @@ namespace System.Globalization.Tests
         [MemberData(nameof(LastIndexOf_TestData))]
         [MemberData(nameof(LastIndexOf_U_WithDiaeresis_TestData))]
         public void LastIndexOf_String(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected, int expectedMatchLength)
-        {// failing test case
+        {
             if (value.Length == 1)
             {
                 LastIndexOf_Char(compareInfo, source, value[0], startIndex, count, options, expected);
