@@ -3476,6 +3476,7 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static unsafe void StorePairScalarNonTemporal(uint* address, Vector64<uint> value1, Vector64<uint> value2) { throw new PlatformNotSupportedException(); }
 
+            /// <summary>
             /// void vst2_lane_s8 (int8_t * ptr, int8x16x2_t val, const int lane)
             ///   A64: ST2 { Vt.16B, Vt+1.16B }[index], [Xn]
             /// </summary>
