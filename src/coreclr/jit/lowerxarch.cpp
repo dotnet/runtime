@@ -3369,7 +3369,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 opN = node->Op(argCnt);
 
                 idx = comp->gtNewIconNode(N, TYP_INT);
-                BlockRange().InsertBefore(node, idx);
+                BlockRange().InsertAfter(opN, idx);
 
                 node->ResetHWIntrinsicId(insIntrinsic, comp, tmp1, opN, idx);
                 break;
@@ -3606,7 +3606,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 LowerNode(tmp2);
 
                 idx = comp->gtNewIconNode((argCnt - 1) << 4, TYP_INT);
-                BlockRange().InsertBefore(node, idx);
+                BlockRange().InsertAfter(tmp2, idx);
 
                 node->ResetHWIntrinsicId(NI_SSE41_Insert, comp, tmp1, tmp2, idx);
 

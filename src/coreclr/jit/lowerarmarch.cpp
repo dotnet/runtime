@@ -1624,7 +1624,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     // For the last insert, we will reuse the existing node and so handle it here, outside the loop.
     opN = node->Op(argCnt);
     idx = comp->gtNewIconNode(N);
-    BlockRange().InsertBefore(node, idx);
+    BlockRange().InsertAfter(opN, idx);
 
     node->ResetHWIntrinsicId(NI_AdvSimd_Insert, comp, tmp1, idx, opN);
 
