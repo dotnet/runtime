@@ -38,6 +38,7 @@ public static unsafe class MarshalStructArrayTest
         [UnmanagedCallersOnly]
         static void Callback(void* arg)
         {
+            Assert.True(arg != null);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
