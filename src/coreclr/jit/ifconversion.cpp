@@ -122,7 +122,7 @@ bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
 bool OptIfConversionDsc::IfConvertCheckThenFlow()
 {
     m_flowFound           = false;
-    BasicBlock* thenBlock = m_startBlock->bbNext;
+    BasicBlock* thenBlock = m_startBlock->Next();
 
     for (int thenLimit = 0; thenLimit < m_checkLimit; thenLimit++)
     {
@@ -385,7 +385,7 @@ void OptIfConversionDsc::IfConvertDump()
 {
     assert(m_startBlock != nullptr);
     m_comp->fgDumpBlock(m_startBlock);
-    for (BasicBlock* dumpBlock = m_startBlock->bbNext; dumpBlock != m_finalBlock;
+    for (BasicBlock* dumpBlock = m_startBlock->Next(); dumpBlock != m_finalBlock;
          dumpBlock             = dumpBlock->GetUniqueSucc())
     {
         m_comp->fgDumpBlock(dumpBlock);
@@ -575,7 +575,7 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Check the Then and Else blocks have a single operation each.
-    if (!IfConvertCheckStmts(m_startBlock->bbNext, &m_thenOperation))
+    if (!IfConvertCheckStmts(m_startBlock->Next(), &m_thenOperation))
     {
         return false;
     }
@@ -742,7 +742,7 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Update the flow from the original block.
-    m_comp->fgRemoveAllRefPreds(m_startBlock->bbNext, m_startBlock);
+    m_comp->fgRemoveAllRefPreds(m_startBlock->Next(), m_startBlock);
     m_startBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(m_comp));
 
 #ifdef DEBUG
@@ -789,7 +789,7 @@ PhaseStatus Compiler::optIfConversion()
     {
         OptIfConversionDsc optIfConversionDsc(this, block);
         madeChanges |= optIfConversionDsc.optIfConvert();
-        block = block->bbPrev;
+        block = block->Prev();
     }
 #endif
 

@@ -2160,7 +2160,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
     GetEmitter()->emitIns_J(INS_bl_local, block->bbJumpDest);
 
-    BasicBlock* const nextBlock = block->bbNext;
+    BasicBlock* const nextBlock = block->Next();
 
     if (block->bbFlags & BBF_RETLESS_CALL)
     {
@@ -2184,7 +2184,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         BasicBlock* const jumpDest = nextBlock->bbJumpDest;
 
         // Now go to where the finally funclet needs to return to.
-        if ((jumpDest == nextBlock->bbNext) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
+        if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
         {
             // Fall-through.
             // TODO-ARM64-CQ: Can we get rid of this instruction, and just have the call return directly

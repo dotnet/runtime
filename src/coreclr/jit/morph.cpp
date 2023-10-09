@@ -5088,9 +5088,24 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         // will implicitly null-check the produced address.
         addExplicitNullCheck = (mac == nullptr) || fgIsBigOffset(mac->m_totalOffset + fieldOffset);
 
-        if (!addExplicitNullCheck)
+        // The transformation here turns a value dependency (FIELD_ADDR being a
+        // known non-null operand) into a control-flow dependency (introducing
+        // explicit COMMA(NULLCHECK, ...)). This effectively "disconnects" the
+        // null check from the parent of the FIELD_ADDR node. For the cases
+        // where we made use of non-nullness we need to make the dependency
+        // explicit now.
+        if (addExplicitNullCheck)
         {
-            mac->m_used = true;
+            if (mac != nullptr)
+            {
+                mac->m_user->SetHasOrderingSideEffect();
+            }
+        }
+        else
+        {
+            // We can elide the null check only by letting it happen as part of
+            // the consuming indirection, so it is no longer non-faulting.
+            mac->m_user->gtFlags &= ~GTF_IND_NONFAULTING;
         }
     }
 
@@ -5153,6 +5168,13 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         }
 
         addr = gtNewOperNode(GT_ADD, (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, addr, offsetNode);
+
+        // We cannot form and GC report an invalid byref, so this must preserve
+        // its ordering with the null check.
+        if (addExplicitNullCheck && addr->TypeIs(TYP_BYREF))
+        {
+            addr->SetHasOrderingSideEffect();
+        }
     }
 #endif
 
@@ -5168,6 +5190,13 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
     {
         addr = gtNewOperNode(GT_ADD, (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, addr,
                              gtNewIconNode(fieldOffset, fieldSeq));
+
+        // We cannot form and GC report an invalid byref, so this must preserve
+        // its ordering with the null check.
+        if (addExplicitNullCheck && addr->TypeIs(TYP_BYREF))
+        {
+            addr->SetHasOrderingSideEffect();
+        }
     }
 
     if (addExplicitNullCheck)
@@ -7482,7 +7511,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // block removal on it.
         fgEnsureFirstBBisScratch();
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
-        block->bbJumpDest = fgFirstBB->bbNext;
+        block->bbJumpDest = fgFirstBB->Next();
     }
 
     // Finish hooking things up.
@@ -8937,7 +8966,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         if (tree->OperIsIndir()) // TODO-CQ: add more operators here (e. g. atomics).
         {
             // Communicate to FIELD_ADDR morphing that the parent is an indirection.
-            mac = &indMac;
+            indMac.m_user = tree->AsIndir();
+            mac           = &indMac;
         }
         // For additions, if we already have a context, keep track of whether all offsets added
         // to the address are constant, and their sum does not overflow.
@@ -8960,13 +8990,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         }
 
         tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1, mac);
-
-        if ((mac != nullptr) && mac->m_used && tree->OperIsIndir())
-        {
-            // This context was used to elide an explicit null check on a FIELD_ADDR, with the expectation that
-            // this indirection will now be responsible for null-checking (implicitly).
-            tree->gtFlags &= ~GTF_IND_NONFAULTING;
-        }
 
         // If we are exiting the "then" part of a Qmark-Colon we must
         // save the state of the current copy assignment table
@@ -9894,8 +9917,7 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
         // Check for a misaligned floating point indirection.
         GenTree*       effAddr = addr->gtEffectiveVal(true);
         target_ssize_t offset;
-        FieldSeq*      fldSeq;
-        gtPeelOffsets(&effAddr, &offset, &fldSeq);
+        gtPeelOffsets(&effAddr, &offset);
 
         if (((offset % genTypeSize(TYP_FLOAT)) != 0) ||
             (effAddr->IsCnsIntOrI() && ((effAddr->AsIntConCommon()->IconValue() % genTypeSize(TYP_FLOAT)) != 0)))
@@ -13154,7 +13176,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
              * Remove the conditional statement */
 
             noway_assert(cond->gtOper == GT_CNS_INT);
-            noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
+            noway_assert((block->Next()->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
             if (condTree != cond)
             {
@@ -13181,14 +13203,14 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 /* JTRUE 1 - transform the basic block into a BBJ_ALWAYS */
                 block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                 bTaken    = block->bbJumpDest;
-                bNotTaken = block->bbNext;
+                bNotTaken = block->Next();
             }
             else
             {
                 /* Unmark the loop if we are removing a backwards branch */
                 /* dest block must also be marked as a loop head and     */
                 /* We must be able to reach the backedge block           */
-                if ((block->bbJumpDest->isLoopHead()) && (block->bbJumpDest->bbNum <= block->bbNum) &&
+                if (block->bbJumpDest->isLoopHead() && (block->bbJumpDest->bbNum <= block->bbNum) &&
                     fgReachable(block->bbJumpDest, block))
                 {
                     optUnmarkLoopBlocks(block->bbJumpDest, block);
@@ -13196,7 +13218,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 /* JTRUE 0 - transform the basic block into a BBJ_NONE   */
                 block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
-                bTaken    = block->bbNext;
+                bTaken    = block->Next();
                 bNotTaken = block->bbJumpDest;
             }
 
@@ -13253,24 +13275,24 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     switch (bUpdated->GetBBJumpKind())
                     {
                         case BBJ_NONE:
-                            edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
+                            edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
                             break;
 
                         case BBJ_COND:
-                            edge         = fgGetPredForBlock(bUpdated->bbNext, bUpdated);
+                            edge         = fgGetPredForBlock(bUpdated->Next(), bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
                             FALLTHROUGH;
 
                         case BBJ_ALWAYS:
                             edge         = fgGetPredForBlock(bUpdated->bbJumpDest, bUpdated);
                             newMaxWeight = bUpdated->bbWeight;
                             newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->bbNext);
+                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
                             break;
 
                         default:
@@ -13421,7 +13443,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
                 if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                 {
-                    if (curJump != block->bbNext)
+                    if (!block->NextIs(curJump))
                     {
                         // transform the basic block into a BBJ_ALWAYS
                         block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
@@ -13925,7 +13947,7 @@ void Compiler::fgMorphBlocks()
             }
         }
 
-        block = block->bbNext;
+        block = block->Next();
     } while (block != nullptr);
 
     // We are done with the global morphing phase

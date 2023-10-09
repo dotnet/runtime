@@ -1071,7 +1071,7 @@ private:
             // Find the hot/cold predecessors. (Consider: just record these when
             // we did the scouting).
             //
-            BasicBlock* const coldBlock = checkBlock->bbPrev;
+            BasicBlock* const coldBlock = checkBlock->Prev();
 
             if (!coldBlock->KindIs(BBJ_NONE))
             {
@@ -1079,7 +1079,7 @@ private:
                 return;
             }
 
-            BasicBlock* const hotBlock = coldBlock->bbPrev;
+            BasicBlock* const hotBlock = coldBlock->Prev();
 
             if (!hotBlock->KindIs(BBJ_ALWAYS) || (hotBlock->bbJumpDest != checkBlock))
             {

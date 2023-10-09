@@ -1663,7 +1663,7 @@ class SuperPMIReplay:
             elif result == "Miss":
                 num_misses += 1
             else:
-                assert(result == "Failure")
+                assert(result == "Error")
                 num_failures += 1
 
         return {"Overall": {"Successful compiles": num_successes, "Missing compiles": num_misses, "Failing compiles": num_failures}}
@@ -1780,7 +1780,7 @@ def aggregate_diff_metrics(details):
         elif base_result == "Miss":
             base_dict["Missing compiles"] += 1
         else:
-            assert(base_result == "Failure")
+            assert(base_result == "Error")
             base_dict["Failing compiles"] += 1
 
         diff_result = row["Diff result"]
@@ -1789,7 +1789,7 @@ def aggregate_diff_metrics(details):
         elif diff_result == "Miss":
             diff_dict["Missing compiles"] += 1
         else:
-            assert(diff_result == "Failure")
+            assert(diff_result == "Error")
             diff_dict["Failing compiles"] += 1
 
         if base_result == "Success" and diff_result == "Success":

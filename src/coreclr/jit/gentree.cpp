@@ -372,6 +372,9 @@ bool GenTree::IsNodeProperlySized() const
 //    src  - source tree, that replaces this.
 //    comp - the compiler instance to transfer annotations for arrays.
 //
+// Remarks:
+//    This should not be used for new code.
+//
 void GenTree::ReplaceWith(GenTree* src, Compiler* comp)
 {
     // The source may be big only if the target is also a big node
@@ -871,7 +874,7 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
     assert(!isContained());
     if (!IsMultiRegNode())
     {
-        return (IsValue()) ? 1 : 0;
+        return IsValue() ? 1 : 0;
     }
     else if (IsMultiRegCall())
     {
@@ -1032,6 +1035,19 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
     assert(!"GetMultiRegCount called with non-multireg node");
     return 1;
 }
+
+#ifdef TARGET_ARM64
+//-----------------------------------------------------------------------------------
+// NeedsConsecutiveRegisters: Checks if this tree node needs consecutive registers
+//
+// Return Value:
+//     Returns if the tree needs consecutive registers.
+//
+bool GenTree::NeedsConsecutiveRegisters() const
+{
+    return HWIntrinsicInfo::NeedsConsecutiveRegisters(AsHWIntrinsic()->GetHWIntrinsicId());
+}
+#endif
 
 //---------------------------------------------------------------
 // gtGetContainedRegMask: Get the reg mask of the node including
@@ -3438,7 +3454,7 @@ AGAIN:
                     hash += tree->AsHWIntrinsic()->GetSimdBaseType();
                     hash += tree->AsHWIntrinsic()->GetSimdSize();
                     hash += tree->AsHWIntrinsic()->GetAuxiliaryType();
-                    hash += tree->AsHWIntrinsic()->GetOtherReg();
+                    hash += tree->AsHWIntrinsic()->GetRegByIndex(1);
                     break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -25538,11 +25554,30 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
         case NI_AdvSimd_Arm64_LoadPairVector64:
         case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+        case NI_AdvSimd_LoadVector64x2:
+        case NI_AdvSimd_LoadAndReplicateToVector64x2:
             return compiler->typGetBlkLayout(16);
 
         case NI_AdvSimd_Arm64_LoadPairVector128:
         case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+        case NI_AdvSimd_Arm64_LoadVector128x2:
+        case NI_AdvSimd_LoadVector64x4:
+        case NI_AdvSimd_LoadAndReplicateToVector64x4:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
             return compiler->typGetBlkLayout(32);
+
+        case NI_AdvSimd_LoadVector64x3:
+        case NI_AdvSimd_LoadAndReplicateToVector64x3:
+            return compiler->typGetBlkLayout(24);
+
+        case NI_AdvSimd_Arm64_LoadVector128x3:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+            return compiler->typGetBlkLayout(48);
+
+        case NI_AdvSimd_Arm64_LoadVector128x4:
+        case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+            return compiler->typGetBlkLayout(64);
+
 #endif // TARGET_ARM64
 
         default:
@@ -25579,7 +25614,7 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
 {
     return (op1->TypeGet() == op2->TypeGet()) && (op1->GetHWIntrinsicId() == op2->GetHWIntrinsicId()) &&
            (op1->GetSimdBaseType() == op2->GetSimdBaseType()) && (op1->GetSimdSize() == op2->GetSimdSize()) &&
-           (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && (op1->GetOtherReg() == op2->GetOtherReg()) &&
+           (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && (op1->GetRegByIndex(1) == op2->GetRegByIndex(1)) &&
            OperandsAreEqual(op1, op2);
 }
 

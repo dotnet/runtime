@@ -126,7 +126,7 @@ export type LoaderHelpers = {
 
     afterConfigLoaded: PromiseAndController<MonoConfig>,
     allDownloadsQueued: PromiseAndController<void>,
-    wasmDownloadPromise: PromiseAndController<AssetEntryInternal>,
+    wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
     memorySnapshotSkippedOrDone: PromiseAndController<void>,
 
@@ -202,6 +202,9 @@ export type RuntimeHelpers = {
     beforeOnRuntimeInitialized: PromiseAndController<void>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
+
+    featureWasmEh: boolean,
+    featureWasmSimd: boolean,
 
     //core
     stringify_as_error_with_stack?: (error: any) => string,
