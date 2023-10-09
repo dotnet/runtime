@@ -245,4 +245,4 @@ namespace System.Reflection.Emit.Tests
             return ilgType.GetMethod("GetMaxStackSize", BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes);
         }
     }
-}  
+}
