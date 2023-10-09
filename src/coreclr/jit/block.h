@@ -622,7 +622,6 @@ public:
 
     BBswtDesc* GetJumpSwt() const
     {
-        assert(KindIs(BBJ_SWITCH));
         return bbJumpSwt;
     }
 
