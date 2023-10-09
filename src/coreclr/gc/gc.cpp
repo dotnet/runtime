@@ -49672,7 +49672,7 @@ void gc_heap::do_pre_gc()
 #ifdef TRACE_GC
     size_t total_allocated_since_last_gc = get_total_allocated_since_last_gc();
 #ifdef BACKGROUND_GC
-    dprintf (1, (ThreadStressLog::gcDetailedStartMsg(),
+    dprintf (6666, (ThreadStressLog::gcDetailedStartMsg(),
         VolatileLoad(&settings.gc_index),
         dd_collection_count (hp->dynamic_data_of (0)),
         settings.condemned_generation,
@@ -50099,7 +50099,7 @@ void gc_heap::do_post_gc()
     const char* str_gc_type = "NGC";
 #endif //BACKGROUND_GC
 
-    dprintf (1, (ThreadStressLog::gcDetailedEndMsg(),
+    dprintf (6666, (ThreadStressLog::gcDetailedEndMsg(),
         VolatileLoad (&settings.gc_index),
         dd_collection_count (hp->dynamic_data_of (0)),
         (size_t)(GetHighPrecisionTimeStamp () / 1000),
@@ -50290,7 +50290,7 @@ unsigned GCHeap::GetGcCount()
 size_t
 GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 {
-    dprintf (6666, ("triggered a GC! gen %d reason %s", gen, str_gc_reasons[reason]));
+    dprintf (2, ("triggered a GC!"));
 
 #ifdef COMMITTED_BYTES_SHADOW
     // This stress the refresh memory limit work by

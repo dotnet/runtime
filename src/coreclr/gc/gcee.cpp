@@ -137,7 +137,7 @@ void GCHeap::UpdatePostGCCounters()
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 
 #ifdef SIMPLE_DPRINTF
-    dprintf (6666, ("GC#%zu: 0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu)",
+    dprintf (2, ("GC#%zu: 0: %zu(%zu); 1: %zu(%zu); 2: %zu(%zu); 3: %zu(%zu)",
         (size_t)pSettings->gc_index,
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
