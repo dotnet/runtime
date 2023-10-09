@@ -916,12 +916,14 @@ void ReportLoadLibraryTime(LPCWSTR lpFileName, int64_t loadTime)
 {
     long loadLibraryCount = ::InterlockedAdd(&s_loadLibraryCount, 1);
     int64_t totalTime = ::InterlockedAdd64(&s_loadLibraryTicks, loadTime);
+    int64_t frequency;
+    QueryPerformanceFrequency((LARGE_INTEGER *)&frequency);
     MAKE_UTF8PTR_FROMWIDE_NOTHROW(fileNameUtf8, lpFileName);
     printf("\nLoadLibrary [%ld]: '%s' - %.6f seconds, %.6f total\n",
         loadLibraryCount,
         fileNameUtf8,
-        loadTime * 1e-9,
-        totalTime * 1e-9);
+        loadTime / (double)frequency,
+        totalTime / (double)frequency);
 }
 
 static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
