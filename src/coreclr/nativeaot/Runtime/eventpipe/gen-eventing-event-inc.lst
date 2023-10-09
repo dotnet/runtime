@@ -15,16 +15,10 @@ BGCOverflow_V1
 BGCPlanEnd
 BGCRevisit
 BGCSweepEnd
-CCWRefCountChange
-CCWRefCountChangeAnsi
 Contention
 ContentionLockCreated
 ContentionStart_V2
 ContentionStop_V1
-DebugExceptionProcessingEnd
-DebugExceptionProcessingStart
-DebugIPCEventEnd
-DebugIPCEventStart
 DecreaseMemoryPressure
 DestroyGCHandle
 ExceptionCatchStart
@@ -92,7 +86,6 @@ PrvFinalizeObject
 PrvGCMarkCards_V1
 PrvGCMarkFinalizeQueueRoots_V1
 PrvGCMarkHandles_V1
-PrvGCMarkStackRoots
 PrvGCMarkStackRoots_V1
 PrvSetGCHandle
 SetGCHandle
@@ -109,6 +102,8 @@ ThreadpoolSuspensionSuspendThread
 ThreadPoolWorkerThreadAdjustmentAdjustment
 ThreadPoolWorkerThreadAdjustmentSample
 ThreadPoolWorkerThreadAdjustmentStats
+ThreadPoolWorkerThreadRetirementStart
+ThreadPoolWorkerThreadRetirementStop
 ThreadPoolWorkerThreadStart
 ThreadPoolWorkerThreadStop
 ThreadPoolWorkerThreadWait
