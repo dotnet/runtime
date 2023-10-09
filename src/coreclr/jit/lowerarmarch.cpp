@@ -1609,10 +1609,13 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     for (N = 1; N < argCnt - 1; N++)
     {
-        opN  = node->Op(N + 1);
-        idx  = comp->gtNewIconNode(N);
+        opN = node->Op(N + 1);
+
+        // Place the insert as early as possible to avoid creating a lot of long lifetimes.
+        GenTree* insertionPoint = LIR::LastNode(tmp1, opN);
+        idx                     = comp->gtNewIconNode(N);
         tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, opN, NI_AdvSimd_Insert, simdBaseJitType, simdSize);
-        BlockRange().InsertBefore(node, idx, tmp1);
+        BlockRange().InsertAfter(insertionPoint, idx, tmp1);
         LowerNode(tmp1);
     }
 
