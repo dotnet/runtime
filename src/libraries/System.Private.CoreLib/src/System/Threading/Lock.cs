@@ -19,10 +19,10 @@ namespace System.Threading
     [Runtime.Versioning.RequiresPreviewFeatures]
     public sealed partial class Lock
     {
-        private const int DefaultMaxSpinCount = 22;
-        private const int DefaultAdaptiveSpinPeriod = 100;
-        private const int SpinSleep0Threshold = 10;
-        private const uint MaxDurationMsForPreemptingWaiters = 100;
+        private const short DefaultMaxSpinCount = 22;
+        private const short DefaultAdaptiveSpinPeriod = 100;
+        private const short SpinSleep0Threshold = 10;
+        private const ushort MaxDurationMsForPreemptingWaiters = 100;
 
         private static long s_contentionCount;
 
@@ -36,9 +36,9 @@ namespace System.Threading
 #endif
 
         private uint _state; // see State for layout
-        private ushort _recursionCount;
-        private int _spinCount;
-        private int _waiterStartTimeMs;
+        private uint _recursionCount;
+        private short _spinCount;
+        private ushort _waiterStartTimeMs;
         private AutoResetEvent? _waitEvent;
 
         /// <summary>
@@ -287,7 +287,7 @@ namespace System.Threading
             }
         }
 
-        private static bool IsAdaptiveSpinEnabled(int minSpinCount) => minSpinCount <= 0;
+        private static bool IsAdaptiveSpinEnabled(short minSpinCount) => minSpinCount <= 0;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
 #if !NATIVEAOT
@@ -313,7 +313,7 @@ namespace System.Threading
             {
                 Debug.Assert(new State(this).IsLocked);
 
-                ushort newRecursionCount = (ushort)(_recursionCount + 1);
+                uint newRecursionCount = _recursionCount + 1;
                 if (newRecursionCount != 0)
                 {
                     _recursionCount = newRecursionCount;
@@ -334,20 +334,20 @@ namespace System.Threading
             }
 
             bool isSingleProcessor = IsSingleProcessor;
-            int maxSpinCount = s_maxSpinCount;
+            short maxSpinCount = s_maxSpinCount;
             if (maxSpinCount == 0)
             {
                 goto Wait;
             }
 
-            int minSpinCount = s_minSpinCount;
-            int spinCount = _spinCount;
+            short minSpinCount = s_minSpinCount;
+            short spinCount = _spinCount;
             if (spinCount < 0)
             {
                 // When negative, the spin count serves as a counter for contentions such that a spin-wait can be attempted
                 // periodically to see if it would be beneficial. Increment the spin count and skip spin-waiting.
                 Debug.Assert(IsAdaptiveSpinEnabled(minSpinCount));
-                _spinCount = spinCount + 1;
+                _spinCount = (short)(spinCount + 1);
                 goto Wait;
             }
 
@@ -369,7 +369,7 @@ namespace System.Threading
                 spinCount = maxSpinCount;
             }
 
-            for (int spinIndex = 0; ;)
+            for (short spinIndex = 0; ;)
             {
                 LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor);
 
@@ -395,7 +395,7 @@ namespace System.Threading
                         spinCount = _spinCount;
                         if (spinCount < maxSpinCount)
                         {
-                            _spinCount = spinCount + 1;
+                            _spinCount = (short)(spinCount + 1);
                         }
                     }
 
@@ -418,7 +418,7 @@ namespace System.Threading
                     spinCount = _spinCount;
                     if (spinCount < maxSpinCount)
                     {
-                        _spinCount = spinCount + 1;
+                        _spinCount = (short)(spinCount + 1);
                     }
                 }
                 else
@@ -427,7 +427,7 @@ namespace System.Threading
                     // number of contentions, the first spinner will attempt a spin-wait again to see if it is effective.
                     Debug.Assert(tryLockResult == TryLockResult.Wait);
                     spinCount = _spinCount;
-                    _spinCount = spinCount > 0 ? spinCount - 1 : minSpinCount;
+                    _spinCount = spinCount > 0 ? (short)(spinCount - 1) : minSpinCount;
                 }
             }
 
@@ -499,7 +499,7 @@ namespace System.Threading
                     // - Further in the same situation above, waking up and waiting shortly thereafter deprioritizes this waiter
                     //   because events release waiters in FIFO order. Spinning a bit helps a waiter to retain its priority at
                     //   least for one spin duration before it gets deprioritized behind all other waiters.
-                    for (int spinIndex = 0; spinIndex < maxSpinCount; spinIndex++)
+                    for (short spinIndex = 0; spinIndex < maxSpinCount; spinIndex++)
                     {
                         if (State.TryLockInsideWaiterSpinLoop(this))
                         {
@@ -569,7 +569,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RecordWaiterStartTime()
         {
-            int currentTimeMs = Environment.TickCount;
+            ushort currentTimeMs = (ushort)Environment.TickCount;
             if (currentTimeMs == 0)
             {
                 // Don't record zero, that value is reserved for indicating that a time is not recorded
@@ -584,10 +584,10 @@ namespace System.Threading
             get
             {
                 // If the recorded time is zero, a time has not been recorded yet
-                int waiterStartTimeMs = _waiterStartTimeMs;
+                ushort waiterStartTimeMs = _waiterStartTimeMs;
                 return
                     waiterStartTimeMs != 0 &&
-                    (uint)(Environment.TickCount - waiterStartTimeMs) >= MaxDurationMsForPreemptingWaiters;
+                    (ushort)Environment.TickCount - waiterStartTimeMs >= MaxDurationMsForPreemptingWaiters;
             }
         }
 
@@ -660,18 +660,18 @@ namespace System.Threading
 
         internal ulong OwningThreadId => _owningThreadId;
 
-        private static int DetermineMaxSpinCount() =>
-            AppContextConfigHelper.GetInt32Config(
+        private static short DetermineMaxSpinCount() =>
+            AppContextConfigHelper.GetInt16Config(
                 "System.Threading.Lock.SpinCount",
                 "DOTNET_Lock_SpinCount",
                 DefaultMaxSpinCount,
                 allowNegative: false);
 
-        private static int DetermineMinSpinCount()
+        private static short DetermineMinSpinCount()
         {
             // The config var can be set to -1 to disable adaptive spin
-            int adaptiveSpinPeriod =
-                AppContextConfigHelper.GetInt32Config(
+            short adaptiveSpinPeriod =
+                AppContextConfigHelper.GetInt16Config(
                     "System.Threading.Lock.AdaptiveSpinPeriod",
                     "DOTNET_Lock_AdaptiveSpinPeriod",
                     DefaultAdaptiveSpinPeriod,
@@ -681,7 +681,7 @@ namespace System.Threading
                 adaptiveSpinPeriod = DefaultAdaptiveSpinPeriod;
             }
 
-            return -adaptiveSpinPeriod;
+            return (short)-adaptiveSpinPeriod;
         }
 
         private struct State : IEquatable<State>
@@ -852,7 +852,7 @@ namespace System.Threading
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static TryLockResult TryLockBeforeSpinLoop(Lock lockObj, int spinCount, out bool isFirstSpinner)
+            public static TryLockResult TryLockBeforeSpinLoop(Lock lockObj, short spinCount, out bool isFirstSpinner)
             {
                 // Normally, threads are allowed to preempt waiters to acquire the lock in order to avoid creating lock convoys,
                 // see TryLock(). There can be cases where waiters can be easily starved as a result. For example, a thread that

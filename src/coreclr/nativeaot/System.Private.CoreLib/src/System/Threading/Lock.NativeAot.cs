@@ -9,15 +9,15 @@ namespace System.Threading
 {
     public sealed partial class Lock
     {
-        private const int SpinCountNotInitialized = int.MinValue;
+        private const short SpinCountNotInitialized = short.MinValue;
 
         // NOTE: Lock must not have a static (class) constructor, as Lock itself is used to synchronize
         // class construction.  If Lock has its own class constructor, this can lead to infinite recursion.
         // All static data in Lock must be lazy-initialized.
         private static int s_staticsInitializationStage;
         private static bool s_isSingleProcessor;
-        private static int s_maxSpinCount;
-        private static int s_minSpinCount;
+        private static short s_maxSpinCount;
+        private static short s_minSpinCount;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Lock"/> class.
@@ -71,11 +71,11 @@ namespace System.Threading
             return isHeld;
         }
 
-        internal ushort ExitAll()
+        internal uint ExitAll()
         {
             Debug.Assert(IsHeldByCurrentThread);
 
-            ushort recursionCount = _recursionCount;
+            uint recursionCount = _recursionCount;
             _owningThreadId = 0;
             _recursionCount = 0;
 
@@ -88,7 +88,7 @@ namespace System.Threading
             return recursionCount;
         }
 
-        internal void Reenter(ushort previousRecursionCount)
+        internal void Reenter(uint previousRecursionCount)
         {
             Debug.Assert(!IsHeldByCurrentThread);
 
@@ -193,7 +193,7 @@ namespace System.Threading
         internal static bool IsSingleProcessor => s_isSingleProcessor;
 
         // Used to transfer the state when inflating thin locks
-        internal void InitializeLocked(int managedThreadId, ushort recursionCount)
+        internal void InitializeLocked(int managedThreadId, uint recursionCount)
         {
             Debug.Assert(recursionCount == 0 || managedThreadId != 0);
 

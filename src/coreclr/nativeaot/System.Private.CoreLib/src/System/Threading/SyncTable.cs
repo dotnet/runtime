@@ -269,7 +269,7 @@ namespace System.Threading
         /// Initializes the Lock assuming the caller holds s_lock.  Use for not yet
         /// published entries only.
         /// </summary>
-        public static void MoveThinLockToNewEntry(int syncIndex, int threadId, ushort recursionLevel)
+        public static void MoveThinLockToNewEntry(int syncIndex, int threadId, uint recursionLevel)
         {
             Debug.Assert(s_lock.IsHeldByCurrentThread);
             Debug.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));

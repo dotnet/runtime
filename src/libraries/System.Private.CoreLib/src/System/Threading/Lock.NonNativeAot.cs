@@ -8,8 +8,8 @@ namespace System.Threading
 {
     public sealed partial class Lock
     {
-        private static readonly int s_maxSpinCount = DetermineMaxSpinCount();
-        private static readonly int s_minSpinCount = DetermineMinSpinCount();
+        private static readonly short s_maxSpinCount = DetermineMaxSpinCount();
+        private static readonly short s_minSpinCount = DetermineMinSpinCount();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Lock"/> class.
