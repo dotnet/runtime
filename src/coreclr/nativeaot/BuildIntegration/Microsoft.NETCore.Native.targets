@@ -51,6 +51,10 @@ The .NET Foundation licenses this file to you under the MIT license.
   <PropertyGroup Condition="'$(SuppressAotAnalysisWarnings)' == 'true'">
     <EnableAotAnalyzer Condition="'$(EnableAotAnalyzer)' == ''">false</EnableAotAnalyzer>
   </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(SuppressSingleFileAnalysisWarnings)' == 'true'">
+    <EnableSingleFileAnalyzer Condition="'$(EnableSingleFileAnalyzer)' == ''">false</EnableSingleFileAnalyzer>
+  </PropertyGroup>
 
   <PropertyGroup>
     <NativeObjectExt Condition="'$(_targetOS)' == 'win'">.obj</NativeObjectExt>
@@ -267,6 +271,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(TrimmerSingleWarn) == 'true'" Include="--singlewarn" />
       <IlcArg Condition="$(SuppressTrimAnalysisWarnings) == 'true'" Include="--notrimwarn" />
       <IlcArg Condition="$(SuppressAotAnalysisWarnings) == 'true'" Include="--noaotwarn" />
+      <IlcArg Condition="$(SuppressSingleFileAnalysisWarnings) == 'true'" Include="--nosinglefilewarn" />
       <IlcArg Condition="$(IlcVerboseLogging) == 'true'" Include="--verbose" />
       <IlcArg Condition="$(IlcTrimMetadata) == 'false'" Include="--reflectiondata:all" />
       <IlcArg Condition="'$(ControlFlowGuard)' == 'Guard' and '$(_targetOS)' == 'win'" Include="--guard:cf" />

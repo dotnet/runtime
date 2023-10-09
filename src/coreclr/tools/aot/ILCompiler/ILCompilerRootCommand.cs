@@ -121,6 +121,8 @@ namespace ILCompiler
             new("--notrimwarn") { Description = "Disable warnings related to trimming" };
         public CliOption<bool> NoAotWarn { get; } =
             new("--noaotwarn") { Description = "Disable warnings related to AOT" };
+        public CliOption<bool> NoSingleFileWarn { get; } =
+            new("--nosinglefilewarn") { Description = "Disable warnings related to single file" };
         public CliOption<string[]> SingleWarnEnabledAssemblies { get; } =
             new("--singlewarnassembly") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Generate single AOT/trimming warning for given assembly" };
         public CliOption<string[]> SingleWarnDisabledAssemblies { get; } =
@@ -217,6 +219,7 @@ namespace ILCompiler
             Options.Add(SingleWarn);
             Options.Add(NoTrimWarn);
             Options.Add(NoAotWarn);
+            Options.Add(NoSingleFileWarn);
             Options.Add(SingleWarnEnabledAssemblies);
             Options.Add(SingleWarnDisabledAssemblies);
             Options.Add(DirectPInvokes);
