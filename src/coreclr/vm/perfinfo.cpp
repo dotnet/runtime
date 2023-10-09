@@ -52,7 +52,8 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, CHAR* guid)
     SString value;
     value.Printf("%s%c%s%c%p", path.GetUTF8(), sDelimiter, guid, sDelimiter, baseAddr);
 
-    WriteLine(SL("ImageLoad"), value);
+    SString command{ SString::Literal, "ImageLoad" };
+    WriteLine(command, value);
 }
 
 // Writes a command line, with "type" being the type of command, with "value" as the command's corresponding instructions/values. This is to be used to log specific information, e.g. LogImage
