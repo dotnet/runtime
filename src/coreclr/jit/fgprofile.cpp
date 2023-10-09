@@ -3803,7 +3803,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     {
         assert(nSucc == 1);
         assert(block == pseudoEdge->m_sourceBlock);
-        assert(!block->JumpsTo(nullptr));
+        assert(!block->HasJumpTo(nullptr));
         FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(block->GetJumpDest(), block);
         assert(flowEdge != nullptr);
         flowEdge->setLikelihood(1.0);

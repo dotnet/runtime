@@ -521,7 +521,7 @@ static BasicBlockVisit VisitEHSuccessors(Compiler* comp, BasicBlock* block, TFun
             // will be yielded as a normal successor.  Don't also yield as
             // an exceptional successor.
             BasicBlock* flowBlock = eh->ExFlowBlock();
-            if (!block->KindIs(BBJ_CALLFINALLY) || !block->JumpsTo(flowBlock))
+            if (!block->KindIs(BBJ_CALLFINALLY) || !block->HasJumpTo(flowBlock))
             {
                 RETURN_ON_ABORT(func(flowBlock));
             }
@@ -635,7 +635,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 
             for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
             {
-                if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->JumpsTo(finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
                 {
                     continue;
                 }
@@ -649,7 +649,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 
             for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
             {
-                if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->JumpsTo(finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
                 {
                     continue;
                 }
@@ -769,7 +769,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 
             for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
             {
-                if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->JumpsTo(finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
                 {
                     continue;
                 }

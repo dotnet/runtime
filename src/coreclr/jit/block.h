@@ -610,7 +610,7 @@ public:
         bbJumpDest = jumpDest;
     }
 
-    bool JumpsTo(const BasicBlock* jumpDest) const
+    bool HasJumpTo(const BasicBlock* jumpDest) const
     {
         return (bbJumpDest == jumpDest);
     }

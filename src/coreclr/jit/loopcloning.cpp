@@ -1862,7 +1862,7 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    if (!bottom->JumpsTo(top))
+    if (!bottom->HasJumpTo(top))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Branch at loop 'bottom' not looping to 'top'.\n", loopInd);
         return false;
@@ -2047,7 +2047,7 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     if (!h->KindIs(BBJ_NONE))
     {
         assert(h->KindIs(BBJ_ALWAYS));
-        assert(h->JumpsTo(loop.lpEntry));
+        assert(h->HasJumpTo(loop.lpEntry));
         h2->SetJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
         h2->SetJumpDest(loop.lpEntry);
     }

@@ -1389,7 +1389,7 @@ void Compiler::optCheckPreds()
             switch (bb->GetJumpKind())
             {
                 case BBJ_COND:
-                    if (bb->JumpsTo(block))
+                    if (bb->HasJumpTo(block))
                     {
                         break;
                     }
@@ -1400,7 +1400,7 @@ void Compiler::optCheckPreds()
                 case BBJ_EHFILTERRET:
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
-                    noway_assert(bb->JumpsTo(block));
+                    noway_assert(bb->HasJumpTo(block));
                     break;
                 default:
                     break;
@@ -2294,7 +2294,7 @@ private:
         {
             // Need to reconnect the flow from `block` to `oldNext`.
 
-            if (block->KindIs(BBJ_COND) && block->JumpsTo(newNext))
+            if (block->KindIs(BBJ_COND) && block->HasJumpTo(newNext))
             {
                 // Reverse the jump condition
                 GenTree* test = block->lastNode();
@@ -2321,7 +2321,7 @@ private:
                 noway_assert((newBlock == nullptr) || loopBlocks.CanRepresent(newBlock->bbNum));
             }
         }
-        else if (block->KindIs(BBJ_ALWAYS) && block->JumpsTo(newNext))
+        else if (block->KindIs(BBJ_ALWAYS) && block->HasJumpTo(newNext))
         {
             // We've made `block`'s jump target its bbNext, so remove the jump.
             if (!comp->fgOptimizeBranchToNext(block, newNext, block->Prev()))
@@ -2378,7 +2378,7 @@ private:
         }
 
         // Make sure we don't leave around a goto-next unless it's marked KEEP_BBJ_ALWAYS.
-        assert(!block->KindIs(BBJ_COND, BBJ_ALWAYS) || !block->JumpsTo(newNext) ||
+        assert(!block->KindIs(BBJ_COND, BBJ_ALWAYS) || !block->HasJumpTo(newNext) ||
                ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
         return newBlock;
     }
@@ -2404,7 +2404,7 @@ private:
             case BBJ_CALLFINALLY:
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
-                assert(!block->JumpsTo(nullptr));
+                assert(!block->HasJumpTo(nullptr));
                 exitPoint = block->GetJumpDest();
 
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
@@ -2936,7 +2936,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
     // entry block. If the `head` branches to `top` because it is the BBJ_ALWAYS of a
     // BBJ_CALLFINALLY/BBJ_ALWAYS pair, we canonicalize by introducing a new fall-through
     // head block. See FindEntry() for the logic that allows this.
-    if (h->KindIs(BBJ_ALWAYS) && h->JumpsTo(t) && (h->bbFlags & BBF_KEEP_BBJ_ALWAYS))
+    if (h->KindIs(BBJ_ALWAYS) && h->HasJumpTo(t) && (h->bbFlags & BBF_KEEP_BBJ_ALWAYS))
     {
         // Insert new head
 
@@ -4395,7 +4395,7 @@ PhaseStatus Compiler::optUnrollLoops()
                     newBlock->scaleBBWeight(1.0 / BB_LOOP_WEIGHT_SCALE);
 
                     // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
-                    assert(newBlock->JumpsTo(nullptr));
+                    assert(newBlock->HasJumpTo(nullptr));
 
                     if (block == bottom)
                     {
@@ -8307,7 +8307,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 break;
 
             case BBJ_COND:
-                if (predBlock->JumpsTo(entry))
+                if (predBlock->HasJumpTo(entry))
                 {
                     predBlock->SetJumpDest(preHead);
                     noway_assert(!predBlock->NextIs(preHead));
@@ -8322,7 +8322,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
-                noway_assert(predBlock->JumpsTo(entry));
+                noway_assert(predBlock->HasJumpTo(entry));
                 predBlock->SetJumpDest(preHead);
                 fgRemoveRefPred(entry, predBlock);
                 fgAddRefPred(preHead, predBlock);

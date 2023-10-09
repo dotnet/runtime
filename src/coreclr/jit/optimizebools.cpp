@@ -124,7 +124,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     // Check if m_b1 and m_b2 have the same bbJumpDest
 
-    if (m_b1->JumpsTo(m_b2->GetJumpDest()))
+    if (m_b1->HasJumpTo(m_b2->GetJumpDest()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, BX)
@@ -486,7 +486,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         // The final condition has been inverted.
         foundEndOfOrConditions = true;
     }
-    else if (m_b1->NextIs(m_b2) && m_b1->JumpsTo(m_b2->GetJumpDest()))
+    else if (m_b1->NextIs(m_b2) && m_b1->HasJumpTo(m_b2->GetJumpDest()))
     {
         // Found two conditions connected together.
     }
@@ -889,7 +889,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_COND));
-        assert(m_b1->JumpsTo(m_b2->GetJumpDest()));
+        assert(m_b1->HasJumpTo(m_b2->GetJumpDest()));
         assert(m_b1->NextIs(m_b2));
         assert(!m_b2->IsLast());
     }
@@ -1494,7 +1494,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             if (b2->KindIs(BBJ_COND))
             {
-                if (!b1->JumpsTo(b2->GetJumpDest()) && !b2->NextIs(b1->GetJumpDest()))
+                if (!b1->HasJumpTo(b2->GetJumpDest()) && !b2->NextIs(b1->GetJumpDest()))
                 {
                     continue;
                 }

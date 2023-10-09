@@ -1826,7 +1826,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 // Note even if the OSR is in a nested try, if it's a mutual protect try
                 // it can be reached directly from "outside".
                 //
-                assert(fgFirstBB->JumpsTo(osrEntry));
+                assert(fgFirstBB->HasJumpTo(osrEntry));
                 assert(fgFirstBB->KindIs(BBJ_ALWAYS));
 
                 if (entryJumpTarget != osrEntry)
@@ -2375,7 +2375,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
                 for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
                 {
-                    if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->JumpsTo(finBeg))
+                    if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
                     {
                         continue;
                     }
@@ -2405,7 +2405,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
     }
 
-    if (!bNext->JumpsTo(nullptr) && bNext->GetJumpDest()->isLoopAlign())
+    if (!bNext->HasJumpTo(nullptr) && bNext->GetJumpDest()->isLoopAlign())
     {
         // `bNext` has a backward target to some block which mean bNext is part of a loop.
         // `block` into which `bNext` is compacted should be updated with its loop number
@@ -2924,7 +2924,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             }
 
             /* Do not remove a block that jumps to itself - used for while (true){} */
-            if (block->JumpsTo(block))
+            if (block->HasJumpTo(block))
             {
                 break;
             }
@@ -2999,7 +2999,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                     {
                         if (predBlock->KindIs(BBJ_EHCATCHRET))
                         {
-                            assert(predBlock->JumpsTo(block));
+                            assert(predBlock->HasJumpTo(block));
                             okToMerge = false; // we can't get rid of the empty block
                             break;
                         }
@@ -3134,7 +3134,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         bNewDest = bDest;
 
         // Do we have a JUMP to an empty unconditional JUMP block?
-        if (bDest->isEmpty() && bDest->KindIs(BBJ_ALWAYS) && !bDest->JumpsTo(bDest)) // special case for self jumps
+        if (bDest->isEmpty() && bDest->KindIs(BBJ_ALWAYS) && !bDest->HasJumpTo(bDest)) // special case for self jumps
         {
             bool optimizeJump = true;
 
@@ -3824,7 +3824,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, BasicBlock* bPrev)
 {
     assert(block->KindIs(BBJ_COND, BBJ_ALWAYS));
-    assert(block->JumpsTo(bNext));
+    assert(block->HasJumpTo(bNext));
     assert(block->NextIs(bNext));
     assert(block->PrevIs(bPrev));
 
@@ -5158,7 +5158,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                         // candidateBlock and have it fall into bTmp
                         //
                         if ((candidateBlock == nullptr) || !candidateBlock->KindIs(BBJ_COND, BBJ_ALWAYS) ||
-                            !candidateBlock->JumpsTo(bTmp))
+                            !candidateBlock->HasJumpTo(bTmp))
                         {
                             // otherwise we have a new candidateBlock
                             //
@@ -6146,7 +6146,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             {
                 // Do we have a JUMP to an empty unconditional JUMP block?
                 if (bDest->isEmpty() && bDest->KindIs(BBJ_ALWAYS) &&
-                    !bDest->JumpsTo(bDest)) // special case for self jumps
+                    !bDest->HasJumpTo(bDest)) // special case for self jumps
                 {
                     if (fgOptimizeBranchToEmptyUnconditional(block, bDest))
                     {
@@ -6169,7 +6169,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     (bNext->bbRefs == 1) &&      // No other block jumps to bNext
                     bNext->KindIs(BBJ_ALWAYS) && // The next block is a BBJ_ALWAYS block
                     bNext->isEmpty() &&          // and it is an empty block
-                    !bNext->JumpsTo(bNext) &&    // special case for self jumps
+                    !bNext->HasJumpTo(bNext) &&    // special case for self jumps
                     !bDest->IsFirstColdBlock(this) &&
                     !fgInDifferentRegions(block, bDest)) // do not cross hot/cold sections
                 {
@@ -6369,7 +6369,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                            (that we will later connect to 'block'), it is not really
                            unreachable.
                         */
-                        if ((bNext->bbRefs > 0) && bNext->JumpsTo(block) && (block->bbRefs == 1))
+                        if ((bNext->bbRefs > 0) && bNext->HasJumpTo(block) && (block->bbRefs == 1))
                         {
                             continue;
                         }
@@ -6457,7 +6457,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 {
                     case BBJ_COND:
                     case BBJ_ALWAYS:
-                        if (block->JumpsTo(block))
+                        if (block->HasJumpTo(block))
                         {
                             fgRemoveBlock(block, /* unreachable */ true);
 

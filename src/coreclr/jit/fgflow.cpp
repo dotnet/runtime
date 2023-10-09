@@ -403,7 +403,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
                 for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
                 {
-                    if ((bcall->bbFlags & BBF_REMOVED) || !bcall->KindIs(BBJ_CALLFINALLY) || !bcall->JumpsTo(finBeg))
+                    if ((bcall->bbFlags & BBF_REMOVED) || !bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
                     {
                         continue;
                     }
@@ -469,7 +469,7 @@ void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock*
 
     for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
     {
-        if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->JumpsTo(finBeg))
+        if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
         {
             continue;
         }

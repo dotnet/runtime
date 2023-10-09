@@ -4056,7 +4056,7 @@ void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
 
     for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->JumpsTo(block))
+        if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->HasJumpTo(block))
         {
             BasicBlock* pPrev = predBlock->Prev();
             if (pPrev != nullptr)
@@ -4115,7 +4115,7 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
                                                              // trying to decide how to split up the predecessor edges.
         if (predBlock->KindIs(BBJ_CALLFINALLY))
         {
-            assert(predBlock->JumpsTo(block));
+            assert(predBlock->HasJumpTo(block));
 
             // A BBJ_CALLFINALLY predecessor of the handler can only come from the corresponding try,
             // not from any EH clauses nested in this handler. However, we represent the BBJ_CALLFINALLY
@@ -4414,7 +4414,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 BasicBlock* bFilterLast = HBtab->BBFilterLast();
                 assert(bFilterLast != nullptr);
                 assert(bFilterLast->KindIs(BBJ_EHFILTERRET));
-                assert(bFilterLast->JumpsTo(block));
+                assert(bFilterLast->HasJumpTo(block));
 #ifdef DEBUG
                 if (verbose)
                 {

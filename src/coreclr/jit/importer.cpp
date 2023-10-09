@@ -4345,7 +4345,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 /* Calling the finally block */
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step);
                 assert(step->KindIs(BBJ_ALWAYS));
-                if (!step->JumpsTo(nullptr))
+                if (!step->HasJumpTo(nullptr))
                 {
                     fgRemoveRefPred(step->GetJumpDest(), step);
                 }
@@ -4397,7 +4397,7 @@ void Compiler::impImportLeave(BasicBlock* block)
             unsigned finallyNesting = compHndBBtab[XTnum].ebdHandlerNestingLevel;
             assert(finallyNesting <= compHndBBtabCount);
 
-            if (!callBlock->JumpsTo(nullptr))
+            if (!callBlock->HasJumpTo(nullptr))
             {
                 fgRemoveRefPred(callBlock->GetJumpDest(), callBlock);
             }
@@ -4447,7 +4447,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         // depending on which is the inner region.
         BasicBlock* finalStep = fgNewBBinRegion(BBJ_ALWAYS, tryIndex, leaveTarget->bbHndIndex, step);
         finalStep->bbFlags |= BBF_KEEP_BBJ_ALWAYS;
-        if (!step->JumpsTo(nullptr))
+        if (!step->HasJumpTo(nullptr))
         {
             fgRemoveRefPred(step->GetJumpDest(), step);
         }
@@ -4595,7 +4595,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 exitBlock = fgNewBBinRegion(BBJ_EHCATCHRET, 0, XTnum + 1, step);
 
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
-                if (!step->JumpsTo(nullptr))
+                if (!step->HasJumpTo(nullptr))
                 {
                     fgRemoveRefPred(step->GetJumpDest(), step);
                 }
@@ -4713,7 +4713,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                     // Need to create another step block in the 'try' region that will actually branch to the
                     // call-to-finally thunk.
                     BasicBlock* step2 = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
-                    if (!step->JumpsTo(nullptr))
+                    if (!step->HasJumpTo(nullptr))
                     {
                         fgRemoveRefPred(step->GetJumpDest(), step);
                     }
@@ -4747,7 +4747,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 #endif // !FEATURE_EH_CALLFINALLY_THUNKS
 
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, step);
-                if (!step->JumpsTo(nullptr))
+                if (!step->HasJumpTo(nullptr))
                 {
                     fgRemoveRefPred(step->GetJumpDest(), step);
                 }
@@ -4794,7 +4794,7 @@ void Compiler::impImportLeave(BasicBlock* block)
             }
 #endif
 
-            if (!callBlock->JumpsTo(nullptr))
+            if (!callBlock->HasJumpTo(nullptr))
             {
                 fgRemoveRefPred(callBlock->GetJumpDest(), callBlock);
             }
@@ -4861,7 +4861,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 /* Create a new exit block in the try region for the existing step block to jump to in this scope */
                 catchStep = fgNewBBinRegion(BBJ_ALWAYS, XTnum + 1, 0, step);
 
-                if (!step->JumpsTo(nullptr))
+                if (!step->HasJumpTo(nullptr))
                 {
                     fgRemoveRefPred(step->GetJumpDest(), step);
                 }
@@ -4921,7 +4921,7 @@ void Compiler::impImportLeave(BasicBlock* block)
     }
     else
     {
-        if (!step->JumpsTo(nullptr))
+        if (!step->HasJumpTo(nullptr))
         {
             fgRemoveRefPred(step->GetJumpDest(), step);
         }

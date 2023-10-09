@@ -2662,7 +2662,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
     switch (blockPred->GetJumpKind())
     {
         case BBJ_COND:
-            assert(blockPred->NextIs(block) || blockPred->JumpsTo(block));
+            assert(blockPred->NextIs(block) || blockPred->HasJumpTo(block));
             return true;
 
         case BBJ_NONE:
@@ -2673,7 +2673,7 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            assert(blockPred->JumpsTo(block));
+            assert(blockPred->HasJumpTo(block));
             return true;
 
         case BBJ_EHFINALLYRET:
@@ -2733,7 +2733,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
     for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
     {
-        if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->JumpsTo(finBeg))
+        if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
         {
             continue;
         }
@@ -2755,7 +2755,7 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
         for (BasicBlock* const bcall : comp->Blocks(comp->fgFirstFuncletBB))
         {
-            if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->JumpsTo(finBeg))
+            if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
             {
                 continue;
             }
@@ -4793,7 +4793,7 @@ void Compiler::fgDebugCheckLoopTable()
             BasicBlock* e = loop.lpEntry;
             if (h->KindIs(BBJ_ALWAYS))
             {
-                assert(h->JumpsTo(e));
+                assert(h->HasJumpTo(e));
             }
             else
             {

@@ -98,7 +98,7 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                 *blockIfTrue  = *isReversed ? block->Next() : block->GetJumpDest();
                 *blockIfFalse = *isReversed ? block->GetJumpDest() : block->Next();
 
-                if (block->JumpsToNext() || block->JumpsTo(block))
+                if (block->JumpsToNext() || block->HasJumpTo(block))
                 {
                     // Ignoring weird cases like a condition jumping to itself
                     return false;
