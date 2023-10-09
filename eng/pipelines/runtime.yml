@@ -271,7 +271,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isFullMatrix'], true))
+                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT checked build and smoke tests
@@ -309,7 +309,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isFullMatrix'], true))
+                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT release build and smoke tests
@@ -353,7 +353,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-                eq(variables['isFullMatrix'], true))
+                eq(variables['isRollingBuild'], true))
 
       #
       # CoreCLR NativeAOT release build and libraries tests
@@ -384,7 +384,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isFullMatrix'], true))
+                eq(variables['isRollingBuild'], true))
 
       # Build and test clr tools
       - template: /eng/pipelines/common/platform-matrix.yml
