@@ -545,7 +545,7 @@ namespace Microsoft.Extensions.Options.Generators
                 return;
             }
 
-            var attributesData = _optionsSourceGenContext.AttributesToGenerate.OrderBy(static kvp => kvp.Key).ToArray();
+            var attributesData = _optionsSourceGenContext.AttributesToGenerate.OrderBy(static kvp => kvp.Key, StringComparer.Ordinal).ToArray();
 
             OutLn($"namespace {StaticGeneratedValidationAttributesClassesNamespace}");
             OutOpenBrace();
