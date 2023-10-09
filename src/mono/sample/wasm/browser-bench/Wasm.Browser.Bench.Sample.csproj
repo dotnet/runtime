@@ -30,15 +30,15 @@
       <_Dotnet>$(RepoRoot)dotnet$(_ScriptExt)</_Dotnet>
     </PropertyGroup>
 
-    <Exec IgnoreExitCode="true" Command="$(_Dotnet) build $(MSBuildThisFileDirectory)../../../wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj -c $(Configuration) -t:Test -p:TargetOS=browser -p:TargetArchitecture=wasm -p:XUnitClassName=none $(BuildAdditionalArgs)" />
+    <Exec IgnoreExitCode="true" Command="$(_Dotnet) build $(MonoProjectRoot)wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj -c $(Configuration) -t:InstallWorkloadUsingArtifacts -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
   </Target>
 
   <Target Name="BuildBlazorFrame" DependsOnTargets="BuildSampleInTree;BuildWBT">
     <ItemGroup>
-        <OverrideFiles Include="$(MSBuildThisFileDirectory)../../../../../src/mono/wasm/Wasm.Build.Tests/data/WasmOverridePacks.targets" />
-        <OverrideFiles Include="$(MSBuildThisFileDirectory)../../../../../src/mono/wasm/Wasm.Build.Tests/data/Blazor.Directory.Build.targets" />
-        <OverrideDestFiles Include="$(MSBuildThisFileDirectory)../blazor-frame/WasmOverridePacks.targets" />
-        <OverrideDestFiles Include="$(MSBuildThisFileDirectory)../blazor-frame/Directory.Build.targets" />
+        <OverrideFiles Include="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/WasmOverridePacks.targets" />
+        <OverrideFiles Include="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/Blazor.Directory.Build.targets" />
+        <OverrideDestFiles Include="$(MonoProjectRoot)sample/wasm/blazor-frame/WasmOverridePacks.targets" />
+        <OverrideDestFiles Include="$(MonoProjectRoot)sample/wasm/blazor-frame/Directory.Build.targets" />
     </ItemGroup>
 
     <Copy SourceFiles="@(OverrideFiles)" DestinationFiles="@(OverrideDestFiles)" UseSymbolicLinksIfPossible="true" OverwriteReadOnlyFiles="true" />
@@ -52,7 +52,7 @@
   &lt;/fallbackPackageFolders&gt;
   &lt;packageSources&gt;
     &lt;clear /&gt;
-    &lt;add key=&quot;nuget-local&quot; value=&quot;$(ArtifactsDir)packages/Release/Shipping/&quot; /&gt;
+    &lt;add key=&quot;nuget-local&quot; value=&quot;$(ArtifactsDir)packages/$(Configuration)/Shipping/&quot; /&gt;
     &lt;add key=&quot;dotnet8&quot; value=&quot;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet8/nuget/v3/index.json&quot; /&gt;
     &lt;add key=&quot;nuget.org&quot;  value=&quot;https://api.nuget.org/v3/index.json&quot; protocolVersion=&quot;3&quot; /&gt;
   &lt;/packageSources&gt;
@@ -71,7 +71,7 @@
     <Exec EnvironmentVariables="MSBuildSDKsPath=;DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame" Command="dotnet publish blazor.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
 
     <ItemGroup>
-        <BlazorSourceFiles Include="$(MSBuildThisFileDirectory)../blazor-frame/bin/Release/net8.0/publish/wwwroot/blazor-template/**/*.*"/>
+        <BlazorSourceFiles Include="$(MSBuildThisFileDirectory)../blazor-frame/bin/$(Configuration)/net8.0/publish/wwwroot/blazor-template/**/*.*"/>
     </ItemGroup>
 
     <Copy
