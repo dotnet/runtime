@@ -3210,13 +3210,16 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         size_t halfArgCnt = argCnt / 2;
         assert((halfArgCnt * 2) == argCnt);
 
+        GenTree* loInsertionPoint = LIR::LastNode(node->GetOperandArray(), halfArgCnt);
+
         GenTree* lo = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, node->GetOperandArray(), halfArgCnt,
                                                      NI_Vector256_Create, simdBaseJitType, 32);
-        BlockRange().InsertAfter(node->Op(halfArgCnt), lo);
+        BlockRange().InsertAfter(loInsertionPoint, lo);
 
+        GenTree* hiInsertionPoint = LIR::LastNode(node->GetOperandArray(halfArgCnt), halfArgCnt);
         GenTree* hi = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, node->GetOperandArray(halfArgCnt), halfArgCnt,
                                                      NI_Vector256_Create, simdBaseJitType, 32);
-        BlockRange().InsertAfter(node->Op(argCnt), hi);
+        BlockRange().InsertAfter(hiInsertionPoint, hi);
 
         assert(argCnt >= 7);
         node->ResetHWIntrinsicId(NI_Vector512_WithUpper, comp, lo, hi);
@@ -3263,13 +3266,17 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         size_t halfArgCnt = argCnt / 2;
         assert((halfArgCnt * 2) == argCnt);
 
+        GenTree* loInsertionPoint = LIR::LastNode(node->GetOperandArray(), halfArgCnt);
+
         GenTree* lo = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, node->GetOperandArray(), halfArgCnt,
                                                      NI_Vector128_Create, simdBaseJitType, 16);
-        BlockRange().InsertAfter(node->Op(halfArgCnt), lo);
+        BlockRange().InsertAfter(loInsertionPoint, lo);
+
+        GenTree* hiInsertionPoint = LIR::LastNode(node->GetOperandArray(halfArgCnt), halfArgCnt);
 
         GenTree* hi = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, node->GetOperandArray(halfArgCnt), halfArgCnt,
                                                      NI_Vector128_Create, simdBaseJitType, 16);
-        BlockRange().InsertAfter(node->Op(argCnt), hi);
+        BlockRange().InsertAfter(hiInsertionPoint, hi);
 
         assert(argCnt >= 3);
         node->ResetHWIntrinsicId(NI_Vector256_WithUpper, comp, lo, hi);
@@ -3336,11 +3343,12 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     opN = node->Op(N + 1);
 
                     idx = comp->gtNewIconNode(N, TYP_INT);
-                    BlockRange().InsertAfter(opN, idx);
+                    // Place the insert as early as possible to avoid creating a lot of long lifetimes.
+                    GenTree* insertionPoint = LIR::LastNode(tmp1, opN);
 
                     tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, opN, idx, insIntrinsic, simdBaseJitType,
                                                           simdSize);
-                    BlockRange().InsertAfter(idx, tmp1);
+                    BlockRange().InsertAfter(insertionPoint, idx, tmp1);
                     LowerNode(tmp1);
                 }
 
@@ -3419,17 +3427,17 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
                     tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, op[N], op[O], NI_SSE2_UnpackLow, CORINFO_TYPE_UBYTE,
                                                           simdSize);
-                    BlockRange().InsertAfter(op[O], tmp1);
+                    BlockRange().InsertAfter(LIR::LastNode(op[N], op[O]), tmp1);
                     LowerNode(tmp1);
 
                     tmp2 = comp->gtNewSimdHWIntrinsicNode(simdType, op[P], op[Q], NI_SSE2_UnpackLow, CORINFO_TYPE_UBYTE,
                                                           simdSize);
-                    BlockRange().InsertAfter(op[Q], tmp2);
+                    BlockRange().InsertAfter(LIR::LastNode(op[P], op[Q]), tmp2);
                     LowerNode(tmp2);
 
                     tmp3 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, NI_SSE2_UnpackLow, CORINFO_TYPE_USHORT,
                                                           simdSize);
-                    BlockRange().InsertAfter(tmp2, tmp3);
+                    BlockRange().InsertAfter(LIR::LastNode(tmp1, tmp2), tmp3);
                     LowerNode(tmp3);
 
                     // This caches the result in index 0 through 3, depending on which
@@ -3468,12 +3476,12 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
             tmp1 =
                 comp->gtNewSimdHWIntrinsicNode(simdType, op[0], op[1], NI_SSE2_UnpackLow, CORINFO_TYPE_UINT, simdSize);
-            BlockRange().InsertAfter(op[1], tmp1);
+            BlockRange().InsertAfter(LIR::LastNode(op[0], op[1]), tmp1);
             LowerNode(tmp1);
 
             tmp2 =
                 comp->gtNewSimdHWIntrinsicNode(simdType, op[2], op[3], NI_SSE2_UnpackLow, CORINFO_TYPE_UINT, simdSize);
-            BlockRange().InsertAfter(op[3], tmp2);
+            BlockRange().InsertAfter(LIR::LastNode(op[2], op[3]), tmp2);
             LowerNode(tmp2);
 
             node->ResetHWIntrinsicId(NI_SSE2_UnpackLow, tmp1, tmp2);
@@ -3565,11 +3573,13 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     LowerNode(tmp2);
 
                     idx = comp->gtNewIconNode(N << 4, TYP_INT);
-                    BlockRange().InsertAfter(tmp2, idx);
+
+                    // Place the insert as early as possible to avoid creating a lot of long lifetimes.
+                    GenTree* insertionPoint = LIR::LastNode(tmp1, tmp2);
 
                     tmp3 = comp->gtNewSimdHWIntrinsicNode(simdType, tmp1, tmp2, idx, NI_SSE41_Insert, simdBaseJitType,
                                                           simdSize);
-                    BlockRange().InsertAfter(idx, tmp3);
+                    BlockRange().InsertAfter(insertionPoint, idx, tmp3);
 
                     insertedNodes[N] = tmp3;
                     tmp1             = tmp3;
@@ -3655,11 +3665,11 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
 
             tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, op[0], op[1], NI_SSE_UnpackLow, simdBaseJitType, simdSize);
-            BlockRange().InsertAfter(op[1], tmp1);
+            BlockRange().InsertAfter(LIR::LastNode(op[0], op[1]), tmp1);
             LowerNode(tmp1);
 
             tmp2 = comp->gtNewSimdHWIntrinsicNode(simdType, op[2], op[3], NI_SSE_UnpackLow, simdBaseJitType, simdSize);
-            BlockRange().InsertAfter(op[3], tmp2);
+            BlockRange().InsertAfter(LIR::LastNode(op[2], op[3]), tmp2);
             LowerNode(tmp2);
 
             node->ResetHWIntrinsicId(NI_SSE_MoveLowToHigh, tmp1, tmp2);
