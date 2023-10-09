@@ -28,7 +28,7 @@ To run the benchmark with blazor startup measurements, set `BlazorStartup` prope
 
 ### Additional build arguments
 
-The benchark project is built in a separate process, so to pass additional msbuild arguments, use `BuildAdditionalArgs` property, like:
+The benchmark project is built in a separate process, so to pass additional msbuild arguments, use `BuildAdditionalArgs` property, like:
 
     > dotnet build /t:RunSample  /p:BuildAdditionalArgs="/p:WasmEnableSIMD=false"
 
