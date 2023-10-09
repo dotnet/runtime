@@ -246,25 +246,23 @@ namespace System
             //
             // TODO: Consider doing the same on x86/AMD64 for V256 and V512
 #if HAS_CUSTOM_BLOCKS && TARGET_ARM64
-            if (len >= 512 && Vector128.IsHardwareAccelerated)
+            if (Vector128.IsHardwareAccelerated && len >= 512)
             {
-                const nuint alignment = 16;
-
                 // Try to opportunistically align the destination below. The input isn't pinned, so the GC
                 // is free to move the references. We're therefore assuming that reads may still be unaligned.
                 //
                 // dest is more important to align than src because an unaligned store is more expensive
                 // than an unaligned load.
-                nuint misalignedElements = (nuint)Unsafe.AsPointer(ref dest) & (alignment - 1);
+                nuint misalignedElements = (nuint)Unsafe.AsPointer(ref dest) & (Vector128.Size - 1);
                 if (misalignedElements != 0)
                 {
                     // E.g. if misalignedElements is 4, it means we need to use a scalar loop
                     // for 16 - 4 = 12 elements till we're aligned to 16b boundary.
-                    misalignedElements = alignment - misalignedElements;
+                    misalignedElements = Vector128.Size - misalignedElements;
                     nuint offset = 0;
                     do
                     {
-                        // For large misalignments on x64 we might want to use smaller SIMD here.
+                        // For large misalignment on x64 we might want to use smaller SIMD here.
                         Unsafe.Add(ref dest, offset) = Unsafe.Add(ref src, offset);
                         offset++;
                     }
