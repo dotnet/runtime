@@ -241,30 +241,34 @@ namespace System
             return;
 
         MCPY05:
-            // Misaligned access via SIMD is especially expensive on ARM64 on large data.
-            // 512 is an arbitrary threshold picked for Ampere and Apple M1.
-            //
-            // TODO: Consider doing the same on x86/AMD64 for V256 and V512
+            // PInvoke to the native version when the copy length exceeds the threshold.
+            if (len > MemmoveNativeThreshold)
+            {
+                goto PInvoke;
+            }
+
 #if HAS_CUSTOM_BLOCKS
-            if (Vector128.IsHardwareAccelerated && len >= 512)
+            if (len >= 128)
             {
                 // Try to opportunistically align the destination below. The input isn't pinned, so the GC
                 // is free to move the references. We're therefore assuming that reads may still be unaligned.
                 //
                 // dest is more important to align than src because an unaligned store is more expensive
                 // than an unaligned load.
-                nuint misalignedElements = Vector128.Size - (nuint)Unsafe.AsPointer(ref dest) & (Vector128.Size - 1);
+#if TARGET_AMD64
+                // Align to 64 bytes for AMD64 (important for 512bit SIMD)
+                nuint misalignedElements = 64 - (nuint)Unsafe.AsPointer(ref dest) & 63;
+                Unsafe.As<byte, Block64>(ref dest) = Unsafe.As<byte, Block64>(ref src);
+#else
+                // E.g. for ARM64, 16 byte alignment is sufficient for NEON
+                nuint misalignedElements = 16 - (nuint)Unsafe.AsPointer(ref dest) & 15;
                 Unsafe.As<byte, Block16>(ref dest) = Unsafe.As<byte, Block16>(ref src);
+#endif
                 src = ref Unsafe.Add(ref src, misalignedElements);
                 dest = ref Unsafe.Add(ref dest, misalignedElements);
                 len -= misalignedElements;
             }
 #endif
-            // PInvoke to the native version when the copy length exceeds the threshold.
-            if (len > MemmoveNativeThreshold)
-            {
-                goto PInvoke;
-            }
 
             // Copy 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
