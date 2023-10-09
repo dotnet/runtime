@@ -1306,7 +1306,7 @@ void CodeGen::inst_RV_RV_TT(
                 op1Reg = targetReg;
             }
 
-            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
+            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg, instOptions);
         }
         break;
 

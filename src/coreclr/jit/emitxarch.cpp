@@ -1321,7 +1321,29 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     if (id->idIsEvexbContext())
     {
         code |= EVEX_B_BIT;
+        unsigned roundingMode = id->idGetEvexRoundingControl();
+        if(roundingMode == 0)
+        {
+            code &= ~(LPRIMEBIT_IN_BYTE_EVEX_PREFIX);
+            code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);
+        }
+        else if(roundingMode == 1)
+        {
+            code &= ~(LPRIMEBIT_IN_BYTE_EVEX_PREFIX);
+            code |= LBIT_IN_BYTE_EVEX_PREFIX;
+        }
+        else if(roundingMode == 2)
+        {
+            code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
+            code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);
+        }
+        else
+        {
+            code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
+            code |= LBIT_IN_BYTE_EVEX_PREFIX;
+        }
     }
+
 
     regNumber maskReg = REG_NA;
 
@@ -6881,7 +6903,7 @@ void emitter::emitIns_R_R_C(instruction          ins,
 *  Add an instruction with three register operands.
 */
 
-void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2)
+void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2, insOpts instOptions)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
@@ -6892,6 +6914,13 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
     id->idReg1(targetReg);
     id->idReg2(reg1);
     id->idReg3(reg2);
+
+    if(instOptions != INS_OPTS_NONE)
+    {
+        // if EVEX.b needs to be set in this path, then it should be embedded rounding.
+        id->idSetEvexbContext();
+        id->idSetEvexRoundingControl(instOptions);
+    }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -8216,11 +8245,11 @@ void emitter::emitIns_SIMD_R_R_C(instruction          ins,
 //    op2Reg    -- The register of the second operand
 //
 void emitter::emitIns_SIMD_R_R_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg)
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, insOpts instOptions)
 {
     if (UseSimdEncoding())
     {
-        emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg);
+        emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
     }
     else
     {

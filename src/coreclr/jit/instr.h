@@ -205,7 +205,15 @@ enum insOpts: unsigned
 {
     INS_OPTS_NONE,
 
-    INS_OPTS_EVEX_b
+    INS_OPTS_EVEX_b,
+
+    INS_OPTS_EVEX_er_rn, // Round to even
+
+    INS_OPTS_EVEX_er_rd, // Round down
+
+    INS_OPTS_EVEX_er_ru, // Round up
+
+    INS_OPTS_EVEX_er_rz  // Round towards zero
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

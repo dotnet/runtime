@@ -775,6 +775,7 @@ protected:
         unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
         unsigned _idEvexbContext : 1; // does EVEX.b need to be set.
+        unsigned _idEvexEmbeddedRounding : 2 // indicate the rounding mode when embedded rounding is enabled.
 #endif                                //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
@@ -808,8 +809,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         47 bits
-        // amd64:       47 bits
+        // x86:         49 bits
+        // amd64:       49 bits
         // arm:         48 bits
         // arm64:       53 bits
         // loongarch64: 46 bits
@@ -828,7 +829,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (15)
+#define ID_EXTRA_BITFIELD_BITS (17)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -863,8 +864,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:         53/49 bits
-        // amd64:       54/49 bits
+        // x86:         55/51 bits
+        // amd64:       56/51 bits
         // arm:         54/50 bits
         // arm64:       60/55 bits
         // loongarch64: 53/48 bits
@@ -880,8 +881,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:         11/15 bits
-        // amd64:       10/15 bits
+        // x86:         9/13 bits
+        // amd64:       8/13 bits
         // arm:         10/14 bits
         // arm64:        4/9 bits
         // loongarch64: 11/16 bits
@@ -1547,6 +1548,35 @@ protected:
             assert(_idEvexbContext == 0);
             _idEvexbContext = 1;
             assert(_idEvexbContext == 1);
+        }
+
+        void idSetEvexRoundingControl(insOpts instOptions)
+        {
+            if(instOptions == INS_OPTS_EVEX_er_rn)
+            {
+                _idEvexEmbeddedRounding = 0;
+            }
+            else if(instOptions == INS_OPTS_EVEX_er_rd)
+            {
+                _idEvexEmbeddedRounding = 1;
+            }
+            else if(instOptions == INS_OPTS_EVEX_er_ru)
+            {
+                _idEvexEmbeddedRounding = 2;
+            }
+            else if(instOptions == INS_OPTS_EVEX_er_rz)
+            {
+                _idEvexEmbeddedRounding = 3;
+            }
+            else
+            {
+                unreached();
+            }
+        }
+
+        unsigned idGetEvexRoundingControl() const
+        {
+            return _idEvexEmbeddedRounding;
         }
 #endif
 
