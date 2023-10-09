@@ -452,15 +452,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				return HandleDelegateCreation (lambda.Symbol, instance, operation);
 			}
 
-			Debug.Assert (operation.Target is IMethodReferenceOperation or IFieldReferenceOperation,
+			Debug.Assert (operation.Target is IMemberReferenceOperation,
 				$"{operation.Target.GetType ()}: {operation.Syntax.GetLocation ().GetLineSpan ()}");
-			if (operation.Target is not IMethodReferenceOperation methodReference)
+			if (operation.Target is not IMemberReferenceOperation memberReference)
 				return TopValue;
 
-			TValue instanceValue = Visit (methodReference.Instance, state);
-			IMethodSymbol? method = methodReference.Method;
-			Debug.Assert (method != null);
-			if (method == null)
+			TValue instanceValue = Visit (memberReference.Instance, state);
+
+			if (memberReference.Member is not IMethodSymbol method)
 				return TopValue;
 
 			// Track references to local functions
