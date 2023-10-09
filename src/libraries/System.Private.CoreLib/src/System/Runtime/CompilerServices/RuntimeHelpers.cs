@@ -284,17 +284,17 @@ namespace System.Runtime.CompilerServices
             {
                 _obj = obj;
                 _ptr = IntPtr.Zero;
-                _isObj = true;
+                _returnType = TaskletReturnType.ObjectReference;
             }
             public RuntimeAsyncReturnValue(IntPtr ptr)
             {
                 _obj = null;
                 _ptr = ptr;
-                _isObj = false;
+                _returnType = TaskletReturnType.Integer;
             }
             public IntPtr _ptr;
             public object? _obj;
-            public bool _isObj;
+            public TaskletReturnType _returnType;
         }
 
         internal abstract unsafe class RuntimeAsyncMaintainedData
@@ -492,17 +492,23 @@ namespace System.Runtime.CompilerServices
             ObjectReference,
             ByReference
         }
+
+        internal struct StackDataInfo
+        {
+            public int StackRequirement;
+            // And native has a bunch of other fields that managed does not use.
+        }
         internal unsafe struct Tasklet
         {
             public Tasklet* pTaskletNextInStack;
             public Tasklet* pTaskletNextInLiveList;
             public Tasklet* pTaskletPrevInLiveList;
             public byte* pStackData;
-            public byte* pStackDataInfo;
-            public int maxStackNeeded;
+            public IntPtr restoreIPAddress;
+            public StackDataInfo* pStackDataInfo;
             public TaskletReturnType taskletReturnType;
 
-            public int GetMaxStackNeeded() { return maxStackNeeded; }
+            public int GetMaxStackNeeded() { return pStackDataInfo->StackRequirement; }
         }
 
         internal static unsafe void PushAsyncData(ref AsyncDataFrame asyncData)

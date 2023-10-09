@@ -1722,6 +1722,8 @@ public:
         return (m_wFlags & mdcIsAsyncThunkMethod) != 0;
     }
 
+    bool IsAsync2Method();
+
     inline void SetIsAsyncThunkMethod()
     {
         LIMITED_METHOD_CONTRACT;

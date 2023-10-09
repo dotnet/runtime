@@ -76,8 +76,12 @@
 
 #include "exceptionhandlingqcalls.h"
 
+#include "runtimesuspension.h"
+
 static const Entry s_QCall[] =
 {
+    DllImportEntry(RuntimeSuspension_DeleteTasklet)
+    DllImportEntry(RuntimeSuspension_CaptureTasklets)
     DllImportEntry(Enum_GetValuesAndNames)
     DllImportEntry(DebugDebugger_Launch)
     DllImportEntry(DebugDebugger_Log)

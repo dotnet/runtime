@@ -270,6 +270,13 @@ inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer)
     return stackPointer < ((LPVOID)(display->SP));
 }
 
+inline BOOL IsInCurrentFrame(REGDISPLAY *display, LPVOID stackPointer)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(display->IsCallerContextValid);
+    return stackPointer < ((LPVOID)(::GetSP(display->pCallerContext)));
+}
+
 inline TADDR GetRegdisplayStackMark(REGDISPLAY *display)
 {
 #if defined(TARGET_AMD64)
