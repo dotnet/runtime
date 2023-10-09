@@ -33,8 +33,8 @@ namespace System.Globalization
 
         private static DateMapping[] InitDateMapping()
         {
-            short[] rawData = new short[]
-            {
+            ReadOnlySpan<short> rawData =
+            [
                 // These data are taken from Tables/Excel/UmAlQura.xls please make sure that the two places are in sync
                 /*  DaysPerM     GY      GM     GD      D1   D2   D3   D4   D5   D6   D7   D8   D9   D10  D11  D12
                 1318*/0x02EA,    1900,     4,    30, /* 0    1    0    1    0    1    1    1    0    1    0    0    4/30/1900
@@ -221,11 +221,11 @@ namespace System.Globalization
                 1499*/0x06AA,    2075,     12,    9, /* 0    1    0    1    0    1    0    1    0    1    1    0    12/9/2075
                 1500*/0x0E93,    2076,     11,   27, /* 1    1    0    0    1    0    0    1    0    1    1    1    11/27/2076
                 1501*/     0,    2077,     11,   17, /* 0    0    0    0    0    0    0    0    0    0    0    0    11/17/2077
-    */      };
+    */      ];
             // Direct inline initialization of DateMapping array would produce a lot of code bloat.
 
-            // We take advantage of C# compiler compiles inline initialization of primitive type array into very compact code.
-            // So we start with raw data stored in primitive type array, and initialize the DateMapping out of it
+            // We take advantage of C# compiler blitting primitive span data into assembly data.
+            // So we start with raw data stored in primitive type span, and initialize the DateMapping out of it
 
             DateMapping[] mapping = new DateMapping[rawData.Length / 4];
             for (int i = 0; i < mapping.Length; i++)

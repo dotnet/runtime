@@ -508,10 +508,49 @@ struct BasicBlock : private LIR::Range
 {
     friend class LIR;
 
+private:
     BasicBlock* bbNext; // next BB in ascending PC offset order
     BasicBlock* bbPrev;
 
-    void setNext(BasicBlock* next)
+    BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
+
+public:
+    BBjumpKinds GetBBJumpKind() const
+    {
+        return bbJumpKind;
+    }
+
+    void SetBBJumpKind(BBjumpKinds kind DEBUG_ARG(Compiler* compiler))
+    {
+#ifdef DEBUG
+        // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
+        // TODO: Change assert to check if compiler is in appropriate optimization phase to use BBJ_NONE
+        // (right now, this assertion does the null check to avoid unused variable warnings)
+        assert((kind != BBJ_NONE) || (compiler != nullptr));
+#endif // DEBUG
+        bbJumpKind = kind;
+    }
+
+    BasicBlock* Prev() const
+    {
+        return bbPrev;
+    }
+
+    void SetPrev(BasicBlock* prev)
+    {
+        bbPrev = prev;
+        if (prev)
+        {
+            prev->bbNext = this;
+        }
+    }
+
+    BasicBlock* Next() const
+    {
+        return bbNext;
+    }
+
+    void SetNext(BasicBlock* next)
     {
         bbNext = next;
         if (next)
@@ -519,6 +558,37 @@ struct BasicBlock : private LIR::Range
             next->bbPrev = this;
         }
     }
+
+    bool IsFirst() const
+    {
+        return (bbPrev == nullptr);
+    }
+
+    bool IsLast() const
+    {
+        return (bbNext == nullptr);
+    }
+
+    bool PrevIs(BasicBlock* block) const
+    {
+        return (bbPrev == block);
+    }
+
+    bool NextIs(BasicBlock* block) const
+    {
+        return (bbNext == block);
+    }
+
+    bool IsLastHotBlock(Compiler* compiler) const;
+
+    bool IsFirstColdBlock(Compiler* compiler) const;
+
+    /* The following union describes the jump target(s) of this block */
+    union {
+        unsigned    bbJumpOffs; // PC offset (temporary only)
+        BasicBlock* bbJumpDest; // basic block
+        BBswtDesc*  bbJumpSwt;  // switch descriptor
+    };
 
     BasicBlockFlags bbFlags;
 
@@ -701,15 +771,6 @@ struct BasicBlock : private LIR::Range
     // Returns "true" iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
     // a block corresponding to an exit from the try of a try/finally.
     bool isBBCallAlwaysPairTail() const;
-
-    BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
-
-    /* The following union describes the jump target(s) of this block */
-    union {
-        unsigned    bbJumpOffs; // PC offset (temporary only)
-        BasicBlock* bbJumpDest; // basic block
-        BBswtDesc*  bbJumpSwt;  // switch descriptor
-    };
 
     bool KindIs(BBjumpKinds kind) const
     {
@@ -1417,10 +1478,10 @@ public:
     {
         assert(m_block != nullptr);
         // Check that we haven't been spliced out of the list.
-        assert((m_block->bbNext == nullptr) || (m_block->bbNext->bbPrev == m_block));
-        assert((m_block->bbPrev == nullptr) || (m_block->bbPrev->bbNext == m_block));
+        assert(m_block->IsLast() || m_block->Next()->PrevIs(m_block));
+        assert(m_block->IsFirst() || m_block->Prev()->NextIs(m_block));
 
-        m_block = m_block->bbNext;
+        m_block = m_block->Next();
         return *this;
     }
 
@@ -1483,7 +1544,7 @@ public:
 
     BasicBlockIterator end() const
     {
-        return BasicBlockIterator(m_end->bbNext); // walk until we see the block *following* the `m_end` block
+        return BasicBlockIterator(m_end->Next()); // walk until we see the block *following* the `m_end` block
     }
 };
 
@@ -1556,7 +1617,7 @@ inline BBArrayIterator BBSwitchTargetList::end() const
 inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
-    switch (block->bbJumpKind)
+    switch (block->GetBBJumpKind())
     {
         case BBJ_THROW:
         case BBJ_RETURN:
@@ -1578,18 +1639,18 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             break;
 
         case BBJ_NONE:
-            m_succs[0] = block->bbNext;
+            m_succs[0] = block->Next();
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;
 
         case BBJ_COND:
-            m_succs[0] = block->bbNext;
+            m_succs[0] = block->Next();
             m_begin    = &m_succs[0];
 
             // If both fall-through and branch successors are identical, then only include
             // them once in the iteration (this is the same behavior as NumSucc()/GetSucc()).
-            if (block->bbJumpDest == block->bbNext)
+            if (block->NextIs(block->bbJumpDest))
             {
                 m_end = &m_succs[1];
             }

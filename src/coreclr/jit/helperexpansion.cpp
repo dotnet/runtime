@@ -824,7 +824,7 @@ template <bool (Compiler::*ExpansionFunction)(BasicBlock**, Statement*, GenTreeC
 PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
     {
         if (skipRarelyRunBlocks && block->isRunRarely())
         {

@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct EssCertIdV2
     {
-        private static ReadOnlySpan<byte> DefaultHashAlgorithm => new byte[] { 0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01 };
+        private static ReadOnlySpan<byte> DefaultHashAlgorithm => [0x30, 0x0B, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01];
 
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn HashAlgorithm;
         internal ReadOnlyMemory<byte> Hash;

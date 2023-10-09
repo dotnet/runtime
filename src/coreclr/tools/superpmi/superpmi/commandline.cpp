@@ -85,11 +85,8 @@ void CommandLine::DumpHelp(const char* program)
     printf("         t - method throughput time\n");
     printf("         * - all available method stats\n");
     printf("\n");
-    printf(" -metricsSummary <file name>, -baseMetricsSummary <file name.csv>\n");
-    printf("     Emit a summary of metrics to the specified file\n");
-    printf("\n");
-    printf(" -diffMetricsSummary <file name>\n");
-    printf("     Same as above, but emit for the diff/second JIT");
+    printf(" -details <file name.csv>\n");
+    printf("     Emit detailed information about the replay/diff of each context into the specified file\n");
     printf("\n");
     printf(" -a[pplyDiff]\n");
     printf("     Compare the compile result generated from the provided JIT with the\n");
@@ -331,16 +328,6 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
                 o->mclFilename = argv[i];
             }
-            else if ((_strnicmp(&argv[i][1], "diffsInfo", 9) == 0))
-            {
-                if (++i >= argc)
-                {
-                    DumpHelp(argv[0]);
-                    return false;
-                }
-
-                o->diffsInfo = argv[i];
-            }
             else if ((_strnicmp(&argv[i][1], "target", 6) == 0))
             {
                 if (++i >= argc)
@@ -399,7 +386,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
                 o->methodStatsTypes = argv[i];
             }
-            else if ((_strnicmp(&argv[i][1], "metricsSummary", argLen) == 0) || (_strnicmp(&argv[i][1], "baseMetricsSummary", argLen) == 0))
+            else if ((_strnicmp(&argv[i][1], "details", argLen) == 0))
             {
                 if (++i >= argc)
                 {
@@ -407,17 +394,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                o->baseMetricsSummaryFile = argv[i];
-            }
-            else if ((_strnicmp(&argv[i][1], "diffMetricsSummary", argLen) == 0))
-            {
-                if (++i >= argc)
-                {
-                    DumpHelp(argv[0]);
-                    return false;
-                }
-
-                o->diffMetricsSummaryFile = argv[i];
+                o->details = argv[i];
             }
             else if ((_strnicmp(&argv[i][1], "applyDiff", argLen) == 0))
             {
@@ -809,13 +786,6 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             DumpHelp(argv[0]);
             return false;
         }
-    }
-
-    if (o->diffsInfo != nullptr && !o->applyDiff)
-    {
-        LogError("-diffsInfo specified without -applyDiff.");
-        DumpHelp(argv[0]);
-        return false;
     }
 
     if (o->skipCleanup && !o->parallel)

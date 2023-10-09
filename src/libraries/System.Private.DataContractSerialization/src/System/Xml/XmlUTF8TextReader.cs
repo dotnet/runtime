@@ -31,8 +31,8 @@ namespace System.Xml
         private OnXmlDictionaryReaderClose? _onClose;
         private bool _buffered;
         private int _maxBytesPerRead;
-        private static ReadOnlySpan<byte> CharTypeMap => new byte[256]
-            {
+        private static ReadOnlySpan<byte> CharTypeMap => // 256
+            [
                 /*  0 (.) */
                          CharType.None,
                 /*  1 (.) */
@@ -545,7 +545,7 @@ namespace System.Xml
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
                 /* FF (?) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-            };
+            ];
 
         public XmlUTF8TextReader()
         {

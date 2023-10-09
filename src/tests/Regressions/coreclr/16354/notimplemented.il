@@ -27,7 +27,7 @@
   }
 }
 
-.class private auto ansi beforefieldinit Fooer
+.class public auto ansi beforefieldinit Fooer
        extends [System.Runtime]System.Object
        implements IBar, class IFoo`1<class [System.Runtime]System.ValueType>
 {

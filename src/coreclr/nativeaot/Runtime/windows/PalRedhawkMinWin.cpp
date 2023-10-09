@@ -671,6 +671,33 @@ REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
     return converted;
 }
 
+REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
+{
+    assert(moduleName);
+    size_t len = strlen(moduleName);
+    wchar_t* moduleNameWide = new (nothrow)wchar_t[len + 1];
+    if (moduleNameWide == nullptr)
+    {
+        return 0;
+    }
+    if (MultiByteToWideChar(CP_UTF8, 0, moduleName, -1, moduleNameWide, (int)(len + 1)) == 0)
+    {
+        return 0;
+    }
+    moduleNameWide[len] = '\0';
+    
+    HANDLE result = LoadLibraryExW(moduleNameWide, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+    delete[] moduleNameWide;
+    return result;
+}
+
+REDHAWK_PALEXPORT void* PalGetProcAddress(HANDLE module, const char* functionName)
+{
+    assert(module);
+    assert(functionName);
+    return GetProcAddress((HMODULE)module, functionName);
+}
+
 REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect)
 {
     return VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, protect);

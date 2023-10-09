@@ -1217,7 +1217,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     {
         SetHasTailCalls(true);
 
-        noway_assert(block->bbJumpKind == BBJ_RETURN);
+        noway_assert(block->KindIs(BBJ_RETURN));
         noway_assert(block->GetFirstLIRNode() != nullptr);
 
         /* figure out what jump we have */
@@ -1520,7 +1520,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
     GetEmitter()->emitIns_J(INS_bl, block->bbJumpDest);
 
-    BasicBlock* const nextBlock = block->bbNext;
+    BasicBlock* const nextBlock = block->Next();
 
     if (block->bbFlags & BBF_RETLESS_CALL)
     {
@@ -1544,7 +1544,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         BasicBlock* const jumpDest = nextBlock->bbJumpDest;
 
         // Now go to where the finally funclet needs to return to.
-        if ((jumpDest == nextBlock->bbNext) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
+        if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
         {
             // Fall-through.
             // TODO-LOONGARCH64-CQ: Can we get rid of this instruction, and just have the call return directly
@@ -2932,7 +2932,7 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
-    noway_assert(compiler->compCurBB->bbJumpKind == BBJ_SWITCH);
+    noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
     unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
@@ -4140,7 +4140,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 // A GT_JCMP node is created for an integer-comparison's conditional branch.
 void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 {
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
 
     assert(tree->OperIs(GT_JCMP));
     assert(!varTypeIsFloating(tree));
@@ -6480,8 +6480,8 @@ void CodeGen::genCall(GenTreeCall* call)
 #ifdef FEATURE_READYTORUN
         else if (call->IsR2ROrVirtualStubRelativeIndir())
         {
-            assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
-                   ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
+            assert((call->IsR2RRelativeIndir() && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
+                   (call->IsVirtualStubRelativeIndir() && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
 
             regNumber tmpReg = call->GetSingleTempReg();
