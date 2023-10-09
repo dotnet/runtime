@@ -30,7 +30,7 @@ The main types provided by this library are:
 
 * `System.Security.Cryptography.SP800108HmacCounterKdf`
 
-## Addtional Documentation
+## Additional Documentation
 
 * [API documentation](https://learn.microsoft.com/en-us/dotnet/api/System.Security.Cryptography)
 
