@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Runtime { }
+.assembly extern xunit.core {}
 
 .assembly provider { }
 
@@ -60,6 +61,20 @@
   {
     .override class IGen2`1<!T>::M1
     ldc.i4.4
+    ret
+  }
+}
+
+.class public auto ansi beforefieldinit ProviderStubTest
+       extends [System.Runtime]System.Object
+{
+  .method public hidebysig static int32 Main()
+  {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .entrypoint
+    ldc.i4 100
     ret
   }
 }
