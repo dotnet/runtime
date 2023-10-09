@@ -248,7 +248,7 @@ namespace System
             }
 
 #if HAS_CUSTOM_BLOCKS
-            if (len > 128)
+            if (len >= 256)
             {
                 // Try to opportunistically align the destination below. The input isn't pinned, so the GC
                 // is free to move the references. We're therefore assuming that reads may still be unaligned.
@@ -261,6 +261,7 @@ namespace System
                 dest = ref Unsafe.Add(ref dest, misalignedElements);
                 len -= misalignedElements;
             }
+#endif
 
             // Copy 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
