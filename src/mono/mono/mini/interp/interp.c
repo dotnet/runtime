@@ -3972,6 +3972,36 @@ main_loop:
 						gpointer unboxed = mono_object_unbox_internal (this_arg);
 						LOCAL_VAR (0, gpointer) = unboxed;
 					}
+
+					InterpMethodCodeType code_type = new_method->code_type;
+
+					g_assert (code_type == IMETHOD_CODE_UNKNOWN ||
+							code_type == IMETHOD_CODE_INTERP ||
+							code_type == IMETHOD_CODE_COMPILED);
+
+					if (G_UNLIKELY (code_type == IMETHOD_CODE_UNKNOWN)) {
+						// FIXME push/pop LMF
+						MonoMethodSignature *sig = mono_method_signature_internal (new_method->method);
+						if (mono_interp_jit_call_supported (new_method->method, sig))
+							code_type = IMETHOD_CODE_COMPILED;
+						else
+							code_type = IMETHOD_CODE_INTERP;
+						new_method->code_type = code_type;
+					}
+
+					if (code_type == IMETHOD_CODE_COMPILED) {
+						frame->imethod = new_method;
+						ip = frame->imethod->code;
+						frame->state.ip = ip;
+						error_init_reuse (error);
+						do_jit_call (context, frame->retval, frame->stack, frame, new_method, error);
+						if (!is_ok (error)) {
+							MonoException *call_ex = interp_error_convert_to_exception (frame, error, ip);
+							THROW_EX (call_ex, ip);
+						}
+
+						goto exit_frame;
+					}
 				}
 			} else {
 				new_method = (InterpMethod*)frame->imethod->data_items [ip [1]];

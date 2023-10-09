@@ -3551,7 +3551,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	CHECK_STACK_RET (td, csignature->param_count + csignature->hasthis, FALSE);
 
 	gboolean skip_tailcall = FALSE;
-	if (tailcall && target_method != NULL) {
+	if (tailcall && !is_virtual && target_method != NULL) {
 		MonoMethodHeader *mh = interp_method_get_header (target_method, error);
 		if (mh != NULL && mh->code_size == 0)
 			skip_tailcall = TRUE;
