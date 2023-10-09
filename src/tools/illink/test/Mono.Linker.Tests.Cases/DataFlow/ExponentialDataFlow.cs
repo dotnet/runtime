@@ -9,7 +9,7 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	//[ExpectedNoWarnings]
+	[ExpectedNoWarnings]
 	[SkipKeptItemsValidation]
 	public class ExponentialDataFlow
 	{
