@@ -19,9 +19,16 @@ namespace System.Net.Quic.Tests
         public MsQuicRemoteExecutorTests()
             : base(null!) { }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        //[ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SslKeyLogFile_IsCreatedAndFilled()
         {
+            if (!RemoteExecutor.IsSupported)
+            {
+                _output.WriteLine("RemoteExecutor is not supported");
+                Assert.True(false, "RemoteExecutor is not supported");
+            }
+            Assert.True(false, "SslKeyLogFile_IsCreatedAndFilled ran on this platform");
+
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
             psi.Environment.Add("SSLKEYLOGFILE", tempFile);
