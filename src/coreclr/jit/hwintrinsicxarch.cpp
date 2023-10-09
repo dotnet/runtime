@@ -2429,12 +2429,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
 
-            if ((simdBaseType == TYP_BYTE) || (simdBaseType == TYP_UBYTE))
-            {
-                // TODO-XARCH-CQ: We should support byte/sbyte multiplication
-                break;
-            }
-
             if (varTypeIsLong(simdBaseType))
             {
                 if (simdSize != 64 && !compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
