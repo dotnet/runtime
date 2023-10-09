@@ -83,10 +83,4 @@ public sealed unsafe class SimpleComWrappers : ComWrappers
     {
         throw new NotImplementedException();
     }
-    
-    [UnmanagedCallersOnly]
-    static int NativeMethodImpl(nint thisPtr)
-    {
-        return 0;
-    }
 }
