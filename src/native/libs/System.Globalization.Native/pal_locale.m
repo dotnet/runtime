@@ -190,7 +190,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             case LocaleString_Iso639LanguageThreeLetterName:
             {
                 NSString *iso639_2 = [currentLocale objectForKey:NSLocaleLanguageCode];
-                value = uloc_getISO3LanguageByLangCode([iso639_2 UTF8String]);
+                value = uloc_getISO3LanguageByLangCode([iso639_2 UTF8String]);//implement without icu
                 break;
             }
             case LocaleString_Iso3166CountryName:
@@ -199,7 +199,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             case LocaleString_Iso3166CountryName2:
             {
                 const char *countryCode = strdup([[currentLocale objectForKey:NSLocaleCountryCode] UTF8String]);
-                value = uloc_getISO3CountryByCountryCode(countryCode);
+                value = uloc_getISO3CountryByCountryCode(countryCode);//implement without icu
                 break;
             }
             case LocaleString_NaNSymbol:

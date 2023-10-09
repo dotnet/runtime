@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-maccatalyst</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
   <ItemGroup>
@@ -74,5 +75,6 @@
     <Compile Include="..\NumberFormatInfo\NumberFormatInfoTests.cs" />
     <Compile Include="..\NumberFormatInfo\NumberFormatInfoValidateParseStyle.cs" />
     <Compile Include="..\System\Globalization\TextInfoTests.cs" />
+    <Compile Include="..\System\Globalization\RegionInfoTests.cs" />
   </ItemGroup>
 </Project>
