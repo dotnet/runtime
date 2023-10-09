@@ -47,7 +47,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static void VerifyPeerAddress(KeyValuePair<string, object?>[] tags, Uri uri)
+        private static void VerifyPeerAddress(KeyValuePair<string, object?>[] tags)
         {
             string ipString = (string)tags.Single(t => t.Key == "network.peer.address").Value;
             IPAddress ip = IPAddress.Parse(ipString);
@@ -122,7 +122,7 @@ namespace System.Net.Http.Functional.Tests
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifyTag(tags, "http.connection.state", state);
-            VerifyPeerAddress(tags, uri);
+            VerifyPeerAddress(tags);
         }
 
         protected static void VerifyConnectionDuration(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion)
@@ -132,7 +132,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.InRange(value, double.Epsilon, 60);
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
-            VerifyPeerAddress(tags, uri);
+            VerifyPeerAddress(tags);
         }
 
         protected static void VerifyTimeInQueue(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion, string method = "GET")
