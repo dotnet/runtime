@@ -155,6 +155,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				remove { }
 			}
 
+			[RequiresAssemblyFiles ("Message for --AnnotatedEvent--")]
+			static event EventHandler AnnotatedEvent;
+
 			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--")]
 			[ExpectedWarning ("IL3002", "--EventToTestRemove.remove--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--EventToTestRemove.remove--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
@@ -165,6 +168,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				EventToTestRemove -= (sender, e) => { };
 				EventToTestAdd += (sender, e) => { };
+				var evt = AnnotatedEvent;
 			}
 		}
 

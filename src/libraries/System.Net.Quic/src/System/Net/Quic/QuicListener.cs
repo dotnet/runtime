@@ -377,8 +377,8 @@ public sealed partial class QuicListener : IAsyncDisposable
         _handle.Dispose();
 
         // Flush the queue and dispose all remaining connections.
-        _disposeCts.Cancel();
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException()));
+        await _disposeCts.CancelAsync().ConfigureAwait(false);
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(GetType().FullName)));
         while (_acceptQueue.Reader.TryRead(out object? item))
         {
             if (item is QuicConnection connection)

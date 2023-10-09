@@ -201,7 +201,7 @@ namespace Internal.Runtime.InteropServices
                     }
 
                     // Finally validate signature
-                    ParameterInfo[] methParams = method.GetParameters();
+                    ReadOnlySpan<ParameterInfo> methParams = method.GetParametersAsSpan();
                     if (method.ReturnType != typeof(void)
                         || methParams == null
                         || methParams.Length != 1

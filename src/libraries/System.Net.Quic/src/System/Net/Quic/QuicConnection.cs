@@ -382,6 +382,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 await stream.DisposeAsync().ConfigureAwait(false);
             }
+
+            // Propagate ODE if disposed in the meantime.
+            ObjectDisposedException.ThrowIf(_disposed == 1, this);
             // Propagate connection error if present.
             if (_acceptQueue.Reader.Completion.IsFaulted)
             {
@@ -485,7 +488,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownComplete()
     {
-        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException());
+        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(_disposed == 1 ? new ObjectDisposedException(GetType().FullName) : ThrowHelper.GetOperationAbortedException());
         _acceptQueue.Writer.TryComplete(exception);
         _connectedTcs.TrySetException(exception);
         _shutdownTcs.TrySetResult();
@@ -622,7 +625,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
 
         // Flush the queue and dispose all remaining streams.
-        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException()));
+        _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(GetType().FullName)));
         while (_acceptQueue.Reader.TryRead(out QuicStream? stream))
         {
             await stream.DisposeAsync().ConfigureAwait(false);

@@ -5,9 +5,9 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
 import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
-import { mono_log_debug } from "./logging";
+import { mono_log_debug, mono_log_warn } from "./logging";
 import { mono_exit } from "./exit";
 import { addCachedReponse, findCachedResponse } from "./assetsCache";
 import { getIcuResourceName } from "./icu";
@@ -713,4 +713,38 @@ function fileName(name: string) {
         lastIndexOfSlash++;
     }
     return name.substring(lastIndexOfSlash);
+}
+
+export async function streamingCompileWasm() {
+    try {
+        const wasmModuleAsset = resolve_single_asset_path("dotnetwasm");
+        await start_asset_download(wasmModuleAsset);
+        mono_assert(wasmModuleAsset && wasmModuleAsset.pendingDownloadInternal && wasmModuleAsset.pendingDownloadInternal.response, "Can't load dotnet.native.wasm");
+        const response = await wasmModuleAsset.pendingDownloadInternal.response;
+        const contentType = response.headers && response.headers.get ? response.headers.get("Content-Type") : undefined;
+        let compiledModule: WebAssembly.Module;
+        if (typeof WebAssembly.compileStreaming === "function" && contentType === "application/wasm") {
+            compiledModule = await WebAssembly.compileStreaming(response);
+        } else {
+            if (ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
+                mono_log_warn("WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            mono_log_debug("instantiate_wasm_module buffered");
+            if (ENVIRONMENT_IS_SHELL) {
+                // workaround for old versions of V8 with https://bugs.chromium.org/p/v8/issues/detail?id=13823
+                compiledModule = await Promise.resolve(new WebAssembly.Module(arrayBuffer));
+            } else {
+                compiledModule = await WebAssembly.compile(arrayBuffer!);
+            }
+        }
+        wasmModuleAsset.pendingDownloadInternal = null as any; // GC
+        wasmModuleAsset.pendingDownload = null as any; // GC
+        wasmModuleAsset.buffer = null as any; // GC
+        wasmModuleAsset.moduleExports = null as any; // GC
+        loaderHelpers.wasmCompilePromise.promise_control.resolve(compiledModule);
+    }
+    catch (err) {
+        loaderHelpers.wasmCompilePromise.promise_control.reject(err);
+    }
 }
