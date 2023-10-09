@@ -97,6 +97,7 @@ class SBuffer
     SBuffer(COUNT_T size);
     SBuffer(const BYTE *buffer, COUNT_T size);
     explicit SBuffer(const SBuffer &buffer);
+    SBuffer(SBuffer &&buffer);
 
     // Immutable constructor should ONLY be used if buffer will
     // NEVER BE FREED OR MODIFIED. PERIOD. .
@@ -108,6 +109,10 @@ class SBuffer
 
     ~SBuffer();
 
+  private:
+    void InitializeInstance();
+
+  public:
     void Clear();
 
     void Set(const SBuffer &buffer);
@@ -550,13 +555,6 @@ class EMPTY_BASES_DECL InlineSBuffer : public SBuffer
 #define GARBAGE_FILL_DWORD  0x24242424 // $$$$
 #define GARBAGE_FILL_BUFFER_ITEMS 16
 #define GARBAGE_FILL_BUFFER_SIZE GARBAGE_FILL_BUFFER_ITEMS*sizeof(DWORD)
-// ================================================================================
-// StackSBuffer : SBuffer with relatively large preallocated buffer for stack use
-// ================================================================================
-
-#define STACK_ALLOC 256
-
-typedef InlineSBuffer<STACK_ALLOC> StackSBuffer;
 
 // ================================================================================
 // Inline definitions

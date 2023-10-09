@@ -3045,7 +3045,7 @@ emit_seq_point (MonoCompile *cfg, MonoMethod *method, guint8* ip, gboolean intr_
 	MonoInst *ins;
 
 	if (cfg->gen_seq_points && cfg->method == method) {
-		NEW_SEQ_POINT (cfg, ins, ip - cfg->header->code, intr_loc);
+		NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - cfg->header->code), intr_loc);
 		if (nonempty_stack)
 			ins->flags |= MONO_INST_NONEMPTY_STACK;
 		MONO_ADD_INS (cfg->cbb, ins);
@@ -3212,7 +3212,7 @@ mini_handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst *val, int contex
 	MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
 
 	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, m_class_offsetof_element_class ());
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, eclass_reg, klass_reg, GINTPTR_TO_TMREG (m_class_offsetof_element_class ()));
 
 	if (context_used) {
 		MonoInst *element_class;
@@ -4211,20 +4211,27 @@ mini_field_access_needs_cctor_run (MonoCompile *cfg, MonoMethod *method, MonoCla
 }
 
 int
-mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index)
+mini_emit_sext_index_reg (MonoCompile *cfg, MonoInst *index, gboolean *need_sext)
 {
 	int index_reg = index->dreg;
 	int index2_reg;
 
+	*need_sext = FALSE;
+
 #if SIZEOF_REGISTER == 8
+	// If index is not I4 don't sign extend otherwise we lose high word
+	if (index->type != STACK_I4)
+		return index_reg;
+
 	/* The array reg is 64 bits but the index reg is only 32 */
-	if (COMPILE_LLVM (cfg)) {
+	if (cfg->opt & MONO_OPT_ABCREM) {
 		/*
 		 * abcrem can't handle the OP_SEXT_I4, so add this after abcrem,
 		 * during OP_BOUNDS_CHECK decomposition, and in the implementation
 		 * of OP_X86_LEA for llvm.
 		 */
 		index2_reg = index_reg;
+		*need_sext = TRUE;
 	} else {
 		index2_reg = alloc_preg (cfg);
 		MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, index2_reg, index_reg);
@@ -4259,7 +4266,9 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	mult_reg = alloc_preg (cfg);
 	array_reg = arr->dreg;
 
-	realidx2_reg = index2_reg = mini_emit_sext_index_reg (cfg, index);
+	gboolean need_sext;
+
+	realidx2_reg = index2_reg = mini_emit_sext_index_reg (cfg, index, &need_sext);
 
 	if (bounded) {
 		bounds_reg = alloc_preg (cfg);
@@ -4283,7 +4292,7 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	}
 
 	if (bcheck)
-		MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, realidx2_reg);
+		MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, realidx2_reg, need_sext);
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	if (size == 1 || size == 2 || size == 4 || size == 8) {
@@ -4444,8 +4453,18 @@ mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboole
 		if (sp [2]->type != STACK_OBJ)
 			return NULL;
 
+		MonoInst *index_ins = sp [1];
+#if SIZEOF_REGISTER == 8
+		if (sp [1]->type == STACK_I4) {
+			// stelemref wrapper receives index as native int, sign extend it
+			guint32 dreg = alloc_preg (cfg);
+			guint32 sreg = index_ins->dreg;
+			EMIT_NEW_UNALU (cfg, index_ins, OP_SEXT_I4, dreg, sreg);
+		}
+#endif
+
 		iargs [2] = sp [2];
-		iargs [1] = sp [1];
+		iargs [1] = index_ins;
 		iargs [0] = sp [0];
 
 		MonoClass *array_class = sp [0]->klass;
@@ -4483,7 +4502,7 @@ mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboole
 				MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, index_reg, index_reg);
 
 			if (safety_checks)
-				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
+				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg, FALSE);
 			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), array_reg, (target_mgreg_t)offset, sp [2]->dreg);
 		} else {
 			MonoInst *addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], safety_checks, FALSE);
@@ -6452,8 +6471,18 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		generic_context = &generic_container->context;
 	cfg->generic_context = generic_context;
 
-	if (!cfg->gshared)
-		g_assert (!sig->has_type_parameters);
+	if (!cfg->gshared) {
+		gboolean check_type_parameter = TRUE;
+		if (method->wrapper_type == MONO_WRAPPER_OTHER) {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+			g_assert (info);
+			if (info->subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR)
+				check_type_parameter = FALSE;
+		}
+
+		if (check_type_parameter)
+			g_assert (!sig->has_type_parameters);
+	}
 
 	if (sig->generic_param_count && method->wrapper_type == MONO_WRAPPER_NONE) {
 		g_assert (method->is_inflated);
@@ -7004,7 +7033,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Avoid sequence points on empty IL like .volatile */
 			// FIXME: Enable this
 			//if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_SEQ_POINT)) {
-			NEW_SEQ_POINT (cfg, ins, ip - header->code, intr_loc);
+			NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - header->code), intr_loc);
 			if ((sp != stack_start) && !sym_seq_point)
 				ins->flags |= MONO_INST_NONEMPTY_STACK;
 			MONO_ADD_INS (cfg->cbb, ins);
@@ -7091,7 +7120,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * The C# compiler uses these nops to notify the JIT that it should
 				 * insert seq points.
 				 */
-				NEW_SEQ_POINT (cfg, ins, ip - header->code, FALSE);
+				NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - header->code), FALSE);
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 			if (cfg->keep_cil_nops)
@@ -8510,7 +8539,7 @@ calli_end:
 						 * ret
 						 * will work correctly.
 						 */
-						NEW_SEQ_POINT (cfg, ins, ip - header->code, TRUE);
+						NEW_SEQ_POINT (cfg, ins, GPTRDIFF_TO_TMREG (ip - header->code), TRUE);
 						MONO_ADD_INS (cfg->cbb, ins);
 					}
 
@@ -10588,7 +10617,7 @@ field_access_end:
 				if (SIZEOF_REGISTER == 8 && COMPILE_LLVM (cfg))
 					MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, index_reg, index_reg);
 
-				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg);
+				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg, FALSE);
 				EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (klass), array_reg, (target_mgreg_t)offset);
 			} else {
 				addr = mini_emit_ldelema_1_ins (cfg, klass, sp [0], sp [1], TRUE, FALSE);
@@ -10840,12 +10869,15 @@ field_access_end:
 					EMIT_NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, addr->dreg, 0, ins->dreg);
 					EMIT_NEW_TEMPLOAD (cfg, ins, vtvar->inst_c0);
-					ins->opcode = OP_LDTOKEN_FIELD;
-					ins->inst_c0 = n;
-					ins->inst_p1 = handle;
+					if (handle_class == mono_defaults.fieldhandle_class) {
+						ins->opcode = OP_LDTOKEN_FIELD;
+						ins->inst_c0 = n;
+						ins->inst_p1 = handle;
 
-					cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
-					cfg->cbb->needs_decompose = TRUE;
+						cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+						cfg->cbb->needs_decompose = TRUE;
+					}
+
 				}
 			}
 

@@ -3,6 +3,7 @@
  */
 
 #include "config.h"
+#include "interp-simd.h"
 #include <glib.h>
 #include <mono/utils/bsearch.h>
 #include <mono/metadata/class-internals.h>
@@ -898,6 +899,9 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 	MonoImage *image = m_class_get_image (cmethod->klass);
 
 	if (image != mono_get_corlib ())
+		return FALSE;
+
+	if (!interp_simd_enabled)
 		return FALSE;
 
 	class_ns = m_class_get_name_space (cmethod->klass);

@@ -827,10 +827,13 @@ gpointer g_convert_error_quark(void);
 #define g_assert(x) (G_LIKELY((x)) ? 1 : (mono_assertion_message (__FILE__, __LINE__, #x), 0))
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus) || (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 202311L)
 #define g_static_assert(x) static_assert (x, "")
+#elif (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 201112L)
+#define g_static_assert(x) _Static_assert (x, "")
 #else
-#define g_static_assert(x) g_assert (x)
+#error Mono requires static_assert (C11 or newer)
+/* #define g_static_assert(x) g_assert (x)*/
 #endif
 
 #define  g_assert_not_reached() G_STMT_START { mono_assertion_message_unreachable (__FILE__, __LINE__); eg_unreachable(); } G_STMT_END
@@ -1311,8 +1314,7 @@ gint
 g_clock_nanosleep (clockid_t clockid, gint flags, const struct timespec *request, struct timespec *remain);
 #endif
 
-//#define ENABLE_CHECKED_CASTS
-#ifdef ENABLE_CHECKED_CASTS
+#ifdef ENABLE_CHECKED_BUILD_CASTS
 
 #define __CAST_PTRTYPE_TO_STYPE(src,dest,min_v,max_v) \
 static inline dest \
@@ -1397,6 +1399,9 @@ __CAST_PTRTYPE_TO_UTYPE(gpointer, gulong, ULONG_MAX)
 __CAST_PTRTYPE_TO_STYPE(gpointer, gint, INT_MIN, INT_MAX)
 __CAST_PTRTYPE_TO_UTYPE(gpointer, guint, UINT_MAX)
 
+__CAST_PTRTYPE_TO_STYPE(gconstpointer, gint, INT_MIN, INT_MAX)
+__CAST_PTRTYPE_TO_UTYPE(gconstpointer, guint, UINT_MAX)
+
 __CAST_PTRTYPE_TO_STYPE(gintptr, gint32, INT32_MIN, INT32_MAX)
 __CAST_PTRTYPE_TO_UTYPE(gintptr, guint32, UINT32_MAX)
 __CAST_PTRTYPE_TO_STYPE(gintptr, gint16, INT16_MIN, INT16_MAX)
@@ -1447,6 +1452,7 @@ __CAST_STYPE_TO_UTYPE(gssize, gsize, SIZE_MAX)
 __CAST_UTYPE_TO_STYPE(gsize, gssize, PTRDIFF_MIN, PTRDIFF_MAX)
 
 __CAST_STYPE_TO_UTYPE(glong, gulong, ULONG_MAX)
+__CAST_STYPE_TO_UTYPE(glong, guint32, UINT32_MAX)
 __CAST_UTYPE_TO_STYPE(gulong, glong, LONG_MIN, LONG_MAX)
 
 __CAST_STYPE_TO_STYPE(gdouble, gint64, INT64_MIN, INT64_MAX)
@@ -1555,7 +1561,7 @@ __CAST_UTYPE_TO_STYPE(gunichar, gchar, CHAR_MIN, CHAR_MAX)
 
 #endif
 
-#if !defined(ENABLE_CHECKED_CASTS)
+#if !defined(ENABLE_CHECKED_BUILD_CASTS)
 
 #define G_CAST_PTRTYPE_TO_STYPE(src,dest,v) ((dest)(gssize)(v))
 #define G_CAST_PTRTYPE_TO_UTYPE(src,dest,v) ((dest)(gsize)(v))
@@ -1584,6 +1590,9 @@ __CAST_UTYPE_TO_STYPE(gunichar, gchar, CHAR_MIN, CHAR_MAX)
 #define GPOINTER_TO_ULONG(v)     G_CAST_PTRTYPE_TO_UTYPE(gpointer, gulong, v)
 #define GPOINTER_TO_INT(v)       G_CAST_PTRTYPE_TO_STYPE(gpointer, gint, v)
 #define GPOINTER_TO_UINT(v)      G_CAST_PTRTYPE_TO_UTYPE(gpointer, guint, v)
+
+#define GCONSTPOINTER_TO_INT(v)  G_CAST_PTRTYPE_TO_STYPE(gconstpointer, gint, v)
+#define GCONSTPOINTER_TO_UINT(v) G_CAST_PTRTYPE_TO_UTYPE(gconstpointer, guint, v)
 
 #define GINTPTR_TO_INT32(v)      G_CAST_PTRTYPE_TO_STYPE(gintptr, gint32, v)
 #define GINTPTR_TO_UINT32(v)     G_CAST_PTRTYPE_TO_UTYPE(gintptr, guint32, v)

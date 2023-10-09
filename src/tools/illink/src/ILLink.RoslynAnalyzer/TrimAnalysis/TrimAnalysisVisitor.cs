@@ -219,7 +219,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			return result.Equals (TopValue) ? UnknownValue.Instance : result;
 		}
 
-		public override void HandleArrayElementWrite (MultiValue arrayValue, MultiValue indexValue, MultiValue valueToWrite, IOperation operation)
+		public override void HandleArrayElementWrite (MultiValue arrayValue, MultiValue indexValue, MultiValue valueToWrite, IOperation operation, bool merge)
 		{
 			int? index = indexValue.AsConstInt ();
 			foreach (var arraySingleValue in arrayValue) {
@@ -227,12 +227,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					if (index == null) {
 						// Reset the array to all unknowns - since we don't know which index is being assigned
 						arr.IndexValues.Clear ();
-					} else {
-						if (arr.IndexValues.TryGetValue (index.Value, out _)) {
-							arr.IndexValues[index.Value] = ArrayValue.SanitizeArrayElementValue(valueToWrite);
-						} else if (arr.IndexValues.Count < MaxTrackedArrayValues) {
-							arr.IndexValues[index.Value] = ArrayValue.SanitizeArrayElementValue(valueToWrite);
-						}
+					} else if (arr.IndexValues.TryGetValue (index.Value, out _) || arr.IndexValues.Count < MaxTrackedArrayValues) {
+						var sanitizedValue = ArrayValue.SanitizeArrayElementValue(valueToWrite);
+						arr.IndexValues[index.Value] = merge
+							? _multiValueLattice.Meet (arr.IndexValues[index.Value], sanitizedValue)
+							: sanitizedValue;
 					}
 				}
 			}

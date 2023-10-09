@@ -34,7 +34,7 @@ void MSC_ONLY(__declspec(noreturn)) ThrowRecordedException(DWORD innerExceptionC
     do                                                                                                                 \
     {                                                                                                                  \
         if (!(expr))                                                                                                   \
-            LogException(exCode, "SuperPMI assertion '%s' failed (" #msg ")", #expr, ##__VA_ARGS__);                   \
+            LogException(exCode, "SuperPMI assertion '%s' failed (" msg ")", #expr, ##__VA_ARGS__);                    \
     } while (0)
 
 #define AssertCode(expr, exCode)                                                                                       \

@@ -142,10 +142,10 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1023`__ | Generating more than 6 arguments is not supported |
 |  __`SYSLIB1024`__ | Argument is using the unsupported out parameter modifier |
 |  __`SYSLIB1025`__ | Multiple logging methods cannot use the same event name within a class |
-|  __`SYSLIB1026`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
-|  __`SYSLIB1027`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
-|  __`SYSLIB1028`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
-|  __`SYSLIB1029`__ | _`SYSLIB1026`-`SYSLIB1029` reserved for logging._ |
+|  __`SYSLIB1026`__ | C# language version not supported by the logging source generator. |
+|  __`SYSLIB1027`__ | _`SYSLIB1001`-`SYSLIB1029` reserved for logging._ |
+|  __`SYSLIB1028`__ | _`SYSLIB1001`-`SYSLIB1029` reserved for logging._ |
+|  __`SYSLIB1029`__ | _`SYSLIB1001`-`SYSLIB1029` reserved for logging._ |
 |  __`SYSLIB1030`__ | JsonSourceGenerator did not generate serialization metadata for type |
 |  __`SYSLIB1031`__ | JsonSourceGenerator encountered a duplicate JsonTypeInfo property name |
 |  __`SYSLIB1032`__ | JsonSourceGenerator encountered a context class that is not partial |
@@ -208,7 +208,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1089`__ | _`SYSLIB1070`-`SYSLIB1089` reserved for System.Runtime.InteropServices.JavaScript.JSImportGenerator._ |
 |  __`SYSLIB1090`__ | Invalid 'GeneratedComInterfaceAttribute' usage |
 |  __`SYSLIB1091`__ | Method is declared in different partial declaration than the 'GeneratedComInterface' attribute. |
-|  __`SYSLIB1092`__ | 'GenerateComInterfaceAttribute' usage not recommended. See aka.ms/GeneratedComInterfaceUsage for recommended usage. |
+|  __`SYSLIB1092`__ | Usage of '[LibraryImport|GeneratedComInterface]' does not follow recommendation. See aka.ms/[LibraryImport|GeneratedComInterface]Usage for best practices. |
 |  __`SYSLIB1093`__ | Analysis for COM interface generation has failed |
 |  __`SYSLIB1094`__ | The base COM interface failed to generate source. Code will not be generated for this interface. |
 |  __`SYSLIB1095`__ | Invalid 'GeneratedComClassAttribute' usage |
@@ -250,7 +250,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1213`__ | Options validation generator: Member potentially missing enumerable validation. |
 |  __`SYSLIB1214`__ | Options validation generator: Can't validate constants, static fields or properties. |
 |  __`SYSLIB1215`__ | Options validation generator: Validation attribute on the member is inaccessible from the validator type. |
-|  __`SYSLIB1216`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1216`__ | C# language version not supported by the options validation source generator. |
 |  __`SYSLIB1217`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
 |  __`SYSLIB1218`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
 |  __`SYSLIB1219`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
@@ -270,3 +270,5 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 | Suppression ID           | Suppressed Diagnostic ID | Description |
 | :----------------------- | :----------------------- | :---------- |
 | __`SYSLIBSUPPRESS0001`__ | CA1822                   | Do not offer to make methods static when the methods need to be instance methods for a custom marshaller shape. |
+| __`SYSLIBSUPPRESS0002`__ | IL2026                   | ConfigurationBindingGenerator: suppress RequiresUnreferencedCode diagnostic for binding call that has been intercepted by a generated static variant. |
+| __`SYSLIBSUPPRESS0003`__ | IL3050                   | ConfigurationBindingGenerator: suppress RequiresDynamicCode diagnostic for binding call that has been intercepted by a generated static variant. |

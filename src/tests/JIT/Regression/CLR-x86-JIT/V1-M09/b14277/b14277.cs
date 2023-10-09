@@ -23,11 +23,10 @@ namespace DefaultNamespace
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Bug b = new Bug();
             b.runTest();
-            return 100;
         }
     }
     ///// EOF

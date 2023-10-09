@@ -29,7 +29,7 @@ namespace Microsoft.Interop
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) =>
                 new PointerTypeInfo(
-                    $"{TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}*",
+                    $"{TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}*",
                     $"{TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch}*",
                     IsFunctionPointer: false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
@@ -47,7 +47,7 @@ namespace Microsoft.Interop
                         IdentifierName(managed),
                         InvocationExpression(
                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                ParseName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch),
+                                TypeSyntaxes.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch,
                                 GenericName(
                                     Identifier("GetInstance"),
                                     TypeArgumentList(SingletonSeparatedList(info.ManagedType.Syntax)))),

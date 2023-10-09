@@ -10,5 +10,4 @@
 // winresrc.h for PAL
 // Included in .rc files.
 
-#include "winver.h"
 #include "palrt.h"

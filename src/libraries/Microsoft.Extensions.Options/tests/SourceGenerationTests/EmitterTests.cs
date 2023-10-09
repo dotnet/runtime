@@ -32,7 +32,7 @@ public class EmitterTests
         }
 
         var (d, r) = await RoslynTestUtils.RunGenerator(
-            new Generator(),
+            new OptionValidatorGenerator(),
             new[]
             {
                 Assembly.GetAssembly(typeof(RequiredAttribute))!,

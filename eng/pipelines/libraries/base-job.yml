@@ -4,7 +4,7 @@ parameters:
   archType: ''
   osSubgroup: ''
   crossBuild: false
-  framework: 'net8.0'
+  framework: 'net9.0'
   isOfficialAllConfigurations: false
   isSourceBuild: false
   liveRuntimeBuildConfig: ''
@@ -24,6 +24,7 @@ parameters:
   pool: ''
   runTests: false
   pgoType: ''
+  SuperPmiCollect: false
 
 jobs:
   - template: /eng/common/templates/job/job.yml

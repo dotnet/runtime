@@ -45,10 +45,6 @@
 #define SSIZE_T_MAX ((ptrdiff_t)(SIZE_T_MAX / 2))
 #endif
 
-#ifndef __has_builtin
-#define __has_builtin(x) 0
-#endif
-
 #ifndef _INC_WINDOWS
 // -----------------------------------------------------------------------------------------------------------
 //

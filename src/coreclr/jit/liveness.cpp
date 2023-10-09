@@ -1046,6 +1046,7 @@ void Compiler::fgExtendDbgLifetimes()
 //    block - the block in question
 //    ehHandlerLiveVars - On entry, contains an allocated VARSET_TP that the
 //                        function will add handler live vars into.
+//    memoryLiveness    - Set of memory liveness that will be added to.
 //
 // Notes:
 //    Assumes caller has screened candidate blocks to only those with
@@ -1073,7 +1074,7 @@ void Compiler::fgExtendDbgLifetimes()
 //        Console.WriteLine("In catch 1");
 //    }
 //
-void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars)
+void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness)
 {
     assert(block->HasPotentialEHSuccs(this));
 
@@ -1087,6 +1088,7 @@ void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveV
             if (HBtab->HasFilter())
             {
                 VarSetOps::UnionD(this, ehHandlerLiveVars, HBtab->ebdFilter->bbLiveIn);
+                memoryLiveness |= HBtab->ebdFilter->bbMemoryLiveIn;
 #if defined(FEATURE_EH_FUNCLETS)
                 // The EH subsystem can trigger a stack walk after the filter
                 // has returned, but before invoking the handler, and the only
@@ -1095,11 +1097,13 @@ void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveV
                 // must report as live any variables live-out of the filter
                 // (which is the same as those live-in to the handler)
                 VarSetOps::UnionD(this, ehHandlerLiveVars, HBtab->ebdHndBeg->bbLiveIn);
+                memoryLiveness |= HBtab->ebdHndBeg->bbMemoryLiveIn;
 #endif // FEATURE_EH_FUNCLETS
             }
             else
             {
                 VarSetOps::UnionD(this, ehHandlerLiveVars, HBtab->ebdHndBeg->bbLiveIn);
+                memoryLiveness |= HBtab->ebdHndBeg->bbMemoryLiveIn;
             }
 
             /* If we have nested try's edbEnclosing will provide them */
@@ -1118,8 +1122,9 @@ void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveV
 
     if (bbInFilterBBRange(block))
     {
-        block->VisitEHSecondPassSuccs(this, [this, &ehHandlerLiveVars](BasicBlock* succ) {
+        block->VisitEHSecondPassSuccs(this, [this, &ehHandlerLiveVars, &memoryLiveness](BasicBlock* succ) {
             VarSetOps::UnionD(this, ehHandlerLiveVars, succ->bbLiveIn);
+            memoryLiveness |= succ->bbMemoryLiveIn;
             return BasicBlockVisit::Continue;
         });
     }
@@ -1190,8 +1195,11 @@ class LiveVarAnalysis
             }
         }
 
-        // Additionally, union in all the live-in tracked vars of successors.
-        block->VisitAllSuccs(m_compiler, [=](BasicBlock* succ) {
+        // Additionally, union in all the live-in tracked vars of regular
+        // successors. EH successors need to be handled more conservatively
+        // (their live-in state is live in this entire basic block). Those are
+        // handled below.
+        block->VisitRegularSuccs(m_compiler, [=](BasicBlock* succ) {
             VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
             m_memoryLiveOut |= succ->bbMemoryLiveIn;
             if (succ->bbNum <= block->bbNum)
@@ -1214,16 +1222,12 @@ class LiveVarAnalysis
         /* Compute the 'm_liveIn'  set */
         VarSetOps::LivenessD(m_compiler, m_liveIn, block->bbVarDef, block->bbVarUse, m_liveOut);
 
-        // Even if block->bbMemoryDef is set, we must assume that it doesn't kill memory liveness from m_memoryLiveOut,
-        // since (without proof otherwise) the use and def may touch different memory at run-time.
-        m_memoryLiveIn = m_memoryLiveOut | block->bbMemoryUse;
-
         // Does this block have implicit exception flow to a filter or handler?
         // If so, include the effects of that flow.
         if (block->HasPotentialEHSuccs(m_compiler))
         {
             VarSetOps::ClearD(m_compiler, m_ehHandlerLiveVars);
-            m_compiler->fgAddHandlerLiveVars(block, m_ehHandlerLiveVars);
+            m_compiler->fgAddHandlerLiveVars(block, m_ehHandlerLiveVars, m_memoryLiveOut);
             VarSetOps::UnionD(m_compiler, m_liveIn, m_ehHandlerLiveVars);
             VarSetOps::UnionD(m_compiler, m_liveOut, m_ehHandlerLiveVars);
 
@@ -1232,7 +1236,11 @@ class LiveVarAnalysis
             m_hasPossibleBackEdge = true;
         }
 
-        /* Has there been any change in either live set? */
+        // Even if block->bbMemoryDef is set, we must assume that it doesn't kill memory liveness from m_memoryLiveOut,
+        // since (without proof otherwise) the use and def may touch different memory at run-time.
+        m_memoryLiveIn = m_memoryLiveOut | block->bbMemoryUse;
+
+        // Has there been any change in either live set?
 
         bool liveInChanged = !VarSetOps::Equal(m_compiler, block->bbLiveIn, m_liveIn);
         if (liveInChanged || !VarSetOps::Equal(m_compiler, block->bbLiveOut, m_liveOut))
@@ -2525,7 +2533,8 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
         if (block->HasPotentialEHSuccs(this))
         {
-            fgAddHandlerLiveVars(block, volatileVars);
+            MemoryKindSet memoryLiveness = 0;
+            fgAddHandlerLiveVars(block, volatileVars, memoryLiveness);
 
             // volatileVars is a subset of exceptVars
             noway_assert(VarSetOps::IsSubset(this, volatileVars, exceptVars));

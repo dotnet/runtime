@@ -2269,13 +2269,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             hfaType  = comp->GetHfaType(argSigClass);
             isHfaArg = varTypeIsValidHfaType(hfaType);
 
-#if defined(TARGET_ARM64)
-            if (TargetOS::IsWindows)
+            if (TargetOS::IsWindows && TargetArchitecture::IsArm64 && callIsVararg)
             {
                 // Make sure for vararg methods isHfaArg is not true.
-                isHfaArg = callIsVararg ? false : isHfaArg;
+                isHfaArg = false;
             }
-#endif // defined(TARGET_ARM64)
 
             if (isHfaArg)
             {
@@ -2614,7 +2612,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 //
                 if (!isRegArg && (size > 1))
                 {
-                    // Arm64 windows native varargs allows splitting a 16 byte struct between stack
+                    // Arm64 windows native varargs allows splitting a 16 byte struct (or SIMD type) between stack
                     // and the last general purpose register.
                     if (TargetOS::IsWindows && callIsVararg)
                     {
@@ -4657,20 +4655,12 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
     if (fgGlobalMorph && lclNode->OperIs(GT_LCL_VAR) && varDsc->lvNormalizeOnLoad() &&
         /* TODO-ASG: delete this zero-diff quirk */ lclNode->CanCSE())
     {
-        // TYP_BOOL quirk: previously, the code in optAssertionIsSubrange did not handle TYP_BOOL.
-        // Now it does, but this leads to some regressions because we lose the uniform VNs for trees
-        // that represent the "reduced" normalize-on-load locals, i. e. LCL_VAR(small type V00), created
-        // here with local assertions, and "expanded", i. e. CAST(small type <- LCL_VAR(int V00)).
-        // This is a pretty fundamental problem with how normalize-on-load locals appear to the optimizer.
-        // This quirk preserves the previous behavior.
-        // TODO-CQ: fix the VNs for normalize-on-load locals and remove this quirk.
-        var_types lclVarType  = varDsc->TypeGet();
-        bool      isBoolQuirk = lclVarType == TYP_BOOL;
+        var_types lclVarType = varDsc->TypeGet();
 
         // Assertion prop can tell us to omit adding a cast here. This is useful when the local is a small-typed
         // parameter that is passed in a register: in that case, the ABI specifies that the upper bits might be
         // invalid, but the assertion guarantees us that we have normalized when we wrote it.
-        if (optLocalAssertionProp && !isBoolQuirk &&
+        if (optLocalAssertionProp &&
             optAssertionIsSubrange(lclNode, IntegralRange::ForType(lclVarType), apFull) != NO_ASSERTION_INDEX)
         {
             // The previous assertion can guarantee us that if this node gets
@@ -8919,6 +8909,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             break;
 #endif
 
+        case GT_COMMA:
+            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
+            {
+                typ = tree->gtType = TYP_VOID;
+            }
+
+            break;
+
         default:
             break;
     }
@@ -10770,6 +10768,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            // Must be working with the same types of vectors.
+            if (hwop1->TypeGet() != node->TypeGet())
+            {
+                break;
+            }
+
             if (toScalar != nullptr)
             {
                 DEBUG_DESTROY_NODE(toScalar);
@@ -10791,7 +10795,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
-
 #if defined(TARGET_XARCH)
         case NI_AVX512F_Add:
         case NI_AVX512BW_Add:
@@ -10915,8 +10918,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             GenTree* vectorNode = op1->AsHWIntrinsic()->Op(1);
 
-            DEBUG_DESTROY_NODE(op1);
-            DEBUG_DESTROY_NODE(node);
+            DEBUG_DESTROY_NODE(op1, node);
+            INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             return vectorNode;
         }
@@ -10942,13 +10945,114 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             GenTree* maskNode = op1->AsHWIntrinsic()->Op(1);
 
-            DEBUG_DESTROY_NODE(op1);
-            DEBUG_DESTROY_NODE(node);
+            DEBUG_DESTROY_NODE(op1, node);
+            INDEBUG(maskNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             return maskNode;
         }
 #endif // TARGET_XARCH
 
+        default:
+        {
+            break;
+        }
+    }
+
+    // Transforms:
+    // 1.(~v1 & v2) to VectorXxx.AndNot(v1, v2)
+    // 2.(v1 & (~v2)) to VectorXxx.AndNot(v2, v1)
+    switch (node->HWOperGet())
+    {
+        case GT_AND:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+            GenTree* lhs = nullptr;
+            GenTree* rhs = nullptr;
+
+            if (op1->OperIsHWIntrinsic())
+            {
+                // Try handle: ~op1 & op2
+                GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
+                genTreeOps          hwOper = hw->HWOperGet();
+
+                if (hwOper == GT_NOT)
+                {
+                    lhs = op2;
+                    rhs = hw->Op(1);
+                }
+                else if (hwOper == GT_XOR)
+                {
+                    GenTree* hwOp1 = hw->Op(1);
+                    GenTree* hwOp2 = hw->Op(2);
+
+                    if (hwOp1->IsVectorAllBitsSet())
+                    {
+                        lhs = op2;
+                        rhs = hwOp2;
+                    }
+                    else if (hwOp2->IsVectorAllBitsSet())
+                    {
+                        lhs = op2;
+                        rhs = hwOp1;
+                    }
+                }
+            }
+
+            if ((lhs == nullptr) && op2->OperIsHWIntrinsic())
+            {
+                // Try handle: op1 & ~op2
+                GenTreeHWIntrinsic* hw     = op2->AsHWIntrinsic();
+                genTreeOps          hwOper = hw->HWOperGet();
+
+                if (hwOper == GT_NOT)
+                {
+                    lhs = op1;
+                    rhs = hw->Op(1);
+                }
+                else if (hwOper == GT_XOR)
+                {
+                    GenTree* hwOp1 = hw->Op(1);
+                    GenTree* hwOp2 = hw->Op(2);
+
+                    if (hwOp1->IsVectorAllBitsSet())
+                    {
+                        lhs = op1;
+                        rhs = hwOp2;
+                    }
+                    else if (hwOp2->IsVectorAllBitsSet())
+                    {
+                        lhs = op1;
+                        rhs = hwOp1;
+                    }
+                }
+            }
+
+            if ((lhs == nullptr) || (rhs == nullptr))
+            {
+                break;
+            }
+
+            // Filter out side effecting cases for several reasons:
+            // 1. gtNewSimdBinOpNode may swap operand order.
+            // 2. The code above will swap operand order.
+            // 3. The code above does not handle GTF_REVERSE_OPS.
+            if (((lhs->gtFlags | rhs->gtFlags) & GTF_ALL_EFFECT) != 0)
+            {
+                break;
+            }
+
+            var_types    simdType        = node->TypeGet();
+            CorInfoType  simdBaseJitType = node->GetSimdBaseJitType();
+            unsigned int simdSize        = node->GetSimdSize();
+
+            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, simdType, lhs, rhs, simdBaseJitType, simdSize);
+
+            DEBUG_DESTROY_NODE(node);
+            INDEBUG(andnNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return andnNode;
+        }
         default:
         {
             break;

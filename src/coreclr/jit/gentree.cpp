@@ -7696,7 +7696,6 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
             READ_VALUE(int8_t);
             return gtNewIconNode(val);
         }
-        case TYP_BOOL:
         case TYP_UBYTE:
         {
             READ_VALUE(uint8_t);
@@ -7790,7 +7789,6 @@ GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
 {
     switch (type)
     {
-        case TYP_BOOL:
         case TYP_UBYTE:
             return gtNewIconNode(pattern);
         case TYP_BYTE:
@@ -14279,7 +14277,7 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
 
     static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     GenTree* srcAddr      = call->gtArgs.GetArgByIndex(1)->GetNode();
-    GenTree* hasValueNode = gtNewIndir(TYP_BOOL, srcAddr);
+    GenTree* hasValueNode = gtNewIndir(TYP_UBYTE, srcAddr);
 
     if (op == op1)
     {
@@ -14849,7 +14847,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 i1 = INT32(UINT16(i1));
                                 goto CNS_INT;
 
-                            case TYP_BOOL:
                             case TYP_UBYTE:
                                 i1 = INT32(UINT8(i1));
                                 goto CNS_INT;
@@ -14881,6 +14878,21 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 goto CNS_LONG;
 
                             case TYP_FLOAT:
+                            {
+#if defined(TARGET_64BIT)
+                                if (tree->IsUnsigned())
+                                {
+                                    f1 = (float)UINT32(i1);
+                                }
+                                else
+                                {
+                                    f1 = (float)INT32(i1);
+                                }
+#else
+                                // 32-bit currently does a 2-step conversion, which is incorrect
+                                // but which we are going to take a breaking change around early
+                                // in a release cycle.
+
                                 if (tree->IsUnsigned())
                                 {
                                     f1 = forceCastToFloat(UINT32(i1));
@@ -14889,10 +14901,14 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 {
                                     f1 = forceCastToFloat(INT32(i1));
                                 }
+#endif
+
                                 d1 = f1;
                                 goto CNS_DOUBLE;
+                            }
 
                             case TYP_DOUBLE:
+                            {
                                 if (tree->IsUnsigned())
                                 {
                                     d1 = (double)UINT32(i1);
@@ -14902,6 +14918,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                     d1 = (double)INT32(i1);
                                 }
                                 goto CNS_DOUBLE;
+                            }
 
                             default:
                                 assert(!"Bad CastToType() in gtFoldExprConst() for a cast from int");
@@ -14982,7 +14999,38 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 goto CNS_LONG;
 
                             case TYP_FLOAT:
+                            {
+#if defined(TARGET_64BIT)
+                                if (tree->IsUnsigned() && (lval1 < 0))
+                                {
+                                    f1 = FloatingPointUtils::convertUInt64ToFloat((unsigned __int64)lval1);
+                                }
+                                else
+                                {
+                                    f1 = (float)lval1;
+                                }
+#else
+                                // 32-bit currently does a 2-step conversion, which is incorrect
+                                // but which we are going to take a breaking change around early
+                                // in a release cycle.
+
+                                if (tree->IsUnsigned() && (lval1 < 0))
+                                {
+                                    f1 = forceCastToFloat(
+                                        FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1));
+                                }
+                                else
+                                {
+                                    f1 = forceCastToFloat((double)lval1);
+                                }
+#endif
+
+                                d1 = f1;
+                                goto CNS_DOUBLE;
+                            }
+
                             case TYP_DOUBLE:
+                            {
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
                                     d1 = FloatingPointUtils::convertUInt64ToDouble((unsigned __int64)lval1);
@@ -14991,13 +15039,8 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 {
                                     d1 = (double)lval1;
                                 }
-
-                                if (tree->CastToType() == TYP_FLOAT)
-                                {
-                                    f1 = forceCastToFloat(d1); // truncate precision
-                                    d1 = f1;
-                                }
                                 goto CNS_DOUBLE;
+                            }
                             default:
                                 assert(!"Bad CastToType() in gtFoldExprConst() for a cast from long");
                                 return tree;
@@ -21287,7 +21330,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(type == TYP_BOOL);
+    assert(type == TYP_UBYTE);
 
     var_types simdType = getSIMDTypeForSize(simdSize);
     assert(varTypeIsSIMD(simdType));
@@ -21426,7 +21469,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(type == TYP_BOOL);
+    assert(type == TYP_UBYTE);
 
     var_types simdType = getSIMDTypeForSize(simdSize);
     assert(varTypeIsSIMD(simdType));
@@ -25425,6 +25468,54 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
         }
     }
 }
+
+//------------------------------------------------------------------------------
+// HWOperGet : Returns Oper based on the HWIntrinsicId
+//
+genTreeOps GenTreeHWIntrinsic::HWOperGet()
+{
+    switch (GetHWIntrinsicId())
+    {
+#if defined(TARGET_XARCH)
+        case NI_SSE_And:
+        case NI_SSE2_And:
+        case NI_AVX_And:
+        case NI_AVX2_And:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_And:
+#endif
+        {
+            return GT_AND;
+        }
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_Not:
+        {
+            return GT_NOT;
+        }
+#endif
+
+#if defined(TARGET_XARCH)
+        case NI_SSE_Xor:
+        case NI_SSE2_Xor:
+        case NI_AVX_Xor:
+        case NI_AVX2_Xor:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_Xor:
+#endif
+        {
+            return GT_XOR;
+        }
+
+        // TODO: Handle other cases
+
+        default:
+        {
+            return GT_NONE;
+        }
+    }
+}
+
 #endif // FEATURE_HW_INTRINSICS
 
 //---------------------------------------------------------------------------------------

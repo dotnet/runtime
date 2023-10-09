@@ -1634,11 +1634,14 @@ OBJECTREF Assembly::GetExposedObject()
 BOOL Assembly::FileNotFound(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;
-    return IsHRESULTForExceptionKind(hr, kFileNotFoundException) ||
+    if (IsHRESULTForExceptionKind(hr, kFileNotFoundException))
+        return TRUE;
+
 #ifdef FEATURE_COMINTEROP
-           (hr == RO_E_METADATA_NAME_NOT_FOUND) ||
+    return hr == RO_E_METADATA_NAME_NOT_FOUND;
+#else
+    return FALSE;
 #endif //FEATURE_COMINTEROP
-           (hr == CLR_E_BIND_TYPE_NOT_FOUND);
 }
 
 

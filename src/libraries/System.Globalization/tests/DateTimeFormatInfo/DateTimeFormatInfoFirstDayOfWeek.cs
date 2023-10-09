@@ -42,7 +42,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("en-AI").DateTimeFormat, DayOfWeek.Monday };
                 yield return new object[] { new CultureInfo("en-AS").DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("en-AT").DateTimeFormat, DayOfWeek.Monday };
-                yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, PlatformDetection.IsNodeJS ? DayOfWeek.Sunday : DayOfWeek.Monday }; // originally in ICU: Sunday, even though ISO 8601 states: Monday 
+                yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, DayOfWeek.Monday }; // originally in ICU: Sunday, even though ISO 8601 states: Monday
                 yield return new object[] { new CultureInfo("en-BB").DateTimeFormat, DayOfWeek.Monday };
                 yield return new object[] { new CultureInfo("en-BE").DateTimeFormat, DayOfWeek.Monday };
                 yield return new object[] { new CultureInfo("en-BI").DateTimeFormat, DayOfWeek.Monday };
@@ -194,13 +194,13 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("ta-LK").DateTimeFormat, DayOfWeek.Monday };
                 yield return new object[] { new CultureInfo("ta-MY").DateTimeFormat, DayOfWeek.Monday };
                 yield return new object[] { new CultureInfo("ta-SG").DateTimeFormat, DayOfWeek.Sunday };
-                yield return new object[] { new CultureInfo("te-IN").DateTimeFormat, PlatformDetection.IsNodeJS ? DayOfWeek.Monday : DayOfWeek.Sunday }; // Browser/V8 responds like dotnet
+                yield return new object[] { new CultureInfo("te-IN").DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("th-TH").DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("tr-CY").DateTimeFormat, DayOfWeek.Monday };
                 yield return new object[] { new CultureInfo("tr-TR").DateTimeFormat, DayOfWeek.Monday };
                 yield return new object[] { new CultureInfo("uk-UA").DateTimeFormat, DayOfWeek.Monday };
                 yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, DayOfWeek.Monday };
-                yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, PlatformDetection.IsNodeJS ? DayOfWeek.Sunday : DayOfWeek.Monday  }; // NodeJS responds like dotnet
+                yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, DayOfWeek.Monday  };
                 yield return new object[] { new CultureInfo("zh-Hans-HK").DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("zh-SG").DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("zh-HK").DateTimeFormat, DayOfWeek.Sunday };

@@ -986,6 +986,22 @@ namespace LibraryImportGenerator.UnitTests
             }
             """;
 
+        public const string IntClassAndMarshaller = IntClassDefinition + IntClassMarshallerDefinition;
+        public const string IntClassDefinition = """
+            internal struct IntClass
+            {
+                public int Field;
+            }
+            """;
+        public const string IntClassMarshallerDefinition = """
+            [CustomMarshaller(typeof(IntClass), MarshalMode.Default, typeof(IntClassMarshaller))]
+            internal static class IntClassMarshaller
+            {
+                public static nint ConvertToUnmanaged(IntClass managed) => (nint)0;
+                public static IntClass ConvertToManaged(nint unmanaged) => default;
+            }
+            """;
+
         public const string IntStructAndMarshaller = IntStructDefinition + IntStructMarshallerDefinition;
         public const string IntStructDefinition = """
             internal struct IntStruct

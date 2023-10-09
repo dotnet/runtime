@@ -165,9 +165,7 @@ namespace System.Net.Http.Functional.Tests
                         else
                         {
                             // Succeed the second connection attempt
-                            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-                            await socket.ConnectAsync(context.DnsEndPoint, token);
-                            return new NetworkStream(socket, ownsSocket: true);
+                            return await DefaultConnectCallback(context.DnsEndPoint, token);
                         }
                     };
 

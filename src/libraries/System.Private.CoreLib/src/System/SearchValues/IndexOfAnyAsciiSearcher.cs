@@ -19,6 +19,11 @@ namespace System.Buffers
     {
         internal static bool IsVectorizationSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool BitmapContains(ref Vector256<byte> bitmap, char c) =>
+            c <= 127 &&
+            (bitmap.GetElementUnsafe(c & 0xF) & (1 << (c >> 4))) != 0;
+
         internal static unsafe void ComputeBitmap256(ReadOnlySpan<byte> values, out Vector256<byte> bitmap0, out Vector256<byte> bitmap1, out BitVector256 lookup)
         {
             // The exact format of these bitmaps differs from the other ComputeBitmap overloads as it's meant for the full [0, 255] range algorithm.
@@ -1022,7 +1027,7 @@ namespace System.Buffers
         {
             if (typeof(T) == typeof(short))
             {
-                result = FixUpPackedVector256Result(result);
+                result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
             uint mask = TNegator.ExtractMask(result);
@@ -1038,7 +1043,7 @@ namespace System.Buffers
         {
             if (typeof(T) == typeof(short))
             {
-                result = FixUpPackedVector256Result(result);
+                result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
             uint mask = TNegator.ExtractMask(result);
@@ -1060,7 +1065,7 @@ namespace System.Buffers
         {
             if (typeof(T) == typeof(short))
             {
-                result = FixUpPackedVector256Result(result);
+                result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
             uint mask = TNegator.ExtractMask(result);
@@ -1076,7 +1081,7 @@ namespace System.Buffers
         {
             if (typeof(T) == typeof(short))
             {
-                result = FixUpPackedVector256Result(result);
+                result = PackedSpanHelpers.FixUpPackedVector256Result(result);
             }
 
             uint mask = TNegator.ExtractMask(result);
@@ -1089,18 +1094,6 @@ namespace System.Buffers
 
             // We matched within the second vector
             return offsetInVector - Vector256<short>.Count + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref secondVector) / (nuint)sizeof(T));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
-        {
-            Debug.Assert(Avx2.IsSupported);
-            // Avx2.PackUnsignedSaturate(Vector256.Create((short)1), Vector256.Create((short)2)) will result in
-            // 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2
-            // We want to swap the X and Y bits
-            // 1, 1, 1, 1, 1, 1, 1, 1, X, X, X, X, X, X, X, X, Y, Y, Y, Y, Y, Y, Y, Y, 2, 2, 2, 2, 2, 2, 2, 2
-            return Avx2.Permute4x64(result.AsInt64(), 0b_11_01_10_00).AsByte();
         }
 
         internal interface INegator

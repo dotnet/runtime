@@ -341,6 +341,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88049", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public async Task ExtractToDirectory_ExactRootDirMatch_Directory_Relative_Throws_Async()
         {
             string entryFolderName = "folder";

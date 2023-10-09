@@ -15,19 +15,11 @@ namespace Microsoft.Extensions.Options.Generators
         internal const string TypeOfType = "System.Type";
         internal const string ValidateObjectMembersAttribute = "Microsoft.Extensions.Options.ValidateObjectMembersAttribute";
         internal const string ValidateEnumeratedItemsAttribute = "Microsoft.Extensions.Options.ValidateEnumeratedItemsAttribute";
+        internal const string GenericIEnumerableType = "System.Collections.Generic.IEnumerable`1";
 
         public static bool TryLoad(Compilation compilation, out SymbolHolder? symbolHolder)
         {
-            INamedTypeSymbol? GetSymbol(string metadataName, bool optional = false)
-            {
-                var symbol = compilation.GetTypeByMetadataName(metadataName);
-                if (symbol == null && !optional)
-                {
-                    return null;
-                }
-
-                return symbol;
-            }
+            INamedTypeSymbol? GetSymbol(string metadataName) => compilation.GetTypeByMetadataName(metadataName);
 
             // required
             var optionsValidatorSymbol = GetSymbol(OptionsValidatorAttribute);
@@ -35,7 +27,10 @@ namespace Microsoft.Extensions.Options.Generators
             var dataTypeAttributeSymbol = GetSymbol(DataTypeAttribute);
             var ivalidatableObjectSymbol = GetSymbol(IValidatableObjectType);
             var validateOptionsSymbol = GetSymbol(IValidateOptionsType);
+            var genericIEnumerableSymbol = GetSymbol(GenericIEnumerableType);
             var typeSymbol = GetSymbol(TypeOfType);
+            var validateObjectMembersAttribute = GetSymbol(ValidateObjectMembersAttribute);
+            var validateEnumeratedItemsAttribute = GetSymbol(ValidateEnumeratedItemsAttribute);
 
     #pragma warning disable S1067 // Expressions should not be too complex
             if (optionsValidatorSymbol == null ||
@@ -43,7 +38,10 @@ namespace Microsoft.Extensions.Options.Generators
                 dataTypeAttributeSymbol == null ||
                 ivalidatableObjectSymbol == null ||
                 validateOptionsSymbol == null ||
-                typeSymbol == null)
+                genericIEnumerableSymbol == null ||
+                typeSymbol == null ||
+                validateObjectMembersAttribute == null ||
+                validateEnumeratedItemsAttribute == null)
             {
                 symbolHolder = default;
                 return false;
@@ -56,11 +54,10 @@ namespace Microsoft.Extensions.Options.Generators
                 dataTypeAttributeSymbol,
                 validateOptionsSymbol,
                 ivalidatableObjectSymbol,
+                genericIEnumerableSymbol,
                 typeSymbol,
-
-                // optional
-                GetSymbol(ValidateObjectMembersAttribute, optional: true),
-                GetSymbol(ValidateEnumeratedItemsAttribute, optional: true));
+                validateObjectMembersAttribute,
+                validateEnumeratedItemsAttribute);
 
             return true;
         }

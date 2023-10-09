@@ -216,6 +216,8 @@ public:
         }
     }
 
+    bool IntersectsGCPtr(unsigned offset, unsigned size) const;
+
     static bool AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2);
 
 private:

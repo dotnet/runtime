@@ -21,7 +21,7 @@ public class Program
     public static ulong s_3;
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();
 
@@ -30,8 +30,6 @@ public class Program
         System.Type runtimeTy = asm.GetType(typeof(Runtime).FullName);
 
         mi.Invoke(null, new object[]{System.Activator.CreateInstance(runtimeTy)});
-
-        return 100;
     }
 
 // Allow reflection lookup on public method

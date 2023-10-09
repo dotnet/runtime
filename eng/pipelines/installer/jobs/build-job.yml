@@ -86,18 +86,26 @@ jobs:
     - name: OfficialBuildArg
       value: ''
 
+    # Explicitly enable tests for linux even though it is a cross build using mariner
+    # They still work in this configuration and until they run on Helix, it is our only
+    # linux test coverage in the installer pipeline
     - name: SkipTests
       value: ${{ or(
         not(in(parameters.archType, 'x64', 'x86')),
         eq(parameters.runtimeFlavor, 'mono'),
         eq(parameters.isOfficialBuild, true),
-        eq(parameters.crossBuild, true),
+        and(
+          eq(parameters.crossBuild, true),
+          not(and(
+            eq(parameters.osGroup, 'linux'),
+            eq(parameters.osSubgroup, ''))
+          )),
         eq(parameters.pgoType, 'PGO')) }}
 
     - name: BuildAction
       value: -test
 
-    - ${{ if eq(or(not(in(parameters.archType, 'x64', 'x86')), eq(parameters.runtimeFlavor, 'mono'), eq(parameters.isOfficialBuild, true), eq(parameters.crossBuild, true), eq(parameters.pgoType, 'PGO')), true) }}:
+    - ${{ if eq(or(not(in(parameters.archType, 'x64', 'x86')), eq(parameters.runtimeFlavor, 'mono'), eq(parameters.isOfficialBuild, true), and(eq(parameters.crossBuild, true), not(and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '')))), eq(parameters.pgoType, 'PGO')), true) }}:
       - name: BuildAction
         value: ''
 
@@ -293,9 +301,55 @@ jobs:
           parameters.archType,
           parameters.liveLibrariesBuildConfig) }}
     steps:
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - powershell: |
+            schtasks /change /tn "\Microsoft\VisualStudio\VSIX Auto Update" /disable
+
+            $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+            if (-not (Test-Path -Path "$vswhere" -PathType Leaf))
+            {
+                Write-Error "Couldn't locate vswhere at $vswhere"
+                exit 1
+            }
+
+            $vsdir = &"$vswhere" -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+            $vsregedit = "$vsdir\Common7\IDE\VsRegEdit.exe"
+
+            if (-not (Test-Path -Path "$vsregedit" ))
+            {
+                Write-Error "VSWhere returned path: $vsdir, but regedit $vsregedit doesn't exist."
+                exit 1
+            }
+
+            Write-Output "VSWhere returned path: $vsdir, using regedit $vsregedit"
+            Write-Output "Disabling updates through VS Registry:"
+
+            &"$vsdir\Common7\IDE\VsRegEdit.exe" set local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword 0
+            &"$vsdir\Common7\IDE\VsRegEdit.exe" read local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword
+          displayName: Disable VSIX updates
+          condition: always()
       - checkout: self
         clean: true
         fetchDepth: $(checkoutFetchDepth)
+
+      - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
+          - task: Bash@3
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+              arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
+        - ${{ else }}:
+          - task: PowerShell@2
+            displayName: Setup Private Feeds Credentials
+            inputs:
+              filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+              arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+            env:
+              Token: $(dn-bot-dnceng-artifact-feeds-rw)
+
       - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
         - template: /eng/pipelines/common/download-artifact-step.yml
           parameters:
@@ -345,9 +399,15 @@ jobs:
                 path: $(Build.SourcesDirectory)/artifacts/bin/osx-${{ parameters.archType }}.$(_BuildConfig)/corehost
                 entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
-        - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+host.tests+packs
+        - script: $(BaseJobBuildCommand) -subset host.pkg+host.tools+host.pretest+host.tests+packs
           displayName: Build and Package
           continueOnError: ${{ and(eq(variables.SkipTests, false), eq(parameters.shouldContinueOnError, true)) }}
+
+      - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
+        - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
+          displayName: Collect vslogs on exit
+          condition: always()
+
 
       - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
         - script: |
@@ -378,6 +438,7 @@ jobs:
           runtimeVariant: ${{ parameters.runtimeVariant }}
           isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
           pgoType: ${{ parameters.pgoType }}
+          skipTests: ${{ eq(variables.SkipTests, true) }}
 
       - ${{ if ne(parameters.osGroup, 'windows') }}:
         - script: set -x && df -h

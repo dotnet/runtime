@@ -436,6 +436,7 @@ handle_enum:
 		/* nothing to do */
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		/* The result is an IntPtr */
 		mono_mb_emit_op (mb, CEE_BOX, mono_defaults.int_class);
 		break;

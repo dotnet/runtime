@@ -96,7 +96,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public abstract TValue HandleArrayElementRead (TValue arrayValue, TValue indexValue, IOperation operation);
 
-		public abstract void HandleArrayElementWrite (TValue arrayValue, TValue indexValue, TValue valueToWrite, IOperation operation);
+		public abstract void HandleArrayElementWrite (TValue arrayValue, TValue indexValue, TValue valueToWrite, IOperation operation, bool merge);
 
 		// This takes an IOperation rather than an IReturnOperation because the return value
 		// may (must?) come from BranchValue of an operation whose FallThroughSuccessor is the exit block.
@@ -139,7 +139,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return state.Get (local);
 		}
 
-		void SetLocal (ILocalReferenceOperation operation, TValue value, LocalDataFlowState<TValue, TValueLattice> state)
+		void SetLocal (ILocalReferenceOperation operation, TValue value, LocalDataFlowState<TValue, TValueLattice> state, bool merge = false)
 		{
 			var local = new LocalKey (operation.Local);
 			if (IsReferenceToCapturedVariable (operation))
@@ -149,27 +149,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			if (InterproceduralState.TrySetHoistedLocal (local, value))
 				return;
 
-			state.Set (local, value);
+			var newValue = merge
+				? state.Lattice.Lattice.ValueLattice.Meet (state.Get (local), value)
+				: value;
+			state.Set (local, newValue);
 		}
 
-		public override TValue VisitSimpleAssignment (ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		TValue ProcessSingleTargetAssignment (IOperation targetOperation, ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state, bool merge)
 		{
-			var targetOperation = operation.Target;
-			if (targetOperation is IFlowCaptureReferenceOperation flowCaptureReference) {
-				Debug.Assert (IsLValueFlowCapture (flowCaptureReference.Id));
-				Debug.Assert (!flowCaptureReference.GetValueUsageInfo (Method).HasFlag (ValueUsageInfo.Read));
-				var capturedReference = state.Current.CapturedReferences.Get (flowCaptureReference.Id).Reference;
-				targetOperation = capturedReference;
-				if (targetOperation == null)
-					throw new InvalidOperationException ();
-
-				// Note: technically we should avoid visiting the target operation below when assigning to a flow capture reference,
-				// because this should be done when the capture is created. For example, a flow capture used as both an LValue and a RValue
-				// should only evaluate the expression that computes the object instance of a property reference once.
-				// However, we just visit the instance again below for simplicity. This could be generalized if we encounter a dataflow
-				// behavior where this makes a difference.
-			}
-
 			switch (targetOperation) {
 			case IFieldReferenceOperation:
 			case IParameterReferenceOperation: {
@@ -237,17 +224,52 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// TODO: when setting a property in an attribute, target is an IPropertyReference.
 			case ILocalReferenceOperation localRef: {
 					TValue value = Visit (operation.Value, state);
-					SetLocal (localRef, value, state);
+					SetLocal (localRef, value, state, merge);
 					return value;
 				}
 			case IArrayElementReferenceOperation arrayElementRef: {
 					if (arrayElementRef.Indices.Length != 1)
 						break;
 
-					TValue arrayRef = Visit (arrayElementRef.ArrayReference, state);
-					TValue index = Visit (arrayElementRef.Indices[0], state);
-					TValue value = Visit (operation.Value, state);
-					HandleArrayElementWrite (arrayRef, index, value, operation);
+					// Similarly to VisitSimpleAssignment, this needs to handle cases where the array reference
+					// is a captured variable, even if the target of the assignment (the array element reference) is not.
+
+					TValue arrayRef;
+					TValue index;
+					TValue value;
+					if (arrayElementRef.ArrayReference is not IFlowCaptureReferenceOperation captureReference) {
+						arrayRef = Visit (arrayElementRef.ArrayReference, state);
+						index = Visit (arrayElementRef.Indices[0], state);
+						value = Visit (operation.Value, state);
+						HandleArrayElementWrite (arrayRef, index, value, operation, merge: merge);
+						return value;
+					}
+
+					index = Visit (arrayElementRef.Indices[0], state);
+					value = Visit (operation.Value, state);
+
+					var capturedReferences = state.Current.CapturedReferences.Get (captureReference.Id);
+					if (!capturedReferences.HasMultipleValues) {
+						// Single captured reference. Treat this as an overwriting assignment,
+						// unless the caller already told us to merge values because this is an
+						// assignment to one of multiple captured array element references.
+						var enumerator = capturedReferences.GetEnumerator ();
+						enumerator.MoveNext ();
+						var capture = enumerator.Current;
+						arrayRef = Visit (capture.Reference, state);
+						HandleArrayElementWrite (arrayRef, index, value, operation, merge: merge);
+						return value;
+					}
+
+					// The capture id may have captured multiple references, as in:
+					// (b ? arr1 : arr2)[0] = value;
+					// We treat this as possible write to each of the captured references,
+					// which requires merging with the previous values of each.
+
+					foreach (var capture in state.Current.CapturedReferences.Get (captureReference.Id)) {
+						arrayRef = Visit (capture.Reference, state);
+						HandleArrayElementWrite (arrayRef, index, value, operation, merge: true);
+					}
 					return value;
 				}
 			case IDiscardOperation:
@@ -293,8 +315,50 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return Visit (operation.Value, state);
 		}
 
-		// Similar to VisitLocalReference
-		public override TValue VisitFlowCaptureReference (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		public override TValue VisitSimpleAssignment (ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			var targetOperation = operation.Target;
+			if (targetOperation is not IFlowCaptureReferenceOperation flowCaptureReference)
+				return ProcessSingleTargetAssignment (targetOperation, operation, state, merge: false);
+
+			// Note: technically we should avoid visiting the target operation in ProcessNonCapturedAssignment when assigning
+			// to a flow capture reference, because this should be done when the capture is created.
+			// For example, a flow capture used as both an LValue and a RValue should only evaluate the expression that
+			// computes the object instance of a property reference once. However, we just visit the instance again below
+			// for simplicity. This could be generalized if we encounter a dataflow behavior where this makes a difference.
+
+			Debug.Assert (IsLValueFlowCapture (flowCaptureReference.Id));
+			Debug.Assert (!flowCaptureReference.GetValueUsageInfo (Method).HasFlag (ValueUsageInfo.Read));
+			var capturedReferences = state.Current.CapturedReferences.Get (flowCaptureReference.Id);
+			if (!capturedReferences.HasMultipleValues) {
+				// Single captured reference. Treat this as an overwriting assignment.
+				var enumerator = capturedReferences.GetEnumerator ();
+				enumerator.MoveNext ();
+				targetOperation = enumerator.Current.Reference;
+				return ProcessSingleTargetAssignment (targetOperation, operation, state, merge: false);
+			}
+
+			// The capture id may have captured multiple references, as in:
+			// (b ? ref v1 : ref v2) = value;
+			// We treat this as a possible write to each of the captured references,
+			// which requires merging with the previous values of each.
+
+			// Note: technically this should only visit the RHS of the assignment once.
+			// For now we visit the RHS in ProcessSingleTargetAssignment for simplicity, and
+			// rely on the warning deduplication to prevent this from producing multiple warnings
+			// if the RHS has dataflow warnings.
+
+			TValue value = TopValue;
+			foreach (var capturedReference in capturedReferences) {
+				targetOperation = capturedReference.Reference;
+				var singleValue = ProcessSingleTargetAssignment (targetOperation, operation, state, merge: true);
+				value = LocalStateLattice.Lattice.ValueLattice.Meet (value, singleValue);
+			}
+
+			return value;
+		}
+
+		TValue GetFlowCaptureValue (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
 			if (!operation.GetValueUsageInfo (Method).HasFlag (ValueUsageInfo.Read)) {
 				// There are known cases where this assert doesn't hold, because LValueFlowCaptureProvider
@@ -304,8 +368,19 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				return TopValue;
 			}
 
-			Debug.Assert (IsRValueFlowCapture (operation.Id));
+			// This assert is incorrect for cases like (b ? arr1 : arr2)[0] = v;
+			// Here the ValueUsageInfo shows that the value usage is for reading (this is probably wrong!)
+			// but the value is actually an LValueFlowCapture.
+			// Let's just disable the assert for now.
+			// Debug.Assert (IsRValueFlowCapture (operation.Id));
+
 			return state.Get (new LocalKey (operation.Id));
+		}
+
+		// Similar to VisitLocalReference
+		public override TValue VisitFlowCaptureReference (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			return GetFlowCaptureValue (operation, state);
 		}
 
 		// Similar to VisitSimpleAssignment when assigning to a local, but for values which are captured without a

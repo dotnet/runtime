@@ -267,9 +267,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						emitPdb = true;
 						debugType = DebugInformationFormat.Embedded;
 						break;
-					case "/langversion:7.3":
-						languageVersion = LanguageVersion.CSharp7_3;
-						break;
 					default:
 						var splitIndex = option.IndexOf (":");
 						if (splitIndex != -1 && option[..splitIndex] == "/main") {

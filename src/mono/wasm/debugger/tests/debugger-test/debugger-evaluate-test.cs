@@ -2156,3 +2156,28 @@ public struct EvaluateStaticGetterInValueType
 {
     public static int A => 5;
 }
+
+namespace DebuggerTests
+{
+    public class SumObjectAndString
+    {
+        public class MyClass
+        {
+            public override string ToString()
+            {
+                return "OverridenToString";
+            }
+        }
+        public static void run()
+        {
+            DateTime dt = new DateTime();
+            List<int> myList = new();
+            List<int> listNull = null;
+            object o = new();
+            MyClass myClass = new();
+            myList.Add(1);
+            Console.WriteLine(myList);
+            Console.WriteLine(dt);
+        }
+    }
+}

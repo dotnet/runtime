@@ -27,12 +27,7 @@ internal sealed class RunConfiguration
 
         RuntimeConfig? rconfig = JsonSerializer.Deserialize<RuntimeConfig>(
                                                 File.ReadAllText(runtimeConfigPath),
-                                                new JsonSerializerOptions(JsonSerializerDefaults.Web)
-                                                {
-                                                    AllowTrailingCommas = true,
-                                                    ReadCommentHandling = JsonCommentHandling.Skip,
-                                                    PropertyNameCaseInsensitive = true
-                                                });
+                                                CommonConfiguration.JsonOptions);
         if (rconfig == null)
             throw new Exception($"Failed to deserialize {runtimeConfigPath}");
 

@@ -1680,13 +1680,13 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // in setupmethodtable
     if (((pAllocator->IsCollectible() ||  pModule->IsReflection() || bmtGenerics->HasInstantiation() || !pModule->IsStaticStoragePrepared(cl)) &&
         (bmtVT->GetClassCtorSlotIndex() != INVALID_SLOT_INDEX || bmtEnumFields->dwNumStaticFields !=0))
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
         // Classes in modules that have been edited (would do on class level if there were a
         // way to tell if the class had been edited) also have dynamic statics as the number
         // of statics might have changed, so can't use the static module-wide storage
         || (pModule->IsEditAndContinueEnabled() &&
                 ((EditAndContinueModule*)pModule)->GetApplyChangesCount() > CorDB_DEFAULT_ENC_FUNCTION_VERSION)
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
         )
     {
         // We will need a dynamic id
@@ -3816,11 +3816,11 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     // Track whether any field in this type requires 8-byte alignment
     BOOL    fFieldRequiresAlign8 = HasParent() ? GetParentMethodTable()->RequiresAlign8() : FALSE;
 #endif
-#if defined(EnC_SUPPORTED)
+#if defined(FEATURE_METADATA_UPDATER)
     bool isEnCField = pFieldDescList != NULL && pFieldDescList->IsEnCNew();
 #else
     bool isEnCField = false;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
     for (i = 0; i < bmtMetaData->cFields; i++)
     {
@@ -6210,10 +6210,10 @@ MethodTableBuilder::InitMethodDesc(
     if (IsMdStatic(dwMemberAttrs))
         pNewMD->SetStatic();
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     if (fEnC)
         pNewMD->SetIsEnCAddedMethod();
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 #ifdef _DEBUG
     // Mark as many methods as synchronized as possible.

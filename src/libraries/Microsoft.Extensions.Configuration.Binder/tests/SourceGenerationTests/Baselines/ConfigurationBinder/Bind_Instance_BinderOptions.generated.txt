@@ -2,12 +2,19 @@
 #nullable enable
 #pragma warning disable CS0612, CS0618 // Suppress warnings about [Obsolete] member usage in generated code.
 
-/// <summary>Generated helper providing an AOT and linking compatible implementation for configuration binding.</summary>
-[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
-internal static class GeneratedConfigurationBinder
+namespace System.Runtime.CompilerServices
 {
-    /// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
-    public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::Program.MyClass obj, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.CoreBindingHelper.BindCore(configuration, ref obj, global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.CoreBindingHelper.GetBinderOptions(configureOptions));
+    using System;
+    using System.CodeDom.Compiler;
+
+    [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    file sealed class InterceptsLocationAttribute : Attribute
+    {
+        public InterceptsLocationAttribute(string filePath, int line, int column)
+        {
+        }
+    }
 }
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -17,102 +24,104 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
 
-    /// <summary>Provide core binding logic.</summary>
     [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
-    file static class CoreBindingHelper
+    file static class BindingExtensions
     {
+        #region IConfiguration extensions.
+        /// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
+        [InterceptsLocation(@"src-0.cs", 12, 20)]
+        public static void Bind_ProgramMyClass(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
+        {
+            if (configuration is null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+
+            if (instance is null)
+            {
+                return;
+            }
+
+            var typedObj = (Program.MyClass)instance;
+            BindCore(configuration, ref typedObj, GetBinderOptions(configureOptions));
+        }
+        #endregion IConfiguration extensions.
+
+        #region Core binding extensions.
         private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList", "MyDictionary", "MyComplexDictionary" });
 
-        public static void BindCore(IConfiguration configuration, ref List<int> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref List<int> instance, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj.Add(ParseInt(value, () => section.Path));
+                    instance.Add(ParseInt(value, () => section.Path));
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Dictionary<string, string> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Dictionary<string, string> instance, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 if (section.Value is string value)
                 {
-                    obj[section.Key] = value;
+                    instance[section.Key] = value;
                 }
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Dictionary<string, Program.MyClass2> obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Dictionary<string, Program.MyClass2> instance, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (!(obj.TryGetValue(section.Key, out Program.MyClass2? element) && element is not null))
+                if (!(instance.TryGetValue(section.Key, out Program.MyClass2? element) && element is not null))
                 {
                     element = new Program.MyClass2();
                 }
-                obj[section.Key] = element;
+                instance[section.Key] = element;
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref Program.MyClass obj, BinderOptions? binderOptions)
+        public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, BinderOptions? binderOptions)
         {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
             ValidateConfigurationKeys(typeof(Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
 
-            obj.MyString = configuration["MyString"]!;
+            instance.MyString = configuration["MyString"]!;
 
             if (configuration["MyInt"] is string value1)
             {
-                obj.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
+                instance.MyInt = ParseInt(value1, () => configuration.GetSection("MyInt").Path);
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section2)
             {
-                List<int>? temp4 = obj.MyList;
+                List<int>? temp4 = instance.MyList;
                 temp4 ??= new List<int>();
                 BindCore(section2, ref temp4, binderOptions);
-                obj.MyList = temp4;
+                instance.MyList = temp4;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyDictionary")) is IConfigurationSection section5)
             {
-                Dictionary<string, string>? temp7 = obj.MyDictionary;
+                Dictionary<string, string>? temp7 = instance.MyDictionary;
                 temp7 ??= new Dictionary<string, string>();
                 BindCore(section5, ref temp7, binderOptions);
-                obj.MyDictionary = temp7;
+                instance.MyDictionary = temp7;
             }
 
             if (AsConfigWithChildren(configuration.GetSection("MyComplexDictionary")) is IConfigurationSection section8)
             {
-                Dictionary<string, Program.MyClass2>? temp10 = obj.MyComplexDictionary;
+                Dictionary<string, Program.MyClass2>? temp10 = instance.MyComplexDictionary;
                 temp10 ??= new Dictionary<string, Program.MyClass2>();
                 BindCore(section8, ref temp10, binderOptions);
-                obj.MyComplexDictionary = temp10;
+                instance.MyComplexDictionary = temp10;
             }
         }
+
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
         public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
@@ -157,7 +166,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         
             if (binderOptions.BindNonPublicProperties)
             {
-                throw new global::System.NotSupportedException($"The configuration binding source generator does not support 'BinderOptions.BindNonPublicProperties'.");
+                throw new NotSupportedException($"The configuration binding source generator does not support 'BinderOptions.BindNonPublicProperties'.");
             }
         
             return binderOptions;
@@ -174,5 +183,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
             }
         }
+        #endregion Core binding extensions.
     }
 }

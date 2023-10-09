@@ -24,10 +24,6 @@ public class GetChromeVersions : MBU.Task
     private const string s_depsUrlPrefix = $"https://omahaproxy.appspot.com/deps.json?version=";
     private const int s_versionCheckThresholdDays = 1;
 
-    // start at the branch position found in all.json, and try to
-    // download chrome, and chromedriver. If not found, then try up to
-    // s_numBranchPositionsToTry lower versions
-    private const int s_numBranchPositionsToTry = 50;
     private static readonly HttpClient s_httpClient = new();
 
     public string Channel { get; set; } = "stable";
@@ -43,6 +39,11 @@ public class GetChromeVersions : MBU.Task
     public string IntermediateOutputPath { get; set; } = string.Empty;
 
     public int MaxMajorVersionsToCheck { get; set; } = 2;
+
+    // start at the branch position found in all.json, and try to
+    // download chrome, and chromedriver. If not found, then try up to
+    // MaxBranchPositionsToCheck lower versions
+    public int MaxBranchPositionsToCheck { get; set; } = 75;
 
     [Output]
     public string ChromeVersion { get; set; } = string.Empty;
@@ -240,7 +241,7 @@ public class GetChromeVersions : MBU.Task
         string baseUrl = $"{s_snapshotBaseUrl}/{OSPrefix}";
 
         int branchPosition = int.Parse(version.branch_base_position);
-        for (int i = 0; i < s_numBranchPositionsToTry; i++)
+        for (int i = 0; i < MaxBranchPositionsToCheck; i++)
         {
             string branchUrl = $"{baseUrl}/{branchPosition}";
             string url = $"{branchUrl}/REVISIONS";

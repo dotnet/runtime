@@ -31,7 +31,6 @@
 #include "MethodTable.inl"
 #include "ObjectLayout.h"
 
-#include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)

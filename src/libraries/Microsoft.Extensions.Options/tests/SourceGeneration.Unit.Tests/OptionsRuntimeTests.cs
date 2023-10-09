@@ -25,10 +25,15 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 {
                     Tall = 10,
                     Id = "1",
-                    Children = new()
+                    Children1 = new()
                     {
-                        new ChildOptions() { Name = "C1" },
-                        new ChildOptions() { Name = "C2" }
+                        new ChildOptions() { Name = "C1-1" },
+                        new ChildOptions() { Name = "C1-2" }
+                    },
+                    Children2 = new List<ChildOptions>()
+                    {
+                        new ChildOptions() { Name = "C2-1" },
+                        new ChildOptions() { Name = "C2-2" }
                     },
                     NestedList = new()
                     {
@@ -126,12 +131,19 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
                 {
                     Tall = 10,
                     Id = "1",
-                    Children = new()
+                    Children1 = new()
                     {
                         new ChildOptions(),
                         new ChildOptions(),
                         new ChildOptions()
-                    }
+                    },
+                    Children2 = new List<ChildOptions>()
+                    {
+                        new ChildOptions(),
+                        new ChildOptions(),
+                        new ChildOptions()
+                    },
+
                 }
             };
 
@@ -142,9 +154,12 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             Assert.True(result1.Failed);
             Assert.Equal(new List<string>
                         {
-                            "Name: The MyOptions.Nested.Children[0].Name field is required.",
-                            "Name: The MyOptions.Nested.Children[1].Name field is required.",
-                            "Name: The MyOptions.Nested.Children[2].Name field is required.",
+                            "Name: The MyOptions.Nested.Children1[0].Name field is required.",
+                            "Name: The MyOptions.Nested.Children1[1].Name field is required.",
+                            "Name: The MyOptions.Nested.Children1[2].Name field is required.",
+                            "Name: The MyOptions.Nested.Children2[0].Name field is required.",
+                            "Name: The MyOptions.Nested.Children2[1].Name field is required.",
+                            "Name: The MyOptions.Nested.Children2[2].Name field is required.",
                         },
                         result1.Failures);
 
@@ -152,9 +167,12 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             Assert.True(result2.Failed);
             Assert.Equal(new List<string>
                         {
-                            "DataAnnotation validation failed for 'MyOptions.Nested.Children[0]' members: 'Name' with the error: 'The Name field is required.'.",
-                            "DataAnnotation validation failed for 'MyOptions.Nested.Children[1]' members: 'Name' with the error: 'The Name field is required.'.",
-                            "DataAnnotation validation failed for 'MyOptions.Nested.Children[2]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children1[0]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children1[1]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children1[2]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children2[0]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children2[1]' members: 'Name' with the error: 'The Name field is required.'.",
+                            "DataAnnotation validation failed for 'MyOptions.Nested.Children2[2]' members: 'Name' with the error: 'The Name field is required.'.",
                         },
                         result2.Failures);
         }
@@ -193,6 +211,37 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             ValidateOptionsResult result2 = dataAnnotationValidateOptions.Validate("MyOptions", options);
             Assert.True(result1.Succeeded);
         }
+
+#if NET8_0_OR_GREATER
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void TestNewDataAnnotationFailures()
+        {
+            NewAttributesValidator sourceGenValidator = new();
+
+            OptionsUsingNewAttributes validOptions = new()
+            {
+                P1 = "123456", P2 = 2, P3 = 4, P4 = "c", P5 = "d"
+            };
+
+            ValidateOptionsResult result = sourceGenValidator.Validate("OptionsUsingNewAttributes", validOptions);
+            Assert.True(result.Succeeded);
+
+            OptionsUsingNewAttributes invalidOptions = new()
+            {
+                P1 = "123", P2 = 4, P3 = 1, P4 = "e", P5 = "c"
+            };
+
+            result = sourceGenValidator.Validate("OptionsUsingNewAttributes", invalidOptions);
+
+            Assert.Equal(new []{
+                "P1: The field OptionsUsingNewAttributes.P1 must be a string or collection type with a minimum length of '5' and maximum length of '10'.",
+                "P2: The OptionsUsingNewAttributes.P2 field does not equal any of the values specified in AllowedValuesAttribute.",
+                "P3: The OptionsUsingNewAttributes.P3 field equals one of the values specified in DeniedValuesAttribute.",
+                "P4: The OptionsUsingNewAttributes.P4 field does not equal any of the values specified in AllowedValuesAttribute.",
+                "P5: The OptionsUsingNewAttributes.P5 field equals one of the values specified in DeniedValuesAttribute."
+            }, result.Failures);
+        }
+#endif // NET8_0_OR_GREATER
     }
 
     public class MyOptions
@@ -219,7 +268,10 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
         public string? Id { get; set; }
 
         [ValidateEnumeratedItems]
-        public List<ChildOptions>? Children { get; set; }
+        public List<ChildOptions>? Children1 { get; set; }
+
+        [ValidateEnumeratedItems]
+        public IEnumerable<ChildOptions>? Children2 { get; set; }
 
 #pragma warning disable SYSLIB1211 // Source gen does static analysis for circular reference. We need to disable it for this test.
         [ValidateEnumeratedItems]
@@ -249,4 +301,29 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     public partial class MySourceGenOptionsValidator : IValidateOptions<MyOptions>
     {
     }
+
+#if NET8_0_OR_GREATER
+    public class OptionsUsingNewAttributes
+    {
+        [Length(5, 10)]
+        public string P1 { get; set; }
+
+        [AllowedValues(1, 2, 3)]
+        public int P2 { get; set; }
+
+        [DeniedValues(1, 2, 3)]
+        public int P3 { get; set; }
+
+        [AllowedValues(new object?[] { "a", "b", "c" })]
+        public string P4 { get; set; }
+
+        [DeniedValues(new object?[] { "a", "b", "c" })]
+        public string P5 { get; set; }
+    }
+
+    [OptionsValidator]
+    public partial class NewAttributesValidator : IValidateOptions<OptionsUsingNewAttributes>
+    {
+    }
+#endif // NET8_0_OR_GREATER
 }

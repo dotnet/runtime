@@ -217,13 +217,13 @@ namespace BundleTests.Helpers
             return BundleApp(fixture, out singleFile, options, copyExcludedFiles:false);
         }
 
-        public static void AddLongNameContentToAppWithSubDirs(TestProjectFixture fixture)
+        public static void AddLongNameContentToAppWithSubDirs(string projectDirectory)
         {
             // For tests using the AppWithSubDirs, One of the sub-directories with a really long name
             // is generated during test-runs rather than being checked in as a test asset.
             // This prevents git-clone of the repo from failing if long-file-name support is not enabled on windows.
             var longDirName = "This is a really, really, really, really, really, really, really, really, really, really, really, really, really, really long file name for punctuation";
-            var longDirPath = Path.Combine(fixture.TestProject.ProjectDirectory, "Sentence", longDirName);
+            var longDirPath = Path.Combine(projectDirectory, "Sentence", longDirName);
             Directory.CreateDirectory(longDirPath);
             using (var writer = File.CreateText(Path.Combine(longDirPath, "word")))
             {

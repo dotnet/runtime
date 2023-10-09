@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Microsoft.Interop
 {
@@ -29,7 +30,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.InvalidAttributedMethodSignatureMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor InvalidAttributedMethodSignature =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
             Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
             GetResourceString(nameof(SR.InvalidAttributedMethodSignatureMessageLibraryImport)),
@@ -40,7 +41,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.InvalidAttributedMethodContainingTypeMissingModifiersMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor InvalidAttributedMethodContainingTypeMissingModifiers =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
             Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
             GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingModifiersMessageLibraryImport)),
@@ -51,7 +52,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.InvalidStringMarshallingConfigurationMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
             Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
             GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationMessageLibraryImport)),
@@ -62,7 +63,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.TypeNotSupportedMessageParameterLibraryImport"/>
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageParameterLibraryImport)),
@@ -73,7 +74,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.TypeNotSupportedMessageReturnLibraryImport"/>
         public static readonly DiagnosticDescriptor ReturnTypeNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageReturnLibraryImport)),
@@ -84,7 +85,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.TypeNotSupportedMessageParameterWithDetails"/>
         public static readonly DiagnosticDescriptor ParameterTypeNotSupportedWithDetails =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageParameterWithDetails)),
@@ -95,7 +96,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.TypeNotSupportedMessageReturnWithDetails"/>
         public static readonly DiagnosticDescriptor ReturnTypeNotSupportedWithDetails =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
                 GetResourceString(nameof(SR.TypeNotSupportedMessageReturnWithDetails)),
@@ -106,7 +107,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.ConfigurationNotSupportedMessageParameterLibraryImport"/>
         public static readonly DiagnosticDescriptor ParameterConfigurationNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
                 GetResourceString(nameof(SR.ConfigurationNotSupportedMessageParameterLibraryImport)),
@@ -117,7 +118,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.ConfigurationNotSupportedMessageReturnLibraryImport"/>
         public static readonly DiagnosticDescriptor ReturnConfigurationNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
                 GetResourceString(nameof(SR.ConfigurationNotSupportedMessageReturnLibraryImport)),
@@ -128,7 +129,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.MarshalAsConfigurationNotSupportedMessageParameterLibraryImport"/>
         public static readonly DiagnosticDescriptor MarshalAsParameterConfigurationNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 GeneratorDiagnostics.Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
                 GetResourceString(nameof(SR.MarshalAsConfigurationNotSupportedMessageParameterLibraryImport)),
@@ -139,7 +140,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.MarshalAsConfigurationNotSupportedMessageReturnLibraryImport"/>
         public static readonly DiagnosticDescriptor MarshalAsReturnConfigurationNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 GeneratorDiagnostics.Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
                 GetResourceString(nameof(SR.MarshalAsConfigurationNotSupportedMessageReturnLibraryImport)),
@@ -150,7 +151,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.ConfigurationNotSupportedMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor ConfigurationNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
                 GetResourceString(nameof(SR.ConfigurationNotSupportedMessageLibraryImport)),
@@ -161,7 +162,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.ConfigurationNotSupportedMessageValueLibraryImport"/>
         public static readonly DiagnosticDescriptor ConfigurationValueNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
                 GetResourceString(nameof(SR.ConfigurationNotSupportedMessageValueLibraryImport)),
@@ -172,7 +173,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.ConfigurationNotSupportedMessageMarshallingInfoLibraryImport"/>
         public static readonly DiagnosticDescriptor MarshallingAttributeConfigurationNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConfigurationNotSupported,
                 GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
                 GetResourceString(nameof(SR.ConfigurationNotSupportedMessageMarshallingInfoLibraryImport)),
@@ -183,7 +184,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.CannotForwardToDllImportMessage"/>
         public static readonly DiagnosticDescriptor CannotForwardToDllImport =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.CannotForwardToDllImport,
                 GetResourceString(nameof(SR.CannotForwardToDllImportTitle)),
                 GetResourceString(nameof(SR.CannotForwardToDllImportMessage)),
@@ -194,7 +195,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.RequiresAllowUnsafeBlocksMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor RequiresAllowUnsafeBlocks =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.RequiresAllowUnsafeBlocks,
                 GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksTitleLibraryImport)),
                 GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksMessageLibraryImport)),
@@ -205,7 +206,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.UnnecessaryParameterMarshallingInfoMessage"/>
         public static readonly DiagnosticDescriptor UnnecessaryParameterMarshallingInfo =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.UnnecessaryMarshallingInfo,
                 GetResourceString(nameof(SR.UnnecessaryMarshallingInfoTitle)),
                 GetResourceString(nameof(SR.UnnecessaryParameterMarshallingInfoMessage)),
@@ -220,7 +221,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.UnnecessaryMarshallingInfoDescription"/>
         public static readonly DiagnosticDescriptor UnnecessaryReturnMarshallingInfo =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.UnnecessaryMarshallingInfo,
                 GetResourceString(nameof(SR.UnnecessaryMarshallingInfoTitle)),
                 GetResourceString(nameof(SR.UnnecessaryReturnMarshallingInfoMessage)),
@@ -235,7 +236,7 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam"/>
         public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallOutParam =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidLibraryImportAttributeUsage,
                 GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),
                 GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam)),
@@ -245,12 +246,22 @@ namespace Microsoft.Interop
 
         /// <inheritdoc cref="SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue"/>
         public static readonly DiagnosticDescriptor SizeOfInCollectionMustBeDefinedAtCallReturnValue =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.InvalidLibraryImportAttributeUsage,
                 GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeTitle)),
                 GetResourceString(nameof(SR.SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue)),
                 Category,
                 DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+        /// <inheritdoc cref="SR.LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails"/>
+        public static readonly DiagnosticDescriptor LibraryImportUsageDoesNotFollowBestPractices =
+            new DiagnosticDescriptor(
+                Ids.NotRecommendedGeneratedComInterfaceUsage,
+                GetResourceString(nameof(SR.LibraryImportUsageDoesNotFollowBestPracticesTitle)),
+                GetResourceString(nameof(SR.LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails)),
+                Category,
+                DiagnosticSeverity.Info,
                 isEnabledByDefault: true);
 
         /// <summary>

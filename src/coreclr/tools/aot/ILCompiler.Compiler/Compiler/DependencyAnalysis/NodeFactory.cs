@@ -203,22 +203,20 @@ namespace ILCompiler.DependencyAnalysis
 
             _threadStatics = new NodeCache<MetadataType, ISymbolDefinitionNode>(CreateThreadStaticsNode);
 
-            TypeThreadStaticIndexNode inlinedThreadStatiscIndexNode = null;
             if (_inlinedThreadStatics.IsComputed())
             {
                 _inlinedThreadStatiscNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
-                inlinedThreadStatiscIndexNode = new TypeThreadStaticIndexNode(_inlinedThreadStatiscNode);
             }
 
             _typeThreadStaticIndices = new NodeCache<MetadataType, TypeThreadStaticIndexNode>(type =>
             {
-                if (inlinedThreadStatiscIndexNode != null &&
-                _inlinedThreadStatics.GetOffsets().ContainsKey(type))
+                if (_inlinedThreadStatics.IsComputed() &&
+                    _inlinedThreadStatics.GetOffsets().ContainsKey(type))
                 {
-                    return inlinedThreadStatiscIndexNode;
+                    return new TypeThreadStaticIndexNode(type, _inlinedThreadStatiscNode);
                 }
 
-                return new TypeThreadStaticIndexNode(type);
+                return new TypeThreadStaticIndexNode(type, null);
             });
 
             _GCStaticEETypes = new NodeCache<GCPointerMap, GCStaticEETypeNode>((GCPointerMap gcMap) =>
@@ -460,7 +458,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _typesWithMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
             {
-                return new TypeMetadataNode(type);
+                return new TypeMetadataNode(type, includeCustomAttributes: true);
+            });
+
+            _typesWithMetadataWithoutCustomAttributes = new NodeCache<MetadataType, TypeMetadataNode>(type =>
+            {
+                return new TypeMetadataNode(type, includeCustomAttributes: false);
             });
 
             _methodsWithMetadata = new NodeCache<MethodDesc, MethodMetadataNode>(method =>
@@ -1156,6 +1159,16 @@ namespace ILCompiler.DependencyAnalysis
             // in the dependency graph otherwise.
             Debug.Assert(MetadataManager is UsageBasedMetadataManager);
             return _typesWithMetadata.GetOrAdd(type);
+        }
+
+        private NodeCache<MetadataType, TypeMetadataNode> _typesWithMetadataWithoutCustomAttributes;
+
+        internal TypeMetadataNode TypeMetadataWithoutCustomAttributes(MetadataType type)
+        {
+            // These are only meaningful for UsageBasedMetadataManager. We should not have them
+            // in the dependency graph otherwise.
+            Debug.Assert(MetadataManager is UsageBasedMetadataManager);
+            return _typesWithMetadataWithoutCustomAttributes.GetOrAdd(type);
         }
 
         private NodeCache<MethodDesc, MethodMetadataNode> _methodsWithMetadata;

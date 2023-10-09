@@ -83,6 +83,10 @@ namespace Microsoft.Interop
         /// The provided <see cref="ByValueContentsMarshalKind" /> is supported but does not change behavior from the default in this scenario.
         /// </summary>
         Unnecessary,
+        /// <summary>
+        /// The provided <see cref="ByValueContentsMarshalKind" /> is supported but does not follow best practices.
+        /// </summary>
+        NotRecommended,
     }
 
     /// <summary>

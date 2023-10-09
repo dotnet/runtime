@@ -1211,29 +1211,55 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // Reset spilled flag, since we are going to load a local variable from its home location.
             unspillTree->gtFlags &= ~GTF_SPILLED;
 
-            GenTreeLclVar* lcl       = unspillTree->AsLclVar();
-            LclVarDsc*     varDsc    = compiler->lvaGetDesc(lcl);
-            var_types      spillType = varDsc->GetRegisterType(lcl);
-            assert(spillType != TYP_UNDEF);
+            GenTreeLclVar* lcl         = unspillTree->AsLclVar();
+            LclVarDsc*     varDsc      = compiler->lvaGetDesc(lcl);
+            var_types      unspillType = varDsc->GetRegisterType(lcl);
+            assert(unspillType != TYP_UNDEF);
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // Load local variable from its home location.
-            // Never allow truncating the locals here, otherwise a subsequent
-            // use of the local with a wider type would see the truncated
-            // value. We do allow wider loads as those can be efficient even
-            // when unaligned and might be smaller encoding wise (on xarch).
-            var_types lclLoadType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
-            assert(lclLoadType != TYP_UNDEF);
-            if (genTypeSize(spillType) < genTypeSize(lclLoadType))
+
+            // Pick type to reload register from stack with. Note that in
+            // general, the type of 'lcl' does not have any relation to the
+            // type of 'varDsc':
+            //
+            // * For normalize-on-load (NOL) locals it is wider under normal
+            // circumstances, where morph has added a cast on top. In some
+            // cases it is the same, when morph has used a subrange assertion
+            // to avoid normalizing.
+            //
+            // * For all locals it can be narrower in some cases, when
+            // lowering optimizes to use a smaller typed `cmp` (e.g. 32-bit cmp
+            // for 64-bit local, or 8-bit cmp for 16-bit local).
+            //
+            // * For byrefs it can differ in GC-ness (TYP_I_IMPL vs TYP_BYREF).
+            //
+            // In the NOL case the potential use of subrange assertions means
+            // we always have to normalize, even if 'lcl' is wide; we could
+            // have a GTF_SPILLED LCL_VAR<int>(NOL local) with a future
+            // LCL_VAR<ushort>(same NOL local), where the latter local then
+            // relies on the normalization to have happened here as part of
+            // unspilling.
+            //
+            if (varDsc->lvNormalizeOnLoad())
             {
-                spillType = lclLoadType;
+                unspillType = varDsc->TypeGet();
+            }
+            else
+            {
+                // Potentially narrower -- see if we should widen.
+                var_types lclLoadType = varDsc->GetStackSlotHomeType();
+                assert(lclLoadType != TYP_UNDEF);
+                if (genTypeSize(unspillType) < genTypeSize(lclLoadType))
+                {
+                    unspillType = lclLoadType;
+                }
             }
 
 #if defined(TARGET_LOONGARCH64)
-            if (varTypeIsFloating(spillType) && emitter::isGeneralRegister(tree->GetRegNum()))
+            if (varTypeIsFloating(unspillType) && emitter::isGeneralRegister(tree->GetRegNum()))
             {
-                spillType = spillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
+                unspillType = unspillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
             }
 #endif
 #elif defined(TARGET_ARM)
@@ -1241,9 +1267,10 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 #else
             NYI("Unspilling not implemented for this target architecture.");
 #endif
+
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
             bool isLastUse = lcl->IsLastUse(0);
-            genUnspillLocal(lcl->GetLclNum(), spillType, lcl->AsLclVar(), tree->GetRegNum(), reSpill, isLastUse);
+            genUnspillLocal(lcl->GetLclNum(), unspillType, lcl->AsLclVar(), tree->GetRegNum(), reSpill, isLastUse);
         }
         else if (unspillTree->IsMultiRegLclVar())
         {

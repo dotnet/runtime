@@ -7,7 +7,7 @@
     <Compile Include="InlineArrayInvalid.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="InvalidCSharp.ilproj" />
+    <ProjectReference Include="InvalidCSharpInlineArray.ilproj" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

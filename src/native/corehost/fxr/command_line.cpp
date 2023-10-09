@@ -285,7 +285,7 @@ void command_line::print_muxer_info(const pal::string_t &dotnet_root, const pal:
     pal::string_t commit = _STRINGIFY(REPO_COMMIT_HASH);
     trace::println(_X("\n")
         _X("Host:\n")
-        _X("  Version:      ") _STRINGIFY(HOST_FXR_PKG_VER) _X("\n")
+        _X("  Version:      ") _STRINGIFY(HOST_VERSION) _X("\n")
         _X("  Architecture: ") _STRINGIFY(CURRENT_ARCH_NAME) _X("\n")
         _X("  Commit:       %s\n")
         _X("  RID:          %s"),

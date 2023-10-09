@@ -32,12 +32,10 @@ public class My
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Object o = new Object();
         foo(o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, o, bar(o), o);
-
-        return 100;
     }
 }
 

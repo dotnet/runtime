@@ -38,7 +38,7 @@
     <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)) or '$(RequiresProcessIsolation)' == 'true'">Exe</OutputType>
 
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
-    <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildOnly</CLRTestKind>
+    <CLRTestKind Condition="'$(CLRTestKind)' == ''">SharedLibrary</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
 
     <!-- Merged test runner assemblies might not have any non-generated sources, and that's okay -->

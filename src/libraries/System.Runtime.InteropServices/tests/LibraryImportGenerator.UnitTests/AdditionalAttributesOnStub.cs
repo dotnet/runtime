@@ -4,6 +4,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using System.Collections.Generic;
 using System.Linq;
@@ -286,7 +287,7 @@ namespace LibraryImportGenerator.UnitTests
                         }
 
                         AttributeSyntax syntax = (AttributeSyntax)attr.ApplicationSyntaxReference!.GetSyntax();
-                        return syntax.Name.ToString().StartsWith("global::");
+                        return syntax.Name.ToString().StartsWith(TypeNames.GlobalAlias);
                     }
                 }
                 else

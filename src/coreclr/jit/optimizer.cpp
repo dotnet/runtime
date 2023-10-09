@@ -3035,7 +3035,9 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 
             JITDUMP(FMT_LP " head " FMT_BB " is also " FMT_LP " bottom\n", loopInd, h->bbNum, sibling);
 
-            BasicBlock* const newH = fgNewBBbefore(BBJ_NONE, t, /*extendRegion*/ true);
+            BasicBlock* const newH = fgNewBBbefore(BBJ_NONE, t, /*extendRegion*/ false);
+
+            fgSetEHRegionForNewLoopHead(newH, t);
 
             fgRemoveRefPred(t, h);
             fgAddRefPred(t, newH);
@@ -5734,7 +5736,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     case TYP_BYTE:
                         lmask = 0x0000007F;
                         break;
-                    case TYP_BOOL:
                     case TYP_UBYTE:
                         lmask = 0x000000FF;
                         break;
@@ -5782,7 +5783,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     case TYP_BYTE:
                         imask = 0x0000007F;
                         break;
-                    case TYP_BOOL:
                     case TYP_UBYTE:
                         imask = 0x000000FF;
                         break;
@@ -7961,6 +7961,74 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
 }
 
 //------------------------------------------------------------------------------
+// fgSetEHRegionForNewLoopHead: When a new loop HEAD block is created, this sets the EH region properly for
+// the new block.
+//
+// In which EH region should the header live?
+//
+// The header block is added immediately before `top`.
+//
+// The `top` block cannot be the first block of a filter or handler: `top` must have a back-edge from a
+// BBJ_COND or BBJ_ALWAYS within the loop, and a filter or handler cannot be branched to like that.
+//
+// The `top` block can be the first block of a `try` region, and you can fall into or branch to the
+// first block of a `try` region. (For top-entry loops, `top` will both be the target of a back-edge
+// and a fall-through from the previous block.)
+//
+// If the `top` block is NOT the first block of a `try` region, the header can simply extend the
+// `top` block region.
+//
+// If the `top` block IS the first block of a `try`, we find its parent region and use that. For mutual-protect
+// regions, we need to find the actual parent, as the block stores the most "nested" mutual region. For
+// non-mutual-protect regions, due to EH canonicalization, we are guaranteed that no other EH regions begin
+// on the same block, so looking to just the parent is sufficient. Note that we can't just extend the EH
+// region of `top` to the header, because `top` will still be the target of backward branches from
+// within the loop. If those backward branches come from outside the `try` (say, only the top half of the loop
+// is a `try` region), then we can't branch to a non-first `try` region block (you always must entry the `try`
+// in the first block).
+//
+// Note that hoisting any code out of a try region, for example, to a pre-header block in a different
+// EH region, needs to ensure that no exceptions will be thrown.
+//
+// Arguments:
+//    newHead - the new `head` block, which has already been added to the block list ahead of the loop `top`
+//    top     - the loop `top` block
+//
+void Compiler::fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top)
+{
+    assert(newHead->bbNext == top);
+    assert(!fgIsFirstBlockOfFilterOrHandler(top));
+
+    if ((top->bbFlags & BBF_TRY_BEG) != 0)
+    {
+        // `top` is the beginning of a try block. Figure out the EH region to use.
+        assert(top->hasTryIndex());
+        unsigned short newTryIndex = (unsigned short)ehTrueEnclosingTryIndexIL(top->getTryIndex());
+        if (newTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            // No EH try index.
+            newHead->clearTryIndex();
+        }
+        else
+        {
+            newHead->setTryIndex(newTryIndex);
+        }
+
+        // What handler region to use? Use the same handler region as `top`.
+        newHead->copyHndIndex(top);
+    }
+    else
+    {
+        // `top` is not the beginning of a try block. Just extend the EH region to the pre-header.
+        // We don't need to call `fgExtendEHRegionBefore()` because all the special handling that function
+        // does it to account for `top` being the first block of a `try` or handler region, which we know
+        // is not true.
+
+        newHead->copyEHRegion(top);
+    }
+}
+
+//------------------------------------------------------------------------------
 // fgCreateLoopPreHeader: Creates a pre-header block for the given loop.
 // A pre-header is a block outside the loop that falls through or branches to the loop
 // entry block. It is the only non-loop predecessor block to the entry block (thus, it
@@ -8198,62 +8266,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
     // Link in the preHead block
     fgInsertBBbefore(top, preHead);
-
-    // In which EH region should the pre-header live?
-    //
-    // The pre-header block is added immediately before `top`.
-    //
-    // The `top` block cannot be the first block of a filter or handler: `top` must have a back-edge from a
-    // BBJ_COND or BBJ_ALWAYS within the loop, and a filter or handler cannot be branched to like that.
-    //
-    // The `top` block can be the first block of a `try` region, and you can fall into or branch to the
-    // first block of a `try` region. (For top-entry loops, `top` will both be the target of a back-edge
-    // and a fall-through from the previous block.)
-    //
-    // If the `top` block is NOT the first block of a `try` region, the pre-header can simply extend the
-    // `top` block region.
-    //
-    // If the `top` block IS the first block of a `try`, we find its parent region and use that. For mutual-protect
-    // regions, we need to find the actual parent, as the block stores the most "nested" mutual region. For
-    // non-mutual-protect regions, due to EH canonicalization, we are guaranteed that no other EH regions begin
-    // on the same block, so looking to just the parent is sufficient. Note that we can't just extend the EH
-    // region of `top` to the pre-header, because `top` will still be the target of backward branches from
-    // within the loop. If those backward branches come from outside the `try` (say, only the top half of the loop
-    // is a `try` region), then we can't branch to a non-first `try` region block (you always must entry the `try`
-    // in the first block).
-    //
-    // Note that hoisting any code out of a try region, for example, to a pre-header block in a different
-    // EH region, needs to ensure that no exceptions will be thrown.
-
-    assert(!fgIsFirstBlockOfFilterOrHandler(top));
-
-    if ((top->bbFlags & BBF_TRY_BEG) != 0)
-    {
-        // `top` is the beginning of a try block. Figure out the EH region to use.
-        assert(top->hasTryIndex());
-        unsigned short newTryIndex = (unsigned short)ehTrueEnclosingTryIndexIL(top->getTryIndex());
-        if (newTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            // No EH try index.
-            preHead->clearTryIndex();
-        }
-        else
-        {
-            preHead->setTryIndex(newTryIndex);
-        }
-
-        // What handler region to use? Use the same handler region as `top`.
-        preHead->copyHndIndex(top);
-    }
-    else
-    {
-        // `top` is not the beginning of a try block. Just extend the EH region to the pre-header.
-        // We don't need to call `fgExtendEHRegionBefore()` because all the special handling that function
-        // does it to account for `top` being the first block of a `try` or handler region, which we know
-        // is not true.
-
-        preHead->copyEHRegion(top);
-    }
+    fgSetEHRegionForNewLoopHead(preHead, top);
 
     // TODO-CQ: set dominators for this block, to allow loop optimizations requiring them
     //        (e.g: hoisting expression in a loop with the same 'head' as this one)
@@ -9031,9 +9044,9 @@ void Compiler::optRemoveRedundantZeroInits()
     CompAllocator   allocator(getAllocator(CMK_ZeroInit));
     LclVarRefCounts refCounts(allocator);
     BitVecTraits    bitVecTraits(lvaCount, this);
-    BitVec          zeroInitLocals = BitVecOps::MakeEmpty(&bitVecTraits);
-    bool            hasGCSafePoint = false;
-    bool            canThrow       = false;
+    BitVec          zeroInitLocals         = BitVecOps::MakeEmpty(&bitVecTraits);
+    bool            hasGCSafePoint         = false;
+    bool            hasImplicitControlFlow = false;
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
 
@@ -9044,6 +9057,8 @@ void Compiler::optRemoveRedundantZeroInits()
         CompAllocator   allocator(getAllocator(CMK_ZeroInit));
         LclVarRefCounts defsInBlock(allocator);
         bool            removedTrackedDefs = false;
+        bool            hasEHSuccs         = block->HasPotentialEHSuccs(this);
+
         for (Statement* stmt = block->FirstNonPhiDef(); stmt != nullptr;)
         {
             Statement* next = stmt->GetNextStmt();
@@ -9054,10 +9069,7 @@ void Compiler::optRemoveRedundantZeroInits()
                     hasGCSafePoint = true;
                 }
 
-                if ((tree->gtFlags & GTF_EXCEPT) != 0)
-                {
-                    canThrow = true;
-                }
+                hasImplicitControlFlow |= hasEHSuccs && ((tree->gtFlags & GTF_EXCEPT) != 0);
 
                 switch (tree->gtOper)
                 {
@@ -9203,7 +9215,8 @@ void Compiler::optRemoveRedundantZeroInits()
                             }
                         }
 
-                        if (!removedExplicitZeroInit && isEntire && (!canThrow || !lclDsc->lvLiveInOutOfHndlr))
+                        if (!removedExplicitZeroInit && isEntire &&
+                            (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->lvLiveInOutOfHndlr)))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.

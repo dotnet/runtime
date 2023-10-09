@@ -12,6 +12,7 @@
     <WorkloadOutputPath Condition="'$(workloadArtifactsPath)' != ''">$(workloadArtifactsPath)/</WorkloadOutputPath>
     <PackageSource>$(ArtifactsShippingPackagesDir)</PackageSource>
     <PackageSource Condition="'$(workloadPackagesPath)' != ''">$(workloadPackagesPath)/</PackageSource>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <!-- Arcade -->
@@ -140,7 +141,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity)*.*.nupkg" 
+      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity)*.*.nupkg"
                         MsiVersion="$(MsiVersion)"
                         SupportsMachineArch="%(SupportsMachineArch)" />
     </ItemGroup>

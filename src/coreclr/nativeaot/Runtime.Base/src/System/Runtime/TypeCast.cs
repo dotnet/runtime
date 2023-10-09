@@ -243,7 +243,29 @@ namespace System.Runtime
         [RuntimeExport("RhTypeCast_IsInstanceOfException")]
         public static unsafe bool IsInstanceOfException(MethodTable* pTargetType, object? obj)
         {
-            return IsInstanceOfClass(pTargetType, obj) != null;
+            // Based on IsInstanceOfClass
+
+            if (obj == null)
+                return false;
+
+            MethodTable* pObjType = obj.GetMethodTable();
+
+            if (pObjType == pTargetType)
+                return true;
+
+            // arrays can be cast to System.Object and System.Array
+            if (pObjType->IsArray)
+                return WellKnownEETypes.IsValidArrayBaseType(pTargetType);
+
+            while (true)
+            {
+                pObjType = pObjType->NonArrayBaseType;
+                if (pObjType == null)
+                    return false;
+
+                if (pObjType == pTargetType)
+                    return true;
+            }
         }
 
         // ChkCast test used for unusual cases (naked type parameters, variant generic types)
@@ -271,7 +293,7 @@ namespace System.Runtime
 
         slowPath:
             // fall through to the slow helper
-            object objRet = ChekCastAny_NoCacheLookup(pTargetType, obj);
+            object objRet = CheckCastAny_NoCacheLookup(pTargetType, obj);
             // Make sure that the fast helper have not lied
             Debug.Assert(result != CastResult.CannotCast);
             return objRet;
@@ -1232,7 +1254,7 @@ namespace System.Runtime
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe object ChekCastAny_NoCacheLookup(MethodTable* pTargetType, object obj)
+        private static unsafe object CheckCastAny_NoCacheLookup(MethodTable* pTargetType, object obj)
         {
             MethodTable* pSourceType = obj.GetMethodTable();
             if (pTargetType->IsArray)

@@ -147,14 +147,24 @@
         <target state="translated">具有“EnableComHosting”的 .NET COM 托管不支持具有“GeneratedComInterfaceAttribute”的接口</target>
         <note />
       </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
+        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
+        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
         <source>The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</source>
-        <target state="new">The return value in the managed definition will be converted to an 'out' parameter when calling the unmanaged COM method. If the return value is intended to be the HRESULT code returned by the unmanaged COM method, use '[PreserveSig]' on the method.</target>
+        <target state="translated">调用非托管 COM 方法时，托管定义中的返回值将转换为 "out" 参数。如果返回值是非托管 COM 方法返回的 HRESULT 代码，请对方法使用 "[PreserveSig]"。</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
         <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
-        <target state="new">The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</target>
+        <target state="translated">调用非托管 COM 方法时，托管定义中的返回值将转换为参数列表末尾的附加 "out" 参数。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -447,6 +457,11 @@
         <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
         <note />
       </trans-unit>
+      <trans-unit id="InAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
+        <target state="new">The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
         <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</source>
         <target state="translated">不支持“[In]”属性，除非也使用“[Out]”属性。不能仅将 Blittable 数组封送为“[In]”。</target>
@@ -465,6 +480,11 @@
       <trans-unit id="InOutAttributeMarshalerNotSupported">
         <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
         <target state="translated">此参数上提供的 “[In]” 和 “[Out]” 属性在此参数上不受支持。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
+        <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
+        <target state="new">The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributes">
@@ -702,6 +722,16 @@
         <target state="translated">“VirtualMethodIndexAttribute” 使用情况无效</target>
         <note />
       </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
+        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
+        <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
+        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
         <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
         <target state="translated">“GetManagedValuesSource” 返回的 “ReadOnlySpan” 的元素类型必须与 “GetManagedValuesDestination” 返回的元素类型相同。</target>
@@ -903,8 +933,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="needs-review-translation">`[Out]` 属性仅在数组参数和通过固定封送的参数上受支持。请考虑使用“out”或“ref”关键字使参数可变。</target>
+        <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="new">The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -915,6 +945,11 @@
       <trans-unit id="OutRequiresToManagedMessage">
         <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
         <target state="translated">类型“{0}”指定它支持按 “Out” 方向进行封送，但不提供返回托管类型的 “ToManaged” 方法</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PreferExplicitInOutAttributesOnArrays">
+        <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
+        <target state="new">It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">
@@ -994,17 +1029,17 @@
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but count parameter '{1}' is an 'out' parameter.</target>
+        <target state="translated">调用方法时，必须定义封送给被调用方的参数“{0}”的大小，但计数参数“{1}”是一个 "out" 参数。</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageReturnValue">
         <source>The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</source>
-        <target state="new">The size of parameter '{0}' that is marshalled to the callee must be defined when the method is called, but the return value is used as the size of the collection.</target>
+        <target state="translated">调用方法时，必须定义封送给被调用方的参数“{0}”的大小，但返回值用作集合的大小。</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeTitle">
         <source>The size of a collection that is marshalled to the callee must be defined when the method is called.</source>
-        <target state="new">The size of a collection that is marshalled to the callee must be defined when the method is called.</target>
+        <target state="translated">调用方法时，必须定义封送给被调用方的集合的大小。</target>
         <note />
       </trans-unit>
       <trans-unit id="StatefulMarshallerRequiresFreeDescription">
@@ -1226,7 +1261,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitleCom">
         <source>Specified type is not supported by source-generated COM</source>
-        <target state="new">Specified type is not supported by source-generated COM</target>
+        <target state="translated">源生成的 COM 不支持指定的类型</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

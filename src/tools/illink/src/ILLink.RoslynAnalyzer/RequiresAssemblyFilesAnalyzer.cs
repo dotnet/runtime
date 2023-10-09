@@ -102,7 +102,7 @@ namespace ILLink.RoslynAnalyzer
 		}
 
 		protected override bool VerifyAttributeArguments (AttributeData attribute) => attribute.ConstructorArguments.Length == 0 ||
-			attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments[0] is { Type.SpecialType: SpecialType.System_String } ctorArg;
+			attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments is [ { Type.SpecialType: SpecialType.System_String }, ..];
 
 		protected override string GetMessageFromAttribute (AttributeData requiresAttribute)
 		{

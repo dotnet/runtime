@@ -31,6 +31,7 @@ try {
         // here we show how emscripten could be further configured
         // It is preferred to use specific 'with***' methods instead in all other cases.
         .withConfig({
+            startupMemoryCache: true,
             resources: {
                 modulesAfterConfigLoaded: {
                     "advanced-sample.lib.module.js": ""

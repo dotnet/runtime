@@ -1986,12 +1986,10 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
             sParentCulture = sCulture;
 #endif // !TARGET_UNIX
         }
-        // (LPCWSTR) to restrict the size to null terminated size
-        pCultureNames->AppendIfNotThere((LPCWSTR)sCulture);
-        // Disabling for Dev10 for consistency with managed resource lookup (see AppCompat bug notes in ResourceFallbackManager.cs)
-        // Also, this is in the wrong order - put after the parent culture chain.
-        //AddThreadPreferredUILanguages(pCultureNames);
-        pCultureNames->AppendIfNotThere((LPCWSTR)sParentCulture);
+        sCulture.Normalize();
+        sParentCulture.Normalize();
+        pCultureNames->AppendIfNotThere(sCulture);
+        pCultureNames->AppendIfNotThere(sParentCulture);
         pCultureNames->Append(SString::Empty());
     }
     EX_CATCH

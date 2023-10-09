@@ -249,9 +249,9 @@ DebuggerJitInfo::DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion na
     m_nativeCodeVersion(nativeCodeVersion),
     m_pLoaderModule(nativeCodeVersion.GetMethodDesc()->GetLoaderModule()),
     m_jitComplete(false),
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     m_encBreakpointsApplied(false),
-#endif //EnC_SUPPORTED
+#endif //FEATURE_METADATA_UPDATER
     m_methodInfo(minfo),
     m_addrOfCode(NULL),
     m_sizeOfCode(0), m_prevJitInfo(NULL), m_nextJitInfo(NULL),
@@ -1565,9 +1565,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
     _ASSERTE(fd != NULL);
-
     // The debugger doesn't track Lightweight-codegen methods b/c they have no metadata.
     if (fd->IsDynamicMethod())
     {
@@ -1576,16 +1574,8 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
 
     if (startAddr == NULL)
     {
-        // This will grab the start address for the current code version.
         startAddr = g_pEEInterface->GetFunctionAddress(fd);
-        if (startAddr == NULL)
-        {
-            startAddr = fd->GetNativeCodeReJITAware();
-            if (startAddr == NULL)
-            {
-                return NULL;
-            }
-        }
+        _ASSERTE(startAddr != NULL);
     }
     else
     {

@@ -1,12 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum);$(NetCoreAppMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
-    <!-- Disabling baseline validation since this is a brand new package.
-         Once this package has shipped a stable version, the following line
-         should be removed in order to re-enable validation. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <PackageDescription>Provides support for system time abstraction primitives for .NET Framework and .NET Standard.
 
 Commonly Used Types:
@@ -16,8 +12,9 @@ System.ITimer</PackageDescription>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
 
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
   </PropertyGroup>
 

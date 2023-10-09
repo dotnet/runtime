@@ -240,14 +240,6 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(RunDisablediOSTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
-
-    <!-- Functional tests on devices have problems with return codes from mlaunch -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'iossimulator' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisablediOSTests)' != 'true'">
-    <!-- Functional tests on arm64 simulator have problems with return codes from mlaunch -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'tvos' and '$(RunDisablediOSTests)' != 'true'">
@@ -274,6 +266,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles\tests\System.IO.MemoryMappedFiles.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Numerics\tests\System.Runtime.Numerics.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
 
     <!--
       Test apps that are too large and take too long to build
@@ -283,9 +276,6 @@
     -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\UnitTests\System.Text.RegularExpressions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
-
-    <!-- Functional tests on devices have problems with return codes from mlaunch -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj" />
 
     <!-- https://github.com/dotnet/runtime/issues/73041 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp\tests\Microsoft.CSharp.Tests.csproj" />
@@ -535,7 +525,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+    <SmokeTestProject Condition="'$(UseNativeAOTRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
     <GrpcTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
@@ -631,7 +621,7 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios'">
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(RunAOTCompilation)' == 'true'">
     <!-- Only System.Runtime tests on iOS for now -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
 
@@ -640,15 +630,20 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos') and '$(UseNativeAOTRuntime)' == 'true'">
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj"
+                    Exclude="@(ProjectExclusions)"
+                    BuildInParallel="false" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(IsManualOrRollingBuild)' == 'true'">
     <!-- These crash on tvOS, but do not on iOS. Run these only on the rolling builds -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles\tests\System.IO.MemoryMappedFiles.Tests.csproj" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime.Numerics\tests\System.Runtime.Numerics.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.IO.Hashing\tests\System.IO.Hashing.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'iossimulator'">
-    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
@@ -661,8 +656,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(RunGrpcTestsOnly)' != 'true' and '$(TargetOS)' == 'maccatalyst'">
-    <ProjectReference Include="$(MonoProjectRoot)sample\iOS\Program.csproj"
-                      BuildInParallel="false" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
@@ -684,7 +677,8 @@
 
   <PropertyGroup>
     <Samples_BuildInParallel Condition="'$(OS)' == 'Windows_NT'">false</Samples_BuildInParallel>
-    <Samples_BuildInParallel Condition="'$(OS)' != 'Windows_NT'">true</Samples_BuildInParallel>
+    <!-- prompted by https://github.com/dotnet/dnceng/issues/450 -->
+    <Samples_BuildInParallel Condition="'$(OS)' != 'Windows_NT'">false</Samples_BuildInParallel>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunWasmSamples)' == 'true' and '$(TargetOS)' == 'browser'">

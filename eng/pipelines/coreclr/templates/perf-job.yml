@@ -5,7 +5,7 @@ parameters:
   osSubgroup: ''
   container: ''
   runtimeVariant: ''
-  framework: net8.0 # Specify the appropriate framework when running release branches (ie net6.0 for release/6.0)
+  framework: net9.0 # Specify the appropriate framework when running release branches (ie net6.0 for release/6.0)
   liveLibrariesBuildConfig: ''
   variables: {}
   runtimeType: 'coreclr'
@@ -229,7 +229,7 @@ jobs:
           artifactFileName: 'AndroidBDNApk.tar.gz'
           artifactName: 'AndroidBDNApk'
           displayName: 'Mono Android BDN Apk'
-      
+
     # Download iOSMono and Native AOT tests
     - ${{ if or(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.runtimeType, 'iOSNativeAOT')) }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
@@ -282,10 +282,10 @@ jobs:
       condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'), ne('${{ parameters.runtimeType }}', 'wasm'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))
 
     # Copy the runtime directory into the testhost folder to include OOBs.
-    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\runtime\\net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)\\shared\\Microsoft.NETCore.App\\$(productVersion) /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\$(productVersion)\\corerun.exe"
+    - script: "build.cmd -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)\\bin\\mono\\$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\runtime\\${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)\\shared\\Microsoft.NETCore.App\\$(productVersion) /E /I /Y;xcopy $(Build.SourcesDirectory)\\artifacts\\bin\\testhost\\${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)\\* $(Build.SourcesDirectory)\\.dotnet-mono /E /I /Y;copy $(Build.SourcesDirectory)\\artifacts\\bin\\coreclr\\$(osGroup).$(archType).$(buildConfigUpper)\\corerun.exe $(Build.SourcesDirectory)\\.dotnet-mono\\shared\\Microsoft.NETCore.App\\$(productVersion)\\corerun.exe"
       displayName: "Create mono dotnet (Windows)"
       condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), eq(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))
 
-    - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/runtime/net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/artifacts/bin/testhost/net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)/shared/Microsoft.NETCore.App/$(productVersion) -rf;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/net8.0-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/$(productVersion)/corerun"
+    - script: "mkdir $(Build.SourcesDirectory)/.dotnet-mono;./build.sh -subset libs.pretest -configuration release -ci -arch $(archType) -testscope innerloop /p:RuntimeArtifactsPath=$(librariesDownloadDir)/bin/mono/$(osGroup).$(archType).$(buildConfigUpper) /p:RuntimeFlavor=mono;cp $(Build.SourcesDirectory)/artifacts/bin/runtime/${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/artifacts/bin/testhost/${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)/shared/Microsoft.NETCore.App/$(productVersion) -rf;cp $(Build.SourcesDirectory)/artifacts/bin/testhost/${{parameters.framework}}-$(osGroup)-$(buildConfigUpper)-$(archType)/* $(Build.SourcesDirectory)/.dotnet-mono -r;cp $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)/corerun $(Build.SourcesDirectory)/.dotnet-mono/shared/Microsoft.NETCore.App/$(productVersion)/corerun"
       displayName: "Create mono dotnet (Linux)"
       condition: and(and(succeeded(), eq(variables.runtimeFlavorName, 'Mono')), ne(variables.osGroup, 'windows'), not(in('${{ parameters.runtimeType }}', 'AndroidMono', 'iOSMono', 'iOSNativeAOT')))

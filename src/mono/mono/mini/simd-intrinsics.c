@@ -1268,6 +1268,7 @@ is_element_type_primitive (MonoType *vector_type)
 	}
 }
 
+#ifdef TARGET_ARM64
 static MonoInst*
 emit_msb_vector_mask (MonoCompile *cfg, MonoClass *arg_class, MonoTypeEnum arg_type)
 {
@@ -1358,6 +1359,7 @@ emit_msb_shift_vector_constant (MonoCompile *cfg, MonoClass *arg_class, MonoType
 	msb_shift_vec->klass = arg_class;
 	return msb_shift_vec;
 }
+#endif
 
 /*
  * Emit intrinsics in System.Numerics.Vector and System.Runtime.Intrinsics.Vector64/128/256/512.
@@ -1800,13 +1802,30 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		g_assert_not_reached ();
 	}
 	case SN_ExtractMostSignificantBits: {
-		if (!is_element_type_primitive (fsig->params [0]) || type_enum_is_float (arg0_type))
+		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 #ifdef TARGET_WASM
+		if (type_enum_is_float (arg0_type))
+			return NULL;
+
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
 #elif defined(TARGET_ARM64)
-		MonoInst* result_ins = NULL;
-		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		MonoClass* arg_class;
+		if (type_enum_is_float (arg0_type)) {
+			MonoClass* cast_class;
+			if (arg0_type == MONO_TYPE_R4) {
+				arg0_type = MONO_TYPE_I4;
+				cast_class = mono_defaults.int32_class;
+			} else {
+				arg0_type = MONO_TYPE_I8;
+				cast_class = mono_defaults.int64_class;
+			}
+			arg_class = create_class_instance ("System.Runtime.Intrinsics", m_class_get_name (klass), m_class_get_byval_arg (cast_class));
+		} else {
+			arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		}
+		
+		// FIXME: Add support for Vector64 on arm64
 		int size = mono_class_value_size (arg_class, NULL);
 		if (size != 16)
 			return NULL;
@@ -1816,11 +1835,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		and_res_vec->sreg2 = msb_mask_vec->dreg;
 
 		MonoInst* msb_shift_vec = emit_msb_shift_vector_constant (cfg, arg_class, arg0_type);
-		
+
 		MonoInst* shift_res_vec = emit_simd_ins (cfg, arg_class, OP_XOP_OVR_X_X_X, and_res_vec->dreg, msb_shift_vec->dreg);
 		shift_res_vec->inst_c0 = INTRINS_AARCH64_ADV_SIMD_USHL;
 		shift_res_vec->inst_c1 = arg0_type;
 
+		MonoInst* result_ins = NULL;
 		if (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1) {
 			// Always perform unsigned operations as vector sum and extract operations could sign-extend the result into the GP register
 			// making the final result invalid. This is not needed for wider type as the maximum sum of extracted MSB cannot be larger than 8bits
@@ -1909,7 +1929,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
-			int index = args[1]->inst_c0;
+			int index = GTMREG_TO_INT (args[1]->inst_c0);
 
 			if (index < 0 || index >= elems) {
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
@@ -2239,7 +2259,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
-			int index = args[1]->inst_c0;
+			int index = GTMREG_TO_INT (args[1]->inst_c0);
 
 			if (index < 0 || index >= elems) {
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
@@ -2390,8 +2410,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 	MonoClass *klass = cmethod->klass;
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
-	gboolean supported = TRUE;
 
+	// Apart from filtering out non-primitive types this also filters out shared generic instance types like: T_BYTE which cannot be intrinsified
 	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 		return NULL;
 
@@ -2408,9 +2428,17 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		g_free (name);
 	}
 
+	// Special case SN_get_IsSupported intrinsic handling in this function which verifies whether a type parameter T is supported for a generic vector.
+	// As we got passed the MONO_TYPE_IS_VECTOR_PRIMITIVE check above, this should always return true for primitive types.
+	if (id == SN_get_IsSupported) {
+		MonoInst *ins = NULL;
+		EMIT_NEW_ICONST (cfg, ins, 1);
+		return ins;
+	}
+
 #if defined(TARGET_WASM)
 	if (!COMPILE_LLVM (cfg))
-		supported = FALSE;
+		return NULL;
 #endif
 
 // FIXME: Support Vector64 for mini JIT on arm64
@@ -2421,24 +2449,11 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 #ifdef TARGET_AMD64
 	if (!COMPILE_LLVM (cfg) && (size != 16))
-		supported = FALSE;
-#ifdef TARGET_WIN32
-		supported = FALSE;
-#endif
-#endif
-
-	switch (id) {
-	case SN_get_IsSupported: {
-		MonoInst *ins = NULL;
-		EMIT_NEW_ICONST (cfg, ins, supported ? 1 : 0);
-		return ins;
-	}
-	default:
-		break;
-	}
-
-	if (!supported)
 		return NULL;
+#ifdef TARGET_WIN32
+		return NULL;
+#endif
+#endif
 
 	switch (id) {
 	case SN_get_Count: {
@@ -2709,7 +2724,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
-			int index = args[1]->inst_c0;
+			int index = GTMREG_TO_INT (args[1]->inst_c0);
 
 			if (index < 0 || index >= elems) {
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
@@ -2791,7 +2806,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		g_assert (fsig->hasthis && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_I4 && fsig->params [1]->type == MONO_TYPE_R4);
 
 		gboolean indirect = FALSE;
-		int elems = 4, index = args [1]->inst_c0;
+		int elems = 4, index = GTMREG_TO_INT (args [1]->inst_c0);
 		int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
 
 		if (args [1]->opcode == OP_ICONST) {
@@ -3225,12 +3240,12 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			}
 
 			/* Emit bounds check for the index (index >= 0) */
-			mini_emit_bounds_check_offset (cfg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), index_ins->dreg, "ArgumentOutOfRangeException");
+			mini_emit_bounds_check_offset (cfg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), index_ins->dreg, "ArgumentOutOfRangeException", FALSE);
 
 			/* Emit bounds check for the end (index + len - 1 < array length) */
 			end_index_reg = alloc_ireg (cfg);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_IADD_IMM, end_index_reg, index_ins->dreg, len - 1);
-			mini_emit_bounds_check_offset (cfg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), end_index_reg, "ArgumentOutOfRangeException");
+			mini_emit_bounds_check_offset (cfg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), end_index_reg, "ArgumentOutOfRangeException", FALSE);
 
 			/* Load the array slice into the simd reg */
 			ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, FALSE, FALSE);
@@ -3259,7 +3274,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			}
 
 			/* CopyTo () does complicated argument checks */
-			mini_emit_bounds_check_offset (cfg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), index_ins->dreg, "ArgumentOutOfRangeException");
+			mini_emit_bounds_check_offset (cfg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), index_ins->dreg, "ArgumentOutOfRangeException", FALSE);
 			end_index_reg = alloc_ireg (cfg);
 			int len_reg = alloc_ireg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, len_reg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), MONO_INST_INVARIANT_LOAD);
@@ -4584,6 +4599,7 @@ static SimdIntrinsic bmi2_methods [] = {
 static SimdIntrinsic x86base_methods [] = {
 	{SN_BitScanForward},
 	{SN_BitScanReverse},
+	{SN_DivRem},
 	{SN_Pause, OP_XOP, INTRINS_SSE_PAUSE},
 	{SN_get_IsSupported}
 };
@@ -4605,7 +4621,7 @@ static const IntrinGroup supported_x86_intrinsics [] = {
 	{ "Sse41", MONO_CPU_X86_SSE41, sse41_methods, sizeof (sse41_methods) },
 	{ "Sse42", MONO_CPU_X86_SSE42, sse42_methods, sizeof (sse42_methods) },
 	{ "Ssse3", MONO_CPU_X86_SSSE3, ssse3_methods, sizeof (ssse3_methods) },
-	{ "X86Base", 0, x86base_methods, sizeof (x86base_methods) },
+	{ "X86Base", MONO_CPU_INITED, x86base_methods, sizeof (x86base_methods), TRUE },
 	{ "X86Serialize", 0, unsupported, sizeof (unsupported) },
 };
 
@@ -5231,6 +5247,49 @@ emit_x86_intrinsics (
 			ins->type = is_64bit ? STACK_I8 : STACK_I4;
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
+		case SN_DivRem: {
+			g_assert (!(TARGET_SIZEOF_VOID_P == 4 && is_64bit)); // x86(no -64) cannot do divisions with 64-bit regs 
+			const MonoStackType divtype = is_64bit ? STACK_I8 : STACK_I4;
+			const int storetype = is_64bit ? OP_STOREI8_MEMBASE_REG : OP_STOREI4_MEMBASE_REG;
+			const int obj_size = MONO_ABI_SIZEOF (MonoObject);
+
+			// We must decide by the second argument, the first is always unsigned here	
+			MonoTypeEnum arg1_type = fsig->param_count > 1 ? get_underlying_type (fsig->params [1]) : MONO_TYPE_VOID;
+			MonoInst* div;
+			MonoInst* div2; 
+
+			if (type_enum_is_unsigned (arg1_type)) {
+				MONO_INST_NEW (cfg, div, is_64bit ? OP_X86_LDIVREMU : OP_X86_IDIVREMU);
+			} else {
+				MONO_INST_NEW (cfg, div, is_64bit ? OP_X86_LDIVREM : OP_X86_IDIVREM);
+			}
+			div->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			div->sreg1 = args [0]->dreg; // we can use this directly, reg alloc knows that the contents will be destroyed
+			div->sreg2 = args [1]->dreg; // same here as ^
+			div->sreg3 = args [2]->dreg;
+			div->type = divtype;
+			MONO_ADD_INS (cfg->cbb, div);
+
+			// Protect the contents of edx/rdx by assigning it a vreg. The instruction must
+			// immediately follow DIV/IDIV so that edx content is not modified.
+			// In LLVM the remainder is already calculated, just need to capture it in a vreg.
+			MONO_INST_NEW (cfg, div2, is_64bit ? OP_X86_LDIVREM2 : OP_X86_IDIVREM2);
+			div2->dreg = is_64bit ? alloc_lreg (cfg) : alloc_ireg (cfg);
+			div2->type = divtype;
+			MONO_ADD_INS (cfg->cbb, div2);
+			
+			// TODO: Can the creation of tuple be elided? (e.g. if deconstruction is used)
+			MonoInst* tuple = mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
+			MonoInst* tuple_addr;
+			EMIT_NEW_TEMPLOADA (cfg, tuple_addr, tuple->inst_c0);
+
+			MonoClassField* field1 = mono_class_get_field_from_name_full (tuple->klass, "Item1", NULL);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, storetype, tuple_addr->dreg, field1->offset - obj_size, div->dreg);
+			MonoClassField* field2 = mono_class_get_field_from_name_full (tuple->klass, "Item2", NULL);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, storetype, tuple_addr->dreg, field2->offset - obj_size, div2->dreg);
+			EMIT_NEW_TEMPLOAD (cfg, ins, tuple->inst_c0);
+			return ins;
+			}
 		default:
 			g_assert_not_reached ();
 		}
@@ -5699,7 +5758,7 @@ emit_wasm_supported_intrinsics (
 				break;
 			}
 			case SN_ExtractScalar: {
-				op = type_to_xextract_op (arg0_type);
+				op = GINT_TO_UINT16 (type_to_xextract_op (arg0_type));
 				break;
 			}
 			case SN_LoadScalarVector128: {

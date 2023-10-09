@@ -4207,22 +4207,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
         if (tree->IsVolatile())
         {
-            bool addrIsInReg   = addr->isUsedFromReg();
-            bool addrIsAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
+            bool needsBarrier = true;
+            ins               = genGetVolatileLdStIns(ins, dataReg, tree, &needsBarrier);
 
-            if ((ins == INS_strb) && addrIsInReg)
-            {
-                ins = INS_stlrb;
-            }
-            else if ((ins == INS_strh) && addrIsInReg && addrIsAligned)
-            {
-                ins = INS_stlrh;
-            }
-            else if ((ins == INS_str) && genIsValidIntReg(dataReg) && addrIsInReg && addrIsAligned)
-            {
-                ins = INS_stlr;
-            }
-            else
+            if (needsBarrier)
             {
                 // issue a full memory barrier before a volatile StInd
                 // Note: We cannot issue store barrier ishst because it is a weaker barrier.

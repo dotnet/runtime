@@ -1,27 +1,27 @@
 jobs:
 
-# - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
 
-#   # build mono
-#   - template: /eng/pipelines/common/platform-matrix.yml
-#     parameters:
-#       jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-#       runtimeFlavor: mono
-#       buildConfig: release
-#       platforms:
-#       - linux_x64
+  # build mono
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+      runtimeFlavor: mono
+      buildConfig: release
+      platforms:
+      - linux_x64
 
-#   # build coreclr and libraries
-#   - template: /eng/pipelines/common/platform-matrix.yml
-#     parameters:
-#       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-#       buildConfig: release
-#       platforms:
-#       - linux_x64
-#       jobParameters:
-#         testGroup: perf
+  # build coreclr and libraries
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+      buildConfig: release
+      platforms:
+      - linux_x64
+      jobParameters:
+        testGroup: perf
 
-- ${{ if ne(variables['System.TeamProject'], 'public') }}: # notin(variables['Build.Reason'], 'Schedule') # Temporarily remove schedule filter since we are now running on schedule runs (Same for above schedule section)
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
   # build coreclr and libraries
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -260,7 +260,6 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: mono
@@ -278,7 +277,6 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: mono
@@ -293,11 +291,10 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
       buildConfig: release
-      runtimeFlavor: mono
+      runtimeFlavor: aot
       platforms:
       - linux_x64
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         runtimeType: mono
@@ -319,7 +316,6 @@ jobs:
       - windows_x86
       - linux_musl_x64
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         projectFile: microbenchmarks.proj
@@ -352,7 +348,6 @@ jobs:
       platforms:
       - linux_x64
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         projectFile: microbenchmarks.proj
@@ -389,7 +384,6 @@ jobs:
       - windows_x64
       - windows_x86
       jobParameters:
-        timeoutInMinutes: 1260
         testGroup: perf
         liveLibrariesBuildConfig: Release
         projectFile: crossgen_perf.proj

@@ -118,40 +118,21 @@ namespace System
             }
         }
 
-        private static string GetStringForFailFastReason(RhFailFastReason reason)
-        {
-            switch (reason)
+        private static string GetStringForFailFastReason(RhFailFastReason reason) => reason switch
             {
-                case RhFailFastReason.InternalError:
-                    return "Runtime internal error";
-                case RhFailFastReason.UnhandledException:
-                    return "Unhandled exception: a managed exception was not handled before reaching unmanaged code";
-                case RhFailFastReason.UnhandledExceptionFromPInvoke:
-                    return "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition";
-                case RhFailFastReason.EnvironmentFailFast:
-                    return "Environment.FailFast was called";
-                default:
-                    return "Unknown reason.";
-            }
-        }
-
-        [DoesNotReturn]
-        public static void FailFast(string message)
-        {
-            FailFast(message, null, RhFailFastReason.EnvironmentFailFast, IntPtr.Zero, IntPtr.Zero);
-        }
-
-        [DoesNotReturn]
-        public static void FailFast(string message, Exception? exception)
-        {
-            FailFast(message, exception, RhFailFastReason.EnvironmentFailFast, IntPtr.Zero, IntPtr.Zero);
-        }
+                RhFailFastReason.InternalError => "Runtime internal error",
+                RhFailFastReason.UnhandledException => "Unhandled exception: a managed exception was not handled before reaching unmanaged code",
+                RhFailFastReason.UnhandledExceptionFromPInvoke => "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition",
+                RhFailFastReason.EnvironmentFailFast => "Environment.FailFast was called",
+                RhFailFastReason.AssertionFailure => "Assertion failure",
+                _ => "Unknown reason."
+            };
 
         // Used to report exceptions that *logically* go unhandled in the Fx code.  For example, an
         // exception that escapes from a ThreadPool workitem, or from a void-returning async method.
         public static void ReportUnhandledException(Exception exception)
         {
-            FailFast(GetStringForFailFastReason(RhFailFastReason.UnhandledException), exception, RhFailFastReason.UnhandledException, IntPtr.Zero, IntPtr.Zero);
+            FailFast(exception: exception, reason: RhFailFastReason.UnhandledException);
         }
 
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
@@ -167,7 +148,7 @@ namespace System
             // back into the dispatcher.
             try
             {
-                FailFast(message: null, exception, reason, pExAddress, pExContext);
+                FailFast(exception: exception, reason: reason, pExAddress: pExAddress, pExContext: pExContext);
             }
             catch
             {
@@ -199,7 +180,9 @@ namespace System
         private static ulong s_crashingThreadId;
 
         [DoesNotReturn]
-        internal static unsafe void FailFast(string? message, Exception? exception, RhFailFastReason reason, IntPtr pExAddress, IntPtr pExContext)
+        internal static unsafe void FailFast(string? message = null, Exception? exception = null, string? errorSource = null,
+            RhFailFastReason reason = RhFailFastReason.EnvironmentFailFast,
+            IntPtr pExAddress = 0, IntPtr pExContext = 0)
         {
             IntPtr triageBufferAddress = IntPtr.Zero;
             int triageBufferSize = 0;
@@ -209,33 +192,43 @@ namespace System
             ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
             if (previousThreadId == 0)
             {
-                message ??= GetStringForFailFastReason(reason);
-
                 CrashInfo crashInfo = new();
-                crashInfo.Open(reason, s_crashingThreadId, message);
+                crashInfo.Open(reason, s_crashingThreadId, message ?? GetStringForFailFastReason(reason));
 
                 bool minimalFailFast = (exception == PreallocatedOutOfMemoryException.Instance);
                 if (!minimalFailFast)
                 {
-                    string prefix;
-                    string outputMessage;
-                    if (exception != null)
+                    Internal.Console.Error.Write(((exception == null) || (reason is RhFailFastReason.EnvironmentFailFast or RhFailFastReason.AssertionFailure)) ?
+                        "Process terminated. " : "Unhandled exception. ");
+
+                    if (errorSource != null)
                     {
-                        prefix = "Unhandled Exception: ";
-                        outputMessage = exception.ToString();
-                    }
-                    else
-                    {
-                        prefix = "Process terminated. ";
-                        outputMessage = message;
+                        Internal.Console.Error.Write(errorSource);
+                        Internal.Console.Error.WriteLine();
                     }
 
-                    Internal.Console.Error.Write(prefix);
-                    if (outputMessage != null)
+                    if (message != null)
                     {
-                        Internal.Console.Error.Write(outputMessage);
+                        Internal.Console.Error.Write(message);
+                        Internal.Console.Error.WriteLine();
                     }
-                    Internal.Console.Error.Write(Environment.NewLine);
+
+                    if (errorSource == null && message == null && (exception == null || reason is RhFailFastReason.EnvironmentFailFast))
+                    {
+                        Internal.Console.Error.Write(GetStringForFailFastReason(reason));
+                        Internal.Console.Error.WriteLine();
+                    }
+
+                    if (reason is RhFailFastReason.EnvironmentFailFast)
+                    {
+                        Internal.Console.Error.Write(new StackTrace().ToString());
+                    }
+
+                    if ((exception != null) && (reason is not RhFailFastReason.AssertionFailure))
+                    {
+                        Internal.Console.Error.Write(exception.ToString());
+                        Internal.Console.Error.WriteLine();
+                    }
 
                     if (exception != null)
                     {
