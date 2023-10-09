@@ -31,13 +31,6 @@
   <ItemGroup>
     <ProjectReference
       Include="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_publish.csproj"
-      AdditionalProperties="_IsPublishing=true
-        ;RuntimeIdentifier=$(PackageRID)
-        ;NativeAotSupported=$(NativeAotSupported)
-        ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-        ;ObjCopyName=$(ObjCopyName)
-        ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets"
-      Targets="Publish;PublishItemsOutputGroup"
       OutputItemType="_RawCrossgenPublishFiles"
       ReferenceOutputAssembly="false" />
   </ItemGroup>

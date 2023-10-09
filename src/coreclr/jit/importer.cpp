@@ -1953,7 +1953,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 
                 impPushOnStack(tree, typeInfo(clsHnd));
 
-                return hndBlk->bbNext;
+                return hndBlk->Next();
             }
         }
 
@@ -2455,7 +2455,7 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
 
 void Compiler::verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg))
 {
-    block->bbJumpKind = BBJ_THROW;
+    block->SetBBJumpKind(BBJ_THROW DEBUG_ARG(this));
     block->bbFlags |= BBF_FAILED_VERIFICATION;
     block->bbFlags &= ~BBF_IMPORTED;
 
@@ -4101,7 +4101,7 @@ bool Compiler::impIsImplicitTailCallCandidate(
     // the block containing call is marked as BBJ_RETURN
     // We allow shared ret tail call optimization on recursive calls even under
     // !FEATURE_TAILCALL_OPT_SHARED_RETURN.
-    if (!isRecursive && (compCurBB->bbJumpKind != BBJ_RETURN))
+    if (!isRecursive && !compCurBB->KindIs(BBJ_RETURN))
         return false;
 #endif // !FEATURE_TAILCALL_OPT_SHARED_RETURN
 
@@ -4250,7 +4250,7 @@ void Compiler::impImportLeave(BasicBlock* block)
     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impImportLeave"));
     verCurrentState.esStackDepth = 0;
 
-    assert(block->bbJumpKind == BBJ_LEAVE);
+    assert(block->KindIs(BBJ_LEAVE));
     assert(fgBBs == (BasicBlock**)0xCDCD || fgLookupBB(jmpAddr) != NULL); // should be a BB boundary
 
     BasicBlock* step         = DUMMY_INIT(NULL);
@@ -4321,8 +4321,8 @@ void Compiler::impImportLeave(BasicBlock* block)
             if (encFinallies == 0)
             {
                 assert(step == DUMMY_INIT(NULL));
-                callBlock             = block;
-                callBlock->bbJumpKind = BBJ_CALLFINALLY; // convert the BBJ_LEAVE to BBJ_CALLFINALLY
+                callBlock = block;
+                callBlock->SetBBJumpKind(BBJ_CALLFINALLY DEBUG_ARG(this)); // convert the BBJ_LEAVE to BBJ_CALLFINALLY
 
                 if (endCatches)
                 {
@@ -4344,7 +4344,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 /* Calling the finally block */
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step);
-                assert(step->bbJumpKind == BBJ_ALWAYS);
+                assert(step->KindIs(BBJ_ALWAYS));
                 if (step->bbJumpDest != nullptr)
                 {
                     fgRemoveRefPred(step->bbJumpDest, step);
@@ -4419,7 +4419,7 @@ void Compiler::impImportLeave(BasicBlock* block)
     if (encFinallies == 0)
     {
         assert(step == DUMMY_INIT(NULL));
-        block->bbJumpKind = BBJ_ALWAYS; // convert the BBJ_LEAVE to a BBJ_ALWAYS
+        block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this)); // convert the BBJ_LEAVE to a BBJ_ALWAYS
 
         if (endCatches)
         {
@@ -4523,7 +4523,7 @@ void Compiler::impImportLeave(BasicBlock* block)
     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impImportLeave"));
     verCurrentState.esStackDepth = 0;
 
-    assert(block->bbJumpKind == BBJ_LEAVE);
+    assert(block->KindIs(BBJ_LEAVE));
     assert(fgBBs == (BasicBlock**)0xCDCD || fgLookupBB(jmpAddr) != nullptr); // should be a BB boundary
 
     BasicBlock* step = nullptr;
@@ -4572,9 +4572,9 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             if (step == nullptr)
             {
-                step             = block;
-                step->bbJumpKind = BBJ_EHCATCHRET; // convert the BBJ_LEAVE to BBJ_EHCATCHRET
-                stepType         = ST_Catch;
+                step = block;
+                step->SetBBJumpKind(BBJ_EHCATCHRET DEBUG_ARG(this)); // convert the BBJ_LEAVE to BBJ_EHCATCHRET
+                stepType = ST_Catch;
 
 #ifdef DEBUG
                 if (verbose)
@@ -4606,7 +4606,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 #if defined(TARGET_ARM)
                 if (stepType == ST_FinallyReturn)
                 {
-                    assert(step->bbJumpKind == BBJ_ALWAYS);
+                    assert(step->KindIs(BBJ_ALWAYS));
                     // Mark the target of a finally return
                     step->bbJumpDest->bbFlags |= BBF_FINALLY_TARGET;
                 }
@@ -4651,7 +4651,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // the new BBJ_CALLFINALLY is in a different EH region, thus it can't just replace the BBJ_LEAVE,
                 // which might be in the middle of the "try". In most cases, the BBJ_ALWAYS will jump to the
                 // next block, and flow optimizations will remove it.
-                block->bbJumpKind = BBJ_ALWAYS;
+                block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                 fgRemoveRefPred(block->bbJumpDest, block);
                 block->bbJumpDest = callBlock;
                 fgAddRefPred(callBlock, block);
@@ -4672,8 +4672,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 
 #else // !FEATURE_EH_CALLFINALLY_THUNKS
 
-                callBlock             = block;
-                callBlock->bbJumpKind = BBJ_CALLFINALLY; // convert the BBJ_LEAVE to BBJ_CALLFINALLY
+                callBlock = block;
+                callBlock->SetBBJumpKind(BBJ_CALLFINALLY DEBUG_ARG(this)); // convert the BBJ_LEAVE to BBJ_CALLFINALLY
 
 #ifdef DEBUG
                 if (verbose)
@@ -4708,7 +4708,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
-                if (step->bbJumpKind == BBJ_EHCATCHRET)
+                if (step->KindIs(BBJ_EHCATCHRET))
                 {
                     // Need to create another step block in the 'try' region that will actually branch to the
                     // call-to-finally thunk.
@@ -4758,7 +4758,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 #if defined(TARGET_ARM)
                 if (stepType == ST_FinallyReturn)
                 {
-                    assert(step->bbJumpKind == BBJ_ALWAYS);
+                    assert(step->KindIs(BBJ_ALWAYS));
                     // Mark the target of a finally return
                     step->bbJumpDest->bbFlags |= BBF_FINALLY_TARGET;
                 }
@@ -4850,12 +4850,12 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 if (stepType == ST_FinallyReturn)
                 {
-                    assert(step->bbJumpKind == BBJ_ALWAYS);
+                    assert(step->KindIs(BBJ_ALWAYS));
                 }
                 else
                 {
                     assert(stepType == ST_Catch);
-                    assert(step->bbJumpKind == BBJ_EHCATCHRET);
+                    assert(step->KindIs(BBJ_EHCATCHRET));
                 }
 
                 /* Create a new exit block in the try region for the existing step block to jump to in this scope */
@@ -4908,7 +4908,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 
     if (step == nullptr)
     {
-        block->bbJumpKind = BBJ_ALWAYS; // convert the BBJ_LEAVE to a BBJ_ALWAYS
+        block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this)); // convert the BBJ_LEAVE to a BBJ_ALWAYS
 
 #ifdef DEBUG
         if (verbose)
@@ -4931,7 +4931,7 @@ void Compiler::impImportLeave(BasicBlock* block)
 #if defined(TARGET_ARM)
         if (stepType == ST_FinallyReturn)
         {
-            assert(step->bbJumpKind == BBJ_ALWAYS);
+            assert(step->KindIs(BBJ_ALWAYS));
             // Mark the target of a finally return
             step->bbJumpDest->bbFlags |= BBF_FINALLY_TARGET;
         }
@@ -4992,9 +4992,9 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     // work around this we will duplicate B0 (call it B0Dup) before resetting. B0Dup is marked as BBJ_CALLFINALLY and
     // only serves to pair up with B1 (BBJ_ALWAYS) that got orphaned. Now during orphan block deletion B0Dup and B1
     // will be treated as pair and handled correctly.
-    if (block->bbJumpKind == BBJ_CALLFINALLY)
+    if (block->KindIs(BBJ_CALLFINALLY))
     {
-        BasicBlock* dupBlock = bbNewBasicBlock(block->bbJumpKind);
+        BasicBlock* dupBlock = bbNewBasicBlock(block->GetBBJumpKind());
         dupBlock->bbFlags    = block->bbFlags;
         dupBlock->bbJumpDest = block->bbJumpDest;
         fgAddRefPred(dupBlock->bbJumpDest, dupBlock);
@@ -5024,7 +5024,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     }
 #endif // FEATURE_EH_FUNCLETS
 
-    block->bbJumpKind = BBJ_LEAVE;
+    block->SetBBJumpKind(BBJ_LEAVE DEBUG_ARG(this));
     fgInitBBLookup();
 
     fgRemoveRefPred(block->bbJumpDest, block);
@@ -6002,7 +6002,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             // Change block to BBJ_THROW so we won't trigger importation of successors.
             //
-            block->bbJumpKind = BBJ_THROW;
+            block->SetBBJumpKind(BBJ_THROW DEBUG_ARG(this));
 
             // If this method has a explicit generic context, the only uses of it may be in
             // the IL for this block. So assume it's used.
@@ -6715,7 +6715,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* Mark current bb as end of filter */
 
                 assert(compCurBB->bbFlags & BBF_DONT_REMOVE);
-                assert(compCurBB->bbJumpKind == BBJ_EHFILTERRET);
+                assert(compCurBB->KindIs(BBJ_EHFILTERRET));
 
                 /* Mark catch handler as successor */
 
@@ -7256,7 +7256,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 JITDUMP(" %04X", jmpAddr);
-                if (block->bbJumpKind != BBJ_LEAVE)
+                if (!block->KindIs(BBJ_LEAVE))
                 {
                     impResetLeaveBlock(block, jmpAddr);
                 }
@@ -7298,20 +7298,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("invalid type for brtrue/brfalse");
                 }
 
-                if (opts.OptimizationEnabled() && (block->bbJumpDest == block->bbNext))
+                if (opts.OptimizationEnabled() && block->NextIs(block->bbJumpDest))
                 {
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
-                    if (block->bbJumpKind == BBJ_COND)
+                    if (block->KindIs(BBJ_COND))
                     {
                         JITDUMP(FMT_BB " both branches and falls through to " FMT_BB ", changing to BBJ_NONE\n",
-                                block->bbNum, block->bbNext->bbNum);
+                                block->bbNum, block->Next()->bbNum);
                         fgRemoveRefPred(block->bbJumpDest, block);
-                        block->bbJumpKind = BBJ_NONE;
+                        block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                     }
                     else
                     {
-                        assert(block->bbJumpKind == BBJ_NONE);
+                        assert(block->KindIs(BBJ_NONE));
                     }
 
                     if (op1->gtFlags & GTF_GLOB_EFFECT)
@@ -7363,24 +7363,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     assert(!opts.compDbgCode);
 
                     BBjumpKinds foldedJumpKind = (BBjumpKinds)(op1->AsIntCon()->gtIconVal ? BBJ_ALWAYS : BBJ_NONE);
-                    assertImp((block->bbJumpKind == BBJ_COND)            // normal case
-                              || (block->bbJumpKind == foldedJumpKind)); // this can happen if we are reimporting the
-                                                                         // block for the second time
+                    // BBJ_COND: normal case
+                    // foldedJumpKind: this can happen if we are reimporting the block for the second time
+                    assertImp(block->KindIs(BBJ_COND, foldedJumpKind)); // normal case
 
-                    if (block->bbJumpKind == BBJ_COND)
+                    if (block->KindIs(BBJ_COND))
                     {
                         if (foldedJumpKind == BBJ_NONE)
                         {
-                            JITDUMP("\nThe block falls through into the next " FMT_BB "\n", block->bbNext->bbNum);
+                            JITDUMP("\nThe block falls through into the next " FMT_BB "\n", block->Next()->bbNum);
                             fgRemoveRefPred(block->bbJumpDest, block);
                         }
                         else
                         {
                             JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
                                     block->bbJumpDest->bbNum);
-                            fgRemoveRefPred(block->bbNext, block);
+                            fgRemoveRefPred(block->Next(), block);
                         }
-                        block->bbJumpKind = foldedJumpKind;
+                        block->SetBBJumpKind(foldedJumpKind DEBUG_ARG(this));
                     }
 
                     break;
@@ -7544,20 +7544,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp((genActualType(op1) == genActualType(op2)) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
                           (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
-                if (opts.OptimizationEnabled() && (block->bbJumpDest == block->bbNext))
+                if (opts.OptimizationEnabled() && block->NextIs(block->bbJumpDest))
                 {
                     // We may have already modified `block`'s jump kind, if this is a re-importation.
                     //
-                    if (block->bbJumpKind == BBJ_COND)
+                    if (block->KindIs(BBJ_COND))
                     {
                         JITDUMP(FMT_BB " both branches and falls through to " FMT_BB ", changing to BBJ_NONE\n",
-                                block->bbNum, block->bbNext->bbNum);
+                                block->bbNum, block->Next()->bbNum);
                         fgRemoveRefPred(block->bbJumpDest, block);
-                        block->bbJumpKind = BBJ_NONE;
+                        block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                     }
                     else
                     {
-                        assert(block->bbJumpKind == BBJ_NONE);
+                        assert(block->KindIs(BBJ_NONE));
                     }
 
                     if (op1->gtFlags & GTF_GLOB_EFFECT)
@@ -7630,16 +7630,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                         {
-                            if (curJump != block->bbNext)
+                            if (!block->NextIs(curJump))
                             {
                                 // transform the basic block into a BBJ_ALWAYS
-                                block->bbJumpKind = BBJ_ALWAYS;
+                                block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
                                 block->bbJumpDest = curJump;
                             }
                             else
                             {
                                 // transform the basic block into a BBJ_NONE
-                                block->bbJumpKind = BBJ_NONE;
+                                block->SetBBJumpKind(BBJ_NONE DEBUG_ARG(this));
                             }
                             foundVal = true;
                         }
@@ -7657,8 +7657,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         printf("\nSwitch folded at " FMT_BB "\n", block->bbNum);
                         printf(FMT_BB " becomes a %s", block->bbNum,
-                               block->bbJumpKind == BBJ_ALWAYS ? "BBJ_ALWAYS" : "BBJ_NONE");
-                        if (block->bbJumpKind == BBJ_ALWAYS)
+                               block->KindIs(BBJ_ALWAYS) ? "BBJ_ALWAYS" : "BBJ_NONE");
+                        if (block->KindIs(BBJ_ALWAYS))
                         {
                             printf(" to " FMT_BB, block->bbJumpDest->bbNum);
                         }
@@ -8532,8 +8532,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         bool bbInALoop  = impBlockIsInALoop(block);
-                        bool bbIsReturn = (block->bbJumpKind == BBJ_RETURN) &&
-                                          (!compIsForInlining() || (impInlineInfo->iciBlock->bbJumpKind == BBJ_RETURN));
+                        bool bbIsReturn = block->KindIs(BBJ_RETURN) &&
+                                          (!compIsForInlining() || (impInlineInfo->iciBlock->KindIs(BBJ_RETURN)));
                         LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
                         if (fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
                         {
@@ -11135,7 +11135,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
 
                 // push catch arg the stack, spill to a temp if necessary
                 // Note: can update HBtab->ebdFilter!
-                const bool isSingleBlockFilter = (filterBB->bbNext == hndBegBB);
+                const bool isSingleBlockFilter = (filterBB->NextIs(hndBegBB));
                 filterBB = impPushCatchArgOnStack(filterBB, impGetObjectClass(), isSingleBlockFilter);
 
                 impImportBlockPending(filterBB);
@@ -11279,7 +11279,7 @@ SPILLSTACK:
 
         unsigned multRef = impCanReimport ? unsigned(~0) : 0;
 
-        switch (block->bbJumpKind)
+        switch (block->GetBBJumpKind())
         {
             case BBJ_COND:
 
@@ -11289,12 +11289,12 @@ SPILLSTACK:
 
                 /* Note if the next block has more than one ancestor */
 
-                multRef |= block->bbNext->bbRefs;
+                multRef |= block->Next()->bbRefs;
 
                 /* Does the next block have temps assigned? */
 
-                baseTmp  = block->bbNext->bbStkTempsIn;
-                tgtBlock = block->bbNext;
+                baseTmp  = block->Next()->bbStkTempsIn;
+                tgtBlock = block->Next();
 
                 if (baseTmp != NO_BASE_TMP)
                 {
@@ -11315,9 +11315,9 @@ SPILLSTACK:
                 break;
 
             case BBJ_NONE:
-                multRef |= block->bbNext->bbRefs;
-                baseTmp  = block->bbNext->bbStkTempsIn;
-                tgtBlock = block->bbNext;
+                multRef |= block->Next()->bbRefs;
+                baseTmp  = block->Next()->bbStkTempsIn;
+                tgtBlock = block->Next();
                 break;
 
             case BBJ_SWITCH:
@@ -12117,11 +12117,11 @@ void Compiler::impImport()
         JITDUMP("Marking leading BBF_INTERNAL block " FMT_BB " as BBF_IMPORTED\n", entryBlock->bbNum);
         entryBlock->bbFlags |= BBF_IMPORTED;
 
-        if (entryBlock->bbJumpKind == BBJ_NONE)
+        if (entryBlock->KindIs(BBJ_NONE))
         {
-            entryBlock = entryBlock->bbNext;
+            entryBlock = entryBlock->Next();
         }
-        else if (opts.IsOSR() && (entryBlock->bbJumpKind == BBJ_ALWAYS))
+        else if (opts.IsOSR() && entryBlock->KindIs(BBJ_ALWAYS))
         {
             entryBlock = entryBlock->bbJumpDest;
         }
@@ -12239,7 +12239,7 @@ void Compiler::impFixPredLists()
                     continue;
                 }
 
-                if (finallyBlock->bbJumpKind != BBJ_EHFINALLYRET)
+                if (!finallyBlock->KindIs(BBJ_EHFINALLYRET))
                 {
                     continue;
                 }
@@ -12253,7 +12253,7 @@ void Compiler::impFixPredLists()
                         continue;
                     }
 
-                    BasicBlock* const continuation = predBlock->bbNext;
+                    BasicBlock* const continuation = predBlock->Next();
                     fgAddRefPred(continuation, finallyBlock);
 
                     if (!added)

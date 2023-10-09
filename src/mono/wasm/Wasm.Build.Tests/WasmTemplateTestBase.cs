@@ -37,7 +37,8 @@ public abstract class WasmTemplateTestBase : BuildTestBase
               <Import Project="WasmOverridePacks.targets" Condition="'$(WBTOverrideRuntimePack)' == 'true'" />
             </Project>
             """);
-        File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
+        if (BuildEnvironment.UseWBTOverridePackTargets)
+            File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
         if (addFrameworkArg)
             extraArgs += $" -f {DefaultTargetFramework}";

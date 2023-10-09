@@ -2836,6 +2836,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92727</Issue>
+        </ExcludeList>
     </ItemGroup>
 
 
@@ -3454,6 +3457,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportSearchPaths/DllImportSearchPathsTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/91388</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandled/**">
+            <Issue>https://github.com/dotnet/runtime/issues/92723</Issue>
         </ExcludeList>
     </ItemGroup>
 

@@ -752,6 +752,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (!await commandParamsObjWriter.WriteConst(literal, context.SdbAgent, token))
                                 throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write LiteralExpressionSyntax into binary writer.");
                         }
+                        else if (arg.Expression is PrefixUnaryExpressionSyntax negativeLiteral)
+                        {
+                            if (!commandParamsObjWriter.WriteConst(negativeLiteral))
+                                throw new InternalErrorException($"Unable to evaluate method '{methodName}'. Unable to write PrefixUnaryExpressionSyntax into binary writer.");
+                        }
                         else if (arg.Expression is IdentifierNameSyntax identifierName)
                         {
                             if (!memberAccessValues.TryGetValue(identifierName.Identifier.Text, out JObject argValue))

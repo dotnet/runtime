@@ -1689,13 +1689,15 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     // The index is never contained, even if it is a constant.
     assert(index->isUsedFromReg());
 
-    const regNumber tmpReg = node->GetSingleTempReg();
+    const regNumber tmpReg = node->ExtractTempReg();
+
+    regNumber indexReg = index->GetRegNum();
 
     // Generate the bounds check if necessary.
     if (node->IsBoundsChecked())
     {
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, base->GetRegNum(), node->gtLenOffset);
-        GetEmitter()->emitIns_R_R(INS_cmp, emitActualTypeSize(index->TypeGet()), index->GetRegNum(), tmpReg);
+        GetEmitter()->emitIns_R_R(INS_cmp, emitActualTypeSize(index->TypeGet()), indexReg, tmpReg);
         genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
     }
 
@@ -1706,17 +1708,47 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         DWORD scale;
         BitScanForward(&scale, node->gtElemSize);
 
-        // dest = base + index * scale
-        genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale);
+#ifdef TARGET_ARM64
+        if (!index->TypeIs(TYP_I_IMPL))
+        {
+            if (scale <= 4)
+            {
+                // target = base + index<<scale
+                GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(),
+                                              indexReg, scale, INS_OPTS_UXTW);
+            }
+            else
+            {
+                GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
+                indexReg      = tmpReg;
+                emitter* emit = GetEmitter();
+                genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+            }
+        }
+        else
+#endif // TARGET_ARM64
+        {
+            // dest = base + index * scale
+            genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+        }
     }
     else // we have to load the element size and use a MADD (multiply-add) instruction
     {
+#ifdef TARGET_ARM64
+        if (!index->TypeIs(TYP_I_IMPL))
+        {
+            const regNumber tmpReg2 = node->ExtractTempReg();
+            GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
+            indexReg = tmpReg2;
+        }
+#endif // TARGET_ARM64
+
         // tmpReg = element size
         instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->gtElemSize);
 
         // dest = index * tmpReg + base
-        GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), index->GetRegNum(),
-                                      tmpReg, base->GetRegNum());
+        GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), indexReg, tmpReg,
+                                      base->GetRegNum());
     }
 
     // dest = dest + elemOffs
@@ -3306,8 +3338,8 @@ void CodeGen::genCall(GenTreeCall* call)
 #ifdef FEATURE_READYTORUN
         else if (call->IsR2ROrVirtualStubRelativeIndir())
         {
-            assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
-                   ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
+            assert((call->IsR2RRelativeIndir() && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
+                   (call->IsVirtualStubRelativeIndir() && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
 
             regNumber tmpReg = call->GetSingleTempReg();
@@ -5515,7 +5547,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     {
         SetHasTailCalls(true);
 
-        noway_assert(block->bbJumpKind == BBJ_RETURN);
+        noway_assert(block->KindIs(BBJ_RETURN));
         noway_assert(block->GetFirstLIRNode() != nullptr);
 
         /* figure out what jump we have */
