@@ -66,8 +66,6 @@ static CalendarId GetCalendarId(const char* calendarName)
         return THAI;
     else if (strcasecmp(calendarName, HEBREW_NAME) == 0)
         return HEBREW;
-    else if (strcasecmp(calendarName, DANGI_NAME) == 0)
-        return KOREA;
     else if (strcasecmp(calendarName, PERSIAN_NAME) == 0)
         return PERSIAN;
     else if (strcasecmp(calendarName, ISLAMIC_NAME) == 0)
@@ -262,15 +260,7 @@ int32_t GlobalizationNative_GetCalendarsNative(const char* localeName, CalendarI
         NSArray *calendarIdentifiers = @[
             NSCalendarIdentifierGregorian,
             NSCalendarIdentifierBuddhist,
-            NSCalendarIdentifierChinese,
-            NSCalendarIdentifierCoptic,
-            NSCalendarIdentifierEthiopicAmeteMihret,
-            NSCalendarIdentifierEthiopicAmeteAlem,
             NSCalendarIdentifierHebrew,
-            NSCalendarIdentifierISO8601,
-            NSCalendarIdentifierIndian,
-            NSCalendarIdentifierIslamicCivil,
-            NSCalendarIdentifierIslamicTabular,
             NSCalendarIdentifierIslamicUmmAlQura,
             NSCalendarIdentifierIslamic,
             NSCalendarIdentifierJapanese,
