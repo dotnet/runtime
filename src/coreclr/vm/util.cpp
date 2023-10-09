@@ -905,20 +905,21 @@ CLRUnmapViewOfFile(
 volatile static int64_t s_loadLibraryTicks = 0;
 volatile static LONG s_loadLibraryCount = 0;
 
-static int64_t GetPreciseTickCount()
+int64_t GetPreciseTickCount()
 {
     int64_t result;
     QueryPerformanceCounter((LARGE_INTEGER *)&result);
     return result;
 }
 
-static void ReportLoadLibraryTime(LPCWSTR lpFileName, int64_t loadTime)
+void ReportLoadLibraryTime(LPCWSTR lpFileName, int64_t loadTime)
 {
     long loadLibraryCount = ::InterlockedAdd(&s_loadLibraryCount, 1);
     int64_t totalTime = ::InterlockedAdd64(&s_loadLibraryTicks, loadTime);
-    printf("\nLoadLibrary(%ld: %S): %.6f seconds, %.6f total\n",
+    MAKE_UTF8PTR_FROMWIDE_NOTHROW(fileNameUtf8, lpFileName);
+    printf("\nLoadLibrary [%ld]: '%s' - %.6f seconds, %.6f total\n",
         loadLibraryCount,
-        (wchar_t *)lpFileName,
+        fileNameUtf8,
         loadTime * 1e-9,
         totalTime * 1e-9);
 }

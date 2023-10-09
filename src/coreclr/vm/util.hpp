@@ -499,6 +499,9 @@ CLRUnmapViewOfFile(
     IN LPVOID lpBaseAddress
     );
 
+int64_t GetPreciseTickCount();
+void ReportLoadLibraryTime(LPCWSTR lpFileName, int64_t loadTime);
+
 #ifndef DACCESS_COMPILE
 FORCEINLINE void VoidCLRUnmapViewOfFile(void *ptr) { CLRUnmapViewOfFile(ptr); }
 typedef Wrapper<void *, DoNothing, VoidCLRUnmapViewOfFile> CLRMapViewHolder;
