@@ -33,7 +33,7 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, CHAR* guid)
     } CONTRACTL_END;
 
     // Nothing to log if the assembly path isn't present.
-    SString path = pPEAssembly->GetPath();
+    SString path{ pPEAssembly->GetPath() };
     if (path.IsEmpty())
     {
         return;
