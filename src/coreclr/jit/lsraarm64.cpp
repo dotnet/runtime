@@ -960,7 +960,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* cmpXchgNode = tree->AsCmpXchg();
-            srcCount                    = cmpXchgNode->gtOpComparand->isContained() ? 2 : 3;
+            srcCount                    = cmpXchgNode->Comparand()->isContained() ? 2 : 3;
             assert(dstCount == 1);
 
             if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
@@ -979,9 +979,9 @@ int LinearScan::BuildNode(GenTree* tree)
             setDelayFree(locationUse);
             RefPosition* valueUse = BuildUse(tree->AsCmpXchg()->Data());
             setDelayFree(valueUse);
-            if (!cmpXchgNode->gtOpComparand->isContained())
+            if (!cmpXchgNode->Comparand()->isContained())
             {
-                RefPosition* comparandUse = BuildUse(tree->AsCmpXchg()->gtOpComparand);
+                RefPosition* comparandUse = BuildUse(tree->AsCmpXchg()->Comparand());
 
                 // For ARMv8 exclusives the lifetime of the comparand must be extended because
                 // it may be used used multiple during retries

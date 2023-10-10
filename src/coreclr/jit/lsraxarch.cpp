@@ -441,7 +441,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // The remaining two operands can be in any reg other than RAX.
             BuildUse(tree->AsCmpXchg()->Addr(), availableIntRegs & ~RBM_RAX);
             BuildUse(tree->AsCmpXchg()->Data(), availableIntRegs & ~RBM_RAX);
-            BuildUse(tree->AsCmpXchg()->gtOpComparand, RBM_RAX);
+            BuildUse(tree->AsCmpXchg()->Comparand(), RBM_RAX);
             BuildDef(tree, RBM_RAX);
         }
         break;

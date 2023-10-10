@@ -11650,7 +11650,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 GenTree* location  = cmpXchg->Addr();  // arg1
                 GenTree* value     = cmpXchg->Data();     // arg2
-                GenTree* comparand = cmpXchg->gtOpComparand; // arg3
+                GenTree* comparand = cmpXchg->Comparand(); // arg3
 
                 ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
 

@@ -2996,7 +2996,7 @@ AGAIN:
         case GT_CMPXCHG:
             return Compare(op1->AsCmpXchg()->Addr(), op2->AsCmpXchg()->Addr()) &&
                    Compare(op1->AsCmpXchg()->Data(), op2->AsCmpXchg()->Data()) &&
-                   Compare(op1->AsCmpXchg()->gtOpComparand, op2->AsCmpXchg()->gtOpComparand);
+                   Compare(op1->AsCmpXchg()->Comparand(), op2->AsCmpXchg()->Comparand());
 
         case GT_STORE_DYN_BLK:
             return Compare(op1->AsStoreDynBlk()->Addr(), op2->AsStoreDynBlk()->Addr()) &&
@@ -3548,7 +3548,7 @@ AGAIN:
         case GT_CMPXCHG:
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsCmpXchg()->Addr()));
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsCmpXchg()->Data()));
-            hash = genTreeHashAdd(hash, gtHashValue(tree->AsCmpXchg()->gtOpComparand));
+            hash = genTreeHashAdd(hash, gtHashValue(tree->AsCmpXchg()->Comparand()));
             break;
 
         case GT_STORE_DYN_BLK:
@@ -6214,12 +6214,12 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             }
             costSz += tree->AsCmpXchg()->Data()->GetCostSz();
 
-            lvl2 = gtSetEvalOrder(tree->AsCmpXchg()->gtOpComparand);
+            lvl2 = gtSetEvalOrder(tree->AsCmpXchg()->Comparand());
             if (level < lvl2)
             {
                 level = lvl2;
             }
-            costSz += tree->AsCmpXchg()->gtOpComparand->GetCostSz();
+            costSz += tree->AsCmpXchg()->Comparand()->GetCostSz();
 
             costEx = MAX_COST; // Seriously, what could be more expensive than lock cmpxchg?
             costSz += 5;       // size of lock cmpxchg [reg+C], reg
@@ -6532,9 +6532,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
                 *pUse = &cmpXchg->Data();
                 return true;
             }
-            if (operand == cmpXchg->gtOpComparand)
+            if (operand == cmpXchg->Comparand())
             {
-                *pUse = &cmpXchg->gtOpComparand;
+                *pUse = &cmpXchg->Comparand();
                 return true;
             }
             return false;
@@ -9367,7 +9367,7 @@ GenTree* Compiler::gtCloneExpr(
                 GenTreeCmpXchg(tree->TypeGet(),
                                gtCloneExpr(tree->AsCmpXchg()->Addr(), addFlags, deepVarNum, deepVarVal),
                                gtCloneExpr(tree->AsCmpXchg()->Data(), addFlags, deepVarNum, deepVarVal),
-                               gtCloneExpr(tree->AsCmpXchg()->gtOpComparand, addFlags, deepVarNum, deepVarVal));
+                               gtCloneExpr(tree->AsCmpXchg()->Comparand(), addFlags, deepVarNum, deepVarVal));
             break;
 
         case GT_STORE_DYN_BLK:
@@ -10062,7 +10062,7 @@ void GenTreeUseEdgeIterator::AdvanceCmpXchg()
             m_state = 1;
             break;
         case 1:
-            m_edge    = &m_node->AsCmpXchg()->gtOpComparand;
+            m_edge    = &m_node->AsCmpXchg()->Comparand();
             m_advance = &GenTreeUseEdgeIterator::Terminate;
             break;
         default:
@@ -12663,7 +12663,7 @@ void Compiler::gtDispTree(GenTree*     tree,
             {
                 gtDispChild(tree->AsCmpXchg()->Addr(), indentStack, IIArc, nullptr, topOnly);
                 gtDispChild(tree->AsCmpXchg()->Data(), indentStack, IIArc, nullptr, topOnly);
-                gtDispChild(tree->AsCmpXchg()->gtOpComparand, indentStack, IIArcBottom, nullptr, topOnly);
+                gtDispChild(tree->AsCmpXchg()->Comparand(), indentStack, IIArcBottom, nullptr, topOnly);
             }
             break;
 

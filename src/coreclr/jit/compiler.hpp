@@ -4664,7 +4664,7 @@ void GenTree::VisitOperands(TVisitor visitor)
             {
                 return;
             }
-            visitor(cmpXchg->gtOpComparand);
+            visitor(cmpXchg->Comparand());
             return;
         }
 

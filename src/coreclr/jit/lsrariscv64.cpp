@@ -369,7 +369,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* cas = tree->AsCmpXchg();
-            assert(!cas->gtOpComparand->isContained());
+            assert(!cas->Comparand()->isContained());
             srcCount = 3;
             assert(dstCount == 1);
 
@@ -377,7 +377,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // Extend lifetimes of argument regs because they may be reused during retries
             setDelayFree(BuildUse(cas->Addr()));
             setDelayFree(BuildUse(cas->Data()));
-            setDelayFree(BuildUse(cas->gtOpComparand));
+            setDelayFree(BuildUse(cas->Comparand()));
 
             // Internals may not collide with target
             setInternalRegsDelayFree = true;
