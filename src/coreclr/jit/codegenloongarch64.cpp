@@ -1518,7 +1518,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     {
         GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_A0, REG_SPBASE, 0);
     }
-    GetEmitter()->emitIns_J(INS_bl, block->bbJumpDest);
+    GetEmitter()->emitIns_J(INS_bl, block->GetJumpDest());
 
     BasicBlock* const nextBlock = block->Next();
 
@@ -1541,7 +1541,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // handler.  So turn off GC reporting for this single instruction.
         GetEmitter()->emitDisableGC();
 
-        BasicBlock* const jumpDest = nextBlock->bbJumpDest;
+        BasicBlock* const jumpDest = nextBlock->GetJumpDest();
 
         // Now go to where the finally funclet needs to return to.
         if (nextBlock->NextIs(jumpDest) && !compiler->fgInDifferentRegions(nextBlock, jumpDest))
@@ -1574,7 +1574,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->bbJumpDest, REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, block->GetJumpDest(), REG_INTRET);
 }
 
 //  move an immediate value into an integer register
@@ -2935,8 +2935,8 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     noway_assert(compiler->compCurBB->KindIs(BBJ_SWITCH));
     assert(treeNode->OperGet() == GT_JMPTABLE);
 
-    unsigned     jumpCount = compiler->compCurBB->bbJumpSwt->bbsCount;
-    BasicBlock** jumpTable = compiler->compCurBB->bbJumpSwt->bbsDstTab;
+    unsigned     jumpCount = compiler->compCurBB->GetJumpSwt()->bbsCount;
+    BasicBlock** jumpTable = compiler->compCurBB->GetJumpSwt()->bbsDstTab;
     unsigned     jmpTabOffs;
     unsigned     jmpTabBase;
 
@@ -4327,7 +4327,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(ins != INS_invalid);
     assert(regs != 0);
 
-    emit->emitIns_J(ins, compiler->compCurBB->bbJumpDest, regs); // 5-bits;
+    emit->emitIns_J(ins, compiler->compCurBB->GetJumpDest(), regs); // 5-bits;
 }
 
 //---------------------------------------------------------------------
@@ -4903,7 +4903,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_JCC:
         {
-            BasicBlock* tgtBlock = compiler->compCurBB->bbJumpDest;
+            BasicBlock* tgtBlock = compiler->compCurBB->GetJumpDest();
 #if !FEATURE_FIXED_OUT_ARGS
             assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
 #endif // !FEATURE_FIXED_OUT_ARGS
