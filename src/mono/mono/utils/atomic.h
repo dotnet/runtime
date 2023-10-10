@@ -91,6 +91,22 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 
 #include<stdatomic.h>
 
+static inline guint8
+mono_atomic_cas_u8 (volatile guint8 *dest, guint8 exch, guint8 comp)
+{
+	g_static_assert (sizeof (atomic_uchar) == sizeof (*dest) && ATOMIC_CHAR_LOCK_FREE == 2);
+	(void)atomic_compare_exchange_strong ((volatile atomic_uchar *)dest, &comp, exch);
+	return comp;
+}
+
+static inline gint16
+mono_atomic_cas_i16 (volatile gint16 *dest, gint16 exch, gint16 comp)
+{
+	g_static_assert (sizeof (atomic_short) == sizeof (*dest) && ATOMIC_SHORT_LOCK_FREE == 2);
+	(void)atomic_compare_exchange_strong ((volatile atomic_short *)dest, &comp, exch);
+	return comp;
+}
+
 static inline gint32
 mono_atomic_cas_i32 (volatile gint32 *dest, gint32 exch, gint32 comp)
 {
@@ -165,6 +181,20 @@ static inline gint64
 mono_atomic_dec_i64 (volatile gint64 *dest)
 {
 	return mono_atomic_add_i64 (dest, -1);
+}
+
+static inline guint8
+mono_atomic_xchg_u8 (volatile guint8 *dest, guint8 exch)
+{
+	g_static_assert (sizeof (atomic_uchar) == sizeof (*dest) && ATOMIC_CHAR_LOCK_FREE == 2);
+	return atomic_exchange ((volatile atomic_uchar *)dest, exch);
+}
+
+static inline gint16
+mono_atomic_xchg_i16 (volatile gint16 *dest, gint16 exch)
+{
+	g_static_assert (sizeof (atomic_short) == sizeof (*dest) && ATOMIC_SHORT_LOCK_FREE == 2);
+	return atomic_exchange ((volatile atomic_short *)dest, exch);
 }
 
 static inline gint32
