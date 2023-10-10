@@ -30,8 +30,6 @@ namespace System.Text.Json
         private PooledByteBufferWriter? _extraPooledByteBufferWriter;
         private bool _hasExtraPooledByteBufferWriter;
 
-        private (int, string?) _lastIndexAndString = (-1, null);
-
         internal bool IsDisposable { get; }
 
         /// <summary>
@@ -278,14 +276,6 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            (int lastIdx, string? lastString) = _lastIndexAndString;
-
-            if (lastIdx == index)
-            {
-                Debug.Assert(lastString != null);
-                return lastString;
-            }
-
             DbRow row = _parsedData.Get(index);
 
             JsonTokenType tokenType = row.TokenType;
@@ -300,6 +290,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
+            string lastString;
             if (row.HasComplexChildren)
             {
                 int backslash = segment.IndexOf(JsonConstants.BackSlash);
@@ -311,7 +302,6 @@ namespace System.Text.Json
             }
 
             Debug.Assert(lastString != null);
-            _lastIndexAndString = (index, lastString);
             return lastString;
         }
 
@@ -320,13 +310,6 @@ namespace System.Text.Json
             CheckNotDisposed();
 
             int matchIndex = isPropertyName ? index - DbRow.Size : index;
-
-            (int lastIdx, string? lastString) = _lastIndexAndString;
-
-            if (lastIdx == matchIndex)
-            {
-                return otherText.SequenceEqual(lastString.AsSpan());
-            }
 
             byte[]? otherUtf8TextArray = null;
 
