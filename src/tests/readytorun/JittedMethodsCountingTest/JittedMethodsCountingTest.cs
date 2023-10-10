@@ -24,6 +24,7 @@ public class JittedMethodsCountingTest
         }
 
         Console.WriteLine("\nHello World from Jitted Methods Counting Test!");
+
         long jits = JitInfo.GetCompiledMethodCount(currentThread: false);
 
         Console.WriteLine("Number of Jitted Methods in App: {0} - Max Threshold: {1}\n",
@@ -37,21 +38,6 @@ public class JittedMethodsCountingTest
     {
         string? dotnetR2R = Environment.GetEnvironmentVariable("DOTNET_ReadyToRun");
         return (string.IsNullOrEmpty(dotnetR2R) || dotnetR2R == "1");
-    }
-
-    private static bool IsRunCrossgen2Set()
-    {
-        string? runCrossgen2 = Environment.GetEnvironmentVariable("RunCrossGen2");
-        return (!string.IsNullOrEmpty(runCrossgen2) && runCrossgen2 == "1");
-    }
-
-    private static bool IsRunningOnARM64()
-    {
-        InteropServices.Architecture thisMachineArch = InteropServices
-                                                      .RuntimeInformation
-                                                      .OSArchitecture;
-
-        return (thisMachineArch == InteropServices.Architecture.Arm64);
     }
 
     private static bool IsHardwareIntrinsicsEnabled()
