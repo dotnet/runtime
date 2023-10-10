@@ -1047,15 +1047,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     else
                     {
                         Debug.Assert(!type.IsValueType);
-
+                        EmitStartBlock($"if ({instanceToBindExpr} is not null)");
+                        EmitBindCoreCall();
+                        EmitEndBlock();
                         if (type is ObjectSpec { InitExceptionMessage: string exMsg })
                         {
+                            EmitStartBlock("else");
                             _writer.WriteLine($@"throw new {Identifier.InvalidOperationException}(""{exMsg}"");");
-                        }
-                        else
-                        {
-                            EmitStartBlock($"if ({instanceToBindExpr} is not null)");
-                            EmitBindCoreCall();
                             EmitEndBlock();
                         }
                     }

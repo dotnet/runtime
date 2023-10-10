@@ -5972,7 +5972,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
     //
-    // We don't rely on (block->bbJumpDest->bbNum <= block->bbNum) because the basic
+    // We don't rely on (block->GetJumpDest()->bbNum <= block->bbNum) because the basic
     // block numbering is not guaranteed to be sequential.
     if ((dstIG != nullptr) && (dstIG->igNum <= emitCurIG->igNum))
     {
@@ -7613,7 +7613,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // emit offsets after the loop with wrong value (for example for GC ref variables).
     unsigned unusedSize = emitTotalCodeSize - actualCodeSize;
 
-    JITDUMP("Allocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
+    JITDUMP("\n\nAllocated method code size = %4u , actual size = %4u, unused size = %4u\n", emitTotalCodeSize,
             actualCodeSize, unusedSize);
 
     BYTE* cpRW = cp + writeableOffset;
@@ -9881,7 +9881,7 @@ void emitter::emitStackPop(BYTE* addr, bool isCall, unsigned char callInstrSize,
         // recorded (when we're doing the ptr reg map for a non-fully-interruptible method).
         if (emitFullGCinfo
 #ifndef JIT32_GCENCODER
-            || (emitComp->IsFullPtrRegMapRequired() && (!emitComp->GetInterruptible()) && isCall)
+            || (emitComp->IsFullPtrRegMapRequired() && !emitComp->GetInterruptible() && isCall)
 #endif // JIT32_GCENCODER
                 )
         {

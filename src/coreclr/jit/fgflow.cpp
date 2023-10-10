@@ -343,7 +343,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
     BasicBlock* bNext;
 
-    switch (block->bbJumpKind)
+    switch (block->GetJumpKind())
     {
         case BBJ_CALLFINALLY:
             if (!(block->bbFlags & BBF_RETLESS_CALL))
@@ -351,37 +351,37 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
                 assert(block->isBBCallAlwaysPair());
 
                 /* The block after the BBJ_CALLFINALLY block is not reachable */
-                bNext = block->bbNext;
+                bNext = block->Next();
 
                 /* bNext is an unreachable BBJ_ALWAYS block */
-                noway_assert(bNext->bbJumpKind == BBJ_ALWAYS);
+                noway_assert(bNext->KindIs(BBJ_ALWAYS));
 
                 while (bNext->countOfInEdges() > 0)
                 {
                     fgRemoveRefPred(bNext, bNext->bbPreds->getSourceBlock());
                 }
             }
-            fgRemoveRefPred(block->bbJumpDest, block);
+            fgRemoveRefPred(block->GetJumpDest(), block);
             break;
 
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
-            fgRemoveRefPred(block->bbJumpDest, block);
+            fgRemoveRefPred(block->GetJumpDest(), block);
             break;
 
         case BBJ_NONE:
-            fgRemoveRefPred(block->bbNext, block);
+            fgRemoveRefPred(block->Next(), block);
             break;
 
         case BBJ_COND:
-            fgRemoveRefPred(block->bbJumpDest, block);
-            fgRemoveRefPred(block->bbNext, block);
+            fgRemoveRefPred(block->GetJumpDest(), block);
+            fgRemoveRefPred(block->Next(), block);
             break;
 
         case BBJ_EHFILTERRET:
 
-            block->bbJumpDest->bbRefs++; // To compensate the bbRefs-- inside fgRemoveRefPred
-            fgRemoveRefPred(block->bbJumpDest, block);
+            block->GetJumpDest()->bbRefs++; // To compensate the bbRefs-- inside fgRemoveRefPred
+            fgRemoveRefPred(block->GetJumpDest(), block);
             break;
 
         case BBJ_EHFINALLYRET:
@@ -401,16 +401,15 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
                 BasicBlock* finBeg = ehDsc->ebdHndBeg;
 
-                for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+                for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
                 {
-                    if ((bcall->bbFlags & BBF_REMOVED) || bcall->bbJumpKind != BBJ_CALLFINALLY ||
-                        bcall->bbJumpDest != finBeg)
+                    if ((bcall->bbFlags & BBF_REMOVED) || !bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
                     {
                         continue;
                     }
 
                     assert(bcall->isBBCallAlwaysPair());
-                    fgRemoveRefPred(bcall->bbNext, block);
+                    fgRemoveRefPred(bcall->Next(), block);
                 }
             }
         }
@@ -468,9 +467,9 @@ void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock*
 
     BasicBlock* finBeg = ehDsc->ebdHndBeg;
 
-    for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+    for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
     {
-        if (bcall->bbJumpKind != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
+        if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
         {
             continue;
         }
@@ -479,7 +478,7 @@ void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock*
 
         if (succNum == i)
         {
-            *bres = bcall->bbNext;
+            *bres = bcall->Next();
             return;
         }
         succNum++;
@@ -491,7 +490,7 @@ void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock*
 
 Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
 {
-    assert(switchBlk->bbJumpKind == BBJ_SWITCH);
+    assert(switchBlk->KindIs(BBJ_SWITCH));
     BlockToSwitchDescMap* switchMap = GetSwitchDescMap();
     SwitchUniqueSuccSet   res;
     if (switchMap->Lookup(switchBlk, &res))
@@ -546,7 +545,7 @@ void Compiler::SwitchUniqueSuccSet::UpdateTarget(CompAllocator alloc,
                                                  BasicBlock*   from,
                                                  BasicBlock*   to)
 {
-    assert(switchBlk->bbJumpKind == BBJ_SWITCH); // Precondition.
+    assert(switchBlk->KindIs(BBJ_SWITCH)); // Precondition.
 
     // Is "from" still in the switch table (because it had more than one entry before?)
     bool fromStillPresent = false;

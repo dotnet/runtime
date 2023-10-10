@@ -23,7 +23,11 @@ class Lowering final : public Phase
 {
 public:
     inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
-        : Phase(compiler, PHASE_LOWERING), vtableCallTemp(BAD_VAR_NUM)
+        : Phase(compiler, PHASE_LOWERING)
+        , vtableCallTemp(BAD_VAR_NUM)
+#ifdef TARGET_ARM64
+        , m_blockIndirs(compiler->getAllocator(CMK_ArrayStack))
+#endif
     {
         m_lsra = (LinearScan*)lsra;
         assert(m_lsra);
@@ -310,7 +314,11 @@ private:
 
     // Per tree node member functions
     void LowerStoreIndirCommon(GenTreeStoreInd* ind);
-    void LowerIndir(GenTreeIndir* ind);
+    GenTree* LowerIndir(GenTreeIndir* ind);
+    bool OptimizeForLdp(GenTreeIndir* ind);
+    bool TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir);
+    void MarkTree(GenTree* root);
+    void UnmarkTree(GenTree* root);
     void LowerStoreIndir(GenTreeStoreInd* node);
     void LowerStoreIndirCoalescing(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
@@ -559,6 +567,21 @@ private:
 
 #ifdef FEATURE_FIXED_OUT_ARGS
     unsigned m_outgoingArgSpaceSize = 0;
+#endif
+
+#ifdef TARGET_ARM64
+    struct SavedIndir
+    {
+        GenTreeIndir*  Indir;
+        GenTreeLclVar* AddrBase;
+        target_ssize_t Offset;
+
+        SavedIndir(GenTreeIndir* indir, GenTreeLclVar* addrBase, target_ssize_t offset)
+            : Indir(indir), AddrBase(addrBase), Offset(offset)
+        {
+        }
+    };
+    ArrayStack<SavedIndir> m_blockIndirs;
 #endif
 };
 
