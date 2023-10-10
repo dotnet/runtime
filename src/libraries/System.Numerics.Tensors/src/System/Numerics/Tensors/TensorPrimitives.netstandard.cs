@@ -354,11 +354,12 @@ namespace System.Numerics.Tensors
 
             SoftwareFallback(ref xRef, ref dRef, remainder);
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void SoftwareFallback(ref float xRef, ref float dRef, nuint length, TUnaryOperator op = default)
             {
                 for (nuint i = 0; i < length; i++)
                 {
-                    Unsafe.Add(ref dRef, i) = op.Invoke(Unsafe.Add(ref xRef, i));
+                    Unsafe.Add(ref dRef, (nint)(i)) = op.Invoke(Unsafe.Add(ref xRef, (nint)(i)));
                 }
             }
 
@@ -532,6 +533,7 @@ namespace System.Numerics.Tensors
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void VectorizedSmall(ref float xRef, ref float dRef, nuint remainder, TUnaryOperator op = default)
             {
                 switch (remainder)

@@ -1293,6 +1293,7 @@ namespace System.Numerics.Tensors
 
             SoftwareFallback(ref xRef, ref dRef, remainder);
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void SoftwareFallback(ref float xRef, ref float dRef, nuint length)
             {
                 for (nuint i = 0; i < length; i++)
@@ -1514,6 +1515,7 @@ namespace System.Numerics.Tensors
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void Vectorized128Small(ref float xRef, ref float dRef, nuint remainder)
             {
                 switch (remainder)
@@ -1757,6 +1759,7 @@ namespace System.Numerics.Tensors
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void Vectorized256Small(ref float xRef, ref float dRef, nuint remainder)
             {
                 switch (remainder)
@@ -2020,6 +2023,7 @@ namespace System.Numerics.Tensors
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void Vectorized512Small(ref float xRef, ref float dRef, nuint remainder)
             {
                 switch (remainder)
