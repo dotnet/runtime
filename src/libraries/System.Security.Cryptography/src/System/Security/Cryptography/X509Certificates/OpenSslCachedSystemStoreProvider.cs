@@ -178,11 +178,11 @@ namespace System.Security.Cryptography.X509Certificates
             if (firstLoad && !hasStoreData && s_defaultRootDir)
             {
                 const string DefaultCertDir = "/etc/ssl/certs";
-                hasStoreData = ProcessDir(DefaultCertDir, out DateTime newDirTime);
+                hasStoreData = ProcessDir(DefaultCertDir, out DateTime lastModified);
                 if (hasStoreData)
                 {
                     s_rootStoreDirectories = new[] { DefaultCertDir };
-                    s_directoryLastWrite = new[] { newDirTime };
+                    s_directoryLastWrite = new[] { lastModified };
                 }
             }
 
@@ -335,6 +335,28 @@ namespace System.Security.Cryptography.X509Certificates
             for (int i = 0; i < directories.Length; i++)
             {
                 directories[i] = Path.GetFullPath(directories[i]);
+            }
+
+            // Remove duplicates.
+            if (directories.Length > 0)
+            {
+                var set = new HashSet<string>(directories, StringComparer.Ordinal);
+                if (set.Count != directories.Length)
+                {
+                    // Preserve the original order.
+                    string[] directoriesTrimmed = new string[set.Count];
+                    int j = 0;
+                    for (int i = 0; i < directories.Length; i++)
+                    {
+                        string directory = directories[i];
+                        if (set.Remove(directory))
+                        {
+                            directoriesTrimmed[j++] = directory;
+                        }
+                    }
+                    Debug.Assert(set.Count == 0);
+                    directories = directoriesTrimmed;
+                }
             }
 
             return directories;
