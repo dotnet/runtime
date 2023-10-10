@@ -774,7 +774,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
         elif generatedFileType == "source-impl-noop":
             Clrallevents.write('#include <CommonTypes.h>\n')
             Clrallevents.write('#include <CommonMacros.h>\n\n')
-            Clrallevents.write('#include "PalRedhawk.h"\n\n')            
+            Clrallevents.write('#include <PalRedhawk.h>\n\n')            
             Clrallevents.write('#ifndef ERROR_SUCCESS\n')
             Clrallevents.write('#define ERROR_SUCCESS 0L\n')
             Clrallevents.write('#endif\n\n')
