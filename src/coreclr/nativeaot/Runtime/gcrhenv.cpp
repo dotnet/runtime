@@ -38,7 +38,6 @@
 #include "thread.inl"
 
 #include "gcdesc.h"
-#include "SyncClean.hpp"
 
 #include "daccess.h"
 
@@ -587,8 +586,6 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
     // is restarted.
     ::FlushProcessWriteBuffers();
 #endif //TARGET_ARM || TARGET_ARM64
-
-    SyncClean::CleanUp();
 
     GetThreadStore()->ResumeAllThreads(true);
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(FALSE);

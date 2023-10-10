@@ -334,47 +334,6 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
     return false;
 }
 
-EXTERN_C void* RhpInitialInterfaceDispatch;
-EXTERN_C void* RhpInterfaceDispatchAVLocation1;
-EXTERN_C void* RhpInterfaceDispatchAVLocation2;
-EXTERN_C void* RhpInterfaceDispatchAVLocation4;
-EXTERN_C void* RhpInterfaceDispatchAVLocation8;
-EXTERN_C void* RhpInterfaceDispatchAVLocation16;
-EXTERN_C void* RhpInterfaceDispatchAVLocation32;
-EXTERN_C void* RhpInterfaceDispatchAVLocation64;
-
-static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
-{
-#ifndef USE_PORTABLE_HELPERS
-    static uintptr_t interfaceDispatchAVLocations[] =
-    {
-        (uintptr_t)&RhpInitialInterfaceDispatch,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation1,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation2,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation4,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation8,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation16,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation32,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation64,
-    };
-
-    // compare the IP against the list of known possible AV locations in the interface dispatch helpers
-    for (size_t i = 0; i < sizeof(interfaceDispatchAVLocations) / sizeof(interfaceDispatchAVLocations[0]); i++)
-    {
-#if defined(HOST_AMD64) || defined(HOST_X86)
-        // Verify that the runtime is not linked with incremental linking enabled. Incremental linking
-        // wraps every method symbol with a jump stub that breaks the following check.
-        ASSERT(*(uint8_t*)interfaceDispatchAVLocations[i] != 0xE9); // jmp XXXXXXXX
-#endif
-
-        if (interfaceDispatchAVLocations[i] == faultingIP)
-            return true;
-    }
-#endif // USE_PORTABLE_HELPERS
-
-    return false;
-}
-
 static uintptr_t UnwindSimpleHelperToCaller(
 #ifdef TARGET_UNIX
     PAL_LIMITED_CONTEXT * pContext
@@ -385,7 +344,7 @@ static uintptr_t UnwindSimpleHelperToCaller(
 {
 #if defined(_DEBUG)
     uintptr_t faultingIP = pContext->GetIp();
-    ASSERT(InWriteBarrierHelper(faultingIP) || InInterfaceDispatchHelper(faultingIP));
+    ASSERT(InWriteBarrierHelper(faultingIP));
 #endif
 #if defined(HOST_AMD64) || defined(HOST_X86)
     // simulate a ret instruction
@@ -437,9 +396,8 @@ int32_t __stdcall RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t fau
         // If this was an AV and code manager is null, this was an AV in unmanaged code.
         // Could still be an AV in one of our assembly helpers that we know how to handle.
         bool inWriteBarrierHelper = InWriteBarrierHelper(faultingIP);
-        bool inInterfaceDispatchHelper = InInterfaceDispatchHelper(faultingIP);
 
-        if (inWriteBarrierHelper || inInterfaceDispatchHelper)
+        if (inWriteBarrierHelper)
         {
             if (faultAddress < NULL_AREA_SIZE)
             {
@@ -523,9 +481,8 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         // If this was an AV and code manager is null, this was an AV in unmanaged code.
         // Could still be an AV in one of our assembly helpers that we know how to handle.
         bool inWriteBarrierHelper = InWriteBarrierHelper(faultingIP);
-        bool inInterfaceDispatchHelper = InInterfaceDispatchHelper(faultingIP);
 
-        if (inWriteBarrierHelper || inInterfaceDispatchHelper)
+        if (inWriteBarrierHelper)
         {
             if (pExPtrs->ExceptionRecord->ExceptionInformation[1] < NULL_AREA_SIZE)
             {

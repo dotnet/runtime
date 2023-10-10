@@ -20,7 +20,6 @@
 #include "threadstore.inl"
 #include "RuntimeInstance.h"
 #include "rhbinder.h"
-#include "CachedInterfaceDispatch.h"
 #include "RhConfig.h"
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
@@ -88,14 +87,6 @@ extern "C" volatile GSCookie __security_cookie = 0;
 
 static bool InitDLL(HANDLE hPalInstance)
 {
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-    //
-    // Initialize interface dispatch.
-    //
-    if (!InitializeInterfaceDispatch())
-        return false;
-#endif
-
 #ifdef FEATURE_PERFTRACING
     // Initialize EventPipe
     EventPipe_Initialize();

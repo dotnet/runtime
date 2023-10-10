@@ -1,9 +1,7 @@
 set(GC_DIR ../../gc)
 
 set(COMMON_RUNTIME_SOURCES
-    allocheap.cpp
     rhassert.cpp
-    CachedInterfaceDispatch.cpp
     Crst.cpp
     DebugHeader.cpp
     MethodTable.cpp
@@ -29,7 +27,6 @@ set(COMMON_RUNTIME_SOURCES
     StackFrameIterator.cpp
     startup.cpp
     stressLog.cpp
-    SyncClean.cpp
     thread.cpp
     threadstore.cpp
     UniversalTransitionHelpers.cpp
@@ -207,7 +204,6 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/PInvoke.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/InteropThunksHelpers.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
@@ -240,7 +236,6 @@ add_compile_definitions($<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:FEATURE_GC_STR
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)
-add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
 add_definitions(-D_LIB)
 
 # there is a problem with undefined symbols when this is set

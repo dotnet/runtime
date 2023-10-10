@@ -53,16 +53,6 @@ FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pD
     return __sync_val_compare_and_swap(pDst, iComparand, iValue);
 }
 
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
-FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
-{
-    __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (uint64_t)pComparandAndResult[0];
-    __int128_t iResult = __sync_val_compare_and_swap((__int128_t volatile*)pDst, iComparand, ((__int128_t)iValueHigh << 64) + (uint64_t)iValueLow);
-    pComparandAndResult[0] = (int64_t)iResult; pComparandAndResult[1] = (int64_t)(iResult >> 64);
-    return iComparand == iResult;
-}
-#endif // HOST_AMD64
-
 #ifdef HOST_64BIT
 
 #define PalInterlockedExchangePointer(_pDst, _pValue) \

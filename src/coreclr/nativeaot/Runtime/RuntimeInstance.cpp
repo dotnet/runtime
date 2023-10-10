@@ -344,27 +344,4 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetGCDescSize, (MethodTable* pEEType))
     return RedhawkGCInterface::GetGCDescSize(pEEType);
 }
 
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-EXTERN_C void RhpInitialDynamicInterfaceDispatch();
-
-COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (MethodTable * pInterface, int32_t slotNumber))
-{
-    InterfaceDispatchCell * pCell = new (nothrow) InterfaceDispatchCell[2];
-    if (pCell == NULL)
-        return NULL;
-
-    // Due to the synchronization mechanism used to update this indirection cell we must ensure the cell's alignment is twice that of a pointer.
-    // Fortunately, Windows heap guarantees this alignment.
-    ASSERT(IS_ALIGNED(pCell, 2 * POINTER_SIZE));
-    ASSERT(IS_ALIGNED(pInterface, (InterfaceDispatchCell::IDC_CachePointerMask + 1)));
-
-    pCell[0].m_pStub = (uintptr_t)&RhpInitialDynamicInterfaceDispatch;
-    pCell[0].m_pCache = ((uintptr_t)pInterface) | InterfaceDispatchCell::IDC_CachePointerIsInterfacePointerOrMetadataToken;
-    pCell[1].m_pStub = 0;
-    pCell[1].m_pCache = (uintptr_t)slotNumber;
-
-    return pCell;
-}
-#endif // FEATURE_CACHED_INTERFACE_DISPATCH
-
 #endif // DACCESS_COMPILE

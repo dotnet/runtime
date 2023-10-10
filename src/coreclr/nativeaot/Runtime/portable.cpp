@@ -263,51 +263,6 @@ COOP_PINVOKE_HELPER(Array*, RhpNewArrayAlign8, (MethodTable* pArrayEEType, int n
 #endif // !HOST_64BIT
 #endif // defined(HOST_ARM) || defined(HOST_WASM)
 
-COOP_PINVOKE_HELPER(void, RhpInitialDynamicInterfaceDispatch, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch1, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch2, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch4, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch8, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch16, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch32, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpInterfaceDispatch64, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
-COOP_PINVOKE_HELPER(void, RhpVTableOffsetDispatch, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;
 void * ReturnFromUniversalTransition;

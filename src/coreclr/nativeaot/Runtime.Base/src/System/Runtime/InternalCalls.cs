@@ -14,23 +14,6 @@ using Internal.Runtime;
 
 namespace System.Runtime
 {
-    internal enum DispatchCellType
-    {
-        InterfaceAndSlot = 0x0,
-        MetadataToken = 0x1,
-        VTableOffset = 0x2,
-    }
-
-    internal struct DispatchCellInfo
-    {
-        public DispatchCellType CellType;
-        public EETypePtr InterfaceType;
-        public ushort InterfaceSlot;
-        public byte HasCache;
-        public uint MetadataToken;
-        public uint VTableOffset;
-    }
-
     // Constants used with RhpGetClasslibFunction, to indicate which classlib function
     // we are interested in.
     // Note: make sure you change the def in ICodeManager.h if you change this!
@@ -182,18 +165,6 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpEHEnumNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetDispatchCellInfo")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void RhpGetDispatchCellInfo(IntPtr pCell, out DispatchCellInfo newCellInfo);
-
-        [RuntimeImport(Redhawk.BaseName, "RhpSearchDispatchCellCache")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhpSearchDispatchCellCache(IntPtr pCell, MethodTable* pInstanceType);
-
-        [RuntimeImport(Redhawk.BaseName, "RhpUpdateDispatchCellCache")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe IntPtr RhpUpdateDispatchCellCache(IntPtr pCell, IntPtr pTargetCode, MethodTable* pInstanceType, ref DispatchCellInfo newCellInfo);
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetClasslibFunctionFromCodeAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]

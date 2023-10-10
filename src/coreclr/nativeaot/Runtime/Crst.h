@@ -14,8 +14,6 @@
 enum CrstType
 {
     CrstHandleTable,
-    CrstAllocHeap,
-    CrstInterfaceDispatchGlobalLists,
     CrstStressLog,
     CrstRestrictedCallouts,
     CrstGcStressControl,
