@@ -151,6 +151,132 @@ namespace __OptionValidationStaticInstances
 namespace __OptionValidationGeneratedAttributes
 {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+    [global::System.AttributeUsage(global::System.AttributeTargets.Property, AllowMultiple = false)]
+    file class __SourceGen__CompareAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        private static string DefaultErrorMessageString => "'{0}' and '{1}' do not match.";
+        public __SourceGen__CompareAttribute(string otherProperty) : base(() => DefaultErrorMessageString)
+        {
+            if (otherProperty == null)
+            {
+                throw new global::System.ArgumentNullException(nameof(otherProperty));
+            }
+            OtherProperty = otherProperty;
+        }
+        public string OtherProperty { get; }
+        public override bool RequiresValidationContext => true;
+
+        protected override global::System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, global::System.ComponentModel.DataAnnotations.ValidationContext validationContext)
+        {
+            bool result = true;
+
+            if (validationContext.ObjectInstance is global::ValidationTest.OptionsUsingGeneratedAttributes && OtherProperty == "P5")
+            {
+                result = Equals(value, ((global::ValidationTest.OptionsUsingGeneratedAttributes)validationContext.ObjectInstance).P5);
+            }
+
+            if (!result)
+            {
+                string[]? memberNames = validationContext.MemberName is null ? null : new string[] { validationContext.MemberName };
+                return new global::System.ComponentModel.DataAnnotations.ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
+            }
+
+            return null;
+        }
+        public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, OtherProperty);
+    }
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+    [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
+    file class __SourceGen__MaxLengthAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        private const int MaxAllowableLength = -1;
+        private static string DefaultErrorMessageString => "The field {0} must be a string or array type with a maximum length of '{1}'.";
+        public __SourceGen__MaxLengthAttribute(int length) : base(() => DefaultErrorMessageString) { Length = length; }
+        public __SourceGen__MaxLengthAttribute(): base(() => DefaultErrorMessageString) { Length = MaxAllowableLength; }
+        public int Length { get; }
+        public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+        public override bool IsValid(object? value)
+        {
+            if (Length == 0 || Length < -1)
+            {
+                throw new global::System.InvalidOperationException("MaxLengthAttribute must have a Length value that is greater than zero. Use MaxLength() without parameters to indicate that the string or array can have the maximum allowable length.");
+            }
+            if (value == null || MaxAllowableLength == Length)
+            {
+                return true;
+            }
+
+            int length;
+            if (value is string stringValue)
+            {
+                length = stringValue.Length;
+            }
+            else if (value is System.Collections.ICollection collectionValue)
+            {
+                length = collectionValue.Count;
+            }
+            else if (value is global::ValidationTest.FakeCount)
+            {
+                length = ((global::ValidationTest.FakeCount)value).Count;
+            }
+            else if (value is global::ValidationTest.FakeCountChild)
+            {
+                length = ((global::ValidationTest.FakeCountChild)value).Count;
+            }
+            else
+            {
+                throw new global::System.InvalidCastException($"The field of type {value.GetType()} must be a string, array, or ICollection type.");
+            }
+
+            return length <= Length;
+        }
+    }
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+    [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
+    file class __SourceGen__MinLengthAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        private static string DefaultErrorMessageString => "The field {0} must be a string or array type with a minimum length of '{1}'.";
+
+        public __SourceGen__MinLengthAttribute(int length) : base(() => DefaultErrorMessageString) { Length = length; }
+        public int Length { get; }
+        public override bool IsValid(object? value)
+        {
+            if (Length < -1)
+            {
+                throw new global::System.InvalidOperationException("MinLengthAttribute must have a Length value that is zero or greater.");
+            }
+            if (value == null)
+            {
+                return true;
+            }
+
+            int length;
+            if (value is string stringValue)
+            {
+                length = stringValue.Length;
+            }
+            else if (value is System.Collections.ICollection collectionValue)
+            {
+                length = collectionValue.Count;
+            }
+            else if (value is global::ValidationTest.FakeCount)
+            {
+                length = ((global::ValidationTest.FakeCount)value).Count;
+            }
+            else if (value is global::ValidationTest.FakeCountChild)
+            {
+                length = ((global::ValidationTest.FakeCountChild)value).Count;
+            }
+            else
+            {
+                throw new global::System.InvalidCastException($"The field of type {value.GetType()} must be a string, array, or ICollection type.");
+            }
+
+            return length >= Length;
+        }
+        public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+    }
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
     [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
     file class __SourceGen__RangeAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
     {
@@ -256,131 +382,5 @@ namespace __OptionValidationGeneratedAttributes
             }
             return value;
         }
-    }
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
-    file class __SourceGen__MinLengthAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
-    {
-        private static string DefaultErrorMessageString => "The field {0} must be a string or array type with a minimum length of '{1}'.";
-
-        public __SourceGen__MinLengthAttribute(int length) : base(() => DefaultErrorMessageString) { Length = length; }
-        public int Length { get; }
-        public override bool IsValid(object? value)
-        {
-            if (Length < -1)
-            {
-                throw new global::System.InvalidOperationException("MinLengthAttribute must have a Length value that is zero or greater.");
-            }
-            if (value == null)
-            {
-                return true;
-            }
-
-            int length;
-            if (value is string stringValue)
-            {
-                length = stringValue.Length;
-            }
-            else if (value is System.Collections.ICollection collectionValue)
-            {
-                length = collectionValue.Count;
-            }
-            else if (value is global::ValidationTest.FakeCount)
-            {
-                length = ((global::ValidationTest.FakeCount)value).Count;
-            }
-            else if (value is global::ValidationTest.FakeCountChild)
-            {
-                length = ((global::ValidationTest.FakeCountChild)value).Count;
-            }
-            else
-            {
-                throw new global::System.InvalidCastException($"The field of type {value.GetType()} must be a string, array, or ICollection type.");
-            }
-
-            return length >= Length;
-        }
-        public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
-    }
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
-    file class __SourceGen__MaxLengthAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
-    {
-        private const int MaxAllowableLength = -1;
-        private static string DefaultErrorMessageString => "The field {0} must be a string or array type with a maximum length of '{1}'.";
-        public __SourceGen__MaxLengthAttribute(int length) : base(() => DefaultErrorMessageString) { Length = length; }
-        public __SourceGen__MaxLengthAttribute(): base(() => DefaultErrorMessageString) { Length = MaxAllowableLength; }
-        public int Length { get; }
-        public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
-        public override bool IsValid(object? value)
-        {
-            if (Length == 0 || Length < -1)
-            {
-                throw new global::System.InvalidOperationException("MaxLengthAttribute must have a Length value that is greater than zero. Use MaxLength() without parameters to indicate that the string or array can have the maximum allowable length.");
-            }
-            if (value == null || MaxAllowableLength == Length)
-            {
-                return true;
-            }
-
-            int length;
-            if (value is string stringValue)
-            {
-                length = stringValue.Length;
-            }
-            else if (value is System.Collections.ICollection collectionValue)
-            {
-                length = collectionValue.Count;
-            }
-            else if (value is global::ValidationTest.FakeCount)
-            {
-                length = ((global::ValidationTest.FakeCount)value).Count;
-            }
-            else if (value is global::ValidationTest.FakeCountChild)
-            {
-                length = ((global::ValidationTest.FakeCountChild)value).Count;
-            }
-            else
-            {
-                throw new global::System.InvalidCastException($"The field of type {value.GetType()} must be a string, array, or ICollection type.");
-            }
-
-            return length <= Length;
-        }
-    }
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    [global::System.AttributeUsage(global::System.AttributeTargets.Property, AllowMultiple = false)]
-    file class __SourceGen__CompareAttribute : global::System.ComponentModel.DataAnnotations.ValidationAttribute
-    {
-        private static string DefaultErrorMessageString => "'{0}' and '{1}' do not match.";
-        public __SourceGen__CompareAttribute(string otherProperty) : base(() => DefaultErrorMessageString)
-        {
-            if (otherProperty == null)
-            {
-                throw new global::System.ArgumentNullException(nameof(otherProperty));
-            }
-            OtherProperty = otherProperty;
-        }
-        public string OtherProperty { get; }
-        public override bool RequiresValidationContext => true;
-
-        protected override global::System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, global::System.ComponentModel.DataAnnotations.ValidationContext validationContext)
-        {
-            bool result = true;
-
-            if (validationContext.ObjectInstance is global::ValidationTest.OptionsUsingGeneratedAttributes && OtherProperty == "P5")
-            {
-                result = Equals(value, ((global::ValidationTest.OptionsUsingGeneratedAttributes)validationContext.ObjectInstance).P5);
-            }
-
-            if (!result)
-            {
-                string[]? memberNames = validationContext.MemberName is null ? null : new string[] { validationContext.MemberName };
-                return new global::System.ComponentModel.DataAnnotations.ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
-            }
-
-            return null;
-        }
-        public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, OtherProperty);
     }
 }
