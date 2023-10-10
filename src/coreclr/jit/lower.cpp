@@ -8376,7 +8376,7 @@ const int LDP_REORDERING_MAX_DISTANCE = 16;
 //
 bool Lowering::OptimizeForLdp(GenTreeIndir* ind)
 {
-    if (!ind->TypeIs(TYP_INT, TYP_LONG, TYP_DOUBLE, TYP_SIMD8, TYP_SIMD16) || ind->IsVolatile())
+    if (!ind->TypeIs(TYP_INT, TYP_LONG, TYP_FLOAT, TYP_DOUBLE, TYP_SIMD8, TYP_SIMD16) || ind->IsVolatile())
     {
         return false;
     }
