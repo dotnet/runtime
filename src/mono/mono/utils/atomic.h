@@ -51,7 +51,7 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
    * libclang sees the platform header, not the clang one.
    */
 #  define MONO_USE_EMULATED_ATOMIC 1
-#elif defined(_MSC_VER) || defined(HOST_WIN32)
+#elif defined(HOST_WIN32)
   /*
    * we need two things to switch to C11 atomics on Windows:
    *
@@ -61,7 +61,11 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
    * stdatomic.h)
    *
    */
-#  define MONO_USE_WIN32_ATOMIC 1
+#  if defined(_MSC_VER)
+#    define MONO_USE_WIN32_ATOMIC 1
+#  else
+#    error FIXME: Implement atomics for mingw and/or clang
+#  endif
 #elif defined(HOST_IOS) || defined(HOST_OSX) || defined(HOST_WATCHOS) || defined(HOST_TVOS)
 #  define MONO_USE_C11_ATOMIC 1
 #elif defined(HOST_ANDROID)
@@ -496,23 +500,13 @@ mono_atomic_load_ptr (volatile gpointer *src)
 static inline void
 mono_atomic_store_i8 (volatile gint8 *dst, gint8 val)
 {
-#if (_MSC_VER >= 1600)
 	_InterlockedExchange8 ((CHAR volatile *)dst, (CHAR)val);
-#else
-	*dst = val;
-	mono_memory_barrier ();
-#endif
 }
 
 static inline void
 mono_atomic_store_i16 (volatile gint16 *dst, gint16 val)
 {
-#if (_MSC_VER >= 1600)
 	_InterlockedExchange16 ((SHORT volatile *)dst, (SHORT)val);
-#else
-	*dst = val;
-	mono_memory_barrier ();
-#endif
 }
 
 static inline void
@@ -532,7 +526,6 @@ mono_atomic_store_ptr (volatile gpointer *dst, gpointer val)
 {
 	InterlockedExchangePointer ((PVOID volatile *)dst, (PVOID)val);
 }
-
 
 #elif defined(MONO_USE_GCC_ATOMIC)
 
