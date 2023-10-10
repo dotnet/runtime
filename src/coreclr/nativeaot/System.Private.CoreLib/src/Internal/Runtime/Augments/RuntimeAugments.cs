@@ -496,13 +496,13 @@ namespace Internal.Runtime.Augments
             return CreateRuntimeTypeHandle(eeInterface);
         }
 
-        public static IntPtr NewInterfaceDispatchCell(RuntimeTypeHandle interfaceTypeHandle, int slotNumber)
+        public static unsafe IntPtr NewInterfaceDispatchCell(RuntimeTypeHandle interfaceTypeHandle, int slotNumber)
         {
-            EETypePtr eeInterfaceType = CreateEETypePtr(interfaceTypeHandle);
-            IntPtr cell = RuntimeImports.RhNewInterfaceDispatchCell(eeInterfaceType, slotNumber);
-            if (cell == IntPtr.Zero)
-                throw new OutOfMemoryException();
-            return cell;
+            nint* dispatchCell = (nint*)NativeMemory.Alloc(3, (nuint)sizeof(void*));
+            dispatchCell[0] = interfaceTypeHandle.Value;
+            dispatchCell[1] = 0;
+            dispatchCell[2] = slotNumber;
+            return (IntPtr)dispatchCell;
         }
 
         public static int GetValueTypeSize(RuntimeTypeHandle typeHandle)

@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -13,18 +12,14 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class InterfaceDispatchCellNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private readonly MethodDesc _targetMethod;
-        private readonly ISortableSymbolNode _callSiteIdentifier;
 
         internal MethodDesc TargetMethod => _targetMethod;
 
-        internal ISortableSymbolNode CallSiteIdentifier => _callSiteIdentifier;
-
-        public InterfaceDispatchCellNode(MethodDesc targetMethod, ISortableSymbolNode callSiteIdentifier)
+        public InterfaceDispatchCellNode(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.OwningType.IsInterface);
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
             _targetMethod = targetMethod;
-            _callSiteIdentifier = callSiteIdentifier;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -32,12 +27,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix)
                 .Append("__InterfaceDispatchCell_")
                 .Append(nameMangler.GetMangledMethodName(_targetMethod));
-
-            if (_callSiteIdentifier != null)
-            {
-                sb.Append('_');
-                _callSiteIdentifier.AppendMangledName(nameMangler, sb);
-            }
         }
 
         int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
@@ -75,8 +64,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            var compare = comparer.Compare(_targetMethod, ((InterfaceDispatchCellNode)other)._targetMethod);
-            return compare != 0 ? compare : comparer.Compare(_callSiteIdentifier, ((InterfaceDispatchCellNode)other)._callSiteIdentifier);
+            return comparer.Compare(_targetMethod, ((InterfaceDispatchCellNode)other)._targetMethod);
         }
     }
 }

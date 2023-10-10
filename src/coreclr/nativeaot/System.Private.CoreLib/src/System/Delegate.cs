@@ -185,7 +185,7 @@ namespace System
             if (firstParameter is null)
                 throw new NullReferenceException();
 
-            m_functionPointer = RuntimeImports.RhpResolveInterfaceMethod(firstParameter, dispatchCell);
+            m_functionPointer = TypeLoaderExports.InterfaceLookupForSlot(firstParameter, dispatchCell);
             m_firstParameter = firstParameter;
         }
 

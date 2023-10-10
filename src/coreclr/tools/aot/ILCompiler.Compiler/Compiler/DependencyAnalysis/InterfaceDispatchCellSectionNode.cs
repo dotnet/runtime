@@ -130,10 +130,6 @@ namespace ILCompiler.DependencyAnalysis
                 if (result != 0)
                     return result;
 
-                result = _comparer.Compare(x.CallSiteIdentifier, y.CallSiteIdentifier);
-                if (result != 0)
-                    return result;
-
                 Debug.Assert(x == y);
                 return 0;
             }

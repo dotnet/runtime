@@ -368,9 +368,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new FrozenObjectNode(key.OwnerType, key.AllocationSiteId, key.SerializableObject);
             });
 
-            _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
+            _interfaceDispatchCells = new NodeCache<MethodDesc, InterfaceDispatchCellNode>(method =>
             {
-                return new InterfaceDispatchCellNode(callSiteCell.Target, callSiteCell.CallsiteId);
+                return new InterfaceDispatchCellNode(method);
             });
 
             _interfaceDispatchMaps = new NodeCache<TypeDesc, InterfaceDispatchMapNode>((TypeDesc type) =>
@@ -693,11 +693,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private NodeCache<DispatchCellKey, InterfaceDispatchCellNode> _interfaceDispatchCells;
+        private NodeCache<MethodDesc, InterfaceDispatchCellNode> _interfaceDispatchCells;
 
-        public InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method, ISortableSymbolNode callSite = null)
+        public InterfaceDispatchCellNode InterfaceDispatchCell(MethodDesc method)
         {
-            return _interfaceDispatchCells.GetOrAdd(new DispatchCellKey(method, callSite));
+            return _interfaceDispatchCells.GetOrAdd(method);
         }
 
         private NodeCache<MethodDesc, RuntimeMethodHandleNode> _runtimeMethodHandles;

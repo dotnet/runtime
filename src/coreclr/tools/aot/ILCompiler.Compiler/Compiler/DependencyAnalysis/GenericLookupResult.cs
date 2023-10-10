@@ -558,14 +558,7 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext context)
         {
             MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(context.TypeInstantiation, context.MethodInstantiation);
-
-            TypeSystemEntity contextOwner = context.Context;
-            GenericDictionaryNode dictionary =
-                contextOwner is TypeDesc ?
-                (GenericDictionaryNode)factory.TypeGenericDictionary((TypeDesc)contextOwner) :
-                (GenericDictionaryNode)factory.MethodGenericDictionary((MethodDesc)contextOwner);
-
-            return factory.InterfaceDispatchCell(instantiatedMethod, dictionary);
+            return factory.InterfaceDispatchCell(instantiatedMethod);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

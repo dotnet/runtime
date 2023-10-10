@@ -1555,14 +1555,8 @@ namespace Internal.JitInterface
                 {
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
                     pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_VALUE;
-#pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
                     pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
-#if !SUPPORT_JIT
-                        , _methodCodeNode
-#endif
-                        ));
-#pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly
+                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod));
                 }
 
                 pResult->nullInstanceCheck = false;
