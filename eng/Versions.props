@@ -181,7 +181,7 @@
     <MicrosoftDotNetXHarnessTestRunnersCommonVersion>8.0.0-prerelease.23505.1</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>8.0.0-prerelease.23505.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>8.0.0-prerelease.23505.1</MicrosoftDotNetXHarnessCLIVersion>
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>8.0.0-alpha.0.23502.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>8.0.0-alpha.0.23509.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <!-- TODO: Remove this hardcoded xunit.analyzers version in favor of Arcade's define. -->
     <XUnitAnalyzersVersion>1.0.0</XUnitAnalyzersVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
