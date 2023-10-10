@@ -710,6 +710,10 @@ REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
 
 REDHAWK_PALIMPORT char* PalCopyTCharAsChar(const TCHAR* toCopy);
 
+REDHAWK_PALIMPORT HANDLE PalLoadLibrary(const char* moduleName);
+
+REDHAWK_PALIMPORT void* PalGetProcAddress(HANDLE module, const char* functionName);
+
 #ifdef TARGET_UNIX
 REDHAWK_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX

@@ -1026,10 +1026,41 @@ namespace System.Numerics.Tensors
             public Vector<float> Invoke(Vector<float> x) => Vector.Abs(x);
         }
 
+        /// <summary>MathF.Exp(x)</summary>
         private readonly struct ExpOperator : IUnaryOperator
         {
             public bool CanVectorize => false;
             public float Invoke(float x) => MathF.Exp(x);
+            public Vector<float> Invoke(Vector<float> x) =>
+                // requires ShiftLeft (.NET 7+)
+                throw new NotImplementedException();
+        }
+
+        /// <summary>MathF.Sinh(x)</summary>
+        private readonly struct SinhOperator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+            public float Invoke(float x) => MathF.Sinh(x);
+            public Vector<float> Invoke(Vector<float> x) =>
+                // requires ShiftLeft (.NET 7+)
+                throw new NotImplementedException();
+        }
+
+        /// <summary>MathF.Cosh(x)</summary>
+        private readonly struct CoshOperator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+            public float Invoke(float x) => MathF.Cosh(x);
+            public Vector<float> Invoke(Vector<float> x) =>
+                // requires ShiftLeft (.NET 7+)
+                throw new NotImplementedException();
+        }
+
+        /// <summary>MathF.Tanh(x)</summary>
+        private readonly struct TanhOperator : IUnaryOperator
+        {
+            public bool CanVectorize => false;
+            public float Invoke(float x) => MathF.Tanh(x);
             public Vector<float> Invoke(Vector<float> x) =>
                 // requires ShiftLeft (.NET 7+)
                 throw new NotImplementedException();

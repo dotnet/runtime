@@ -147,20 +147,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static void Cosh(ReadOnlySpan<float> x, Span<float> destination)
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MathF.Cosh(x[i]);
-            }
-        }
+        public static void Cosh(ReadOnlySpan<float> x, Span<float> destination) =>
+            InvokeSpanIntoSpan<CoshOperator>(x, destination);
 
         /// <summary>Computes the cosine similarity between the two specified non-empty, equal-length tensors of single-precision floating-point numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -1012,20 +1000,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static void Sinh(ReadOnlySpan<float> x, Span<float> destination)
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MathF.Sinh(x[i]);
-            }
-        }
+        public static void Sinh(ReadOnlySpan<float> x, Span<float> destination) =>
+            InvokeSpanIntoSpan<SinhOperator>(x, destination);
 
         /// <summary>Computes the softmax function over the specified non-empty tensor of single-precision floating-point numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -1177,20 +1153,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static void Tanh(ReadOnlySpan<float> x, Span<float> destination)
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = MathF.Tanh(x[i]);
-            }
-        }
+        public static void Tanh(ReadOnlySpan<float> x, Span<float> destination) =>
+            InvokeSpanIntoSpan<TanhOperator>(x, destination);
 
         /// <summary>Throws an exception if the <paramref name="input"/> and <paramref name="output"/> spans overlap and don't begin at the same memory location.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1208,8 +1172,8 @@ namespace System.Numerics.Tensors
         /// Logically 16 rows of 16 uints. The Nth row should be used to handle N remaining elements at the
         /// end of the input, where elements in the vector prior to that will be zero'd.
         /// </remarks>
-        private static ReadOnlySpan<uint> RemainderUInt32Mask_16x16 => new uint[]
-        {
+        private static ReadOnlySpan<uint> RemainderUInt32Mask_16x16 =>
+        [
             0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
             0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF,
             0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF,
@@ -1227,6 +1191,6 @@ namespace System.Numerics.Tensors
             0x00000000, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
             0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
             0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-        };
+        ];
     }
 }
