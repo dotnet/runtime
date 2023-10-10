@@ -19,16 +19,13 @@ namespace System.Net.Quic.Tests
         public MsQuicRemoteExecutorTests()
             : base(null!) { }
 
-        //[ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SslKeyLogFile_IsCreatedAndFilled()
         {
-            if (!RemoteExecutor.IsSupported)
+            if (PlatformDetection.IsReleaseRuntime)
             {
-                _output.WriteLine("RemoteExecutor is not supported");
-                Assert.True(false, "RemoteExecutor is not supported");
+                throw new SkipTestException("Retrieving SSL secrets is not supported in Release mode.");
             }
-            Assert.True(false, "SslKeyLogFile_IsCreatedAndFilled ran on this platform");
 
             var psi = new ProcessStartInfo();
             var tempFile = Path.GetTempFileName();
