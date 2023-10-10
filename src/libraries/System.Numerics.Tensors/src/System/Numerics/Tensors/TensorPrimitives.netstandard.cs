@@ -461,12 +461,10 @@ namespace System.Numerics.Tensors
                 // potentially reprocess a few elements in case 0 for beg, to handle any
                 // data before the first aligned address.
 
-                nuint blockCount = (remainder + (uint)(Vector<float>.Count - 1)) & (uint)(-Vector<float>.Count);
-
                 nuint endIndex = remainder;
-                remainder = blockCount * (uint)(Vector<float>.Count);
+                remainder = (remainder + (uint)(Vector<float>.Count - 1)) & (nuint)(-Vector<float>.Count);
 
-                switch (blockCount / (uint)(sizeof(Vector<float>)))
+                switch (remainder / (uint)(Vector<float>.Count))
                 {
                     case 8:
                     {

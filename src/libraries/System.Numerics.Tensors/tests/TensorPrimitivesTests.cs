@@ -20,7 +20,7 @@ namespace System.Numerics.Tensors.Tests
             TensorLengths.Concat(new object[][] { [0] });
 
         public static IEnumerable<object[]> TensorLengths =>
-            from length in Enumerable.Range(1, 128)
+            from length in Enumerable.Range(1, 256)
             select new object[] { length };
 
         private static readonly Random s_random = new Random(20230828);

@@ -1443,12 +1443,10 @@ namespace System.Numerics.Tensors
                 // potentially reprocess a few elements in case 0 for beg, to handle any
                 // data before the first aligned address.
 
-                nuint blockCount = (remainder + (uint)(Vector128<float>.Count - 1)) & (uint)(-Vector128<float>.Count);
-
                 nuint endIndex = remainder;
-                remainder = blockCount * (uint)(Vector128<float>.Count);
+                remainder = (remainder + (uint)(Vector128<float>.Count - 1)) & (nuint)(-Vector128<float>.Count);
 
-                switch (blockCount / (uint)(sizeof(Vector128<float>)))
+                switch (remainder / (uint)(Vector128<float>.Count))
                 {
                     case 8:
                     {
@@ -1687,12 +1685,10 @@ namespace System.Numerics.Tensors
                 // potentially reprocess a few elements in case 0 for beg, to handle any
                 // data before the first aligned address.
 
-                nuint blockCount = (remainder + (uint)(Vector256<float>.Count - 1)) & (uint)(-Vector256<float>.Count);
-
                 nuint endIndex = remainder;
-                remainder = blockCount * (uint)(Vector256<float>.Count);
+                remainder = (remainder + (uint)(Vector256<float>.Count - 1)) & (nuint)(-Vector256<float>.Count);
 
-                switch (blockCount / (uint)(sizeof(Vector256<float>)))
+                switch (remainder / (uint)(Vector256<float>.Count))
                 {
                     case 8:
                     {
@@ -1951,12 +1947,10 @@ namespace System.Numerics.Tensors
                 // potentially reprocess a few elements in case 0 for beg, to handle any
                 // data before the first aligned address.
 
-                nuint blockCount = (remainder + (uint)(Vector512<float>.Count - 1)) & (uint)(-Vector512<float>.Count);
-
                 nuint endIndex = remainder;
-                remainder = blockCount * (uint)(Vector512<float>.Count);
+                remainder = (remainder + (uint)(Vector512<float>.Count - 1)) & (nuint)(-Vector512<float>.Count);
 
-                switch (blockCount / (uint)(sizeof(Vector512<float>)))
+                switch (remainder / (uint)(Vector512<float>.Count))
                 {
                     case 8:
                     {
