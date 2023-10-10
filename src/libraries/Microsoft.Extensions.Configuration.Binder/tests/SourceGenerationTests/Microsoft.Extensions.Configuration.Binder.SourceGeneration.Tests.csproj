@@ -49,14 +49,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Baselines\net462\*.generated.txt;
-                      Baselines\net462\ConfigurationBinder\*.generated.txt;
-                      Baselines\net462\OptionsBuilder\*.generated.txt;
-                      Baselines\net462\ServiceCollection\*.generated.txt;
-                      Baselines\netcoreapp\*.generated.txt;
-                      Baselines\netcoreapp\ConfigurationBinder\*.generated.txt;
-                      Baselines\netcoreapp\OptionsBuilder\*.generated.txt;
-                      Baselines\netcoreapp\ServiceCollection\*.generated.txt;">
+    <Content Include="Baselines\*\*\*.generated.txt;
+             Baselines\*\*.generated.txt;">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 

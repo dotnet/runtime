@@ -876,7 +876,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             var firstParam = parameters[0];
                             var secondParam = parameters[1];
 
-                            if (firstParam.Name == "argument" && firstParam.Type.Equals(_typeSymbols.Object, SymbolEqualityComparer.Default)
+                            if (firstParam.Name == "argument" && firstParam.Type.SpecialType == SpecialType.System_Object
                                 && secondParam.Name == "paramName" && secondParam.Type.Equals(_typeSymbols.String, SymbolEqualityComparer.Default))
                             {
                                 return true;
