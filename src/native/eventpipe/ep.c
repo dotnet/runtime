@@ -983,6 +983,8 @@ ep_enable (
 
 	sessionId = ep_enable_3(&options);
 
+	ep_session_options_fini(&options);
+
 	return sessionId;
 }
 
@@ -1095,7 +1097,7 @@ ep_on_error:
 }
 
 void
-ep_session_options_init(
+ep_session_options_init (
 	EventPipeSessionOptions* options,
 	const ep_char8_t* output_path,
 	uint32_t circular_buffer_size_in_mb,
@@ -1123,6 +1125,10 @@ ep_session_options_init(
 	options->sync_callback = sync_callback;
 	options->callback_additional_data = callback_additional_data;
 }
+
+void
+ep_session_options_fini (EventPipeSessionOptions* options)
+{}
 
 EventPipeSessionID
 ep_enable_3 (const EventPipeSessionOptions *options)

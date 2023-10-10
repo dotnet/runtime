@@ -138,6 +138,9 @@ ep_session_options_init (
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data);
 
+void
+ep_session_options_fini (EventPipeSessionOptions* options);
+
 /*
  * EventPipe.
  */
