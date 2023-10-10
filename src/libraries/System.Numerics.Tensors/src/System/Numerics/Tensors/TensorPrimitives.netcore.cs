@@ -1764,9 +1764,15 @@ namespace System.Numerics.Tensors
                     case 6:
                     case 5:
                     {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<float> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
                         Vector128<float> end = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<float>.Count)));
+
+                        beg.StoreUnsafe(ref dRef);
                         end.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<float>.Count));
-                        goto case 4;
+
+                        break;
                     }
 
                     case 4:
@@ -2030,9 +2036,15 @@ namespace System.Numerics.Tensors
                     case 10:
                     case 9:
                     {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<float> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
                         Vector256<float> end = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<float>.Count)));
+
+                        beg.StoreUnsafe(ref dRef);
                         end.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<float>.Count));
-                        goto case 8;
+
+                        break;
                     }
 
                     case 8:
@@ -2049,9 +2061,15 @@ namespace System.Numerics.Tensors
                     case 6:
                     case 5:
                     {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<float> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
                         Vector128<float> end = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<float>.Count)));
+
+                        beg.StoreUnsafe(ref dRef);
                         end.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<float>.Count));
-                        goto case 4;
+
+                        break;
                     }
 
                     case 4:
