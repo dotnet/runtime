@@ -474,6 +474,11 @@ enable (
 {
 	ep_requires_lock_held ();
 
+	EP_ASSERT (options != NULL);
+	EP_ASSERT (options->format < EP_SERIALIZATION_FORMAT_COUNT);
+	EP_ASSERT (options->session_type == EP_SESSION_TYPE_SYNCHRONOUS || options->circular_buffer_size_in_mb > 0);
+	EP_ASSERT (options->providers_len > 0 && options->providers != NULL);
+
 	EventPipeSession *session = NULL;
 	EventPipeSessionID session_id = 0;
 	uint32_t session_index = 0;
