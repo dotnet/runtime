@@ -192,7 +192,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 						// This can happen in a constructor - there it is possible to assign to a property
 						// without a setter. This turns into an assignment to the compiler-generated backing field.
 						// To match the linker, this should warn about the compiler-generated backing field.
-						// For now, just don't warn. https://github.com/dotnet/linker/issues/2731
+						// For now, just don't warn. https://github.com/dotnet/runtime/issues/93277
 						break;
 					}
 					// Even if the property has a set method, if the assignment takes place in a property initializer,

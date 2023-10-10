@@ -481,7 +481,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			public Type GetOnlyProperty { get; }
 
-			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/linker/issues/2731
+			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/runtime/issues/93277
 			[ExpectedWarning ("IL2074", nameof (WriteToGetOnlyProperty), nameof (GetUnknownType),
 				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			public WriteToGetOnlyProperty ()
@@ -549,7 +549,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			Type GetOnlyProperty { get; }
 
-			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/linker/issues/2731
+			// Analyzer doesn't warn about compiler-generated backing field of property: https://github.com/dotnet/runtime/issues/93277
 			[ExpectedWarning ("IL2074", nameof (WriteCapturedGetOnlyProperty), nameof (GetUnknownType),
 				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2074", nameof (WriteCapturedGetOnlyProperty), nameof (GetTypeWithPublicConstructors),
