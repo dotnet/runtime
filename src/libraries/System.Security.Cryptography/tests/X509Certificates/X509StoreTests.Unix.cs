@@ -67,10 +67,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string sslCertDir = string.Join(Path.PathSeparator,
                 new[] {
                         sslCertDir1,
-                        "/invalid1",
                         sslCertDir2,
-                        "/invalid2",
-                        "",
+                        "",          // empty string
+                        sslCertDir2, // duplicate directory
+                        "/invalid2", // path that does not exist
             });
 
             var psi = new ProcessStartInfo();
