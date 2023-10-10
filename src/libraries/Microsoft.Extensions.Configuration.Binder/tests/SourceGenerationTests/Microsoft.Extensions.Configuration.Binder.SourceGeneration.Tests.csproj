@@ -49,8 +49,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Baselines\*\*\*.generated.txt;
-             Baselines\*\*.generated.txt;">
+    <Content Include="Baselines\**\*;">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
 
