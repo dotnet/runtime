@@ -376,13 +376,13 @@ void CodeGen::genMarkLabelsForCodegen()
 
     for (BasicBlock* const block : compiler->Blocks())
     {
-        switch (block->GetBBJumpKind())
+        switch (block->GetJumpKind())
         {
             case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
             case BBJ_COND:
             case BBJ_EHCATCHRET:
-                JITDUMP("  " FMT_BB " : branch target\n", block->bbJumpDest->bbNum);
-                block->bbJumpDest->bbFlags |= BBF_HAS_LABEL;
+                JITDUMP("  " FMT_BB " : branch target\n", block->GetJumpDest()->bbNum);
+                block->GetJumpDest()->bbFlags |= BBF_HAS_LABEL;
                 break;
 
             case BBJ_SWITCH:
