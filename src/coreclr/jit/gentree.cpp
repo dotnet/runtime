@@ -6999,7 +6999,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 #endif // FEATURE_HW_INTRINSICS
 
         default:
-            assert(!OperMayOverflow() && !OperIsIndirOrArrMetaData());
+            assert(!OperMayOverflow() && (!OperIsIndirOrArrMetaData() || OperIsAtomicZeroDiffQuirk()));
             return ExceptionSetFlags::None;
     }
 }
@@ -17521,7 +17521,7 @@ GenTreeLclVar* GenTree::IsImplicitByrefParameterValuePostMorph(Compiler* compile
 {
 #if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) // TODO-LOONGARCH64-CQ: enable this.
 
-    if (!OperIsIndir())
+    if (!OperIsLoad())
     {
         return nullptr;
     }
