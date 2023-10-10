@@ -24,12 +24,12 @@ public class JittedMethodsCountingTest
         }
 
         // This test is currently not compatible with the R2R-CG2 pipelines on Arm64.
-        if (IsRunCrossgen2Set() && IsRunningOnARM64())
-        {
-            Console.WriteLine("\nThis test is currently unsupported on ARM64 when"
-                              + " RunCrossGen2 is enabled. Skipping...\n");
-            return 100;
-        }
+        // if (IsRunCrossgen2Set() && IsRunningOnARM64())
+        // {
+        //     Console.WriteLine("\nThis test is currently unsupported on ARM64 when"
+        //                       + " RunCrossGen2 is enabled. Skipping...\n");
+        //     return 100;
+        // }
 
         Console.WriteLine("\nHello World from Jitted Methods Counting Test!");
 
