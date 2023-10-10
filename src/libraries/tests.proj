@@ -387,8 +387,6 @@
     <!-- https://github.com/dotnet/runtime/issues/91593 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels\tests\System.Threading.Channels.Tests.csproj" />
-
-
   </ItemGroup>
 
   <!-- Aggressive Trimming related failures -->
