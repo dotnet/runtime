@@ -29,7 +29,7 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(string.Empty, startingTimestamp, errorType: null);
+            NameResolutionTelemetry.Log.AfterResolution(string.Empty, startingTimestamp);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, name);
             return name;
@@ -400,7 +400,7 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(hostName, startingTimestamp, errorType: null);
+            NameResolutionTelemetry.Log.AfterResolution(hostName, startingTimestamp);
 
             return result;
         }
@@ -440,7 +440,7 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(address, startingTimestamp, errorType: null);
+            NameResolutionTelemetry.Log.AfterResolution(address, startingTimestamp);
 
             // Do the forward lookup to get the IPs for that host name
             startingTimestamp = NameResolutionTelemetry.Log.BeforeResolution(name);
@@ -470,7 +470,7 @@ namespace System.Net
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(name, startingTimestamp, errorType: null);
+            NameResolutionTelemetry.Log.AfterResolution(name, startingTimestamp);
 
             // One of three things happened:
             // 1. Success.
@@ -594,32 +594,22 @@ namespace System.Net
             static async Task<T> CompleteAsync(Task task, string hostName, long startingTimestamp)
             {
                 _ = NameResolutionTelemetry.Log.BeforeResolution(hostName);
-                string? errorType = null;
+                Exception? exception = null;
                 try
                 {
                     return await ((Task<T>)task).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    errorType = GetErrorType(ex);
+                    exception = ex;
                     throw;
                 }
                 finally
                 {
-                    NameResolutionTelemetry.Log.AfterResolution(hostName, startingTimestamp, errorType);
+                    NameResolutionTelemetry.Log.AfterResolution(hostName, startingTimestamp, exception);
                 }
             }
         }
-
-        private static string GetErrorType(Exception exception) => (exception as SocketException)?.SocketErrorCode switch
-        {
-            SocketError.HostNotFound => "host_not_found",
-            SocketError.TryAgain => "try_again",
-            SocketError.AddressFamilyNotSupported => "address_family_not_supported",
-            SocketError.NoRecovery => "no_recovery",
-
-            _ => exception.GetType().Name
-        };
 
         private static IPHostEntry CreateHostEntryForAddress(IPAddress address) =>
             new IPHostEntry
@@ -643,8 +633,7 @@ namespace System.Net
 
         private static bool LogFailure(object hostNameOrAddress, long? startingTimestamp, Exception exception)
         {
-            string errorType = GetErrorType(exception);
-            NameResolutionTelemetry.Log.AfterResolution(hostNameOrAddress, startingTimestamp, errorType);
+            NameResolutionTelemetry.Log.AfterResolution(hostNameOrAddress, startingTimestamp, exception);
             return false;
         }
 
