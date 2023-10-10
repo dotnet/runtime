@@ -17,291 +17,118 @@ using Internal.Runtime.Augments;
 
 namespace System
 {
-    internal sealed unsafe class RuntimeType : TypeInfo, ICloneable
+    internal sealed unsafe class MetadataOnlyType : TypeInfo, ICloneable
     {
-        private MethodTable* _pUnderlyingEEType;
-        private RuntimeTypeInfo? _runtimeTypeInfo;
+        private RuntimeTypeInfo _runtimeTypeInfo;
 
-        internal RuntimeType(MethodTable* pUnderlyingEEType)
+        internal MetadataOnlyType(RuntimeTypeInfo runtimeTypeInfo)
         {
-            _pUnderlyingEEType = pUnderlyingEEType;
+            _runtimeTypeInfo = runtimeTypeInfo;
         }
 
-        internal EETypePtr ToEETypePtr() => new EETypePtr(_pUnderlyingEEType);
-
-        internal RuntimeTypeInfo GetRuntimeTypeInfo() => _runtimeTypeInfo ?? CreateRuntimeTypeInfo();
-
-        private RuntimeTypeInfo CreateRuntimeTypeInfo()
-        {
-            EETypePtr eeType = ToEETypePtr();
-
-            RuntimeTypeHandle runtimeTypeHandle = new RuntimeTypeHandle(eeType);
-
-            RuntimeTypeInfo runtimeTypeInfo;
-
-            if (eeType.IsDefType)
-            {
-                if (eeType.IsGeneric)
-                {
-                    runtimeTypeInfo = ExecutionDomain.GetConstructedGenericTypeForHandle(runtimeTypeHandle);
-                }
-                else
-                {
-                    runtimeTypeInfo = ReflectionCoreExecution.ExecutionDomain.GetNamedTypeForHandle(runtimeTypeHandle);
-                }
-            }
-            else if (eeType.IsArray)
-            {
-                if (!eeType.IsSzArray)
-                    runtimeTypeInfo = ExecutionDomain.GetMdArrayTypeForHandle(runtimeTypeHandle, eeType.ArrayRank);
-                else
-                    runtimeTypeInfo = ExecutionDomain.GetArrayTypeForHandle(runtimeTypeHandle);
-            }
-            else if (eeType.IsPointer)
-            {
-                runtimeTypeInfo = ExecutionDomain.GetPointerTypeForHandle(runtimeTypeHandle);
-            }
-            else if (eeType.IsFunctionPointer)
-            {
-                runtimeTypeInfo = ExecutionDomain.GetFunctionPointerTypeForHandle(runtimeTypeHandle);
-            }
-            else if (eeType.IsByRef)
-            {
-                runtimeTypeInfo = ExecutionDomain.GetByRefTypeForHandle(runtimeTypeHandle);
-            }
-            else
-            {
-                Debug.Fail("Invalid RuntimeTypeHandle");
-                throw new ArgumentException(SR.Arg_InvalidHandle);
-            }
-
-            return (_runtimeTypeInfo = runtimeTypeInfo);
-        }
+        internal RuntimeTypeInfo GetRuntimeTypeInfo() => _runtimeTypeInfo;
 
         public override string? GetEnumName(object value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            ulong rawValue;
-            if (!Enum.TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
+            if (!Enum.TryGetUnboxedValueOfEnumOrInteger(value, out _))
                 throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
 
-            // For desktop compatibility, do not bounce an incoming integer that's the wrong size.
-            // Do a value-preserving cast of both it and the enum values and do a 64-bit compare.
-
-            if (!IsActualEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
-
-            return Enum.GetName(this, rawValue);
+            // Enums must have RuntimeType
+            throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
         }
 
         public override string[] GetEnumNames()
         {
-            if (!IsActualEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
-
-            string[] ret = Enum.GetNamesNoCopy(this);
-
-            // Make a copy since we can't hand out the same array since users can modify them
-            return new ReadOnlySpan<string>(ret).ToArray();
+            // Enums must have RuntimeType
+            throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
         }
 
         public override Type GetEnumUnderlyingType()
         {
-            if (!IsActualEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
-
-            return Enum.InternalGetUnderlyingType(this);
+            // Enums must have RuntimeType
+            throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
         }
 
         public override bool IsEnumDefined(object value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (!IsActualEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
-
-            if (value is string valueAsString)
-            {
-                EnumInfo enumInfo = Enum.GetEnumInfo(this);
-                foreach (string name in enumInfo.Names)
-                {
-                    if (valueAsString == name)
-                        return true;
-                }
-                return false;
-            }
-            else
-            {
-                ulong rawValue;
-                if (!Enum.TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
-                {
-                    if (Type.IsIntegerType(value.GetType()))
-                        throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), Enum.InternalGetUnderlyingType(this)));
-                    else
-                        throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
-                }
-
-                if (value is Enum)
-                {
-                    if (value.GetEETypePtr() != this.ToEETypePtr())
-                        throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, value.GetType(), this));
-                }
-                else
-                {
-                    Type underlyingType = Enum.InternalGetUnderlyingType(this);
-                    if (!(underlyingType.TypeHandle.ToEETypePtr() == value.GetEETypePtr()))
-                        throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), underlyingType));
-                }
-
-                return Enum.GetName(this, rawValue) != null;
-            }
+            // Enums must have RuntimeType
+            throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
         }
 
         [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
         public override Array GetEnumValues()
         {
-            if (!IsActualEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
-
-            Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
-            int count = values.Length;
-
-            // Without universal shared generics, chances are slim that we'll have the appropriate
-            // array type available. Offer an escape hatch that avoids a missing metadata exception
-            // at the cost of a small appcompat risk.
-            Array result = AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed ?
-                Array.CreateInstance(Enum.InternalGetUnderlyingType(this), count) :
-                Array.CreateInstance(this, count);
-
-            Array.Copy(values, result, values.Length);
-            return result;
+            // Enums must have RuntimeType
+            throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
         }
 
         public override Array GetEnumValuesAsUnderlyingType()
         {
-            if (!IsActualEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
-
-            return Enum.GetValuesAsUnderlyingType(this);
+            // Enums must have RuntimeType
+            throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
         }
 
         public override RuntimeTypeHandle TypeHandle
-            => new RuntimeTypeHandle(_pUnderlyingEEType);
+            => GetRuntimeTypeInfo().TypeHandle;
 
         internal new unsafe bool IsInterface
-            => _pUnderlyingEEType->IsInterface;
+            => GetRuntimeTypeInfo().IsInterface;
 
         protected override bool IsValueTypeImpl()
-            => _pUnderlyingEEType->IsValueType;
-
-        internal bool IsActualValueType
-            => _pUnderlyingEEType->IsValueType;
+            => GetRuntimeTypeInfo().IsValueType;
 
         public override unsafe bool IsEnum
-            => _pUnderlyingEEType->IsEnum;
+            => GetRuntimeTypeInfo().IsEnum;
 
         internal unsafe bool IsActualEnum
-            => _pUnderlyingEEType->IsEnum;
+            => GetRuntimeTypeInfo().IsEnum;
 
         protected override unsafe bool IsArrayImpl()
-            => _pUnderlyingEEType->IsArray;
+            => GetRuntimeTypeInfo().IsArray;
 
         protected override unsafe bool IsByRefImpl()
-            => _pUnderlyingEEType->IsByRef;
+            => GetRuntimeTypeInfo().IsByRef;
 
         protected override unsafe bool IsPointerImpl()
-            => _pUnderlyingEEType->IsPointer;
+            => GetRuntimeTypeInfo().IsPointer;
 
         protected override unsafe bool HasElementTypeImpl()
-            => _pUnderlyingEEType->IsParameterizedType;
+            => GetRuntimeTypeInfo().HasElementType;
 
         public override Type? GetElementType()
-            => _pUnderlyingEEType->IsParameterizedType ? GetTypeFromMethodTable(_pUnderlyingEEType->RelatedParameterType) : null;
+            => GetRuntimeTypeInfo().GetElementType();
 
         public override int GetArrayRank()
-            => _pUnderlyingEEType->IsArray ? _pUnderlyingEEType->ArrayRank : throw new ArgumentException(SR.Argument_HasToBeArrayClass);
+            => GetRuntimeTypeInfo().GetArrayRank();
 
         public override Type? BaseType
-        {
-            get
-            {
-                if (_pUnderlyingEEType->IsCanonical)
-                {
-                    MethodTable* pBaseType = _pUnderlyingEEType->NonArrayBaseType;
-                    return (pBaseType != null) ? GetTypeFromMethodTable(pBaseType) : null;
-                }
-
-                if (_pUnderlyingEEType->IsArray)
-                {
-                    return typeof(Array);
-                }
-
-                if (_pUnderlyingEEType->IsGenericTypeDefinition)
-                {
-                    return GetRuntimeTypeInfo().BaseType;
-                }
-
-                return null;
-            }
-        }
+            => GetRuntimeTypeInfo().BaseType;
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces()
-        {
-            MethodTable* pUnderlyingEEType = _pUnderlyingEEType;
-
-            if (pUnderlyingEEType->IsGenericTypeDefinition)
-                return GetRuntimeTypeInfo().GetInterfaces();
-
-            int count = pUnderlyingEEType->NumInterfaces;
-            if (count == 0)
-                return EmptyTypes;
-
-            Type[] result = new Type[count];
-            for (int i = 0; i < result.Length; i++)
-            {
-                result[i] = GetTypeFromMethodTable(pUnderlyingEEType->InterfaceMap[i]);
-            }
-            return result;
-        }
+            => GetRuntimeTypeInfo().GetInterfaces();
 
         public override bool IsTypeDefinition
-            => (_pUnderlyingEEType->IsCanonical &&  !_pUnderlyingEEType->IsGeneric) || _pUnderlyingEEType->IsGenericTypeDefinition;
+            => GetRuntimeTypeInfo().IsTypeDefinition;
 
         public override bool IsGenericType
-            => _pUnderlyingEEType->IsGeneric || _pUnderlyingEEType->IsGenericTypeDefinition;
+            => GetRuntimeTypeInfo().IsConstructedGenericType || GetRuntimeTypeInfo().IsGenericTypeDefinition;
 
         public override bool IsGenericTypeDefinition
-            => _pUnderlyingEEType->IsGenericTypeDefinition;
+            => GetRuntimeTypeInfo().IsGenericTypeDefinition;
 
         public override bool IsConstructedGenericType
-            => _pUnderlyingEEType->IsGeneric;
+            => GetRuntimeTypeInfo().IsConstructedGenericType;
 
         public override Type GetGenericTypeDefinition()
-            => _pUnderlyingEEType->IsGeneric ? GetTypeFromMethodTable(_pUnderlyingEEType->GenericDefinition) :
-            _pUnderlyingEEType->IsGenericTypeDefinition ? this :
-            throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
+            => GetRuntimeTypeInfo().GetGenericTypeDefinition();
 
         public override Type[] GenericTypeArguments
-        {
-            get
-            {
-                MethodTable* pUnderlyingEEType = _pUnderlyingEEType;
-
-                if (!pUnderlyingEEType->IsGeneric)
-                    return EmptyTypes;
-
-                MethodTableList genericArguments = pUnderlyingEEType->GenericArguments;
-
-                Type[] result = new Type[pUnderlyingEEType->GenericArity];
-                for (int i = 0; i < result.Length; i++)
-                {
-                    result[i] = GetTypeFromMethodTable(genericArguments[i]);
-                }
-                return result;
-            }
-        }
+            => GetRuntimeTypeInfo().GenericTypeArguments;
 
         public override Type[] GenericTypeParameters
             => GetRuntimeTypeInfo().GenericTypeParameters;
@@ -315,61 +142,42 @@ namespace System
             return EmptyTypes;
         }
 
-        // Identical to base class
-        // public override bool IsGenericParameter => false;
-        public override bool IsGenericTypeParameter => false;
-        public override bool IsGenericMethodParameter => false;
+        public override bool IsGenericParameter
+            => GetRuntimeTypeInfo().IsGenericParameter;
+        public override bool IsGenericTypeParameter
+            => GetRuntimeTypeInfo().IsGenericTypeParameter;
+        public override bool IsGenericMethodParameter
+            => GetRuntimeTypeInfo().IsGenericMethodParameter;
 
-        // Identical to base class
-        // public override int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
-        public override GenericParameterAttributes GenericParameterAttributes => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
-        public override Type[] GetGenericParameterConstraints() => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
+        public override int GenericParameterPosition
+            => GetRuntimeTypeInfo().GenericParameterPosition;
+        public override GenericParameterAttributes GenericParameterAttributes
+            => GetRuntimeTypeInfo().GenericParameterAttributes;
+        public override Type[] GetGenericParameterConstraints()
+            => GetRuntimeTypeInfo().GetGenericParameterConstraints();
 
-        protected override bool IsPrimitiveImpl() => _pUnderlyingEEType->IsPrimitive && !_pUnderlyingEEType->IsEnum;
+        protected override bool IsPrimitiveImpl() => GetRuntimeTypeInfo().IsPrimitive && !GetRuntimeTypeInfo().IsEnum;
 
         public override bool IsSZArray
-            => _pUnderlyingEEType->ElementType == EETypeElementType.SzArray;
+            => GetRuntimeTypeInfo().IsSZArray;
 
         public override bool IsVariableBoundArray
-            => _pUnderlyingEEType->ElementType == EETypeElementType.Array;
+            => GetRuntimeTypeInfo().IsVariableBoundArray;
 
         public override bool IsByRefLike
-            => _pUnderlyingEEType->IsByRefLike;
+            => GetRuntimeTypeInfo().IsByRefLike;
 
         public override bool IsFunctionPointer
-            => _pUnderlyingEEType->IsFunctionPointer;
+            => GetRuntimeTypeInfo().IsFunctionPointer;
 
         public override bool IsUnmanagedFunctionPointer
-            => _pUnderlyingEEType->IsUnmanagedFunctionPointer;
+            => GetRuntimeTypeInfo().IsUnmanagedFunctionPointer;
 
         public override Type[] GetFunctionPointerParameterTypes()
-        {
-            if (!IsFunctionPointer)
-                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
-
-            MethodTable* pUnderlyingEEType = _pUnderlyingEEType;
-
-            uint count = pUnderlyingEEType->NumFunctionPointerParameters;
-            if (count == 0)
-                return EmptyTypes;
-
-            MethodTableList parameterTypes = pUnderlyingEEType->FunctionPointerParameters;
-
-            Type[] result = new Type[count];
-            for (int i = 0; i < result.Length; i++)
-            {
-                result[i] = GetTypeFromMethodTable(parameterTypes[i]);
-            }
-            return result;
-        }
+            => GetRuntimeTypeInfo().GetFunctionPointerParameterTypes();
 
         public override Type GetFunctionPointerReturnType()
-        {
-            if (!IsFunctionPointer)
-                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
-
-            return GetTypeFromMethodTable(_pUnderlyingEEType->FunctionPointerReturnType);
-        }
+            => GetRuntimeTypeInfo().GetFunctionPointerReturnType();
 
         //
         // Implementation shared with MetadataType

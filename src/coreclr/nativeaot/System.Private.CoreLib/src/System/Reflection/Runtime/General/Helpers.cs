@@ -64,17 +64,6 @@ namespace System.Reflection.Runtime.General
             return types;
         }
 
-#pragma warning disable IDE0060 // TODO!!! Unused parameters
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeNamedTypeInfo ToRuntimeNamedTypeInfo(this Type type)
-        {
-            // TODO: !!!
-            Debug.Assert(false);
-            return null;
-            // Debug.Assert(type is RuntimeNamedTypeInfo);
-            // return (RuntimeNamedTypeInfo)type;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo ToRuntimeTypeInfo(this Type type)
         {
@@ -82,20 +71,13 @@ namespace System.Reflection.Runtime.General
             {
                 return runtimeType.GetRuntimeTypeInfo();
             }
-            // TODO: !!!
+            if (type is MetadataOnlyType metadataOnlyType)
+            {
+                return metadataOnlyType.GetRuntimeTypeInfo();
+            }
             Debug.Assert(false);
             return null;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Type ToType(this RuntimeTypeInfo typeInfo)
-        {
-            RuntimeTypeHandle runtimeTypeHandle = typeInfo.InternalTypeHandleIfAvailable;
-            // TODO: !!!
-            Debug.Assert(!runtimeTypeHandle.IsNull);
-            return Type.GetTypeFromHandle(runtimeTypeHandle);
-        }
-#pragma warning restore IDE0060
 
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumeration)
         {

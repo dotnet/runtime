@@ -9,6 +9,7 @@ namespace System.Collections.Generic
 {
     internal static class EnumerableExtensions
     {
+        // TODO: Delete
         // Used to prevent returning values out of IEnumerable<>-typed properties
         // that an untrusted caller could cast back to array or List.
         public static IEnumerable<T> AsNothingButIEnumerable<T>(this IEnumerable<T> en)

@@ -14,6 +14,7 @@ using Internal.Reflection.Core.NonPortable;
 using Internal.Reflection.Augments;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
+using System.Threading;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -528,29 +529,15 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public Type UnderlyingSystemType
-        {
-            get
-            {
-                return this.ToType();
-            }
-        }
-
         public abstract TypeAttributes Attributes { get; }
 
         public bool IsAbstract => (Attributes & TypeAttributes.Abstract) != 0;
 
         public bool IsInterface => (Attributes & TypeAttributes.Interface) != 0;
 
-        protected bool IsPrimitiveImpl()
-        {
-            return 0 != (Classification & TypeClassification.IsPrimitive);
-        }
+        public bool IsPrimitive => (Classification & TypeClassification.IsPrimitive) != 0;
 
-        protected bool IsValueTypeImpl()
-        {
-            return 0 != (Classification & TypeClassification.IsValueType);
-        }
+        public bool IsValueType => (Classification & TypeClassification.IsValueType) != 0;
 
         //
         // Returns the anchoring typedef that declares the members that this type wants returned by the Declared*** properties.
@@ -606,6 +593,19 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         internal abstract RuntimeTypeHandle InternalTypeHandleIfAvailable { get; }
+
+        private Type _type;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Type ToType() => _type ?? CreateType();
+
+        private Type CreateType()
+        {
+            RuntimeTypeHandle runtimeTypeHandle = InternalTypeHandleIfAvailable;
+            Type type = runtimeTypeHandle.IsNull ? new MetadataOnlyType(this) : Type.GetTypeFromHandle(runtimeTypeHandle)!;
+            Interlocked.CompareExchange(ref _type, type, null);
+            return _type;
+        }
 
         internal bool IsDelegate
         {
