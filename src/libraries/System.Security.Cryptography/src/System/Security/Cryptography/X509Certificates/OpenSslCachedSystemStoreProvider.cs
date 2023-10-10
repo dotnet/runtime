@@ -338,7 +338,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             // Remove duplicates.
-            if (directories.Length > 0)
+            if (directories.Length > 1)
             {
                 var set = new HashSet<string>(directories, StringComparer.Ordinal);
                 if (set.Count != directories.Length)
