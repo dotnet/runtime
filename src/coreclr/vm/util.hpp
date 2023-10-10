@@ -500,7 +500,7 @@ CLRUnmapViewOfFile(
     );
 
 int64_t GetPreciseTickCount();
-void ReportLoadLibraryTime(LPCWSTR lpFileName, int64_t loadTime);
+void ReportActionTime(const char *actionName, LPCWSTR lpFileName, int64_t beforeTicks);
 
 #ifndef DACCESS_COMPILE
 FORCEINLINE void VoidCLRUnmapViewOfFile(void *ptr) { CLRUnmapViewOfFile(ptr); }

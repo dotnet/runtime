@@ -522,8 +522,6 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
     m_pOwner = pOwner;
     _ASSERTE(pOwner->GetUncompressedSize() == 0);
 
-    int64_t before = GetPreciseTickCount();
-
 #ifndef TARGET_UNIX
     _ASSERTE(!pOwner->IsInBundle());
     m_Module = CLRLoadLibraryEx(pOwner->GetPath(), NULL, GetLoadWithAlteredSearchPathFlag());
@@ -542,6 +540,8 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 #endif // LOGGING
 
 #else
+    int64_t before = GetPreciseTickCount();
+
     HANDLE hFile = pOwner->GetFileHandle();
     INT64 offset = pOwner->GetOffset();
 
@@ -582,8 +582,8 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         ApplyBaseRelocations(/* relocationMustWriteCopy*/ false);
         SetRelocated();
     }
+    ReportTime("LOAD_LIBRARY", pOwner->GetPath(), before);
 #endif
-    ReportLoadLibraryTime(pOwner->GetPath(), GetPreciseTickCount() - before);
 }
 
 #if !defined(TARGET_UNIX)
@@ -1201,9 +1201,9 @@ NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
 {
     PVOID loadedImage;
     
+#if TARGET_UNIX
     int64_t before = GetPreciseTickCount();
 
-#if TARGET_UNIX
     {
         HANDLE fileHandle = WszCreateFile(
             fullPath,
@@ -1221,11 +1221,11 @@ NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
 
         loadedImage = PAL_LOADLoadPEFile(fileHandle, 0);
     }
+    ReportTime("LOAD_LIBRARY", fullPath, before);
+
 #else
     loadedImage = CLRLoadLibraryEx(fullPath, NULL, GetLoadWithAlteredSearchPathFlag());
 #endif
-
-    ReportLoadLibraryTime(fullPath, GetPreciseTickCount() - before);
 
     if (loadedImage == NULL)
     {

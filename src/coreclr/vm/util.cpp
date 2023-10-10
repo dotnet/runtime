@@ -902,8 +902,8 @@ CLRUnmapViewOfFile(
     }
 }
 
-volatile static int64_t s_loadLibraryTicks = 0;
-volatile static LONG s_loadLibraryCount = 0;
+volatile static int64_t s_totalTicks = 0;
+volatile static LONG s_actionIndex = 0;
 
 int64_t GetPreciseTickCount()
 {
@@ -912,17 +912,19 @@ int64_t GetPreciseTickCount()
     return result;
 }
 
-void ReportLoadLibraryTime(LPCWSTR lpFileName, int64_t loadTime)
+void ReportTime(const char *actionName, LPCWSTR lpFileName, int64_t before)
 {
-    long loadLibraryCount = ::InterlockedAdd(&s_loadLibraryCount, 1);
-    int64_t totalTime = ::InterlockedAdd64(&s_loadLibraryTicks, loadTime);
+    int64_t duration = GetPreciseTickCount() - before;
+    long actionIndex = ::InterlockedAdd(&s_actionIndex, 1);
+    int64_t totalTime = ::InterlockedAdd64(&s_totalTicks, duration);
     int64_t frequency;
     QueryPerformanceFrequency((LARGE_INTEGER *)&frequency);
     MAKE_UTF8PTR_FROMWIDE_NOTHROW(fileNameUtf8, lpFileName);
-    printf("\nLoadLibrary [%ld]: '%s' - %.6f seconds, %.6f total\n",
-        loadLibraryCount,
+    printf("\n[%ld]: %s '%s' - %.6f seconds, %.6f total\n",
+        actionIndex,
+        actionName,
         fileNameUtf8,
-        loadTime / (double)frequency,
+        duration / (double)frequency,
         totalTime / (double)frequency);
 }
 
@@ -942,7 +944,7 @@ static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
         hMod = WszLoadLibrary(lpLibFileName);
         *pLastError = GetLastError();
         
-        ReportLoadLibraryTime(lpLibFileName, GetPreciseTickCount() - before);
+        ReportTime("LOAD_LIBRARY", lpLibFileName, before);
     }
     return hMod;
 }
@@ -982,7 +984,7 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
         hMod = WszLoadLibrary(lpLibFileName, hFile, dwFlags);
         *pLastError = GetLastError();
 
-        ReportLoadLibraryTime(lpLibFileName, GetPreciseTickCount() - before);
+        ReportTime("LOAD_LIBRARY", lpLibFileName, before);
     }
     return hMod;
 }
