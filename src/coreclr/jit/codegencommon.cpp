@@ -5848,7 +5848,6 @@ void CodeGen::genFnProlog()
     const bool isOSRx64Root = false;
 #endif // TARGET_AMD64
 
-#ifndef TARGET_LOONGARCH64
     tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
 
     if (tempMask != RBM_NONE)
@@ -5870,7 +5869,6 @@ void CodeGen::genFnProlog()
             initReg  = genRegNumFromMask(tempMask);
         }
     }
-#endif
 
 #if defined(TARGET_AMD64)
     // For x64 OSR root frames, we can't use any as of yet unsaved
@@ -5887,6 +5885,13 @@ void CodeGen::genFnProlog()
     if (isRoot && compiler->opts.IsOSR())
     {
         initReg = REG_IP1;
+    }
+#elif defined(TARGET_LOONGARCH64)
+    // For LoongArch64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_SCRATCH;
     }
 #endif
 
