@@ -457,15 +457,12 @@ eventpipe_protocol_helper_collect_tracing (
 {
 	ep_return_false_if_nok (stream != NULL);
 
-	EventPipeSessionID session_id = 0;
-	bool result = false;
-	EventPipeSessionOptions options;
-
 	if (!payload) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
-		ep_raise_error ();
+		return false;
 	}
 
+	EventPipeSessionOptions options;
 	ep_session_options_init(
 		&options,
 		NULL,
@@ -480,6 +477,8 @@ eventpipe_protocol_helper_collect_tracing (
 		NULL,
 		NULL);
 
+	EventPipeSessionID session_id = 0;
+	bool result = false;
 	session_id = ep_enable_3(&options);
 
 	if (session_id == 0) {
