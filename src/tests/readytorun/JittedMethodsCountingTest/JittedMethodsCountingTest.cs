@@ -23,18 +23,8 @@ public class JittedMethodsCountingTest
             return 100;
         }
 
-        // This test is currently not compatible with the R2R-CG2 pipelines on Arm64.
-        // if (IsRunCrossgen2Set() && IsRunningOnARM64())
-        // {
-        //     Console.WriteLine("\nThis test is currently unsupported on ARM64 when"
-        //                       + " RunCrossGen2 is enabled. Skipping...\n");
-        //     return 100;
-        // }
-
         Console.WriteLine("\nHello World from Jitted Methods Counting Test!");
-
-        // Get the total amount of Jitted Methods.
-        long jits = JitInfo.GetCompiledMethodCount(false);
+        long jits = JitInfo.GetCompiledMethodCount(currentThread: false);
 
         Console.WriteLine("Number of Jitted Methods in App: {0} - Max Threshold: {1}\n",
                           jits,
