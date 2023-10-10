@@ -792,7 +792,6 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             Clrallevents.write("\n")
 
         # Hack to write etw specific information to nativeaot
-        nativeaotEtwflag = False
         for providerNode in tree.getElementsByTagName('provider'):
             providerName = providerNode.getAttribute('name')
             templateNodes = providerNode.getElementsByTagName('template')
