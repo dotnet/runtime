@@ -186,4 +186,7 @@
   <data name="InvalidOperation_ShouldNotHaveMethodBody" xml:space="preserve">
     <value>Method body should not exist.</value>
   </data>
+  <data name="Argument_InvalidLabel" xml:space="preserve">
+    <value>Invalid Label.</value>
+  </data>
 </root>

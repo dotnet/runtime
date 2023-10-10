@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -243,6 +244,122 @@ namespace System.Reflection.Emit.Tests
         {
             Type ilgType = Type.GetType("System.Reflection.Emit.ILGeneratorImpl, System.Reflection.Emit", throwOnError: true)!;
             return ilgType.GetMethod("GetMaxStackSize", BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes);
+        }
+
+        [Fact]
+        public void Label_ConditionalBranching()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                MethodBuilder methodBuilder = type.DefineMethod("Method1", MethodAttributes.Public, typeof(int), new[] { typeof(int), typeof(int) });
+                ILGenerator il = methodBuilder.GetILGenerator();
+                Label failed = il.DefineLabel();
+                Label endOfMethod = il.DefineLabel();
+
+                // public int Method1(int P_0, int P_1) => (P_0 > 100 || P_1 > 100) ? (-1) : (P_0 + P_1);
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Ldc_I4_S, 100);
+                il.Emit(OpCodes.Bgt_S, failed);
+
+                il.Emit(OpCodes.Ldarg_2);
+                il.Emit(OpCodes.Ldc_I4_S, 100);
+                il.Emit(OpCodes.Bgt_S, failed);
+
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Ldarg_2);
+                il.Emit(OpCodes.Add);
+                il.Emit(OpCodes.Br_S, endOfMethod);
+
+                il.MarkLabel(failed);
+                il.Emit(OpCodes.Ldc_I4_M1);
+                il.MarkLabel(endOfMethod);
+                il.Emit(OpCodes.Ret);
+
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                MethodInfo getMaxStackSizeMethod = LoadILGenerator_GetMaxStackSizeMethod();
+                Assert.Equal(2, getMaxStackSizeMethod.Invoke(il, new object[0]));
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                byte[]? bodyBytes = typeFromDisk.GetMethod("Method1").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(
+                [
+                    (byte)OpCodes.Ldarg_1.Value, (byte)OpCodes.Ldc_I4_S.Value, 100, 0, 0, 0,
+                    (byte)OpCodes.Bgt_S.Value, 13,
+                    (byte)OpCodes.Ldarg_2.Value, (byte)OpCodes.Ldc_I4_S.Value, 100, 0, 0, 0,
+                    (byte)OpCodes.Bgt_S.Value, 5,
+                    (byte)OpCodes.Ldarg_1.Value, (byte)OpCodes.Ldarg_2.Value, (byte)OpCodes.Add.Value,
+                    (byte)OpCodes.Br_S.Value, (byte)OpCodes.Break.Value,
+                    (byte)OpCodes.Ldc_I4_M1.Value, (byte)OpCodes.Ret.Value
+                ], bodyBytes);
+            }
+        }
+
+        [Fact]
+        public void Label_SwitchCase()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                MethodBuilder methodBuilder = type.DefineMethod("Method1", MethodAttributes.Public, typeof(string), new[] { typeof(int) });
+                ILGenerator il = methodBuilder.GetILGenerator();
+                Label defaultCase = il.DefineLabel();
+                Label endOfMethod = il.DefineLabel();
+                Label[] jumpTable = [ il.DefineLabel(), il.DefineLabel(), il.DefineLabel(), il.DefineLabel(), il.DefineLabel() ];
+
+                // public string Method1(int P_0) => P_0 switch ...
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Switch, jumpTable);
+
+                // Branch on default case
+                il.Emit(OpCodes.Br_S, defaultCase);
+
+                // Case P_0 = 0
+                il.MarkLabel(jumpTable[0]);
+                il.Emit(OpCodes.Ldstr, "no bananas");
+                il.Emit(OpCodes.Br_S, endOfMethod);
+
+                // Case P_0 = 1
+                il.MarkLabel(jumpTable[1]);
+                il.Emit(OpCodes.Ldstr, "one banana");
+                il.Emit(OpCodes.Br_S, endOfMethod);
+
+                // Case P_0 = 2
+                il.MarkLabel(jumpTable[2]);
+                il.Emit(OpCodes.Ldstr, "two bananas");
+                il.Emit(OpCodes.Br_S, endOfMethod);
+
+                // Case P_0 = 3
+                il.MarkLabel(jumpTable[3]);
+                il.Emit(OpCodes.Ldstr, "three bananas");
+                il.Emit(OpCodes.Br_S, endOfMethod);
+
+                // Case P_0 = 4
+                il.MarkLabel(jumpTable[4]);
+                il.Emit(OpCodes.Ldstr, "four bananas");
+                il.Emit(OpCodes.Br_S, endOfMethod);
+
+                // Default case
+                il.MarkLabel(defaultCase);
+                il.Emit(OpCodes.Ldstr, "many bananas");
+                il.MarkLabel(endOfMethod);
+                il.Emit(OpCodes.Ret);
+
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                MethodInfo getMaxStackSizeMethod = LoadILGenerator_GetMaxStackSizeMethod();
+                Assert.Equal(6, getMaxStackSizeMethod.Invoke(il, new object[0]));
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                byte[]? bodyBytes = typeFromDisk.GetMethod("Method1").GetMethodBody().GetILAsByteArray();
+                Assert.Equal((byte)OpCodes.Ldarg_1.Value, bodyBytes[0]);
+                Assert.Equal((byte)OpCodes.Switch.Value, bodyBytes[1]);
+                Assert.Equal(5, bodyBytes[2]); // case count
+                Assert.Equal(69, bodyBytes.Length);
+            }
         }
     }
 }

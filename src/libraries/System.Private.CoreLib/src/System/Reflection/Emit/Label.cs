@@ -18,7 +18,7 @@ namespace System.Reflection.Emit
     {
         internal readonly int m_label;
 
-        internal Label(int label) => m_label = label;
+        public Label(int label) => m_label = label;
 
         internal int GetLabelValue() => m_label;
 
