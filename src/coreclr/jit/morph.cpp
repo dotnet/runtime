@@ -12878,8 +12878,8 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             break;
 
         case GT_CMPXCHG:
-            tree->AsCmpXchg()->Addr()  = fgMorphTree(tree->AsCmpXchg()->Addr());
-            tree->AsCmpXchg()->Data()     = fgMorphTree(tree->AsCmpXchg()->Data());
+            tree->AsCmpXchg()->Addr()      = fgMorphTree(tree->AsCmpXchg()->Addr());
+            tree->AsCmpXchg()->Data()      = fgMorphTree(tree->AsCmpXchg()->Data());
             tree->AsCmpXchg()->Comparand() = fgMorphTree(tree->AsCmpXchg()->Comparand());
 
             tree->gtFlags &= (~GTF_EXCEPT & ~GTF_CALL);
