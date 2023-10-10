@@ -540,6 +540,8 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 #endif // LOGGING
 
 #else
+    ReportPreloadTime(pOwner->GetPath());
+
     int64_t before = GetPreciseTickCount();
 
     HANDLE hFile = pOwner->GetFileHandle();
@@ -582,7 +584,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         ApplyBaseRelocations(/* relocationMustWriteCopy*/ false);
         SetRelocated();
     }
-    ReportTime("LOAD_LIBRARY", pOwner->GetPath(), before);
+    ReportActionTime("LOAD_LIBRARY", pOwner->GetPath(), before);
 #endif
 }
 
@@ -1202,6 +1204,8 @@ NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
     PVOID loadedImage;
     
 #if TARGET_UNIX
+    ReportPreloadTime(fullPath);
+
     int64_t before = GetPreciseTickCount();
 
     {
@@ -1221,7 +1225,7 @@ NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
 
         loadedImage = PAL_LOADLoadPEFile(fileHandle, 0);
     }
-    ReportTime("LOAD_LIBRARY", fullPath, before);
+    ReportActionTime("LOAD_LIBRARY", fullPath, before);
 
 #else
     loadedImage = CLRLoadLibraryEx(fullPath, NULL, GetLoadWithAlteredSearchPathFlag());
