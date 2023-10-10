@@ -5617,31 +5617,6 @@ struct GenTreeCall final : public GenTree
 #endif
 };
 
-struct GenTreeCmpXchg : public GenTree
-{
-    GenTree* gtOpLocation;
-    GenTree* gtOpValue;
-    GenTree* gtOpComparand;
-
-    GenTreeCmpXchg(var_types type, GenTree* loc, GenTree* val, GenTree* comparand)
-        : GenTree(GT_CMPXCHG, type), gtOpLocation(loc), gtOpValue(val), gtOpComparand(comparand)
-    {
-        // There's no reason to do a compare-exchange on a local location, so we'll assume that all of these
-        // have global effects.
-        gtFlags |= (GTF_GLOB_REF | GTF_ASG);
-
-        // Merge in flags from operands
-        gtFlags |= gtOpLocation->gtFlags & GTF_ALL_EFFECT;
-        gtFlags |= gtOpValue->gtFlags & GTF_ALL_EFFECT;
-        gtFlags |= gtOpComparand->gtFlags & GTF_ALL_EFFECT;
-    }
-#if DEBUGGABLE_GENTREE
-    GenTreeCmpXchg() : GenTree()
-    {
-    }
-#endif
-};
-
 #if !defined(TARGET_64BIT)
 struct GenTreeMultiRegOp : public GenTreeOp
 {
@@ -7148,7 +7123,7 @@ struct GenTreeIndir : public GenTreeOp
 
     GenTree*& Data()
     {
-        assert(OperIs(GT_STOREIND) || OperIsStoreBlk());
+        assert(OperIs(GT_STOREIND) || OperIsStoreBlk() || OperIsAtomicOp());
         return gtOp2;
     }
 
@@ -7440,6 +7415,30 @@ protected:
         SetRMWStatusDefault();
     }
 #endif
+};
+
+struct GenTreeCmpXchg : public GenTreeIndir
+{
+private:
+    GenTree* m_comparand;
+
+public:
+    GenTreeCmpXchg(var_types type, GenTree* loc, GenTree* val, GenTree* comparand)
+        : GenTreeIndir(GT_CMPXCHG, type, loc, val), m_comparand(comparand)
+    {
+        gtFlags |= comparand->gtFlags & GTF_ALL_EFFECT;
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeCmpXchg() : GenTreeIndir()
+    {
+    }
+#endif
+
+    GenTree*& Comparand()
+    {
+        return m_comparand;
+    }
 };
 
 /* gtRetExp -- Place holder for the return expression from an inline candidate (GT_RET_EXPR) */

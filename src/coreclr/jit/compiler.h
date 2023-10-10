@@ -2899,6 +2899,9 @@ public:
     var_types gtTypeForNullCheck(GenTree* tree);
     void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
 
+    GenTree* gtNewAtomicNode(
+        genTreeOps oper, var_types type, GenTree* addr, GenTree* value, GenTree* comparand = nullptr);
+
     GenTree* gtNewTempStore(unsigned         tmp,
                             GenTree*         val,
                             unsigned         curLevel   = CHECK_SPILL_NONE,

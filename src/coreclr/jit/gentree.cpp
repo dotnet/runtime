@@ -8345,6 +8345,38 @@ GenTree* Compiler::gtNewStoreValueNode(
 }
 
 //------------------------------------------------------------------------
+// gtNewAtomicNode: Create a new atomic operation node.
+//
+// Arguments:
+//    oper      - The atomic oper
+//    type      - Type to store/load
+//    addr      - Destination ("location") address
+//    value     - Value
+//    comparand - Comparand value for a CMPXCHG
+//
+// Return Value:
+//    The created node.
+//
+GenTree* Compiler::gtNewAtomicNode(genTreeOps oper, var_types type, GenTree* addr, GenTree* value, GenTree* comparand)
+{
+    assert(GenTree::OperIsAtomicOp(oper) && ((oper == GT_CMPXCHG) == (comparand != nullptr)));
+    GenTree* node;
+    if (comparand != nullptr)
+    {
+        node = new (this, GT_CMPXCHG) GenTreeCmpXchg(type, addr, value, comparand);
+        addr->gtFlags |= GTF_DONT_CSE;
+    }
+    else
+    {
+        node = new (this, oper) GenTreeIndir(oper, type, addr, value);
+    }
+
+    // All atomics are opaque global stores.
+    node->AddAllEffectsFlags(GTF_ASG | GTF_GLOB_REF);
+    return node;
+}
+
+//------------------------------------------------------------------------
 // FixupInitBlkValue: Fixup the init value for an initBlk operation
 //
 // Arguments:
