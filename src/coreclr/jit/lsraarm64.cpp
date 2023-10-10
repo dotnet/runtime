@@ -975,7 +975,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // For ARMv8.1 atomic cas the lifetime of the addr and data must be extended to prevent
             // them being reused as the target register which must be destroyed early
 
-            RefPosition* locationUse = BuildUse(tree->AsCmpXchg()->gtOpLocation);
+            RefPosition* locationUse = BuildUse(tree->AsCmpXchg()->Addr());
             setDelayFree(locationUse);
             RefPosition* valueUse = BuildUse(tree->AsCmpXchg()->gtOpValue);
             setDelayFree(valueUse);

@@ -11266,7 +11266,7 @@ public:
             {
                 GenTreeCmpXchg* const cmpXchg = node->AsCmpXchg();
 
-                result = WalkTree(&cmpXchg->gtOpLocation, cmpXchg);
+                result = WalkTree(&cmpXchg->Addr(), cmpXchg);
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;

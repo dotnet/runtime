@@ -375,7 +375,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
             buildInternalIntRegisterDefForNode(tree); // temp reg for store conditional error
             // Extend lifetimes of argument regs because they may be reused during retries
-            setDelayFree(BuildUse(cas->gtOpLocation));
+            setDelayFree(BuildUse(cas->Addr()));
             setDelayFree(BuildUse(cas->gtOpValue));
             setDelayFree(BuildUse(cas->gtOpComparand));
 

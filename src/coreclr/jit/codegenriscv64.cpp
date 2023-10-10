@@ -2670,7 +2670,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 {
     assert(treeNode->OperIs(GT_CMPXCHG));
 
-    GenTree* locOp       = treeNode->gtOpLocation;
+    GenTree* locOp       = treeNode->Addr();
     GenTree* valOp       = treeNode->gtOpValue;
     GenTree* comparandOp = treeNode->gtOpComparand;
 

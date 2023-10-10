@@ -4396,7 +4396,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
 
-    GenTree* location  = tree->gtOpLocation;  // arg1
+    GenTree* location  = tree->Addr();  // arg1
     GenTree* value     = tree->gtOpValue;     // arg2
     GenTree* comparand = tree->gtOpComparand; // arg3
 
