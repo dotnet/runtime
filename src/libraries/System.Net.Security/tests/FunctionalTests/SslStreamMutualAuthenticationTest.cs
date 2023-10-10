@@ -179,9 +179,6 @@ namespace System.Net.Security.Tests
                         case ClientCertSource.SelectionCallback:
                             clientOptions.LocalCertificateSelectionCallback = ClientCertSelectionCallback;
                             break;
-//                        case ClientCertSource.CertificateContext:
-//                            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(_clientCertificate, new());
-//                            break;
                     }
 
                     Task t2 = client.AuthenticateAsClientAsync(clientOptions);
