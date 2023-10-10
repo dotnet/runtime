@@ -111,6 +111,7 @@ build_Tests()
     export __ErrMsgPrefix
     export __Exclude
     export EnableNativeSanitizers
+    export BuildAsStandalone
 
     # Generate build command
     buildArgs=("$__RepoRootDir/src/tests/build.proj")
@@ -283,7 +284,7 @@ handle_arguments_local() {
             ;;
 
         standalone|-standalone)
-            export BuildAsStandalone=true
+            BuildAsStandalone=true
             ;;
 
         excludemonofailures|-excludemonofailures)
