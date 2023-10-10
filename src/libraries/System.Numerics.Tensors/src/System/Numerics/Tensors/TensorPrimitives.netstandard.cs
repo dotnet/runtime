@@ -331,7 +331,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)(x.Length);
 
-            if (Vector.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated && op.CanVectorize)
             {
                 if (remainder >= (uint)(Vector<float>.Count))
                 {
