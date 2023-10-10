@@ -2938,10 +2938,7 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
         }
 #endif // not TARGET_64BIT
 
-        if (opts.OptimizationEnabled())
-        {
-            varDsc->SetIsSpan(this->isSpanClass(layout->GetClassHandle()));
-        }
+        varDsc->SetIsSpan(this->isSpanClass(layout->GetClassHandle()));
 
         // Check whether this local is an unsafe value type and requires GS cookie protection.
         // GS checks require the stack to be re-ordered, which can't be done with EnC.
