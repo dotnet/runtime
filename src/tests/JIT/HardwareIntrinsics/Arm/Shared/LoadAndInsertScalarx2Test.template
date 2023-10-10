@@ -137,7 +137,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 var testStruct = new TestStruct();
                 {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
                 {Op1BaseType}[] _data2 = new {Op1BaseType}[Op1ElementCount];
-                testStruct._newData = new {Op1BaseType}[Op1ElementCount];
+                testStruct._newData = new {Op1BaseType}[Op1ElementCount*2];
 
                 for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
                 for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp1}; }
@@ -145,7 +145,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld2), ref Unsafe.As<{Op1BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
-                for (var i = 0; i < Op1ElementCount; i++) { testStruct._newData[i] = {NextValueOp1}; }
+                for (var i = 0; i < Op1ElementCount*2; i++) { testStruct._newData[i] = {NextValueOp1}; }
 
                 return testStruct;
             }
@@ -175,7 +175,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private {Op1VectorType}<{Op1BaseType}> _fld1;
         private {Op1VectorType}<{Op1BaseType}> _fld2;
-        private {Op1BaseType}[] _newData = new {Op1BaseType}[Op1ElementCount];
+        private {Op1BaseType}[] _newData = new {Op1BaseType}[Op1ElementCount*2];
 
         private DataTable _dataTable;
 
@@ -189,7 +189,7 @@ namespace JIT.HardwareIntrinsics.Arm
             for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp1}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld2), ref Unsafe.As<{Op1BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());            
 
-            for (var i = 0; i < Op1ElementCount; i++) { _newData[i] = {NextValueOp1}; }
+            for (var i = 0; i < Op1ElementCount*2; i++) { _newData[i] = {NextValueOp1}; }
 
             _dataTable = new DataTable(_data1, _data2, new {RetBaseType}[RetElementCount], new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
@@ -202,8 +202,8 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            {Op1BaseType}[] newData = new {Op1BaseType}[Op1ElementCount];
-            for (var i = 0; i < Op1ElementCount; i++) { newData[i] = {NextValueOp1}; }
+            {Op1BaseType}[] newData = new {Op1BaseType}[Op1ElementCount*2];
+            for (var i = 0; i < Op1ElementCount*2; i++) { newData[i] = {NextValueOp1}; }
 
             fixed ({Op1BaseType}* pNewData = newData)
             {
@@ -224,8 +224,8 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
-            {Op1BaseType}[] newData = new {Op1BaseType}[Op1ElementCount];
-            for (var i = 0; i < Op1ElementCount; i++) { newData[i] = {NextValueOp1}; }
+            {Op1BaseType}[] newData = new {Op1BaseType}[Op1ElementCount*2];
+            for (var i = 0; i < Op1ElementCount*2; i++) { newData[i] = {NextValueOp1}; }
 
             fixed ({Op1BaseType}* pNewData = newData)
             {
@@ -246,8 +246,8 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            {Op1BaseType}[] newData = new {Op1BaseType}[Op1ElementCount];
-            for (var i = 0; i < Op1ElementCount; i++) { newData[i] = {NextValueOp1}; }
+            {Op1BaseType}[] newData = new {Op1BaseType}[Op1ElementCount*2];
+            for (var i = 0; i < Op1ElementCount*2; i++) { newData[i] = {NextValueOp1}; }
 
             fixed ({Op1BaseType}* pNewData = newData)
             {
@@ -272,8 +272,8 @@ namespace JIT.HardwareIntrinsics.Arm
             var op1 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr1);
             var op2 = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr2);
 
-            {Op1BaseType}[] newData = new {Op1BaseType}[Op1ElementCount];
-            for (var i = 0; i < Op1ElementCount; i++) { newData[i] = {NextValueOp1}; }
+            {Op1BaseType}[] newData = new {Op1BaseType}[Op1ElementCount*2];
+            for (var i = 0; i < Op1ElementCount*2; i++) { newData[i] = {NextValueOp1}; }
 
             fixed ({Op1BaseType}* pNewData = newData)
             {
@@ -351,13 +351,13 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1BaseType}[] inArray2 = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray1 = new {RetBaseType}[RetElementCount];
             {RetBaseType}[] outArray2 = new {RetBaseType}[RetElementCount];
-            {RetBaseType}[] newDataArray = new {RetBaseType}[RetElementCount];
+            {RetBaseType}[] newDataArray = new {RetBaseType}[Op1ElementCount*2];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), op1);
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray2[0]), op2);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray1[0]), ref Unsafe.AsRef<byte>(result1), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray2[0]), ref Unsafe.AsRef<byte>(result2), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref newDataArray[0]), ref Unsafe.AsRef<byte>(newData), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref newDataArray[0]), ref Unsafe.AsRef<byte>(newData), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>()*2);
 
             ValidateResult(inArray1, inArray2, newDataArray, outArray1, outArray2, method);
         }
@@ -368,13 +368,13 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1BaseType}[] inArray2 = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray1 = new {RetBaseType}[RetElementCount];
             {RetBaseType}[] outArray2 = new {RetBaseType}[RetElementCount];
-            {RetBaseType}[] newDataArray = new {RetBaseType}[RetElementCount];
+            {RetBaseType}[] newDataArray = new {RetBaseType}[Op1ElementCount*2];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray1[0]), ref Unsafe.AsRef<byte>(result1), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray2[0]), ref Unsafe.AsRef<byte>(result2), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref newDataArray[0]), ref Unsafe.AsRef<byte>(newData), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref newDataArray[0]), ref Unsafe.AsRef<byte>(newData), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>()*2);
 
             ValidateResult(inArray1, inArray2, newDataArray, outArray1, outArray2, method);
         }
