@@ -540,12 +540,12 @@ namespace Microsoft.Extensions.Options.Generators
 
         private void GenValidationAttributesClasses()
         {
-            var attributesData = _optionsSourceGenContext.AttributesToGenerate;
-
-            if (attributesData.Count == 0)
+            if (_optionsSourceGenContext.AttributesToGenerate.Count == 0)
             {
                 return;
             }
+
+            var attributesData = _optionsSourceGenContext.AttributesToGenerate.OrderBy(static kvp => kvp.Key, StringComparer.Ordinal).ToArray();
 
             OutLn($"namespace {StaticGeneratedValidationAttributesClassesNamespace}");
             OutOpenBrace();
