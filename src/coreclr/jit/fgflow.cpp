@@ -343,7 +343,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
     BasicBlock* bNext;
 
-    switch (block->GetBBJumpKind())
+    switch (block->GetJumpKind())
     {
         case BBJ_CALLFINALLY:
             if (!(block->bbFlags & BBF_RETLESS_CALL))
@@ -361,12 +361,12 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
                     fgRemoveRefPred(bNext, bNext->bbPreds->getSourceBlock());
                 }
             }
-            fgRemoveRefPred(block->bbJumpDest, block);
+            fgRemoveRefPred(block->GetJumpDest(), block);
             break;
 
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
-            fgRemoveRefPred(block->bbJumpDest, block);
+            fgRemoveRefPred(block->GetJumpDest(), block);
             break;
 
         case BBJ_NONE:
@@ -374,14 +374,14 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         case BBJ_COND:
-            fgRemoveRefPred(block->bbJumpDest, block);
+            fgRemoveRefPred(block->GetJumpDest(), block);
             fgRemoveRefPred(block->Next(), block);
             break;
 
         case BBJ_EHFILTERRET:
 
-            block->bbJumpDest->bbRefs++; // To compensate the bbRefs-- inside fgRemoveRefPred
-            fgRemoveRefPred(block->bbJumpDest, block);
+            block->GetJumpDest()->bbRefs++; // To compensate the bbRefs-- inside fgRemoveRefPred
+            fgRemoveRefPred(block->GetJumpDest(), block);
             break;
 
         case BBJ_EHFINALLYRET:
@@ -403,8 +403,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 
                 for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
                 {
-                    if ((bcall->bbFlags & BBF_REMOVED) || !bcall->KindIs(BBJ_CALLFINALLY) ||
-                        bcall->bbJumpDest != finBeg)
+                    if ((bcall->bbFlags & BBF_REMOVED) || !bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
                     {
                         continue;
                     }
@@ -470,7 +469,7 @@ void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock*
 
     for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
     {
-        if (!bcall->KindIs(BBJ_CALLFINALLY) || bcall->bbJumpDest != finBeg)
+        if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
         {
             continue;
         }
