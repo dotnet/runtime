@@ -1309,18 +1309,22 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     if (attr == EA_32BYTE)
     {
-        // Set L bit to 1 in case of instructions that operate on 256-bits.
+        // Set L bit to 01 in case of instructions that operate on 256-bits.
         code |= LBIT_IN_BYTE_EVEX_PREFIX;
     }
     else if (attr == EA_64BYTE)
     {
-        // Set L' bits to 11 in case of instructions that operate on 512-bits.
+        // Set L' bits to 10 in case of instructions that operate on 512-bits.
         code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
     }
 
     if (id->idIsEvexbContext())
     {
         code |= EVEX_B_BIT;
+    }
+
+    if (id->idGetEvexbContext() == 2) // Evex.b context: embedded rounding, need to set Evex.L'L accordingly
+    {
         unsigned roundingMode = id->idGetEvexRoundingControl();
         if(roundingMode == 0)
         {
@@ -6918,7 +6922,7 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
     if(instOptions != INS_OPTS_NONE)
     {
         // if EVEX.b needs to be set in this path, then it should be embedded rounding.
-        id->idSetEvexbContext();
+        id->idSetEvexbContext(instOptions);
         id->idSetEvexRoundingControl(instOptions);
     }
 

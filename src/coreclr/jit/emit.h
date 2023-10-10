@@ -774,7 +774,7 @@ protected:
         unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
         unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
-        unsigned _idEvexbContext : 1; // does EVEX.b need to be set.
+        unsigned _idEvexbContext : 2; // does EVEX.b need to be set.
         unsigned _idEvexEmbeddedRounding : 2 // indicate the rounding mode when embedded rounding is enabled.
 #endif                                //  TARGET_XARCH
 
@@ -809,8 +809,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         49 bits
-        // amd64:       49 bits
+        // x86:         50 bits
+        // amd64:       50 bits
         // arm:         48 bits
         // arm64:       53 bits
         // loongarch64: 46 bits
@@ -829,7 +829,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (17)
+#define ID_EXTRA_BITFIELD_BITS (18)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -864,8 +864,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:         55/51 bits
-        // amd64:       56/51 bits
+        // x86:         56/52 bits
+        // amd64:       57/53 bits
         // arm:         54/50 bits
         // arm64:       60/55 bits
         // loongarch64: 53/48 bits
@@ -881,8 +881,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:         9/13 bits
-        // amd64:       8/13 bits
+        // x86:         8/12 bits
+        // amd64:       7/12 bits
         // arm:         10/14 bits
         // arm64:        4/9 bits
         // loongarch64: 11/16 bits
@@ -1543,11 +1543,22 @@ protected:
         {
             return _idEvexbContext != 0;
         }
-        void idSetEvexbContext()
+        void idSetEvexbContext(insOpts instOptions = INS_OPTS_EVEX_b)
         {
             assert(_idEvexbContext == 0);
-            _idEvexbContext = 1;
-            assert(_idEvexbContext == 1);
+            assert(instOptions != INS_OPTS_NONE);
+            if(instOptions == INS_OPTS_EVEX_b)
+            {
+                _idEvexbContext = 1; // EVEX.b context: embedded broadcast
+            }
+            else
+            {
+                _idEvexbContext = 2; // EVEX.b context: embedded rounding
+            }
+        }
+        unsigned idGetEvexbContext() const
+        {
+            return _idEvexbContext;
         }
 
         void idSetEvexRoundingControl(insOpts instOptions)
