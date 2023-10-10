@@ -3123,11 +3123,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // Collect task, opcode, keyword and channel information
-#if FEATURE_MANAGED_ETW_CHANNELS && FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                foreach (var providerEnumKind in (ReadOnlySpan<string>)["Keywords", "Tasks", "Opcodes", "Channels"])
-#else
                 foreach (string providerEnumKind in (ReadOnlySpan<string>)["Keywords", "Tasks", "Opcodes"])
-#endif
                 {
                     Type? nestedType = eventSourceType.GetNestedType(providerEnumKind);
                     if (nestedType != null)
@@ -3413,14 +3409,6 @@ namespace System.Diagnostics.Tracing
                 ulong value = unchecked((ulong)(long)staticField.GetRawConstantValue()!);
                 manifest.AddKeyword(staticField.Name, value);
             }
-#if FEATURE_MANAGED_ETW_CHANNELS && FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-            else if (!reflectionOnly && (staticFieldType == typeof(EventChannel)) || AttributeTypeNamesMatch(staticFieldType, typeof(EventChannel)))
-            {
-                if (providerEnumKind != "Channels") goto Error;
-                var channelAttribute = (EventChannelAttribute)GetCustomAttributeHelper(staticField, typeof(EventChannelAttribute));
-                manifest.AddChannel(staticField.Name, (byte)staticField.GetRawConstantValue(), channelAttribute);
-            }
-#endif
             return;
             Error:
             manifest.ManifestError(SR.Format(SR.EventSource_EnumKindMismatch, staticField.FieldType.Name, providerEnumKind));
@@ -4929,7 +4917,6 @@ namespace System.Diagnostics.Tracing
         public NonEventAttribute() { }
     }
 
-    // FUTURE we may want to expose this at some point once we have a partner that can help us validate the design.
     /// <summary>
     /// EventChannelAttribute allows customizing channels supported by an EventSource. This attribute must be
     /// applied to an member of type EventChannel defined in a Channels class nested in the EventSource class:
@@ -4945,12 +4932,7 @@ namespace System.Diagnostics.Tracing
     /// </code>
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-    public
-#else
-    internal sealed
-#endif
-    class EventChannelAttribute : Attribute
+    internal sealed class EventChannelAttribute : Attribute
     {
         /// <summary>
         /// Specified whether the channel is enabled by default
@@ -4962,24 +4944,6 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventChannelType EventChannelType { get; set; }
 
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-        /// <summary>
-        /// Specifies the isolation for the channel
-        /// </summary>
-        public EventChannelIsolation Isolation { get; set; }
-
-        /// <summary>
-        /// Specifies an SDDL access descriptor that controls access to the log file that backs the channel.
-        /// See MSDN (https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-channeltype-complextype) for details.
-        /// </summary>
-        public string? Access { get; set; }
-
-        /// <summary>
-        /// Allows importing channels defined in external manifests
-        /// </summary>
-        public string? ImportChannel { get; set; }
-#endif
-
         // TODO: there is a convention that the name is the Provider/Type   Should we provide an override?
         // public string Name { get; set; }
     }
@@ -4987,12 +4951,7 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// Allowed channel types
     /// </summary>
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-    public
-#else
-    internal
-#endif
-    enum EventChannelType
+    internal enum EventChannelType
     {
         /// <summary>The admin channel</summary>
         Admin = 1,
@@ -5003,32 +4962,6 @@ namespace System.Diagnostics.Tracing
         /// <summary>The debug channel</summary>
         Debug,
     }
-
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-    /// <summary>
-    /// Allowed isolation levels. See MSDN (https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-channeltype-complextype)
-    /// for the default permissions associated with each level. EventChannelIsolation and Access allows control over the
-    /// access permissions for the channel and backing file.
-    /// </summary>
-    public
-    enum EventChannelIsolation
-    {
-        /// <summary>
-        /// This is the default isolation level. All channels that specify Application isolation use the same ETW session
-        /// </summary>
-        Application = 1,
-        /// <summary>
-        /// All channels that specify System isolation use the same ETW session
-        /// </summary>
-        System,
-        /// <summary>
-        /// Use sparingly! When specifying Custom isolation, a separate ETW session is created for the channel.
-        /// Using Custom isolation lets you control the access permissions for the channel and backing file.
-        /// Because there are only 64 ETW sessions available, you should limit your use of Custom isolation.
-        /// </summary>
-        Custom,
-    }
-#endif
 
     /// <summary>
     /// Describes the pre-defined command (EventCommandEventArgs.Command property) that is passed to the OnEventCommand callback.
@@ -5557,26 +5490,13 @@ namespace System.Diagnostics.Tracing
                     string? channelType = null;
                     bool enabled = false;
                     string? fullName = null;
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                    string? isolation = null;
-                    string? access = null;
-#endif
+
                     if (channelInfo.Attribs != null)
                     {
                         EventChannelAttribute attribs = channelInfo.Attribs;
                         if (Enum.IsDefined(typeof(EventChannelType), attribs.EventChannelType))
                             channelType = attribs.EventChannelType.ToString();
                         enabled = attribs.Enabled;
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                        if (attribs.ImportChannel != null)
-                        {
-                            fullName = attribs.ImportChannel;
-                            elementName = "importChannel";
-                        }
-                        if (Enum.IsDefined(typeof(EventChannelIsolation), attribs.Isolation))
-                            isolation = attribs.Isolation.ToString();
-                        access = attribs.Access;
-#endif
                     }
 
                     fullName ??= providerName + "/" + channelInfo.Name;
@@ -5587,14 +5507,7 @@ namespace System.Diagnostics.Tracing
                     sb?.Append(" value=\"").Append(channel).Append('"');
                     if (channelType != null)
                         sb?.Append(" type=\"").Append(channelType).Append('"');
-                    sb?.Append(" enabled=\"").Append(enabled ? "true" : "false").Append('"');
-#if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                    if (access != null)
-                        sb?.Append(" access=\"").Append(access).Append("\"");
-                    if (isolation != null)
-                        sb?.Append(" isolation=\"").Append(isolation).Append("\"");
-#endif
-                    sb?.AppendLine("/>");
+                    sb?.Append(" enabled=\"").Append(enabled ? "true" : "false").AppendLine("\"/>");
                 }
                 sb?.AppendLine(" </channels>");
             }
