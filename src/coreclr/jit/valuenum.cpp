@@ -11649,7 +11649,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 assert(tree->OperIsImplicitIndir()); // special node with an implicit indirections
 
                 GenTree* location  = cmpXchg->Addr();  // arg1
-                GenTree* value     = cmpXchg->gtOpValue;     // arg2
+                GenTree* value     = cmpXchg->Data();     // arg2
                 GenTree* comparand = cmpXchg->gtOpComparand; // arg3
 
                 ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();

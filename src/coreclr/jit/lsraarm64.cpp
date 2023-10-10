@@ -977,7 +977,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
             RefPosition* locationUse = BuildUse(tree->AsCmpXchg()->Addr());
             setDelayFree(locationUse);
-            RefPosition* valueUse = BuildUse(tree->AsCmpXchg()->gtOpValue);
+            RefPosition* valueUse = BuildUse(tree->AsCmpXchg()->Data());
             setDelayFree(valueUse);
             if (!cmpXchgNode->gtOpComparand->isContained())
             {

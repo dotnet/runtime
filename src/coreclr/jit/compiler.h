@@ -11271,7 +11271,7 @@ public:
                 {
                     return result;
                 }
-                result = WalkTree(&cmpXchg->gtOpValue, cmpXchg);
+                result = WalkTree(&cmpXchg->Data(), cmpXchg);
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;

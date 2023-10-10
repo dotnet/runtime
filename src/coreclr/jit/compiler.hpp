@@ -4660,7 +4660,7 @@ void GenTree::VisitOperands(TVisitor visitor)
             {
                 return;
             }
-            if (visitor(cmpXchg->gtOpValue) == VisitResult::Abort)
+            if (visitor(cmpXchg->Data()) == VisitResult::Abort)
             {
                 return;
             }
