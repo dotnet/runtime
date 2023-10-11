@@ -933,7 +933,7 @@ namespace System.Numerics.Tensors
         /// <typeparam name="TBinaryOperator">
         /// Specifies the operation to perform on the transformed value from <paramref name="x"/> with <paramref name="y"/>.
         /// </typeparam>
-        private static void InvokeSpanScalarIntoSpan<TTransformOperator, TBinaryOperator>(
+        private static unsafe void InvokeSpanScalarIntoSpan<TTransformOperator, TBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination, TTransformOperator xTransformOp = default, TBinaryOperator binaryOp = default)
             where TTransformOperator : struct, IUnaryOperator
             where TBinaryOperator : struct, IBinaryOperator
@@ -945,48 +945,295 @@ namespace System.Numerics.Tensors
 
             ValidateInputOutputSpanNonOverlapping(x, destination);
 
+            // Since every branch has a cost and since that cost is
+            // essentially lost for larger inputs, we do branches
+            // in a way that allows us to have the minimum possible
+            // for small sizes
+
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
-            int i = 0, oneVectorFromEnd;
 
-            if (Vector.IsHardwareAccelerated && xTransformOp.CanVectorize)
+            nuint remainder = (uint)(x.Length);
+
+            if (Vector.IsHardwareAccelerated)
             {
-                oneVectorFromEnd = x.Length - Vector<float>.Count;
-                if (oneVectorFromEnd >= 0)
+                if (remainder >= (uint)(Vector<float>.Count))
                 {
-                    // Loop handling one vector at a time.
-                    Vector<float> yVec = new(y);
-                    do
-                    {
-                        AsVector(ref dRef, i) = binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, i)),
-                                                          yVec);
+                    Vectorized(ref xRef, y, ref dRef, remainder);
+                }
+                else
+                {
+                    // We have less than a vector and so we can only handle this as scalar. To do this
+                    // efficiently, we simply have a small jump table and fallthrough. So we get a simple
+                    // length check, single jump, and then linear execution.
 
-                        i += Vector<float>.Count;
-                    }
-                    while (i <= oneVectorFromEnd);
+                    VectorizedSmall(ref xRef, y, ref dRef, remainder);
+                }
 
-                    // Handle any remaining elements with a final vector.
-                    if (i != x.Length)
-                    {
-                        int lastVectorIndex = x.Length - Vector<float>.Count;
-                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
-                        dest = Vector.ConditionalSelect(
-                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
-                            dest,
-                            binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, lastVectorIndex)), yVec));
-                    }
+                return;
+            }
 
-                    return;
+            // This is the software fallback when no acceleration is available
+            // It requires no branches to hit
+
+            SoftwareFallback(ref xRef, y, ref dRef, remainder);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void SoftwareFallback(ref float xRef, float y, ref float dRef, nuint length, TTransformOperator xTransformOp = default, TBinaryOperator binaryOp = default)
+            {
+                for (nuint i = 0; i < length; i++)
+                {
+                    Unsafe.Add(ref dRef, (nint)(i)) = binaryOp.Invoke(xTransformOp.Invoke(Unsafe.Add(ref xRef, (nint)(i))),
+                                                                      y);
                 }
             }
 
-            // Loop handling one element at a time.
-            while (i < x.Length)
+            static void Vectorized(ref float xRef, float y, ref float dRef, nuint remainder, TTransformOperator xTransformOp = default, TBinaryOperator binaryOp = default)
             {
-                Unsafe.Add(ref dRef, i) = binaryOp.Invoke(xTransformOp.Invoke(Unsafe.Add(ref xRef, i)),
-                                                    y);
+                ref float dRefBeg = ref dRef;
 
-                i++;
+                // Preload the beginning and end so that overlapping accesses don't negatively impact the data
+
+                Vector<float> yVec = new Vector<float>(y);
+
+                Vector<float> beg = binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef)),
+                                                    yVec);
+                Vector<float> end = binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count))),
+                                                    yVec);
+
+                if (remainder > (uint)(Vector<float>.Count * 8))
+                {
+                    // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
+                    // for large inputs (> 85KB) which are on the LOH and unlikely to be compacted.
+
+                    fixed (float* px = &xRef)
+                    fixed (float* pd = &dRef)
+                    {
+                        float* xPtr = px;
+                        float* dPtr = pd;
+
+                        // We need to the ensure the underlying data can be aligned and only align
+                        // it if it can. It is possible we have an unaligned ref, in which case we
+                        // can never achieve the required SIMD alignment.
+
+                        bool canAlign = ((nuint)(dPtr) % sizeof(float)) == 0;
+
+                        if (canAlign)
+                        {
+                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
+                            //
+                            // Noting that we are only actually aligning dPtr. THis is because unaligned stores
+                            // are more expensive than unaligned loads and aligning both is significantly more
+                            // complex.
+
+                            nuint misalignment = ((uint)(sizeof(Vector<float>)) - ((nuint)(dPtr) % (uint)(sizeof(Vector<float>)))) / sizeof(float);
+
+                            xPtr += misalignment;
+                            dPtr += misalignment;
+
+                            Debug.Assert(((nuint)(dPtr) % (uint)(sizeof(Vector<float>))) == 0);
+
+                            remainder -= misalignment;
+                        }
+
+                        Vector<float> vector1;
+                        Vector<float> vector2;
+                        Vector<float> vector3;
+                        Vector<float> vector4;
+
+                        while (remainder >= (uint)(Vector<float>.Count * 8))
+                        {
+                            // We load, process, and store the first four vectors
+
+                            vector1 = binaryOp.Invoke(xTransformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 0))),
+                                                                          yVec);
+                            vector2 = binaryOp.Invoke(xTransformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 1))),
+                                                                          yVec);
+                            vector3 = binaryOp.Invoke(xTransformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 2))),
+                                                                          yVec);
+                            vector4 = binaryOp.Invoke(xTransformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 3))),
+                                                                          yVec);
+
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 0)) = vector1;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 1)) = vector2;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 2)) = vector3;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 3)) = vector4;
+
+                            // We load, process, and store the next four vectors
+
+                            vector1 = binaryOp.Invoke(xTransformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 4))),
+                                                                          yVec);
+                            vector2 = binaryOp.Invoke(xTransformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 5))),
+                                                                          yVec);
+                            vector3 = binaryOp.Invoke(xTransformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 6))),
+                                                                          yVec);
+                            vector4 = binaryOp.Invoke(xTransformOp.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 7))),
+                                                                          yVec);
+
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 4)) = vector1;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 5)) = vector2;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 6)) = vector3;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 7)) = vector4;
+
+                            // We adjust the source and destination references, then update
+                            // the count of remaining elements to process.
+
+                            xPtr += (uint)(Vector<float>.Count * 8);
+                            dPtr += (uint)(Vector<float>.Count * 8);
+
+                            remainder -= (uint)(Vector<float>.Count * 8);
+                        }
+
+                        // Adjusting the refs here allows us to avoid pinning for very small inputs
+
+                        xRef = ref *xPtr;
+                        dRef = ref *dPtr;
+                    }
+                }
+
+                // Process the remaining [Count, Count * 8] elements via a jump table
+                //
+                // Unless the original length was an exact multiple of Count, then we'll
+                // end up reprocessing a couple elements in case 1 for end. We'll also
+                // potentially reprocess a few elements in case 0 for beg, to handle any
+                // data before the first aligned address.
+
+                nuint endIndex = remainder;
+                remainder = (remainder + (uint)(Vector<float>.Count - 1)) & (nuint)(-Vector<float>.Count);
+
+                switch (remainder / (uint)(Vector<float>.Count))
+                {
+                    case 8:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 8))),
+                                                               yVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 8)) = vector;
+                        goto case 7;
+                    }
+
+                    case 7:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 7))),
+                                                               yVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 7)) = vector;
+                        goto case 6;
+                    }
+
+                    case 6:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 6))),
+                                                               yVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 6)) = vector;
+                        goto case 5;
+                    }
+
+                    case 5:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 5))),
+                                                               yVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 5)) = vector;
+                        goto case 4;
+                    }
+
+                    case 4:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 4))),
+                                                               yVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 4)) = vector;
+                        goto case 3;
+                    }
+
+                    case 3:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 3))),
+                                                               yVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 3)) = vector;
+                        goto case 2;
+                    }
+
+                    case 2:
+                    {
+                        Vector<float> vector = binaryOp.Invoke(xTransformOp.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 2))),
+                                                               yVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 2)) = vector;
+                        goto case 1;
+                    }
+
+                    case 1:
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        AsVector(ref dRef, endIndex - (uint)Vector<float>.Count) = end;
+                        goto default;
+                    }
+
+                    default:
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        AsVector(ref dRefBeg) = beg;
+                        break;
+                    }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall(ref float xRef, float y, ref float dRef, nuint remainder, TTransformOperator xTransformOp = default, TBinaryOperator binaryOp = default)
+            {
+                switch (remainder)
+                {
+                    case 7:
+                    {
+                        Unsafe.Add(ref dRef, 6) = binaryOp.Invoke(xTransformOp.Invoke(Unsafe.Add(ref xRef, 6)),
+                                                                  y);
+                        goto case 6;
+                    }
+
+                    case 6:
+                    {
+                        Unsafe.Add(ref dRef, 5) = binaryOp.Invoke(xTransformOp.Invoke(Unsafe.Add(ref xRef, 5)),
+                                                                  y);
+                        goto case 5;
+                    }
+
+                    case 5:
+                    {
+                        Unsafe.Add(ref dRef, 4) = binaryOp.Invoke(xTransformOp.Invoke(Unsafe.Add(ref xRef, 4)),
+                                                                  y);
+                        goto case 4;
+                    }
+
+                    case 4:
+                    {
+                        Unsafe.Add(ref dRef, 3) = binaryOp.Invoke(xTransformOp.Invoke(Unsafe.Add(ref xRef, 3)),
+                                                                  y);
+                        goto case 3;
+                    }
+
+                    case 3:
+                    {
+                        Unsafe.Add(ref dRef, 2) = binaryOp.Invoke(xTransformOp.Invoke(Unsafe.Add(ref xRef, 2)),
+                                                                  y);
+                        goto case 2;
+                    }
+
+                    case 2:
+                    {
+                        Unsafe.Add(ref dRef, 1) = binaryOp.Invoke(xTransformOp.Invoke(Unsafe.Add(ref xRef, 1)),
+                                                                  y);
+                        goto case 1;
+                    }
+
+                    case 1:
+                    {
+                        dRef = binaryOp.Invoke(xTransformOp.Invoke(xRef), y);
+                        break;
+                    }
+
+                    default:
+                    {
+                        Debug.Assert(remainder == 0);
+                        break;
+                    }
+                }
             }
         }
 
