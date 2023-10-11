@@ -472,10 +472,10 @@ namespace System.Runtime.CompilerServices
                 _createRuntimeMaintainedData = getMaintainedData;
             }
 
+            public RuntimeAsyncMaintainedData? _maintainedData;
             public StackCrawlMark _crawlMark;
             public void* _next;
             public Func<RuntimeAsyncMaintainedData>? _createRuntimeMaintainedData;
-            public RuntimeAsyncMaintainedData? _maintainedData;
             public Thread _currentThread = Thread.CurrentThread;
 
             // Store current ExecutionContext and SynchronizationContext as "previousXxx".

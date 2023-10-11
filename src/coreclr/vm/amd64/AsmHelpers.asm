@@ -682,5 +682,180 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 endif ; FEATURE_TIERED_COMPILATION
 
-        end
+extern PlatformIndependentRestore:proc
 
+regRestoreCase macro RegisterName
+Check&RegisterName&:
+    mov edx, [rax+4]
+    mov RegisterName, [rcx+rdx]
+    add rax, 8
+    jmp RegRestoreLoop
+        endm
+
+regRestoreCaseXmm macro RegisterName
+Check&RegisterName&:
+    mov edx, [rax+4]
+    movdqu RegisterName, [rcx+rdx]
+    add rax, 8
+    jmp RegRestoreLoop
+        endm
+
+NESTED_ENTRY RuntimeSuspension_ResumeTaskletReferenceReturn, _TEXT
+        alloc_stack             48h
+    END_PROLOGUE
+
+        lea r8, [rsp+28h]
+
+        ; Zero out integerRegister and AddressInMethodToRestoreTo
+        ; Probably not needed in production code, but convenient for now
+        xor rax, rax
+        mov [r8], rax
+        mov [r8+8h], rax
+
+        ; Fill in pFutureRSPLocation
+        lea rax, [rsp+50]
+        mov [r8+10h], rax
+
+        ; Capture return address
+        mov rax, [rax]
+        mov [r8+18h], rax
+
+        call PlatformIndependentRestore
+        ; RAX now points at the RegRestore array
+        mov rcx, [rsp+28h + 10h]
+        ; RCX now has the value of the future RSP
+
+        .data
+switchTable     qword    Checkrbx, Checkrbp, Checkrdi, Checkrsi, Checkr12, Checkr13, Checkr14, Checkr15, Checkxmm6, Checkxmm7, Checkxmm8, Checkxmm9, Checkxmm10, Checkxmm11, Checkxmm12, Checkxmm13, Checkxmm14, Checkxmm15, ReturnRegisters
+        .code
+RegRestoreLoop:
+    mov edx, [rax]
+    ; edx now has the value of the reg field of the RegRestore structure
+    lea r8, [switchTable]
+    mov r8, [r8 + rdx*8]
+    jmp r8
+ReturnRegisters:
+    mov rax, [rsp+28h + 0h]
+    MOVDQU xmm0, [rsp+28h + 0h]
+    mov rdx, [rsp+28h + 0h] ; Load address of where to jmp into ecx
+    mov rsp, rcx
+    jmp rdx
+regRestoreCase rbx
+regRestoreCase rbp
+regRestoreCase rdi
+regRestoreCase rsi
+regRestoreCase r12
+regRestoreCase r13
+regRestoreCase r14
+regRestoreCase r15
+regRestoreCaseXmm xmm6
+regRestoreCaseXmm xmm7
+regRestoreCaseXmm xmm8
+regRestoreCaseXmm xmm9
+regRestoreCaseXmm xmm10
+regRestoreCaseXmm xmm11
+regRestoreCaseXmm xmm12
+regRestoreCaseXmm xmm13
+regRestoreCaseXmm xmm14
+regRestoreCaseXmm xmm15
+NESTED_END RuntimeSuspension_ResumeTaskletReferenceReturn, _TEXT
+
+LEAF_ENTRY RuntimeSuspension_ResumeTaskletIntegerRegisterReturn, _TEXT
+        jmp RuntimeSuspension_ResumeTaskletReferenceReturn
+LEAF_END RuntimeSuspension_ResumeTaskletIntegerRegisterReturn, _TEXT
+
+unwindRegCase macro RegisterName
+Unwind&RegisterName&:
+    mov edx, [r8+4]
+    mov RegisterName, [rsp+rdx]
+    add r8, 8
+    jmp RegUnwindLoop
+        endm
+
+unwindRegCaseXmm macro RegisterName
+Unwind&RegisterName&:
+    mov edx, [r8+4]
+    movdqu RegisterName, [rsp+rdx]
+    add r8, 8
+    jmp RegUnwindLoop
+        endm
+
+LEAF_ENTRY RuntimeSuspension_UnwindToFunctionWithAsyncFrame, _TEXT
+
+;    // Psuedocode...
+;    Tasklet* pCurTasklet = topTasklet;
+;    uintptr_t curSP = SP + offset;
+;    uintptr_t ip = NULL;
+;    for (uint32_t i = 0; i < count; i++)
+;    {
+;        RegRestore* pRegRestore = pCurTasklet->pStackDataInfo->RegistersToRestore;
+;        while (pRegRestore->reg != RegisterToRestore::ReturnRegisters)
+;        {
+;            RestoreReg(pRegRestore);
+;        }
+;        ip = *(uintptr_t*)(curSP + pCurTasklet->pStackDataInfo->ReturnAddressOffset);
+;        curSP += pCurTasklet->pStackDataInfo->StackRequirement;
+;    }
+;    Jmp ip
+
+
+; rcx is pCurTasklet
+; rdx is count of tasklets to unwind
+; rsp is current stack pointer
+; rax is the putative new ip
+; rax is also the scratch Register
+; r10 is second scratch register
+; r8 is pRegRestore
+; r9 is pStackDataInfo
+        pop rax; Pop off saved IP, so that we start with the right SP set_frame
+NewTaskletUnwind:
+        mov r9, [rcx+28h] ; Load r9 with the pStackDataInfo value on the current tasklet
+        mov r8, [r9+30h] ; Load r8 with the pRegRestore value
+
+        .data
+unwindSwitchTable     qword    Unwindrbx, Unwindrbp, Unwindrdi, Unwindrsi, Unwindr12, Unwindr13, Unwindr14, Unwindr15, Unwindxmm6, Unwindxmm7, Unwindxmm8, Unwindxmm9, Unwindxmm10, Unwindxmm11, Unwindxmm12, Unwindxmm13, Unwindxmm14, Unwindxmm15, UnwindReturnRegisters
+        .code
+RegUnwindLoop:
+        mov eax, [r8]
+        ; eax now has the value of the reg field of the RegRestore structure
+        lea r10, [unwindSwitchTable]
+        mov r10, [r10 + rax*8]
+        jmp r10
+unwindRegCase rbx
+unwindRegCase rbp
+unwindRegCase rdi
+unwindRegCase rsi
+unwindRegCase r12
+unwindRegCase r13
+unwindRegCase r14
+unwindRegCase r15
+unwindRegCaseXmm xmm6
+unwindRegCaseXmm xmm7
+unwindRegCaseXmm xmm8
+unwindRegCaseXmm xmm9
+unwindRegCaseXmm xmm10
+unwindRegCaseXmm xmm11
+unwindRegCaseXmm xmm12
+unwindRegCaseXmm xmm13
+unwindRegCaseXmm xmm14
+unwindRegCaseXmm xmm15
+UnwindReturnRegisters:
+        ; Load return address into RAX in case we are done
+        mov eax, [r9 + 0ch] ; Put ReturnAddressOffset into rax
+        mov rax, [rsp+rax]
+        
+        ; Adjust rsp to callers rsp
+        mov r10, [r9] ; Load StackDataInfo.StackRequirement
+        sub r10, [r9 + 18h] ; Subtract off the CbArgs (stack args amount)
+        add rsp, r10 ; Adjust rsp as requested
+
+        mov rcx, [rcx] ; Adjust to callers tasklet
+        ; Adjust count of tasklets to unwind
+        sub edx, 1
+        jnz NewTaskletUnwind
+TaskletUnwindDone:
+        mov rcx, rax ; Move return address into rcx
+        xor rax, rax ; Clear return register in case it is supposed to be an object reference or something  -- TODO, note that for structure returns this will mean we need to slightly adjust the calling convention so that we don't rely on this being a pointer to the return buffer
+        jmp rcx
+LEAF_END RuntimeSuspension_UnwindToFunctionWithAsyncFrame, _TEXT
+        end

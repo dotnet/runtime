@@ -57,10 +57,11 @@ struct StackDataInfo
     uint32_t UnrecordedDataSize; // From the restored RSP to the data chunk, how many bytes are skipped
     uint32_t StackDataSize;
     uint32_t ReturnAddressOffset;
-    int32_t* ByRefOffsets = NULL; // Negative numbers indicate pinned byrefs
     uint32_t cByRefs;
-    uint32_t* ObjectRefOffsets = NULL;
     uint32_t cObjectRefs;
+    uint32_t CbArgs;
+    int32_t* ByRefOffsets = NULL; // Negative numbers indicate pinned byrefs
+    uint32_t* ObjectRefOffsets = NULL;
     RegRestore* RegistersToRestore = NULL;
 };
 
@@ -123,7 +124,7 @@ public:
 };
 
 // The actual restoration function which needs to be written in assembly, sets up enough of a frame on top of the current RSP to call this function
-// Then, once this function returns, iterates through the 
+// Then, once this function returns, iterates through the RegRestore to change over the saved registers to the new values
 extern "C" RegRestore* PlatformIndependentRestore(Tasklet* tasklet, RuntimeAsyncReturnValue* returnValueToFillIn, RestoreFunctionLocals *restoreLocals)
 {
     // Compute what needs to be adjusted in terms of byrefs for 
@@ -248,9 +249,13 @@ struct TaskletCaptureData
 
 struct RuntimeSuspensionEnumData
 {
-    RuntimeSuspensionEnumData(const CQuickArrayList<RegRestore>& restoreRegLocations, REGDISPLAY* pRD_) :
+    RuntimeSuspensionEnumData(const CQuickArrayList<RegRestore>& restoreRegLocations, REGDISPLAY* pRD_, TaskletCaptureData *taskletCaptureData, CrawlFrame *_pCf, StackDataInfo* _pStackDataInfo, uint8_t* _pStackData) :
         RestoreRegLocations(restoreRegLocations),
-        pRD(pRD_)
+        pRD(pRD_),
+        pTaskletCaptureData(taskletCaptureData),
+        pCf(_pCf),
+        pStackDataInfo(_pStackDataInfo),
+        pStackData(_pStackData)
     {
     }
 
@@ -258,6 +263,10 @@ struct RuntimeSuspensionEnumData
     CQuickArrayList<int32_t> ByRefOffsets;
     const CQuickArrayList<RegRestore>& RestoreRegLocations;
     REGDISPLAY* pRD;
+    TaskletCaptureData *pTaskletCaptureData;
+    CrawlFrame *pCf;
+    StackDataInfo* pStackDataInfo;
+    uint8_t* pStackData;
 
     uint32_t GetOffsetForReg(RegisterToRestore nonVolatileReg)
     {
@@ -328,8 +337,9 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
     byrefAdjustment.Size = sizeofEntireMeaningfulStack;
 
     StackDataInfo stackDataInfo;
-    stackDataInfo.StackRequirement = (uint32_t)(::GetSP(pCf->GetRegisterSet()->pCallerContext) - pCf->GetRegisterSet()->SP);
+    stackDataInfo.StackRequirement = (uint32_t)(::GetSP(pCf->GetRegisterSet()->pCallerContext) - pCf->GetRegisterSet()->SP) + sizeofArgStack;
     stackDataInfo.StackDataSize = sizeofEntireMeaningfulStack;
+    stackDataInfo.UnrecordedDataSize = (uint32_t)taskletCaptureData->stackToIgnoreFromPreviousFrame
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     uintptr_t returnAddressLocation = (uintptr_t) (EECodeManager::GetCallerSp(pCf->GetRegisterSet()) - sizeof(void*));
@@ -390,6 +400,8 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
         else
         {
             int32_t byRefOffset = (int32_t)offset;
+
+            pEnumData->pTaskletCaptureData->AddCopiedByRef(pEnumData->pCf->GetRegisterSet()->SP, (uintptr_t*)(pEnumData->pStackData + offset - pEnumData->pStackDataInfo->UnrecordedDataSize));
             if (isPinned)
             {
                 byRefOffset = -byRefOffset;
@@ -399,7 +411,7 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
         }
     };
 
-    RuntimeSuspensionEnumData enumData(savedRegRestoreData, pCf->GetRegisterSet());
+    RuntimeSuspensionEnumData enumData(savedRegRestoreData, pCf->GetRegisterSet(), taskletCaptureData, pCf, &stackDataInfo, pStackData);
 
     pCM->EnumGcRefs(pCf->GetRegisterSet(),
                     pCf->GetCodeInfo(),
@@ -453,6 +465,8 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
 PORTABILIT_ASSERT()
 #endif
 
+
+
     Tasklet *pTasklet = (Tasklet*)malloc(sizeof(Tasklet));
     memset(pTasklet, 0, sizeof(Tasklet));
     pTasklet->pStackData = pStackData;
@@ -471,7 +485,8 @@ PORTABILIT_ASSERT()
         taskletCaptureData->lastTasklet = pTasklet;
     }
     
-    _ASSERTE(!"Needs to implement doing byref update of the data already captured.. maybe?");
+    // Apply byrefs to newly allocated stuff
+    taskletCaptureData->ApplyByRefRelocsToNewlyAllocatedTasklet(byrefAdjustment);
 
     return SWA_CONTINUE;
 }
@@ -483,6 +498,7 @@ extern "C" Tasklet* QCALLTYPE RuntimeSuspension_CaptureTasklets(QCall::StackCraw
 
     TaskletCaptureData cdata;
     cdata.stackMark = stackMark;
+    cdata.stackLimit = (uintptr_t)taskAsyncData;
     GetThread()->StackWalkFrames(CaptureTaskletsCore, &cdata, FUNCTIONSONLY);
 
     // We should have captured a full stack here. 
@@ -494,9 +510,4 @@ extern "C" Tasklet* QCALLTYPE RuntimeSuspension_CaptureTasklets(QCall::StackCraw
 extern "C" void QCALLTYPE RuntimeSuspension_DeleteTasklet(Tasklet* tasklet)
 {
     // Well, leaking isn't a good plan in the long term, but for now it'll be fine
-}
-
-EXTERN_C FCDECL1(void, RuntimeSuspension_UnwindToFunctionWithAsyncFrame, AsyncDataFrame* frame)
-{
-    _ASSERTE(!"Not Yet Implemented");
 }
