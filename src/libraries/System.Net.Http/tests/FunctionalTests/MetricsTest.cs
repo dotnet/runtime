@@ -655,8 +655,8 @@ namespace System.Net.Http.Functional.Tests
                 _output.WriteLine($"Client exception: {clientException}");
 
                 string[] expectedExceptionTypes = TestAsync
-                    ? [nameof(TaskCanceledException)]
-                    : [nameof(TaskCanceledException), nameof(OperationCanceledException)];
+                    ? [typeof(TaskCanceledException).FullName]
+                    : [typeof(TaskCanceledException).FullName, typeof(OperationCanceledException).FullName];
 
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
                 VerifyRequestDuration(m, uri, acceptedErrorTypes: expectedExceptionTypes);
@@ -837,7 +837,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(ex is HttpRequestException or TaskCanceledException);
 
                 Measurement<double> m = Assert.Single(recorder.GetMeasurements());
-                VerifyRequestDuration(m, uri, acceptedErrorTypes: [nameof(TaskCanceledException), "response_ended"]);
+                VerifyRequestDuration(m, uri, acceptedErrorTypes: [typeof(TaskCanceledException).FullName, "response_ended"]);
             }, async server =>
             {
                 try
