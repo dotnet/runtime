@@ -3,7 +3,9 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable 8500 // sizeof of managed types
@@ -341,16 +343,28 @@ namespace System
             // Writing backward allows us to get away with only simple modifications to the
             // mov instruction's base and index registers between loop iterations.
 
-            for (; pointerSizeLength >= 8; pointerSizeLength -= 8)
+            if (pointerSizeLength >= 8)
             {
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -1) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -2) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -3) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -4) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -5) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -6) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -7) = default;
-                Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -8) = default;
+                // For large inputs we use SIMD instructions to zero memory, requirements:
+                // X64:   AVX+ hardware, data must be 16-byte aligned to provide needed atomicity
+                //        guarantees.
+                // ARM64: No requirements, 16-byte alignment is recommended for better performance.
+                if ((Avx.X64.IsSupported || AdvSimd.Arm64.IsSupported) && pointerSizeLength >= 32)
+                    goto LargeInput;
+
+                do
+                {
+                    Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -1) = 0;
+                    Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -2) = 0;
+                    Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -3) = 0;
+                    Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -4) = 0;
+                    Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -5) = 0;
+                    Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -6) = 0;
+                    Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -7) = 0;
+                    Unsafe.Add(ref Unsafe.Add(ref ip, (nint)pointerSizeLength), -8) = 0;
+                    pointerSizeLength -= 8;
+                }
+                while (pointerSizeLength >= 8);
             }
 
             Debug.Assert(pointerSizeLength <= 7);
@@ -406,7 +420,51 @@ namespace System
 
             // Write only element.
             ip = default;
+            return;
+
+        LargeInput:
+            // Pin the pointer so we can align it and prevent GC from changing the alignment.
+            // It's not necessary on ARM64 since its SIMD stores are still atomic even with
+            // 8-byte alignment, but we do it anyway to keep the code simple.
+            Debug.Assert(pointerSizeLength >= 16 && (AdvSimd.Arm64.IsSupported || Avx.X64.IsSupported));
+            fixed (nint* pIp = &ip)
+            {
+                nuint* p = (nuint*)pIp;
+                nuint offset = (64 - ((nuint)p & 63)) >> 3;
+                // Scalar loop to align ip to 64 bytes
+                // We can't use SIMD on AMD64 because it's not yet aligned.
+                for (nuint i = 0; i < offset; i++)
+                {
+                    *p = 0;
+                    p++;
+                }
+                p += offset;
+                pointerSizeLength -= offset;
+
+                // The main loop which writes 64 bytes at a time
+                // using SIMD instructions on both ARM64 and X64.
+                nuint blocksCount = pointerSizeLength >> 3;
+                do
+                {
+                    *((Block64*)p) = default;
+                    p += 8;
+                    blocksCount--;
+                } while (blocksCount != 0);
+
+                // Scalar loop to handle the remaining bytes
+                // We, again, can't use an overlapped SIMD on AMD64 due to atomicity issues.
+                pointerSizeLength %= 8;
+                while (pointerSizeLength != 0)
+                {
+                    *p = 0;
+                    p++;
+                    pointerSizeLength--;
+                }
+            }
         }
+
+        [StructLayout(LayoutKind.Sequential, Size = 64)]
+        private struct Block64 { }
 
         public static void Reverse(ref int buf, nuint length)
         {
