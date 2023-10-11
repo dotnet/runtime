@@ -367,11 +367,11 @@ set DOTNET_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
 
   <!--
   ***********************************************************************************************
-  IlasmRoundTrip
+  IlasmRoundTrip for merged tests
   ***********************************************************************************************
   -->
 
-  <Target Name="IlasmRoundTripCommand" AfterTargets="AfterBuild">
+  <Target Name="IlasmRoundTripCommand" AfterTargets="AfterBuild" Condition="'$(GenerateRunScript)' == 'false'">
     <PropertyGroup>
       <InputAssemblyName>$(AssemblyName).dll</InputAssemblyName>
       <DisassemblyName>IL-RT/$(AssemblyName).il</DisassemblyName>
