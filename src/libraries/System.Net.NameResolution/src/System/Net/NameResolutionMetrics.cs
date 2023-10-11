@@ -41,7 +41,7 @@ namespace System.Net
             SocketError.AddressFamilyNotSupported => "address_family_not_supported",
             SocketError.NoRecovery => "no_recovery",
 
-            _ => exception.GetType().Name
+            _ => exception.GetType().FullName!
         };
     }
 }
