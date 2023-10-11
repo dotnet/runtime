@@ -166,6 +166,37 @@ bool IntegralRange::Contains(int64_t value) const
             }
             break;
 
+        case GT_IND:
+        {
+            GenTree* const addr = node->AsIndir()->Addr();
+
+            if (node->TypeIs(TYP_INT) && addr->OperIs(GT_ADD) && addr->gtGetOp1()->OperIs(GT_LCL_VAR) &&
+                addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length))
+            {
+                GenTreeLclVar* const lclVar = addr->gtGetOp1()->AsLclVar();
+
+                if (compiler->lvaGetDesc(lclVar->GetLclNum())->IsSpan())
+                {
+                    assert(compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
+                    return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                }
+            }
+            break;
+        }
+
+        case GT_LCL_FLD:
+        {
+            GenTreeLclFld* const lclFld = node->AsLclFld();
+            LclVarDsc* const     varDsc = compiler->lvaGetDesc(lclFld);
+
+            if (node->TypeIs(TYP_INT) && varDsc->IsSpan() && lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length)
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
+            break;
+        }
+
         case GT_LCL_VAR:
         {
             LclVarDsc* const varDsc = compiler->lvaGetDesc(node->AsLclVar());
@@ -5260,7 +5291,7 @@ public:
     {
         ASSERT_TP pAssertionOut;
 
-        if (predBlock->KindIs(BBJ_COND) && (predBlock->bbJumpDest == block))
+        if (predBlock->KindIs(BBJ_COND) && predBlock->HasJumpTo(block))
         {
             pAssertionOut = mJumpDestOut[predBlock->bbNum];
 
@@ -5462,7 +5493,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
             optPrintAssertionIndices(block->bbAssertionGen);
             if (block->KindIs(BBJ_COND))
             {
-                printf(" => " FMT_BB " valueGen = ", block->bbJumpDest->bbNum);
+                printf(" => " FMT_BB " valueGen = ", block->GetJumpDest()->bbNum);
                 optPrintAssertionIndices(jumpDestGen[block->bbNum]);
             }
             printf("\n");
@@ -6022,7 +6053,7 @@ PhaseStatus Compiler::optAssertionPropMain()
             optDumpAssertionIndices(" out  = ", block->bbAssertionOut, "\n");
             if (block->KindIs(BBJ_COND))
             {
-                printf(" " FMT_BB " = ", block->bbJumpDest->bbNum);
+                printf(" " FMT_BB " = ", block->GetJumpDest()->bbNum);
                 optDumpAssertionIndices(bbJtrueAssertionOut[block->bbNum], "\n");
             }
         }

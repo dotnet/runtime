@@ -622,7 +622,7 @@ void CodeGen::genCodeForBBlist()
             {
                 // We only need the NOP if we're not going to generate any more code as part of the block end.
 
-                switch (block->GetBBJumpKind())
+                switch (block->GetJumpKind())
                 {
                     case BBJ_ALWAYS:
                     case BBJ_THROW:
@@ -665,7 +665,7 @@ void CodeGen::genCodeForBBlist()
 
         /* Do we need to generate a jump or return? */
 
-        switch (block->GetBBJumpKind())
+        switch (block->GetJumpKind())
         {
             case BBJ_RETURN:
                 genExitCode(block);
@@ -749,7 +749,7 @@ void CodeGen::genCodeForBBlist()
                 // with a jump, do not remove jumps from such blocks.
                 // Do not remove a jump between hot and cold regions.
                 bool isRemovableJmpCandidate =
-                    !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->bbJumpDest);
+                    !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->GetJumpDest());
 
 #ifdef TARGET_AMD64
                 // AMD64 requires an instruction after a call instruction for unwinding
@@ -758,10 +758,10 @@ void CodeGen::genCodeForBBlist()
                 isRemovableJmpCandidate = isRemovableJmpCandidate && !GetEmitter()->emitIsLastInsCall();
 #endif // TARGET_AMD64
 
-                inst_JMP(EJ_jmp, block->bbJumpDest, isRemovableJmpCandidate);
+                inst_JMP(EJ_jmp, block->GetJumpDest(), isRemovableJmpCandidate);
             }
 #else
-                inst_JMP(EJ_jmp, block->bbJumpDest);
+                inst_JMP(EJ_jmp, block->GetJumpDest());
 #endif // TARGET_XARCH
 
                 FALLTHROUGH;
@@ -782,9 +782,9 @@ void CodeGen::genCodeForBBlist()
                 // block, even if one is not otherwise needed, to be able to calculate the size of this
                 // loop (loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
 
-                if (block->bbJumpDest->isLoopAlign())
+                if (block->GetJumpDest()->isLoopAlign())
                 {
-                    GetEmitter()->emitSetLoopBackEdge(block->bbJumpDest);
+                    GetEmitter()->emitSetLoopBackEdge(block->GetJumpDest());
 
                     if (!block->IsLast())
                     {
@@ -2621,7 +2621,7 @@ void CodeGen::genCodeForJcc(GenTreeCC* jcc)
     assert(compiler->compCurBB->KindIs(BBJ_COND));
     assert(jcc->OperIs(GT_JCC));
 
-    inst_JCC(jcc->gtCondition, compiler->compCurBB->bbJumpDest);
+    inst_JCC(jcc->gtCondition, compiler->compCurBB->GetJumpDest());
 }
 
 //------------------------------------------------------------------------

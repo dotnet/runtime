@@ -3163,9 +3163,9 @@ namespace System.Diagnostics.Tracing
 
                 // Collect task, opcode, keyword and channel information
 #if FEATURE_MANAGED_ETW_CHANNELS && FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-                foreach (var providerEnumKind in new string[] { "Keywords", "Tasks", "Opcodes", "Channels" })
+                foreach (var providerEnumKind in (ReadOnlySpan<string>)["Keywords", "Tasks", "Opcodes", "Channels"])
 #else
-                foreach (string providerEnumKind in new string[] { "Keywords", "Tasks", "Opcodes" })
+                foreach (string providerEnumKind in (ReadOnlySpan<string>)["Keywords", "Tasks", "Opcodes"])
 #endif
                 {
                     Type? nestedType = eventSourceType.GetNestedType(providerEnumKind);

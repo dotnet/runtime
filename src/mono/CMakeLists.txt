@@ -17,17 +17,13 @@ if (MSVC)
     add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif()
 
-  # FIXME This is all questionable but the logs are flooded and nothing else is fixing them.
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4090>) # W1: const problem
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4100>) # W4: unreferenced formal parameter
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4152>) # W4: nonstandard extension, function/data pointer conversion in expression
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4201>) # W4: nonstandard extension used: nameless struct/union
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4210>) # W4: nonstandard extension used: function given file scope
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # W4: signed/unsigned mismatch
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4389>) # W4: signed/unsigned mismatch
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4505>) # W4: unreferenced function with internal linkage has been removed
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4702>) # W4: unreachable code
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4706>) # W4: assignment within conditional expression
+
+  # FIXME we should investigate these mismatches at some point
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # W4: signed/unsigned mismatch
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4389>) # W4: signed/unsigned mismatch
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
@@ -824,7 +820,6 @@ else()
   set(EGLIB_BREAKPOINT "G_STMT_START { raise(SIGTRAP); } G_STMT_END")
   if(GCC)
     set(EGLIB_GNUC_UNUSED "__attribute__((__unused__))")
-    set(EGLIB_GNUC_NORETURN "__attribute__((__noreturn__))")
     if(HOST_AMD64 OR HOST_X86)
       set(EGLIB_BREAKPOINT "G_STMT_START { __asm__(\"int \$03\"); } G_STMT_END")
     endif()
