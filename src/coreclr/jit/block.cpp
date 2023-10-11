@@ -399,10 +399,6 @@ void BasicBlock::dspFlags()
     {
         printf("internal ");
     }
-    if (bbFlags & BBF_FAILED_VERIFICATION)
-    {
-        printf("failV ");
-    }
     if (bbFlags & BBF_RUN_RARELY)
     {
         printf("rare ");
