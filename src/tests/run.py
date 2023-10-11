@@ -576,7 +576,7 @@ def call_msbuild(args):
 
     if args.ilasmroundtrip:
         print("")
-        print("Running 'ildasm -> ildasm' scripts.")
+        print("Running 'ildasm -> ilasm' scripts.")
         
         for file in glob.glob(args.test_location + "/**/*_ilasmroundtrip.py", recursive=True):
             proc = subprocess.Popen("python " + file, cwd=os.path.dirname(file))
