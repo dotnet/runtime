@@ -1505,10 +1505,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -1537,12 +1537,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TUnaryOperator.Invoke(xRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -1747,10 +1746,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -1804,12 +1803,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TUnaryOperator.Invoke(xRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -2015,10 +2013,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -2101,12 +2099,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TUnaryOperator.Invoke(xRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -2450,10 +2447,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -2484,12 +2481,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TBinaryOperator.Invoke(xRef, yRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -2725,10 +2721,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -2787,12 +2783,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TBinaryOperator.Invoke(xRef, yRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -3029,10 +3024,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -3123,12 +3118,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TBinaryOperator.Invoke(xRef, yRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -3478,10 +3472,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -3512,12 +3506,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -3749,10 +3742,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -3813,12 +3806,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -4051,10 +4043,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -4149,12 +4141,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -4533,10 +4524,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -4569,12 +4560,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -4841,10 +4831,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -4908,12 +4898,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -5181,10 +5170,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -5283,12 +5272,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -5661,10 +5649,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -5697,12 +5685,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TTernaryOperator.Invoke(xRef, yRef, z);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -5965,10 +5952,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -6034,12 +6021,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TTernaryOperator.Invoke(xRef, yRef, z);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -6303,10 +6289,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -6409,12 +6395,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TTernaryOperator.Invoke(xRef, yRef, z);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -6787,10 +6772,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -6823,12 +6808,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TTernaryOperator.Invoke(xRef, y, zRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -7091,10 +7075,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -7160,12 +7144,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TTernaryOperator.Invoke(xRef, y, zRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -7429,10 +7412,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<float>.Count);
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         beg.StoreUnsafe(ref dRefBeg);
@@ -7535,12 +7518,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = TTernaryOperator.Invoke(xRef, y, zRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }

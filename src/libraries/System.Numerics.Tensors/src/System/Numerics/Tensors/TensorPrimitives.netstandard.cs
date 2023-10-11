@@ -522,10 +522,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         AsVector(ref dRef, endIndex - (uint)Vector<float>.Count) = end;
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         AsVector(ref dRefBeg) = beg;
@@ -578,12 +578,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = op.Invoke(xRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -836,10 +835,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         AsVector(ref dRef, endIndex - (uint)Vector<float>.Count) = end;
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         AsVector(ref dRefBeg) = beg;
@@ -898,12 +897,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = op.Invoke(xRef, yRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -1163,10 +1161,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         AsVector(ref dRef, endIndex - (uint)Vector<float>.Count) = end;
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         AsVector(ref dRefBeg) = beg;
@@ -1225,12 +1223,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = binaryOp.Invoke(xTransformOp.Invoke(xRef), y);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -1504,10 +1501,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         AsVector(ref dRef, endIndex - (uint)Vector<float>.Count) = end;
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         AsVector(ref dRefBeg) = beg;
@@ -1575,9 +1572,8 @@ namespace System.Numerics.Tensors
                         break;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -1846,10 +1842,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         AsVector(ref dRef, endIndex - (uint)Vector<float>.Count) = end;
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         AsVector(ref dRefBeg) = beg;
@@ -1914,12 +1910,11 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = op.Invoke(xRef, yRef, z);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
-                        Debug.Assert(remainder == 0);
                         break;
                     }
                 }
@@ -2188,10 +2183,10 @@ namespace System.Numerics.Tensors
                     {
                         // Store the last block, which includes any elements that wouldn't fill a full vector
                         AsVector(ref dRef, endIndex - (uint)Vector<float>.Count) = end;
-                        goto default;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         // Store the first block, which includes any elements preceding the first aligned block
                         AsVector(ref dRefBeg) = beg;
@@ -2256,10 +2251,10 @@ namespace System.Numerics.Tensors
                     case 1:
                     {
                         dRef = op.Invoke(xRef, y, zRef);
-                        break;
+                        goto case 0;
                     }
 
-                    default:
+                    case 0:
                     {
                         Debug.Assert(remainder == 0);
                         break;
