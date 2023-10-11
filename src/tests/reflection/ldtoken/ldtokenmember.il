@@ -4,18 +4,13 @@
 .assembly extern mscorlib
 {
 }
-.assembly extern xunit.core {}
 
 .assembly ldtokenmember
 {
 }
 
-.class public auto ansi ldtokenmember {
-.method public hidebysig static int32 Main() cil managed
+.method private hidebysig static int32 Main() cil managed
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
   .entrypoint
   .maxstack  8
   .locals init (class [mscorlib]System.Type nonGenericHolderType,
@@ -295,7 +290,6 @@ OtherWeirdoGenericMethodOwningTypeOK:
 
   ldc.i4     100
   ret
-}
 }
 
 .class private auto ansi beforefieldinit NonGenericHolder

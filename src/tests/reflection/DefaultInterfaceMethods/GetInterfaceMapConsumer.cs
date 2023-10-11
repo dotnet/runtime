@@ -3,12 +3,10 @@
 
 using System;
 using System.Reflection;
-using Xunit;
 
-public class Program
+class Program
 {
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         bool failed = false;
 

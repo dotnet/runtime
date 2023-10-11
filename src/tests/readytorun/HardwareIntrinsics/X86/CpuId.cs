@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 using System.Reflection;
-using Xunit;
 
 namespace XarchHardwareIntrinsicTest._CpuId
 {
@@ -18,8 +17,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
         const int Pass = 100;
         const int Fail = 0;
 
-        [Fact]
-        public unsafe static int TestEntryPoint()
+        public unsafe static int Main()
         {
             int testResult = Pass;
 

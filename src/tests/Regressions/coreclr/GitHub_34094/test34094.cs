@@ -4,9 +4,8 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using Xunit;
 
-public class Test34094
+class Test34094
 {
     static bool TestSseCompareGreaterThan()
     {
@@ -512,8 +511,7 @@ public class Test34094
         return true;
     }
 
-    [Fact]
-    public static unsafe int TestEntryPoint()
+    static unsafe int Main()
     {
         if (!Sse.IsSupported)
         {

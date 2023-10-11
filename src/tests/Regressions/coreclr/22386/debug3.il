@@ -71,7 +71,7 @@
   }
 }
 
-.class public sequential ansi sealed beforefieldinit Test2`1<T>
+.class private sequential ansi sealed beforefieldinit Test2`1<T>
        extends [System.Runtime]System.ValueType
        implements class I2`1<!T>
 {
@@ -96,7 +96,7 @@
 }
 
 
-.method public hidebysig static int32 Main() cil managed
+.method private hidebysig static int32 Main() cil managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
       01 00 00 00

@@ -8,14 +8,12 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
-using Xunit;
 
-public class Program
+class Program
 {
     const int ARRAY_SIZE = 1024;
 
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         // Run all tests 3x times to exercise both slow and fast paths work
         for (int i = 0; i < 3; i++)

@@ -3,11 +3,10 @@
 
 using System;
 using System.Reflection;
-using Xunit;
 
 #pragma warning disable CS8500
 
-unsafe public class Program
+unsafe class Program
 {
 
     public static void AsTypedReference<T>(ref T value, TypedReference* output)
@@ -16,8 +15,7 @@ unsafe public class Program
         value = (T)(object)"Hello";
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         // In this test, we try to reflect on a signature of a method that takes a TypedReference*.
         // This is not useful for much else than Reflection.Emit or Delegate.CreateDelegate.

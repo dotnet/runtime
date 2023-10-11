@@ -6,13 +6,9 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Tracing.Tests.Common;
-using Xunit;
 
 namespace Tracing.Tests
 {
-    using Xunit;
-    using Assert = Tracing.Tests.Common.Assert;
-    
     public static class EventActivityIdControlTest
     {
         internal enum ActivityControlCode : uint
@@ -30,8 +26,7 @@ namespace Tracing.Tests
         private static MethodInfo s_EventActivityIdControl;
         private static bool s_FailureEncountered = false;
 
-        [Fact]
-        public static int TestEntryPoint()
+        static int Main()
         {
             if(!Initialize())
             {

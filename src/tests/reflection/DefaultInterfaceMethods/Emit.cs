@@ -5,12 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-using Xunit;
 
-public class Program
+class Program
 {
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Mine"), AssemblyBuilderAccess.Run);
         var modb = ab.DefineDynamicModule("Mine.dll");

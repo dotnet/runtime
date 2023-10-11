@@ -24,7 +24,7 @@
   }
 }
 
-.class public auto ansi beforefieldinit Fooer
+.class private auto ansi beforefieldinit Fooer
        extends [mscorlib]System.Object
        implements IFoo
 {
@@ -40,7 +40,7 @@
 
 .field public static int32 s_result
 
-.method public hidebysig static int32 
+.method private hidebysig static int32 
         Main() cil managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 public struct S0
 {
@@ -15,9 +14,9 @@ public struct S0
 
 public class Program
 {
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main()
     {
         GC.KeepAlive(new S0[,] { { new S0(new object()) } });
+        return 100;
     }
 }

@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class Program
+internal class Program
 {
     // This test exercises the "depth cutoff" parameter of generic cycle detector.
     // It is a simple algorithm generating deep generic types of the form
@@ -32,10 +32,10 @@ public class Program
     private struct Depth4<T> {}
     
     [Fact]
-    public static void DepthTest()
+    public static int DepthTest()
     {
         const long Factorial20 = 20L * 19L * 18L * 17L * 16L * 15L * 14L * 13L * 12L * 11L * 10L * 9L * 8L * 7L * 6L * 5L * 4L * 3L * 2L;
-        Assert.Equal(Factorial20, Depth1<long>.TypeNestedFactorial(ReturnTwentyAndDontTellJIT()));
+        return Depth1<long>.TypeNestedFactorial(ReturnTwentyAndDontTellJIT()) == Factorial20 ? 100 : 101;
     }
     
     [MethodImpl(MethodImplOptions.NoInlining)]

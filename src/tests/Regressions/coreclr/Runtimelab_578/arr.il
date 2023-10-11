@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
-.assembly extern xunit.core {}
 .assembly 'arr' { }
 
 .method static int32[] alloc() cil managed
@@ -35,12 +34,8 @@
     ret
 }
 
-.class public auto ansi arr {
 .method public static int32 main() cil managed
 {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
     .locals init (int32[][] a)
     .entrypoint
 
@@ -71,5 +66,4 @@
     add // 99 + 1 = 100
 
     ret
-}
 }

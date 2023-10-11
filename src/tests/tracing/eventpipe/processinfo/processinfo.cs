@@ -14,7 +14,6 @@ using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
-using Xunit;
 
 namespace Tracing.Tests.ProcessInfoValidation
 {
@@ -89,8 +88,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             return normalizedCommandLine;
         }
 
-        [Fact]
-        public static void TestEntryPoint()
+        public static int Main()
         {
 
             Process currentProcess = Process.GetCurrentProcess();
@@ -232,6 +230,8 @@ namespace Tracing.Tests.ProcessInfoValidation
             Utils.Assert(end == totalSize, $"Full payload should have been read. Expected: {totalSize}, Received: {end}");
 
             Logger.logger.Log($"\n{{\n\tprocessId: {processId},\n\truntimeCookie: {runtimeCookie},\n\tcommandLine: {commandLine},\n\tOS: {OS},\n\tArch: {arch}\n}}");
+
+            return 100;
         }
     }
 }

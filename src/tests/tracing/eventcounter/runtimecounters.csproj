@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
@@ -11,7 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="runtimecounters.cs" />
-    <ProjectReference Include="../common/tracing_common.csproj" />
+    <ProjectReference Include="../common/common.csproj" />
   </ItemGroup>
 
   <!-- Hack to get NativeAOT assemblies into IlcReference

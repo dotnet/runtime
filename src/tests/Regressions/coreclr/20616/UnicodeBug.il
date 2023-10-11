@@ -1,14 +1,9 @@
-.assembly extern mscorlib { }
-.assembly extern xunit.core {}
+﻿.assembly extern mscorlib { }
 
 .assembly UnicodeBug { }
 
-.class public auto ansi UnicodeBug {
-.method public static int32 main()
+.method static int32 main()
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
   .entrypoint
 
   //
@@ -95,7 +90,6 @@
 
   ldc.i4 100
   ret
-}
 }
 
 .class 'л' { }

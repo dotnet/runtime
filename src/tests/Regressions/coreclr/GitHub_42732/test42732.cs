@@ -9,7 +9,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
 
 public class Test11611
 {    
@@ -37,12 +36,12 @@ public class Test11611
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main()
     {
         Console.WriteLine("About to run test");
         d = test;
         Test();
         Console.WriteLine("Test complete run test");
+        return 100;
     }
 }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 #pragma warning disable 8500
 
@@ -18,8 +17,7 @@ public unsafe class Program
     public static Type GrabPtr<T>() => typeof(T*);
     public static Type GrabFnptr<T>() => typeof(delegate*<T>);
 
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main()
     {
         AssertEqual(GrabArray<int>().GetElementType(), typeof(int));
         AssertEqual(GrabArray<string>().GetElementType(), typeof(string));
@@ -29,5 +27,7 @@ public unsafe class Program
 
         AssertEqual(GrabFnptr<DateTime>().GetFunctionPointerReturnType(), typeof(DateTime));
         AssertEqual(GrabFnptr<Action>().GetFunctionPointerReturnType(), typeof(Action));
+
+        return 100;
     }
 }

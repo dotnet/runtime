@@ -5,7 +5,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
-using Xunit;
 
 class TestAssemblyLoadContext : AssemblyLoadContext
 {
@@ -64,8 +63,7 @@ public class Test22888
         return success;
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         string currentAssemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         string testAssemblyFullPath = Path.Combine(currentAssemblyDirectory, "test22888resources.dll");

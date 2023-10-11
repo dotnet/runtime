@@ -10,14 +10,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Xunit;
 
 public class delete_next_card_table
 {
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main()
     {
         new delete_next_card_table().DoMemoryChurn();
+        return 100;
     }
 
     // this function attempts to allocate & free large amounts

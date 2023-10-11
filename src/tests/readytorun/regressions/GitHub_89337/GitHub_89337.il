@@ -16,7 +16,6 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 6:0:0:0
 }
-.assembly extern xunit.core {}
 .assembly extern NonexistentAssembly
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
@@ -121,7 +120,7 @@
 
 } // end of class System.Runtime.CompilerServices.NullableAttribute
 
-.class public auto ansi beforefieldinit GitHub_89337
+.class private auto ansi beforefieldinit GitHub_89337
        extends [System.Runtime]System.Object
 {
   .class auto ansi nested private beforefieldinit Generic`1<T>
@@ -177,12 +176,9 @@
     IL_0006:  ret
   } // end of method GitHub_89337::Passthru
 
-  .method public hidebysig static int32
+  .method private hidebysig static int32
           Main() cil managed
   {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
     .entrypoint
     // Code size       8 (0x8)
     .maxstack  1

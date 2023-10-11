@@ -3,7 +3,6 @@
 
 using System;
 using System.Reflection;
-using Xunit;
 
 public class TestSetValue
 {
@@ -15,10 +14,9 @@ public class TestSetValueDirect
     public static readonly string MagicString = "";
 }
 
-public class Test_TrySetReadonlyStaticField2
+class Test_TrySetReadonlyStaticField2
 {
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         // Validate that the readonly static field cannot be set via reflection when the static constructor is triggered 
         // by the reflection SetValue operation itself.

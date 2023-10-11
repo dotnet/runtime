@@ -3,9 +3,8 @@
 
 using System;
 using System.Reflection;
-using Xunit;
 
-public class X
+class X
 {
     readonly static string S;
     readonly static string S_Expected;
@@ -95,8 +94,7 @@ public class X
         return (shouldThrow == threw) && !unexpected;
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         var s = S;
         bool b0 = Set("3", true);

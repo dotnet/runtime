@@ -10,7 +10,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Reflection;
 using System.IO;
-using Xunit;
 
 class InstanceFieldTest : MyClass
 {
@@ -49,7 +48,7 @@ static class OpenClosedDelegateExtension
     }
 }
 
-public class Program
+class Program
 {
     static void TestVirtualMethodCalls()
     {
@@ -548,7 +547,7 @@ public class Program
         ILInliningVersioningTest<LocallyDefinedStructure>.RunAllTests(typeof(Program).Assembly);
     }
 
-    public static int Main()
+    static int Main()
     {
         // Run all tests 3x times to exercise both slow and fast paths work
         for (int i = 0; i < 3; i++)

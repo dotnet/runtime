@@ -3,12 +3,10 @@
 
 using System;
 using System.Reflection;
-using Xunit;
 
-public class Program
+class Program
 {
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         if ((int)typeof(IFoo).GetMethod("StaticMethod").Invoke(null, new object[] { 1 }) != 31)
             return 1;

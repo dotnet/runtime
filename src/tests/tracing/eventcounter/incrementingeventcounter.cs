@@ -9,7 +9,6 @@ using System.Diagnostics.Tracing;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Xunit;
 
 namespace BasicEventSourceTests
 {
@@ -102,8 +101,7 @@ namespace BasicEventSourceTests
             }
         }
 
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             int iter = 100;
 

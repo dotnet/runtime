@@ -12,7 +12,6 @@ using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Xunit;
 
 internal class ClassWithStatic
 {
@@ -22,7 +21,7 @@ internal class ClassWithStatic
     public static int Static = StaticValue;
 }
 
-public class Program
+internal class Program
 {
     const int LineCountInitialValue = 0x12345678;
 
@@ -2248,12 +2247,12 @@ public class Program
         }
         else
         {
-            Console.Error.WriteLine($@"{_failedTests.Count} tests failed:");
+            Console.Error.WriteLine($@"{_failedTests.Count} test failed:");
             foreach (string testName in _failedTests)
             {
                 Console.Error.WriteLine($@"    {testName}");
             }
-            return 101;
+            return 1;
         }
     }
 

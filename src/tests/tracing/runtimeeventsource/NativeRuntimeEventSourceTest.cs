@@ -16,14 +16,12 @@ using System.ComponentModel;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using Xunit;
 
 namespace Tracing.Tests
 {
     public sealed class NativeRuntimeEventSourceTest
     {
-        [Fact]
-        public static void TestEntryPoint()
+        private static int Main()
         {
             // Access ArrayPool.Shared.Rent() before the test to avoid the deadlock reported
             // in https://github.com/dotnet/runtime/issues/86233. This is a real issue,
@@ -110,6 +108,8 @@ namespace Tracing.Tests
                 // Ensure that we've seen no events.
                 Assert2.True("noEventsListener.EventCount == 0", noEventsListener.EventCount == 0);
             }
+
+            return 100;
         }
 
         private static unsafe void DoOverlappedIO()

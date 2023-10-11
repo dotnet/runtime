@@ -24,7 +24,7 @@ namespace Microsoft.Diagnostics.NETCore.Client
         {
         }
 
-        public DiagnosticsClient(IpcEndpointConfig config) :
+        internal DiagnosticsClient(IpcEndpointConfig config) :
             this(new DiagnosticPortIpcEndpoint(config))
         {
         }

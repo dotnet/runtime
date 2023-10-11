@@ -6,12 +6,10 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
-using Xunit;
 
-public static class Program
+internal static class Program
 {
-    [Fact]
-    public static void TestEntryPoint()
+    private static int Main()
     {
         // Verify crst levels with GCs triggered during R2R code lookup in the Prestub on the main thread, during which dynamic
         // code from a background thread is deleted at the start of the GC in the main thread
@@ -37,6 +35,8 @@ public static class Program
                 null,
                 Array.Empty<object>());
         }
+
+        return 100;
     }
 
     private static DynamicMethod CreateDynamicMethod(string name)

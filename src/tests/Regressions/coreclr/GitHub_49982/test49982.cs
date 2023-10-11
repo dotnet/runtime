@@ -9,9 +9,8 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Xunit;
 
-public class Program
+class Program
 {
     private class MockEndPoint : EndPoint
     {
@@ -41,8 +40,7 @@ public class Program
         return extendedSocketException.EndPointEquals(endPoint);
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         Console.WriteLine("Extended socket exception:");
         return TestExtendedSocketException() ? 100 : 1;

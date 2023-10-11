@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Reflection;
-using Xunit;
 
-public class Test35000
+class Test35000
 {
     public class TestData0
     {
@@ -16,8 +15,7 @@ public class Test35000
         public override object MyMethod(int a, int b, int c, int d, int e, int f, int g, int h) { return null; }
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         var method = typeof(TestData0).GetMethod(nameof(TestData0.MyMethod));
         var func = (Func<TestData0, int, int, int, int, int, int, int, int, object>)Delegate.CreateDelegate(typeof(Func<TestData0, int, int, int, int, int, int, int, int, object>), null, method);

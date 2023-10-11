@@ -1,13 +1,12 @@
 using System;
-using Xunit;
 
 namespace InterfaceMain
 {
-    public interface Program
+    interface Program
     {
-        [Fact]
-        public static void TestEntryPoint()
+        static int Main()
         {
+            return 100;
         }
     }
 }

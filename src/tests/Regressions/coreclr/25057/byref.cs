@@ -4,7 +4,6 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Xunit;
 
 [StructLayout(LayoutKind.Explicit)]
 ref struct InvalidRefStruct
@@ -13,7 +12,7 @@ ref struct InvalidRefStruct
     public Span<int> Y;
 }
 
-public class Program
+class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Type LoadInvalidRefStruct()
@@ -21,8 +20,7 @@ public class Program
         return typeof(InvalidRefStruct);
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         try
         {

@@ -3,12 +3,10 @@
 
 using System;
 using System.Reflection;
-using Xunit;
 
-public class Program
+class Program
 {
-    [Fact]
-    public static unsafe int TestEntryPoint()
+    static unsafe int Main()
     {
         var baseClass = new BaseClass();
         var derivedClass = new DerivedClass();

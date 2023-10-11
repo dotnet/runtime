@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
-using Xunit;
 
 [StructLayout(LayoutKind.Auto, Size = 16)]
-public struct Foo
+struct Foo
 {
     private int _field;
 
-    [Fact]
-    public static unsafe int TestEntryPoint()
+    static unsafe int Main()
     {
         return sizeof(Foo) == 4 ? 100 : -1;
     }

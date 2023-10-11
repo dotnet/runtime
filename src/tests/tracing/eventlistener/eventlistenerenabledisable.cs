@@ -6,7 +6,6 @@ using System.IO;
 using System.Diagnostics.Tracing;
 using System.Threading;
 using Tracing.Tests.Common;
-using Xunit;
 
 namespace Tracing.Tests
 {
@@ -71,10 +70,9 @@ namespace Tracing.Tests
         }
     }
 
-    public class EventListenerEnableDisableTest
+    class EventListenerEnableDisableTest
     {
-        [Fact]
-        public static int TestEntryPoint()
+        static int Main()
         {
             bool pass = false;
             using(var source = new EnableDisableEventSource())

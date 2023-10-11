@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-public class Program
+class Program
 {
-    [Fact]
-    public static void TestEntryPoint()
+    static int Main()
     {
         System.Console.WriteLine(System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
         CallC();
         CallB();
         CallC2();
         CallB2();
+
+        return 100;
     }
 
     static void CallB() => new B();

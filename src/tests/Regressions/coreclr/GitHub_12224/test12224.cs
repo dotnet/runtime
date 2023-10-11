@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
-using Xunit;
 
 public class Test12224
 {    
@@ -28,8 +27,7 @@ public class Test12224
         }
     }
 
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         Thread thread = new Thread(new ParameterizedThreadStart(Test12224.ExecuteTest));
         thread.IsBackground = true;

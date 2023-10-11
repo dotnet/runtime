@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-public class Program
+class Program
 {
     interface IFrobber
     {
@@ -28,9 +27,9 @@ public class Program
         }
     }
 
-    [Fact]
-    public static void TestEntryPoint()
+    private static int Main()
     {
         Foo<IFrobber>.FrobAll(new Frobber[,] { { new Frobber() } });
+        return 100;
     }
 }

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
-using Xunit;
 
 // Some generally-useful stuff
 public class List<T> { }
@@ -918,8 +917,7 @@ class Test23
   
 
 public class M {
-  [Fact]
-  public static int TestEntryPoint() {
+  public static int Main() {
     Test1.Test();
     if (Utils.failures == 0) Console.WriteLine("Test1 OK");
     Test2.Test();

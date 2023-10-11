@@ -5,15 +5,13 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
-using Xunit;
 
 public class RootClass
 {
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         string currentFolder = Path.GetDirectoryName(typeof(RootClass).Assembly.Location);
-        string folderAPath = Path.Combine(currentFolder, "FolderA.dll");
+        string folderAPath = Path.Combine(currentFolder, "..", "FolderA", "FolderA", "FolderA.dll");
         Console.WriteLine("Loading FolderA: {0}", folderAPath);
         Assembly folderA = AssemblyLoadContext.Default.LoadFromAssemblyPath(folderAPath);
         Type classA = folderA.GetType("ClassA");
@@ -24,7 +22,7 @@ public class RootClass
             return 101;
         }
         
-        string folderBPath = Path.Combine(currentFolder, "FolderB.dll");
+        string folderBPath = Path.Combine(currentFolder, "..", "FolderB", "FolderB", "FolderB.dll");
         Console.WriteLine("Loading FolderB: {0}", folderBPath);
         Assembly folderB = AssemblyLoadContext.Default.LoadFromAssemblyPath(folderBPath);
         Type classB = folderB.GetType("ClassB");

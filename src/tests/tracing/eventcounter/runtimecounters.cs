@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using Xunit;
 
 namespace RuntimeEventCounterTests
 {
@@ -98,8 +97,7 @@ namespace RuntimeEventCounterTests
 
     public partial class TestRuntimeEventCounter
     {
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())

@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 namespace CrossBoundaryLayout
 {
-    public class Program
+    class Program
     {
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             int failure = ATest.Test();
             failure += BTest.Test();

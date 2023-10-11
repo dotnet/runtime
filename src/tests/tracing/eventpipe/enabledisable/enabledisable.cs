@@ -13,7 +13,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using Xunit;
 
 namespace Tracing.Tests.EnableDisableValidation
 {
@@ -56,8 +55,7 @@ namespace Tracing.Tests.EnableDisableValidation
 
     public class EnableDisableValidation
     {
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             // There is a potential deadlock because EventPipeEventSource uses ConcurrentDictionary, which
             // triggers loading the CDSCollectionETWBCLProvider EventSource, and registering the provider

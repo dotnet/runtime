@@ -29,7 +29,7 @@
        extends [mscorlib]System.Object
 { }
 
-.class public auto ansi beforefieldinit Fooer`1<T>
+.class private auto ansi beforefieldinit Fooer`1<T>
        extends [mscorlib]System.Object
        implements class IFoo`1<class Gen`1<!T>>
 {

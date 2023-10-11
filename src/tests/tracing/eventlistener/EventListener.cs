@@ -5,7 +5,6 @@ using System;
 using System.IO;
 using System.Diagnostics.Tracing;
 using Tracing.Tests.Common;
-using Xunit;
 
 namespace Tracing.Tests
 {
@@ -66,13 +65,12 @@ namespace Tracing.Tests
         }
     }
 
-    public class EventPipeSmoke
+    class EventPipeSmoke
     {
         private static int messageIterations = 100;
         private static readonly DateTime ThePast = DateTime.UtcNow;
 
-        [Fact]
-        public static int TestEntryPoint()
+        static int Main()
         {
             bool pass = false;
             using(var listener = new SimpleEventListener("SimpleEventSource", EventLevel.Verbose))

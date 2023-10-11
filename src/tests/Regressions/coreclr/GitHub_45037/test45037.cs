@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Xunit;
 
 public abstract class Base<T>
 {
@@ -45,13 +44,14 @@ class Child<T> : Parent where T : class
 
 class Foo { }
 
-public class Program
+class Program
 {
-    [Fact]
-    public static void TestEntryPoint()
+    static int Main()
     {
         Type[] t = Assembly.GetExecutingAssembly().GetTypes();
         new Child<Foo>();
         new CovariantReturn();
+
+        return 100;
     }
 }

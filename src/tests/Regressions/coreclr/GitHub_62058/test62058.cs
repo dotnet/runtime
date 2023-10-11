@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
 
 public class Program
 {
@@ -16,8 +15,7 @@ public class Program
         public bool IsValid { get; set; }
     }
 
-    [Fact]
-    public static void TestEntryPoint()
+    public static int Main()
     {
         bool warmup = new Foo().IsValid;
         CatchIgnore(() =>
@@ -29,6 +27,8 @@ public class Program
                 bool check = foo.IsValid;
             }
         }));
+
+        return 100;
     }
 
     public static void CatchRethrow(Action action)

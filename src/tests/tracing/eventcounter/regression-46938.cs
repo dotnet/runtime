@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using Xunit;
 
 namespace EventCounterRegressionTests
 {
@@ -65,8 +64,7 @@ namespace EventCounterRegressionTests
 
     public partial class TestEventCounter
     {
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             // Create an EventListener.
             using (SimpleEventListener myListener = new SimpleEventListener())

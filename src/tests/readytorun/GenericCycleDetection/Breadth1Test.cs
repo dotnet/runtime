@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class Program
+internal class Program
 {
     // This test exercises the "breadth cutoff" parameter of generic cycle detector.
     // It mimics generic representation of expressions.
@@ -193,9 +193,9 @@ public class Program
     }
     
     [Fact]
-    public static void BreadthTest()
+    public static int BreadthTest()
     {
-        Assert.Equal(100, Expression<long, int>.Construct(2) * Expression<float, double>.Construct(2));
+        return Expression<long, int>.Construct(2) * Expression<float, double>.Construct(2);
     }
     
     [MethodImpl(MethodImplOptions.NoInlining)]

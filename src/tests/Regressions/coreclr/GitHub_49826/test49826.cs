@@ -5,12 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Xunit;
 
-public class Program
+class Program
 {
-    [Fact]
-    public static int TestEntryPoint()
+    static int Main()
     {
         JsonSerializerOptions options = new JsonSerializerOptions();
         JsonConverter converter = options.GetConverter(typeof(DateTime));

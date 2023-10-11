@@ -2,12 +2,10 @@ using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using Xunit;
 
 public class Program 
 {
-    [Fact]
-    public static int TestEntryPoint() 
+    public static int Main() 
     {
         return RunTest();
     }

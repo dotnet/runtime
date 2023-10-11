@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
-using Xunit;
 
 namespace Tracing.Tests.BufferValidation
 {
@@ -24,8 +23,7 @@ namespace Tracing.Tests.BufferValidation
 
     public class BufferValidation
     {
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             // This tests the resilience of message sending with
             // smaller buffers, specifically 1MB and 4MB

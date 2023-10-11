@@ -9,7 +9,6 @@ using System.Diagnostics.Tracing;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Xunit;
 
 namespace BasicEventSourceTests
 {
@@ -112,8 +111,7 @@ namespace BasicEventSourceTests
             mockedCountCalled++;
             return mockedCountCalled;
         }
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Main()
         {
             // Create an EventListener.
             using (SimpleEventListener myListener = new SimpleEventListener("SimpleEventSource", EventLevel.Verbose))
