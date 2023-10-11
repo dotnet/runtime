@@ -6203,27 +6203,31 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             break;
 
         case GT_CMPXCHG:
+        {
+            GenTree* addr = tree->AsCmpXchg()->Addr();
+            level         = gtSetEvalOrder(addr);
+            costSz        = addr->GetCostSz();
 
-            level  = gtSetEvalOrder(tree->AsCmpXchg()->Addr());
-            costSz = tree->AsCmpXchg()->Addr()->GetCostSz();
-
-            lvl2 = gtSetEvalOrder(tree->AsCmpXchg()->Data());
+            GenTree* value = tree->AsCmpXchg()->Data();
+            lvl2           = gtSetEvalOrder(value);
             if (level < lvl2)
             {
                 level = lvl2;
             }
-            costSz += tree->AsCmpXchg()->Data()->GetCostSz();
+            costSz += value->GetCostSz();
 
-            lvl2 = gtSetEvalOrder(tree->AsCmpXchg()->Comparand());
+            GenTree* comparand = tree->AsCmpXchg()->Comparand();
+            lvl2               = gtSetEvalOrder(comparand);
             if (level < lvl2)
             {
                 level = lvl2;
             }
-            costSz += tree->AsCmpXchg()->Comparand()->GetCostSz();
+            costSz += comparand->GetCostSz();
 
             costEx = MAX_COST; // Seriously, what could be more expensive than lock cmpxchg?
             costSz += 5;       // size of lock cmpxchg [reg+C], reg
-            break;
+        }
+        break;
 
         case GT_STORE_DYN_BLK:
             level  = gtSetEvalOrder(tree->AsStoreDynBlk()->Addr());
