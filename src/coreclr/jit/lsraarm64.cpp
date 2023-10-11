@@ -1409,12 +1409,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_Insert:
                     case NI_AdvSimd_InsertScalar:
                     case NI_AdvSimd_LoadAndInsertScalar:
-                    case NI_AdvSimd_LoadAndInsertScalarx2:
-                    case NI_AdvSimd_LoadAndInsertScalarx3:
-                    case NI_AdvSimd_LoadAndInsertScalarx4:
-                    case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
-                    case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
-                    case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
+                    case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+                    case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+                    case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
                     case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
                         needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
                         break;
@@ -1481,12 +1481,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 simdRegToSimdRegMove = true;
                 break;
             }
-            case NI_AdvSimd_LoadAndInsertScalarx2:
-            case NI_AdvSimd_LoadAndInsertScalarx3:
-            case NI_AdvSimd_LoadAndInsertScalarx4:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             {
                 delayFreeMultiple = true;
                 break;
@@ -1615,12 +1615,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 buildInternalRegisterUses();
                 *pDstCount = 0;
                 break;
-            case NI_AdvSimd_LoadAndInsertScalarx2:
-            case NI_AdvSimd_LoadAndInsertScalarx3:
-            case NI_AdvSimd_LoadAndInsertScalarx4:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
                 assert(intrin.op2 != nullptr);
                 assert(intrin.op3 != nullptr);
                 assert(isRMW);

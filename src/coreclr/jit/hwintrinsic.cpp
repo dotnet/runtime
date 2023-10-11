@@ -1095,16 +1095,16 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 switch (fieldCount)
                 {
                     case 2:
-                        intrinsic =
-                            sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarx2 : NI_AdvSimd_Arm64_LoadAndInsertScalarx2;
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x2
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2;
                         break;
                     case 3:
-                        intrinsic =
-                            sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarx3 : NI_AdvSimd_Arm64_LoadAndInsertScalarx3;
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x3
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3;
                         break;
                     case 4:
-                        intrinsic =
-                            sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarx4 : NI_AdvSimd_Arm64_LoadAndInsertScalarx4;
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x4
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4;
                         break;
                     default:
                         assert("unsupported");
@@ -1174,8 +1174,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
 #ifdef TARGET_ARM64
     if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar) ||
-        ((intrinsic >= NI_AdvSimd_LoadAndInsertScalar) && (intrinsic <= NI_AdvSimd_LoadAndInsertScalarx4)) ||
-        ((intrinsic >= NI_AdvSimd_Arm64_LoadAndInsertScalar) && (intrinsic <= NI_AdvSimd_Arm64_LoadAndInsertScalarx4)))
+        ((intrinsic >= NI_AdvSimd_LoadAndInsertScalar) && (intrinsic <= NI_AdvSimd_LoadAndInsertScalarVector64x4)) ||
+        ((intrinsic >= NI_AdvSimd_Arm64_LoadAndInsertScalar) &&
+         (intrinsic <= NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4)))
     {
         assert(sig->numArgs == 3);
         immOp = impStackTop(1).val;

@@ -253,12 +253,12 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_Insert:
             case NI_AdvSimd_InsertScalar:
             case NI_AdvSimd_LoadAndInsertScalar:
-            case NI_AdvSimd_LoadAndInsertScalarx2:
-            case NI_AdvSimd_LoadAndInsertScalarx3:
-            case NI_AdvSimd_LoadAndInsertScalarx4:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
@@ -1922,12 +1922,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = impStoreMultiRegValueToVar(op1, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }
-        case NI_AdvSimd_LoadAndInsertScalarx2:
-        case NI_AdvSimd_LoadAndInsertScalarx3:
-        case NI_AdvSimd_LoadAndInsertScalarx4:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+        case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
         {
             assert(sig->numArgs == 3);
 
@@ -1955,7 +1955,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
-            info.compNeedsConsecutiveRegisters = true;
             assert(op1->TypeGet() == TYP_STRUCT);
 
             info.compNeedsConsecutiveRegisters = true;

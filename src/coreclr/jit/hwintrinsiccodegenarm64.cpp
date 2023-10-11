@@ -728,12 +728,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
-            case NI_AdvSimd_LoadAndInsertScalarx2:
-            case NI_AdvSimd_LoadAndInsertScalarx3:
-            case NI_AdvSimd_LoadAndInsertScalarx4:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx2:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx3:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarx4:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             {
                 assert(isRMW);
                 unsigned fieldIdx = 0;
