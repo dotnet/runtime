@@ -12,7 +12,7 @@ public class Program
         ITestInterface itf = new TestClass();
 
         // The calls need to made twice as the first time is the trampoline
-        // the section is post build_imt_slots
+        // the second call is post build_imt_slots which is the point of the test
 
         ret = itf.TestMethod1(10);
         if (ret != 100) return ret;
