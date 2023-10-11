@@ -4,11 +4,9 @@
 
 If you haven't already done so, please read [this document](../../README.md#Build_Requirements) to understand the build requirements for your operating system.
 
-The **correct version** of Emscripten SDK (emsdk) needs to be installed. To read how to install it, see [Installing emsdk](../../../../src/mono/wasm/README.md#installing-emsdk).
-
 ## Building
 
-At this time no other build dependencies are necessary to start building for WebAssembly. To read how to build on specific platforms, see [Building](../../../../src/mono/wasm/README.md#building).
+At this time no other build dependencies are necessary to start building for WebAssembly. Emscripten will be downloaded and installed automatically in the build process. To read how to build on specific platforms, see [Building](../../../../src/mono/wasm/README.md#building).
 
 This document explains how to work on the runtime or libraries. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
 

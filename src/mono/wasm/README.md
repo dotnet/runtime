@@ -1,32 +1,10 @@
 # Build WebAssembly
 
-If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](../../../docs/workflow/building/libraries/webassembly-instructions.md).
-
-## Installing emsdk
-
-The **correct version** of Emscripten SDK (emsdk) needs to be installed. Version number is saved in [emscripten-version.txt](./emscripten-version.txt).
-
-### macOS/Linux
-
-* You can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk` .
-Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always install into `$reporoot/src/mono/wasm/emsdk`.
-
-Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building targets from that will have it set. But you might need to set it manually if you are directly using the `dotnet build`, or `build.sh` by `source ./emsdk_env.sh`.
-
-* Alternatively you can install **correct version** yourself from the [Emscripten SDK guide](https://emscripten.org/docs/getting_started/downloads.html).
-Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.23`. See [emscripten-version.txt](./emscripten-version.txt)
-
-Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for wasm.
-
-```bash
-export EMSDK_PATH=<FULL_PATH_TO_SDK_INSTALL>/emsdk
-```
+If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](../../../docs/workflow/building/libraries/webassembly-instructions.md). Emscripten that is needed to build the project will be provisioned automatically, unless `EMSDK_PATH` variable is set or emscripten is already present in `src\mono\wasm\emsdk` directory.
 
 ### Windows
 
 Windows build [requirements](../../../docs/workflow/requirements/windows-requirements.md)
-
-If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically during the build.
 
 **Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/wasm/emsdk` directory should be manually deleted and then a rebuild attempted.
 
