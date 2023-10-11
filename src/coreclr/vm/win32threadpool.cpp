@@ -126,6 +126,10 @@ SVAL_IMPL(ThreadpoolMgr::LIST_ENTRY,ThreadpoolMgr,TimerQueue);  // queue of time
 unsigned int ThreadpoolMgr::LastCPThreadCreation=0;     //  last time a completion port thread was created
 unsigned int ThreadpoolMgr::NumberOfProcessors; // = NumberOfWorkerThreads - no. of blocked threads
 
+DWORD ThreadpoolMgr::WorkerThreadTimeoutMs = 20 * 1000;
+DWORD ThreadpoolMgr::IOCompletionThreadTimeoutMs = 15 * 1000;
+int ThreadpoolMgr::NumWorkerThreadsBeingKeptAlive = 0;
+int ThreadpoolMgr::NumIOCompletionThreadsBeingKeptAlive = 0;
 
 CrstStatic ThreadpoolMgr::WorkerCriticalSection;
 CLREvent * ThreadpoolMgr::RetiredCPWakeupEvent;       // wakeup event for completion port threads
@@ -353,6 +357,13 @@ BOOL ThreadpoolMgr::Initialize()
 
     NumberOfProcessors = GetCurrentProcessCpuCount();
     InitPlatformVariables();
+
+    int threadTimeoutMs = g_pConfig->ThreadPoolThreadTimeoutMs();
+    if (threadTimeoutMs >= -1)
+    {
+        WorkerThreadTimeoutMs = (DWORD)threadTimeoutMs;
+        IOCompletionThreadTimeoutMs = (DWORD)threadTimeoutMs;
+    }
 
     EX_TRY
     {
@@ -1809,6 +1820,9 @@ DWORD WINAPI ThreadpoolMgr::WorkerThreadStart(LPVOID lpArgs)
     ThreadCounter::Counts counts, oldCounts, newCounts;
     bool foundWork = true, wasNotRecalled = true;
 
+    bool isThreadKeepAliveInitialized = false;
+    bool keepThreadAlive = false;
+
     counts = WorkerCounter.GetCleanCounts();
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolWorkerThreadStart))
         FireEtwThreadPoolWorkerThreadStart(counts.NumActive, counts.NumRetired, GetClrInstanceId());
@@ -1864,6 +1878,35 @@ Work:
 
     GCX_PREEMP_NO_DTOR();
     _ASSERTE(pThread == NULL || !pThread->PreemptiveGCDisabled());
+
+    if (!isThreadKeepAliveInitialized && fThreadInit)
+    {
+        // Determine whether to keep this thread alive. Some threads may always be kept alive based on config.
+        isThreadKeepAliveInitialized = true;
+        int threadsToKeepAlive = g_pConfig->ThreadPoolThreadsToKeepAlive();
+        if (threadsToKeepAlive != 0)
+        {
+            if (threadsToKeepAlive < 0)
+            {
+                keepThreadAlive = true;
+            }
+            else
+            {
+                int count = VolatileLoadWithoutBarrier(&NumWorkerThreadsBeingKeptAlive);
+                while (count < threadsToKeepAlive)
+                {
+                    int countBeforeUpdate = InterlockedCompareExchangeT(&NumWorkerThreadsBeingKeptAlive, count + 1, count);
+                    if (countBeforeUpdate == count)
+                    {
+                        keepThreadAlive = true;
+                        break;
+                    }
+
+                    count = countBeforeUpdate;
+                }
+            }
+        }
+    }
 
     // make sure there's really work.  If not, go back to sleep
 
@@ -1951,7 +1994,7 @@ Retire:
     while (true)
     {
 RetryRetire:
-        if (RetiredWorkerSemaphore->Wait(WorkerTimeout))
+        if (RetiredWorkerSemaphore->Wait(keepThreadAlive ? INFINITE : WorkerThreadTimeoutMs))
         {
             foundWork = true;
 
@@ -2028,7 +2071,7 @@ WaitForWork:
         FireEtwThreadPoolWorkerThreadWait(counts.NumActive, counts.NumRetired, GetClrInstanceId());
 
 RetryWaitForWork:
-    if (WorkerSemaphore->Wait(WorkerTimeout, WorkerThreadSpinLimit, NumberOfProcessors))
+    if (WorkerSemaphore->Wait(keepThreadAlive ? INFINITE : WorkerThreadTimeoutMs, WorkerThreadSpinLimit, NumberOfProcessors))
     {
         foundWork = true;
         goto Work;
@@ -3153,13 +3196,13 @@ DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
     PIOCompletionContext context;
     BOOL fIsCompletionContext;
 
-    const DWORD CP_THREAD_WAIT = 15000; /* milliseconds */
-
     _ASSERTE(GlobalCompletionPort != NULL);
 
     BOOL fThreadInit = FALSE;
     Thread *pThread = NULL;
 
+    bool isThreadKeepAliveInitialized = false;
+    bool keepThreadAlive = false;
     DWORD cpThreadWait = 0;
 
     if (g_fEEStarted) {
@@ -3196,7 +3239,7 @@ DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
     ThreadCounter::Counts oldCounts;
     ThreadCounter::Counts newCounts;
 
-    cpThreadWait = CP_THREAD_WAIT;
+    cpThreadWait = IOCompletionThreadTimeoutMs;
     for (;; )
     {
 Top:
@@ -3224,6 +3267,36 @@ Top:
 
         GCX_PREEMP_NO_DTOR();
 
+        if (!isThreadKeepAliveInitialized && fThreadInit)
+        {
+            // Determine whether to keep this thread alive. Some threads may always be kept alive based on config.
+            isThreadKeepAliveInitialized = true;
+            int threadsToKeepAlive = g_pConfig->ThreadPoolThreadsToKeepAlive();
+            if (threadsToKeepAlive != 0)
+            {
+                if (threadsToKeepAlive < 0)
+                {
+                    keepThreadAlive = true;
+                }
+                else
+                {
+                    int count = VolatileLoadWithoutBarrier(&NumIOCompletionThreadsBeingKeptAlive);
+                    while (count < threadsToKeepAlive)
+                    {
+                        int countBeforeUpdate =
+                            InterlockedCompareExchangeT(&NumIOCompletionThreadsBeingKeptAlive, count + 1, count);
+                        if (countBeforeUpdate == count)
+                        {
+                            keepThreadAlive = true;
+                            break;
+                        }
+
+                        count = countBeforeUpdate;
+                    }
+                }
+            }
+        }
+
         //
         // We're about to wait on the IOCP; mark ourselves as no longer "working."
         //
@@ -3238,7 +3311,7 @@ Top:
             // one thread listening for completions.  So there's no point in having a timeout; it will
             // only use power unnecessarily.
             //
-            cpThreadWait = (newCounts.NumActive == 1) ? INFINITE : CP_THREAD_WAIT;
+            cpThreadWait = (newCounts.NumActive == 1 || keepThreadAlive) ? INFINITE : IOCompletionThreadTimeoutMs;
 
             if (oldCounts == CPThreadCounter.CompareExchangeCounts(newCounts, oldCounts))
                 break;
