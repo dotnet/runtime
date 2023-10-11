@@ -447,7 +447,11 @@ int
 interp_create_local (TransformData *td, MonoType *type);
 
 void
-interp_foreach_local_var (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int, gpointer));
+interp_foreach_ins_var (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int*, gpointer));
+
+void
+interp_foreach_ins_svar (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int*, gpointer));
+
 
 /* Forward definitions for simd methods */
 static gboolean

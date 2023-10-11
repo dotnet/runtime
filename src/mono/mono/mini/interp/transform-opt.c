@@ -42,9 +42,9 @@ set_var_live_range (TransformData *td, int var, int ins_index)
 }
 
 static void
-set_var_live_range_cb (TransformData *td, int var, gpointer data)
+set_var_live_range_cb (TransformData *td, int *pvar, gpointer data)
 {
-	set_var_live_range (td, var, (int)(gsize)data);
+	set_var_live_range (td, *pvar, (int)(gsize)data);
 }
 
 static void
@@ -66,9 +66,9 @@ initialize_global_var (TransformData *td, int var, int bb_index)
 }
 
 static void
-initialize_global_var_cb (TransformData *td, int var, gpointer data)
+initialize_global_var_cb (TransformData *td, int *pvar, gpointer data)
 {
-	initialize_global_var (td, var, (int)(gsize)data);
+	initialize_global_var (td, *pvar, (int)(gsize)data);
 }
 
 static void
@@ -93,7 +93,7 @@ initialize_global_vars (TransformData *td)
 					td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
 				}
 			}
-			interp_foreach_local_var (td, ins, (gpointer)(gsize)bb->index, initialize_global_var_cb);
+			interp_foreach_ins_var (td, ins, (gpointer)(gsize)bb->index, initialize_global_var_cb);
 		}
 	}
 	td->total_locals_size = ALIGN_TO (td->total_locals_size, MINT_STACK_ALIGNMENT);
@@ -370,7 +370,7 @@ interp_alloc_offsets (TransformData *td)
 								// The arg of the call is no longer global
 								*call_args = new_var;
 								// Also update liveness for this instruction
-								interp_foreach_local_var (td, new_inst, (gpointer)(gsize)ins_index, set_var_live_range_cb);
+								interp_foreach_ins_var (td, new_inst, (gpointer)(gsize)ins_index, set_var_live_range_cb);
 								ins_index++;
 							}
 						} else {
@@ -408,7 +408,7 @@ interp_alloc_offsets (TransformData *td)
 				}
 			}
 			// Set live_start and live_end for every referenced local that is not global
-			interp_foreach_local_var (td, ins, (gpointer)(gsize)ins_index, set_var_live_range_cb);
+			interp_foreach_ins_var (td, ins, (gpointer)(gsize)ins_index, set_var_live_range_cb);
 			ins_index++;
 		}
 		gint32 current_offset = td->total_locals_size;
@@ -1516,8 +1516,9 @@ cprop_sreg (TransformData *td, InterpInst *ins, int *psreg, LocalValue *local_de
 }
 
 static void
-clear_local_defs (TransformData *td, int var, void *data)
+clear_local_defs (TransformData *td, int *pvar, void *data)
 {
+	int var = *pvar;
 	LocalValue *local_defs = (LocalValue*) data;
 	local_defs [var].type = LOCAL_VALUE_NONE;
 	local_defs [var].ins = NULL;
@@ -1525,8 +1526,9 @@ clear_local_defs (TransformData *td, int var, void *data)
 }
 
 static void
-clear_unused_defs (TransformData *td, int var, void *data)
+clear_unused_defs (TransformData *td, int *pvar, void *data)
 {
+	int var = *pvar;
 	if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_LOCAL_ONLY))
 		return;
 	if (td->locals [var].indirects)
@@ -1578,7 +1580,7 @@ retry:
 		td->cbb = bb;
 
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next)
-			interp_foreach_local_var (td, ins, local_defs, clear_local_defs);
+			interp_foreach_ins_var (td, ins, local_defs, clear_local_defs);
 
 		if (td->verbose_level) {
 			GString* bb_info = interp_get_bb_links (bb);
@@ -2008,7 +2010,7 @@ retry:
 		}
 
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next)
-			interp_foreach_local_var (td, ins, local_defs, clear_unused_defs);
+			interp_foreach_ins_var (td, ins, local_defs, clear_unused_defs);
 	}
 
 	needs_retry |= interp_local_deadce (td);
