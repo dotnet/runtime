@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <DefineConstants>SYSTEM_PRIVATE_CORELIB;FEATURE_MANAGED_ETW_CHANNELS;FEATURE_MANAGED_ETW;$(DefineConstants)</DefineConstants>
+    <DefineConstants>SYSTEM_PRIVATE_CORELIB;$(DefineConstants)</DefineConstants>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <FeatureNativeAot>true</FeatureNativeAot>
     <RuntimeBasePath>..\..\Runtime.Base\src\</RuntimeBasePath>
