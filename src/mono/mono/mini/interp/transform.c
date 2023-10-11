@@ -8052,8 +8052,9 @@ handle_relocations (TransformData *td)
 }
 
 static void
-alloc_unopt_global_local (TransformData *td, int local, gpointer data)
+alloc_unopt_global_local (TransformData *td, int *plocal, gpointer data)
 {
+	int local = *plocal;
 	// Execution stack locals are resolved when we emit the instruction in the code stream,
 	// once all global locals have their offset resolved
 	if (td->locals [local].flags & INTERP_LOCAL_FLAG_EXECUTION_STACK)
@@ -8082,31 +8083,34 @@ interp_get_ins_length (InterpInst *ins)
 }
 
 void
-interp_foreach_local_var (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int, gpointer))
+interp_foreach_ins_svar (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int*, gpointer))
 {
 	int opcode = ins->opcode;
 	if (mono_interp_op_sregs [opcode]) {
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++) {
-			int sreg = ins->sregs [i];
-
-			if (sreg == MINT_CALL_ARGS_SREG) {
+			if (ins->sregs [i] == MINT_CALL_ARGS_SREG) {
 				if (ins->info.call_info && ins->info.call_info->call_args) {
 					int *call_args = ins->info.call_info->call_args;
-					int var = *call_args;
-					while (var != -1) {
-						callback (td, var, data);
+					while (*call_args != -1) {
+						callback (td, call_args, data);
 						call_args++;
-						var = *call_args;
 					}
 				}
 			} else {
-				callback (td, sreg, data);
+				callback (td, &ins->sregs [i], data);
 			}
 		}
 	}
+}
 
+void
+interp_foreach_ins_var (TransformData *td, InterpInst *ins, gpointer data, void (*callback)(TransformData*, int*, gpointer))
+{
+	interp_foreach_ins_svar (td, ins, data, callback);
+
+	int opcode = ins->opcode;
 	if (mono_interp_op_dregs [opcode])
-		callback (td, ins->dreg, data);
+		callback (td, &ins->dreg, data);
 }
 
 int
@@ -8127,7 +8131,7 @@ interp_compute_native_offset_estimates (TransformData *td)
 				continue;
 			noe += interp_get_ins_length (ins);
 			if (!td->optimized)
-				interp_foreach_local_var (td, ins, NULL, alloc_unopt_global_local);
+				interp_foreach_ins_var (td, ins, NULL, alloc_unopt_global_local);
 		}
 	}
 
