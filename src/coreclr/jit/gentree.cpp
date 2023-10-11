@@ -7638,11 +7638,19 @@ GenTree* Compiler::gtNewLconNode(__int64 value)
     return node;
 }
 
+GenTree* Compiler::gtNewDconNodeF(float value)
+{
+    return gtNewDconNode(FloatingPointUtils::convertToDouble(value), TYP_FLOAT);
+}
+
+GenTree* Compiler::gtNewDconNodeD(double value)
+{
+    return gtNewDconNode(value, TYP_DOUBLE);
+}
+
 GenTree* Compiler::gtNewDconNode(double value, var_types type)
 {
-    GenTree* node = new (this, GT_CNS_DBL) GenTreeDblCon(value, type);
-
-    return node;
+    return new (this, GT_CNS_DBL) GenTreeDblCon(value, type);
 }
 
 GenTree* Compiler::gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle)
@@ -7895,12 +7903,12 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
         case TYP_FLOAT:
         {
             READ_VALUE(float);
-            return gtNewDconNode(val, TYP_FLOAT);
+            return gtNewDconNodeF(val);
         }
         case TYP_DOUBLE:
         {
             READ_VALUE(double);
-            return gtNewDconNode(val);
+            return gtNewDconNodeD(val);
         }
         case TYP_REF:
         {
@@ -7975,11 +7983,11 @@ GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
         case TYP_FLOAT:
             float floatPattern;
             memset(&floatPattern, pattern, sizeof(floatPattern));
-            return gtNewDconNode(floatPattern, TYP_FLOAT);
+            return gtNewDconNodeF(floatPattern);
         case TYP_DOUBLE:
             double doublePattern;
             memset(&doublePattern, pattern, sizeof(doublePattern));
-            return gtNewDconNode(doublePattern);
+            return gtNewDconNodeD(doublePattern);
         case TYP_REF:
         case TYP_BYREF:
             assert(pattern == 0);
