@@ -5886,6 +5886,13 @@ void CodeGen::genFnProlog()
     {
         initReg = REG_IP1;
     }
+#elif defined(TARGET_LOONGARCH64)
+    // For LoongArch64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_SCRATCH;
+    }
 #endif
 
 #ifndef TARGET_LOONGARCH64
