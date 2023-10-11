@@ -345,11 +345,11 @@ namespace System
 
             if (pointerSizeLength >= 8)
             {
-                // For large inputs we use SIMD instructions to zero memory, requirements:
-                // X64:   AVX+ hardware, data must be 16-byte aligned to provide needed atomicity
-                //        guarantees.
-                // ARM64: No requirements, 16-byte alignment is recommended for better performance.
-                if ((Avx.X64.IsSupported || AdvSimd.Arm64.IsSupported) && pointerSizeLength >= 32)
+                // Handle large inputs separately, currently, only on ARM64 since it gives us
+                // needed atomicity guarantees even with just 8-byte alignment.
+                // TODO: consider pinning the input, align to 64 bytes and use AVX/AVX512 on x64.
+                // since VMOVAPQ guarantees 16-byte alignment if aligned to 16 bytes.
+                if (AdvSimd.Arm64.IsSupported && pointerSizeLength >= 32)
                     goto LargeInput;
 
                 do
@@ -423,43 +423,26 @@ namespace System
             return;
 
         LargeInput:
-            // Pin the pointer so we can align it and prevent GC from changing the alignment.
-            // It's not necessary on ARM64 since its SIMD stores are still atomic even with
-            // 8-byte alignment, but we do it anyway to keep the code simple.
-            Debug.Assert(pointerSizeLength >= 16 && (AdvSimd.Arm64.IsSupported || Avx.X64.IsSupported));
-            fixed (nint* pIp = &ip)
+            // Branch-less alignment to 64 bytes.
+            Unsafe.As<nint, Block64>(ref ip) = default;
+            nuint misalignedPtrs = (64 - (nuint)Unsafe.AsPointer(ref ip) & 63) >> 3;
+            ip = ref Unsafe.Add(ref ip, misalignedPtrs);
+            pointerSizeLength -= misalignedPtrs;
+
+            nuint blocks = pointerSizeLength >> 3;
+            do
             {
-                nuint* p = (nuint*)pIp;
-                nuint offset = (64 - ((nuint)p & 63)) >> 3;
-                // Scalar loop to align ip to 64 bytes
-                // We can't use SIMD on AMD64 because it's not yet aligned.
-                for (nuint i = 0; i < offset; i++)
-                {
-                    *p = 0;
-                    p++;
-                }
-                p += offset;
-                pointerSizeLength -= offset;
+                Unsafe.As<nint, Block64>(ref ip) = default;
+                ip = ref Unsafe.Add(ref ip, 8);
 
-                // The main loop which writes 64 bytes at a time
-                // using SIMD instructions on both ARM64 and X64.
-                nuint blocksCount = pointerSizeLength >> 3;
-                do
-                {
-                    *((Block64*)p) = default;
-                    p += 8;
-                    blocksCount--;
-                } while (blocksCount != 0);
+                // rely on dec's flag for the loop condition
+                blocks--;
+            } while (blocks != 0);
 
-                // Scalar loop to handle the remaining bytes
-                // We, again, can't use an overlapped SIMD on AMD64 due to atomicity issues.
-                pointerSizeLength %= 8;
-                while (pointerSizeLength != 0)
-                {
-                    *p = 0;
-                    p++;
-                    pointerSizeLength--;
-                }
+            pointerSizeLength %= 8;
+            if (pointerSizeLength != 0)
+            {
+                Unsafe.As<nint, Block64>(ref Unsafe.Add(ref ip, (nint)pointerSizeLength - 8)) = default;
             }
         }
 
