@@ -122,7 +122,7 @@ namespace System.Linq
                         }
                     }
                 }
-#endif                
+#endif
             }
             else
             {
