@@ -638,8 +638,18 @@ namespace System.Threading
 
         public object? Dequeue(ThreadPoolWorkQueueThreadLocals tl, ref bool missedSteal)
         {
+            object? workItem;
+            if (_nextWorkItemToProcess != null)
+            {
+                workItem = Interlocked.Exchange(ref _nextWorkItemToProcess, null);
+                if (workItem != null)
+                {
+                    return workItem;
+                }
+            }
+
             // Check for local work items
-            object? workItem = tl.workStealingQueue.LocalPop();
+            workItem = tl.workStealingQueue.LocalPop();
             if (workItem != null)
             {
                 return workItem;
@@ -763,6 +773,37 @@ namespace System.Threading
         // Dispatch (if YieldFromDispatchLoop is true), or performing periodic activities
         public const uint DispatchQuantumMs = 30;
 
+        private static object? _nextWorkItemToProcess;
+
+        private static bool TryDequeue(out object? workItem, ThreadPoolWorkQueue workQueue, ThreadPoolWorkQueueThreadLocals tl)
+        {
+            bool missedSteal = false;
+            workItem = workQueue.Dequeue(tl, ref missedSteal);
+
+            if (workItem == null)
+            {
+                if (s_assignableWorkItemQueueCount > 0)
+                {
+                    workQueue.UnassignWorkItemQueue(tl);
+                }
+
+                //
+                // No work.
+                // If we missed a steal, though, there may be more work in the queue.
+                // Instead of looping around and trying again, we'll just request another thread.  Hopefully the thread
+                // that owns the contended work-stealing queue will pick up its own workitems in the meantime,
+                // which will be more efficient than this thread doing it anyway.
+                //
+                if (missedSteal)
+                {
+                    workQueue.EnsureThreadRequested();
+                }
+
+                return false;
+            }
+            return true;
+        }
+
         /// <summary>
         /// Dispatches work items to this thread.
         /// </summary>
@@ -784,13 +825,23 @@ namespace System.Threading
             workQueue.MarkThreadRequestSatisfied();
 
             object? workItem = null;
+            if (_nextWorkItemToProcess != null)
+            {
+                workItem = Interlocked.Exchange(ref _nextWorkItemToProcess, null);
+                if (workItem == null)
+                {
+                    // go through queues and try to dequeue
+                    TryDequeue(out workItem, workQueue, tl);
+                }
+            }
+
             {
                 // Alternate between checking for high-prioriy and normal-priority work first, that way both sets of work
                 // items get a chance to run in situations where worker threads are starved and work items that run also
                 // take over the thread, sustaining starvation. For example, when worker threads are continually starved,
                 // high-priority work items may always be queued and normal-priority work items may not get a chance to run.
                 bool dispatchNormalPriorityWorkFirst = workQueue._dispatchNormalPriorityWorkFirst;
-                if (dispatchNormalPriorityWorkFirst && !tl.workStealingQueue.CanSteal)
+                if (workItem == null && dispatchNormalPriorityWorkFirst && !tl.workStealingQueue.CanSteal)
                 {
                     workQueue._dispatchNormalPriorityWorkFirst = !dispatchNormalPriorityWorkFirst;
                     ConcurrentQueue<object> queue =
@@ -801,41 +852,24 @@ namespace System.Threading
                     }
                 }
 
-                if (workItem == null)
+                if (workItem == null && !TryDequeue(out workItem, workQueue, tl))
                 {
-                    bool missedSteal = false;
-                    workItem = workQueue.Dequeue(tl, ref missedSteal);
-
-                    if (workItem == null)
-                    {
-                        if (s_assignableWorkItemQueueCount > 0)
-                        {
-                            workQueue.UnassignWorkItemQueue(tl);
-                        }
-
-                        //
-                        // No work.
-                        // If we missed a steal, though, there may be more work in the queue.
-                        // Instead of looping around and trying again, we'll just request another thread.  Hopefully the thread
-                        // that owns the contended work-stealing queue will pick up its own workitems in the meantime,
-                        // which will be more efficient than this thread doing it anyway.
-                        //
-                        if (missedSteal)
-                        {
-                            workQueue.EnsureThreadRequested();
-                        }
-
-                        // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
-                        return true;
-                    }
+                    // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
+                    return true;
                 }
 
-                // A work item was successfully dequeued, and there may be more work items to process. Request a thread to
-                // parallelize processing of work items, before processing more work items. Following this, it is the
-                // responsibility of the new thread and other enqueuers to request more threads as necessary. The
-                // parallelization may be necessary here for correctness (aside from perf) if the work item blocks for some
-                // reason that may have a dependency on other queued work items.
-                workQueue.EnsureThreadRequested();
+                object? secondWorkItem = null;
+                if (TryDequeue(out secondWorkItem, workQueue, tl))
+                {
+                    _nextWorkItemToProcess = secondWorkItem;
+
+                    // A work item was successfully dequeued, and there may be more work items to process. Request a thread to
+                    // parallelize processing of work items, before processing more work items. Following this, it is the
+                    // responsibility of the new thread and other enqueuers to request more threads as necessary. The
+                    // parallelization may be necessary here for correctness (aside from perf) if the work item blocks for some
+                    // reason that may have a dependency on other queued work items.
+                    workQueue.EnsureThreadRequested();
+                }
 
                 // After this point, this method is no longer responsible for ensuring thread requests except for missed steals
             }
@@ -860,34 +894,13 @@ namespace System.Threading
             //
             while (true)
             {
-                if (workItem == null)
+                if (workItem == null && !TryDequeue(out workItem, workQueue, tl))
                 {
-                    bool missedSteal = false;
-                    workItem = workQueue.Dequeue(tl, ref missedSteal);
-
-                    if (workItem == null)
-                    {
-                        if (s_assignableWorkItemQueueCount > 0)
-                        {
-                            workQueue.UnassignWorkItemQueue(tl);
-                        }
-
-                        //
-                        // No work.
-                        // If we missed a steal, though, there may be more work in the queue.
-                        // Instead of looping around and trying again, we'll just request another thread.  Hopefully the thread
-                        // that owns the contended work-stealing queue will pick up its own workitems in the meantime,
-                        // which will be more efficient than this thread doing it anyway.
-                        //
-                        if (missedSteal)
-                        {
-                            workQueue.EnsureThreadRequested();
-                        }
-
-                        return true;
-                    }
+                    // Tell the VM we're returning normally, not because Hill Climbing asked us to return.
+                    return true;
                 }
 
+                Debug.Assert(workItem != null);
                 if (workQueue._loggingEnabled && FrameworkEventSource.Log.IsEnabled())
                 {
                     FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
