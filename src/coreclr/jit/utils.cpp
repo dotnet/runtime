@@ -579,7 +579,7 @@ DECODE_OPCODE:
                     break;
 
                 case ShortInlineR:
-                    dOp = getR4LittleEndian(opcodePtr);
+                    dOp = FloatingPointUtils::convertToDouble(getR4LittleEndian(opcodePtr));
                     goto FLT_OP;
                 case InlineR:
                     dOp = getR8LittleEndian(opcodePtr);

@@ -901,7 +901,10 @@ namespace System.Numerics.Tensors
             where TBinaryOperator : struct, IBinaryOperator
             where TAggregationOperator : struct, IAggregationOperator
         {
-            Debug.Assert(x.Length == y.Length);
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
 
             if (x.IsEmpty)
             {
@@ -1210,7 +1213,7 @@ namespace System.Numerics.Tensors
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
         /// <typeparam name="TUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
-        private static unsafe void InvokeSpanIntoSpan<TUnaryOperator>(
+        private static void InvokeSpanIntoSpan<TUnaryOperator>(
             ReadOnlySpan<float> x, Span<float> destination)
             where TUnaryOperator : struct, IUnaryOperator
         {
@@ -1326,7 +1329,7 @@ namespace System.Numerics.Tensors
         /// <typeparam name="TBinaryOperator">
         /// Specifies the operation to perform on the pair-wise elements loaded from <paramref name="x"/> and <paramref name="y"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanSpanIntoSpan<TBinaryOperator>(
+        private static void InvokeSpanSpanIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
             where TBinaryOperator : struct, IBinaryOperator
         {
@@ -1456,7 +1459,7 @@ namespace System.Numerics.Tensors
         /// <typeparam name="TBinaryOperator">
         /// Specifies the operation to perform on each element loaded from <paramref name="x"/> with <paramref name="y"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanScalarIntoSpan<TBinaryOperator>(
+        private static void InvokeSpanScalarIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination)
             where TBinaryOperator : struct, IBinaryOperator =>
             InvokeSpanScalarIntoSpan<IdentityOperator, TBinaryOperator>(x, y, destination);
@@ -1472,7 +1475,7 @@ namespace System.Numerics.Tensors
         /// <typeparam name="TBinaryOperator">
         /// Specifies the operation to perform on the transformed value from <paramref name="x"/> with <paramref name="y"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanScalarIntoSpan<TTransformOperator, TBinaryOperator>(
+        private static void InvokeSpanScalarIntoSpan<TTransformOperator, TBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination)
             where TTransformOperator : struct, IUnaryOperator
             where TBinaryOperator : struct, IBinaryOperator
@@ -1603,7 +1606,7 @@ namespace System.Numerics.Tensors
         /// Specifies the operation to perform on the pair-wise elements loaded from <paramref name="x"/>, <paramref name="y"/>,
         /// and <paramref name="z"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanSpanSpanIntoSpan<TTernaryOperator>(
+        private static void InvokeSpanSpanSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> z, Span<float> destination)
             where TTernaryOperator : struct, ITernaryOperator
         {
@@ -1743,7 +1746,7 @@ namespace System.Numerics.Tensors
         /// Specifies the operation to perform on the pair-wise elements loaded from <paramref name="x"/> and <paramref name="y"/>
         /// with <paramref name="z"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanSpanScalarIntoSpan<TTernaryOperator>(
+        private static void InvokeSpanSpanScalarIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, float z, Span<float> destination)
             where TTernaryOperator : struct, ITernaryOperator
         {
@@ -1887,7 +1890,7 @@ namespace System.Numerics.Tensors
         /// Specifies the operation to perform on the pair-wise element loaded from <paramref name="x"/>, with <paramref name="y"/>,
         /// and the element loaded from <paramref name="z"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanScalarSpanIntoSpan<TTernaryOperator>(
+        private static void InvokeSpanScalarSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, float y, ReadOnlySpan<float> z, Span<float> destination)
             where TTernaryOperator : struct, ITernaryOperator
         {
@@ -2142,7 +2145,7 @@ namespace System.Numerics.Tensors
         /// and zero for all other elements.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector128<float> CreateRemainderMaskSingleVector128(int count) =>
+        private static Vector128<float> CreateRemainderMaskSingleVector128(int count) =>
             Vector128.LoadUnsafe(
                 ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
                 (uint)((count * 16) + 12)); // last four floats in the row
@@ -2152,7 +2155,7 @@ namespace System.Numerics.Tensors
         /// and zero for all other elements.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector256<float> CreateRemainderMaskSingleVector256(int count) =>
+        private static Vector256<float> CreateRemainderMaskSingleVector256(int count) =>
             Vector256.LoadUnsafe(
                 ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
                 (uint)((count * 16) + 8)); // last eight floats in the row
@@ -2163,7 +2166,7 @@ namespace System.Numerics.Tensors
         /// and zero for all other elements.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector512<float> CreateRemainderMaskSingleVector512(int count) =>
+        private static Vector512<float> CreateRemainderMaskSingleVector512(int count) =>
             Vector512.LoadUnsafe(
                 ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
                 (uint)(count * 16)); // all sixteen floats in the row

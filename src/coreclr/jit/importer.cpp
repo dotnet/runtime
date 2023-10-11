@@ -6336,14 +6336,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LDC_R8:
                 cval.dblVal = getR8LittleEndian(codeAddr);
                 JITDUMP(" %#.17g", cval.dblVal);
-                impPushOnStack(gtNewDconNode(cval.dblVal), typeInfo(TYP_DOUBLE));
+                impPushOnStack(gtNewDconNodeD(cval.dblVal), typeInfo(TYP_DOUBLE));
                 break;
 
             case CEE_LDC_R4:
-                cval.dblVal = getR4LittleEndian(codeAddr);
+            {
+                GenTree* dcon = gtNewDconNodeF(getR4LittleEndian(codeAddr));
+                cval.dblVal   = dcon->AsDblCon()->DconValue();
+                impPushOnStack(dcon, typeInfo(TYP_DOUBLE));
                 JITDUMP(" %#.17g", cval.dblVal);
-                impPushOnStack(gtNewDconNode(cval.dblVal, TYP_FLOAT), typeInfo(TYP_DOUBLE));
                 break;
+            }
 
             case CEE_LDSTR:
                 val = getU4LittleEndian(codeAddr);
