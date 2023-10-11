@@ -2833,6 +2833,7 @@ public:
 
 #ifdef TARGET_ARM64
     GenTreeFieldList* gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount);
+    GenTreeFieldList* gtConvertParamOpToFieldList(GenTree* op, unsigned fieldCount, CORINFO_CLASS_HANDLE clsHnd);
 #endif
 #endif // FEATURE_HW_INTRINSICS
 
