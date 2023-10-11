@@ -750,7 +750,7 @@ namespace System.Numerics.Tensors
         private static unsafe bool IsNegative(float f) => *(int*)&f < 0;
 
         /// <summary>Gets whether each specified <see cref="float"/> is negative.</summary>
-        private static unsafe Vector<float> IsNegative(Vector<float> f) =>
+        private static Vector<float> IsNegative(Vector<float> f) =>
             (Vector<float>)Vector.LessThan((Vector<int>)f, Vector<int>.Zero);
 
         /// <summary>Gets the base 2 logarithm of <paramref name="x"/>.</summary>
@@ -760,7 +760,7 @@ namespace System.Numerics.Tensors
         /// Gets a vector mask that will be all-ones-set for the last <paramref name="count"/> elements
         /// and zero for all other elements.
         /// </summary>
-        private static unsafe Vector<float> CreateRemainderMaskSingleVector(int count)
+        private static Vector<float> CreateRemainderMaskSingleVector(int count)
         {
             Debug.Assert(Vector<float>.Count is 4 or 8 or 16);
 
