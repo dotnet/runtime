@@ -3258,12 +3258,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     break;
                 }
-#if defined(TARGET_RISCV64)
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
                 else if (genTypeSize(retType) < 4)
                 {
                     break;
                 }
-#endif
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
                 if ((retType == TYP_REF) && impStackTop(1).val->IsIntegralConst(0))
                 {
@@ -3302,12 +3302,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     break;
                 }
-#if defined(TARGET_RISCV64)
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
                 else if (genTypeSize(retType) < 4)
                 {
                     break;
                 }
-#endif
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
                 if ((retType == TYP_REF) && impStackTop().val->IsIntegralConst(0))
                 {

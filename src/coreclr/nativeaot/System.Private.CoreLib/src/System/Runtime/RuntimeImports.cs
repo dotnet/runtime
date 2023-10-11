@@ -828,6 +828,22 @@ namespace System.Runtime
         // Interlocked helpers
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg8")]
+        internal static extern byte InterlockedCompareExchange(ref byte location1, byte value, byte comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg16")]
+        internal static extern short InterlockedCompareExchange(ref short location1, short value, short comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
+        internal static extern int InterlockedCompareExchange(ref int location1, int value, int comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg64")]
+        internal static extern long InterlockedCompareExchange(ref long location1, long value, long comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpCheckedLockCmpXchg")]
         internal static extern object InterlockedCompareExchange(ref object? location1, object? value, object? comparand);
 

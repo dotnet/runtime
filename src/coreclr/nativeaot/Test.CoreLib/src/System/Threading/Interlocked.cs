@@ -21,13 +21,21 @@ namespace System.Threading
         [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
+#if TARGET_AMD64 || TARGET_ARM64
             return CompareExchange(ref location1, value, comparand);
+#else
+            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [Intrinsic]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
+#if TARGET_AMD64 || TARGET_ARM64
             return CompareExchange(ref location1, value, comparand);
+#else
+            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [Intrinsic]
