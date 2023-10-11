@@ -1222,6 +1222,8 @@ MINI_OP(OP_XZERO,   "xzero", XREG, NONE, NONE)
 MINI_OP(OP_XONES,   "xones", XREG, NONE, NONE)
 MINI_OP(OP_XCONST,  "xconst", XREG, NONE, NONE)
 MINI_OP(OP_XPHI,	"xphi", XREG, NONE, NONE)
+/* Same as xmove, but not optimized away by copyprop etc. */
+MINI_OP(OP_XMOVE_ARG,   "xmove_arg", XREG, XREG, NONE)
 
 /*
  * These are used for efficient implementation of the

@@ -2051,7 +2051,7 @@ add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int re
 		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, reg, TRUE);
 		break;
 	case ArgSIMDInSSEReg:
-		MONO_INST_NEW (cfg, ins, OP_XMOVE);
+		MONO_INST_NEW (cfg, ins, OP_XMOVE_ARG);
 		ins->dreg = alloc_xreg (cfg);
 		ins->sreg1 = tree->dreg;
 		ins->klass = tree->klass;
@@ -7531,6 +7531,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/*FIXME the peephole pass should have killed this*/
 			if (ins->dreg != ins->sreg1)
 				amd64_sse_movaps_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_XMOVE_ARG:
+			amd64_sse_movaps_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_XZERO:
 			amd64_sse_pxor_reg_reg (code, ins->dreg, ins->dreg);

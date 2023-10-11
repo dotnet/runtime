@@ -786,6 +786,7 @@ cvttpd2dq: dest:x src1:x len:5 clob:1
 cvttps2dq: dest:x src1:x len:5 clob:1
 
 xmove: dest:x src1:x len:5
+xmove_arg: dest:x src1:x len:5
 xzero: dest:x len:5
 xones: dest:x len:5
 xconst: dest:x len:12
