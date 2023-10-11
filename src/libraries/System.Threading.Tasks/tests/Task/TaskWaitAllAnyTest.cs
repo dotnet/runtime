@@ -342,10 +342,10 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
                 TaskInfo ti = _taskInfos[i];
 
                 if (allShouldFinish && !ti.Task.IsCompleted)
-                    Assert.True(false, string.Format("WaitAll contract is broken -- Task at Index = {0} does not finish", i));
+                    Assert.Fail(string.Format("WaitAll contract is broken -- Task at Index = {0} does not finish", i));
 
                 if (thisShouldFinish == ti.Task && !ti.Task.IsCompleted)
-                    Assert.True(false, string.Format("WaitAny contract is broken -- Task at Index = {0} does not finish", i));
+                    Assert.Fail(string.Format("WaitAny contract is broken -- Task at Index = {0} does not finish", i));
 
                 WorkloadType workType = ti.WorkType;
 
@@ -361,13 +361,13 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
                     if (_api == API.WaitAll)
                     {
                         if (!expCaught)
-                            Assert.True(false, string.Format("excepted TPLTestException in Task at Index = {0}  NOT caught", i));
+                            Assert.Fail(string.Format("excepted TPLTestException in Task at Index = {0}  NOT caught", i));
                     }
                     else // must be API_WaitAllAny.WaitAny
                     {
                         //waitAny will not fail if a number of tasks were exceptional
                         if (expCaught)
-                            Assert.True(false, string.Format("Unexpected TPLTestException in Task at Index = {0} caught", i));
+                            Assert.Fail(string.Format("Unexpected TPLTestException in Task at Index = {0} caught", i));
 
                         //need to check it eventually to prevent it from crashing the finalizer
                         faultyTasks.Add(i, ti.Task);
@@ -390,11 +390,11 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
                     }
                 }
                 else if (ti.Task.IsCompleted && !CheckResult(ti.Result))
-                    Assert.True(false, string.Format("Failed result verification in Task at Index = {0}", i));
+                    Assert.Fail(string.Format("Failed result verification in Task at Index = {0}", i));
             }
 
             if (!expCaught && _caughtException != null)
-                Assert.True(false, string.Format("Caught unexpected exception of {0}", _caughtException));
+                Assert.Fail(string.Format("Caught unexpected exception of {0}", _caughtException));
 
             // second pass on the faulty tasks
             if (faultyTasks.Count > 0)
@@ -408,7 +408,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
                 foreach (var tasks in faultyTasks)
                 {
                     if (!(tasks.Value.Exception.InnerException is TPLTestException))
-                        Assert.True(false, string.Format("Unexpected Exception in Task at Index = {0} caught", tasks.Key));
+                        Assert.Fail(string.Format("Unexpected Exception in Task at Index = {0} caught", tasks.Key));
                 }
             }
         }

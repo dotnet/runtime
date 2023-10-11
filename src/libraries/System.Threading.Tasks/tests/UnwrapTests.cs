@@ -573,7 +573,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 task.GetAwaiter().GetResult();
-                Assert.False(true, "Canceled task should have thrown from GetResult");
+                Assert.Fail("Canceled task should have thrown from GetResult");
                 return default(CancellationToken);
             }
             catch (OperationCanceledException oce)

@@ -68,7 +68,7 @@ namespace System.Reflection.Tests
             }
 #endif
 
-            Assert.False("Expected to find CatchType clause.");
+            Assert.Fail("Expected to find CatchType clause.");
         }
 
         private static void MethodBodyExample(object arg)
