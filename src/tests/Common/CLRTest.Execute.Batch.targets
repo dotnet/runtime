@@ -470,8 +470,6 @@ IF NOT "%__TestEnv%"=="" (
 
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 
-$(IlasmRoundTripBatchScript)
-
 $(SuperPMICollectionBatchScript)
 
 REM Allow test environment variables or precommands to override the ExePath

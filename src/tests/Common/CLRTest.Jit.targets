@@ -367,6 +367,60 @@ set DOTNET_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
 
   <!--
   ***********************************************************************************************
+  IlasmRoundTrip
+  ***********************************************************************************************
+  -->
+
+  <Target Name="IlasmRoundTripCommand" AfterTargets="AfterBuild">
+    <PropertyGroup>
+      <InputAssemblyName>$(AssemblyName).dll</InputAssemblyName>
+      <DisassemblyName>IL-RT/$(AssemblyName).il</DisassemblyName>
+      <TargetAssemblyName>IL-RT/$(AssemblyName).dll</TargetAssemblyName>
+      <_IlasmRoundTripScriptText><![CDATA[
+import datetime
+import fnmatch
+import json
+import math
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import re
+import string
+import glob
+
+if not os.path.exists("IL-RT"):
+  os.mkdir("IL-RT")
+
+shutil.copyfile("$(InputAssemblyName)", "$(TargetAssemblyName)")
+
+proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ildasm /raweh /unicode /out=$(DisassemblyName) $(TargetAssemblyName)")
+
+try:
+    proc.communicate()
+except:
+    proc.kill()
+    sys.exit(1)
+
+proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ilasm /output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName) /DLL")
+
+try:
+    proc.communicate()
+except:
+    proc.kill()
+    sys.exit(1)
+
+]]></_IlasmRoundTripScriptText>
+    </PropertyGroup>
+    <WriteLinesToFile
+      File="$(OutputPath)\$(AssemblyName)_ilasmroundtrip.py"
+      Lines="$(_IlasmRoundTripScriptText)"
+      Overwrite="true" />
+  </Target>
+
+  <!--
+  ***********************************************************************************************
   GCStress settings
   ***********************************************************************************************
   -->

@@ -46,6 +46,7 @@ import tempfile
 import re
 import string
 import xml.etree.ElementTree
+import glob
 
 from collections import defaultdict
 
@@ -572,6 +573,21 @@ def call_msbuild(args):
     global g_verbose
 
     common_msbuild_arguments = []
+
+    if args.ilasmroundtrip:
+        print("")
+        print("Running 'ildasm -> ildasm' scripts.")
+        
+        for file in glob.glob(args.test_location + "/**/*_ilasmroundtrip.py", recursive=True):
+            proc = subprocess.Popen("python " + file, cwd=os.path.dirname(file))
+
+            try:
+                proc.communicate()
+            except:
+                proc.kill()
+                sys.exit(1)
+
+        print("")
 
     if args.parallel:
         common_msbuild_arguments += ["/p:ParallelRun={}".format(args.parallel)]
