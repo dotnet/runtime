@@ -371,7 +371,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_IMPORTED             = MAKE_BBFLAG( 4), // BB byte-code has been imported
     BBF_INTERNAL             = MAKE_BBFLAG( 5), // BB has been added by the compiler
     BBF_FAILED_VERIFICATION  = MAKE_BBFLAG( 6), // BB has verification exception
-    BBF_TRY_BEG              = MAKE_BBFLAG( 7), // BB starts a 'try' block
+//  BBF_UNUSED               = MAKE_BBFLAG( 7),
     BBF_FUNCLET_BEG          = MAKE_BBFLAG( 8), // BB is the beginning of a funclet
     BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 9), // First block of a cloned finally region
     BBF_CLONED_FINALLY_END   = MAKE_BBFLAG(10), // Last block of a cloned finally region

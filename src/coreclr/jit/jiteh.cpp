@@ -2214,7 +2214,7 @@ bool Compiler::fgNormalizeEHCase2()
 
                         // Note that we don't need to clear any flags on the old try start, since it is still a 'try'
                         // start.
-                        newTryStart->bbFlags |= (BBF_TRY_BEG | BBF_DONT_REMOVE | BBF_INTERNAL);
+                        newTryStart->bbFlags |= (BBF_DONT_REMOVE | BBF_INTERNAL);
 
                         if (insertBeforeBlk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
                         {
@@ -3007,7 +3007,6 @@ void Compiler::fgVerifyHandlerTab()
         assert(HBtab->ebdHndBeg != nullptr);
         assert(HBtab->ebdHndLast != nullptr);
 
-        assert(HBtab->ebdTryBeg->bbFlags & BBF_TRY_BEG);
         assert(HBtab->ebdTryBeg->bbFlags & BBF_DONT_REMOVE);
 
         assert(HBtab->ebdHndBeg->bbFlags & BBF_DONT_REMOVE);
@@ -3497,12 +3496,6 @@ void Compiler::fgVerifyHandlerTab()
                 assert((block->bbFlags & BBF_FUNCLET_BEG) == 0);
             }
 #endif // FEATURE_EH_FUNCLETS
-        }
-
-        // Only the first block of 'try' regions should have BBF_TRY_BEG set.
-        if (!blockTryBegSet[block->bbNum])
-        {
-            assert((block->bbFlags & BBF_TRY_BEG) == 0);
         }
 
         // Check for legal block types
@@ -4339,12 +4332,18 @@ bool Compiler::fgRelocateEHRegions()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-/*****************************************************************************
- * We've inserted a new block before 'block' that should be part of the same EH region as 'block'.
- * Update the EH table to make this so. Also, set the new block to have the right EH region data
- * (copy the bbTryIndex, bbHndIndex, and bbCatchTyp from 'block' to the new predecessor, and clear
- * 'bbCatchTyp' from 'block').
- */
+//------------------------------------------------------------------------
+// fgExtendEHRegionBefore: Modify the EH table to account for a new block.
+//
+// We've inserted a new block before 'block' that should be part of the same
+// EH region as 'block'. Update the EH table to make this so. Also, set the
+// new block to have the right EH region data (copy the bbTryIndex, bbHndIndex,
+// and bbCatchTyp from 'block' to the new predecessor, and clear 'bbCatchTyp'
+// from 'block').
+//
+// Arguments:
+//    block - The block before which a new block has been inserted
+//
 void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 {
     assert(!block->IsFirst());
@@ -4369,13 +4368,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             }
 #endif // DEBUG
             HBtab->ebdTryBeg = bPrev;
-            bPrev->bbFlags |= BBF_TRY_BEG | BBF_DONT_REMOVE;
-
-            // clear the TryBeg flag unless it begins another try region
-            if (!bbIsTryBeg(block))
-            {
-                block->bbFlags &= ~BBF_TRY_BEG;
-            }
+            bPrev->bbFlags |= BBF_DONT_REMOVE;
         }
 
         if (HBtab->ebdHndBeg == block)
@@ -4387,12 +4380,13 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             }
 #endif // DEBUG
 
+            HBtab->ebdHndBeg = bPrev;
+            bPrev->bbFlags |= BBF_DONT_REMOVE;
+
             // The first block of a handler has an artificial extra refcount. Transfer that to the new block.
             noway_assert(block->countOfInEdges() > 0);
             block->bbRefs--;
-
-            HBtab->ebdHndBeg = bPrev;
-            bPrev->bbFlags |= BBF_DONT_REMOVE;
+            bPrev->bbRefs++;
 
 #if defined(FEATURE_EH_FUNCLETS)
             if (fgFuncletsCreated)
@@ -4402,8 +4396,6 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 block->bbFlags &= ~BBF_FUNCLET_BEG;
             }
 #endif // FEATURE_EH_FUNCLETS
-
-            bPrev->bbRefs++;
 
             // If this is a handler for a filter, the last block of the filter will end with
             // a BBJ_EHFILTERRET block that has a bbJumpDest that jumps to the first block of
