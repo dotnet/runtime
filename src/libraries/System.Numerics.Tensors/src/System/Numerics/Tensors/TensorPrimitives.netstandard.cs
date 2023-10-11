@@ -1592,7 +1592,7 @@ namespace System.Numerics.Tensors
         /// Specifies the operation to perform on the pair-wise elements loaded from <paramref name="x"/> and <paramref name="y"/>
         /// with <paramref name="z"/>.
         /// </typeparam>
-        private static void InvokeSpanSpanScalarIntoSpan<TTernaryOperator>(
+        private static unsafe void InvokeSpanSpanScalarIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, float z, Span<float> destination, TTernaryOperator op = default)
             where TTernaryOperator : struct, ITernaryOperator
         {
@@ -1612,51 +1612,317 @@ namespace System.Numerics.Tensors
             ref float xRef = ref MemoryMarshal.GetReference(x);
             ref float yRef = ref MemoryMarshal.GetReference(y);
             ref float dRef = ref MemoryMarshal.GetReference(destination);
-            int i = 0, oneVectorFromEnd;
+
+            nuint remainder = (uint)(x.Length);
 
             if (Vector.IsHardwareAccelerated)
             {
-                oneVectorFromEnd = x.Length - Vector<float>.Count;
-                if (oneVectorFromEnd >= 0)
+                if (remainder >= (uint)(Vector<float>.Count))
                 {
-                    Vector<float> zVec = new(z);
+                    Vectorized(ref xRef, ref yRef, z, ref dRef, remainder);
+                }
+                else
+                {
+                    // We have less than a vector and so we can only handle this as scalar. To do this
+                    // efficiently, we simply have a small jump table and fallthrough. So we get a simple
+                    // length check, single jump, and then linear execution.
 
-                    // Loop handling one vector at a time.
-                    do
-                    {
-                        AsVector(ref dRef, i) = op.Invoke(AsVector(ref xRef, i),
-                                                          AsVector(ref yRef, i),
-                                                          zVec);
+                    VectorizedSmall(ref xRef, ref yRef, z, ref dRef, remainder);
+                }
 
-                        i += Vector<float>.Count;
-                    }
-                    while (i <= oneVectorFromEnd);
+                return;
+            }
 
-                    // Handle any remaining elements with a final vector.
-                    if (i != x.Length)
-                    {
-                        int lastVectorIndex = x.Length - Vector<float>.Count;
-                        ref Vector<float> dest = ref AsVector(ref dRef, lastVectorIndex);
-                        dest = Vector.ConditionalSelect(
-                            Vector.Equals(CreateRemainderMaskSingleVector(x.Length - i), Vector<float>.Zero),
-                            dest,
-                            op.Invoke(AsVector(ref xRef, lastVectorIndex),
-                                      AsVector(ref yRef, lastVectorIndex),
-                                      zVec));
-                    }
+            // This is the software fallback when no acceleration is available
+            // It requires no branches to hit
 
-                    return;
+            SoftwareFallback(ref xRef, ref yRef, z, ref dRef, remainder);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void SoftwareFallback(ref float xRef, ref float yRef, float z, ref float dRef, nuint length, TTernaryOperator op = default)
+            {
+                for (nuint i = 0; i < length; i++)
+                {
+                    Unsafe.Add(ref dRef, (nint)(i)) = op.Invoke(Unsafe.Add(ref xRef, (nint)(i)),
+                                                                Unsafe.Add(ref yRef, (nint)(i)),
+                                                                z);
                 }
             }
 
-            // Loop handling one element at a time.
-            while (i < x.Length)
+            static void Vectorized(ref float xRef, ref float yRef, float z, ref float dRef, nuint remainder, TTernaryOperator op = default)
             {
-                Unsafe.Add(ref dRef, i) = op.Invoke(Unsafe.Add(ref xRef, i),
-                                                    Unsafe.Add(ref yRef, i),
-                                                    z);
+                ref float dRefBeg = ref dRef;
 
-                i++;
+                // Preload the beginning and end so that overlapping accesses don't negatively impact the data
+
+                Vector<float> zVec = new Vector<float>(z);
+
+                Vector<float> beg = op.Invoke(AsVector(ref xRef),
+                                              AsVector(ref yRef),
+                                              zVec);
+                Vector<float> end = op.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count)),
+                                              AsVector(ref yRef, remainder - (uint)(Vector<float>.Count)),
+                                              zVec);
+
+                if (remainder > (uint)(Vector<float>.Count * 8))
+                {
+                    // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
+                    // for large inputs (> 85KB) which are on the LOH and unlikely to be compacted.
+
+                    fixed (float* px = &xRef)
+                    fixed (float* py = &yRef)
+                    fixed (float* pd = &dRef)
+                    {
+                        float* xPtr = px;
+                        float* yPtr = py;
+                        float* dPtr = pd;
+
+                        // We need to the ensure the underlying data can be aligned and only align
+                        // it if it can. It is possible we have an unaligned ref, in which case we
+                        // can never achieve the required SIMD alignment.
+
+                        bool canAlign = ((nuint)(dPtr) % sizeof(float)) == 0;
+
+                        if (canAlign)
+                        {
+                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
+                            //
+                            // Noting that we are only actually aligning dPtr. THis is because unaligned stores
+                            // are more expensive than unaligned loads and aligning both is significantly more
+                            // complex.
+
+                            nuint misalignment = ((uint)(sizeof(Vector<float>)) - ((nuint)(dPtr) % (uint)(sizeof(Vector<float>)))) / sizeof(float);
+
+                            xPtr += misalignment;
+                            yPtr += misalignment;
+                            dPtr += misalignment;
+
+                            Debug.Assert(((nuint)(dPtr) % (uint)(sizeof(Vector<float>))) == 0);
+
+                            remainder -= misalignment;
+                        }
+
+                        Vector<float> vector1;
+                        Vector<float> vector2;
+                        Vector<float> vector3;
+                        Vector<float> vector4;
+
+                        while (remainder >= (uint)(Vector<float>.Count * 8))
+                        {
+                            // We load, process, and store the first four vectors
+
+                            vector1 = op.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 0)),
+                                                *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 0)),
+                                                zVec);
+                            vector2 = op.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 1)),
+                                                *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 1)),
+                                                zVec);
+                            vector3 = op.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 2)),
+                                                *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 2)),
+                                                zVec);
+                            vector4 = op.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 3)),
+                                                *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 3)),
+                                                zVec);
+
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 0)) = vector1;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 1)) = vector2;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 2)) = vector3;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 3)) = vector4;
+
+                            // We load, process, and store the next four vectors
+
+                            vector1 = op.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 4)),
+                                                *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 4)),
+                                                zVec);
+                            vector2 = op.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 5)),
+                                                *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 5)),
+                                                zVec);
+                            vector3 = op.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 6)),
+                                                *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 6)),
+                                                zVec);
+                            vector4 = op.Invoke(*(Vector<float>*)(xPtr + (uint)(Vector<float>.Count * 7)),
+                                                *(Vector<float>*)(yPtr + (uint)(Vector<float>.Count * 7)),
+                                                zVec);
+
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 4)) = vector1;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 5)) = vector2;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 6)) = vector3;
+                            *(Vector<float>*)(dPtr + (uint)(Vector<float>.Count * 7)) = vector4;
+
+                            // We adjust the source and destination references, then update
+                            // the count of remaining elements to process.
+
+                            xPtr += (uint)(Vector<float>.Count * 8);
+                            yPtr += (uint)(Vector<float>.Count * 8);
+                            dPtr += (uint)(Vector<float>.Count * 8);
+
+                            remainder -= (uint)(Vector<float>.Count * 8);
+                        }
+
+                        // Adjusting the refs here allows us to avoid pinning for very small inputs
+
+                        xRef = ref *xPtr;
+                        yRef = ref *yPtr;
+                        dRef = ref *dPtr;
+                    }
+                }
+
+                // Process the remaining [Count, Count * 8] elements via a jump table
+                //
+                // Unless the original length was an exact multiple of Count, then we'll
+                // end up reprocessing a couple elements in case 1 for end. We'll also
+                // potentially reprocess a few elements in case 0 for beg, to handle any
+                // data before the first aligned address.
+
+                nuint endIndex = remainder;
+                remainder = (remainder + (uint)(Vector<float>.Count - 1)) & (nuint)(-Vector<float>.Count);
+
+                switch (remainder / (uint)(Vector<float>.Count))
+                {
+                    case 8:
+                    {
+                        Vector<float> vector = op.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 8)),
+                                                         AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 8)),
+                                                         zVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 8)) = vector;
+                        goto case 7;
+                    }
+
+                    case 7:
+                    {
+                        Vector<float> vector = op.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 7)),
+                                                         AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 7)),
+                                                         zVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 7)) = vector;
+                        goto case 6;
+                    }
+
+                    case 6:
+                    {
+                        Vector<float> vector = op.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 6)),
+                                                         AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 6)),
+                                                         zVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 6)) = vector;
+                        goto case 5;
+                    }
+
+                    case 5:
+                    {
+                        Vector<float> vector = op.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 5)),
+                                                         AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 5)),
+                                                         zVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 5)) = vector;
+                        goto case 4;
+                    }
+
+                    case 4:
+                    {
+                        Vector<float> vector = op.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 4)),
+                                                         AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 4)),
+                                                         zVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 4)) = vector;
+                        goto case 3;
+                    }
+
+                    case 3:
+                    {
+                        Vector<float> vector = op.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 3)),
+                                                         AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 3)),
+                                                         zVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 3)) = vector;
+                        goto case 2;
+                    }
+
+                    case 2:
+                    {
+                        Vector<float> vector = op.Invoke(AsVector(ref xRef, remainder - (uint)(Vector<float>.Count * 2)),
+                                                         AsVector(ref yRef, remainder - (uint)(Vector<float>.Count * 2)),
+                                                         zVec);
+                        AsVector(ref dRef, remainder - (uint)(Vector<float>.Count * 2)) = vector;
+                        goto case 1;
+                    }
+
+                    case 1:
+                    {
+                        // Store the last block, which includes any elements that wouldn't fill a full vector
+                        AsVector(ref dRef, endIndex - (uint)Vector<float>.Count) = end;
+                        goto default;
+                    }
+
+                    default:
+                    {
+                        // Store the first block, which includes any elements preceding the first aligned block
+                        AsVector(ref dRefBeg) = beg;
+                        break;
+                    }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall(ref float xRef, ref float yRef, float z, ref float dRef, nuint remainder, TTernaryOperator op = default)
+            {
+                switch (remainder)
+                {
+                    case 7:
+                    {
+                        Unsafe.Add(ref dRef, 6) = op.Invoke(Unsafe.Add(ref xRef, 6),
+                                                            Unsafe.Add(ref yRef, 6),
+                                                            z);
+                        goto case 6;
+                    }
+
+                    case 6:
+                    {
+                        Unsafe.Add(ref dRef, 5) = op.Invoke(Unsafe.Add(ref xRef, 5),
+                                                            Unsafe.Add(ref yRef, 5),
+                                                            z);
+                        goto case 5;
+                    }
+
+                    case 5:
+                    {
+                        Unsafe.Add(ref dRef, 4) = op.Invoke(Unsafe.Add(ref xRef, 4),
+                                                            Unsafe.Add(ref yRef, 4),
+                                                            z);
+                        goto case 4;
+                    }
+
+                    case 4:
+                    {
+                        Unsafe.Add(ref dRef, 3) = op.Invoke(Unsafe.Add(ref xRef, 3),
+                                                            Unsafe.Add(ref yRef, 3),
+                                                            z);
+                        goto case 3;
+                    }
+
+                    case 3:
+                    {
+                        Unsafe.Add(ref dRef, 2) = op.Invoke(Unsafe.Add(ref xRef, 2),
+                                                            Unsafe.Add(ref yRef, 2),
+                                                            z);
+                        goto case 2;
+                    }
+
+                    case 2:
+                    {
+                        Unsafe.Add(ref dRef, 1) = op.Invoke(Unsafe.Add(ref xRef, 1),
+                                                            Unsafe.Add(ref yRef, 1),
+                                                            z);
+                        goto case 1;
+                    }
+
+                    case 1:
+                    {
+                        dRef = op.Invoke(xRef, yRef, z);
+                        break;
+                    }
+
+                    default:
+                    {
+                        Debug.Assert(remainder == 0);
+                        break;
+                    }
+                }
             }
         }
 
