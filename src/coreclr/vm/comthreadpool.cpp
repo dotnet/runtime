@@ -192,6 +192,34 @@ FCIMPL4(INT32, ThreadPoolNative::GetNextConfigUInt32Value,
         case 19: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_SampleIntervalHigh, false, W("System.Threading.ThreadPool.HillClimbing.SampleIntervalHigh"))) { return 20; } FALLTHROUGH;
         case 20: if (TryGetConfig(CLRConfig::INTERNAL_HillClimbing_GainExponent, false, W("System.Threading.ThreadPool.HillClimbing.GainExponent"))) { return 21; } FALLTHROUGH;
 
+        case 21:
+        {
+            int threadPoolThreadTimeoutMs = g_pConfig->ThreadPoolThreadTimeoutMs();
+            if (threadPoolThreadTimeoutMs >= -1)
+            {
+                *configValueRef = (UINT32)threadPoolThreadTimeoutMs;
+                *isBooleanRef = false;
+                *appContextConfigNameRef = W("System.Threading.ThreadPool.ThreadTimeoutMs");
+                return 22;
+            }
+
+            FALLTHROUGH;
+        }
+
+        case 22:
+        {
+            int threadPoolThreadsToKeepAlive = g_pConfig->ThreadPoolThreadsToKeepAlive();
+            if (threadPoolThreadsToKeepAlive >= -1)
+            {
+                *configValueRef = (UINT32)threadPoolThreadsToKeepAlive;
+                *isBooleanRef = false;
+                *appContextConfigNameRef = W("System.Threading.ThreadPool.ThreadsToKeepAlive");
+                return 23;
+            }
+
+            FALLTHROUGH;
+        }
+
         default:
             *configValueRef = 0;
             *isBooleanRef = false;
