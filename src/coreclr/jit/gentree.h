@@ -1615,12 +1615,6 @@ public:
         return OperIsAtomicOp(gtOper);
     }
 
-    bool OperIsAtomicZeroDiffQuirk() const
-    {
-        // TODO-Cleanup: delete.
-        return OperIsAtomicOp();
-    }
-
     static bool OperIsLoad(genTreeOps gtOper)
     {
         return (gtOper == GT_IND) || (gtOper == GT_BLK);
