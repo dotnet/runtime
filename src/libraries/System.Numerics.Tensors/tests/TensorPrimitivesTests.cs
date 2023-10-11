@@ -1449,9 +1449,9 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
 
             float maxMagnitude = x[0];
-            foreach (float i in x.Span)
+            foreach (float f in x.Span)
             {
-                maxMagnitude = MathFMaxMagnitude(maxMagnitude, i);
+                maxMagnitude = MathFMaxMagnitude(maxMagnitude, f);
             }
 
             Assert.Equal(maxMagnitude, TensorPrimitives.MaxMagnitude(x));
@@ -1467,9 +1467,9 @@ namespace System.Numerics.Tensors.Tests
             RunForEachSpecialValue(() =>
             {
                 float maxMagnitude = x[0];
-                foreach (float i in x.Span)
+                foreach (float f in x.Span)
                 {
-                    maxMagnitude = MathFMaxMagnitude(maxMagnitude, i);
+                    maxMagnitude = MathFMaxMagnitude(maxMagnitude, f);
                 }
 
                 Assert.Equal(maxMagnitude, TensorPrimitives.MaxMagnitude(x));
@@ -1779,9 +1779,9 @@ namespace System.Numerics.Tensors.Tests
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
 
             float minMagnitude = x[0];
-            foreach (float i in x.Span)
+            foreach (float f in x.Span)
             {
-                minMagnitude = MathFMinMagnitude(minMagnitude, i);
+                minMagnitude = MathFMinMagnitude(minMagnitude, f);
             }
 
             Assert.Equal(minMagnitude, TensorPrimitives.MinMagnitude(x));
@@ -1797,9 +1797,9 @@ namespace System.Numerics.Tensors.Tests
             RunForEachSpecialValue(() =>
             {
                 float minMagnitude = x[0];
-                foreach (float i in x.Span)
+                foreach (float f in x.Span)
                 {
-                    minMagnitude = MathFMinMagnitude(minMagnitude, i);
+                    minMagnitude = MathFMinMagnitude(minMagnitude, f);
                 }
 
                 Assert.Equal(minMagnitude, TensorPrimitives.MinMagnitude(x));
