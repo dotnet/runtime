@@ -16,7 +16,7 @@ When rebuilding with `build.sh` after a code change, you need to ensure that the
 
 ### Note: do not mix runtime and library configurations
 
-At this time, it is not possible to specify different configurations for the runtime and libraries. That is mixing a Release `-runtimeConfiguration` with a Debug `-libraryConfiguration` (or `-configuration`), or vice versa will not work.
+At this time, it is not possible to specify different configurations for the runtime and libraries. That is mixing a Release `-runtimeConfiguration` with a Debug `-libraryConfiguration` (or `-configuration`), or vice versa will not work. The same applies to single and multithreaded configurations.
 
 Please only use the `-configuration` option with `Debug` or `Release`, and do not specify a `-runtimeConfiguration` and `-libraryConfiguration`.
 
