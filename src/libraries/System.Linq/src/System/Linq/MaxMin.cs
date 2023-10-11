@@ -16,9 +16,7 @@ namespace System.Linq
             public static abstract bool Compare(T left, T right);
             public static abstract Vector128<T> Compare(Vector128<T> left, Vector128<T> right);
             public static abstract Vector256<T> Compare(Vector256<T> left, Vector256<T> right);
-#if NET8_0_OR_GREATER
             public static abstract Vector512<T> Compare(Vector512<T> left, Vector512<T> right);
-#endif
         }
 
         private static T MinMaxInteger<T, TMinMax>(this IEnumerable<T> source)
@@ -69,11 +67,7 @@ namespace System.Linq
                         }
                     }
                 }
-#if NET8_0_OR_GREATER
                 else if(!Vector512.IsHardwareAccelerated || span.Length < Vector512<T>.Count)
-#else
-                else
-#endif
                 {
                     ref T current = ref MemoryMarshal.GetReference(span);
                     ref T lastVectorStart = ref Unsafe.Add(ref current, span.Length - Vector256<T>.Count);
@@ -97,7 +91,6 @@ namespace System.Linq
                         }
                     }
                 }
-#if NET8_0_OR_GREATER
                 else
                 {
                     ref T current = ref MemoryMarshal.GetReference(span);
@@ -122,7 +115,6 @@ namespace System.Linq
                         }
                     }
                 }
-#endif
             }
             else
             {
