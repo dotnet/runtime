@@ -377,18 +377,10 @@ set DOTNET_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
       <DisassemblyName>IL-RT/$(AssemblyName).il</DisassemblyName>
       <TargetAssemblyName>IL-RT/$(AssemblyName).dll</TargetAssemblyName>
       <_IlasmRoundTripScriptText><![CDATA[
-import datetime
-import fnmatch
-import json
-import math
 import os
 import shutil
 import subprocess
 import sys
-import tempfile
-import re
-import string
-import glob
 
 if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
