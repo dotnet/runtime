@@ -13,6 +13,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly InterceptorInfo _interceptorInfo;
             private readonly BindingHelperInfo _bindingHelperInfo;
             private readonly TypeIndex _typeIndex;
+            private readonly bool _emitEnumParseMethod;
+            private readonly bool _emitGenericParseEnum;
+            private readonly bool _emitThrowIfNullMethod;
 
             private readonly SourceWriter _writer = new();
 
@@ -21,6 +24,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _interceptorInfo = sourceGenSpec.InterceptorInfo;
                 _bindingHelperInfo = sourceGenSpec.BindingHelperInfo;
                 _typeIndex = new TypeIndex(sourceGenSpec.ConfigTypes);
+                _emitEnumParseMethod = sourceGenSpec.EmitEnumParseMethod;
+                _emitGenericParseEnum = sourceGenSpec.EmitGenericParseEnum;
+                _emitThrowIfNullMethod = sourceGenSpec.EmitThrowIfNullMethod;
             }
 
             public void Emit(SourceProductionContext context)
