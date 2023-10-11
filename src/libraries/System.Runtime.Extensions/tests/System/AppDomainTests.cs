@@ -108,7 +108,7 @@ namespace System.Tests
 
         static void NotExpectedToBeCalledHandler(object sender, UnhandledExceptionEventArgs args)
         {
-            Assert.True(false, "UnhandledException handler not expected to be called");
+            Assert.Fail("UnhandledException handler not expected to be called");
         }
 
         static void MyHandler(object sender, UnhandledExceptionEventArgs args)

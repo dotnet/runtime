@@ -2481,7 +2481,7 @@ namespace System.Diagnostics.Tests
             containingProcess.WaitForExit();
 
             if (containingProcess.ExitCode != 10)
-                Assert.True(false, "attempt to terminate a process tree containing the calling process did not throw the expected exception");
+                Assert.Fail("attempt to terminate a process tree containing the calling process did not throw the expected exception");
 
             int RunProcessAttemptingToKillEntireTreeOnParent()
             {
