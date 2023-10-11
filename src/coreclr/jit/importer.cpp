@@ -3265,6 +3265,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             }
         }
 
+        // dummy change to trigger SPMI
         // Create a pointer to the box payload in op1.
         //
         op1 = gtNewLclvNode(impBoxTemp, TYP_REF);
