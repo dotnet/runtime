@@ -45,7 +45,15 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     [Output]
     public ITaskItem[]? TrimmedAssemblies { get; set; }
 
+    /// <summary>
+    /// Contains the updated list of assemblies comparing to the input variable Assemblies.
+    /// Replaced the trimmed ones with their new location.
+    /// </summary>
+    [Output]
+    public ITaskItem[]? UpdatedAssemblies { get; set; }
+
     private readonly List<ITaskItem> _trimmedAssemblies = new();
+    private readonly List<ITaskItem> _updatedAssemblies = new();
 
     public override bool Execute()
     {
@@ -76,6 +84,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         if (TrimIndividualMethods)
         {
             TrimmedAssemblies = _trimmedAssemblies.ToArray();
+            UpdatedAssemblies = _updatedAssemblies.ToArray();
         }
 
         if (!result.IsCompleted && !Log.HasLoggedErrors)
@@ -116,6 +125,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
     private bool TrimMethods(ITaskItem assemblyItem)
     {
+        ITaskItem newAssmeblyItem = assemblyItem;
+
         string assemblyFilePathArg = assemblyItem.ItemSpec;
         string methodTokenFile = assemblyItem.GetMetadata("MethodTokenFile");
         if (string.IsNullOrEmpty(methodTokenFile))
@@ -143,7 +154,13 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             return true;
         }
 
-        string trimmedAssemblyFilePath = ComputeTrimmedAssemblyPath(assemblyFilePath);
+        string trimmedAssemblyFolder = ComputeTrimmedAssemblyFolderName(assemblyFilePath);
+        if (!Directory.Exists(trimmedAssemblyFolder))
+        {
+            Directory.CreateDirectory(trimmedAssemblyFolder);
+        }
+
+        string trimmedAssemblyFilePath = ComputeTrimmedAssemblyPath(trimmedAssemblyFolder, assemblyFilePath);
         bool isTrimmed = false;
         using FileStream fs = File.Open(assemblyFilePath, FileMode.Open);
         using PEReader peReader = new(fs, PEStreamOptions.LeaveOpen);
@@ -167,23 +184,30 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         if (isTrimmed)
         {
             AddItemToTrimmedList(assemblyFilePathArg, trimmedAssemblyFilePath);
+            newAssmeblyItem.ItemSpec = trimmedAssemblyFilePath;
         }
 
+        _updatedAssemblies.Add(newAssmeblyItem);
         return true;
     }
 
-    private static string ComputeTrimmedAssemblyPath(string assemblyFilePath)
+    private static string ComputeTrimmedAssemblyFolderName(string assemblyFilePath)
     {
         string? assemblyPath = Path.GetDirectoryName(assemblyFilePath);
-        string? assemblyName = Path.GetFileNameWithoutExtension(assemblyFilePath);
         if (string.IsNullOrEmpty(assemblyPath))
         {
-            return (assemblyName + "_trimmed.dll");
+            return "trimmedAssemblies";
         }
         else
         {
-            return Path.Combine(assemblyPath, (assemblyName + "_trimmed.dll"));
+            return Path.Combine(assemblyPath,  "trimmedAssemblies");
         }
+    }
+
+    private static string ComputeTrimmedAssemblyPath(string trimmedAssemblyFolder, string assemblyFilePath)
+    {
+        string? assemblyName = Path.GetFileName(assemblyFilePath);
+        return Path.Combine(trimmedAssemblyFolder, assemblyName);
     }
 
     private static string ComputeGuid(MetadataReader mr)
@@ -308,11 +332,5 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         var trimmedAssemblyItem = new TaskItem(assemblyFilePath);
         trimmedAssemblyItem.SetMetadata("TrimmedAssemblyFileName", trimmedAssemblyFilePath);
         _trimmedAssemblies.Add(trimmedAssemblyItem);
-
-        // Set the timestamp of trimmed assemblies to be the same as original assemblies.
-        // To avoid undesired re-AOT compilation, during app rebuilding process.
-        FileInfo fileInfo = new FileInfo(assemblyFilePath);
-        DateTime lastModified = fileInfo.LastWriteTime;
-        File.SetLastWriteTime(trimmedAssemblyFilePath, lastModified);
     }
 }

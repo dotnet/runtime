@@ -714,12 +714,13 @@
         TrimIndividualMethods="true"
         Assemblies="@(_WasmAssembliesInternal)">
       <Output TaskParameter="TrimmedAssemblies" ItemName="_ILStripTrimmedAssemblies" />
+      <Output TaskParameter="UpdatedAssemblies" ItemName="_UpdatedAssembliesAfterILStrip" />
     </ILStrip>
-    <Move
-        Condition=" '$(WasmStripILAfterAOT)' == 'true' "
-        SourceFiles="@(_ILStripTrimmedAssemblies->'%(TrimmedAssemblyFileName)')"
-        DestinationFiles="@(_ILStripTrimmedAssemblies)"
-    />
+
+    <ItemGroup>
+      <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
+      <_WasmAssembliesInternal Include="@(_UpdatedAssembliesAfterILStrip)" />
+    </ItemGroup>
 
     <ItemGroup>
       <_BitcodeFile Include="%(_WasmAssembliesInternal.LlvmBitcodeFile)" />
