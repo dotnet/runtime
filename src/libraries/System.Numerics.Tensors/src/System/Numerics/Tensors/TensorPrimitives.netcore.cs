@@ -901,7 +901,10 @@ namespace System.Numerics.Tensors
             where TBinaryOperator : struct, IBinaryOperator
             where TAggregationOperator : struct, IAggregationOperator
         {
-            Debug.Assert(x.Length == y.Length);
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
 
             if (x.IsEmpty)
             {
