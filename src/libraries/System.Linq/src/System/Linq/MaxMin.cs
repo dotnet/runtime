@@ -67,7 +67,7 @@ namespace System.Linq
                         }
                     }
                 }
-                else if(!Vector512.IsHardwareAccelerated || span.Length < Vector512<T>.Count)
+                else if (!Vector512.IsHardwareAccelerated || span.Length < Vector512<T>.Count)
                 {
                     ref T current = ref MemoryMarshal.GetReference(span);
                     ref T lastVectorStart = ref Unsafe.Add(ref current, span.Length - Vector256<T>.Count);
