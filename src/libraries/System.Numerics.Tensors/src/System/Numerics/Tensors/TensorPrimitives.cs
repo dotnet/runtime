@@ -320,6 +320,7 @@ namespace System.Numerics.Tensors
 
             if (!x.IsEmpty)
             {
+                result = 0;
                 float max = float.NegativeInfinity;
 
                 for (int i = 0; i < x.Length; i++)
@@ -370,6 +371,7 @@ namespace System.Numerics.Tensors
 
             if (!x.IsEmpty)
             {
+                result = 0;
                 float max = float.NegativeInfinity;
                 float maxMag = float.NegativeInfinity;
 
@@ -423,6 +425,7 @@ namespace System.Numerics.Tensors
 
             if (!x.IsEmpty)
             {
+                result = 0;
                 float min = float.PositiveInfinity;
 
                 for (int i = 0; i < x.Length; i++)
@@ -473,6 +476,7 @@ namespace System.Numerics.Tensors
 
             if (!x.IsEmpty)
             {
+                result = 0;
                 float min = float.PositiveInfinity;
                 float minMag = float.PositiveInfinity;
 
