@@ -555,7 +555,6 @@ void BasicBlock::dspFlags() const
         {BBF_REMOVED, "del"},
         {BBF_DONT_REMOVE, "keep"},
         {BBF_INTERNAL, "internal"},
-        {BBF_FAILED_VERIFICATION, "failV"},
         {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
         {BBF_LOOP_HEAD, "loophead"},
         {BBF_HAS_LABEL, "label"},
