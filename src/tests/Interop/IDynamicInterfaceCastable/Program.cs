@@ -558,7 +558,8 @@ namespace IDynamicInterfaceCastableTests
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

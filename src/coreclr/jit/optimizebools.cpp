@@ -124,7 +124,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     // Check if m_b1 and m_b2 have the same bbJumpDest
 
-    if (m_b1->bbJumpDest == m_b2->bbJumpDest)
+    if (m_b1->HasJumpTo(m_b2->GetJumpDest()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, BX)
@@ -136,7 +136,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
         m_sameTarget = true;
     }
-    else if (m_b2->NextIs(m_b1->bbJumpDest))
+    else if (m_b2->NextIs(m_b1->GetJumpDest()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, B3)
@@ -480,13 +480,13 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_t3 = nullptr;
 
     bool foundEndOfOrConditions = false;
-    if (m_b1->NextIs(m_b2) && m_b2->NextIs(m_b1->bbJumpDest))
+    if (m_b1->NextIs(m_b2) && m_b2->NextIs(m_b1->GetJumpDest()))
     {
         // Found the end of two (or more) conditions being ORed together.
         // The final condition has been inverted.
         foundEndOfOrConditions = true;
     }
-    else if (m_b1->NextIs(m_b2) && (m_b1->bbJumpDest == m_b2->bbJumpDest))
+    else if (m_b1->NextIs(m_b2) && m_b1->HasJumpTo(m_b2->GetJumpDest()))
     {
         // Found two conditions connected together.
     }
@@ -586,8 +586,8 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_comp->fgSetStmtSeq(s2);
 
     // Update the flow.
-    m_comp->fgRemoveRefPred(m_b1->bbJumpDest, m_b1);
-    m_b1->SetBBJumpKind(BBJ_NONE DEBUG_ARG(m_comp));
+    m_comp->fgRemoveRefPred(m_b1->GetJumpDest(), m_b1);
+    m_b1->SetJumpKind(BBJ_NONE DEBUG_ARG(m_comp));
 
     // Fixup flags.
     m_b2->bbFlags |= (m_b1->bbFlags & BBF_COPY_PROPAGATE);
@@ -839,22 +839,22 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update edges if m_b1: BBJ_COND and m_b2: BBJ_COND
 
-        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->bbJumpDest, m_b1);
+        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->GetJumpDest(), m_b1);
         FlowEdge* edge2;
 
         if (m_sameTarget)
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->bbJumpDest, m_b2);
+            edge2 = m_comp->fgGetPredForBlock(m_b2->GetJumpDest(), m_b2);
         }
         else
         {
             edge2 = m_comp->fgGetPredForBlock(m_b2->Next(), m_b2);
 
-            m_comp->fgRemoveRefPred(m_b1->bbJumpDest, m_b1);
+            m_comp->fgRemoveRefPred(m_b1->GetJumpDest(), m_b1);
 
-            m_b1->bbJumpDest = m_b2->bbJumpDest;
+            m_b1->SetJumpDest(m_b2->GetJumpDest());
 
-            m_comp->fgAddRefPred(m_b2->bbJumpDest, m_b1);
+            m_comp->fgAddRefPred(m_b2->GetJumpDest(), m_b1);
         }
 
         assert(edge1 != nullptr);
@@ -864,11 +864,11 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
         if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
         {
-            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->bbJumpDest);
+            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->GetJumpDest());
         }
         else
         {
-            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, m_b1->bbJumpDest);
+            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, m_b1->GetJumpDest());
         }
     }
 
@@ -876,10 +876,10 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     if (optReturnBlock)
     {
-        m_b1->bbJumpDest = nullptr;
-        m_b1->SetBBJumpKind(BBJ_RETURN DEBUG_ARG(m_comp));
+        m_b1->SetJumpDest(nullptr);
+        m_b1->SetJumpKind(BBJ_RETURN DEBUG_ARG(m_comp));
 #ifdef DEBUG
-        m_b1->bbJumpSwt = m_b2->bbJumpSwt;
+        m_b1->SetJumpSwt(m_b2->GetJumpSwt());
 #endif
         assert(m_b2->KindIs(BBJ_RETURN));
         assert(m_b1->NextIs(m_b2));
@@ -889,7 +889,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_COND));
-        assert(m_b1->bbJumpDest == m_b2->bbJumpDest);
+        assert(m_b1->HasJumpTo(m_b2->GetJumpDest()));
         assert(m_b1->NextIs(m_b2));
         assert(!m_b2->IsLast());
     }
@@ -901,7 +901,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         // Replace pred 'm_b2' for 'm_b2->bbNext' with 'm_b1'
         // Remove  pred 'm_b2' for 'm_b2->bbJumpDest'
         m_comp->fgReplacePred(m_b2->Next(), m_b2, m_b1);
-        m_comp->fgRemoveRefPred(m_b2->bbJumpDest, m_b2);
+        m_comp->fgRemoveRefPred(m_b2->GetJumpDest(), m_b2);
     }
 
     // Get rid of the second block
@@ -1494,7 +1494,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             if (b2->KindIs(BBJ_COND))
             {
-                if ((b1->bbJumpDest != b2->bbJumpDest) && !b2->NextIs(b1->bbJumpDest))
+                if (!b1->HasJumpTo(b2->GetJumpDest()) && !b2->NextIs(b1->GetJumpDest()))
                 {
                     continue;
                 }
@@ -1520,7 +1520,7 @@ PhaseStatus Compiler::optOptimizeBools()
             else if (b2->KindIs(BBJ_RETURN))
             {
                 // Set b3 to b1 jump destination
-                BasicBlock* b3 = b1->bbJumpDest;
+                BasicBlock* b3 = b1->GetJumpDest();
 
                 // b3 must not be marked as BBF_DONT_REMOVE
 

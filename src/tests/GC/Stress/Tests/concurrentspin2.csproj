@@ -2,7 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestKind>BuildOnly</CLRTestKind>
+    <CLRTestKind Condition="'$(TestBuildMode)' != 'nativeaot'">BuildOnly</CLRTestKind>
+    <EventSourceSupport Condition="'$(TestBuildMode)' == 'nativeaot'">true</EventSourceSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="concurrentspin2.cs" />

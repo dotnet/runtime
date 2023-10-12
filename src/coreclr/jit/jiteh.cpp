@@ -2410,7 +2410,7 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             filterBb->bbCodeOffs = handlerBb->bbCodeOffs;
             filterBb->bbHndIndex = handlerBb->bbHndIndex;
             filterBb->bbTryIndex = handlerBb->bbTryIndex;
-            filterBb->bbJumpDest = handlerBb;
+            filterBb->SetJumpDest(handlerBb);
             filterBb->bbSetRunRarely();
             filterBb->bbFlags |= BBF_INTERNAL | BBF_DONT_REMOVE;
 
@@ -3506,7 +3506,7 @@ void Compiler::fgVerifyHandlerTab()
         }
 
         // Check for legal block types
-        switch (block->GetBBJumpKind())
+        switch (block->GetJumpKind())
         {
             case BBJ_EHFINALLYRET:
             {
@@ -4056,7 +4056,7 @@ void Compiler::fgClearFinallyTargetBit(BasicBlock* block)
 
     for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->bbJumpDest == block)
+        if (predBlock->KindIs(BBJ_ALWAYS) && predBlock->HasJumpTo(block))
         {
             BasicBlock* pPrev = predBlock->Prev();
             if (pPrev != nullptr)
@@ -4115,7 +4115,7 @@ bool Compiler::fgIsIntraHandlerPred(BasicBlock* predBlock, BasicBlock* block)
                                                              // trying to decide how to split up the predecessor edges.
         if (predBlock->KindIs(BBJ_CALLFINALLY))
         {
-            assert(predBlock->bbJumpDest == block);
+            assert(predBlock->HasJumpTo(block));
 
             // A BBJ_CALLFINALLY predecessor of the handler can only come from the corresponding try,
             // not from any EH clauses nested in this handler. However, we represent the BBJ_CALLFINALLY
@@ -4414,7 +4414,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 BasicBlock* bFilterLast = HBtab->BBFilterLast();
                 assert(bFilterLast != nullptr);
                 assert(bFilterLast->KindIs(BBJ_EHFILTERRET));
-                assert(bFilterLast->bbJumpDest == block);
+                assert(bFilterLast->HasJumpTo(block));
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -4423,8 +4423,8 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 }
 #endif // DEBUG
                 // Change the bbJumpDest for bFilterLast from the old first 'block' to the new first 'bPrev'
-                fgRemoveRefPred(bFilterLast->bbJumpDest, bFilterLast);
-                bFilterLast->bbJumpDest = bPrev;
+                fgRemoveRefPred(bFilterLast->GetJumpDest(), bFilterLast);
+                bFilterLast->SetJumpDest(bPrev);
                 fgAddRefPred(bPrev, bFilterLast);
             }
         }
