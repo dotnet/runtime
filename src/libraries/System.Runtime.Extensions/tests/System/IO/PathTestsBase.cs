@@ -226,7 +226,7 @@ namespace System.IO.Tests
             public static void Equal(ReadOnlySpan<char> expected, ReadOnlySpan<char> actual)
             {
                 if (!actual.SequenceEqual(expected))
-                    throw new Xunit.Sdk.EqualException(new string(expected), new string(actual));
+                    throw Xunit.Sdk.EqualException.ForMismatchedValues(new string(expected), new string(actual));
             }
 
             public static void Empty(ReadOnlySpan<char> actual)
