@@ -611,50 +611,43 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     assert(block->KindIs(BBJ_EHFINALLYRET));
     assert(fgPredsComputed);
 
-    BBehfDesc* const ehfDesc   = block->GetJumpEhf();
-    unsigned         succCount = ehfDesc->bbeCount;
-    BasicBlock**     succTab   = ehfDesc->bbeSuccs;
-
-    unsigned i = 0;
+    BBehfDesc* const   ehfDesc   = block->GetJumpEhf();
+    const unsigned     succCount = ehfDesc->bbeCount;
+    BasicBlock** const succTab   = ehfDesc->bbeSuccs;
 
     // Walk the successor table looking for blocks to update the preds for
-    while (i < succCount)
+    bool      found   = false;
+    FlowEdge* newEdge = nullptr;
+    for (unsigned i = 0; i < succCount; i++)
     {
-        if (succTab[i] == oldSucc) // We will update when succTab[i] matches
+        if (succTab[i] != oldSucc)
+        {
+            continue;
+        }
+
+        found = true;
+
+        // Change the succTab entry to branch to the new location
+        //
+        succTab[i] = newSucc;
+
+        if (newEdge == nullptr)
         {
             // Remove the old edge [block => oldSucc]
             //
             fgRemoveAllRefPreds(oldSucc, block);
 
-            // Change the succTab entry to branch to the new location
-            //
-            succTab[i] = newSucc;
-
             // Create the new edge [block => newSucc]
             //
-            FlowEdge* const newEdge = fgAddRefPred(newSucc, block);
-
-            // Now set the correct value of newEdge's DupCount
-            // and replace any other successors in succTab[] that go to oldSucc.
-            //
-            i++;
-            while (i < succCount)
-            {
-                if (succTab[i] == oldSucc)
-                {
-                    // We also must update this entry in the succTab
-                    //
-                    succTab[i] = newSucc;
-                    newSucc->bbRefs++;
-                    newEdge->incrementDupCount();
-                }
-                i++; // Check the next entry in succTab[]
-            }
-            return;
+            newEdge = fgAddRefPred(newSucc, block);
         }
-        i++; // Check the next entry in succTab[] for a match
+        else
+        {
+            newSucc->bbRefs++;
+            newEdge->incrementDupCount();
+        }
     }
-    noway_assert(!"Did not find oldTarget in succTab[]");
+    noway_assert(found && "Did not find oldSucc in succTab[]");
 }
 
 //------------------------------------------------------------------------
@@ -697,6 +690,7 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ)
             --succCount;
 
             found = true;
+
 #ifdef DEBUG
             // We only expect to see a successor once in the table.
             for (; i < succCount; i++)
@@ -704,6 +698,8 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ)
                 assert(succTab[i] != succ);
             }
 #endif // DEBUG
+
+            break;
         }
     }
     assert(found);

@@ -2749,31 +2749,41 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 {
     // If the current block is a successor to a BBJ_EHFINALLYRET (return from finally),
     // then the lexically previous block should be a call to the same finally.
+    // Also, `block` should be in the explicit successors list of `blockPred`.
     // Verify all of that.
+
+    bool found = false;
+    for (BasicBlock* const succ : blockPred->EHFinallyRetSuccs())
+    {
+        if (block == succ)
+        {
+            assert(!found); // we should only find it once
+            found = true;
+        }
+    }
+    assert(found && "BBJ_EHFINALLYRET successor not found");
 
     unsigned    hndIndex = blockPred->getHndIndex();
     EHblkDsc*   ehDsc    = comp->ehGetDsc(hndIndex);
     BasicBlock* finBeg   = ehDsc->ebdHndBeg;
 
-    // Because there is no bbPrev, we have to search for the lexically previous
-    // block.  We can shorten the search by only looking in places where it is legal
-    // to have a call to the finally.
-
     BasicBlock* firstBlock;
     BasicBlock* lastBlock;
     comp->ehGetCallFinallyBlockRange(hndIndex, &firstBlock, &lastBlock);
 
+    found = false;
     for (BasicBlock* const bcall : comp->Blocks(firstBlock, lastBlock))
     {
         if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->HasJumpTo(finBeg) && bcall->NextIs(block))
         {
-            return true;
+            found = true;
+            break;
         }
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
 
-    if (comp->fgFuncletsCreated)
+    if (!found && comp->fgFuncletsCreated)
     {
         // There is no easy way to search just the funclets that were pulled out of
         // the corresponding try body, so instead we search all the funclets, and if
@@ -2782,27 +2792,19 @@ bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 
         for (BasicBlock* const bcall : comp->Blocks(comp->fgFirstFuncletBB))
         {
-            if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
+            if (bcall->KindIs(BBJ_CALLFINALLY) && bcall->HasJumpTo(finBeg) && bcall->NextIs(block) &&
+                comp->ehCallFinallyInCorrectRegion(bcall, hndIndex))
             {
-                continue;
-            }
-
-            if (!bcall->NextIs(block))
-            {
-                continue;
-            }
-
-            if (comp->ehCallFinallyInCorrectRegion(bcall, hndIndex))
-            {
-                return true;
+                found = true;
+                break;
             }
         }
     }
 
 #endif // FEATURE_EH_FUNCLETS
 
-    assert(!"BBJ_EHFINALLYRET predecessor of block that doesn't follow a BBJ_CALLFINALLY!");
-    return false;
+    assert(found && "BBJ_EHFINALLYRET predecessor of block that doesn't follow a BBJ_CALLFINALLY!");
+    return found;
 }
 
 //------------------------------------------------------------------------------
