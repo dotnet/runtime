@@ -413,7 +413,7 @@ namespace System
             {
                 string expectedString = string.Join(", ", expected);
                 string actualString = string.Join(", ", actual);
-                throw new AssertActualExpectedException(expectedString, actualString, null);
+                throw EqualException.ForMismatchedValues(expectedString, actualString);
             }
         }
 
