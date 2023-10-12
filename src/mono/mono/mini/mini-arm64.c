@@ -1796,6 +1796,11 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type (), FALSE);
 	}
 
+	if (sig->call_convention == MONO_CALL_SWIFTCALL) {
+		// Assume that the first argument is SwiftError
+		cinfo->args[0].storage = ArgSwiftError;
+	}
+
 	cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
 
 	return cinfo;
@@ -2594,6 +2599,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	case ArgInIReg:
 	case ArgInFReg:
 	case ArgInFRegR4:
+	case ArgSwiftError:
 		cfg->ret->opcode = OP_REGVAR;
 		cfg->ret->dreg = cinfo->ret.reg;
 		break;
@@ -2648,6 +2654,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		case ArgInIReg:
 		case ArgInFReg:
 		case ArgInFRegR4:
+		case ArgSwiftError:
 			// FIXME: Use nregs/size
 			/* These will be copied to the stack in the prolog */
 			ins->inst_offset = offset;
@@ -3069,6 +3076,14 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			ins->inst_p1 = mono_mempool_alloc (cfg->mempool, sizeof (ArgInfo));
 			memcpy (ins->inst_p1, ainfo, sizeof (ArgInfo));
 			MONO_ADD_INS (cfg->cbb, ins);
+			break;
+		}
+		case ArgSwiftError: {
+			// Create an extra variable and save call->args[0]->dreg
+			MonoInst *ins;
+			ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+			ins->backend.data = GUINT_TO_POINTER (call->args[0]->dreg);
+			cfg->arch.interop_var = ins;
 			break;
 		}
 		default:
@@ -3586,6 +3601,13 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 		g_assert_not_reached ();
 		break;
 	}
+
+	// Move value from R21 to the arg dreg
+	if (call->signature->call_convention == MONO_CALL_SWIFTCALL) {
+		gint32 error_dreg = GPOINTER_TO_INT32 (cfg->arch.interop_var->backend.data);
+		arm_movx (code, error_dreg, ARMREG_R21);
+	}
+
 	return code;
 }
 
@@ -5665,6 +5687,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 
 			switch (ainfo->storage) {
 			case ArgInIReg:
+			case ArgSwiftError:
 				/* Stack slots for arguments have size 8 */
 				code = emit_strx (code, ainfo->reg, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
 				if (i == 0 && sig->hasthis) {

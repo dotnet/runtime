@@ -49,6 +49,7 @@ storage_name (ArgStorage st)
 	case ArgValuetypeAddrOnStack: return "ArgValuetypeAddrOnStack";
 	case ArgGSharedVtInReg: return "ArgGSharedVtInReg";
 	case ArgGSharedVtOnStack: return "ArgGSharedVtOnStack";
+	case ArgSwiftError: return "ArgSwiftError";
 	case ArgNone: return "ArgNone";
 	default: return "unknown";
 	}
