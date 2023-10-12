@@ -100,6 +100,7 @@ private:
     void AssignLikelihoodNext(BasicBlock* block);
     void AssignLikelihoodJump(BasicBlock* block);
     void AssignLikelihoodCond(BasicBlock* block);
+    void AssignLikelihoodFinallyRet(BasicBlock* block);
     void AssignLikelihoodSwitch(BasicBlock* block);
     void RepairLikelihoods();
     void BlendLikelihoods();

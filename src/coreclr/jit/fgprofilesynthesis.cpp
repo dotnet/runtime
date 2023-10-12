@@ -136,10 +136,13 @@ void ProfileSynthesis::AssignLikelihoods()
         {
             case BBJ_THROW:
             case BBJ_RETURN:
-            case BBJ_EHFINALLYRET:
             case BBJ_EHFAULTRET:
                 // No successor cases
-                // (todo: finally ret may have succs)
+                break;
+
+            case BBJ_EHFINALLYRET:
+                // N successor case
+                AssignLikelihoodFinallyRet(block);
                 break;
 
             case BBJ_NONE:
@@ -430,6 +433,38 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
+// AssignLikelihoodFinallyRet: update edge likelihood for a block that
+//   ends in a BBJ_EHFINALLYRET
+//
+// Arguments;
+//   block -- block in question (BBJ_EHFINALLYRET)
+//
+void ProfileSynthesis::AssignLikelihoodFinallyRet(BasicBlock* block)
+{
+    assert(block->KindIs(BBJ_EHFINALLYRET));
+
+    // Assume each case is equally probable.
+    // If there are no successors (either successors are not computed, or the finally is dead but we haven't
+    // removed it), do nothing.
+    //
+    const unsigned n = block->NumSucc();
+    if (n == 0)
+    {
+        return;
+    }
+
+    const weight_t p = 1 / (weight_t)n;
+
+    // Each edge gets that basic probability
+    //
+    for (BasicBlock* const succ : block->Succs())
+    {
+        FlowEdge* const edge = m_comp->fgGetPredForBlock(succ, block);
+        edge->setLikelihood(p);
+    }
+}
+
+//------------------------------------------------------------------------
 // AssignLikelihoodSwitch: update edge likelihood for a block that
 //   ends in a switch
 //
@@ -438,6 +473,8 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 //
 void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
 {
+    assert(block->KindIs(BBJ_SWITCH));
+
     // Assume each switch case is equally probable
     //
     const unsigned n = block->NumSucc();
@@ -503,7 +540,6 @@ void ProfileSynthesis::RepairLikelihoods()
         {
             case BBJ_THROW:
             case BBJ_RETURN:
-            case BBJ_EHFINALLYRET:
             case BBJ_EHFAULTRET:
                 // No successor cases
                 // Nothing to do.
@@ -525,6 +561,7 @@ void ProfileSynthesis::RepairLikelihoods()
                 AssignLikelihoodJump(block);
                 break;
 
+            case BBJ_EHFINALLYRET:
             case BBJ_COND:
             case BBJ_SWITCH:
             {
@@ -554,6 +591,10 @@ void ProfileSynthesis::RepairLikelihoods()
                 if (block->KindIs(BBJ_COND))
                 {
                     AssignLikelihoodCond(block);
+                }
+                else if (block->KindIs(BBJ_EHFINALLYRET))
+                {
+                    AssignLikelihoodFinallyRet(block);
                 }
                 else
                 {
@@ -595,7 +636,6 @@ void ProfileSynthesis::BlendLikelihoods()
         {
             case BBJ_THROW:
             case BBJ_RETURN:
-            case BBJ_EHFINALLYRET:
             case BBJ_EHFAULTRET:
                 // No successor cases
                 // Nothing to do.
@@ -617,6 +657,7 @@ void ProfileSynthesis::BlendLikelihoods()
                 AssignLikelihoodJump(block);
                 break;
 
+            case BBJ_EHFINALLYRET:
             case BBJ_COND:
             case BBJ_SWITCH:
             {
@@ -630,6 +671,10 @@ void ProfileSynthesis::BlendLikelihoods()
                 if (block->KindIs(BBJ_COND))
                 {
                     AssignLikelihoodCond(block);
+                }
+                else if (block->KindIs(BBJ_EHFINALLYRET))
+                {
+                    AssignLikelihoodFinallyRet(block);
                 }
                 else
                 {
