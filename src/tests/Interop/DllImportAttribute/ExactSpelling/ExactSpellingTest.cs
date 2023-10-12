@@ -5,7 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-class ExactSpellingTest
+public class ExactSpellingTest
 {
     class Ansi
     {
@@ -125,7 +125,8 @@ class ExactSpellingTest
         Assert.Throws<EntryPointNotFoundException>(() => Ansi.MarshalPointer_Int_InOut2(ref int8));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {
