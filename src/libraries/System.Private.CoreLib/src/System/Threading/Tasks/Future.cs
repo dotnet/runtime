@@ -15,6 +15,8 @@ using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
+
+#if !NATIVEAOT
 #pragma warning disable CA1822
     // Used to implement Runtime implemented Task suspension handling
     internal struct RuntimeTaskState<TResult>
@@ -38,6 +40,7 @@ namespace System.Threading.Tasks
         public Task<TResult> FromException(Exception e) { return Task.FromException<TResult>(e); }
     }
 #pragma warning restore CA1822
+#endif
 
     /// <summary>
     /// Represents an asynchronous operation that produces a result at some time in the future.

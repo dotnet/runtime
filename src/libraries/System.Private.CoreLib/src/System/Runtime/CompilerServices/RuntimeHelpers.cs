@@ -118,6 +118,8 @@ namespace System.Runtime.CompilerServices
         internal static bool IsKnownConstant(int t) => false;
 #pragma warning restore IDE0060
 
+#if !NATIVEAOT
+
         // TODO, this method should be marked so that it is only callable from a runtime async method
         public static TResult UnsafeAwaitAwaiterFromRuntimeAsync<TResult, TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion2<TResult>
         {
@@ -623,5 +625,6 @@ namespace System.Runtime.CompilerServices
             maintainedData._oldTaskletNext = null;
             maintainedData._suspendActive = false;
         }
+#endif
     }
 }
