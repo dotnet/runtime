@@ -2976,8 +2976,8 @@ ValueNum ValueNumStore::VNForMapSelectInner(ValueNumKind vnk, var_types type, Va
 // cache entry.
 //
 // Arguments:
-//    comp       - Compiler instance
-//    deps       - Array stack containing the memory dependencies.
+//    comp - Compiler instance
+//    set  - Set of memory dependencies to store in the entry.
 //
 void ValueNumStore::MapSelectWorkCacheEntry::SetMemoryDependencies(Compiler* comp, SmallValueNumSet& set)
 {
