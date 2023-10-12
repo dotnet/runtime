@@ -391,16 +391,17 @@ import glob
 print("")
 print("ILASM RoundTrips")
 
+outputPath = "$(OutputPath.Replace('\', '/'))"
+
 if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
-for inputAssemblyName in glob.glob(r"$(OutputPath)*.dll"):
-  if not inputAssemblyName.endswith($(AssemblyName).dll):
+for inputAssemblyName in glob.glob(outputPath + "*.dll"):
+  if not inputAssemblyName.endswith("$(AssemblyName).dll"):
     print("ILASM RoundTrip for " + inputAssemblyName)
 
-    extra_backslash = "\\" if os.name == 'nt' else ""
-    disassemblyName = os.path.join(r"$(OutputPath)" + extra_backslash, "IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
-    targetAssemblyName = os.path.join(r"$(OutputPath)" + extra_backslash, "IL-RT", os.path.basename(inputAssemblyName))
+    disassemblyName = os.path.join(outputPath, "IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
+    targetAssemblyName = os.path.join(outputPath, "IL-RT", os.path.basename(inputAssemblyName))
 
     shutil.copyfile(inputAssemblyName, targetAssemblyName)
 
