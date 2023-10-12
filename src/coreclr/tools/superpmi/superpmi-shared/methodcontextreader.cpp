@@ -67,13 +67,15 @@ std::string MethodContextReader::CheckForPairedFile(const std::string& fileName,
 }
 
 MethodContextReader::MethodContextReader(
-    const char* inputFileName, const int* indexes, int indexCount, char* hash, int offset, int increment)
+    const char* inputFileName, const int* indexes, int indexCount, int repeatCount, char* hash, int offset, int increment)
     : fileHandle(INVALID_HANDLE_VALUE)
     , fileSize(0)
     , curMCIndex(0)
     , Indexes(indexes)
     , IndexCount(indexCount)
     , curIndexPos(0)
+    , RepeatCount(repeatCount)
+    , curRepeatIter(0)
     , Hash(hash)
     , curTOCIndex(0)
     , Offset(offset)
@@ -128,6 +130,21 @@ MethodContextReader::~MethodContextReader()
     CloseHandle(this->mutex);
 
     CleanExcludedMethods();
+}
+
+void MethodContextReader::Reset()
+{
+    this->curRepeatIter++;
+
+    // resets for `-compile`
+    this->curIndexPos = 0;
+    // resets for `-stride`
+    this->curMCIndex  = 0;
+    // resets for `-methodhash`
+    this->curTOCIndex = 0;
+    // resets for `mch files`
+    __int64 pos       = 0;
+    SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_BEGIN);
 }
 
 bool MethodContextReader::AcquireLock()
@@ -411,13 +428,17 @@ double MethodContextReader::PercentComplete()
     if (this->hasIndex() && this->hasTOC())
     {
         // Best estimate I can come up with...
-        return 100.0 * (double)this->curIndexPos / (double)this->IndexCount;
+        double completed = (this->curRepeatIter * this->IndexCount) + curIndexPos;
+        double total     = this->RepeatCount * this->IndexCount;
+        return 100.0 * completed / total;
     }
     this->AcquireLock();
     __int64 pos = 0;
     SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT);
     this->ReleaseLock();
-    return 100.0 * (double)pos / (double)this->fileSize;
+    double completed = (this->curRepeatIter * (double)this->fileSize) + pos;
+    double total     = this->RepeatCount * (double)this->fileSize;
+    return 100.0 * completed / total;
 }
 
 // Binary search to get this method number from the index

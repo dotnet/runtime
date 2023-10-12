@@ -288,7 +288,7 @@ int __cdecl main(int argc, char* argv[])
     // The method context reader handles skipping any unrequested method contexts
     // Used in conjunction with an MCI file, it does a lot less work...
     MethodContextReader* reader =
-        new MethodContextReader(o.nameOfInputMethodContextFile, o.indexes, o.indexCount, o.hash, o.offset, o.increment);
+        new MethodContextReader(o.nameOfInputMethodContextFile, o.indexes, o.indexCount, o.repeatCount, o.hash, o.offset, o.increment);
     if (!reader->isValid())
     {
         return (int)SpmiResult::GeneralFailure;
@@ -327,6 +327,8 @@ int __cdecl main(int argc, char* argv[])
         }
     }
 
+    for (int iter = 0; iter < o.repeatCount; iter++)
+    {
     while (true)
     {
         MethodContextBuffer mcb = reader->GetNextMethodContext();
@@ -709,6 +711,8 @@ int __cdecl main(int argc, char* argv[])
 
         delete crl;
         delete mc;
+    }
+        reader->Reset();
     }
     delete reader;
 

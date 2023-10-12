@@ -592,6 +592,11 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
         bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -v ewmin %s", spmiArgs);
 
+        if (o.repeatCount > 1)
+        {
+            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -repeatCount %d", o.repeatCount);
+        }
+
         SECURITY_ATTRIBUTES sa;
         sa.nLength              = sizeof(sa);
         sa.lpSecurityDescriptor = NULL;

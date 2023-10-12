@@ -68,6 +68,8 @@ private:
     const int* Indexes;
     int        IndexCount;
     int        curIndexPos;
+    int        RepeatCount;
+    int        curRepeatIter;
 
     // Method hash to process
     // If you have an index file, these things get processed
@@ -124,12 +126,14 @@ private:
 
 public:
     MethodContextReader(const char* inputFileName,
-                        const int*  indexes    = nullptr,
-                        int         indexCount = -1,
-                        char*       hash       = nullptr,
-                        int         offset     = -1,
-                        int         increment  = -1);
+                        const int*  indexes     = nullptr,
+                        int         indexCount  = -1,
+                        int         repeatCount = -1,
+                        char*       hash        = nullptr,
+                        int         offset      = -1,
+                        int         increment   = -1);
     ~MethodContextReader();
+    void Reset();
 
     // Read a method context buffer from the ContextCollection
     // (either a hive [single] or an index)
