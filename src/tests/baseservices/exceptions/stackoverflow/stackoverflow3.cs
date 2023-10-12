@@ -1,17 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
-using Xunit;
 
 namespace TestStackOverflow3
 {
-    public class Program
+    class Program
     {
         private const int MAX_RECURSIVE_CALLS = 1000000;
         static int ctr = 0;
 
-        [Fact]
-        public static void TestEntryPoint()
+        public static void Main()
         {
             Program ex = new Program();
             ex.Execute();
