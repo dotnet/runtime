@@ -11,7 +11,7 @@ using System.Security.Cryptography;
 
 namespace System.Numerics.Tensors
 {
-    public static partial class TensorPrimitives
+    public static unsafe partial class TensorPrimitives
     {
         /// <summary>Defines the threshold, in bytes, at which non-temporal stores will be used.</summary>
         /// <remarks>
