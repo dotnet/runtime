@@ -631,34 +631,6 @@ bool Compiler::fgRemoveDeadBlocks()
 {
     JITDUMP("\n*************** In fgRemoveDeadBlocks()");
 
-    jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
-
-    worklist.push_back(fgFirstBB);
-
-    // Do not remove handler blocks
-    for (EHblkDsc* const HBtab : EHClauses(this))
-    {
-        if (HBtab->HasFilter())
-        {
-            worklist.push_back(HBtab->ebdFilter);
-        }
-        worklist.push_back(HBtab->ebdHndBeg);
-    }
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // For ARM code, prevent creating retless calls by adding the BBJ_ALWAYS to the "fgAlwaysBlks" list.
-    for (BasicBlock* const block : Blocks())
-    {
-        if (block->KindIs(BBJ_CALLFINALLY))
-        {
-            assert(block->isBBCallAlwaysPair());
-
-            // Don't remove the BBJ_ALWAYS block that is only here for the unwinder.
-            worklist.push_back(block->Next());
-        }
-    }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-
     unsigned prevFgCurBBEpoch = fgCurBBEpoch;
     EnsureBasicBlockEpoch();
 
@@ -672,6 +644,9 @@ bool Compiler::fgRemoveDeadBlocks()
     }
 
     BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
+
+    jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
+    worklist.push_back(fgFirstBB);
 
     // Visit all the reachable blocks, everything else can be removed
     while (!worklist.empty())
@@ -690,6 +665,43 @@ bool Compiler::fgRemoveDeadBlocks()
         {
             worklist.push_back(succ);
         }
+
+        // Add all the "EH" successors. For every `try`, add its handler (including filter) to the worklist.
+        if (bbIsTryBeg(block))
+        {
+            // Due to EH normalization, a block can only be the start of a single `try` region, with the exception
+            // of mutually-protect regions.
+            assert(block->hasTryIndex());
+            unsigned  tryIndex = block->getTryIndex();
+            EHblkDsc* ehDsc    = ehGetDsc(tryIndex);
+            for (;;)
+            {
+                worklist.push_back(ehDsc->ebdHndBeg);
+                if (ehDsc->HasFilter())
+                {
+                    worklist.push_back(ehDsc->ebdFilter);
+                }
+                tryIndex = ehDsc->ebdEnclosingTryIndex;
+                if (tryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    break;
+                }
+                ehDsc = ehGetDsc(tryIndex);
+                if (ehDsc->ebdTryBeg != block)
+                {
+                    break;
+                }
+            }
+        }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        // For ARM code, always keep BBJ_CALLFINALLY/BBJ_ALWAYS as a pair
+        if (block->KindIs(BBJ_CALLFINALLY))
+        {
+            assert(block->isBBCallAlwaysPair());
+            worklist.push_back(block->Next());
+        }
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     }
 
     // Track if there is any unreachable block. Even if it is marked with
@@ -702,14 +714,8 @@ bool Compiler::fgRemoveDeadBlocks()
     // any of the fgFirstBB, handler, filter or BBJ_ALWAYS (Arm) blocks.
     auto isBlockRemovable = [&](BasicBlock* block) -> bool {
         bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
-        bool isRemovable = (!isVisited || block->bbRefs == 0);
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        isRemovable &=
-            !block->isBBCallAlwaysPairTail(); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
-#endif
+        bool isRemovable = !isVisited || (block->bbRefs == 0);
         hasUnreachableBlock |= isRemovable;
-
         return isRemovable;
     };
 
@@ -738,6 +744,7 @@ bool Compiler::fgRemoveDeadBlocks()
     fgVerifyHandlerTab();
     fgDebugCheckBBlist(false);
 #endif // DEBUG
+
     return hasUnreachableBlock;
 }
 
