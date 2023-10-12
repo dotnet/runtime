@@ -1288,7 +1288,7 @@ namespace System.Diagnostics.Tests
                 }
                 catch (NotEmptyException)
                 {
-                    throw new TrueException(PrintProcesses(currentProcess), false);
+                    throw TrueException.ForNonTrueValue(PrintProcesses(currentProcess), false);
                 }
 
                 Assert.All(processes, process => Assert.Equal(currentProcess.ProcessName, process.ProcessName));

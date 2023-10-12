@@ -232,7 +232,7 @@ namespace System.IO.Tests
             public static void Empty(ReadOnlySpan<char> actual)
             {
                 if (actual.Length > 0)
-                    throw new Xunit.Sdk.NotEmptyException();
+                    throw Xunit.Sdk.NotEmptyException.ForNonEmptyCollection();
             }
         }
     }
