@@ -206,7 +206,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "zh-TW", DayOfWeek.Sunday };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [MemberData(nameof(FirstDayOfWeek_Get_TestData))]
         public void FirstDayOfWeek(DateTimeFormatInfo format, DayOfWeek expected)
         {
