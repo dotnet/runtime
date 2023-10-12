@@ -154,7 +154,6 @@
     <Error Condition="'$(InMergedTestDirectory)' == 'true'
       and '$(OutputType)' == 'Exe'
       and '$(_CLRTestNeedsToRun)' == 'true'
-      and '$(CLRTestKind)' == 'BuildAndRun'
       and '$(RequiresProcessIsolation)' != 'true'
       and '$(BuildAsStandalone)' != 'true'
       and '$(IsMergedTestRunnerAssembly)' != 'true'"
