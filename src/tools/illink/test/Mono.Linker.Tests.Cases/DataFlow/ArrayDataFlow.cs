@@ -214,9 +214,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// the analyzer and ILLink/ILCompiler.
 		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll),
 			ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL2087", nameof (GetMethods), nameof (DataFlowTypeExtensions.RequiresAll),
+		[ExpectedWarning ("IL2072", nameof (GetMethods), nameof (DataFlowTypeExtensions.RequiresAll),
 			ProducedBy = Tool.Analyzer)]
-		[ExpectedWarning ("IL2087", nameof (GetFields), nameof (DataFlowTypeExtensions.RequiresAll),
+		[ExpectedWarning ("IL2072", nameof (GetFields), nameof (DataFlowTypeExtensions.RequiresAll),
 			ProducedBy = Tool.Analyzer)]
 		static void TestGetMergedArrayElement (bool b = true)
 		{
