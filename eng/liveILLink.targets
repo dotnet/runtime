@@ -43,6 +43,7 @@
     <!-- Need to reference the analyzer project separately, because there's no easy way to get it as a transitive reference of ILLink.Tasks.csproj -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj"
                       ReferenceOutputAssembly="false"
+                      Private="false"
                       OutputItemType="Analyzer"
                       SetConfiguration="Configuaration=$(ToolsConfiguration)" />
   </ItemGroup>
