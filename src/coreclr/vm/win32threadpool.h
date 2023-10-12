@@ -971,6 +971,11 @@ private:
     static unsigned int LastCPThreadCreation;		// last time a completion port thread was created
     static unsigned int NumberOfProcessors;             // = NumberOfWorkerThreads - no. of blocked threads
 
+    static DWORD WorkerThreadTimeoutMs;
+    static DWORD IOCompletionThreadTimeoutMs;
+    static int NumWorkerThreadsBeingKeptAlive;
+    static int NumIOCompletionThreadsBeingKeptAlive;
+
     static BOOL IsApcPendingOnWaitThread;               // Indicates if an APC is pending on the wait thread
 
     // This needs to be non-hosted, because worker threads can run prior to EE startup.
@@ -980,8 +985,6 @@ public:
     static CrstStatic WorkerCriticalSection;
 
 private:
-    static const DWORD WorkerTimeout = 20 * 1000;
-
     DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) SVAL_DECL(ThreadCounter,WorkerCounter);
 
     //

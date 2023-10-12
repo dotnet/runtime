@@ -3,6 +3,7 @@
 # UI to this, and thus avoid any scheduled triggers
 
 trigger: none
+pr: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml

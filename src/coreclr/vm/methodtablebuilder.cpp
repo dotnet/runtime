@@ -6871,9 +6871,15 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
     SIZE_T sizeOfMethodDescs = 0; // current running size of methodDesc chunk
     int startIndex = 0; // start of the current chunk (index into bmtMethod array)
 
+    // Limit the maximum MethodDescs per chunk by the number of precodes that can fit to a single memory page,
+    // since we allocate consecutive temporary entry points for all MethodDescs in the whole chunk.
+    DWORD maxPrecodesPerPage = Precode::GetMaxTemporaryEntryPointsCount();
+    DWORD methodDescCount = 0;
+
     DeclaredMethodIterator it(*this);
     while (it.Next())
     {
+        DWORD currentSlotMethodDescCount = 1;
         int tokenRange = GetTokenRange(it.Token());
 
         // This code assumes that iterator returns tokens in ascending order. If this assumption does not hold,
@@ -6896,6 +6902,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         // See comment in AllocAndInitMethodDescChunk
         if (NeedsTightlyBoundUnboxingStub(*it))
         {
+            currentSlotMethodDescCount = 2;
             size *= 2;
 
             if (bmtGenerics->GetNumGenericArgs() == 0) {
@@ -6907,7 +6914,8 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         }
 
         if (tokenRange != currentTokenRange ||
-            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs)
+            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs ||
+            methodDescCount + currentSlotMethodDescCount > maxPrecodesPerPage)
         {
             if (sizeOfMethodDescs != 0)
             {
@@ -6917,9 +6925,11 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
 
             currentTokenRange = tokenRange;
             sizeOfMethodDescs = 0;
+            methodDescCount = 0;
         }
 
         sizeOfMethodDescs += size;
+        methodDescCount += currentSlotMethodDescCount;
     }
 
     if (sizeOfMethodDescs != 0)
