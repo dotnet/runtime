@@ -3074,19 +3074,16 @@ void Compiler::fgVerifyHandlerTab()
 #endif
 
     // To verify that bbCatchTyp is set properly on all blocks, and that some BBF_* flags are only set on the first
-    // block of 'try' or handlers, create two bool arrays indexed by block number: one for the set of blocks that
-    // are the beginning blocks of 'try' regions, and one for blocks that are the beginning of handlers (including
-    // filters). Note that since this checking function runs before EH normalization, we have to handle the case
-    // where blocks can be both the beginning of a 'try' as well as the beginning of a handler. After we've iterated
-    // over the EH table, loop over all blocks and verify that only handler begin blocks have bbCatchTyp == BBCT_NONE,
-    // and some other things.
+    // block of handlers, create a bool arrays indexed by block number for blocks that are the beginning of handlers
+    // (including filters). Note that since this checking function runs before EH normalization, we have to handle
+    // the case where blocks can be both the beginning of a 'try' as well as the beginning of a handler. After we've
+    // iterated over the EH table, loop over all blocks and verify that only handler begin blocks have
+    // bbCatchTyp != BBCT_NONE, and some other things.
 
     size_t blockBoolSetBytes = (bbNumMax + 1) * sizeof(bool);
-    bool*  blockTryBegSet    = (bool*)_alloca(blockBoolSetBytes);
     bool*  blockHndBegSet    = (bool*)_alloca(blockBoolSetBytes);
     for (unsigned i = 0; i <= bbNumMax; i++)
     {
-        blockTryBegSet[i] = false;
         blockHndBegSet[i] = false;
     }
 
@@ -3365,12 +3362,7 @@ void Compiler::fgVerifyHandlerTab()
             }
         }
 
-        // Set up blockTryBegSet and blockHndBegSet.
-        // We might want to have this assert:
-        //    if (fgNormalizeEHDone) assert(!blockTryBegSet[HBtab->ebdTryBeg->bbNum]);
-        // But we can't, because if we have mutually-protect 'try' regions, we'll see exactly the same tryBeg twice
-        // (or more).
-        blockTryBegSet[HBtab->ebdTryBeg->bbNum] = true;
+        // Set up blockHndBegSet.
         assert(!blockHndBegSet[HBtab->ebdHndBeg->bbNum]);
         blockHndBegSet[HBtab->ebdHndBeg->bbNum] = true;
 
