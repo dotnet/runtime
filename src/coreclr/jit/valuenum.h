@@ -256,37 +256,6 @@ public:
         }
     };
 
-    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueNumSet;
-
-    class SmallValueNumSet
-    {
-        union {
-            ValueNum     m_inlineElements[3];
-            ValueNumSet* m_set;
-        };
-
-        unsigned m_numElements = 0;
-
-    public:
-        unsigned Count()
-        {
-            return m_numElements;
-        }
-
-        void Add(Compiler* comp, ValueNum vn);
-
-        template <typename Func>
-        void ForEach(Func func);
-
-        void CopyTo(Compiler* comp, SmallValueNumSet& other);
-    };
-
-    struct MapSelectWorkCacheEntry
-    {
-        SmallValueNumSet MemoryDependencies;
-        ValueNum         Result;
-    };
-
 private:
     Compiler* m_pComp;
 
@@ -715,13 +684,13 @@ public:
     ValueNum VNForMapSelectInner(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
     // A method that does the work for VNForMapSelect and may call itself recursively.
-    ValueNum VNForMapSelectWork(ValueNumKind      vnk,
-                                var_types         type,
-                                ValueNum          map,
-                                ValueNum          index,
-                                int*              pBudget,
-                                bool*             pUsedRecursiveVN,
-                                SmallValueNumSet& loopMemoryDependencies);
+    ValueNum VNForMapSelectWork(ValueNumKind            vnk,
+                                var_types               type,
+                                ValueNum                map,
+                                ValueNum                index,
+                                int*                    pBudget,
+                                bool*                   pUsedRecursiveVN,
+                                class SmallValueNumSet& loopMemoryDependencies);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
     ValueNum VNForMapStore(ValueNum map, ValueNum index, ValueNum value);
@@ -1839,6 +1808,22 @@ private:
         }
         return m_VNFunc4Map;
     }
+
+    class MapSelectWorkCacheEntry
+    {
+        union {
+            ValueNum* m_memoryDependencies;
+            ValueNum  m_inlineMemoryDependencies[sizeof(ValueNum*) / sizeof(ValueNum)];
+        };
+
+        unsigned m_numMemoryDependencies = 0;
+
+    public:
+        ValueNum Result;
+
+        void SetMemoryDependencies(Compiler* comp, class SmallValueNumSet& deps);
+        void GetMemoryDependencies(Compiler* comp, class SmallValueNumSet& deps);
+    };
 
     typedef JitHashTable<VNDefFuncApp<2>, VNDefFuncAppKeyFuncs<2>, MapSelectWorkCacheEntry> MapSelectWorkCache;
     MapSelectWorkCache* m_mapSelectWorkCache = nullptr;
