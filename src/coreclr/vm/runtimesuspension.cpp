@@ -339,7 +339,7 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
     StackDataInfo stackDataInfo;
     stackDataInfo.StackRequirement = (uint32_t)(::GetSP(pCf->GetRegisterSet()->pCallerContext) - pCf->GetRegisterSet()->SP) + sizeofArgStack;
     stackDataInfo.StackDataSize = sizeofEntireMeaningfulStack;
-    stackDataInfo.UnrecordedDataSize = (uint32_t)taskletCaptureData->stackToIgnoreFromPreviousFrame
+    stackDataInfo.UnrecordedDataSize = (uint32_t)taskletCaptureData->stackToIgnoreFromPreviousFrame;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     uintptr_t returnAddressLocation = (uintptr_t) (EECodeManager::GetCallerSp(pCf->GetRegisterSet()) - sizeof(void*));
