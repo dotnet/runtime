@@ -31,6 +31,7 @@ public class Runtime_92590
         TestIntInt(ref i, 0, Vector256.Create(1));
 
         Assert.Equal(2, i);
+        throw new Exception("FORCE FAIL");
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
