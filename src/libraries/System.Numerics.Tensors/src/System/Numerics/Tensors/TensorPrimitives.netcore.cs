@@ -13,6 +13,20 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
+        /// <summary>Defines the threshold, in bytes, at which non-temporal stores will be used.</summary>
+        /// <remarks>
+        ///     A non-temporal store is one that allows the CPU to bypass the cache when writing to memory.
+        ///
+        ///     This can be beneficial when working with large amounts of memory where the writes would otherwise
+        ///     cause large amounts of repeated updates and evictions. The hardware optimization manuals recommend
+        ///     the threshold to be roughly half the size of the last level of on-die cache -- that is, if you have approximately
+        ///     4MB of L3 cache per core, you'd want this to be approx. 1-2MB, depending on if hyperthreading was enabled.
+        ///
+        ///     However, actually computing the amount of L3 cache per core can be tricky or error prone. Native memcpy
+        ///     algorithms use a constant threshold that is typically around 256KB and we match that here for simplicity. This
+        ///     threshold accounts for most processors in the last 10-15 years that had approx. 1MB L3 per core and support
+        ///     hyperthreading, giving a per core last level cache of approx. 512KB.
+        /// </remarks>
         private const nuint NonTemporalByteThreshold = 256 * 1024;
 
         /// <summary>
