@@ -342,8 +342,8 @@ namespace System
         {
             get
             {
-                ReadOnlySpan<byte> map = new byte[]
-                {
+                ReadOnlySpan<byte> map =
+                [
                     default,
                     (byte)CorElementType.ELEMENT_TYPE_VOID,      // EETypeElementType.Void
                     (byte)CorElementType.ELEMENT_TYPE_BOOLEAN,   // EETypeElementType.Boolean
@@ -377,7 +377,7 @@ namespace System
                     default,
                     default,
                     default
-                };
+                ];
 
                 // Verify last element of the map
                 Debug.Assert((byte)CorElementType.ELEMENT_TYPE_FNPTR == map[(int)EETypeElementType.FunctionPointer]);

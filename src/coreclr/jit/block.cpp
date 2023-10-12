@@ -1449,7 +1449,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
     /* Record the jump kind in the block */
 
-    block->SetBBJumpKind(jumpKind DEBUG_ARG(this));
+    block->SetJumpKind(jumpKind DEBUG_ARG(this));
 
     if (jumpKind == BBJ_THROW)
     {

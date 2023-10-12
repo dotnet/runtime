@@ -15,7 +15,7 @@ class TestClass
     }
 }
 
-class RuntimeHandlesTest
+public class RuntimeHandlesTest
 {
     [DllImport("RuntimeHandlesNative")]
     private static extern bool Marshal_In(RuntimeMethodHandle expected, IntPtr handle);
@@ -42,7 +42,8 @@ class RuntimeHandlesTest
         Assert.True(Marshal_In(handle, handle.Value));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

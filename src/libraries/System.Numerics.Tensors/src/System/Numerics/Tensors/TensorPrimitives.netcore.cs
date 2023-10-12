@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Security.Cryptography;
 
 namespace System.Numerics.Tensors
 {
@@ -147,7 +148,7 @@ namespace System.Numerics.Tensors
             // so we convert the VectorXx<float> to a VectorXx<uint>, and the caller then uses this twice, narrows the combination
             // into a VectorXx<ushort>, and then saves that out to the destination `ref Half` reinterpreted as `ref ushort`.
 
-            #pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/44948
+#pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/44948
             const uint MinExp = 0x3880_0000u; // Minimum exponent for rounding
             const uint Exponent126 = 0x3f00_0000u; // Exponent displacement #1
             const uint SingleBiasedExponentMask = 0x7F80_0000; // float.BiasedExponentMask; // Exponent mask
@@ -155,7 +156,7 @@ namespace System.Numerics.Tensors
             const float MaxHalfValueBelowInfinity = 65520.0f; // Maximum value that is not Infinity in Half
             const uint ExponentMask = 0x7C00; // Mask for exponent bits in Half
             const uint SingleSignMask = 0x8000_0000u; // float.SignMask; // Mask for sign bit in float
-            #pragma warning restore IDE0059
+#pragma warning restore IDE0059
 
             static Vector128<uint> SingleToHalfAsWidenedUInt32_Vector128(Vector128<float> value)
             {
@@ -462,13 +463,13 @@ namespace System.Numerics.Tensors
             // The VectorXx<uint> is created by reading a vector of Halfs as a VectorXx<short> then widened to two VectorXx<int>s and cast to VectorXx<uint>s.
             // We loop handling one input vector at a time, producing two output float vectors.
 
-            #pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/44948
+#pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/44948
             const uint ExponentLowerBound = 0x3880_0000u; // The smallest positive normal number in Half, converted to Single
             const uint ExponentOffset = 0x3800_0000u; // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
             const uint SingleSignMask = 0x8000_0000; // float.SignMask; // Mask for sign bit in Single
             const uint HalfExponentMask = 0x7C00; // Mask for exponent bits in Half
             const uint HalfToSingleBitsMask = 0x0FFF_E000; // Mask for bits in Single converted from Half
-            #pragma warning restore IDE0059
+#pragma warning restore IDE0059
 
             static Vector128<float> HalfAsWidenedUInt32ToSingle_Vector128(Vector128<uint> value)
             {
@@ -900,7 +901,10 @@ namespace System.Numerics.Tensors
             where TBinaryOperator : struct, IBinaryOperator
             where TAggregationOperator : struct, IAggregationOperator
         {
-            Debug.Assert(x.Length == y.Length);
+            if (x.Length != y.Length)
+            {
+                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
+            }
 
             if (x.IsEmpty)
             {
@@ -1209,7 +1213,7 @@ namespace System.Numerics.Tensors
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
         /// <typeparam name="TUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
-        private static unsafe void InvokeSpanIntoSpan<TUnaryOperator>(
+        private static void InvokeSpanIntoSpan<TUnaryOperator>(
             ReadOnlySpan<float> x, Span<float> destination)
             where TUnaryOperator : struct, IUnaryOperator
         {
@@ -1325,7 +1329,7 @@ namespace System.Numerics.Tensors
         /// <typeparam name="TBinaryOperator">
         /// Specifies the operation to perform on the pair-wise elements loaded from <paramref name="x"/> and <paramref name="y"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanSpanIntoSpan<TBinaryOperator>(
+        private static void InvokeSpanSpanIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination)
             where TBinaryOperator : struct, IBinaryOperator
         {
@@ -1455,7 +1459,7 @@ namespace System.Numerics.Tensors
         /// <typeparam name="TBinaryOperator">
         /// Specifies the operation to perform on each element loaded from <paramref name="x"/> with <paramref name="y"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanScalarIntoSpan<TBinaryOperator>(
+        private static void InvokeSpanScalarIntoSpan<TBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination)
             where TBinaryOperator : struct, IBinaryOperator =>
             InvokeSpanScalarIntoSpan<IdentityOperator, TBinaryOperator>(x, y, destination);
@@ -1471,7 +1475,7 @@ namespace System.Numerics.Tensors
         /// <typeparam name="TBinaryOperator">
         /// Specifies the operation to perform on the transformed value from <paramref name="x"/> with <paramref name="y"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanScalarIntoSpan<TTransformOperator, TBinaryOperator>(
+        private static void InvokeSpanScalarIntoSpan<TTransformOperator, TBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination)
             where TTransformOperator : struct, IUnaryOperator
             where TBinaryOperator : struct, IBinaryOperator
@@ -1602,7 +1606,7 @@ namespace System.Numerics.Tensors
         /// Specifies the operation to perform on the pair-wise elements loaded from <paramref name="x"/>, <paramref name="y"/>,
         /// and <paramref name="z"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanSpanSpanIntoSpan<TTernaryOperator>(
+        private static void InvokeSpanSpanSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, ReadOnlySpan<float> z, Span<float> destination)
             where TTernaryOperator : struct, ITernaryOperator
         {
@@ -1742,7 +1746,7 @@ namespace System.Numerics.Tensors
         /// Specifies the operation to perform on the pair-wise elements loaded from <paramref name="x"/> and <paramref name="y"/>
         /// with <paramref name="z"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanSpanScalarIntoSpan<TTernaryOperator>(
+        private static void InvokeSpanSpanScalarIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, ReadOnlySpan<float> y, float z, Span<float> destination)
             where TTernaryOperator : struct, ITernaryOperator
         {
@@ -1886,7 +1890,7 @@ namespace System.Numerics.Tensors
         /// Specifies the operation to perform on the pair-wise element loaded from <paramref name="x"/>, with <paramref name="y"/>,
         /// and the element loaded from <paramref name="z"/>.
         /// </typeparam>
-        private static unsafe void InvokeSpanScalarSpanIntoSpan<TTernaryOperator>(
+        private static void InvokeSpanScalarSpanIntoSpan<TTernaryOperator>(
             ReadOnlySpan<float> x, float y, ReadOnlySpan<float> z, Span<float> destination)
             where TTernaryOperator : struct, ITernaryOperator
         {
@@ -2141,7 +2145,7 @@ namespace System.Numerics.Tensors
         /// and zero for all other elements.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector128<float> CreateRemainderMaskSingleVector128(int count) =>
+        private static Vector128<float> CreateRemainderMaskSingleVector128(int count) =>
             Vector128.LoadUnsafe(
                 ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
                 (uint)((count * 16) + 12)); // last four floats in the row
@@ -2151,7 +2155,7 @@ namespace System.Numerics.Tensors
         /// and zero for all other elements.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector256<float> CreateRemainderMaskSingleVector256(int count) =>
+        private static Vector256<float> CreateRemainderMaskSingleVector256(int count) =>
             Vector256.LoadUnsafe(
                 ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
                 (uint)((count * 16) + 8)); // last eight floats in the row
@@ -2162,7 +2166,7 @@ namespace System.Numerics.Tensors
         /// and zero for all other elements.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector512<float> CreateRemainderMaskSingleVector512(int count) =>
+        private static Vector512<float> CreateRemainderMaskSingleVector512(int count) =>
             Vector512.LoadUnsafe(
                 ref Unsafe.As<uint, float>(ref MemoryMarshal.GetReference(RemainderUInt32Mask_16x16)),
                 (uint)(count * 16)); // all sixteen floats in the row
@@ -2988,6 +2992,156 @@ namespace System.Numerics.Tensors
                 }
 
                 return ret;
+            }
+#endif
+        }
+
+        /// <summary>MathF.Cosh(x)</summary>
+        private readonly struct CoshOperator : IUnaryOperator
+        {
+            // This code is based on `vrs4_coshf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Spec:
+            //   coshf(|x| > 89.415985107421875) = Infinity
+            //   coshf(Infinity)  = infinity
+            //   coshf(-Infinity) = infinity
+            //
+            // cosh(x) = (exp(x) + exp(-x))/2
+            // cosh(-x) = +cosh(x)
+            //
+            // checks for special cases
+            // if ( asint(x) > infinity) return x with overflow exception and
+            // return x.
+            // if x is NaN then raise invalid FP operation exception and return x.
+            //
+            // coshf = v/2 * exp(x - log(v)) where v = 0x1.0000e8p-1
+
+            private const float LOGV = 0.693161f;
+            private const float HALFV = 1.0000138f;
+            private const float INVV2 = 0.24999309f;
+
+            public static float Invoke(float x) => MathF.Cosh(x);
+
+            public static Vector128<float> Invoke(Vector128<float> x)
+            {
+                Vector128<float> y = Vector128.Abs(x);
+                Vector128<float> z = ExpOperator.Invoke(y - Vector128.Create(LOGV));
+                return Vector128.Create(HALFV) * (z + (Vector128.Create(INVV2) / z));
+            }
+
+            public static Vector256<float> Invoke(Vector256<float> x)
+            {
+                Vector256<float> y = Vector256.Abs(x);
+                Vector256<float> z = ExpOperator.Invoke(y - Vector256.Create(LOGV));
+                return Vector256.Create(HALFV) * (z + (Vector256.Create(INVV2) / z));
+            }
+
+#if NET8_0_OR_GREATER
+            public static Vector512<float> Invoke(Vector512<float> x)
+            {
+                Vector512<float> y = Vector512.Abs(x);
+                Vector512<float> z = ExpOperator.Invoke(y - Vector512.Create(LOGV));
+                return Vector512.Create(HALFV) * (z + (Vector512.Create(INVV2) / z));
+            }
+#endif
+        }
+
+        /// <summary>MathF.Sinh(x)</summary>
+        private readonly struct SinhOperator : IUnaryOperator
+        {
+            // Same as cosh, but with `z -` rather than `z +`, and with the sign
+            // flipped on the result based on the sign of the input.
+
+            private const uint SIGN_MASK = 0x7FFFFFFF;
+            private const float LOGV = 0.693161f;
+            private const float HALFV = 1.0000138f;
+            private const float INVV2 = 0.24999309f;
+
+            public static float Invoke(float x) => MathF.Sinh(x);
+
+            public static Vector128<float> Invoke(Vector128<float> x)
+            {
+                Vector128<float> y = Vector128.Abs(x);
+                Vector128<float> z = ExpOperator.Invoke(y - Vector128.Create(LOGV));
+                Vector128<float> result = Vector128.Create(HALFV) * (z - (Vector128.Create(INVV2) / z));
+                Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~SIGN_MASK);
+                return (sign ^ result.AsUInt32()).AsSingle();
+            }
+
+            public static Vector256<float> Invoke(Vector256<float> x)
+            {
+                Vector256<float> y = Vector256.Abs(x);
+                Vector256<float> z = ExpOperator.Invoke(y - Vector256.Create(LOGV));
+                Vector256<float> result = Vector256.Create(HALFV) * (z - (Vector256.Create(INVV2) / z));
+                Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~SIGN_MASK);
+                return (sign ^ result.AsUInt32()).AsSingle();
+            }
+
+#if NET8_0_OR_GREATER
+            public static Vector512<float> Invoke(Vector512<float> x)
+            {
+                Vector512<float> y = Vector512.Abs(x);
+                Vector512<float> z = ExpOperator.Invoke(y - Vector512.Create(LOGV));
+                Vector512<float> result = Vector512.Create(HALFV) * (z - (Vector512.Create(INVV2) / z));
+                Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SIGN_MASK);
+                return (sign ^ result.AsUInt32()).AsSingle();
+            }
+#endif
+        }
+
+        /// <summary>MathF.Tanh(x)</summary>
+        private readonly struct TanhOperator : IUnaryOperator
+        {
+            // This code is based on `vrs4_tanhf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // To compute vrs4_tanhf(v_f32x4_t x)
+            // Let y = |x|
+            // If 0 <= y < 0x1.154246p3
+            //    Let z = e^(-2.0 * y) - 1      -(1)
+            //
+            //    Using (1), tanhf(y) can be calculated as,
+            //    tanhf(y) = -z / (z + 2.0)
+            //
+            // For other cases, call scalar tanhf()
+            //
+            // If x < 0, then we use the identity
+            //    tanhf(-x) = -tanhf(x)
+
+            private const uint SIGN_MASK = 0x7FFFFFFF;
+
+            public static float Invoke(float x) => MathF.Tanh(x);
+
+            public static Vector128<float> Invoke(Vector128<float> x)
+            {
+                Vector128<float> y = Vector128.Abs(x);
+                Vector128<float> z = ExpOperator.Invoke(Vector128.Create(-2f) * y) - Vector128.Create(1f);
+                Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~SIGN_MASK);
+                return (sign ^ (-z / (z + Vector128.Create(2f))).AsUInt32()).AsSingle();
+            }
+
+            public static Vector256<float> Invoke(Vector256<float> x)
+            {
+                Vector256<float> y = Vector256.Abs(x);
+                Vector256<float> z = ExpOperator.Invoke(Vector256.Create(-2f) * y) - Vector256.Create(1f);
+                Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~SIGN_MASK);
+                return (sign ^ (-z / (z + Vector256.Create(2f))).AsUInt32()).AsSingle();
+            }
+
+#if NET8_0_OR_GREATER
+            public static Vector512<float> Invoke(Vector512<float> x)
+            {
+                Vector512<float> y = Vector512.Abs(x);
+                Vector512<float> z = ExpOperator.Invoke(Vector512.Create(-2f) * y) - Vector512.Create(1f);
+                Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SIGN_MASK);
+                return (sign ^ (-z / (z + Vector512.Create(2f))).AsUInt32()).AsSingle();
             }
 #endif
         }

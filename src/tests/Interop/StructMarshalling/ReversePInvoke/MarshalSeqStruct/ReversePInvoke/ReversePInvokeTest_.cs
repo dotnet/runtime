@@ -1832,7 +1832,8 @@ public class MarshalStructTest
 
     #endregion
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try{
 

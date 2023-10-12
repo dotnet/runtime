@@ -98,7 +98,7 @@ bool RedhawkGCInterface::InitializeSubsystems()
         GetRuntimeInstance()->EnableConservativeStackReporting();
     }
 
-    HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
+    HRESULT hr = GCHeapUtilities::InitializeGC();
     if (FAILED(hr))
         return false;
 

@@ -47,9 +47,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static void VerifySocketAddress(KeyValuePair<string, object?>[] tags)
+        private static void VerifyPeerAddress(KeyValuePair<string, object?>[] tags)
         {
-            string ipString = (string)tags.Single(t => t.Key == "server.socket.address").Value;
+            string ipString = (string)tags.Single(t => t.Key == "network.peer.address").Value;
             IPAddress ip = IPAddress.Parse(ipString);
             Assert.True(ip.Equals(IPAddress.Loopback.MapToIPv6()) ||
                     ip.Equals(IPAddress.Loopback) ||
@@ -122,7 +122,7 @@ namespace System.Net.Http.Functional.Tests
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifyTag(tags, "http.connection.state", state);
-            VerifySocketAddress(tags);
+            VerifyPeerAddress(tags);
         }
 
         protected static void VerifyConnectionDuration(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion)
@@ -132,7 +132,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.InRange(value, double.Epsilon, 60);
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
-            VerifySocketAddress(tags);
+            VerifyPeerAddress(tags);
         }
 
         protected static void VerifyTimeInQueue(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion, string method = "GET")
@@ -717,10 +717,17 @@ namespace System.Net.Http.Functional.Tests
             base.Dispose(disposing);
         }
 
-        protected Task<HttpResponseMessage> SendAsync(HttpMessageInvoker invoker, HttpRequestMessage request, CancellationToken cancellationToken = default) =>
-            TestHttpMessageInvoker ?
-            invoker.SendAsync(request, cancellationToken) :
-            ((HttpClient)invoker).SendAsync(TestAsync, request, cancellationToken);
+        protected Task<HttpResponseMessage> SendAsync(HttpMessageInvoker invoker, HttpRequestMessage request, CancellationToken cancellationToken = default)
+        {
+            if (TestHttpMessageInvoker)
+            {
+                return TestAsync
+                    ? invoker.SendAsync(request, cancellationToken)
+                    : Task.Run(() => invoker.Send(request, cancellationToken));
+            }
+
+            return ((HttpClient)invoker).SendAsync(TestAsync, request, cancellationToken);
+        }
 
         protected HttpMessageInvoker CreateHttpMessageInvoker(HttpMessageHandler? handler = null) =>
             TestHttpMessageInvoker ?

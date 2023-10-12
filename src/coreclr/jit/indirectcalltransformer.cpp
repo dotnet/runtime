@@ -274,12 +274,12 @@ private:
             }
 
             // checkBlock
-            checkBlock->bbJumpDest = elseBlock;
+            checkBlock->SetJumpDest(elseBlock);
             compiler->fgAddRefPred(elseBlock, checkBlock);
             compiler->fgAddRefPred(thenBlock, checkBlock);
 
             // thenBlock
-            thenBlock->bbJumpDest = remainderBlock;
+            thenBlock->SetJumpDest(remainderBlock);
             compiler->fgAddRefPred(remainderBlock, thenBlock);
 
             // elseBlock
@@ -573,7 +573,7 @@ private:
                 // There's no need for a new block here. We can just append to currBlock.
                 //
                 checkBlock = currBlock;
-                checkBlock->SetBBJumpKind(BBJ_COND DEBUG_ARG(compiler));
+                checkBlock->SetJumpKind(BBJ_COND DEBUG_ARG(compiler));
             }
             else
             {
@@ -582,7 +582,7 @@ private:
                 checkBlock                 = CreateAndInsertBasicBlock(BBJ_COND, thenBlock);
 
                 // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
-                prevCheckBlock->bbJumpDest = checkBlock;
+                prevCheckBlock->SetJumpDest(checkBlock);
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
                 // Calculate the total likelihood for this check as a sum of likelihoods
@@ -651,8 +651,8 @@ private:
             const bool isLastCheck = (checkIdx == origCall->GetInlineCandidatesCount() - 1);
             if (isLastCheck && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) != 0))
             {
-                checkBlock->bbJumpDest = nullptr;
-                checkBlock->SetBBJumpKind(BBJ_NONE DEBUG_ARG(compiler));
+                checkBlock->SetJumpDest(nullptr);
+                checkBlock->SetJumpKind(BBJ_NONE DEBUG_ARG(compiler));
                 return;
             }
 
@@ -980,11 +980,11 @@ private:
         {
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
-            thenBlock->bbJumpDest = remainderBlock;
+            thenBlock->SetJumpDest(remainderBlock);
             thenBlock->inheritWeightPercentage(currBlock, origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
 
             // thenBlock always jumps to remainderBlock. Also, it has a single pred - last checkBlock
-            thenBlock->bbJumpDest = remainderBlock;
+            thenBlock->SetJumpDest(remainderBlock);
             compiler->fgAddRefPred(thenBlock, checkBlock);
             compiler->fgAddRefPred(remainderBlock, thenBlock);
 
@@ -1003,7 +1003,7 @@ private:
             // where we know the last check is always true (in case of "exact" GDV)
             if (checkBlock->KindIs(BBJ_COND))
             {
-                checkBlock->bbJumpDest = elseBlock;
+                checkBlock->SetJumpDest(elseBlock);
                 compiler->fgAddRefPred(elseBlock, checkBlock);
             }
             else
@@ -1081,7 +1081,7 @@ private:
 
             BasicBlock* const hotBlock = coldBlock->Prev();
 
-            if (!hotBlock->KindIs(BBJ_ALWAYS) || (hotBlock->bbJumpDest != checkBlock))
+            if (!hotBlock->KindIs(BBJ_ALWAYS) || !hotBlock->HasJumpTo(checkBlock))
             {
                 JITDUMP("Unexpected flow from hot path " FMT_BB "\n", hotBlock->bbNum);
                 return;
@@ -1126,8 +1126,7 @@ private:
             // not fall through to the check block.
             //
             compiler->fgRemoveRefPred(checkBlock, coldBlock);
-            coldBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(compiler));
-            coldBlock->bbJumpDest = elseBlock;
+            coldBlock->SetJumpKindAndTarget(BBJ_ALWAYS, elseBlock);
             compiler->fgAddRefPred(elseBlock, coldBlock);
         }
 

@@ -649,3 +649,16 @@ function(add_library_clr targetName kind)
     strip_symbols(${ARGV0} symbolFile)
   endif()
 endfunction()
+
+# Adhoc sign targetName with the entitlements in entitlementsFile.
+function(adhoc_sign_with_entitlements targetName entitlementsFile)
+    # Add a dependency from a source file for the target on the entitlements file to ensure that the target is rebuilt if only the entitlements file changes.
+    get_target_property(sources ${targetName} SOURCES)
+    list(GET sources 0 firstSource)
+    set_source_files_properties(${firstSource} PROPERTIES OBJECT_DEPENDS ${entitlementsFile})
+
+    add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        COMMAND codesign -s - -f --entitlements ${entitlementsFile} $<TARGET_FILE:${targetName}>)
+endfunction()

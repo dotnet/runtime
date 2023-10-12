@@ -521,7 +521,7 @@ static BasicBlockVisit VisitEHSuccessors(Compiler* comp, BasicBlock* block, TFun
             // will be yielded as a normal successor.  Don't also yield as
             // an exceptional successor.
             BasicBlock* flowBlock = eh->ExFlowBlock();
-            if (!block->KindIs(BBJ_CALLFINALLY) || (block->bbJumpDest != flowBlock))
+            if (!block->KindIs(BBJ_CALLFINALLY) || !block->HasJumpTo(flowBlock))
             {
                 RETURN_ON_ABORT(func(flowBlock));
             }
@@ -635,7 +635,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 
             for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
             {
-                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
                 {
                     continue;
                 }
@@ -649,7 +649,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 
             for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
             {
-                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
                 {
                     continue;
                 }
@@ -769,7 +769,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 
             for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
             {
-                if (!bcall->KindIs(BBJ_CALLFINALLY) || (bcall->bbJumpDest != finBeg))
+                if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
                 {
                     continue;
                 }
@@ -3224,7 +3224,7 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     fgRemoveBlockAsPred(block);
 
     // Update jump kind after the scrub.
-    block->SetBBJumpKind(BBJ_THROW DEBUG_ARG(this));
+    block->SetJumpKind(BBJ_THROW DEBUG_ARG(this));
 
     // Any block with a throw is rare
     block->bbSetRunRarely();
@@ -3244,7 +3244,7 @@ inline void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
         leaveBlk->bbPreds = nullptr;
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-        fgClearFinallyTargetBit(leaveBlk->bbJumpDest);
+        fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     }
 }
