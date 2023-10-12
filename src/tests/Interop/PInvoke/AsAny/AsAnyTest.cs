@@ -10,19 +10,19 @@ using Xunit;
 
 #pragma warning disable CS0612, CS0618
 
-struct A
+public struct A
 {
     public long a;
     public long b;
 }
 
-struct AsAnyField
+public struct AsAnyField
 {
     [MarshalAs(UnmanagedType.AsAny)]
     public object intArray;
 }
 
-class AsAnyTests
+public class AsAnyTests
 {
     private const char mappableChar = (char)0x2075;
     private const char unmappableChar = (char)0x7777;
@@ -295,7 +295,8 @@ class AsAnyTests
     [DllImport("AsAnyNative", EntryPoint = "PassMixStruct")]
     public static extern bool PassMixStruct(AsAnyField mix);
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {
