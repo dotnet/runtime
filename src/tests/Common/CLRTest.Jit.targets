@@ -390,7 +390,6 @@ import glob
 import struct
 
 def is_managed_assembly(file):
-    print(file)
     file_size = os.path.getsize(file)
 
     if file_size < 64:
