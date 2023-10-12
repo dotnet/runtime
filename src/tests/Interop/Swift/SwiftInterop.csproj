@@ -4,10 +4,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="GlobalFunctions.cs" />
-    <Compile Include="DefaultParams.cs" />
+    <Compile Include="ErrorHandling.cs" />
+    <!-- <Compile Include="DefaultParams.cs" />
     <Compile Include="Varargs.cs" />
-    <Compile Include="ClosureFunctions.cs" />
+    <Compile Include="ClosureFunctions.cs" /> -->
 
     <!-- TODO: Add missing tests from the library -->
   </ItemGroup>
