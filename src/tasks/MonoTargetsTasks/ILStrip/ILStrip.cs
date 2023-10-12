@@ -61,6 +61,25 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             throw new ArgumentException($"'{nameof(Assemblies)}' is required.", nameof(Assemblies));
         }
 
+        string trimmedAssemblyFolder = string.Empty;
+        if (TrimIndividualMethods)
+        {
+            if (!string.IsNullOrEmpty(IntermediateOutputPath))
+            {
+                if (!Directory.Exists(IntermediateOutputPath))
+                {
+                    Directory.CreateDirectory(IntermediateOutputPath);
+                }
+            }
+
+            trimmedAssemblyFolder = ComputeTrimmedAssemblyFolderName(IntermediateOutputPath);
+            if (Directory.Exists(trimmedAssemblyFolder))
+            {
+                Directory.Delete(trimmedAssemblyFolder, true);
+            }
+            Directory.CreateDirectory(trimmedAssemblyFolder);
+        }
+
         int allowedParallelism = DisableParallelStripping ? 1 : Math.Min(Assemblies.Length, Environment.ProcessorCount);
         if (BuildEngine is IBuildEngine9 be9)
             allowedParallelism = be9.RequestCores(allowedParallelism);
@@ -75,7 +94,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                                                         }
                                                         else
                                                         {
-                                                            if (!TrimMethods(assemblyItem))
+                                                            if (!TrimMethods(assemblyItem, trimmedAssemblyFolder))
                                                                 state.Stop();
                                                         }
                                                     });
@@ -121,7 +140,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         return true;
     }
 
-    private bool TrimMethods(ITaskItem assemblyItem)
+    private bool TrimMethods(ITaskItem assemblyItem, string trimmedAssemblyFolder)
     {
         ITaskItem newAssmeblyItem = assemblyItem;
 
@@ -150,16 +169,6 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         {
             Log.LogError($"{assemblyFilePath} read from {methodTokenFile} doesn't exist.");
             return true;
-        }
-
-        if (!string.IsNullOrEmpty(IntermediateOutputPath))
-            if (!Directory.Exists(IntermediateOutputPath))
-                Directory.CreateDirectory(IntermediateOutputPath);
-
-        string trimmedAssemblyFolder = ComputeTrimmedAssemblyFolderName(IntermediateOutputPath);
-        if (!Directory.Exists(trimmedAssemblyFolder))
-        {
-            Directory.CreateDirectory(trimmedAssemblyFolder);
         }
 
         string trimmedAssemblyFilePath = ComputeTrimmedAssemblyPath(trimmedAssemblyFolder, assemblyFilePath);
