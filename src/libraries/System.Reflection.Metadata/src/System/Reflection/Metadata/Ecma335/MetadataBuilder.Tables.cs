@@ -2048,7 +2048,9 @@ namespace System.Reflection.Metadata.Ecma335
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
             // OrderBy performs a stable sort, so multiple attributes with the same parent will be sorted in the order they were added to the table.
-            var ordered = _customAttributeTableNeedsSorting ? _customAttributeTable.OrderBy((x, y) => x.Parent - y.Parent) : _customAttributeTable;
+            // Avoid sorting the table when emitting EnC delta. Deleted attributes are represented in the table as rows with nil Parent field.
+            // Sorting the table would move them to the beginning of the table and break mapping specified in EncMap table.
+            var ordered = _customAttributeTableNeedsSorting && _encMapTable is [] ? _customAttributeTable.OrderBy((x, y) => x.Parent - y.Parent) : _customAttributeTable;
 
             foreach (CustomAttributeRow customAttribute in ordered)
             {
