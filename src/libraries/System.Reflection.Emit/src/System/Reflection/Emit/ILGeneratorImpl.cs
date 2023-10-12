@@ -250,16 +250,17 @@ namespace System.Reflection.Emit
 
         public override void Emit(OpCode opcode, Label[] labels)
         {
-            if (opcode.Equals(OpCodes.Switch))
+            if (!opcode.Equals(OpCodes.Switch))
+                throw new ArgumentException(SR.Argument_MustBeSwitchOpCode,  nameof(opcode));
+                
+            SwitchInstructionEncoder switchEncoder = _il.Switch(labels.Length);
+            UpdateStackSize(opcode);
+            
+            foreach (Label label in labels)
             {
-                SwitchInstructionEncoder switchEncoder = _il.Switch(labels.Length);
-                UpdateStackSize(opcode);
-
-                foreach (Label label in labels)
-                {
-                    switchEncoder.Branch(_labelTable[label]);
-                }
+                switchEncoder.Branch(_labelTable[label]);
             }
+        }
         }
 
         public override void Emit(OpCode opcode, LocalBuilder local) => throw new NotImplementedException();
