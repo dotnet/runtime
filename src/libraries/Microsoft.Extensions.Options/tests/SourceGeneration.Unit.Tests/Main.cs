@@ -1850,7 +1850,11 @@ string lengthAttribute = "";
         Assert.Empty(diagnostics);
         Assert.Single(generatedSources);
 
-        // string generatedSource = File.ReadAllText(@"Baselines/DataAnnotationAttributesWithParams.g.cs");
-        // Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
+#if NETCOREAPP
+        string generatedSource = File.ReadAllText(@"Baselines/UsingInterfaceAsPropertyTypeForLengthAttributesTests.netcore.g.cs");
+#else
+        string generatedSource = File.ReadAllText(@"Baselines/UsingInterfaceAsPropertyTypeForLengthAttributesTests.netfx.g.cs");
+#endif // NETCOREAPP
+        Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 }
