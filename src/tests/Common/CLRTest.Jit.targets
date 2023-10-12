@@ -397,8 +397,9 @@ if not os.path.exists("IL-RT"):
 for inputAssemblyName in glob.glob(r"$(OutputPath)*.dll"):
   print("ILASM RoundTrip for " + inputAssemblyName)
 
-  disassemblyName = os.path.join(r"$(OutputPath)\", "IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
-  targetAssemblyName = os.path.join(r"$(OutputPath)\", "IL-RT", os.path.basename(inputAssemblyName))
+  extra_backslash = "\\" if os.name == 'nt' else ""
+  disassemblyName = os.path.join(r"$(OutputPath)" + extra_backslash, "IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
+  targetAssemblyName = os.path.join(r"$(OutputPath)" + extra_backslash, "IL-RT", os.path.basename(inputAssemblyName))
 
   shutil.copyfile(inputAssemblyName, targetAssemblyName)
 
