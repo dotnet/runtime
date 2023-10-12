@@ -19,7 +19,7 @@ namespace System.Numerics.Tensors.Tests
             TensorLengths.Concat(new object[][] { [0] });
 
         public static IEnumerable<object[]> TensorLengths =>
-            from length in Enumerable.Range(1, 128)
+            from length in Enumerable.Range(1, 256)
             select new object[] { length };
 
         public static IEnumerable<object[]> VectorLengthAndIteratedRange(float min, float max, float increment)
