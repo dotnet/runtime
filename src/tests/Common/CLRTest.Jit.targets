@@ -141,6 +141,11 @@ set RunningIlasmRoundTrip=
       </IlasmRoundTripBatchScript>
 
       <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
+
+IF "$(IsMergedTestRunnerAssembly)"=="true" (
+  python $(AssemblyName)_ilasmroundtrip.py
+)
+
 REM IlasmRoundTrip Script
 REM Disable Ilasm round-tripping for Linker tests.
 REM Todo: Ilasm round-trip on linked binaries.
@@ -371,7 +376,7 @@ set DOTNET_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
   ***********************************************************************************************
   -->
 
-  <Target Name="IlasmRoundTripCommand" AfterTargets="AfterBuild" Condition="'$(GenerateRunScript)' == 'false'">
+  <Target Name="IlasmRoundTripCommand" AfterTargets="AfterBuild" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
     <PropertyGroup>
       <InputAssemblyName>$(AssemblyName).dll</InputAssemblyName>
       <DisassemblyName>IL-RT/$(AssemblyName).il</DisassemblyName>
@@ -381,35 +386,46 @@ import os
 import shutil
 import subprocess
 import sys
+import glob
+
+print("")
+print("ILASM RoundTrips")
 
 if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
-shutil.copyfile("$(InputAssemblyName)", "$(TargetAssemblyName)")
+for inputAssemblyName in glob.glob(r"$(OutputPath)*.dll"):
+  print("ILASM RoundTrip for " + inputAssemblyName)
 
-proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ildasm /raweh /unicode /out=$(DisassemblyName) $(TargetAssemblyName)")
+  disassemblyName = os.path.join(r"$(OutputPath)\", "IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
+  targetAssemblyName = os.path.join(r"$(OutputPath)\", "IL-RT", os.path.basename(inputAssemblyName))
 
-try:
-    proc.communicate()
-except:
-    proc.kill()
-    sys.exit(1)
+  shutil.copyfile(inputAssemblyName, targetAssemblyName)
 
-proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ilasm /output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName) /DLL")
+  proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ildasm /raweh /unicode /out=" + disassemblyName + " " + targetAssemblyName)
 
-try:
-    proc.communicate()
-except:
-    proc.kill()
-    sys.exit(1)
+  try:
+      proc.communicate()
+  except:
+      proc.kill()
+      sys.exit(1)
+
+  proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ilasm /DLL /output=" + inputAssemblyName + " $(_IlasmSwitches) " + disassemblyName)
+
+  try:
+      proc.communicate()
+  except:
+      proc.kill()
+      sys.exit(1)
+
+print("")
 
 ]]></_IlasmRoundTripScriptText>
     </PropertyGroup>
     <WriteLinesToFile
-      File="$(OutputPath)\$(AssemblyName)_ilasmroundtrip.py"
+      File="$(OutputPath)$(AssemblyName)_ilasmroundtrip.py"
       Lines="$(_IlasmRoundTripScriptText)"
       Overwrite="true" />
-    <Exec Command="python $(OutputPath)\$(AssemblyName)_ilasmroundtrip.py" WorkingDirectory="$(OutputPath)" />
   </Target>
 
   <!--
