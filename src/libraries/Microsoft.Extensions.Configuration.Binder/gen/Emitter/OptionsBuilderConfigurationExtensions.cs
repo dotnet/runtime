@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     paramList + $", {TypeDisplayString.NullableActionOfBinderOptions} {Identifier.configureBinder}",
                     documentation);
 
-                EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder, _emitThrowIfNullMethod);
 
                 _writer.WriteLine($$"""
                     {{Identifier.Configure}}<{{Identifier.TOptions}}>({{Identifier.optionsBuilder}}.{{Identifier.Services}}, {{Identifier.optionsBuilder}}.Name, {{Identifier.config}}, {{Identifier.configureBinder}});
@@ -65,11 +65,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitMethodStartBlock(MethodsToGen.OptionsBuilderExt_BindConfiguration, "BindConfiguration", paramList, documentation);
 
-                EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder);
-                EmitCheckForNullArgument_WithBlankLine(Identifier.configSectionPath);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.optionsBuilder, _emitThrowIfNullMethod);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.configSectionPath, _emitThrowIfNullMethod);
 
                 EmitStartBlock($"{Identifier.optionsBuilder}.{Identifier.Configure}<{Identifier.IConfiguration}>(({Identifier.instance}, {Identifier.config}) =>");
-                EmitCheckForNullArgument_WithBlankLine(Identifier.config);
+                EmitCheckForNullArgument_WithBlankLine(Identifier.config, _emitThrowIfNullMethod);
                 _writer.WriteLine($$"""
                     {{Identifier.IConfiguration}} {{Identifier.section}} = string.Equals(string.Empty, {{Identifier.configSectionPath}}, StringComparison.OrdinalIgnoreCase) ? {{Identifier.config}} : {{Identifier.config}}.{{Identifier.GetSection}}({{Identifier.configSectionPath}});
                     {{nameof(MethodsToGen_CoreBindingHelper.BindCoreMain)}}({{Identifier.section}}, {{Identifier.instance}}, typeof({{Identifier.TOptions}}), {{Identifier.configureBinder}});
