@@ -43,6 +43,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_out")]
             public static partial void NegateBoolsOut(
+                [MarshalUsing(typeof(EnforceLastElementMarshalledCleanupBoolStruct), ElementIndirectionDepth = 1)]
                 BoolStruct[] boolStruct,
                 int numValues,
                 [MarshalUsing(typeof(EnforceAllElementsCleanedUpBoolStruct), ElementIndirectionDepth = 1)]
@@ -51,6 +52,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_out_2d")]
             public static partial void NegateBoolsOut2D(
+                [MarshalUsing(typeof(EnforceLastElementMarshalledCleanupBoolStruct), ElementIndirectionDepth = 2)]
                 BoolStruct[][] boolStruct,
                 int length,
                 int[] widths,
@@ -148,6 +150,7 @@ namespace LibraryImportGenerator.IntegrationTests
             foreach (var throwOn in new int[] { 0, 1, 5, 9 })
             {
                 EnforceLastElementMarshalledCleanupBoolStruct.ThrowOnNthMarshalledElement(throwOn);
+                EnforceLastElementMarshalledCleanupBoolStruct.ExpectedCleanupNumber = throwOn;
                 Assert.Throws<ArgumentException>(() =>
                 {
                     NativeExportsNE.MarshallingFails.MarshalSingleDimensionalArray(arr);
@@ -211,13 +214,18 @@ namespace LibraryImportGenerator.IntegrationTests
             var widths = new int[10] { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
             foreach (var throwOn in new int[] { 0, 1, 45, 99 })
             {
+                // Set up unmarshalling asserts
                 EnforceAllElementsCleanedUpBoolStruct.ThrowOnNthUnmarshalledElement(throwOn);
                 EnforceAllElementsCleanedUpBoolStruct.ExpectedCleanupNumber = 100;
+                // Set up marshalling asserts
+                EnforceLastElementMarshalledCleanupBoolStruct.ThrowOnNthMarshalledElement(-1);
+                EnforceLastElementMarshalledCleanupBoolStruct.ExpectedCleanupNumber = 100;
                 Assert.Throws<ArgumentException>(() =>
                 {
                     NativeExportsNE.MarshallingFails.NegateBoolsOut2D(arr, arr.Length, widths, out BoolStruct[][] boolsOut);
                 });
                 EnforceAllElementsCleanedUpBoolStruct.AssertAllHaveBeenCleaned();
+                EnforceLastElementMarshalledCleanupBoolStruct.AssertAllHaveBeenCleaned();
             }
             // Run without throwing - this is okay only because the native code doesn't actually use the array, it creates a whole new one
             EnforceAllElementsCleanedUpBoolStruct.ThrowOnNthUnmarshalledElement(-1);
@@ -275,6 +283,7 @@ namespace LibraryImportGenerator.IntegrationTests
             foreach (var throwOn in new int[] { 0, 1, 5, 9 })
             {
                 EnforceLastElementMarshalledCleanupBoolStruct.ThrowOnNthMarshalledElement(throwOn);
+                EnforceLastElementMarshalledCleanupBoolStruct.ExpectedCleanupNumber = throwOn;
                 Assert.Throws<ArgumentException>(() =>
                 {
                     NativeExportsNE.MarshallingFails.NegateBoolsRef(ref arr, arr.Length);
@@ -376,7 +385,9 @@ namespace LibraryImportGenerator.IntegrationTests
     [CustomMarshaller(typeof(BoolStruct), MarshalMode.ElementOut, typeof(EnforceAllElementsCleanedUpBoolStruct))]
     internal static class EnforceAllElementsCleanedUpBoolStruct
     {
-        private static MarshallingExceptionManager<BoolStruct, BoolStructNative> s_BoolStructMarshalling = new(default, default);
+        private static MarshallingExceptionManager<BoolStruct, BoolStructNative> s_BoolStructMarshalling = new(default, new BoolStructNative() { b1 = 0x01, b2 = 0x01, b3 = 0x00 });
+
+        private static BoolStructNative s_expectedUnmarshalled = new BoolStructNative() { b1 = 0x00, b2 = 0x00, b3 = 0x01 };
 
         public static void ThrowOnNthMarshalledElement(int n)
         {
@@ -404,6 +415,9 @@ namespace LibraryImportGenerator.IntegrationTests
 
         public static void Free(BoolStructNative obj)
         {
+            if (!(obj.Equals(s_expectedUnmarshalled) || obj.Equals(default)))
+                s_BoolStructMarshalling.Throw($"Freed unmarshalled value: {{ b1: {obj.b1}, be: {obj.b2}, b3: {obj.b3} }}");
+
             if (ExpectedCleanupNumber-- < 0)
                 s_BoolStructMarshalling.Throw($"Freed too many objects");
         }
@@ -420,9 +434,14 @@ namespace LibraryImportGenerator.IntegrationTests
     [CustomMarshaller(typeof(BoolStruct), MarshalMode.ElementOut, typeof(EnforceLastElementMarshalledCleanupBoolStruct))]
     static class EnforceLastElementMarshalledCleanupBoolStruct
     {
-        private static MarshallingExceptionManager<BoolStruct, BoolStructNative> s_BoolStructMarshalling = new(default, new BoolStructNative() { b1 = 0xC1, b2 = 0xBE, b3 = 0xD0 });
+        private static MarshallingExceptionManager<BoolStruct, BoolStructNative> s_BoolStructMarshalling = new(default, new BoolStructNative() { b1 = 0x01, b2 = 0x01, b3 = 0x00 });
 
-        private static BoolStructNative s_dummyBoolStruct = new BoolStructNative() { b1 = 0xC1, b2 = 0xBE, b3 = 0xD0 };
+        private static BoolStructNative s_expectedUnmarshalled = new BoolStructNative() { b1 = 0x00, b2 = 0x00, b3 = 0x01 };
+
+        /// <summary>
+        /// The number of elements that are expected to be cleaned up / freed.
+        /// </summary>
+        public static int ExpectedCleanupNumber { get; set; } = 0;
 
         public static void ThrowOnNthMarshalledElement(int n) => s_BoolStructMarshalling.ThrowOnNthMarshalledElement(n);
 
@@ -432,8 +451,16 @@ namespace LibraryImportGenerator.IntegrationTests
 
         public static void Free(BoolStructNative obj)
         {
-            if (!obj.Equals(s_dummyBoolStruct))
-                s_BoolStructMarshalling.Throw($"Freed unmarshalled pointer: {{ b1: {obj.b1}, be: {obj.b2}, b3: {obj.b3} }}");
+            if (!obj.Equals(s_expectedUnmarshalled))
+                s_BoolStructMarshalling.Throw($"Freed unmarshalled value: {{ b1: {obj.b1}, b2: {obj.b2}, b3: {obj.b3} }}");
+            if (ExpectedCleanupNumber-- < 0)
+                s_BoolStructMarshalling.Throw($"Freed too many objects");
+        }
+
+        internal static void AssertAllHaveBeenCleaned()
+        {
+            if (ExpectedCleanupNumber != 0)
+                s_BoolStructMarshalling.Throw($"Incorrected number of elements freed. Expected {ExpectedCleanupNumber} more elements to be freed.");
         }
     }
 
@@ -474,9 +501,9 @@ namespace LibraryImportGenerator.IntegrationTests
     [CustomMarshaller(typeof(BoolStruct), MarshalMode.ElementRef, typeof(EnforceClearedMemoryCleanup))]
     static class EnforceClearedMemoryCleanup
     {
-        private static MarshallingExceptionManager<BoolStruct, BoolStructNative> s_exceptionManager = new(default, s_dummyBoolStruct);
+        private static MarshallingExceptionManager<BoolStruct, BoolStructNative> s_exceptionManager = new(default, new BoolStructNative() { b1 = 0x01, b2 = 0x01, b3 = 0x00 });
 
-        private static BoolStructNative s_dummyBoolStruct = new BoolStructNative() { b1 = 0xC1, b2 = 0xBE, b3 = 0xD0 };
+        private static BoolStructNative s_expectedUnmarshalledValue = new BoolStructNative() { b1 = 0x00, b2 = 0x00, b3 = 0x01 };
 
         public static void ThrowOnNthMarshalledElement(int n) => s_exceptionManager.ThrowOnNthMarshalledElement(n);
 
@@ -488,8 +515,128 @@ namespace LibraryImportGenerator.IntegrationTests
 
         public static void Free(BoolStructNative obj)
         {
-            if (!(obj.Equals(s_dummyBoolStruct) || obj.Equals(default)))
+            if (!(obj.Equals(s_expectedUnmarshalledValue) || obj.Equals(default)))
                 s_exceptionManager.Throw($"Freed unmarshalled value: {{ b1: {obj.b1}, b2: {obj.b2}, b3: {obj.b3} }}");
+        }
+    }
+
+    public static class FillRangeArrayMarshaller
+    {
+        public static FailingMarshaller<IntStructWrapper, int> Marshaller = new(
+            IntStructWrapperMarshaller.ConvertToUnmanaged,
+            IntStructWrapperMarshaller.ConvertToManaged,
+            (int unmanaged, int i) => unmanaged == i
+        );
+
+        public static IntStructWrapper ConvertToManaged(int unmanaged) => Marshaller.ConvertToManaged(unmanaged);
+        public static int ConvertToUnmanaged(IntStructWrapper managed) => Marshaller.ConvertToUnmanaged(managed);
+    }
+
+    file static class IntStructWrapperMarshaller
+    {
+        public static IntStructWrapper ConvertToManaged(int unmanaged) => new IntStructWrapper() { Value = unmanaged };
+
+        public static int ConvertToUnmanaged(IntStructWrapper managed) => managed.Value;
+    }
+
+    file static class BoolStructMarshaller
+    {
+        public static BoolStruct ConvertToManaged(BoolStructNative unmanaged)
+            => new BoolStruct()
+            {
+                b1 = unmanaged.b1 != 0,
+                b2 = unmanaged.b2 != 0,
+                b3 = unmanaged.b3 != 0
+            };
+
+        public static BoolStructNative ConvertToUnmanaged(BoolStruct managed)
+            => new BoolStructNative()
+            {
+                b1 = (byte)(managed.b1 ? 1 : 0),
+                b2 = (byte)(managed.b2 ? 1 : 0),
+                b3 = (byte)(managed.b3 ? 1 : 0)
+            };
+    }
+
+    public class FailingMarshaller<T, TUnmanaged> where TUnmanaged : unmanaged, IEquatable<TUnmanaged>
+    {
+        Func<T, TUnmanaged> _marshal;
+        Func<TUnmanaged, T> _unmarshal;
+        Func<TUnmanaged, int, bool> _okayToFree;
+
+        int _freeCount = 0;
+        public int ExpectedFreeCount { get; set; } = 0;
+        public TUnmanaged[]? ExpectedFreedValues;
+        int _marshalledCount;
+        int _unmarshalledCount;
+
+        public int MarshallingFailsIndex { get; set; } = -1;
+        public int UnmarshallingFailsIndex { get; set; } = -1;
+
+
+        public FailingMarshaller(Func<T, TUnmanaged> marshal, Func<TUnmanaged, T> unmarshal, Func<TUnmanaged, int, bool> okayToFree)
+        {
+            _marshal = marshal;
+            _unmarshal = unmarshal;
+            _okayToFree = okayToFree;
+        }
+
+        public void AssertAllHaveBeenCleaned()
+        {
+            if (ExpectedFreeCount - _freeCount != 0)
+                throw new InvalidMarshallingException($"Incorrected number of elements freed. Expected {ExpectedFreeCount - _freeCount} more elements to be freed.");
+            ExpectedFreeCount = 0;
+            ExpectedFreedValues = null;
+            _freeCount = 0;
+        }
+
+        public void Free(TUnmanaged unmanaged)
+        {
+            if (!_okayToFree(unmanaged, _freeCount++))
+                throw new InvalidMarshallingException("Freed unmanaged value that was not expected to be freed");
+
+            if (_freeCount + 1 > ExpectedFreeCount)
+                throw new InvalidMarshallingException($"Freed too many unmanaged values. Expected to free {ExpectedFreeCount} values.");
+
+            if (ExpectedFreedValues?[_freeCount] is { } expected && unmanaged.Equals(expected))
+                throw new InvalidMarshallingException("Freed unmanaged value that was not expected to be freed");
+
+            _freeCount++;
+        }
+
+        public T ConvertToManaged(TUnmanaged unmanaged)
+        {
+            if (_unmarshalledCount++ == UnmarshallingFailsIndex)
+            {
+                int tmp = _unmarshalledCount;
+                _unmarshalledCount = 0;
+                UnmarshallingFailsIndex = -1;
+                throw new ArgumentException($"Unmarshalling failed on element number {tmp}");
+            }
+            return _unmarshal(unmanaged);
+        }
+
+        public TUnmanaged ConvertToUnmanaged(T managed)
+        {
+            if (_marshalledCount++ == MarshallingFailsIndex)
+            {
+                int tmp = _marshalledCount;
+                _marshalledCount = 0;
+                MarshallingFailsIndex = -1;
+                throw new ArgumentException($"Marshalling failed on element number {tmp}");
+            }
+            return _marshal(managed);
+        }
+
+        /// <summary>
+        /// An exception that isn't able to be accidentally caught by try catch blocks (Except for catch (Exception e))
+        /// </summary>
+        [Serializable]
+        private sealed class InvalidMarshallingException : Exception
+        {
+            public InvalidMarshallingException(string? message) : base(message)
+            {
+            }
         }
     }
 
