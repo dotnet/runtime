@@ -11472,11 +11472,15 @@ SPILLSTACK:
         impReimportSpillClique(block);
 
         // For blocks that haven't been imported yet, we still need to mark them as pending import.
-        for (BasicBlock* const succ : block->Succs())
+        // Filter successor from BBJ_EHFILTERRET have already been handled, above.
+        if (!block->KindIs(BBJ_EHFILTERRET))
         {
-            if ((succ->bbFlags & BBF_IMPORTED) == 0)
+            for (BasicBlock* const succ : block->Succs())
             {
-                impImportBlockPending(succ);
+                if ((succ->bbFlags & BBF_IMPORTED) == 0)
+                {
+                    impImportBlockPending(succ);
+                }
             }
         }
     }
@@ -11484,10 +11488,14 @@ SPILLSTACK:
     {
         // otherwise just import the successors of block
 
-        /* Does this block jump to any other blocks? */
-        for (BasicBlock* const succ : block->Succs())
+        // Does this block jump to any other blocks?
+        // Filter successor from BBJ_EHFILTERRET have already been handled, above.
+        if (!block->KindIs(BBJ_EHFILTERRET))
         {
-            impImportBlockPending(succ);
+            for (BasicBlock* const succ : block->Succs())
+            {
+                impImportBlockPending(succ);
+            }
         }
     }
 }
