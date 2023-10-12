@@ -197,6 +197,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             newAssmeblyItem.ItemSpec = trimmedAssemblyFilePath;
             newAssmeblyItem.SetMetadata("UntrimmedAssemblyFilePath", assemblyFilePathArg);
             newAssmeblyItem.SetMetadata("ILStripped", "true");
+            // The following line is added to prevent some items not being added to `_updatedAssemblies`
+            Console.WriteLine(trimmedAssemblyFilePath);
         }
 
         _updatedAssemblies.Add(newAssmeblyItem);
