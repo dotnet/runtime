@@ -11,5 +11,6 @@ namespace System.Runtime.InteropServices
         StdCall = 3,
         ThisCall = 4,
         FastCall = 5,
+        SwiftCall = 6,
     }
 }

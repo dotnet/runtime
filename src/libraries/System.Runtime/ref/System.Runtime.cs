@@ -12600,6 +12600,10 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvThiscall() { }
     }
+    public partial class CallConvSwift
+    {
+        public CallConvSwift() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple=false, Inherited=false)]
     public sealed partial class CallerArgumentExpressionAttribute : System.Attribute
     {
@@ -12895,6 +12899,12 @@ namespace System.Runtime.CompilerServices
     {
         public InlineArrayAttribute(int length) { }
         public int Length { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple = false)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class SwiftErrorReturnAttribute : System.Attribute
+    {
+        public SwiftErrorReturnAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

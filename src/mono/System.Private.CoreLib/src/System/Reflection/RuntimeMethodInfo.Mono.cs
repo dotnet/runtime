@@ -69,6 +69,7 @@ namespace System.Reflection
         CallConvStdcall = 0x0300,
         CallConvThiscall = 0x0400,
         CallConvFastcall = 0x0500,
+        CallConvSwift = 0x0600,
 
         MaxValue = 0xFFFF,
     }
@@ -502,6 +503,7 @@ namespace System.Reflection
                 case PInvokeAttributes.CallConvStdcall: callingConvention = InteropServicesCallingConvention.StdCall; break;
                 case PInvokeAttributes.CallConvThiscall: callingConvention = InteropServicesCallingConvention.ThisCall; break;
                 case PInvokeAttributes.CallConvFastcall: callingConvention = InteropServicesCallingConvention.FastCall; break;
+                case PInvokeAttributes.CallConvSwift: callingConvention = InteropServicesCallingConvention.SwiftCall; break;
 
                 // Invalid: default to CallingConvention.Cdecl
                 default: break;
@@ -579,6 +581,7 @@ namespace System.Reflection
                 PInvokeAttributes.CallConvStdcall => InteropServicesCallingConvention.StdCall,
                 PInvokeAttributes.CallConvThiscall => InteropServicesCallingConvention.ThisCall,
                 PInvokeAttributes.CallConvFastcall => InteropServicesCallingConvention.FastCall,
+                PInvokeAttributes.CallConvSwift => InteropServicesCallingConvention.SwiftCall,
                 // Invalid: default to CallingConvention.Cdecl
                 _ => InteropServicesCallingConvention.Cdecl,
             };

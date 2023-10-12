@@ -3232,6 +3232,8 @@ mono_marshal_set_callconv_for_type(MonoType *type, MonoMethodSignature *csig, gb
 			csig->call_convention = MONO_CALL_FASTCALL;
 		else if (!strcmp (class_name, "CallConvThiscall"))
 			csig->call_convention = MONO_CALL_THISCALL;
+		else if (!strcmp (class_name, "CallConvSwift"))
+			csig->call_convention = MONO_CALL_SWIFTCALL;
 		else if (!strcmp (class_name, "CallConvSuppressGCTransition") && skip_gc_trans != NULL)
 			*skip_gc_trans = TRUE;
 	}
@@ -3356,6 +3358,8 @@ mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, Mon
 		sig->call_convention = MONO_CALL_STDCALL;
 	else if (!strcmp (name, "Thiscall"))
 		sig->call_convention = MONO_CALL_THISCALL;
+	else if (!strcmp (name, "Swift"))
+		sig->call_convention = MONO_CALL_SWIFTCALL;
 	else if (!strcmp (name, "Fastcall"))
 		sig->call_convention = MONO_CALL_FASTCALL;
 	else if (!strcmp (name, "SuppressGCTransition"))
