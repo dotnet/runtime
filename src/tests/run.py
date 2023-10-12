@@ -46,7 +46,6 @@ import tempfile
 import re
 import string
 import xml.etree.ElementTree
-import glob
 
 from collections import defaultdict
 
