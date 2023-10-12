@@ -31,8 +31,17 @@ namespace System
 
         internal RuntimeTypeInfo GetRuntimeTypeInfo() => _runtimeTypeInfo ?? CreateRuntimeTypeInfo();
 
+        private static bool IsReflectionDisabled => false;
+
+        private static bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
+        private static bool DoNotThrowForAssembly => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAssembly", out bool doNotThrow) && doNotThrow;
+        private static bool DoNotThrowForAttributes => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAttributes", out bool doNotThrow) && doNotThrow;
+
         private RuntimeTypeInfo CreateRuntimeTypeInfo()
         {
+            if (IsReflectionDisabled)
+                throw new NotSupportedException(SR.Reflection_Disabled);
+
             EETypePtr eeType = ToEETypePtr();
 
             RuntimeTypeHandle runtimeTypeHandle = new RuntimeTypeHandle(eeType);
@@ -186,6 +195,9 @@ namespace System
             return Enum.GetValuesAsUnderlyingType(this);
         }
 
+        public override int GetHashCode()
+            => ((nuint)_pUnderlyingEEType).GetHashCode();
+
         public override RuntimeTypeHandle TypeHandle
             => new RuntimeTypeHandle(_pUnderlyingEEType);
 
@@ -267,7 +279,7 @@ namespace System
         }
 
         public override bool IsTypeDefinition
-            => (_pUnderlyingEEType->IsCanonical &&  !_pUnderlyingEEType->IsGeneric) || _pUnderlyingEEType->IsGenericTypeDefinition;
+            => (_pUnderlyingEEType->IsCanonical && !_pUnderlyingEEType->IsGeneric) || _pUnderlyingEEType->IsGenericTypeDefinition;
 
         public override bool IsGenericType
             => _pUnderlyingEEType->IsGeneric || _pUnderlyingEEType->IsGenericTypeDefinition;
@@ -375,6 +387,16 @@ namespace System
         // Implementation shared with MetadataType
         //
 
+        public override string ToString()
+        {
+            if (IsReflectionDisabled)
+                return "0x" + ((nuint)_pUnderlyingEEType).ToString("x");
+
+            return GetRuntimeTypeInfo().ToString();
+        }
+
+        public override bool Equals(object? obj) => ReferenceEquals(obj, this);
+
         object ICloneable.Clone() => this;
 
         public override bool IsSecurityCritical => true;
@@ -470,30 +492,80 @@ namespace System
             => GetRuntimeTypeInfo().IsDefined(attributeType, inherit);
 
         public override object[] GetCustomAttributes(bool inherit)
-            => GetRuntimeTypeInfo().GetCustomAttributes(inherit);
+        {
+            if (IsReflectionDisabled && DoNotThrowForAttributes)
+                return Array.Empty<object>();
+
+            return GetRuntimeTypeInfo().GetCustomAttributes(inherit);
+        }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
-            => GetRuntimeTypeInfo().GetCustomAttributes(attributeType, inherit);
+        {
+            if (IsReflectionDisabled && DoNotThrowForAttributes)
+                return Array.Empty<object>();
+
+            return GetRuntimeTypeInfo().GetCustomAttributes(attributeType, inherit);
+        }
 
         public override IEnumerable<CustomAttributeData> CustomAttributes
-            => GetRuntimeTypeInfo().CustomAttributes;
+        {
+            get
+            {
+                if (IsReflectionDisabled && DoNotThrowForAttributes)
+                    return Array.Empty<CustomAttributeData>();
+
+                return GetRuntimeTypeInfo().CustomAttributes;
+            }
+        }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
-            => GetRuntimeTypeInfo().GetCustomAttributesData();
+        {
+            if (IsReflectionDisabled && DoNotThrowForAttributes)
+                return Array.Empty<CustomAttributeData>();
 
-        public override string? Namespace => GetRuntimeTypeInfo().Namespace;
+            return GetRuntimeTypeInfo().GetCustomAttributesData();
+        }
+
+        public override string Name
+        {
+            get
+            {
+                if (IsReflectionDisabled && DoNotThrowForNames)
+                    return ToString();
+
+                return GetRuntimeTypeInfo().Name;
+            }
+        }
+
+        public override string? Namespace
+        {
+            get
+            {
+                if (IsReflectionDisabled && DoNotThrowForNames)
+                    return null;
+
+                return GetRuntimeTypeInfo().Namespace;
+            }
+        }
 
         public override string? AssemblyQualifiedName => GetRuntimeTypeInfo().AssemblyQualifiedName;
 
         public override string? FullName => GetRuntimeTypeInfo().FullName;
 
-        public override Assembly Assembly => GetRuntimeTypeInfo().Assembly;
+        public override Assembly Assembly
+        {
+            get
+            {
+                if (IsReflectionDisabled && DoNotThrowForAssembly)
+                    return null!; // TODO!!!!!!!!!!
+
+                return GetRuntimeTypeInfo().Assembly;
+            }
+        }
 
         public override Module Module => GetRuntimeTypeInfo().Module;
 
         public override Guid GUID => GetRuntimeTypeInfo().GUID;
-
-        public override string Name => GetRuntimeTypeInfo().Name;
 
         public override bool HasSameMetadataDefinitionAs(MemberInfo other) => GetRuntimeTypeInfo().HasSameMetadataDefinitionAs(other);
 

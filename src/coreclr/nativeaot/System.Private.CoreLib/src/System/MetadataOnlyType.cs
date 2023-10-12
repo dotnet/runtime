@@ -72,6 +72,9 @@ namespace System
             throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
         }
 
+        public override int GetHashCode()
+            => RuntimeHelpers.GetHashCode(this);
+
         public override RuntimeTypeHandle TypeHandle
             => GetRuntimeTypeInfo().TypeHandle;
 
@@ -183,6 +186,11 @@ namespace System
         // Implementation shared with MetadataType
         //
 
+        public override string ToString()
+            => GetRuntimeTypeInfo().ToString();
+
+        public override bool Equals(object? obj) => ReferenceEquals(obj, this);
+
         object ICloneable.Clone() => this;
 
         public override bool IsSecurityCritical => true;
@@ -289,6 +297,8 @@ namespace System
         public override IList<CustomAttributeData> GetCustomAttributesData()
             => GetRuntimeTypeInfo().GetCustomAttributesData();
 
+        public override string Name => GetRuntimeTypeInfo().Name;
+
         public override string? Namespace => GetRuntimeTypeInfo().Namespace;
 
         public override string? AssemblyQualifiedName => GetRuntimeTypeInfo().AssemblyQualifiedName;
@@ -300,8 +310,6 @@ namespace System
         public override Module Module => GetRuntimeTypeInfo().Module;
 
         public override Guid GUID => GetRuntimeTypeInfo().GUID;
-
-        public override string Name => GetRuntimeTypeInfo().Name;
 
         public override bool HasSameMetadataDefinitionAs(MemberInfo other) => GetRuntimeTypeInfo().HasSameMetadataDefinitionAs(other);
 
