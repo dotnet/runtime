@@ -25,12 +25,12 @@ internal sealed class MsQuicTlsSecret : IDisposable
             return null;
         }
 
-        QUIC_TLS_SECRETS* tlsSecret = null;
+        QUIC_TLS_SECRETS* tlsSecrets = null;
         try
         {
-            tlsSecret = (QUIC_TLS_SECRETS*)NativeMemory.AllocZeroed((nuint)sizeof(QUIC_TLS_SECRETS));
-            MsQuicHelpers.SetMsQuicParameter(handle, QUIC_PARAM_CONN_TLS_SECRETS, (uint)sizeof(QUIC_TLS_SECRETS), (byte*)tlsSecret);
-            MsQuicTlsSecret instance = new MsQuicTlsSecret(tlsSecret);
+            tlsSecrets = (QUIC_TLS_SECRETS*)NativeMemory.AllocZeroed((nuint)sizeof(QUIC_TLS_SECRETS));
+            MsQuicHelpers.SetMsQuicParameter(handle, QUIC_PARAM_CONN_TLS_SECRETS, (uint)sizeof(QUIC_TLS_SECRETS), (byte*)tlsSecrets);
+            MsQuicTlsSecret instance = new MsQuicTlsSecret(tlsSecrets);
             handle.Disposable = instance;
             return instance;
         }
@@ -40,17 +40,17 @@ internal sealed class MsQuicTlsSecret : IDisposable
             {
                 NetEventSource.Error(handle, $"Failed to set native memory for TLS secret: {ex}");
             }
-            if (tlsSecret is not null)
+            if (tlsSecrets is not null)
             {
-                NativeMemory.Free(tlsSecret);
+                NativeMemory.Free(tlsSecrets);
             }
             return null;
         }
     }
 
-    private unsafe MsQuicTlsSecret(QUIC_TLS_SECRETS* tlsSecret)
+    private unsafe MsQuicTlsSecret(QUIC_TLS_SECRETS* tlsSecrets)
     {
-        _tlsSecrets = tlsSecret;
+        _tlsSecrets = tlsSecrets;
     }
 
     public unsafe void WriteSecret()
@@ -93,10 +93,20 @@ internal sealed class MsQuicTlsSecret : IDisposable
 
     public unsafe void Dispose()
     {
-        if (_tlsSecrets is not null)
+        if (_tlsSecrets is null)
         {
-            NativeMemory.Free(_tlsSecrets);
+            return;
+        }
+        lock (this)
+        {
+            if (_tlsSecrets is null)
+            {
+                return;
+            }
+
+            QUIC_TLS_SECRETS* tlsSecrets = _tlsSecrets;
             _tlsSecrets = null;
+            NativeMemory.Free(_tlsSecrets);
         }
     }
 }
