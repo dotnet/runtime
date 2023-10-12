@@ -37,6 +37,11 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     public bool TrimIndividualMethods { get; set; }
 
     /// <summary>
+    /// The location to store the trimmed assemblies, when provided.
+    /// </summary>
+    public string IntermediateOutputPath { get; set; } = string.Empty;
+
+    /// <summary>
     /// Assembilies got trimmed successfully.
     ///
     /// Successful trimming will set the following metadata on the items:
@@ -154,7 +159,11 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             return true;
         }
 
-        string trimmedAssemblyFolder = ComputeTrimmedAssemblyFolderName(assemblyFilePath);
+        if (!string.IsNullOrEmpty(IntermediateOutputPath))
+            if (!Directory.Exists(IntermediateOutputPath))
+                Directory.CreateDirectory(IntermediateOutputPath);
+
+        string trimmedAssemblyFolder = ComputeTrimmedAssemblyFolderName(IntermediateOutputPath);
         if (!Directory.Exists(trimmedAssemblyFolder))
         {
             Directory.CreateDirectory(trimmedAssemblyFolder);
@@ -191,16 +200,15 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         return true;
     }
 
-    private static string ComputeTrimmedAssemblyFolderName(string assemblyFilePath)
+    private static string ComputeTrimmedAssemblyFolderName(string IntermediateOutputPath)
     {
-        string? assemblyPath = Path.GetDirectoryName(assemblyFilePath);
-        if (string.IsNullOrEmpty(assemblyPath))
+        if (string.IsNullOrEmpty(IntermediateOutputPath))
         {
             return "trimmedAssemblies";
         }
         else
         {
-            return Path.Combine(assemblyPath,  "trimmedAssemblies");
+            return Path.Combine(IntermediateOutputPath,  "trimmedAssemblies");
         }
     }
 

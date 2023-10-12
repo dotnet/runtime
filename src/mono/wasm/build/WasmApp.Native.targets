@@ -712,6 +712,7 @@
     <ILStrip
         Condition=" '$(WasmStripILAfterAOT)' == 'true' "
         TrimIndividualMethods="true"
+        IntermediateOutputPath="$(_WasmIntermediateOutputPath)"
         Assemblies="@(_WasmAssembliesInternal)">
       <Output TaskParameter="TrimmedAssemblies" ItemName="_ILStripTrimmedAssemblies" />
       <Output TaskParameter="UpdatedAssemblies" ItemName="_UpdatedAssembliesAfterILStrip" />
