@@ -20,6 +20,8 @@
       GetWorkloadInputs;
       _InstallWorkloads
     </InstallWorkloadUsingArtifactsDependsOn>
+
+    <SkipUpdateAppRefPackForTestingWorkloads>false</SkipUpdateAppRefPackForTestingWorkloads>
   </PropertyGroup>
 
   <ItemGroup>
@@ -190,7 +192,7 @@
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
-                     SkipUpdateAppRefPack="true"
+                     SkipUpdateAppRefPack="$(SkipUpdateAppRefPackForTestingWorkloads)"
       />
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />
