@@ -421,7 +421,7 @@ if [[ -n "$wasm_bundle_directory" ]]; then
     using_wasm=true
     wasm_bundle_directory_path=$payload_directory
     mv $wasm_bundle_directory/* $wasm_bundle_directory_path
-    wasm_args="--experimental-wasm-eh --expose_wasm"
+    wasm_args="--expose_wasm"
     if [ "$javascript_engine" == "v8" ]; then
         # for es6 module support
         wasm_args="$wasm_args --module"
