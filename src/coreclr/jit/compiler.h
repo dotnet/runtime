@@ -6127,7 +6127,6 @@ private:
 
     AddCodeDsc* fgAddCodeList;
     bool        fgAddCodeModf;
-    bool        fgRngChkThrowAdded;
     AddCodeDsc* fgExcptnTargetCache[SCK_COUNT];
 
     BasicBlock* fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind);

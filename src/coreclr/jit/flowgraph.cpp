@@ -3777,7 +3777,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     tree = fgMorphArgs(tree);
 
     // Store the tree in the new basic block.
-    assert(!srcBlk->isEmpty());
     if (!srcBlk->IsLIR())
     {
         fgInsertStmtAtEnd(newBlk, fgNewStmtFromTree(tree));
