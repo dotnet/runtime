@@ -10,9 +10,10 @@ using static VariantNative;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 #pragma warning disable CS0612, CS0618
-partial class Test_VariantTest
+public partial class Test_VariantTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool testComMarshal=true;
         ComWrappers.RegisterForMarshalling(new ComWrappersImpl());

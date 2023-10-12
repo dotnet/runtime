@@ -684,7 +684,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Empty(result.Diagnostics);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task Primitives()
         {
             string source = """
@@ -733,6 +733,59 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                                 public UInt128 Prop12 { get; set; }
                                 public DateOnly Prop18 { get; set; }
                                 public TimeOnly Prop22 { get; set; }
+                                public byte[] Prop28 { get; set; }
+                                public int Prop29 { get; set; }
+                                public DateTime Prop30 { get; set; }
+                            }
+                        }
+                        """;
+            await VerifyAgainstBaselineUsingFile("Primitives.generated.txt", source);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetFramework))]
+        public async Task PrimitivesNetFwk()
+        {
+            string source = """
+                        using System;
+                        using System.Globalization;
+                        using Microsoft.Extensions.Configuration;
+
+                        public class Program
+                        {
+                            public static void Main()
+                            {
+                                ConfigurationBuilder configurationBuilder = new();
+                                IConfigurationRoot config = configurationBuilder.Build();
+
+                                MyClass obj = new();
+                                config.Bind(obj);
+                            }
+
+                            public class MyClass
+                            {
+                                public bool Prop0 { get; set; }
+                                public byte Prop1 { get; set; }
+                                public sbyte Prop2 { get; set; }
+                                public char Prop3 { get; set; }
+                                public double Prop4 { get; set; }
+                                public string Prop5 { get; set; }
+                                public int Prop6 { get; set; }
+                                public short Prop8 { get; set; }
+                                public long Prop9 { get; set; }
+                                public float Prop10 { get; set; }
+                                public ushort Prop13 { get; set; }
+                                public uint Prop14 { get; set; }
+                                public ulong Prop15 { get; set; }
+                                public object Prop16 { get; set; }
+                                public CultureInfo Prop17 { get; set; }
+                                public DateTime Prop19 { get; set; }
+                                public DateTimeOffset Prop20 { get; set; }
+                                public decimal Prop21 { get; set; }
+                                public TimeSpan Prop23 { get; set; }
+                                public Guid Prop24 { get; set; }
+                                public Uri Prop25 { get; set; }
+                                public Version Prop26 { get; set; }
+                                public DayOfWeek Prop27 { get; set; }
                                 public byte[] Prop28 { get; set; }
                                 public int Prop29 { get; set; }
                                 public DateTime Prop30 { get; set; }

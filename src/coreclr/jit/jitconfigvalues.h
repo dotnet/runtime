@@ -617,16 +617,16 @@ CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)           // Profile 
 CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect counts as 64-bit values.
 
 // Profile consumption options
-CONFIG_INTEGER(JitDisablePgo, W("JitDisablePgo"), 0) // Ignore pgo data for all methods
+CONFIG_INTEGER(JitDisablePGO, W("JitDisablePGO"), 0) // Ignore PGO data for all methods
 #if defined(DEBUG)
-CONFIG_STRING(JitEnablePgoRange, W("JitEnablePgoRange"))         // Enable pgo data for only some methods
+CONFIG_STRING(JitEnablePGORange, W("JitEnablePGORange"))         // Enable PGO data for only some methods
 CONFIG_INTEGER(JitRandomEdgeCounts, W("JitRandomEdgeCounts"), 0) // Substitute random values for edge counts
 CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualizationAndPGO"), 0)
 CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
 CONFIG_INTEGER(JitRandomlyCollect64BitCounts, W("JitRandomlyCollect64BitCounts"), 0) // Collect 64-bit counts randomly
                                                                                      // for some methods.
 // 1: profile synthesis for root methods
-// 2: profile synthesis for root methods w/o pgo data
+// 2: profile synthesis for root methods w/o PGO data
 // 3: profile synthesis for root methods, blend with existing PGO data
 CONFIG_INTEGER(JitSynthesizeCounts, W("JitSynthesizeCounts"), 0)
 // Check if synthesis left consistent counts

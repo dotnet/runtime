@@ -3,6 +3,7 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 using TestLibrary;
+using Xunit;
 
 //Value Pass N-->M	M--->N
 //Cdecl		 -1		 678
@@ -29,7 +30,8 @@ public class Test_FuncPtrAsDelegateParamManaged
     }
 
     [SecuritySafeCritical]
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool breturn = true;
 

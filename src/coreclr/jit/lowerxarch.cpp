@@ -8363,13 +8363,13 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
             case TYP_FLOAT:
             {
                 float scalar = static_cast<float>(childNode->gtSimdVal.f32[0]);
-                constScalar  = comp->gtNewDconNode(scalar, simdBaseType);
+                constScalar  = comp->gtNewDconNodeF(scalar);
                 break;
             }
             case TYP_DOUBLE:
             {
                 double scalar = static_cast<double>(childNode->gtSimdVal.f64[0]);
-                constScalar   = comp->gtNewDconNode(scalar, simdBaseType);
+                constScalar   = comp->gtNewDconNodeD(scalar);
                 break;
             }
             case TYP_INT:
