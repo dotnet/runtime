@@ -14,7 +14,7 @@ namespace System.Net.NameResolution.Tests
 {
     public class MetricsTest
     {
-        private const string DnsLookupDuration = "dns.lookup.duration";
+        private const string DnsLookupDuration = "dns.lookups.duration";
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ResolveValidHostName_MetricsRecorded()
@@ -57,26 +57,17 @@ namespace System.Net.NameResolution.Tests
             Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostEntry(Dns.BeginGetHostEntry(InvalidHostName, null, null)));
             Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostAddresses(Dns.BeginGetHostAddresses(InvalidHostName, null, null)));
 
-            double[] measurements = GetMeasurementsForHostname(recorder, InvalidHostName, "host_not_found");
+            double[] measurements = GetMeasurementsForHostname(recorder, InvalidHostName);
 
             Assert.Equal(6, measurements.Length);
             Assert.All(measurements, m => Assert.True(m > double.Epsilon));
         }
 
-        private static double[] GetMeasurementsForHostname(InstrumentRecorder<double> recorder, string hostname, string? expectedErrorType = null)
+        private static double[] GetMeasurementsForHostname(InstrumentRecorder<double> recorder, string hostname)
         {
             return recorder
                 .GetMeasurements()
-                .Where(m =>
-                {
-                    KeyValuePair<string, object?>[] tags = m.Tags.ToArray();
-                    if (!tags.Any(t => t.Key == "dns.question.name" && t.Value is string hostnameTag && hostnameTag == hostname))
-                    {
-                        return false;
-                    }
-                    string? actualErrorType = tags.FirstOrDefault(t => t.Key == "error.type").Value as string;
-                    return expectedErrorType == actualErrorType;
-                })
+                .Where(m => m.Tags.ToArray().Any(t => t.Key == "dns.question.name" && t.Value is string hostnameTag && hostnameTag == hostname))
                 .Select(m => m.Value)
                 .ToArray();
         }

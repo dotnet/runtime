@@ -81,7 +81,7 @@ namespace System.Net
         }
 
         [NonEvent]
-        public void AfterResolution(object hostNameOrAddress, long? startingTimestamp, Exception? exception = null)
+        public void AfterResolution(object hostNameOrAddress, long? startingTimestamp, bool successful)
         {
             Debug.Assert(startingTimestamp.HasValue);
             if (startingTimestamp == 0)
@@ -99,7 +99,7 @@ namespace System.Net
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
-                    if (exception is not null)
+                    if (!successful)
                     {
                         ResolutionFailed();
                     }
@@ -110,7 +110,7 @@ namespace System.Net
 
             if (NameResolutionMetrics.IsEnabled())
             {
-                NameResolutionMetrics.AfterResolution(duration, GetHostnameFromStateObject(hostNameOrAddress), exception);
+                NameResolutionMetrics.AfterResolution(duration, GetHostnameFromStateObject(hostNameOrAddress));
             }
         }
 

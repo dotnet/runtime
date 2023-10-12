@@ -23,13 +23,13 @@ namespace System.Net
             {
                 name = NameResolutionPal.GetHostName();
             }
-            catch (Exception ex) when (LogFailure(string.Empty, startingTimestamp, ex))
+            catch when (LogFailure(string.Empty, startingTimestamp))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(string.Empty, startingTimestamp);
+            NameResolutionTelemetry.Log.AfterResolution(string.Empty, startingTimestamp, successful: true);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, name);
             return name;
@@ -394,13 +394,13 @@ namespace System.Net
                         Aliases = aliases
                     };
             }
-            catch (Exception ex) when (LogFailure(hostName, startingTimestamp, ex))
+            catch when (LogFailure(hostName, startingTimestamp))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(hostName, startingTimestamp);
+            NameResolutionTelemetry.Log.AfterResolution(hostName, startingTimestamp, successful: true);
 
             return result;
         }
@@ -434,13 +434,13 @@ namespace System.Net
                 }
                 Debug.Assert(name != null);
             }
-            catch (Exception ex) when (LogFailure(address, startingTimestamp, ex))
+            catch when (LogFailure(address, startingTimestamp))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(address, startingTimestamp);
+            NameResolutionTelemetry.Log.AfterResolution(address, startingTimestamp, successful: true);
 
             // Do the forward lookup to get the IPs for that host name
             startingTimestamp = NameResolutionTelemetry.Log.BeforeResolution(name);
@@ -464,13 +464,13 @@ namespace System.Net
                         AddressList = addresses
                     };
             }
-            catch (Exception ex) when (LogFailure(name, startingTimestamp, ex))
+            catch when (LogFailure(name, startingTimestamp))
             {
                 Debug.Fail("LogFailure should return false");
                 throw;
             }
 
-            NameResolutionTelemetry.Log.AfterResolution(name, startingTimestamp);
+            NameResolutionTelemetry.Log.AfterResolution(name, startingTimestamp, successful: true);
 
             // One of three things happened:
             // 1. Success.
@@ -577,7 +577,7 @@ namespace System.Net
         }
 
         private static Task<T>? GetAddrInfoWithTelemetryAsync<T>(string hostName, bool justAddresses, AddressFamily addressFamily, CancellationToken cancellationToken)
-            where T : class
+             where T : class
         {
             long startingTimestamp = Stopwatch.GetTimestamp();
             Task? task = NameResolutionPal.GetAddrInfoAsync(hostName, justAddresses, addressFamily, cancellationToken);
@@ -594,19 +594,15 @@ namespace System.Net
             static async Task<T> CompleteAsync(Task task, string hostName, long startingTimestamp)
             {
                 _ = NameResolutionTelemetry.Log.BeforeResolution(hostName);
-                Exception? exception = null;
+                T? result = null;
                 try
                 {
-                    return await ((Task<T>)task).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    exception = ex;
-                    throw;
+                    result = await ((Task<T>)task).ConfigureAwait(false);
+                    return result;
                 }
                 finally
                 {
-                    NameResolutionTelemetry.Log.AfterResolution(hostName, startingTimestamp, exception);
+                    NameResolutionTelemetry.Log.AfterResolution(hostName, startingTimestamp, successful: result is not null);
                 }
             }
         }
@@ -631,9 +627,9 @@ namespace System.Net
             }
         }
 
-        private static bool LogFailure(object hostNameOrAddress, long? startingTimestamp, Exception exception)
+        private static bool LogFailure(object hostNameOrAddress, long? startingTimestamp)
         {
-            NameResolutionTelemetry.Log.AfterResolution(hostNameOrAddress, startingTimestamp, exception);
+            NameResolutionTelemetry.Log.AfterResolution(hostNameOrAddress, startingTimestamp, successful: false);
             return false;
         }
 
