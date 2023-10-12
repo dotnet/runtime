@@ -2860,80 +2860,88 @@ ValueNum ValueNumStore::VNForMapPhysicalSelect(
     return result;
 }
 
-typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueNumSet;
-
-class SmallValueNumSet
+//------------------------------------------------------------------------------
+// SmallValueNumSet::Add: Add a value number to the set.
+//
+// Arguments:
+//   comp - Compiler instance to use if memory allocation is necessary
+//   vn   - Value number to add
+//
+void ValueNumStore::SmallValueNumSet::Add(Compiler* comp, ValueNum vn)
 {
-    union {
-        ValueNum     m_inlineElements[4];
-        ValueNumSet* m_set;
-    };
-    unsigned m_numElements = 0;
-
-public:
-    unsigned Count()
+    if (m_numElements <= ArrLen(m_inlineElements))
     {
-        return m_numElements;
-    }
-
-    template <typename Func>
-    void ForEach(Func func)
-    {
-        if (m_numElements <= ArrLen(m_inlineElements))
+        for (unsigned i = 0; i < m_numElements; i++)
         {
-            for (unsigned i = 0; i < m_numElements; i++)
+            if (m_inlineElements[i] == vn)
             {
-                func(m_inlineElements[i]);
+                return;
             }
+        }
+
+        if (m_numElements < ArrLen(m_inlineElements))
+        {
+            m_inlineElements[m_numElements] = vn;
+            m_numElements++;
         }
         else
         {
-            for (ValueNum vn : ValueNumSet::KeyIteration(m_set))
+            ValueNumSet* set = new (comp, CMK_ValueNumber) ValueNumSet(comp->getAllocator(CMK_ValueNumber));
+            for (ValueNum oldVn : m_inlineElements)
             {
-                func(vn);
+                set->Set(oldVn, true);
             }
+
+            set->Set(vn, true);
+
+            m_set = set;
+            m_numElements++;
+            assert(m_numElements == set->GetCount());
         }
     }
-
-    void Add(Compiler* comp, ValueNum vn)
+    else
     {
-        if (m_numElements <= ArrLen(m_inlineElements))
+        m_set->Set(vn, true, ValueNumSet::SetKind::Overwrite);
+        m_numElements = m_set->GetCount();
+    }
+}
+
+//------------------------------------------------------------------------------
+// SmallValueNumSet::ForEach: Call a functor for each value number in the set.
+//
+// Arguments:
+//   func - Functor to call
+//
+template <typename Func>
+void ValueNumStore::SmallValueNumSet::ForEach(Func func)
+{
+    if (m_numElements <= ArrLen(m_inlineElements))
+    {
+        for (unsigned i = 0; i < m_numElements; i++)
         {
-            for (unsigned i = 0; i < m_numElements; i++)
-            {
-                if (m_inlineElements[i] == vn)
-                {
-                    return;
-                }
-            }
-
-            if (m_numElements < ArrLen(m_inlineElements))
-            {
-                m_inlineElements[m_numElements] = vn;
-                m_numElements++;
-            }
-            else
-            {
-                ValueNumSet* set = new (comp, CMK_ValueNumber) ValueNumSet(comp->getAllocator(CMK_ValueNumber));
-                for (ValueNum oldVn : m_inlineElements)
-                {
-                    set->Set(oldVn, true);
-                }
-
-                set->Set(vn, true);
-
-                m_set = set;
-                m_numElements++;
-                assert(m_numElements == set->GetCount());
-            }
-        }
-        else
-        {
-            m_set->Set(vn, true, ValueNumSet::SetKind::Overwrite);
-            m_numElements = m_set->GetCount();
+            func(m_inlineElements[i]);
         }
     }
-};
+    else
+    {
+        for (ValueNum vn : ValueNumSet::KeyIteration(m_set))
+        {
+            func(vn);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+// SmallValueNumSet::CopyTo: Copy the contents to another set.
+//
+// Arguments:
+//   comp  - Compiler instance
+//   other - The other set
+//
+void ValueNumStore::SmallValueNumSet::CopyTo(Compiler* comp, ValueNumStore::SmallValueNumSet& other)
+{
+    ForEach([comp, &other](ValueNum vn) { other.Add(comp, vn); });
+}
 
 //------------------------------------------------------------------------------
 // VNForMapSelectInner: Select value from a map and record loop memory dependencies.
@@ -2969,55 +2977,6 @@ ValueNum ValueNumStore::VNForMapSelectInner(ValueNumKind vnk, var_types type, Va
     }
 
     return result;
-}
-
-//------------------------------------------------------------------------------
-// SetMemoryDependencies: Set the cached memory dependencies for a map-select
-// cache entry.
-//
-// Arguments:
-//    comp       - Compiler instance
-//    deps       - Array stack containing the memory dependencies.
-//
-void ValueNumStore::MapSelectWorkCacheEntry::SetMemoryDependencies(Compiler* comp, SmallValueNumSet& set)
-{
-    m_numMemoryDependencies = set.Count();
-    ValueNum* arr;
-    if (m_numMemoryDependencies > ArrLen(m_inlineMemoryDependencies))
-    {
-        m_memoryDependencies = new (comp, CMK_ValueNumber) ValueNum[m_numMemoryDependencies];
-
-        arr = m_memoryDependencies;
-    }
-    else
-    {
-        arr = m_inlineMemoryDependencies;
-    }
-
-    size_t i = 0;
-    set.ForEach([&i, arr](ValueNum vn) {
-        arr[i] = vn;
-        i++;
-    });
-}
-
-//------------------------------------------------------------------------------
-// GetMemoryDependencies: Push all of the memory dependencies cached in this
-// entry into the specified set.
-//
-// Arguments:
-//    comp   - Compiler instance
-//    result - Set to add memory dependencies to.
-//
-void ValueNumStore::MapSelectWorkCacheEntry::GetMemoryDependencies(Compiler* comp, SmallValueNumSet& result)
-{
-    ValueNum* arr = m_numMemoryDependencies <= ArrLen(m_inlineMemoryDependencies) ? m_inlineMemoryDependencies
-                                                                                  : m_memoryDependencies;
-
-    for (unsigned i = 0; i < m_numMemoryDependencies; i++)
-    {
-        result.Add(comp, arr[i]);
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -3074,7 +3033,7 @@ TailCall:
     VNDefFuncApp<2> fstruct(VNF_MapSelect, map, index);
     if (GetMapSelectWorkCache()->Lookup(fstruct, &entry))
     {
-        entry.GetMemoryDependencies(m_pComp, memoryDependencies);
+        entry.MemoryDependencies.CopyTo(m_pComp, memoryDependencies);
         return entry.Result;
     }
 
@@ -3099,8 +3058,6 @@ TailCall:
         *pUsedRecursiveVN = true;
         return RecursiveVN;
     }
-
-    SmallValueNumSet recMemoryDependencies;
 
     VNFuncApp funcApp;
     if (GetVNFunc(map, &funcApp))
@@ -3264,7 +3221,7 @@ TailCall:
                         bool     allSame       = true;
                         ValueNum argRest       = phiFuncApp.m_args[1];
                         ValueNum sameSelResult = VNForMapSelectWork(vnk, type, phiArgVN, index, pBudget,
-                                                                    pUsedRecursiveVN, recMemoryDependencies);
+                                                                    pUsedRecursiveVN, entry.MemoryDependencies);
 
                         // It is possible that we just now exceeded our budget, if so we need to force an early exit
                         // and stop calling VNForMapSelectWork
@@ -3306,7 +3263,7 @@ TailCall:
                             {
                                 bool     usedRecursiveVN = false;
                                 ValueNum curResult       = VNForMapSelectWork(vnk, type, phiArgVN, index, pBudget,
-                                                                        &usedRecursiveVN, recMemoryDependencies);
+                                                                        &usedRecursiveVN, entry.MemoryDependencies);
 
                                 *pUsedRecursiveVN |= usedRecursiveVN;
                                 if (sameSelResult == ValueNumStore::RecursiveVN)
@@ -3334,13 +3291,10 @@ TailCall:
                             if (!*pUsedRecursiveVN)
                             {
                                 entry.Result = sameSelResult;
-                                entry.SetMemoryDependencies(m_pComp, recMemoryDependencies);
-
                                 GetMapSelectWorkCache()->Set(fstruct, entry);
                             }
 
-                            recMemoryDependencies.ForEach(
-                                [this, &memoryDependencies](ValueNum vn) { memoryDependencies.Add(m_pComp, vn); });
+                            entry.MemoryDependencies.CopyTo(m_pComp, memoryDependencies);
 
                             return sameSelResult;
                         }
@@ -3370,12 +3324,11 @@ TailCall:
         fapp->m_args[1]                         = fstruct.m_args[1];
 
         entry.Result = c->m_baseVN + offsetWithinChunk;
-        entry.SetMemoryDependencies(m_pComp, recMemoryDependencies);
 
         GetMapSelectWorkCache()->Set(fstruct, entry);
     }
 
-    recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) { memoryDependencies.Add(m_pComp, vn); });
+    entry.MemoryDependencies.CopyTo(m_pComp, memoryDependencies);
 
     return entry.Result;
 }
