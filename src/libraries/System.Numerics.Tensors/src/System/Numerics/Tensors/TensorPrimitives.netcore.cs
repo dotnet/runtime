@@ -11,7 +11,7 @@ using System.Security.Cryptography;
 
 namespace System.Numerics.Tensors
 {
-    public static partial class TensorPrimitives
+    public static unsafe partial class TensorPrimitives
     {
         private const nuint NonTemporalByteThreshold = 256 * 1024;
 
