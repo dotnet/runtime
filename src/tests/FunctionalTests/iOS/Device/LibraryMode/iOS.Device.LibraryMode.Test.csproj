@@ -5,22 +5,22 @@
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
-    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
+    <SelfContained>true</SelfContained>
+    <UseConsoleUITemplate>true</UseConsoleUITemplate>
     <ForceLibraryModeGenerateAppBundle>true</ForceLibraryModeGenerateAppBundle>
     <NativeLib Condition="'$(NativeLib)' == ''">shared</NativeLib>
     <BundlesResources Condition="'$(BundlesResources)' == ''">false</BundlesResources>
-    <UseConsoleUITemplate>true</UseConsoleUITemplate>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
     <RunAOTCompilation>true</RunAOTCompilation>
     <MonoEnableLLVM>true</MonoEnableLLVM>
-    <MainLibraryFileName>iOS.Simulator.LibraryMode.Test.dll</MainLibraryFileName>
+    <MainLibraryFileName>iOS.Device.LibraryMode.Test.dll</MainLibraryFileName>
     <MonoForceInterpreter>false</MonoForceInterpreter>
-    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
-    <iOSLikeDedup Condition="'$(iOSLikeDedup)' == ''">false</iOSLikeDedup>
   </PropertyGroup>
 
   <ItemGroup>

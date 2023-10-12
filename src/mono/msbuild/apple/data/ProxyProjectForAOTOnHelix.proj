@@ -14,9 +14,9 @@
     <IntermediateOutputPath>$(OriginalPublishDir)</IntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <UseArtifactsIntermediateOutput>true</UseArtifactsIntermediateOutput>
-    <NativeLib>static</NativeLib>
-    <CustomNativeMain>true</CustomNativeMain>
-    <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
+    <NativeLib Condition="'$(OutputType)' == 'Exe'">static</NativeLib>
+    <CustomNativeMain Condition="'$(OutputType)' == 'Exe'">true</CustomNativeMain>
+    <NativeCompilationDuringPublish Condition="'$(OutputType)' == 'Exe'">false</NativeCompilationDuringPublish>
     <_IsApplePlatform>true</_IsApplePlatform>
     <TargetsAppleMobile>true</TargetsAppleMobile>
     <_targetOS>$(TargetOS)</_targetOS>
