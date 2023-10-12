@@ -395,29 +395,30 @@ if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
 for inputAssemblyName in glob.glob(r"$(OutputPath)*.dll"):
-  print("ILASM RoundTrip for " + inputAssemblyName)
+  if not inputAssemblyName.endswith($(AssemblyName).dll):
+    print("ILASM RoundTrip for " + inputAssemblyName)
 
-  extra_backslash = "\\" if os.name == 'nt' else ""
-  disassemblyName = os.path.join(r"$(OutputPath)" + extra_backslash, "IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
-  targetAssemblyName = os.path.join(r"$(OutputPath)" + extra_backslash, "IL-RT", os.path.basename(inputAssemblyName))
+    extra_backslash = "\\" if os.name == 'nt' else ""
+    disassemblyName = os.path.join(r"$(OutputPath)" + extra_backslash, "IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
+    targetAssemblyName = os.path.join(r"$(OutputPath)" + extra_backslash, "IL-RT", os.path.basename(inputAssemblyName))
 
-  shutil.copyfile(inputAssemblyName, targetAssemblyName)
+    shutil.copyfile(inputAssemblyName, targetAssemblyName)
 
-  proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ildasm /raweh /unicode /out=" + disassemblyName + " " + targetAssemblyName)
+    proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ildasm /raweh /unicode /out=" + disassemblyName + " " + targetAssemblyName)
 
-  try:
-      proc.communicate()
-  except:
-      proc.kill()
-      sys.exit(1)
+    try:
+        proc.communicate()
+    except:
+        proc.kill()
+        sys.exit(1)
 
-  proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ilasm /DLL /output=" + inputAssemblyName + " $(_IlasmSwitches) " + disassemblyName)
+    proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ilasm /DLL /output=" + inputAssemblyName + " $(_IlasmSwitches) " + disassemblyName)
 
-  try:
-      proc.communicate()
-  except:
-      proc.kill()
-      sys.exit(1)
+    try:
+        proc.communicate()
+    except:
+        proc.kill()
+        sys.exit(1)
 
 print("")
 
