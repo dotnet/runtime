@@ -371,7 +371,7 @@ if [[ "$physicalpromotion" == "true" ]]; then
     configurations="$configurations PhysicalPromotionType=physicalpromotion"
 fi
 
-if [[ "${hybridglobalization,,}" == "true" ]]; then # convert to lowercase to test
+if [[ "$(echo "$hybridglobalization" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then # convert to lowercase to test
     configurations="$configurations HybridGlobalization=True" # Force True for consistency
 fi
 
