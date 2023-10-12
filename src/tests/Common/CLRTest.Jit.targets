@@ -409,6 +409,7 @@ except:
       File="$(OutputPath)\$(AssemblyName)_ilasmroundtrip.py"
       Lines="$(_IlasmRoundTripScriptText)"
       Overwrite="true" />
+    <Exec Command="python $(OutputPath)\$(AssemblyName)_ilasmroundtrip.py" WorkingDirectory="$(OutputPath)" />
   </Target>
 
   <!--
