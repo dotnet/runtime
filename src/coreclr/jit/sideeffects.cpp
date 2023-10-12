@@ -421,6 +421,21 @@ bool AliasSet::InterferesWith(const NodeInfo& other) const
 }
 
 //------------------------------------------------------------------------
+// AliasSet::WritesLocal:
+//    Returns true if this alias set contains a write to the specified local.
+//
+// Arguments:
+//    lclNum - The local number.
+//
+// Returns:
+//    True if so.
+//
+bool AliasSet::WritesLocal(unsigned lclNum) const
+{
+    return m_lclVarWrites.Contains(lclNum);
+}
+
+//------------------------------------------------------------------------
 // AliasSet::Clear:
 //    Clears the current alias set.
 //

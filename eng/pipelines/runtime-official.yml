@@ -149,16 +149,12 @@ extends:
                     filesToSign:
                     - name: createdump
                       path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
                     - name: corerun
                       path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
                     - name: dotnet
                       path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
-                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
                     - name: apphost
                       path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
-                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
 
               - task: CopyFiles@2
                 displayName: 'Copy signed createdump to sharedFramework'

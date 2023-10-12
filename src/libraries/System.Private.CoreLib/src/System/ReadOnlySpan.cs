@@ -24,6 +24,7 @@ namespace System
 #pragma warning disable SYSLIB1056 // Specified native type is invalid
     [NativeMarshalling(typeof(ReadOnlySpanMarshaller<,>))]
 #pragma warning restore SYSLIB1056 // Specified native type is invalid
+    [Intrinsic]
     public readonly ref struct ReadOnlySpan<T>
     {
         /// <summary>A byref or a native ptr.</summary>
