@@ -2881,7 +2881,7 @@ PhaseStatus Compiler::fgSimpleLowering()
                 {
                     // We need to have created the appropriate throw helper.
                     //
-                    fgAddCodeRef(block, SCK_RNGCHK_FAIL);
+                    fgAddCodeRef(block, tree->AsBoundsChk()->gtThrowKind);
                     break;
                 }
 
