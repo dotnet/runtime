@@ -1355,7 +1355,7 @@ namespace System.Numerics.Tensors
                         Vector128<float> vector3;
                         Vector128<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -1596,7 +1596,7 @@ namespace System.Numerics.Tensors
                         Vector256<float> vector3;
                         Vector256<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -1863,7 +1863,7 @@ namespace System.Numerics.Tensors
                         Vector512<float> vector3;
                         Vector512<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -2271,7 +2271,7 @@ namespace System.Numerics.Tensors
                         Vector128<float> vector3;
                         Vector128<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -2545,7 +2545,7 @@ namespace System.Numerics.Tensors
                         Vector256<float> vector3;
                         Vector256<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -2848,7 +2848,7 @@ namespace System.Numerics.Tensors
                         Vector512<float> vector3;
                         Vector512<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -3299,7 +3299,7 @@ namespace System.Numerics.Tensors
                         Vector128<float> vector3;
                         Vector128<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -3569,7 +3569,7 @@ namespace System.Numerics.Tensors
                         Vector256<float> vector3;
                         Vector256<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -3870,7 +3870,7 @@ namespace System.Numerics.Tensors
                         Vector512<float> vector3;
                         Vector512<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -4322,7 +4322,7 @@ namespace System.Numerics.Tensors
                         Vector128<float> vector3;
                         Vector128<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -4629,7 +4629,7 @@ namespace System.Numerics.Tensors
                         Vector256<float> vector3;
                         Vector256<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -4968,7 +4968,7 @@ namespace System.Numerics.Tensors
                         Vector512<float> vector3;
                         Vector512<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -5450,7 +5450,7 @@ namespace System.Numerics.Tensors
                         Vector128<float> vector3;
                         Vector128<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -5753,7 +5753,7 @@ namespace System.Numerics.Tensors
                         Vector256<float> vector3;
                         Vector256<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -6090,7 +6090,7 @@ namespace System.Numerics.Tensors
                         Vector512<float> vector3;
                         Vector512<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -6573,7 +6573,7 @@ namespace System.Numerics.Tensors
                         Vector128<float> vector3;
                         Vector128<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -6876,7 +6876,7 @@ namespace System.Numerics.Tensors
                         Vector256<float> vector3;
                         Vector256<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
@@ -7213,7 +7213,7 @@ namespace System.Numerics.Tensors
                         Vector512<float> vector3;
                         Vector512<float> vector4;
 
-                        if (canAlign && (remainder > (NonTemporalByteThreshold / sizeof(float))))
+                        if ((remainder > (NonTemporalByteThreshold / sizeof(float))) && canAlign)
                         {
                             // This loop stores the data non-temporally, which benefits us when there
                             // is a large amount of data involved as it avoids polluting the cache.
