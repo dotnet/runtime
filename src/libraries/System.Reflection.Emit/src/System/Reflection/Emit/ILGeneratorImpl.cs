@@ -261,7 +261,6 @@ namespace System.Reflection.Emit
                 switchEncoder.Branch(_labelTable[label]);
             }
         }
-        }
 
         public override void Emit(OpCode opcode, LocalBuilder local) => throw new NotImplementedException();
         public override void Emit(OpCode opcode, SignatureHelper signature) => throw new NotImplementedException();
