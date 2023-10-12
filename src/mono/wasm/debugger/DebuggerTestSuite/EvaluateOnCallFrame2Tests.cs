@@ -769,13 +769,32 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                await EvaluateOnCallFrameAndCheck(id,
-                   ("f[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
-                   ("f[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
-                   ("f[aChar, \"&\", longString]", TString("9-&-longString")),
-                   ("f[f.numArray[j], aDouble]", TNumber("4.34")), //ElementAccessExpressionSyntax
-                   ("f[f.numArray[j], f.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
-                   ("f[f.numArray[f.numList[0]], f.numArray[i]]", TNumber("3")),
-                   ("f[f.numArray[f.numList[0]], f.numArray[f.numArray[i]]]", TNumber("4"))
+                   ("c[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
+                   ("c[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
+                   ("c[aChar, \"&\", longString]", TString("9-&-longString")),
+                   ("c[cc.numArray[j], aDouble]", TNumber("4.34")), //ElementAccessExpressionSyntax
+                   ("c[cc.numArray[j], cc.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
+                   ("c[cc.numArray[cc.numList[0]], cc.numArray[i]]", TNumber("3")),
+                   ("c[cc.numArray[cc.numList[0]], cc.numArray[cc.numArray[i]]]", TNumber("4"))
+                ); 
+           });
+
+        [Fact]
+        public async Task EvaluateValueTypeIndexingMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("s[j, aDouble]", TNumber("3.34")), //only IdentifierNameSyntaxes
+                   ("s[1, aDouble]", TNumber("3.34")), //IdentifierNameSyntax with LiteralExpressionSyntax
+                   ("s[aChar, \"&\", longString]", TString("9-&-longString")),
+                   ("s[cc.numArray[j], aDouble]", TNumber("4.34")), //ElementAccessExpressionSyntax
+                   ("s[cc.numArray[j], cc.numArray[0]]", TNumber("3")), //multiple ElementAccessExpressionSyntaxes
+                   ("s[cc.numArray[cc.numList[0]], cc.numArray[i]]", TNumber("3")),
+                   ("s[cc.numArray[cc.numList[0]], cc.numArray[cc.numArray[i]]]", TNumber("4"))
                 ); 
            });
 
