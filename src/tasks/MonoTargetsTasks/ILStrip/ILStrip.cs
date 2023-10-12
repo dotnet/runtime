@@ -42,22 +42,16 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     public string IntermediateOutputPath { get; set; } = string.Empty;
 
     /// <summary>
-    /// Assembilies got trimmed successfully.
-    ///
-    /// Successful trimming will set the following metadata on the items:
-    ///  - TrimmedAssemblyFileName
-    /// </summary>
-    [Output]
-    public ITaskItem[]? TrimmedAssemblies { get; set; }
-
-    /// <summary>
     /// Contains the updated list of assemblies comparing to the input variable Assemblies.
     /// Replaced the trimmed ones with their new location.
+    ///
+    /// Added two metadata for trimmed items:
+    /// - UntrimmedAssemblyFilePath
+    /// - ILStripped: set to true to indicate this item is trimmed
     /// </summary>
     [Output]
     public ITaskItem[]? UpdatedAssemblies { get; set; }
 
-    private readonly List<ITaskItem> _trimmedAssemblies = new();
     private readonly List<ITaskItem> _updatedAssemblies = new();
 
     public override bool Execute()
@@ -88,7 +82,6 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         if (TrimIndividualMethods)
         {
-            TrimmedAssemblies = _trimmedAssemblies.ToArray();
             UpdatedAssemblies = _updatedAssemblies.ToArray();
         }
 
@@ -192,8 +185,9 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         if (isTrimmed)
         {
-            AddItemToTrimmedList(assemblyFilePathArg, trimmedAssemblyFilePath);
             newAssmeblyItem.ItemSpec = trimmedAssemblyFilePath;
+            newAssmeblyItem.SetMetadata("UntrimmedAssemblyFilePath", assemblyFilePathArg);
+            newAssmeblyItem.SetMetadata("ILStripped", "true");
         }
 
         _updatedAssemblies.Add(newAssmeblyItem);
@@ -333,12 +327,5 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         Array.Clear(zeroBuffer, 0, zeroBuffer.Length);
         memStream.Write(zeroBuffer, 0, methodSize - headerSize);
         ArrayPool<byte>.Shared.Return(zeroBuffer);
-    }
-
-    private void AddItemToTrimmedList(string assemblyFilePath, string trimmedAssemblyFilePath)
-    {
-        var trimmedAssemblyItem = new TaskItem(assemblyFilePath);
-        trimmedAssemblyItem.SetMetadata("TrimmedAssemblyFileName", trimmedAssemblyFilePath);
-        _trimmedAssemblies.Add(trimmedAssemblyItem);
     }
 }
