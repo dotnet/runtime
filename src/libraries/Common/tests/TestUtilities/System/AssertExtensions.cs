@@ -603,7 +603,7 @@ namespace System
                 case E ex when (ex.GetType() == typeof(E)):
                     return ex;
                 default:
-                    throw new ThrowsException.ForIncorrectExceptionType(typeof(E), exception);
+                    throw ThrowsException.ForIncorrectExceptionType(typeof(E), exception);
             }
         }
 
@@ -628,7 +628,7 @@ namespace System
                 case E ex when (ex.GetType() == typeof(E)):
                     return ex;
                 default:
-                    throw new ThrowsException.ForIncorrectExceptionType(typeof(E), exception);
+                    throw ThrowsException.ForIncorrectExceptionType(typeof(E), exception);
             }
         }
 
