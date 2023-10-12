@@ -16,6 +16,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Buffers;
+using System.Collections.Concurrent;
 
 public class ILStrip : Microsoft.Build.Utilities.Task
 {
@@ -52,7 +53,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     [Output]
     public ITaskItem[]? UpdatedAssemblies { get; set; }
 
-    private readonly List<ITaskItem> _updatedAssemblies = new();
+    private ConcurrentBag<ITaskItem> _updatedAssemblies = new();
 
     public override bool Execute()
     {
@@ -197,8 +198,6 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             newAssmeblyItem.ItemSpec = trimmedAssemblyFilePath;
             newAssmeblyItem.SetMetadata("UntrimmedAssemblyFilePath", assemblyFilePathArg);
             newAssmeblyItem.SetMetadata("ILStripped", "true");
-            // The following line is added to prevent some items not being added to `_updatedAssemblies`
-            Console.WriteLine(trimmedAssemblyFilePath);
         }
 
         _updatedAssemblies.Add(newAssmeblyItem);
