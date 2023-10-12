@@ -292,6 +292,8 @@ namespace System.Reflection.Runtime.General
         // Helper for the V1/V1.1 Delegate.CreateDelegate() api. These apis take method names rather than MethodInfo and only expect to create open static delegates
         // or closed instance delegates. For backward compatibility, they don't allow relaxed signature matching (which could make the choice of target method ambiguous.)
         //
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Analysis does not track annotations for RuntimeTypeInfo")]
         private static RuntimeMethodInfo LookupMethodForCreateDelegate(RuntimeTypeInfo runtimeDelegateType, RuntimeTypeInfo containingType, string method, bool isStatic, bool ignoreCase)
         {
             Debug.Assert(runtimeDelegateType.IsDelegate);

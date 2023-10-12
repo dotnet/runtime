@@ -154,6 +154,9 @@ namespace System.Reflection.Runtime.TypeInfos
     {
         public Type[] GetInterfaces() => ImplementedInterfaces.ToArray();
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2073:UnrecognizedReflectionPattern",
+            Justification = "Analysis does not track annotations for RuntimeTypeInfo")]
         public Type? GetInterface(string name, bool ignoreCase)
         {
             ArgumentNullException.ThrowIfNull(name, "fullname" /* Yep, CoreCLR names this different than the ref assembly */);

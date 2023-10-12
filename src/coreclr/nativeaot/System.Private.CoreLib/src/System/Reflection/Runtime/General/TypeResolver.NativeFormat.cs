@@ -169,8 +169,6 @@ namespace System.Reflection.Runtime.General
         //
         // Main routine to resolve a typeReference.
         //
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Resolves type references within metadata. We ensure metadata is consistent.")]
         private static RuntimeTypeInfo? TryResolveTypeReference(this TypeReferenceHandle typeReferenceHandle, MetadataReader reader, ref Exception? exception)
         {
             TypeReference typeReference = typeReferenceHandle.GetTypeReference(reader);
