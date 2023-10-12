@@ -3082,6 +3082,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	gboolean disable_direct_icalls = (flags & JIT_FLAG_NO_DIRECT_ICALLS) ? 1 : 0;
 	gboolean gsharedvt_method = FALSE;
 	gboolean interp_entry_only = FALSE;
+	gboolean despecialize_callees = FALSE;
 #ifdef ENABLE_LLVM
 	gboolean llvm = (flags & JIT_FLAG_LLVM) ? 1 : 0;
 #endif
@@ -3180,6 +3181,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->backend = current_backend;
 	cfg->jit_mm = jit_mm_for_method (cfg->method);
 	cfg->mem_manager = m_method_get_mem_manager (cfg->method);
+	cfg->despecialize_callees = despecialize_callees;
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC || cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 		/* We can't have seq points inside gc critical regions or native-to-managed wrapper */
@@ -3271,6 +3273,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		if (!cfg->llvm_only) {
 			cfg->disable_llvm = TRUE;
 			cfg->exception_message = g_strdup ("gsharedvt");
+			cfg->despecialize_callees = despecialize_callees = TRUE;
 		}
 	}
 
@@ -3343,6 +3346,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		if (COMPILE_LLVM (cfg)) {
 			mono_llvm_check_method_supported (cfg);
 			if (cfg->disable_llvm) {
+				despecialize_callees = TRUE;
 				if (cfg->verbose_level > 0) {
 					//nm = mono_method_full_name (cfg->method, TRUE);
 					printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);
@@ -3901,6 +3905,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		if (!cfg->disable_llvm)
 			mono_llvm_emit_method (cfg);
 		if (cfg->disable_llvm) {
+			despecialize_callees = TRUE;
 			if (cfg->verbose_level > 0) {
 				//nm = mono_method_full_name (cfg->method, TRUE);
 				printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);

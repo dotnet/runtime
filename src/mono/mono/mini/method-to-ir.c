@@ -6391,6 +6391,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
 	}
 
+	if (cfg->compile_aot)
+		cfg->refd_methods = g_hash_table_new (NULL, NULL);
+
 	if ((cfg->gen_sdb_seq_points && cfg->method == method) || cfg->prof_coverage) {
 		minfo = mono_debug_lookup_method (method);
 		if (minfo) {
@@ -7594,6 +7597,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			} else {
 				cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 			}
+
+			if (cfg->compile_aot)
+				 g_hash_table_insert (cfg->refd_methods, cmethod, cmethod);
 
 			CHECK_CFG_ERROR;
 

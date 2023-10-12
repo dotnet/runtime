@@ -334,6 +334,7 @@ typedef struct MonoAotCompile {
 	GHashTable *ginst_blob_hash;
 	GHashTable *gsharedvt_in_signatures;
 	GHashTable *gsharedvt_out_signatures;
+	GHashTable* unspecialize_referenced_methods;
 	guint32 *plt_got_info_offsets;
 	guint32 got_offset, llvm_got_offset, plt_offset, plt_got_offset_base, plt_got_info_offset_base, nshared_got_entries;
 	/* Number of GOT entries reserved for trampolines */
@@ -4723,11 +4724,6 @@ mono_aot_can_specialize (MonoMethod *method)
 	if (!method)
 		return FALSE;
 
-	if (strstr (mono_method_full_name(method, TRUE), "HashCode:Add"))
-	{
-		printf("here\n");
-	}
-
 	// Disallow specialization if the method can get called from outside the assembly,
 	// this includes:
 	// - Public methods
@@ -4745,6 +4741,9 @@ mono_aot_can_specialize (MonoMethod *method)
 		return FALSE;
 
 	if (method->is_inflated)
+		return FALSE;
+	
+	if (!strcmp (m_class_get_name (method->klass), "RuntimeType"))
 		return FALSE;
 
 	if (mono_aot_is_externally_callable (method) || 
@@ -4810,7 +4809,6 @@ mono_aot_can_specialize (MonoMethod *method)
 	if (!strncmp (method->name, "bzero", 5)) // string:bzero, string:bzero_aligned_<align>
 		return FALSE;
 
-
 	// does the following work?
 	gboolean is_dynamically_accessed = FALSE;
 
@@ -4832,10 +4830,15 @@ mono_aot_can_specialize (MonoMethod *method)
 			contains_attribute (cattr, "System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute")))
 			is_dynamically_accessed = TRUE;
 
-	if (is_ok (cattr_error) && cattr && contains_attribute (cattr, "System.Runtime", "ReferencedPrivateMethodAttribute")) {
+	if (is_ok (cattr_error) && cattr && contains_attribute (cattr, "System", "ReferencedPrivateMethodAttribute")) {
 		printf ("*** LDFTN: %s\n", mono_method_full_name (method, TRUE));
 		is_dynamically_accessed = TRUE;
 	}
+
+	//if (is_ok (cattr_error) && cattr && contains_attribute (cattr, "System.Runtime.CompilerServices", "CompilerGeneratedAttribute")) {
+	//	printf ("*** CGNRT: %s\n", mono_method_full_name (method, TRUE));
+	//	is_dynamically_accessed = TRUE;
+	//}
 
 	if (cattr)
 		mono_custom_attrs_free (cattr);
@@ -9696,6 +9699,10 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	cfg = mini_method_compile (method, acfg->jit_opts, flags, 0, index);
 	mono_time_track_end (&mono_jit_stats.jit_time, jit_time_start);
 
+	if (cfg->despecialize_callees) {
+		//g_hash_table_insert (acfg->unspecialize_referenced_methods, method, cfg->refd_methods);
+	}
+
 	if (cfg->exception_type == MONO_EXCEPTION_GENERIC_SHARING_FAILED) {
 		if (acfg->aot_opts.print_skipped_methods)
 			printf ("Skip (gshared failure): %s (%s)\n", mono_method_get_full_name (method), cfg->exception_message);
@@ -11047,7 +11054,7 @@ emit_code (MonoAotCompile *acfg)
 			continue;
 
 		/* Emit unbox trampoline */
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass) && !mono_aot_can_specialize (method)) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass) && (!mono_aot_can_specialize (method) || !COMPILE_LLVM (cfg))) {
 			sprintf (symbol, "ut_%d", get_method_index (acfg, method));
 
 			emit_section_change (acfg, ".text", 0);
@@ -11144,6 +11151,7 @@ emit_code (MonoAotCompile *acfg)
 		fprintf (acfg->fp, "	.no_dead_strip %s\n", symbol);
 
 	for (guint32 i = 0; i < acfg->nmethods; ++i) {
+
 #ifdef MONO_ARCH_AOT_SUPPORTED
 		if (acfg->flags & MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY) {
 			if (!ignore_cfg (acfg->cfgs [i]))
@@ -11152,7 +11160,7 @@ emit_code (MonoAotCompile *acfg)
 				emit_pointer (acfg, NULL);
 		} else {
 			if (!ignore_cfg (acfg->cfgs [i])) {
-				if (!mono_aot_can_specialize(acfg->cfgs [i]->method)) {
+				if (!mono_aot_can_specialize(acfg->cfgs [i]->method) || !acfg->cfgs [i]->compile_llvm) {
 					arch_emit_label_address (acfg, acfg->cfgs [i]->asm_symbol, FALSE, acfg->thumb_mixed && acfg->cfgs [i]->compile_llvm, NULL, &acfg->call_table_entry_size);
 				} else {
 					arch_emit_label_address (acfg, symbol, FALSE, FALSE, NULL, &acfg->call_table_entry_size);
@@ -11186,7 +11194,7 @@ emit_code (MonoAotCompile *acfg)
 
 		method = cfg->orig_method;
 
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass) && !mono_aot_can_specialize(method)) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass) && (!mono_aot_can_specialize(method) || !COMPILE_LLVM (cfg))) {
 			index = get_method_index (acfg, method);
 
 			emit_int32 (acfg, index);
@@ -11221,7 +11229,7 @@ emit_code (MonoAotCompile *acfg)
 		method = cfg->orig_method;
 		(void)method;
 
-		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass) && !mono_aot_can_specialize(method)) {
+		if (mono_aot_mode_is_full (&acfg->aot_opts) && m_class_is_valuetype (cfg->orig_method->klass) && (!mono_aot_can_specialize(method) || !COMPILE_LLVM (cfg))) {
 #ifdef MONO_ARCH_AOT_SUPPORTED
 			const int index = get_method_index (acfg, method);
 			sprintf (symbol, "ut_%d", index);
@@ -14333,6 +14341,7 @@ acfg_create (MonoAssembly *ass, guint32 jit_opts)
 	acfg->gshared_instances = g_hash_table_new (NULL, NULL);
 	acfg->prefer_instances = g_hash_table_new (NULL, NULL);
 	acfg->exported_methods = g_ptr_array_new ();
+	acfg->unspecialize_referenced_methods = g_hash_table_new (NULL, NULL);
 	acfg->dedup_phase = DEDUP_NONE;
 	mono_os_mutex_init_recursive (&acfg->mutex);
 
@@ -14434,6 +14443,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->plt_entry_debug_sym_cache);
 	g_hash_table_destroy (acfg->klass_blob_hash);
 	g_hash_table_destroy (acfg->method_blob_hash);
+	g_hash_table_destroy (acfg->unspecialize_referenced_methods);
 	if (acfg->blob_hash)
 		g_hash_table_destroy (acfg->blob_hash);
 	got_info_free (&acfg->got_info);

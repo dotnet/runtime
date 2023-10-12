@@ -1508,6 +1508,10 @@ typedef struct {
 	guint            disable_inline_rgctx_fetch : 1;
 	guint            deopt : 1;
 	guint            prefer_instances : 1;
+	/* If this is true, all methods referenced by the compiled methods must retain their method table
+	 * entries. This can only occur when attempting LLVM AOT.
+	 */
+	guint						 despecialize_callees : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -1595,6 +1599,9 @@ typedef struct {
 
 	/* Method headers which need to be freed after compilation */
 	GSList *headers_to_free;
+
+	/* A table of methods referenced by this method. */
+	GHashTable* refd_methods;
 
 	/* Used by AOT */
 	guint32 got_offset, ex_info_offset, method_info_offset, method_index;
@@ -2757,6 +2764,24 @@ mini_is_gsharedvt_gparam (MonoType *t);
 
 gboolean
 mini_is_gsharedvt_inst (MonoGenericInst *inst);
+
+/*void
+mono_method_enum_referenced_methods (MonoCompile* cfg, GHashTable* dest)
+{
+	
+	for (MonoBasicBlock* bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		// Ignore unreachable BBs.
+		if (!(bb == cfg->bb_entry || bb->in_count > 0))
+			continue;
+
+		for (MonoInst* ins = bb->code; ins; ins = ins->next) {
+			if (ins->opcode == OP_CALL) {
+				
+			}
+		}
+	}
+
+}*/
 
 MonoGenericContext* mini_method_get_context (MonoMethod *method);
 

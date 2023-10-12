@@ -137,6 +137,7 @@ typedef struct {
 	GHashTable *no_method_table_lmethods;
 	GHashTable *intrins_id_to_intrins;
 	GHashTable *intrins_id_to_type;
+	GHashTable* nollvm_refd_methods;
 } MonoLLVMModule;
 
 /*
@@ -203,6 +204,7 @@ typedef struct {
 	gboolean emit_dummy_arg;
 	gboolean has_safepoints;
 	gboolean has_catch;
+	gboolean can_specialize;
 	int this_arg_pindex, rgctx_arg_pindex;
 	LLVMValueRef imt_rgctx_loc;
 	GHashTable *llvm_types;
@@ -12248,6 +12250,22 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	emit_method_inner (ctx);
 
+	if (cfg->disable_llvm) {
+		cfg->despecialize_callees = 1;
+
+		GHashTableIter it;
+		g_hash_table_iter_init (&it, cfg->refd_methods);
+		MonoMethod* m;
+		void* dummy;
+	
+		// Accumulate all methods which are referenced from methods that have 
+		// failed LLVM compilation into acfg->nollvm_refd_methods. These will
+		// be removed from no_method_table_lmethods later.
+		while (g_hash_table_iter_next (&it, (void**)&m, &dummy)) {
+			g_hash_table_insert(ctx->module->nollvm_refd_methods, m, dummy);
+		}
+	}
+
 	if (!ctx_ok (ctx)) {
 		if (ctx->lmethod) {
 			/* Need to add unused phi nodes as they can be referenced by other values */
@@ -12320,15 +12338,22 @@ emit_method_inner (EmitContext *ctx)
 	char **names;
 	LLVMBuilderRef entry_builder = NULL;
 	LLVMBasicBlockRef entry_bb = NULL;
-	gboolean can_specialize = FALSE;
+
+	if (cfg->compile_aot) {
+		ctx->can_specialize = mono_aot_can_specialize (cfg->method);
+	} else {
+		ctx->can_specialize = FALSE;
+	}
+
+	// The method has been referenced by a LLVM-failed method, must not specialize.
+	if (ctx->can_specialize && g_hash_table_contains(ctx->module->nollvm_refd_methods, cfg->method)) {
+		ctx->can_specialize = FALSE;
+	}
 
 	if (cfg->gsharedvt && !cfg->llvm_only) {
 		set_failure (ctx, "gsharedvt");
 		return;
 	}
-
-	if (cfg->compile_aot)
-		can_specialize = mono_aot_can_specialize(cfg->method);
 
 #if 0
 	{
@@ -12373,6 +12398,7 @@ emit_method_inner (EmitContext *ctx)
 				LLVMSetLinkage (method, LLVMExternalLinkage);
 				LLVMSetVisibility (method, LLVMHiddenVisibility);
 			}
+
 			/* Not looked up at runtime */
 			g_hash_table_insert (ctx->module->no_method_table_lmethods, method, method);
 
@@ -12487,7 +12513,7 @@ emit_method_inner (EmitContext *ctx)
 			LLVMSetLinkage (method, LLVMInternalLinkage);
 			//all methods have internal visibility when doing llvm_only
 			if (!cfg->llvm_only && ctx->module->external_symbols) {
-				if (can_specialize) {
+				if (ctx->can_specialize) {
 					LLVMSetLinkage (method, LLVMInternalLinkage);
 				} else {
 					LLVMSetLinkage (method, LLVMExternalLinkage);
@@ -12972,8 +12998,8 @@ after_codegen_1:
 	if (mini_get_debug_options ()->llvm_disable_inlining)
 		mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
 
-	if (can_specialize) {
-		printf ("MOO: %s\n", mono_method_get_full_name (cfg->method));
+	if (ctx->can_specialize && !cfg->disable_llvm) {
+		//printf ("MOO: %s\n", mono_method_get_full_name (cfg->method));
 		g_hash_table_insert (ctx->module->no_method_table_lmethods, method, method);
 	}
 
@@ -13001,7 +13027,7 @@ after_codegen:
 		g_print ("***\n\n");
 	}
 
-	if (cfg->compile_aot && !cfg->llvm_only && !can_specialize)
+	if (cfg->compile_aot && !cfg->llvm_only && !ctx->can_specialize)
 		mark_as_used (ctx->module, method);
 		
 	if (!cfg->llvm_only) {
@@ -13047,6 +13073,15 @@ after_codegen:
 
 	if (ctx->llvm_only && m_class_is_valuetype (cfg->orig_method->klass) && !(cfg->orig_method->flags & METHOD_ATTRIBUTE_STATIC))
 		emit_unbox_tramp (ctx, ctx->method_name, ctx->method_type, ctx->lmethod, cfg->method_index);
+}
+
+void 
+mono_llvm_keep_referenced_method_refs (MonoCompile* cfg, MonoMethod* caller)
+{
+	g_assert (cfg);
+	g_assert (caller);
+
+	//g_hash_table_remove(ctx->module->no_method_table_lmethods,...);
 }
 
 /*
@@ -13449,6 +13484,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->method_to_call_info = g_hash_table_new (NULL, NULL);
 	module->idx_to_unbox_tramp = g_hash_table_new (NULL, NULL);
 	module->no_method_table_lmethods = g_hash_table_new (NULL, NULL);
+	module->nollvm_refd_methods = g_hash_table_new (NULL, NULL);
 	module->callsite_list = g_ptr_array_new ();
 
 	if (llvm_only)
@@ -13581,6 +13617,7 @@ mono_llvm_free_aot_module (void)
 	g_hash_table_destroy (module->no_method_table_lmethods);
 	g_hash_table_destroy (module->intrins_id_to_intrins);
 	g_hash_table_destroy (module->intrins_id_to_type);
+	g_hash_table_destroy (module->nollvm_refd_methods);
 
 	g_ptr_array_free (module->cfgs, TRUE);
 	g_ptr_array_free (module->callsite_list, TRUE);
@@ -13591,6 +13628,20 @@ mono_llvm_fixup_aot_module (void)
 {
 	MonoLLVMModule *module = &aot_module;
 	MonoMethod *method;
+
+	/* 
+	 * Remove methods that are referenced from non-LLVM code (e.g. due to compilation
+	 * failure) from no_method_table_lmethods.
+	 *
+	 * NOTE: we may be too late to the party here
+	 */
+	GHashTableIter it;
+	g_hash_table_iter_init (&it, module->nollvm_refd_methods);
+	MonoMethod* m;
+	void* dummy;
+	while (g_hash_table_iter_next (&it, (void**)&m, &dummy)) {
+		g_hash_table_remove(module->no_method_table_lmethods, m);
+	}
 
 	/*
 	 * Replace GOT entries for directly callable methods with the methods themselves.
@@ -13645,8 +13696,9 @@ mono_llvm_fixup_aot_module (void)
 		if (can_direct_call) {
 			mono_llvm_replace_uses_of (placeholder, lmethod);
 
-			if (mono_aot_can_specialize (method))
+			if (mono_aot_can_specialize (method)) {
 				g_hash_table_insert (specializable, lmethod, method);
+			}
 
 			g_hash_table_insert (patches_to_null, site->ji, site->ji);
 		} else {
