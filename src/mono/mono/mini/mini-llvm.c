@@ -4060,6 +4060,15 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			}
 			break;
 		default: {
+			if (m_class_is_simd_type (mono_class_from_mono_type_internal (ainfo->type))) {
+				/* SIMD value passed by value */
+				if (ctx->addresses [reg]) {
+					LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
+					LLVMBuildStore (builder, arg, build_ptr_cast (builder, ctx->addresses [reg]->value,  pointer_type(LLVMTypeOf (arg))));
+				}
+				break;
+			}
+
 			LLVMTypeRef t;
 			/* Needed to avoid phi argument mismatch errors since operations on pointers produce i32/i64 */
 			if (m_type_is_byref (ainfo->type))
@@ -13293,23 +13302,8 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		switch (ainfo->storage) {
 		case LLVMArgNormal: {
 			MonoType *t = (sig->hasthis && i == 0) ? m_class_get_byval_arg (mono_get_intptr_class ()) : ainfo->type;
-			int opcode;
 
-			opcode = mono_type_to_regmove (cfg, t);
-			if (opcode == OP_FMOVE) {
-				MONO_INST_NEW (cfg, ins, OP_FMOVE);
-				ins->dreg = mono_alloc_freg (cfg);
-			} else if (opcode == OP_LMOVE) {
-				MONO_INST_NEW (cfg, ins, OP_LMOVE);
-				ins->dreg = mono_alloc_lreg (cfg);
-			} else if (opcode == OP_RMOVE) {
-				MONO_INST_NEW (cfg, ins, OP_RMOVE);
-				ins->dreg = mono_alloc_freg (cfg);
-			} else {
-				MONO_INST_NEW (cfg, ins, OP_MOVE);
-				ins->dreg = mono_alloc_ireg (cfg);
-			}
-			ins->sreg1 = in->dreg;
+			ins = mini_emit_regmove (cfg, in->dreg, t);
 			break;
 		}
 		case LLVMArgVtypeByVal:

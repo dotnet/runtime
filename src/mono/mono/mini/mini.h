@@ -2168,6 +2168,7 @@ guint32 mono_alloc_ireg  (MonoCompile *cfg);
 guint32 mono_alloc_lreg  (MonoCompile *cfg);
 guint32 mono_alloc_freg  (MonoCompile *cfg);
 guint32 mono_alloc_preg  (MonoCompile *cfg);
+guint32 mono_alloc_xreg  (MonoCompile *cfg);
 guint32   mono_alloc_dreg                   (MonoCompile *cfg, MonoStackType stack_type);
 guint32 mono_alloc_ireg_ref (MonoCompile *cfg);
 guint32 mono_alloc_ireg_mp (MonoCompile *cfg);
@@ -2350,6 +2351,7 @@ MonoInst*         mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, Mon
 MonoInst*         mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args, gboolean *ins_type_initialized);
 MonoInst*         mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*         mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field);
+MonoInst*         mini_emit_regmove (MonoCompile *cfg, int sreg, MonoType *type);
 MonoInst*         mini_handle_enum_has_flag (MonoCompile *cfg, MonoClass *klass, MonoInst *enum_this, int enum_val_reg, MonoInst *enum_flag);
 MonoInst*         mini_handle_unbox (MonoCompile *cfg, MonoClass *klass, MonoInst *val, int context_used);
 

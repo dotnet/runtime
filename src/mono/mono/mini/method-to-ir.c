@@ -251,6 +251,12 @@ mono_alloc_preg (MonoCompile *cfg)
 }
 
 guint32
+mono_alloc_xreg (MonoCompile *cfg)
+{
+	return alloc_xreg (cfg);
+}
+
+guint32
 mono_alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 {
 	return alloc_dreg (cfg, stack_type);
@@ -1689,6 +1695,34 @@ MONO_RESTORE_WARNING
 
 		EMIT_NEW_PCONST (cfg, ins, target);
 	}
+	return ins;
+}
+
+MonoInst*
+mini_emit_regmove (MonoCompile *cfg, int sreg, MonoType *type)
+{
+	MonoInst *ins;
+	int opcode = mono_type_to_regmove (cfg, type);
+
+	if (opcode == OP_FMOVE) {
+		MONO_INST_NEW (cfg, ins, OP_FMOVE);
+		ins->dreg = mono_alloc_freg (cfg);
+	} else if (opcode == OP_LMOVE) {
+		MONO_INST_NEW (cfg, ins, OP_LMOVE);
+		ins->dreg = mono_alloc_lreg (cfg);
+	} else if (opcode == OP_RMOVE) {
+		MONO_INST_NEW (cfg, ins, OP_RMOVE);
+		ins->dreg = mono_alloc_freg (cfg);
+	} else if (opcode == OP_XMOVE) {
+		MONO_INST_NEW (cfg, ins, OP_XMOVE);
+		ins->dreg = mono_alloc_xreg (cfg);
+		ins->klass = mono_class_from_mono_type_internal (type);
+	} else {
+		MONO_INST_NEW (cfg, ins, OP_MOVE);
+		ins->dreg = mono_alloc_ireg (cfg);
+	}
+	ins->sreg1 = sreg;
+
 	return ins;
 }
 
