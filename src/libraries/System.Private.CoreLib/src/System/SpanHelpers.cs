@@ -423,31 +423,52 @@ namespace System
             return;
 
         LargeInput:
-            // Branch-less alignment to 64 bytes.
-            Unsafe.As<nint, Block64>(ref ip) = default;
-            nuint misalignedPtrs = (64 - (nuint)Unsafe.AsPointer(ref ip) & 63) >> 3;
+            // Branch-less alignment to 16 bytes: unconditional zero the first pointer
+            // and then adjust ip pointer to +1 if it was misaligned.
+            ip = 0;
+            nuint misalignedPtrs = (nuint)(((nuint)Unsafe.AsPointer(ref ip) & 8) == 0 ? 0 : 1);
             ip = ref Unsafe.Add(ref ip, misalignedPtrs);
             pointerSizeLength -= misalignedPtrs;
 
+            // Work with 64b blocks and use blocks--'s flag as a loop condition.
             nuint blocks = pointerSizeLength >> 3;
             do
             {
-                Unsafe.As<nint, Block64>(ref ip) = default;
+                // On ARM64, this is supposed to be optimized into:
+                //
+                // stp     xzr, xzr, [x0]
+                // stp     xzr, xzr, [x0, #0x10]
+                // stp     xzr, xzr, [x0, #0x20]
+                // stp     xzr, xzr, [x0, #0x30]
+                //
+                // Although, JIT is free to optimize it into
+                //
+                // stp     q0, q0, [x0]
+                // stp     q0, q0, [x0, #20]
+                //
+                Unsafe.Add(ref ip, 0) = 0;
+                Unsafe.Add(ref ip, 1) = 0;
+                Unsafe.Add(ref ip, 2) = 0;
+                Unsafe.Add(ref ip, 3) = 0;
+                Unsafe.Add(ref ip, 4) = 0;
+                Unsafe.Add(ref ip, 5) = 0;
+                Unsafe.Add(ref ip, 6) = 0;
+                Unsafe.Add(ref ip, 7) = 0;
                 ip = ref Unsafe.Add(ref ip, 8);
-
-                // rely on dec's flag for the loop condition
                 blocks--;
             } while (blocks != 0);
 
-            pointerSizeLength %= 8;
-            if (pointerSizeLength != 0)
-            {
-                Unsafe.As<nint, Block64>(ref Unsafe.Add(ref ip, (nint)pointerSizeLength - 8)) = default;
-            }
+            // Unconditional zero last 64 bytes to handle the remainder, it's also just 4 paired stores
+            ip = ref Unsafe.Add(ref ip, pointerSizeLength);
+            Unsafe.Add(ref ip, -1) = 0;
+            Unsafe.Add(ref ip, -2) = 0;
+            Unsafe.Add(ref ip, -3) = 0;
+            Unsafe.Add(ref ip, -4) = 0;
+            Unsafe.Add(ref ip, -5) = 0;
+            Unsafe.Add(ref ip, -6) = 0;
+            Unsafe.Add(ref ip, -7) = 0;
+            Unsafe.Add(ref ip, -8) = 0;
         }
-
-        [StructLayout(LayoutKind.Sequential, Size = 64)]
-        private struct Block64 { }
 
         public static void Reverse(ref int buf, nuint length)
         {
