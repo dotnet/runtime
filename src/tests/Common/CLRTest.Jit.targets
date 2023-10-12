@@ -387,6 +387,58 @@ import shutil
 import subprocess
 import sys
 import glob
+import struct
+
+def is_managed_assembly(file):
+    print(file)
+    file_size = os.path.getsize(file)
+
+    if file_size < 64:
+        return False
+
+    with open(file, "rb") as f:
+        f.seek(0x3c)
+
+        # PE Header starts @ 0x3C (60). Its a 4 byte header.
+        peHeaderPointer = struct.unpack('I', f.read(4))[0]
+        if peHeaderPointer == 0:
+            peHeaderPointer = 0x80
+
+        # Ensure there is at least enough room for the following structures:
+        #     24 byte PE Signature & Header
+        #     28 byte Standard Fields         (24 bytes for PE32+)
+        #     68 byte NT Fields               (88 bytes for PE32+)
+        # >= 128 byte Data Dictionary Table
+        if peHeaderPointer > (file_size - 256):
+            return False
+
+        # Check the PE signature.  Should equal 'PE\0\0'.
+        f.seek(peHeaderPointer)
+        peHeaderSignature = struct.unpack('I', f.read(4))[0]
+        if peHeaderSignature != 0x00004550:
+            return False
+
+        # skip over the PEHeader fields
+        f.seek(f.tell() + 20)
+
+        PE32 = 0x10b
+        PE32Plus = 0x20b
+
+        # Read PE magic number from Standard Fields to determine format.
+        peFormat = struct.unpack('H', f.read(2))[0]
+        if peFormat != PE32 and peFormat != PE32Plus:
+            return False
+
+        # Read the 15th Data Dictionary RVA field which contains the CLI header RVA.
+        # When this is non-zero then the file contains CLI data otherwise not.
+        dataDictionaryStart = (peHeaderPointer + (232 if peFormat == PE32 else 248)) & 0xffff
+        f.seek(dataDictionaryStart)
+
+        cliHeaderRva = struct.unpack('I', f.read(4))[0]
+        if cliHeaderRva == 0:
+            return False
+
+        return True
 
 print("")
 print("ILASM RoundTrips")
@@ -397,7 +449,7 @@ if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
 for inputAssemblyName in glob.glob(outputPath + "*.dll"):
-  if not inputAssemblyName.endswith("$(AssemblyName).dll"):
+  if (not inputAssemblyName.endswith("$(AssemblyName).dll")) and is_managed_assembly(inputAssemblyName):
     print("ILASM RoundTrip for " + inputAssemblyName)
 
     disassemblyName = os.path.join(outputPath, "IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
