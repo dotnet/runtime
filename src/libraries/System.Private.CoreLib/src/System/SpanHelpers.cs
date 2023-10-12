@@ -427,6 +427,7 @@ namespace System
             // and then adjust ip pointer to +1 if it was misaligned.
             ip = 0;
             nuint misalignedPtrs = (nuint)(((nuint)Unsafe.AsPointer(ref ip) & 8) == 0 ? 0 : 1);
+            ref nint ipEnd = ref Unsafe.Add(ref ip, pointerSizeLength);
             ip = ref Unsafe.Add(ref ip, misalignedPtrs);
             pointerSizeLength -= misalignedPtrs;
 
@@ -458,16 +459,16 @@ namespace System
                 blocks--;
             } while (blocks != 0);
 
-            // Unconditional zero last 64 bytes to handle the remainder, it's also just 4 paired stores
-            ip = ref Unsafe.Add(ref ip, pointerSizeLength);
-            Unsafe.Add(ref ip, -1) = 0;
-            Unsafe.Add(ref ip, -2) = 0;
-            Unsafe.Add(ref ip, -3) = 0;
-            Unsafe.Add(ref ip, -4) = 0;
-            Unsafe.Add(ref ip, -5) = 0;
-            Unsafe.Add(ref ip, -6) = 0;
-            Unsafe.Add(ref ip, -7) = 0;
-            Unsafe.Add(ref ip, -8) = 0;
+            // Unconditional zero last 64 bytes to handle the remainder.
+            // Ideally, two instructions again.
+            Unsafe.Add(ref ipEnd, -1) = 0;
+            Unsafe.Add(ref ipEnd, -2) = 0;
+            Unsafe.Add(ref ipEnd, -3) = 0;
+            Unsafe.Add(ref ipEnd, -4) = 0;
+            Unsafe.Add(ref ipEnd, -5) = 0;
+            Unsafe.Add(ref ipEnd, -6) = 0;
+            Unsafe.Add(ref ipEnd, -7) = 0;
+            Unsafe.Add(ref ipEnd, -8) = 0;
         }
 
         public static void Reverse(ref int buf, nuint length)
