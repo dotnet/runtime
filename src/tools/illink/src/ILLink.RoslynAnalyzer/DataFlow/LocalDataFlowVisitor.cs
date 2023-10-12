@@ -362,6 +362,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				if (operation.Value is IFlowCaptureReferenceOperation)
 					return TopValue;
 
+				// Note: technically we should save some information about the value for LValue flow captures
+				// (for example, the object instance of a property reference) and avoid re-computing it when
+				// assigning to the FlowCaptureReference.
 				var capturedRef = new CapturedReferenceValue (operation.Value);
 				var currentState = state.Current;
 				currentState.CapturedReferences.Set (operation.Id, capturedRef);
