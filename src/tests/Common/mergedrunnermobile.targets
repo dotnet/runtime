@@ -5,6 +5,7 @@
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <WasmMainAssemblyFileName>$(AssemblyName).dll</WasmMainAssemblyFileName>
     <TestFramework>GeneratedRunner</TestFramework>
+    <WasmEnableWebcil>false</WasmEnableWebcil>
   </PropertyGroup>
 
   <Target Name="_AddRuntimeLibsToPublishAssets" BeforeTargets="PrepareForPublish" DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild;ResolveRuntimeFilesFromLocalBuild">
