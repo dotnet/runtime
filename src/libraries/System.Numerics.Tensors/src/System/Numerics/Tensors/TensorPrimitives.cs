@@ -316,6 +316,10 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static int IndexOfMax(ReadOnlySpan<float> x)
         {
+#if NET8_0_OR_GREATER
+            return IndexOfMinMaxCore<MaxOperator>(x);
+#else
+
             int result = -1;
 
             if (!x.IsEmpty)
@@ -349,6 +353,7 @@ namespace System.Numerics.Tensors
             }
 
             return result;
+#endif
         }
 
         /// <summary>Searches for the index of the single-precision floating-point number with the largest magnitude in the specified tensor.</summary>

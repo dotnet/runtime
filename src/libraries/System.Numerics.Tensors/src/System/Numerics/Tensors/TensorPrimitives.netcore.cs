@@ -8,6 +8,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace System.Numerics.Tensors
 {
@@ -1048,7 +1049,7 @@ namespace System.Numerics.Tensors
             if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
-
+                Vector512<int> minIndex = Vector512.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
                 Vector512<float> result = Vector512.LoadUnsafe(ref xRef, 0), current;

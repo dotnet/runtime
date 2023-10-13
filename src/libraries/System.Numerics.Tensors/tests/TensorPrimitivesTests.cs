@@ -990,6 +990,8 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void IndexOfMax_Negative0LesserThanPositive0()
         {
+            System.Diagnostics.Debugger.Launch();
+
             Assert.Equal(1, TensorPrimitives.IndexOfMax([-0f, +0f]));
             Assert.Equal(0, TensorPrimitives.IndexOfMax([-0f, -0f, -0f, -0f]));
             Assert.Equal(4, TensorPrimitives.IndexOfMax([-0f, -0f, -0f, -0f, +0f, +0f, +0f]));
@@ -1312,6 +1314,21 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(max, TensorPrimitives.Max(x));
                 Assert.Equal(SingleToUInt32(x[TensorPrimitives.IndexOfMax(x)]), SingleToUInt32(TensorPrimitives.Max(x)));
             }, x);
+        }
+
+        [Fact]
+        public static void Max_Tensor_Temp()
+        {
+            using BoundedMemory<float> x = CreateAndFillTensor(128);
+
+            Assert.Equal(Enumerable.Max(MemoryMarshal.ToEnumerable<float>(x.Memory)), TensorPrimitives.Max(x));
+
+            float max = float.NegativeInfinity;
+            foreach (float f in x.Span)
+            {
+                max = Math.Max(max, f);
+            }
+            Assert.Equal(max, TensorPrimitives.Max(x));
         }
 
         [Theory]
