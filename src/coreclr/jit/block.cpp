@@ -1081,14 +1081,13 @@ unsigned BasicBlock::NumSucc() const
     {
         case BBJ_THROW:
         case BBJ_RETURN:
-        case BBJ_EHFINALLYRET:
         case BBJ_EHFAULTRET:
-        case BBJ_EHFILTERRET:
             return 0;
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_NONE:
             return 1;
@@ -1102,6 +1101,23 @@ unsigned BasicBlock::NumSucc() const
             {
                 return 2;
             }
+
+        case BBJ_EHFINALLYRET:
+            // We may call this method before we realize we have invalid IL. Tolerate.
+            //
+            if (!hasHndIndex())
+            {
+                return 0;
+            }
+
+            // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
+            //
+            if (bbJumpEhf == nullptr)
+            {
+                return 0;
+            }
+
+            return bbJumpEhf->bbeCount;
 
         case BBJ_SWITCH:
             return bbJumpSwt->bbsCount;
@@ -1128,6 +1144,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
             return bbJumpDest;
 
@@ -1145,6 +1162,9 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
                 assert(bbNext != bbJumpDest);
                 return bbJumpDest;
             }
+
+        case BBJ_EHFINALLYRET:
+            return bbJumpEhf->bbeSuccs[i];
 
         case BBJ_SWITCH:
             return bbJumpSwt->bbsDstTab[i];

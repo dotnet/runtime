@@ -616,12 +616,6 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 {
     switch (bbJumpKind)
     {
-        case BBJ_EHFILTERRET:
-            RETURN_ON_ABORT(func(bbJumpDest));
-            RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
-            RETURN_ON_ABORT(VisitSuccessorEHSuccessors(comp, this, bbJumpDest, func));
-            break;
-
         case BBJ_EHFINALLYRET:
             for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
             {
@@ -639,6 +633,7 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
 
         case BBJ_CALLFINALLY:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
             RETURN_ON_ABORT(func(bbJumpDest));
             RETURN_ON_ABORT(VisitEHSuccessors(comp, this, func));
@@ -728,10 +723,6 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 {
     switch (bbJumpKind)
     {
-        case BBJ_EHFILTERRET:
-            RETURN_ON_ABORT(func(bbJumpDest));
-            break;
-
         case BBJ_EHFINALLYRET:
             for (unsigned i = 0; i < bbJumpEhf->bbeCount; i++)
             {
@@ -741,6 +732,7 @@ BasicBlockVisit BasicBlock::VisitRegularSuccs(Compiler* comp, TFunc func)
 
         case BBJ_CALLFINALLY:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_ALWAYS:
             RETURN_ON_ABORT(func(bbJumpDest));
