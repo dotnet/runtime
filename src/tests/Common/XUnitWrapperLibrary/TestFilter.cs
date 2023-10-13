@@ -126,7 +126,10 @@ public class TestFilter
     // issues.targets file as a split model would be very confusing for developers
     // and test monitors.
 
+    // Explanation on the Test Exclusion Table is detailed in method LoadTestExclusionTable()
+    // later on in this file.
     private readonly Dictionary<string, string>? _testExclusionTable;
+
     private readonly int _stripe;
     private readonly int _stripeCount = 1;
     private int _shouldRunQuery = -1;
@@ -224,6 +227,23 @@ public class TestFilter
                : string.Empty;
     }
 
+    // Some tests are purposefully not run for a number of reasons. They are specified
+    // in src/tests/issues.targets, along with a brief explanation on why they are
+    // skipped inside an '<Issue>' tag.
+    //
+    // When building any test or test subtree, if any of the tests built matches an entry
+    // in issues.targets, then the exclusions list file ($CORE_ROOT/TestExclusions.txt is
+    // the default) is updated by adding a new a comma-separated entry:
+    //
+    // 1) Test's Path (What is added to <ExcludeList> in issues.targets)
+    // 2) Reason for Skipping (What is written in the <Issue> tag)
+    //
+    // When a test runner is executed (e.g. Methodical_d1.sh), it uses a compiler-generated
+    // source file to actually run the tests (e.g. FullRunner.g.cs - This is detailed in
+    // XUnitWrapperGenerator.cs). This generated source file is the one in charge of
+    // reading the test exclusions list file, and stores the comma-separated values into a
+    // table represented by the dictionary called _testExclusionTable in this file.
+
     public static Dictionary<string, string> LoadTestExclusionTable()
     {
         Dictionary<string, string> output = new Dictionary<string, string>();
@@ -256,6 +276,13 @@ public class TestFilter
 
         foreach (string[] testInfo in excludedTestsWithReasons)
         {
+            // Each line read from the exclusion list file follows the following format:
+            //
+            // Test Path, Reason For Skipping
+            //
+            // This translates to the two-element arrays we are adding to the test
+            // exclusions table here.
+
             if (!table.ContainsKey(testInfo[0]))
             {
                 table.Add(testInfo[0], testInfo[1]);

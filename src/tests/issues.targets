@@ -20,9 +20,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/SSA/MemorySsa/**">
             <Issue>https://github.com/dotnet/runtime/issues/86112</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/doublearray/dblarray2_cs_d/**">
-            <Issue>Learning and Testing to Include Reasons in Logs</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
