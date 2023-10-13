@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 2.6.0)
+
 project(System.Security.Cryptography.Native C)
 
 # These are happening inside of OpenSSL-defined macros out of our control

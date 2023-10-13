@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 2.6.0)
+
 project(System.IO.Compression.Native C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)

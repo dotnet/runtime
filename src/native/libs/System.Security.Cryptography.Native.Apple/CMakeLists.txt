@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.20)
+
 project(System.Security.Cryptography.Native.Apple C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)

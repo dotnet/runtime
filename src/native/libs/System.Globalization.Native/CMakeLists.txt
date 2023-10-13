@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 2.6.0)
+
 project(System.Globalization.Native C)
 
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
