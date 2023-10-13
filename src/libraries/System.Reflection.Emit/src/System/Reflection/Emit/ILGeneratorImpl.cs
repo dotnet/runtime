@@ -44,7 +44,7 @@ namespace System.Reflection.Emit
         public override Label DefineLabel()
         {
             LabelHandle metadataLabel = _il.DefineLabel();
-            Label emitLabel = new Label(metadataLabel.Id);
+            Label emitLabel = CreateLabel(metadataLabel.Id);
             _labelTable.Add(emitLabel, metadataLabel);
             return emitLabel;
         }
@@ -251,11 +251,13 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, Label[] labels)
         {
             if (!opcode.Equals(OpCodes.Switch))
-                throw new ArgumentException(SR.Argument_MustBeSwitchOpCode,  nameof(opcode));
-                
+            {
+                throw new ArgumentException(SR.Argument_MustBeSwitchOpCode, nameof(opcode));
+            }
+
             SwitchInstructionEncoder switchEncoder = _il.Switch(labels.Length);
             UpdateStackSize(opcode);
-            
+
             foreach (Label label in labels)
             {
                 switchEncoder.Branch(_labelTable[label]);

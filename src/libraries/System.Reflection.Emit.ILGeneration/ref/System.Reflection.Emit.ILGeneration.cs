@@ -23,6 +23,7 @@ namespace System.Reflection.Emit
         public abstract void BeginFaultBlock();
         public abstract void BeginFinallyBlock();
         public abstract void BeginScope();
+        protected static Label CreateLabel(int id) { throw null; }
         public virtual System.Reflection.Emit.LocalBuilder DeclareLocal(System.Type localType) { throw null; }
         public abstract System.Reflection.Emit.LocalBuilder DeclareLocal(System.Type localType, bool pinned);
         public abstract System.Reflection.Emit.Label DefineLabel();
@@ -59,9 +60,9 @@ namespace System.Reflection.Emit
     public readonly partial struct Label : System.IEquatable<System.Reflection.Emit.Label>
     {
         private readonly int _dummyPrimitive;
-        public Label(int label) { }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Reflection.Emit.Label obj) { throw null; }
+        public int Id { get { throw null; } }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Emit.Label a, System.Reflection.Emit.Label b) { throw null; }
         public static bool operator !=(System.Reflection.Emit.Label a, System.Reflection.Emit.Label b) { throw null; }

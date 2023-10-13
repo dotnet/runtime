@@ -18,9 +18,12 @@ namespace System.Reflection.Emit
     {
         internal readonly int m_label;
 
-        public Label(int label) => m_label = label;
+        internal Label(int label) => m_label = label;
 
-        internal int GetLabelValue() => m_label;
+        /// <summary>
+        /// Gets the label unique id assigned by the ILGenerator.
+        /// </summary>
+        public int Id => m_label;
 
         public override int GetHashCode() => m_label;
 
