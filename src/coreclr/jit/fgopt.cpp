@@ -437,12 +437,9 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             // to properly set the info.compProfilerCallback flag.
             continue;
         }
-        else
+        else if (!canRemoveBlock(block))
         {
-            if (!canRemoveBlock(block))
-            {
-                continue;
-            }
+            continue;
         }
 
         // Remove all the code for the block
@@ -469,15 +466,29 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             block->SetJumpKind(BBJ_THROW DEBUG_ARG(this));
             block->bbSetRunRarely();
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-            // If this is a <BBJ_CALLFINALLY, BBJ_ALWAYS> pair, we have to clear BBF_FINALLY_TARGET flag on
-            // the target node (of BBJ_ALWAYS) since BBJ_CALLFINALLY node is getting converted to a BBJ_THROW.
+            // If this is a <BBJ_CALLFINALLY, BBJ_ALWAYS> pair, we just converted it to a BBJ_THROW.
+            // Get rid of the BBJ_ALWAYS block which is now dead.
             if (bIsBBCallAlwaysPair)
             {
-                noway_assert(block->Next()->KindIs(BBJ_ALWAYS));
-                fgClearFinallyTargetBit(block->Next()->GetJumpDest());
-            }
+                BasicBlock* leaveBlk = block->Next();
+                noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
+
+                leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+
+                for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
+                {
+                    fgRemoveEhfSuccessor(leavePredBlock, leaveBlk);
+                }
+                assert(leaveBlk->bbRefs == 0);
+                assert(leaveBlk->bbPreds == nullptr);
+
+                fgRemoveBlock(leaveBlk, /* unreachable */ true);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+                // We have to clear BBF_FINALLY_TARGET flag on the target node (of BBJ_ALWAYS).
+                fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+            }
         }
         else
         {
@@ -2025,14 +2036,13 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 {
     noway_assert(block != nullptr);
-    noway_assert((block->bbFlags & BBF_REMOVED) == 0);
-    noway_assert(block->KindIs(BBJ_NONE));
-
-    noway_assert(block->NextIs(bNext));
     noway_assert(bNext != nullptr);
+    noway_assert((block->bbFlags & BBF_REMOVED) == 0);
     noway_assert((bNext->bbFlags & BBF_REMOVED) == 0);
+    noway_assert(block->KindIs(BBJ_NONE));
+    noway_assert(block->NextIs(bNext));
     noway_assert(bNext->countOfInEdges() == 1 || block->isEmpty());
-    noway_assert(bNext->bbPreds);
+    noway_assert(bNext->bbPreds != nullptr);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     noway_assert((bNext->bbFlags & BBF_FINALLY_TARGET) == 0);
@@ -2267,7 +2277,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     /* set the right links */
 
-    block->SetJumpKind(bNext->GetJumpKind() DEBUG_ARG(this));
     VarSetOps::AssignAllowUninitRhs(this, block->bbLiveOut, bNext->bbLiveOut);
 
     // Update the beginning and ending IL offsets (bbCodeOffs and bbCodeOffsEnd).
@@ -2319,7 +2328,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     /* Unlink bNext and update all the marker pointers if necessary */
 
-    fgUnlinkRange(block->Next(), bNext);
+    fgUnlinkRange(bNext, bNext);
 
     // If bNext was the last block of a try or handler, update the EH table.
 
@@ -2338,7 +2347,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_COND:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
-            block->SetJumpDest(bNext->GetJumpDest());
+        case BBJ_EHFILTERRET:
+            block->SetJumpKindAndTarget(bNext->GetJumpKind(), bNext->GetJumpDest());
 
             /* Update the predecessor list for 'bNext->bbJumpDest' */
             fgReplacePred(bNext->GetJumpDest(), bNext, block);
@@ -2351,49 +2361,25 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
 
         case BBJ_NONE:
+            block->SetJumpKind(bNext->GetJumpKind() DEBUG_ARG(this));
             /* Update the predecessor list for 'bNext->bbNext' */
             fgReplacePred(bNext->Next(), bNext, block);
             break;
 
-        case BBJ_EHFILTERRET:
-            fgReplacePred(bNext->GetJumpDest(), bNext, block);
-            break;
-
         case BBJ_EHFINALLYRET:
-        {
-            unsigned  hndIndex = block->getHndIndex();
-            EHblkDsc* ehDsc    = ehGetDsc(hndIndex);
-
-            if (ehDsc->HasFinallyHandler()) // No need to do this for fault handlers
-            {
-                BasicBlock* begBlk;
-                BasicBlock* endBlk;
-                ehGetCallFinallyBlockRange(hndIndex, &begBlk, &endBlk);
-
-                BasicBlock* finBeg = ehDsc->ebdHndBeg;
-
-                for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->Next())
-                {
-                    if (!bcall->KindIs(BBJ_CALLFINALLY) || !bcall->HasJumpTo(finBeg))
-                    {
-                        continue;
-                    }
-
-                    noway_assert(bcall->isBBCallAlwaysPair());
-                    fgReplacePred(bcall->Next(), bNext, block);
-                }
-            }
-        }
-        break;
+            block->SetJumpKindAndTarget(bNext->GetJumpKind(), bNext->GetJumpEhf());
+            fgChangeEhfBlock(bNext, block);
+            break;
 
         case BBJ_EHFAULTRET:
         case BBJ_THROW:
         case BBJ_RETURN:
             /* no jumps or fall through blocks to set here */
+            block->SetJumpKind(bNext->GetJumpKind() DEBUG_ARG(this));
             break;
 
         case BBJ_SWITCH:
-            block->SetJumpSwt(bNext->GetJumpSwt());
+            block->SetJumpKindAndTarget(bNext->GetJumpKind(), bNext->GetJumpSwt());
             // We are moving the switch jump from bNext to block.  Examine the jump targets
             // of the BBJ_SWITCH at bNext and replace the predecessor to 'bNext' with ones to 'block'
             fgChangeSwitchBlock(bNext, block);
@@ -2404,7 +2390,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             break;
     }
 
-    if (!bNext->HasJumpTo(nullptr) && bNext->GetJumpDest()->isLoopAlign())
+    if (bNext->KindIs(BBJ_COND, BBJ_ALWAYS) && bNext->GetJumpDest()->isLoopAlign())
     {
         // `bNext` has a backward target to some block which mean bNext is part of a loop.
         // `block` into which `bNext` is compacted should be updated with its loop number

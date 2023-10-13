@@ -2745,7 +2745,6 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
         case BBJ_RETURN:
         case BBJ_EHFILTERRET:
         case BBJ_EHFAULTRET:
-        case BBJ_EHFINALLYRET:
         case BBJ_EHCATCHRET:
             // These have no jump destination to update.
             break;
@@ -2773,12 +2772,39 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
             }
             break;
 
+        case BBJ_EHFINALLYRET:
+        {
+            BBehfDesc*  ehfDesc = blk->GetJumpEhf();
+            BasicBlock* newSucc = nullptr;
+            for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
+            {
+                BasicBlock* const succ = ehfDesc->bbeSuccs[i];
+                if (redirectMap->Lookup(succ, &newSucc))
+                {
+                    if (updatePreds)
+                    {
+                        fgRemoveRefPred(succ, blk);
+                    }
+                    if (updatePreds || addPreds)
+                    {
+                        fgAddRefPred(newSucc, blk);
+                    }
+                    ehfDesc->bbeSuccs[i] = newSucc;
+                }
+                else if (addPreds)
+                {
+                    fgAddRefPred(succ, blk);
+                }
+            }
+        }
+        break;
+
         case BBJ_SWITCH:
         {
             bool redirected = false;
             for (unsigned i = 0; i < blk->GetJumpSwt()->bbsCount; i++)
             {
-                BasicBlock* switchDest = blk->GetJumpSwt()->bbsDstTab[i];
+                BasicBlock* const switchDest = blk->GetJumpSwt()->bbsDstTab[i];
                 if (redirectMap->Lookup(switchDest, &newJumpDest))
                 {
                     if (updatePreds)
@@ -2829,6 +2855,10 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
         case BBJ_COND:
             // All of these have a single jump destination to update.
             to->SetJumpDest(from->GetJumpDest());
+            break;
+
+        case BBJ_EHFINALLYRET:
+            to->SetJumpEhf(new (this, CMK_BasicBlock) BBehfDesc(this, from->GetJumpEhf()));
             break;
 
         case BBJ_SWITCH:
