@@ -212,6 +212,18 @@ public class TestFilter
         return false;
     }
 
+    public string GetTestExclusionReason(string testDisplayName)
+    {
+        if (_testExclusionTable is null)
+            return string.Empty;
+
+        string trueDisplayName = testDisplayName.Replace("\\", "/");
+
+        return _testExclusionTable.ContainsKey(trueDisplayName)
+               ? _testExclusionTable[trueDisplayName]
+               : string.Empty;
+    }
+
     public static Dictionary<string, string> LoadTestExclusionTable()
     {
         Dictionary<string, string> output = new Dictionary<string, string>();

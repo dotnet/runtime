@@ -169,6 +169,7 @@ public sealed class ConditionalTest : ITestInfo
 
         using (builder.NewBracesScope())
         {
+            builder.AppendLine("string reason = string.Empty;");
             builder.AppendLine(testReporterWrapper.GenerateSkippedTestReporting(_innerTest));
         }
         return builder;
@@ -448,13 +449,15 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
             using (builder.NewBracesScope())
             {
-                builder.AppendLine($"{_summaryLocalIdentifier}.ReportStartingTest({test.TestNameExpression},"
+                builder.AppendLine($"{_summaryLocalIdentifier}.ReportStartingTest("
+                                 + $"{test.TestNameExpression},"
                                  + $" System.Console.Out);");
 
                 builder.AppendLine($"{_outputRecorderIdentifier}.ResetTestOutput();");
                 builder.Append(testExecutionExpression);
 
-                builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression},"
+                builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest("
+                                 + $"{test.TestNameExpression},"
                                  + $" \"{test.ContainingType}\","
                                  + $" @\"{test.Method}\","
                                  + $" stopwatch.Elapsed - testStart,"
@@ -468,7 +471,8 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
             using (builder.NewBracesScope())
             {
-                builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression},"
+                builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest("
+                                 + $"{test.TestNameExpression},"
                                  + $" \"{test.ContainingType}\","
                                  + $" @\"{test.Method}\","
                                  + $" stopwatch.Elapsed - testStart,"
@@ -484,6 +488,8 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
         using (builder.NewBracesScope())
         {
+            builder.AppendLine($"string reason = {_filterLocalIdentifier}"
+                             + $".GetTestExclusionReason({test.TestNameExpression});");
             builder.AppendLine(GenerateSkippedTestReporting(test));
         }
         return builder;
@@ -491,11 +497,12 @@ public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest)
     {
-        return $"{_summaryLocalIdentifier}.ReportSkippedTest({skippedTest.TestNameExpression},"
+        return $"{_summaryLocalIdentifier}.ReportSkippedTest("
+             + $"{skippedTest.TestNameExpression},"
              + $" \"{skippedTest.ContainingType}\","
              + $" @\"{skippedTest.Method}\","
              + $" System.TimeSpan.Zero,"
-             + $" string.Empty,"
+             + $" reason,"
              + $" tempLogSw,"
              + $" statsCsvSw);";
     }
