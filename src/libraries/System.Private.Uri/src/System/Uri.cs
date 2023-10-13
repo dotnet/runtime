@@ -17,7 +17,7 @@ namespace System
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public partial class Uri : ISpanFormattable, ISerializable
+    public partial class Uri : ISpanFormattable, ISerializable, IParsable<Uri>
     {
         public static readonly string UriSchemeFile = UriParser.FileUri.SchemeName;
         public static readonly string UriSchemeFtp = UriParser.FtpUri.SchemeName;
@@ -5185,5 +5185,15 @@ namespace System
                 return InFact(Flags.AuthorityFound);
             }
         }
+
+        static bool IParsable<Uri>.TryParse(string? s, IFormatProvider? provider, out Uri result)
+        {
+            bool returnValue = TryCreate(s, UriKind.RelativeOrAbsolute, out Uri? nullableResult);
+            result = nullableResult ?? new Uri(string.Empty);
+            return returnValue;
+        }
+
+        static Uri IParsable<Uri>.Parse(string s, IFormatProvider? provider) =>
+            new Uri(s, UriKind.RelativeOrAbsolute);
     } // class Uri
 } // namespace System
