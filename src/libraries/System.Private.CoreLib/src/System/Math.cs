@@ -155,6 +155,11 @@ namespace System
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
         }
 
+        internal static ulong BigMul(uint a, uint b)
+        {
+            return ((ulong)a) * b;
+        }
+
         public static long BigMul(int a, int b)
         {
             return ((long)a) * b;
