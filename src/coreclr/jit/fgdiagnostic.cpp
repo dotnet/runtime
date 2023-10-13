@@ -2077,7 +2077,8 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 break;
 
             case BBJ_EHFILTERRET:
-                printf("%*s        (fltret)", maxBlockNumWidth - 2, "");
+                printf("-> " FMT_BB "%*s (fltret)", block->GetJumpDest()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
                 break;
 
             case BBJ_EHCATCHRET:

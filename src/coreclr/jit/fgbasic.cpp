@@ -268,7 +268,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
         }
 
         // The first block has an implicit ref count which we must
-        // remove. Note the ref count could be greater that one, if
+        // remove. Note the ref count could be greater than one, if
         // the first block is not scratch and is targeted by a
         // branch.
         assert(fgFirstBB->bbRefs >= 1);

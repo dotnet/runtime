@@ -437,6 +437,11 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             // to properly set the info.compProfilerCallback flag.
             continue;
         }
+        else if ((block->bbFlags & BBF_DONT_REMOVE) && block->isEmpty() && block->KindIs(BBJ_THROW))
+        {
+            // We already converted a non-removable block to a throw; don't bother processing it again.
+            continue;
+        }
         else if (!canRemoveBlock(block))
         {
             continue;
@@ -457,6 +462,8 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
             const bool bIsBBCallAlwaysPair = block->isBBCallAlwaysPair();
 
             // Unmark the block as removed, clear BBF_INTERNAL, and set BBJ_IMPORTED
+
+            JITDUMP("Converting BBF_DONT_REMOVE block " FMT_BB " to BBJ_THROW\n", block->bbNum);
 
             // The successors may be unreachable after this change.
             changed |= block->NumSucc() > 0;

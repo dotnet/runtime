@@ -637,7 +637,7 @@ void BasicBlock::dspJumpKind()
             break;
 
         case BBJ_EHFILTERRET:
-            printf(" (fltret)");
+            printf(" -> " FMT_BB " (fltret)", bbJumpDest->bbNum);
             break;
 
         case BBJ_EHCATCHRET:
