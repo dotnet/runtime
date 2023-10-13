@@ -10,9 +10,9 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> FirstDayOfWeek_Get_TestData()
         {
-            yield return new object[] { DateTimeFormatInfo.InvariantInfo, DayOfWeek.Sunday };
-            yield return new object[] { new CultureInfo("en-US", false).DateTimeFormat, DayOfWeek.Sunday };
-            yield return new object[] { new CultureInfo("fr-FR", false).DateTimeFormat, DayOfWeek.Monday };
+            yield return new object[] { DateTimeFormatInfo.InvariantInfo, DayOfWeek.Sunday, "invariant" };
+            yield return new object[] { new CultureInfo("en-US", false).DateTimeFormat, DayOfWeek.Sunday, "en-US" };
+            yield return new object[] { new CultureInfo("fr-FR", false).DateTimeFormat, DayOfWeek.Monday, "fr-FR" };
         }
 
         public static IEnumerable<object[]> FirstDayOfWeek_Get_TestData_HybridGlobalization()
@@ -208,9 +208,9 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(FirstDayOfWeek_Get_TestData))]
-        public void FirstDayOfWeek(DateTimeFormatInfo format, DayOfWeek expected)
+        public void FirstDayOfWeek(DateTimeFormatInfo format, DayOfWeek expected, string cultureName)
         {
-            Assert.Equal(expected, format.FirstDayOfWeek);
+            Assert.True(expected == format.FirstDayOfWeek, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {format.FirstDayOfWeek}");
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
