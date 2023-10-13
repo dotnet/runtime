@@ -353,7 +353,7 @@ namespace System
             => _pUnderlyingEEType->IsFunctionPointer;
 
         public override bool IsUnmanagedFunctionPointer
-            => _pUnderlyingEEType->IsUnmanagedFunctionPointer;
+            => _pUnderlyingEEType->IsFunctionPointer && _pUnderlyingEEType->IsUnmanagedFunctionPointer;
 
         public override Type[] GetFunctionPointerParameterTypes()
         {

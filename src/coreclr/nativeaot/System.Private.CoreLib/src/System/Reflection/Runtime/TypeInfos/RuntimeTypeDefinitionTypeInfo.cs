@@ -34,7 +34,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
             // Do not rewrite as a call to IsConstructedGenericType - we haven't yet established that "other" is a runtime-implemented member yet!
             // TODO!!!
-            if (other is Type otherType && otherType.ToRuntimeTypeInfo() is RuntimeConstructedGenericTypeInfo otherConstructedGenericType)
+            if (other is RuntimeType or MetadataOnlyType && ((Type)other).ToRuntimeTypeInfo() is RuntimeConstructedGenericTypeInfo otherConstructedGenericType)
                 other = otherConstructedGenericType.GetGenericTypeDefinition();
 
             // Unlike most other MemberInfo objects, types never get cloned due to containing generic types being instantiated.

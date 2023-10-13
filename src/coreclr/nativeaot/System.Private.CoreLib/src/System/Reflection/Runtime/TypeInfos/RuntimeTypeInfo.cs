@@ -456,13 +456,17 @@ namespace System.Reflection.Runtime.TypeInfos
             RuntimeTypeInfo?[] runtimeTypeArguments = new RuntimeTypeInfo[typeArguments.Length];
             for (int i = 0; i < typeArguments.Length; i++)
             {
-                RuntimeTypeInfo? runtimeTypeArgument = runtimeTypeArguments[i] = typeArguments[i].ToRuntimeTypeInfo();
-                if (runtimeTypeArgument == null)
+                Type typeArgument = typeArguments[i];
+                if (typeArgument is RuntimeType) // TODO: !!!!
                 {
-                    if (typeArguments[i] == null)
+                    runtimeTypeArguments[i] = typeArgument.ToRuntimeTypeInfo();
+                }
+                else
+                {
+                    if (typeArgument == null)
                         throw new ArgumentNullException();
 
-                    if (typeArguments[i].IsSignatureType)
+                    if (typeArgument.IsSignatureType)
                     {
                         foundSignatureType = true;
                     }
@@ -495,7 +499,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return this.InternalDeclaringType.ToType();
+                return this.InternalDeclaringType?.ToType();
             }
         }
 
@@ -726,7 +730,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 {
                     baseType = baseTypeDefRefOrSpec.Resolve(this.TypeContext);
                 }
-                return baseType.ToType();
+                return baseType?.ToType();
             }
         }
 
