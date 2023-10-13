@@ -120,9 +120,10 @@
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
     <PropertyGroup>
-      <CrossGenDllCmd>$(DotNetCli) @(Crossgen2)</CrossGenDllCmd>
+      <CrossGenDllCmd>$(DotNetCli)</CrossGenDllCmd>
       <!-- When running under source build, the SDK might already target the next major version. -->
       <CrossGenDllCmd Condition="'$(DotNetBuildFromSource)' == 'true'">$(CrossGenDllCmd) --roll-forward Major</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) @(Crossgen2)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
