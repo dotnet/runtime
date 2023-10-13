@@ -322,7 +322,7 @@ In a `blazor` project, the script is `_framework/blazor.web.js` and it is loaded
 </body>
 ```
 
-Replace it with this:
+Replace it with this (note that for a `blazor` project, `Blazor.start` needs an extra dictionary with a `webAssembly` key):
 
 ```html
 <body>
