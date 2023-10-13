@@ -1228,7 +1228,7 @@ namespace System.Numerics.Tensors
                 ref float xRef = ref MemoryMarshal.GetReference(x);
                 Vector512<int> resultIndex = Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
                 Vector512<int> curIndex = Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-                Vector512<int> increment = Vector512.Create(16);
+                Vector512<int> increment = Vector512.Create(Vector512<float>.Count);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
@@ -1284,7 +1284,7 @@ namespace System.Numerics.Tensors
                 ref float xRef = ref MemoryMarshal.GetReference(x);
                 Vector256<int> resultIndex = Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7);
                 Vector256<int> curIndex = Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7);
-                Vector256<int> increment = Vector256.Create(8);
+                Vector256<int> increment = Vector256.Create(Vector256<float>.Count);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
@@ -1340,7 +1340,7 @@ namespace System.Numerics.Tensors
                 ref float xRef = ref MemoryMarshal.GetReference(x);
                 Vector128<int> resultIndex = Vector128.Create(0, 1, 2, 3);
                 Vector128<int> curIndex = Vector128.Create(0, 1, 2, 3);
-                Vector128<int> increment = Vector128.Create(4);
+                Vector128<int> increment = Vector128.Create(Vector128<float>.Count);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
