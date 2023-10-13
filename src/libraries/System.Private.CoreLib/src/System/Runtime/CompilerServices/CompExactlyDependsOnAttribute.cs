@@ -9,7 +9,7 @@ namespace System.Runtime.CompilerServices
     // binary if the associated type will always have a well defined value for its IsSupported property
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, AllowMultiple = true, Inherited = false)]
 #if MONO
-    [Conditional("DEBUG")] // Mono doesn't use Ready2Run so we can remove this attribute to reduce size
+    [Conditional("unnecessary")] // Mono doesn't use Ready2Run so we can remove this attribute to reduce size
 #endif
     internal sealed class CompExactlyDependsOnAttribute : Attribute
     {
