@@ -336,6 +336,7 @@ namespace LibraryImportGenerator.IntegrationTests
             foreach (var throwOn in new int[] { 0, 1, 45, 99 })
             {
                 BoolStructInMarshallerAllowNull.Marshaller.MarshallingFailsIndex = throwOn;
+                // https://github.com/dotnet/runtime/issues/93431
                 BoolStructInMarshallerAllowNull.Marshaller.ExpectedFreeCount = throwOn - throwOn % 10;
                 Assert.Throws<ArgumentException>(() =>
                 {
