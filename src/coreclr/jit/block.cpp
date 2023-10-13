@@ -562,7 +562,6 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_CALL, "hascall"},
         {BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY, "xentry"},
         {BBF_GC_SAFE_POINT, "gcsafe"},
-        {BBF_FUNCLET_BEG, "flet"},
         {BBF_HAS_IDX_LEN, "idxlen"},
         {BBF_HAS_MD_IDX_LEN, "mdidxlen"},
         {BBF_HAS_NEWOBJ, "newobj"},
@@ -1808,12 +1807,7 @@ bool BasicBlock::isBBCallFinallyPairTail() const
 //
 bool BasicBlock::hasEHBoundaryIn() const
 {
-    bool returnVal = (bbCatchTyp != BBCT_NONE);
-    if (!returnVal)
-    {
-        assert(!HasFlag(BBF_FUNCLET_BEG));
-    }
-    return returnVal;
+    return bbCatchTyp != BBCT_NONE;
 }
 
 //------------------------------------------------------------------------

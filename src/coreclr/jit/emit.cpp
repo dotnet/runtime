@@ -6527,9 +6527,9 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
             // Only branches to finallys (not faults, catches, filters, etc.)
             assert(tgtEH->HasFinallyHandler());
 
-            // Only to the first block of the finally (which is properly marked)
+            // Only to the first block of the finally
             BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
-            assert(tgtBlk->HasFlag(BBF_FUNCLET_BEG));
+            assert(emitComp->funIsFuncletEntry(tgtBlk));
 
             // And now we made it back to where we started
             assert(tgtIG == emitCodeGetCookie(tgtBlk));

@@ -3017,16 +3017,6 @@ void Compiler::fgVerifyHandlerTab()
             assert(HBtab->ebdFilter->HasFlag(BBF_DONT_REMOVE));
             assert(!HBtab->ebdFilter->HasFlag(BBF_REMOVED));
         }
-
-        if (fgFuncletsCreated)
-        {
-            assert(HBtab->ebdHndBeg->HasFlag(BBF_FUNCLET_BEG));
-
-            if (HBtab->HasFilter())
-            {
-                assert(HBtab->ebdFilter->HasFlag(BBF_FUNCLET_BEG));
-            }
-        }
     }
 
     // I want to assert things about the relative ordering of blocks in the block list using
@@ -3460,12 +3450,6 @@ void Compiler::fgVerifyHandlerTab()
         if (!blockHndBegSet[block->bbNum])
         {
             assert(block->bbCatchTyp == BBCT_NONE);
-
-            if (fgFuncletsCreated)
-            {
-                // Make sure blocks that aren't the first block of a funclet do not have the BBF_FUNCLET_BEG flag set.
-                assert(!block->HasFlag(BBF_FUNCLET_BEG));
-            }
         }
 
         // Check for legal block types
@@ -4323,13 +4307,6 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             block->bbRefs--;
             bPrev->bbRefs++;
 
-            if (fgFuncletsCreated)
-            {
-                assert(block->HasFlag(BBF_FUNCLET_BEG));
-                bPrev->SetFlags(BBF_FUNCLET_BEG);
-                block->RemoveFlags(BBF_FUNCLET_BEG);
-            }
-
             // If this is a handler for a filter, the last block of the filter will end with
             // a BBJ_EHFILTERRET block that jumps to the first block of its handler.
             // So we need to update it to keep things in sync.
@@ -4364,18 +4341,10 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             // The first block of a filter has an artificial extra refcount. Transfer that to the new block.
             noway_assert(block->countOfInEdges() > 0);
             block->bbRefs--;
+            bPrev->bbRefs++;
 
             HBtab->ebdFilter = bPrev;
             bPrev->SetFlags(BBF_DONT_REMOVE);
-
-            if (fgFuncletsCreated)
-            {
-                assert(block->HasFlag(BBF_FUNCLET_BEG));
-                bPrev->SetFlags(BBF_FUNCLET_BEG);
-                block->RemoveFlags(BBF_FUNCLET_BEG);
-            }
-
-            bPrev->bbRefs++;
         }
     }
 }

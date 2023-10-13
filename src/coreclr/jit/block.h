@@ -426,7 +426,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_INTERNAL             = MAKE_BBFLAG( 5), // BB has been added by the compiler
 //  BBF_UNUSED               = MAKE_BBFLAG( 6),
     BBF_NEEDS_GCPOLL         = MAKE_BBFLAG( 7), // BB may need a GC poll because it uses the slow tail call helper
-    BBF_FUNCLET_BEG          = MAKE_BBFLAG( 8), // BB is the beginning of a funclet
+//  BBF_UNUSED               = MAKE_BBFLAG( 8),
     BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 9), // First block of a cloned finally region
     BBF_CLONED_FINALLY_END   = MAKE_BBFLAG(10), // Last block of a cloned finally region
     BBF_HAS_NULLCHECK        = MAKE_BBFLAG(11), // BB contains a null check

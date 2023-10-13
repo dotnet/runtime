@@ -854,9 +854,10 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 // Don't display the `[` `]` unless we're going to display something.
                 const bool isTryEntryBlock = bbIsTryBeg(block);
+                const bool isFuncletEntryBlock = fgFuncletsCreated && funIsFuncletEntry(block);
 
-                if (isTryEntryBlock ||
-                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
+                if (isTryEntryBlock || isFuncletEntryBlock ||
+                    block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -864,7 +865,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     {
                         fprintf(fgxFile, "T");
                     }
-                    if (block->HasFlag(BBF_FUNCLET_BEG))
+                    if (isFuncletEntryBlock)
                     {
                         fprintf(fgxFile, "F");
                     }
@@ -2147,7 +2148,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
         printf("   ");
     }
 
-    if (flags & BBF_FUNCLET_BEG)
+    if (fgFuncletsCreated && funIsFuncletEntry(block))
     {
         printf("F ");
     }
@@ -2963,18 +2964,14 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         return;
     }
 
+    //
+    // Make sure that fgFirstFuncletBB is accurate.
+    // It should be the first basic block in a handler region.
+    //
     bool reachedFirstFunclet = false;
-    if (fgFuncletsCreated)
+    if (fgFuncletsCreated && (fgFirstFuncletBB != nullptr))
     {
-        //
-        // Make sure that fgFirstFuncletBB is accurate.
-        // It should be the first basic block in a handler region.
-        //
-        if (fgFirstFuncletBB != nullptr)
-        {
-            assert(fgFirstFuncletBB->hasHndIndex() == true);
-            assert(fgFirstFuncletBB->HasFlag(BBF_FUNCLET_BEG));
-        }
+        assert(funIsFuncletEntry(fgFirstFuncletBB));
     }
 
     /* Check bbNum, bbRefs and bbPreds */

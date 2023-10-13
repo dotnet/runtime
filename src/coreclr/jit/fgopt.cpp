@@ -892,8 +892,7 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     // If the next block has multiple incoming edges, we can still compact if the first block is empty.
     // However, not if it is the beginning of a handler.
-    if (bNext->countOfInEdges() != 1 &&
-        (!block->isEmpty() || block->HasFlag(BBF_FUNCLET_BEG) || (block->bbCatchTyp != BBCT_NONE)))
+    if (bNext->countOfInEdges() != 1 && (!block->isEmpty() || (block->bbCatchTyp != BBCT_NONE)))
     {
         return false;
     }

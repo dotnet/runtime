@@ -844,7 +844,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // TODO-RISCV64-CQ: We can use C extension for optimization
 
     assert(block != NULL);
-    assert(block->HasFlag(BBF_FUNCLET_BEG));
+    assert(compiler->funIsFuncletEntry(block));
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 

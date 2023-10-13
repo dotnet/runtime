@@ -4774,8 +4774,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->CopyFlags(curr);
 
     // Remove flags that the new block can't have.
-    newBlock->RemoveFlags(BBF_LOOP_HEAD | BBF_FUNCLET_BEG | BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT |
-                          BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
+    newBlock->RemoveFlags(
+        BBF_LOOP_HEAD | BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -5802,16 +5802,6 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
 #endif
 
 #endif // DEBUG
-
-    if (UsesFunclets())
-    {
-        bStart->SetFlags(BBF_FUNCLET_BEG); // Mark the start block of the funclet
-
-        if (bMiddle != nullptr)
-        {
-            bMiddle->SetFlags(BBF_FUNCLET_BEG); // Also mark the start block of a filter handler as a funclet
-        }
-    }
 
     BasicBlock* bNext;
     bNext = bLast->Next();
