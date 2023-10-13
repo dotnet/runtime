@@ -842,10 +842,16 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
     return &compFuncInfos[funcIdx];
 }
 
+inline bool Compiler::funIsFuncletEntry(BasicBlock* block)
+{
+    assert(fgFuncletsCreated);
+    return bbIsHandlerBeg(block);
+}
+
 /*****************************************************************************
  *  Get the funcIdx for the EH funclet that begins with block.
  *  This is only valid after funclets are created.
- *  It is only valid for blocks marked with BBF_FUNCLET_BEG because
+ *  It is only valid for funclet entry blocks because
  *  otherwise we would have to do a more expensive check to determine
  *  if this should return the filter funclet or the filter handler funclet.
  *
@@ -853,7 +859,7 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
     assert(fgFuncletsCreated);
-    assert(block->bbFlags & BBF_FUNCLET_BEG);
+    assert(funIsFuncletEntry(block));
 
     EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
     unsigned int funcIdx = eh->ebdFuncIndex;
@@ -904,6 +910,11 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 {
     assert(funcIdx == 0);
     return &compFuncInfoRoot;
+}
+
+inline bool Compiler::funIsFuncletEntry(BasicBlock* block)
+{
+    return false;
 }
 
 /*****************************************************************************

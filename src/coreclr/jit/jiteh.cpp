@@ -3021,18 +3021,6 @@ void Compiler::fgVerifyHandlerTab()
             assert(HBtab->ebdFilter->bbFlags & BBF_DONT_REMOVE);
             assert((HBtab->ebdFilter->bbFlags & BBF_REMOVED) == 0);
         }
-
-#if defined(FEATURE_EH_FUNCLETS)
-        if (fgFuncletsCreated)
-        {
-            assert(HBtab->ebdHndBeg->bbFlags & BBF_FUNCLET_BEG);
-
-            if (HBtab->HasFilter())
-            {
-                assert(HBtab->ebdFilter->bbFlags & BBF_FUNCLET_BEG);
-            }
-        }
-#endif // FEATURE_EH_FUNCLETS
     }
 
     // I want to assert things about the relative ordering of blocks in the block list using
@@ -3479,14 +3467,6 @@ void Compiler::fgVerifyHandlerTab()
         if (!blockHndBegSet[block->bbNum])
         {
             assert(block->bbCatchTyp == BBCT_NONE);
-
-#if defined(FEATURE_EH_FUNCLETS)
-            if (fgFuncletsCreated)
-            {
-                // Make sure blocks that aren't the first block of a funclet do not have the BBF_FUNCLET_BEG flag set.
-                assert((block->bbFlags & BBF_FUNCLET_BEG) == 0);
-            }
-#endif // FEATURE_EH_FUNCLETS
         }
 
         // Check for legal block types
@@ -4379,15 +4359,6 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             block->bbRefs--;
             bPrev->bbRefs++;
 
-#if defined(FEATURE_EH_FUNCLETS)
-            if (fgFuncletsCreated)
-            {
-                assert((block->bbFlags & BBF_FUNCLET_BEG) != 0);
-                bPrev->bbFlags |= BBF_FUNCLET_BEG;
-                block->bbFlags &= ~BBF_FUNCLET_BEG;
-            }
-#endif // FEATURE_EH_FUNCLETS
-
             // If this is a handler for a filter, the last block of the filter will end with
             // a BBJ_EHFILTERRET block that has a bbJumpDest that jumps to the first block of
             // its handler. So we need to update it to keep things in sync.
@@ -4424,20 +4395,10 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             // The first block of a filter has an artificial extra refcount. Transfer that to the new block.
             noway_assert(block->countOfInEdges() > 0);
             block->bbRefs--;
+            bPrev->bbRefs++;
 
             HBtab->ebdFilter = bPrev;
             bPrev->bbFlags |= BBF_DONT_REMOVE;
-
-#if defined(FEATURE_EH_FUNCLETS)
-            if (fgFuncletsCreated)
-            {
-                assert((block->bbFlags & BBF_FUNCLET_BEG) != 0);
-                bPrev->bbFlags |= BBF_FUNCLET_BEG;
-                block->bbFlags &= ~BBF_FUNCLET_BEG;
-            }
-#endif // FEATURE_EH_FUNCLETS
-
-            bPrev->bbRefs++;
         }
     }
 }

@@ -692,7 +692,7 @@ void Compiler::fgExtendDbgScopes()
         // If we get to a funclet, reset the scope lists and start again, since the block
         // offsets will be out of order compared to the previous block.
 
-        if (block->bbFlags & BBF_FUNCLET_BEG)
+        if (funIsFuncletEntry(block))
         {
             compResetScopeLists();
             VarSetOps::ClearD(this, inScope);

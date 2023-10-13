@@ -907,11 +907,16 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (displayBlockFlags)
             {
                 // Don't display the `[` `]` unless we're going to display something.
-                const bool            isTryEntryBlock = bbIsTryBeg(block);
+                const bool isTryEntryBlock = bbIsTryBeg(block);
+#if FEATURE_EH_FUNCLETS
+                const bool isFuncletEntryBlock = fgFuncletsCreated && funIsFuncletEntry(block);
+#else // !FEATURE_EH_FUNCLETS
+                const bool isFuncletEntryBlock = false;
+#endif // !FEATURE_EH_FUNCLETS
                 const BasicBlockFlags allDisplayedBlockFlags =
-                    BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_LOOP_ALIGN;
+                    BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_LOOP_ALIGN;
 
-                if (isTryEntryBlock || ((block->bbFlags & allDisplayedBlockFlags) != 0))
+                if (isTryEntryBlock || isFuncletEntryBlock || ((block->bbFlags & allDisplayedBlockFlags) != 0))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -919,7 +924,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     {
                         fprintf(fgxFile, "T");
                     }
-                    if (block->bbFlags & BBF_FUNCLET_BEG)
+                    if (isFuncletEntryBlock)
                     {
                         fprintf(fgxFile, "F");
                     }
@@ -2162,11 +2167,13 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         printf("   ");
     }
 
-    if (flags & BBF_FUNCLET_BEG)
+#ifdef FEATURE_EH_FUNCLETS
+    if (fgFuncletsCreated && funIsFuncletEntry(block))
     {
         printf("F ");
     }
     else
+#endif
     {
         printf("  ");
     }
@@ -2867,18 +2874,14 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     }
 
 #if defined(FEATURE_EH_FUNCLETS)
+    //
+    // Make sure that fgFirstFuncletBB is accurate.
+    // It should be the first basic block in a handler region.
+    //
     bool reachedFirstFunclet = false;
-    if (fgFuncletsCreated)
+    if (fgFuncletsCreated && (fgFirstFuncletBB != nullptr))
     {
-        //
-        // Make sure that fgFirstFuncletBB is accurate.
-        // It should be the first basic block in a handler region.
-        //
-        if (fgFirstFuncletBB != nullptr)
-        {
-            assert(fgFirstFuncletBB->hasHndIndex() == true);
-            assert(fgFirstFuncletBB->bbFlags & BBF_FUNCLET_BEG);
-        }
+        assert(funIsFuncletEntry(fgFirstFuncletBB));
     }
 #endif // FEATURE_EH_FUNCLETS
 

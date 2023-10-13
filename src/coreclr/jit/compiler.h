@@ -8342,6 +8342,7 @@ public:
     FuncInfoDsc* funCurrentFunc();
     void funSetCurrentFunc(unsigned funcIdx);
     FuncInfoDsc* funGetFunc(unsigned funcIdx);
+    bool funIsFuncletEntry(BasicBlock* block);
     unsigned int funGetFuncIdx(BasicBlock* block);
 
     // LIVENESS

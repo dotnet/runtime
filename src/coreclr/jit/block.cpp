@@ -431,10 +431,6 @@ void BasicBlock::dspFlags()
     {
         printf("gcsafe ");
     }
-    if (bbFlags & BBF_FUNCLET_BEG)
-    {
-        printf("flet ");
-    }
     if (bbFlags & BBF_HAS_IDX_LEN)
     {
         printf("idxlen ");
@@ -1652,14 +1648,7 @@ bool BasicBlock::isBBCallAlwaysPairTail() const
 //
 bool BasicBlock::hasEHBoundaryIn() const
 {
-    bool returnVal = (bbCatchTyp != BBCT_NONE);
-    if (!returnVal)
-    {
-#if FEATURE_EH_FUNCLETS
-        assert((bbFlags & BBF_FUNCLET_BEG) == 0);
-#endif // FEATURE_EH_FUNCLETS
-    }
-    return returnVal;
+    return bbCatchTyp != BBCT_NONE;
 }
 
 //------------------------------------------------------------------------
