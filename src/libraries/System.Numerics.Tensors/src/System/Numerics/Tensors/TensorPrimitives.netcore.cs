@@ -1047,7 +1047,6 @@ namespace System.Numerics.Tensors
             if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
-                Vector512<int> minIndex = Vector512.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
                 Vector512<float> result = Vector512.LoadUnsafe(ref xRef, 0), current;
@@ -1218,11 +1217,6 @@ namespace System.Numerics.Tensors
         /// </remarks>
         private static int IndexOfMinMaxCore<TIndexOfMinMax>(ReadOnlySpan<float> x) where TIndexOfMinMax : struct, IIndexOfOperator
         {
-            if (x.IsEmpty)
-            {
-                return -1;
-            }
-
             // This matches the IEEE 754:2019 `maximum`/`minimum` functions.
             // It propagates NaN inputs back to the caller and
             // otherwise returns the greater of the inputs.
@@ -1232,7 +1226,7 @@ namespace System.Numerics.Tensors
             if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
-                Vector512<int> maxIndex = Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+                Vector512<int> resultIndex = Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
                 Vector512<int> curIndex = Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
                 Vector512<int> increment = Vector512.Create(16);
 
@@ -1241,7 +1235,7 @@ namespace System.Numerics.Tensors
                 Vector512<float> result = Vector512.LoadUnsafe(ref xRef, 0), current;
                 if (!Vector512.EqualsAll(result, result))
                 {
-                    return GetFirstNaNIndex(result, maxIndex);
+                    return GetFirstNaNIndex(result, resultIndex);
                 }
 
                 int oneVectorFromEnd = x.Length - Vector512<float>.Count;
@@ -1259,7 +1253,7 @@ namespace System.Numerics.Tensors
                         return GetFirstNaNIndex(current, curIndex);
                     }
 
-                    TIndexOfMinMax.Invoke(ref result, current, ref maxIndex, curIndex);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
                     i += Vector512<float>.Count;
                 }
 
@@ -1276,19 +1270,19 @@ namespace System.Numerics.Tensors
 
                     Vector512<float> remainderMask = CreateRemainderMaskSingleVector512(x.Length - i);
 
-                    TIndexOfMinMax.Invoke(ref result, current, ref maxIndex, curIndex, remainderMask);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex, remainderMask);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
 
-                return TIndexOfMinMax.Invoke(result, maxIndex);
+                return TIndexOfMinMax.Invoke(result, resultIndex);
             }
 #endif
 
             if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
-                Vector256<int> maxIndex = Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7);
+                Vector256<int> resultIndex = Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7);
                 Vector256<int> curIndex = Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7);
                 Vector256<int> increment = Vector256.Create(8);
 
@@ -1297,7 +1291,7 @@ namespace System.Numerics.Tensors
                 Vector256<float> max = Vector256.LoadUnsafe(ref xRef, 0), current;
                 if (!Vector256.EqualsAll(max, max))
                 {
-                    return GetFirstNaNIndex(max, maxIndex);
+                    return GetFirstNaNIndex(max, resultIndex);
                 }
 
                 int oneVectorFromEnd = x.Length - Vector256<float>.Count;
@@ -1315,7 +1309,7 @@ namespace System.Numerics.Tensors
                         return GetFirstNaNIndex(current, curIndex);
                     }
 
-                    TIndexOfMinMax.Invoke(ref max, current, ref maxIndex, curIndex);
+                    TIndexOfMinMax.Invoke(ref max, current, ref resultIndex, curIndex);
 
                     i += Vector256<float>.Count;
                 }
@@ -1333,18 +1327,18 @@ namespace System.Numerics.Tensors
 
                     Vector256<float> remainderMask = CreateRemainderMaskSingleVector256(x.Length - i);
 
-                    TIndexOfMinMax.Invoke(ref max, current, ref maxIndex, curIndex, remainderMask);
+                    TIndexOfMinMax.Invoke(ref max, current, ref resultIndex, curIndex, remainderMask);
 
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
-                return TIndexOfMinMax.Invoke(max, maxIndex);
+                return TIndexOfMinMax.Invoke(max, resultIndex);
             }
 
             if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
-                Vector128<int> maxIndex = Vector128.Create(0, 1, 2, 3);
+                Vector128<int> resultIndex = Vector128.Create(0, 1, 2, 3);
                 Vector128<int> curIndex = Vector128.Create(0, 1, 2, 3);
                 Vector128<int> increment = Vector128.Create(4);
 
@@ -1353,7 +1347,7 @@ namespace System.Numerics.Tensors
                 Vector128<float> result = Vector128.LoadUnsafe(ref xRef, 0), current;
                 if (!Vector128.EqualsAll(result, result))
                 {
-                    return GetFirstNaNIndex(result, maxIndex);
+                    return GetFirstNaNIndex(result, resultIndex);
                 }
 
                 int oneVectorFromEnd = x.Length - Vector128<float>.Count;
@@ -1371,7 +1365,7 @@ namespace System.Numerics.Tensors
                         return GetFirstNaNIndex(current, curIndex);
                     }
 
-                    TIndexOfMinMax.Invoke(ref result, current, ref maxIndex, curIndex);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
 
                     i += Vector128<float>.Count;
                 }
@@ -1389,12 +1383,12 @@ namespace System.Numerics.Tensors
 
                     Vector128<float> remainderMask = CreateRemainderMaskSingleVector128(x.Length - i);
 
-                    TIndexOfMinMax.Invoke(ref result, current, ref maxIndex, curIndex, remainderMask);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex, remainderMask);
 
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
-                return TIndexOfMinMax.Invoke(result, maxIndex);
+                return TIndexOfMinMax.Invoke(result, resultIndex);
             }
 
             // Scalar path used when either vectorization is not supported or the input is too small to vectorize.
