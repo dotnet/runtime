@@ -109,9 +109,6 @@ void Compiler::fgInit()
     /* This global flag is set whenever we remove a statement */
     fgStmtRemoved = false;
 
-    /* This global flag is set whenever we add a throw block for a RngChk */
-    fgRngChkThrowAdded = false; /* reset flag for fgIsCodeAdded() */
-
     /* Keep track of whether or not EH statements have been optimized */
     fgOptimizedFinally = false;
 

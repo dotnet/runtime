@@ -3727,7 +3727,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     /* Remember that we're adding a new basic block */
 
     fgAddCodeModf      = true;
-    fgRngChkThrowAdded = true;
 
     /* Now figure out what code to insert */
 
