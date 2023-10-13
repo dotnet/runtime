@@ -12,6 +12,8 @@ namespace System.Reflection.Emit
         {
         }
 
+        protected Label CreateLabel(int id) => new Label(id);
+
         #region Public Members
 
         #region Emit
