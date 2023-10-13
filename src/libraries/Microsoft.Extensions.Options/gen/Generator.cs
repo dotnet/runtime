@@ -32,6 +32,11 @@ namespace Microsoft.Extensions.Options.Generators
 
         private static void HandleAnnotatedTypes(Compilation compilation, ImmutableArray<(TypeDeclarationSyntax? TypeSyntax, SemanticModel SemanticModel)> types, SourceProductionContext context)
         {
+            if (types.Length == 0)
+            {
+                return;
+            }
+
             if (!SymbolLoader.TryLoad(compilation, out var symbolHolder))
             {
                 // Not eligible compilation
