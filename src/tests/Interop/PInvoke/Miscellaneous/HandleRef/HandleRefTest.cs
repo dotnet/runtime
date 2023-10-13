@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using Xunit;
 
-class HandleRefTest
+public class HandleRefTest
 {
     [DllImport(@"HandleRefNative", CallingConvention = CallingConvention.Winapi)]
     private static extern int MarshalPointer_In(HandleRef pintValue, int stackGuard);
@@ -24,7 +24,8 @@ class HandleRefTest
     [DllImport(@"HandleRefNative")]
     private static extern HandleRef InvalidMarshalPointer_Return();
 
-    public unsafe static int Main()
+    [Fact]
+    public unsafe static int TestEntryPoint()
     {
         try{
             const int intManaged = 1000;

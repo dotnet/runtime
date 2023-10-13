@@ -609,8 +609,28 @@ void BasicBlock::dspJumpKind()
     switch (bbJumpKind)
     {
         case BBJ_EHFINALLYRET:
+        {
+            printf(" ->");
+
+            // Early in compilation, we display the jump kind before the BBJ_EHFINALLYRET successors have been set.
+            if (bbJumpEhf == nullptr)
+            {
+                printf(" ????");
+            }
+            else
+            {
+                const unsigned     jumpCnt = bbJumpEhf->bbeCount;
+                BasicBlock** const jumpTab = bbJumpEhf->bbeSuccs;
+
+                for (unsigned i = 0; i < jumpCnt; i++)
+                {
+                    printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                }
+            }
+
             printf(" (finret)");
             break;
+        }
 
         case BBJ_EHFAULTRET:
             printf(" (falret)");
@@ -1122,6 +1142,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
             else
             {
                 assert(i == 1);
+                assert(bbNext != bbJumpDest);
                 return bbJumpDest;
             }
 
@@ -1160,7 +1181,15 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             {
                 return 0;
             }
-            return comp->fgNSuccsOfFinallyRet(this);
+
+            // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
+            //
+            if (bbJumpEhf == nullptr)
+            {
+                return 0;
+            }
+
+            return bbJumpEhf->bbeCount;
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1209,15 +1238,14 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
     switch (bbJumpKind)
     {
         case BBJ_EHFILTERRET:
-        {
             // Handler is the (sole) normal successor of the filter.
             assert(comp->fgFirstBlockOfHandler(this) == bbJumpDest);
             return bbJumpDest;
-        }
 
         case BBJ_EHFINALLYRET:
-            // Note: the following call is expensive.
-            return comp->fgSuccOfFinallyRet(this, i);
+            assert(bbJumpEhf != nullptr);
+            assert(i < bbJumpEhf->bbeCount);
+            return bbJumpEhf->bbeSuccs[i];
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1236,6 +1264,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
             else
             {
                 assert(i == 1);
+                assert(bbNext != bbJumpDest);
                 return bbJumpDest;
             }
 
@@ -1638,6 +1667,24 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
     for (unsigned i = 0; i < bbsCount; i++)
     {
         bbsDstTab[i] = other->bbsDstTab[i];
+    }
+}
+
+//------------------------------------------------------------------------
+// BBehfDesc copy ctor: copy a EHFINALLYRET descriptor
+//
+// Arguments:
+//    comp - compiler instance
+//    other - existing descriptor to copy
+//
+BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other) : bbeCount(other->bbeCount)
+{
+    // Allocate and fill in a new dst tab
+    //
+    bbeSuccs = new (comp, CMK_BasicBlock) BasicBlock*[bbeCount];
+    for (unsigned i = 0; i < bbeCount; i++)
+    {
+        bbeSuccs[i] = other->bbeSuccs[i];
     }
 }
 

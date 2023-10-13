@@ -12173,6 +12173,7 @@ void Compiler::impFixPredLists()
         {
             BasicBlock* const finallyBegBlock  = HBtab->ebdHndBeg;
             BasicBlock* const finallyLastBlock = HBtab->ebdHndLast;
+            unsigned          predCount        = (unsigned)-1;
 
             for (BasicBlock* const finallyBlock : BasicBlockRangeList(finallyBegBlock, finallyLastBlock))
             {
@@ -12188,24 +12189,60 @@ void Compiler::impFixPredLists()
                     continue;
                 }
 
-                for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
+                // Count the number of predecessors. Then we can allocate the bbJumpEhf table and fill it in.
+                // We only need to count once, since it's invariant with the finally block.
+                if (predCount == (unsigned)-1)
                 {
-                    // We only care about preds that are callfinallies.
-                    //
-                    if (!predBlock->isBBCallAlwaysPair())
+                    predCount = 0;
+                    for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
                     {
-                        continue;
-                    }
-
-                    BasicBlock* const continuation = predBlock->Next();
-                    fgAddRefPred(continuation, finallyBlock);
-
-                    if (!added)
-                    {
-                        JITDUMP("\nAdding pred edges from BBJ_EHFINALLYRET blocks\n");
-                        added = true;
+                        // We only care about preds that are callfinallies.
+                        //
+                        if (!predBlock->isBBCallAlwaysPair())
+                        {
+                            continue;
+                        }
+                        ++predCount;
                     }
                 }
+
+                BBehfDesc* jumpEhf = new (this, CMK_BasicBlock) BBehfDesc;
+
+                // It's possible for the `finally` to have no CALLFINALLY predecessors if the `try` block
+                // has an unconditional `throw` (the finally will still be invoked in the exceptional
+                // case via the runtime). In that case, jumpEhf->bbeCount remains the default, zero,
+                // and jumpEhf->bbeSuccs remains the default, nullptr.
+                if (predCount > 0)
+                {
+                    jumpEhf->bbeCount = predCount;
+                    jumpEhf->bbeSuccs = new (this, CMK_BasicBlock) BasicBlock*[predCount];
+
+                    unsigned predNum = 0;
+                    for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
+                    {
+                        // We only care about preds that are callfinallies.
+                        //
+                        if (!predBlock->isBBCallAlwaysPair())
+                        {
+                            continue;
+                        }
+
+                        BasicBlock* const continuation = predBlock->Next();
+                        fgAddRefPred(continuation, finallyBlock);
+
+                        jumpEhf->bbeSuccs[predNum] = continuation;
+                        ++predNum;
+
+                        if (!added)
+                        {
+                            JITDUMP("\nAdding pred edges from BBJ_EHFINALLYRET blocks\n");
+                            added = true;
+                        }
+                    }
+                    assert(predNum == predCount);
+                }
+
+                finallyBlock->SetJumpEhf(jumpEhf);
             }
         }
     }
