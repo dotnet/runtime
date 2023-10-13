@@ -722,6 +722,12 @@ bool Compiler::fgRemoveDeadBlocks()
     auto isBlockRemovable = [&](BasicBlock* block) -> bool {
         bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
         bool isRemovable = !isVisited || (block->bbRefs == 0);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        // Can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair, even if bbRefs == 0.
+        isRemovable &= !block->isBBCallAlwaysPairTail();
+#endif
+
         hasUnreachableBlock |= isRemovable;
         return isRemovable;
     };
