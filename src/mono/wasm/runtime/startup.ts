@@ -246,8 +246,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         // signal this stage, this will allow pending assets to allocate memory
         runtimeHelpers.beforeOnRuntimeInitialized.promise_control.resolve();
 
-        await wait_for_all_assets();
-
         // Threads early are not supported with memory snapshot. See below how we enable them later.
         // Please disable startupMemoryCache in order to be able to diagnose or pause runtime startup.
         if (MonoWasmThreads && !runtimeHelpers.config.startupMemoryCache) {
@@ -538,6 +536,9 @@ async function mono_wasm_before_memory_snapshot() {
     if (runtimeHelpers.config.browserProfilerOptions)
         mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
 
+    // wait for all assets in memory
+    await runtimeHelpers.coreAssetsInMemory.promise;
+
     mono_wasm_load_runtime("unused", runtimeHelpers.config.debugLevel);
 
     if (runtimeHelpers.config.virtualWorkingDirectory) {
@@ -550,6 +551,8 @@ async function mono_wasm_before_memory_snapshot() {
         mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
         FS.chdir(cwd);
     }
+
+    await wait_for_all_assets();
 
     // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
     if (runtimeHelpers.config.startupMemoryCache) {
@@ -571,6 +574,8 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
             }
         }
         cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
+        runtimeHelpers.monoReady = true;
+
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
     } catch (err: any) {

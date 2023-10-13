@@ -97,6 +97,7 @@ export interface AssetEntryInternal extends AssetEntry {
     pendingDownloadInternal?: LoadingResource
     noCache?: boolean
     useCredentials?: boolean
+    isCoreAssembly?: boolean
 }
 
 export type LoaderHelpers = {
@@ -189,11 +190,13 @@ export type RuntimeHelpers = {
     memorySnapshotCacheKey: string,
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
+    monoReady: boolean,
     runtimeReady: boolean,
     jsSynchronizationContextInstalled: boolean,
     cspPolicy: boolean,
 
-    allAssetsInMemory: PromiseAndController<void>,
+    coreAssetsInMemory: PromiseAndController<void>,
+    remainingAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     afterInstantiateWasm: PromiseAndController<void>,
     beforePreInit: PromiseAndController<void>,

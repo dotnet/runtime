@@ -106,7 +106,7 @@ export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal
 
 export async function wait_for_all_assets() {
     // wait for all assets in memory
-    await runtimeHelpers.allAssetsInMemory.promise;
+    await runtimeHelpers.remainingAssetsInMemory.promise;
     if (runtimeHelpers.config.assets) {
         mono_assert(loaderHelpers.actual_downloaded_assets_count == loaderHelpers.expected_downloaded_assets_count, () => `Expected ${loaderHelpers.expected_downloaded_assets_count} assets to be downloaded, but only finished ${loaderHelpers.actual_downloaded_assets_count}`);
         mono_assert(loaderHelpers.actual_instantiated_assets_count == loaderHelpers.expected_instantiated_assets_count, () => `Expected ${loaderHelpers.expected_instantiated_assets_count} assets to be in memory, but only instantiated ${loaderHelpers.actual_instantiated_assets_count}`);
