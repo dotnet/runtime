@@ -2745,7 +2745,6 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
         case BBJ_RETURN:
         case BBJ_EHFILTERRET:
         case BBJ_EHFAULTRET:
-        case BBJ_EHFINALLYRET:
         case BBJ_EHCATCHRET:
             // These have no jump destination to update.
             break;
@@ -2773,12 +2772,39 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
             }
             break;
 
+        case BBJ_EHFINALLYRET:
+        {
+            BBehfDesc*  ehfDesc = blk->GetJumpEhf();
+            BasicBlock* newSucc = nullptr;
+            for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
+            {
+                BasicBlock* const succ = ehfDesc->bbeSuccs[i];
+                if (redirectMap->Lookup(succ, &newSucc))
+                {
+                    if (updatePreds)
+                    {
+                        fgRemoveRefPred(succ, blk);
+                    }
+                    if (updatePreds || addPreds)
+                    {
+                        fgAddRefPred(newSucc, blk);
+                    }
+                    ehfDesc->bbeSuccs[i] = newSucc;
+                }
+                else if (addPreds)
+                {
+                    fgAddRefPred(succ, blk);
+                }
+            }
+        }
+        break;
+
         case BBJ_SWITCH:
         {
             bool redirected = false;
             for (unsigned i = 0; i < blk->GetJumpSwt()->bbsCount; i++)
             {
-                BasicBlock* switchDest = blk->GetJumpSwt()->bbsDstTab[i];
+                BasicBlock* const switchDest = blk->GetJumpSwt()->bbsDstTab[i];
                 if (redirectMap->Lookup(switchDest, &newJumpDest))
                 {
                     if (updatePreds)
@@ -2829,6 +2855,10 @@ void Compiler::optCopyBlkDest(BasicBlock* from, BasicBlock* to)
         case BBJ_COND:
             // All of these have a single jump destination to update.
             to->SetJumpDest(from->GetJumpDest());
+            break;
+
+        case BBJ_EHFINALLYRET:
+            to->SetJumpEhf(new (this, CMK_BasicBlock) BBehfDesc(this, from->GetJumpEhf()));
             break;
 
         case BBJ_SWITCH:
@@ -7989,11 +8019,11 @@ void Compiler::fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top)
     assert(newHead->NextIs(top));
     assert(!fgIsFirstBlockOfFilterOrHandler(top));
 
-    if ((top->bbFlags & BBF_TRY_BEG) != 0)
+    if (bbIsTryBeg(top))
     {
         // `top` is the beginning of a try block. Figure out the EH region to use.
         assert(top->hasTryIndex());
-        unsigned short newTryIndex = (unsigned short)ehTrueEnclosingTryIndexIL(top->getTryIndex());
+        unsigned newTryIndex = ehTrueEnclosingTryIndexIL(top->getTryIndex());
         if (newTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
         {
             // No EH try index.
@@ -8107,7 +8137,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             // Does this existing region have the same EH region index that we will use when we create the pre-header?
             // If not, we want to create a new pre-header with the expected region.
             bool headHasCorrectEHRegion = false;
-            if ((top->bbFlags & BBF_TRY_BEG) != 0)
+            if (bbIsTryBeg(top))
             {
                 assert(top->hasTryIndex());
                 unsigned newTryIndex     = ehTrueEnclosingTryIndexIL(top->getTryIndex());
