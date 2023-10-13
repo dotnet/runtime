@@ -3618,8 +3618,10 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     // arg slots on the stack frame if there are no other calls.
     compUsesThrowHelper = true;
 
-    if (!fgUseThrowHelperBlocks())
+    if (!fgUseThrowHelperBlocks() && (kind != SCK_FAIL_FAST))
     {
+        // We'll create a throw block in-place then (for better debugging)
+        // It's not needed for fail fast, since it's not recoverable anyway.
         return nullptr;
     }
 
@@ -3797,7 +3799,7 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
 
 Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
 {
-    assert(fgUseThrowHelperBlocks());
+    assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
     if (!(fgExcptnTargetCache[kind] && // Try the cached value first
           fgExcptnTargetCache[kind]->acdData == refData))
     {
