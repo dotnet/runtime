@@ -345,6 +345,25 @@ namespace LibraryImportGenerator.IntegrationTests
                 BoolStructInMarshallerAllowNull.Marshaller.AssertAllHaveBeenCleaned();
             }
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/93431")]
+        public void MultiDimensionalRefArray_EnsureInnerArraysAreCleared_ProperCleanup()
+        {
+            var arr = GetMultiDimensionalArray<BoolStruct>(10, 10);
+            var widths = new int[10] { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
+            foreach (var throwOn in new int[] { 0, 1, 45, 99 })
+            {
+                BoolStructInMarshallerAllowNull.Marshaller.MarshallingFailsIndex = throwOn;
+                // Expected Behavior - Should free all elements of inner arrays that were partially marshalled
+                BoolStructInMarshallerAllowNull.Marshaller.ExpectedFreeCount = throwOn + 10 - (throwOn % 10);
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    NativeExportsNE.MarshallingFails.NegateBoolsRef2D_ClearMarshalling(ref arr, arr.Length, widths);
+                });
+                BoolStructInMarshallerAllowNull.Marshaller.AssertAllHaveBeenCleaned();
+            }
+        }
     }
 
     public struct BoolStructNative : IEquatable<BoolStructNative>
