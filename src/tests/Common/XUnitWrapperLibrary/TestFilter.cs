@@ -227,9 +227,9 @@ public class TestFilter
                : string.Empty;
     }
 
-    // Some tests are purposefully not run for a number of reasons. They are specified
-    // in src/tests/issues.targets, along with a brief explanation on why they are
-    // skipped inside an '<Issue>' tag.
+    // GH dotnet/runtime issue #91562: Some tests are purposefully not run for a number
+    // of reasons. They are specified in src/tests/issues.targets, along with a brief
+    // explanation on why they are skipped inside an '<Issue>' tag.
     //
     // When building any test or test subtree, if any of the tests built matches an entry
     // in issues.targets, then the exclusions list file ($CORE_ROOT/TestExclusions.txt is
