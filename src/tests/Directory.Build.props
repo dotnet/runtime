@@ -3,6 +3,7 @@
   <PropertyGroup>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
     <InstallV8ForTests>false</InstallV8ForTests>
+    <WasmEnableWebcil>false</WasmEnableWebcil>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
