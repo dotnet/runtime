@@ -28,9 +28,6 @@ namespace System.Text.Json.SourceGeneration
 #if LAUNCH_DEBUGGER
             System.Diagnostics.Debugger.Launch();
 #endif
-            IncrementalValueProvider<KnownTypeSymbols> knownTypeSymbols = context.CompilationProvider
-                .Select((compilation, _) => new KnownTypeSymbols(compilation));
-
             IncrementalValuesProvider<(ContextGenerationSpec?, ImmutableEquatableArray<DiagnosticInfo>)> contextGenerationSpecs = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
@@ -39,11 +36,11 @@ namespace System.Text.Json.SourceGeneration
                     Parser.JsonSerializableAttributeFullName,
                     (node, _) => node is ClassDeclarationSyntax,
                     (context, _) => (ContextClass: (ClassDeclarationSyntax)context.TargetNode, context.SemanticModel))
-                .Combine(knownTypeSymbols)
                 .Select(static (tuple, cancellationToken) =>
                 {
-                    Parser parser = new(tuple.Right);
-                    ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(tuple.Left.ContextClass, tuple.Left.SemanticModel, cancellationToken);
+                    KnownTypeSymbols knownTypes = new(tuple.SemanticModel.Compilation);
+                    Parser parser = new(knownTypes);
+                    ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(tuple.ContextClass, tuple.SemanticModel, cancellationToken);
                     ImmutableEquatableArray<DiagnosticInfo> diagnostics = parser.Diagnostics.ToImmutableEquatableArray();
                     return (contextGenerationSpec, diagnostics);
                 })
