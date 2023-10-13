@@ -668,6 +668,7 @@ namespace System
             if (ReferenceEquals(left, right))
                 return true;
 
+            // TODO: This pattern does not work for MetadataOnly runtime types!!!
             // Runtime types are never equal to non-runtime types
             // If `left` is a non-runtime type with a weird Equals implementation
             // this is where operator `==` would differ from `Equals` call.

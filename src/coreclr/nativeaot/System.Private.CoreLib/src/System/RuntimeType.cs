@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
@@ -383,6 +384,36 @@ namespace System
             return GetTypeFromMethodTable(_pUnderlyingEEType->FunctionPointerReturnType);
         }
 
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
+        {
+            if (c == null)
+                return false;
+
+            if (object.ReferenceEquals(c, this))
+                return true;
+
+            // TODO: This pattern does not work for MetadataOnly runtime types!!!
+            if (c.UnderlyingSystemType is not RuntimeType fromRuntimeType)
+                return false;  // Desktop compat: If typeInfo is null, or implemented by a different Reflection implementation, return "false."
+
+            // If both types have type handles, let MRT handle this. It's not dependent on metadata.
+            if (RuntimeImports.AreTypesAssignable(fromRuntimeType._pUnderlyingEEType, _pUnderlyingEEType))
+                return true;
+
+            // Runtime IsAssignableFrom does not handle casts from generic type definitions: always returns false. For those, we fall through to the
+            // managed implementation. For everyone else, return "false".
+            //
+            // Runtime IsAssignableFrom does not handle pointer -> UIntPtr cast.
+            if (!fromRuntimeType._pUnderlyingEEType->IsGenericTypeDefinition || fromRuntimeType._pUnderlyingEEType->IsPointer)
+                return false;
+
+            // If we got here, the types are open, or reduced away, or otherwise lacking in type handles. Perform the IsAssignability check in managed code.
+            return GetRuntimeTypeInfo().IsAssignableFrom(c);
+        }
+
+        public override bool IsInstanceOfType([NotNullWhen(true)] object? o)
+            => RuntimeImports.IsInstanceOfAny(_pUnderlyingEEType, o) != null;
+
         //
         // Implementation shared with MetadataType
         //
@@ -398,6 +429,9 @@ namespace System
         public override bool Equals(object? obj) => ReferenceEquals(obj, this);
 
         object ICloneable.Clone() => this;
+
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
+            => (typeInfo == null) ? false : IsAssignableFrom(typeInfo.AsType());
 
         public override bool IsSecurityCritical => true;
         public override bool IsSecuritySafeCritical => false;

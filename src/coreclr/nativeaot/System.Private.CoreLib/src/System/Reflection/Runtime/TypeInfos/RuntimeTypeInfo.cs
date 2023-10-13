@@ -295,8 +295,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public bool IsAssignableFrom(TypeInfo typeInfo) => IsAssignableFrom((Type)typeInfo);
-
         public bool IsAssignableFrom(Type c)
         {
             if (c == null)

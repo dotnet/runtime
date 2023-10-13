@@ -182,6 +182,12 @@ namespace System
         public override Type GetFunctionPointerReturnType()
             => GetRuntimeTypeInfo().GetFunctionPointerReturnType();
 
+        public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
+            => GetRuntimeTypeInfo().IsAssignableFrom(c);
+
+        public override bool IsInstanceOfType([NotNullWhen(true)] object? o)
+            => false; // Cannot have an instance of a type without MethodTable
+
         //
         // Implementation shared with MetadataType
         //
@@ -192,6 +198,9 @@ namespace System
         public override bool Equals(object? obj) => ReferenceEquals(obj, this);
 
         object ICloneable.Clone() => this;
+
+        public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
+            => (typeInfo == null) ? false : IsAssignableFrom(typeInfo.AsType());
 
         public override bool IsSecurityCritical => true;
         public override bool IsSecuritySafeCritical => false;
