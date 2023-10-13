@@ -21,7 +21,7 @@ export function mono_wasm_browser_entropy(bufferPtr: number, bufferLength: numbe
 
     // fill the targetBuffer in batches of batchedQuotaMax
     for (let i = 0; i < bufferLength; i += batchedQuotaMax) {
-        const targetBatch = new Uint8Array(targetBuffer, i, Math.min(bufferLength - i, batchedQuotaMax));
+        const targetBatch = targetBuffer.subarray(i, i + Math.min(bufferLength - i, batchedQuotaMax));
         globalThis.crypto.getRandomValues(targetBatch);
     }
 

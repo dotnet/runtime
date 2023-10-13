@@ -15,7 +15,7 @@ namespace Sample
             Console.WriteLine ("Hello, World!");
 
             var rand = new Random();
-            Console.WriteLine ("Today's lucky number is " + rand.Next(100));
+            Console.WriteLine ("Today's lucky number is " + rand.Next(100) + " and " + Guid.NewGuid());
 
             var start = DateTime.UtcNow;
             var timezonesCount = TimeZoneInfo.GetSystemTimeZones().Count;
