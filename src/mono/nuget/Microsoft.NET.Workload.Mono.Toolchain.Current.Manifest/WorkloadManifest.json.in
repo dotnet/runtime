@@ -5,7 +5,7 @@
   },
   "workloads": {
     "wasm-tools": {
-      "description": ".NET WebAssembly build tools",
+      "description": ".NET WebAssembly build tools for net8.0",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
@@ -15,7 +15,7 @@
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64"]
     },
     "wasm-experimental": {
-      "description": ".NET WebAssembly experimental tooling",
+      "description": ".NET WebAssembly experimental tooling for net8.0",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Templates",
         "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
@@ -24,7 +24,7 @@
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
     },
     "wasi-experimental": {
-      "description": ".NET WASI experimental",
+      "description": ".NET WASI experimental for net8.0",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.wasi-wasm",
