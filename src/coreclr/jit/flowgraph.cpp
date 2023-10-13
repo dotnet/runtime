@@ -3693,9 +3693,15 @@ bool Compiler::fgCreateThrowHelperBlocks()
 
     for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
     {
-        // Create the target basic block
+        // Create the target basic block in the region indicated by srcBlk.
         //
         BasicBlock* const srcBlk = add->acdDstBlk;
+
+        // Double-check that srcBlk hasn't changed EH regions since the time
+        // the add was created.
+        //
+        assert(bbThrowIndex(srcBlk) == add->acdData);
+
         BasicBlock* const newBlk =
             fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk, /* runRarely */ true, /* insertAtEnd */ true);
 
