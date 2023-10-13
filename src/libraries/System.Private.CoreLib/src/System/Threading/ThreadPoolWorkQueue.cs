@@ -823,9 +823,12 @@ namespace System.Threading
             object? workItem = null;
             if (_nextWorkItemToProcess != null)
             {
-                TryDequeue(out workItem, out anyMissedSteal, workQueue, tl);
+                workItem = Interlocked.Exchange(ref _nextWorkItemToProcess, null);
 
-                workItem ??= Interlocked.Exchange(ref _nextWorkItemToProcess, null);
+                if (workItem == null)
+                {
+                    TryDequeue(out workItem, out anyMissedSteal, workQueue, tl);
+                }
             }
 
             {
