@@ -360,9 +360,9 @@ namespace LibraryImportGenerator.IntegrationTests
     static class BoolStructArrayMarshaller
     {
         public static FailingMarshaller<BoolStruct[], nint> Marshaller = new(
-            _ => 0xA1fa1fa,
+            _ => 0xa1fa1fa,
             _ => throw new NotImplementedException(),
-            (nint unmanaged, int index) => unmanaged == 0xA1fa1fa
+            (nint unmanaged, int index) => unmanaged == 0xa1fa1fa
         );
 
         public static nint ConvertToUnmanaged(BoolStruct[] managed) => Marshaller.ConvertToUnmanaged(managed);
