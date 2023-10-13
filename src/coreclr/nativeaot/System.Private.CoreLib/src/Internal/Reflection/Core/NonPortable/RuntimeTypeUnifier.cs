@@ -46,7 +46,7 @@ namespace Internal.Reflection.Core.NonPortable
         internal static unsafe RuntimeType GetRuntimeTypeForMethodTable(MethodTable* eeType)
         {
             // If writable data is supported, we shouldn't be using the hashtable - the runtime type
-            // is accessible through a couple indirections from the EETypePtr which is much faster.
+            // is accessible through a couple indirections from the MethodTable which is much faster.
             Debug.Assert(!Internal.Runtime.MethodTable.SupportsWritableData);
             return RuntimeTypeHandleToTypeCache.Table.GetOrAdd((IntPtr)eeType);
         }

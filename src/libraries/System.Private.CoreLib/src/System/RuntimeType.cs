@@ -259,7 +259,7 @@ namespace System
         public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
 
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
-            => (typeInfo == null) ? false : IsAssignableFrom(typeInfo.AsType());
+            => typeInfo != null && IsAssignableFrom(typeInfo.AsType());
 
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
