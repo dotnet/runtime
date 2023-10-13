@@ -5,7 +5,11 @@ import { isSharedArrayBuffer, localHeapViewU8 } from "./memory";
 // https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues
 const batchedQuotaMax = 65536;
 
-export function mono_wasm_browser_entropy(bufferPtr: number, bufferLength: number) {
+export function mono_wasm_browser_entropy(bufferPtr: number, bufferLength: number): number {
+    if (!globalThis.crypto || !globalThis.crypto.getRandomValues) {
+        return -1;
+    }
+
     const memoryView = localHeapViewU8();
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 
@@ -18,10 +22,12 @@ export function mono_wasm_browser_entropy(bufferPtr: number, bufferLength: numbe
     // fill the targetBuffer in batches of batchedQuotaMax
     for (let i = 0; i < bufferLength; i += batchedQuotaMax) {
         const targetBatch = new Uint8Array(targetBuffer, i, Math.min(bufferLength - i, batchedQuotaMax));
-        crypto.getRandomValues(targetBatch);
+        globalThis.crypto.getRandomValues(targetBatch);
     }
 
     if (needsCopy) {
         targetView.set(targetBuffer);
     }
+
+    return 0;
 }
