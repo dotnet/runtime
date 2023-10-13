@@ -772,12 +772,12 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     const bool useBlockId   = JitConfig.JitDumpFgBlockID() != 0;
     const bool displayBlockFlags = JitConfig.JitDumpFgBlockFlags() != 0;
 #else  // !DEBUG
-    const bool             createDotFile     = true;
-    const bool             includeEH         = false;
-    const bool             includeLoops      = false;
-    const bool             constrained       = true;
-    const bool             useBlockId        = false;
-    const bool             displayBlockFlags = false;
+    const bool             createDotFile       = true;
+    const bool             includeEH           = false;
+    const bool             includeLoops        = false;
+    const bool             constrained         = true;
+    const bool             useBlockId          = false;
+    const bool             displayBlockFlags   = false;
 #endif // !DEBUG
 
     FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, pos, createDotFile ? "dot" : "fgx");
@@ -910,7 +910,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock = bbIsTryBeg(block);
 #if FEATURE_EH_FUNCLETS
                 const bool isFuncletEntryBlock = fgFuncletsCreated && funIsFuncletEntry(block);
-#else // !FEATURE_EH_FUNCLETS
+#else  // !FEATURE_EH_FUNCLETS
                 const bool isFuncletEntryBlock = false;
 #endif // !FEATURE_EH_FUNCLETS
                 const BasicBlockFlags allDisplayedBlockFlags =
@@ -1764,7 +1764,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 #ifdef DEBUG
                 const bool displayLoopFlags = JitConfig.JitDumpFgLoopFlags() != 0;
 #else  // !DEBUG
-                const bool displayLoopFlags  = false;
+                const bool displayLoopFlags    = false;
 #endif // !DEBUG
 
                 char name[30];
@@ -3125,7 +3125,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #ifndef JIT32_GCENCODER
     copiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-    copiedForGenericsCtxt                    = false;
+    copiedForGenericsCtxt                      = false;
 #endif // JIT32_GCENCODER
 
     // This if only in support of the noway_asserts it contains.
