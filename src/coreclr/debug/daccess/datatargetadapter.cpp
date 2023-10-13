@@ -131,10 +131,13 @@ DataTargetAdapter::GetPlatform(
         _ASSERTE_MSG(false, "Not supported platform.");
         return E_NOTIMPL;
 
+#ifndef HOST_WINDOWS
+    // In windows, IMAGE_FILE_MACHINE_RISCV64 is not declared yet.
     case IMAGE_FILE_MACHINE_RISCV64:
         ulExpectedPointerSize = 8;
         platform = CORDB_PLATFORM_POSIX_RISCV64;
     break;
+#endif // HOST_WINDOWS
 
 #else   // TARGET_UNIX
     case IMAGE_FILE_MACHINE_I386:
