@@ -218,7 +218,7 @@ namespace System.Globalization.Tests
         public void FirstDayOfWeekHybridGlobalization(string culture, DayOfWeek expected)
         {
             DateTimeFormatInfo format = new CultureInfo(culture).DateTimeFormat;
-            Assert.True(expected == format.FirstDayOfWeek, $"Failed for culture: {culture}. Expected: {expected}, Actual: {format.FirstDayOfWeek}");
+            FirstDayOfWeek(format, expected, culture);
         }
 
         [Theory]
