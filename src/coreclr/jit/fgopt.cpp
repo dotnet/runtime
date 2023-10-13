@@ -1682,7 +1682,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     fgSetTryBeg(HBtab, newTryEntry);
 
                     // Try entry blocks get specially marked and have special protection.
-                    HBtab->ebdTryBeg->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG;
+                    HBtab->ebdTryBeg->bbFlags |= BBF_DONT_REMOVE;
 
                     // We are keeping this try region
                     removeTryRegion = false;
@@ -2050,8 +2050,8 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 
     // Make sure the second block is not the start of a TRY block or an exception handler
 
+    noway_assert(!bbIsTryBeg(bNext));
     noway_assert(bNext->bbCatchTyp == BBCT_NONE);
-    noway_assert((bNext->bbFlags & BBF_TRY_BEG) == 0);
     noway_assert((bNext->bbFlags & BBF_DONT_REMOVE) == 0);
 
     /* both or none must have an exception handler */
@@ -6386,10 +6386,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                 goto REPEAT;
             }
 
-            /* Remove unreachable or empty blocks - do not consider blocks marked BBF_DONT_REMOVE or genReturnBB block
-             * These include first and last block of a TRY, exception handlers and RANGE_CHECK_FAIL THROW blocks */
-
-            if ((block->bbFlags & BBF_DONT_REMOVE) == BBF_DONT_REMOVE || block == genReturnBB)
+            // Remove unreachable or empty blocks - do not consider blocks marked BBF_DONT_REMOVE
+            // These include first and last block of a TRY, exception handlers and THROW blocks.
+            if ((block->bbFlags & BBF_DONT_REMOVE) != 0)
             {
                 bPrev = block;
                 continue;
@@ -6407,8 +6406,8 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
             }
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
-            noway_assert(!block->bbCatchTyp);
-            noway_assert(!(block->bbFlags & BBF_TRY_BEG));
+            assert(!bbIsTryBeg(block));
+            noway_assert(block->bbCatchTyp == BBCT_NONE);
 
             /* Remove unreachable blocks
              *

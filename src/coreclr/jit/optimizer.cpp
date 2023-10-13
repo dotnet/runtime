@@ -8019,11 +8019,11 @@ void Compiler::fgSetEHRegionForNewLoopHead(BasicBlock* newHead, BasicBlock* top)
     assert(newHead->NextIs(top));
     assert(!fgIsFirstBlockOfFilterOrHandler(top));
 
-    if ((top->bbFlags & BBF_TRY_BEG) != 0)
+    if (bbIsTryBeg(top))
     {
         // `top` is the beginning of a try block. Figure out the EH region to use.
         assert(top->hasTryIndex());
-        unsigned short newTryIndex = (unsigned short)ehTrueEnclosingTryIndexIL(top->getTryIndex());
+        unsigned newTryIndex = ehTrueEnclosingTryIndexIL(top->getTryIndex());
         if (newTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
         {
             // No EH try index.
@@ -8137,7 +8137,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             // Does this existing region have the same EH region index that we will use when we create the pre-header?
             // If not, we want to create a new pre-header with the expected region.
             bool headHasCorrectEHRegion = false;
-            if ((top->bbFlags & BBF_TRY_BEG) != 0)
+            if (bbIsTryBeg(top))
             {
                 assert(top->hasTryIndex());
                 unsigned newTryIndex     = ehTrueEnclosingTryIndexIL(top->getTryIndex());
