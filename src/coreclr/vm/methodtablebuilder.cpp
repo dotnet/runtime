@@ -3571,7 +3571,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     cAsyncThunkMemberSignature += 2;
                     originalTokenOffsetFromAsyncDetailsOffset = 1;
                     newTokenOffsetFromAsyncDetailsOffset = 2;
-                    thunkType = AsyncMethodType::AsyncToTask;
+                    thunkType = AsyncMethodType::TaskToAsync;
                     originalPrefixSize = 1;
                     newPrefixSize = 2;
                     originalSuffixSize = 0;
@@ -3582,7 +3582,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     cAsyncThunkMemberSignature -= 2;
                     originalTokenOffsetFromAsyncDetailsOffset = 2;
                     newTokenOffsetFromAsyncDetailsOffset = 1;
-                    thunkType = AsyncMethodType::TaskToAsync;
+                    thunkType = AsyncMethodType::AsyncToTask;
                     originalPrefixSize = 2;
                     newPrefixSize = 1;
                     originalSuffixSize = 1;

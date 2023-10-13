@@ -32,7 +32,7 @@ namespace System.Threading.Tasks
         public void Pop() { RuntimeHelpers.PopAsyncData(ref dataFrame); }
         public Task<TResult> FromResult(TResult result)
         {
-            if (dataFrame._maintainedData == null || !dataFrame._maintainedData._suspendActive)
+            if (dataFrame._maintainedData == null || (dataFrame._maintainedData._suspendActive == 0))
                 return Task.FromResult(result);
             return (Task<TResult>)dataFrame._maintainedData.GetTask();
         }

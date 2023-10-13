@@ -5,7 +5,7 @@ struct Tasklet;
 struct AsyncDataFrame;
 struct RuntimeAsyncReturnValue;
 
-extern "C" Tasklet* QCALLTYPE RuntimeSuspension_CaptureTasklets(QCall::StackCrawlMarkHandle stackMark, uint8_t* returnValue, uint8_t useReturnValueHandle, void* taskAsyncData, Tasklet** lastTasklet);
+extern "C" Tasklet* QCALLTYPE RuntimeSuspension_CaptureTasklets(QCall::StackCrawlMarkHandle stackMark, uint8_t* returnValue, uint8_t useReturnValueHandle, void* taskAsyncData, Tasklet** lastTasklet, int32_t* pFramesCaptured);
 extern "C" void QCALLTYPE RuntimeSuspension_DeleteTasklet(Tasklet* tasklet);
 
 EXTERN_C FCDECL1(void, RuntimeSuspension_UnwindToFunctionWithAsyncFrame, AsyncDataFrame* frame);

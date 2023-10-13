@@ -348,7 +348,8 @@
            bool V_1,
            bool V_2,
            bool V_3,
-           uint32 V_4)
+           uint32 V_4,
+           valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable V_5)
   IL_0000:  nop
   IL_0001:  ldarg.0
   IL_0002:  stloc.0
@@ -363,7 +364,10 @@
   IL_0014:  ldloc.1
   IL_0015:  brfalse.s  IL_001d
   IL_0017:  call       valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable [System.Runtime]System.Threading.Tasks.Task::Yield()
-  IL_001c:  call       void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::UnsafeAwaitAwaiterFromRuntimeAsync<valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable>(!!0)
+            stloc 5
+            ldloca 5
+            call       instance valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable::GetAwaiter()
+  IL_001c:  call       void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::UnsafeAwaitAwaiterFromRuntimeAsync<valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter>(!!0)
   IL_001d:  ldloc.0
   IL_001e:  ldc.i4     0x773593ed
   IL_0023:  mul
@@ -375,7 +379,10 @@
   IL_002e:  ldloc.2
   IL_002f:  brfalse.s  IL_0037
   IL_0031:  call       valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable [System.Runtime]System.Threading.Tasks.Task::Yield()
-  IL_0036:  call       void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::UnsafeAwaitAwaiterFromRuntimeAsync<valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable>(!!0)
+            stloc 5
+            ldloca 5
+            call       instance valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable::GetAwaiter()
+  IL_0036:  call       void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::UnsafeAwaitAwaiterFromRuntimeAsync<valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter>(!!0)
   IL_0037:  ldloc.0
   IL_0038:  ldc.i4     0x773593ed
   IL_003d:  mul
@@ -387,7 +394,10 @@
   IL_0048:  ldloc.3
   IL_0049:  brfalse.s  IL_0051
   IL_004b:  call       valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable [System.Runtime]System.Threading.Tasks.Task::Yield()
-  IL_0050:  call       void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::UnsafeAwaitAwaiterFromRuntimeAsync<valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable>(!!0)
+            stloc 5
+            ldloca 5
+            call       instance valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable::GetAwaiter()
+  IL_0050:  call       void [System.Runtime]System.Runtime.CompilerServices.RuntimeHelpers::UnsafeAwaitAwaiterFromRuntimeAsync<valuetype [System.Runtime]System.Runtime.CompilerServices.YieldAwaitable/YieldAwaiter>(!!0)
   IL_0051:  ldloc.0
   IL_0052:  stloc.s    V_4
   IL_0054:  br.s       IL_0056

@@ -990,7 +990,7 @@ AsyncMethodData* MethodDesc::GetAddrOfAsyncMethodData()
 {
     WRAPPER_NO_CONTRACT;
 
-    _ASSERTE(IsAsyncThunkMethod() || IsAsync2Method());
+    _ASSERTE(HasAsyncMethodData());
 
     SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot |  mdcMethodImpl | mdcHasNativeCodeSlot)];
 

@@ -125,11 +125,13 @@ namespace System.Runtime.CompilerServices
         {
             if (!awaiter.IsCompleted)
             {
+                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
+
                 // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
                 // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
                 // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
                 // it will resume with a return value of null.
-                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate();
+                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
                 if (resumption != null)
                 {
                     // We are trying to suspend
@@ -151,7 +153,17 @@ namespace System.Runtime.CompilerServices
                     }
                     // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
                     // and return from GetOrCreateResumptionDelegate with a null return value.
-                    RuntimeHelpers.SuspendIfSuspensionNotAborted();
+                    ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
+                    RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
+                    if (maintainedData._abortSuspend)
+                    {
+                        AbortSuspend();
+                    }
+                    else
+                    {
+                        // This function must be called from the same function that has the stackmark in it.
+                        unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
+                    }
                 }
             }
 
@@ -164,11 +176,13 @@ namespace System.Runtime.CompilerServices
         {
             if (!awaiter.IsCompleted)
             {
+                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
+
                 // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
                 // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
                 // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
                 // it will resume with a return value of null.
-                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate();
+                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
                 if (resumption != null)
                 {
                     // We are trying to suspend
@@ -190,7 +204,17 @@ namespace System.Runtime.CompilerServices
                     }
                     // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
                     // and return from GetOrCreateResumptionDelegate with a null return value.
-                    RuntimeHelpers.SuspendIfSuspensionNotAborted();
+                    ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
+                    RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
+                    if (maintainedData._abortSuspend)
+                    {
+                        AbortSuspend();
+                    }
+                    else
+                    {
+                        // This function must be called from the same function that has the stackmark in it.
+                        unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
+                    }
                 }
             }
 
@@ -204,11 +228,13 @@ namespace System.Runtime.CompilerServices
         {
             if (!awaiter.IsCompleted)
             {
+                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
+
                 // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
                 // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
                 // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
                 // it will resume with a return value of null.
-                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate();
+                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
                 if (resumption != null)
                 {
                     // We are trying to suspend
@@ -230,7 +256,17 @@ namespace System.Runtime.CompilerServices
                     }
                     // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
                     // and return from GetOrCreateResumptionDelegate with a null return value.
-                    RuntimeHelpers.SuspendIfSuspensionNotAborted();
+                    ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
+                    RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
+                    if (maintainedData._abortSuspend)
+                    {
+                        AbortSuspend();
+                    }
+                    else
+                    {
+                        // This function must be called from the same function that has the stackmark in it.
+                        unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
+                    }
                 }
             }
 
@@ -243,11 +279,13 @@ namespace System.Runtime.CompilerServices
         {
             if (!awaiter.IsCompleted)
             {
+                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
+
                 // Create resumption delegate, wrapping task, and create tasklets to represent each stack frame on the stack.
                 // RuntimeTaskSuspender.GetOrCreateResumptionDelegate() works like a POSIX fork call in that calls to it will return a
                 // delegate if they are the initial call to GetOrCreateResumptionDelegate, but once the thread is resumed,
                 // it will resume with a return value of null.
-                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate();
+                Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
                 if (resumption != null)
                 {
                     // We are trying to suspend
@@ -269,7 +307,17 @@ namespace System.Runtime.CompilerServices
                     }
                     // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
                     // and return from GetOrCreateResumptionDelegate with a null return value.
-                    RuntimeHelpers.SuspendIfSuspensionNotAborted();
+                    ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
+                    RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
+                    if (maintainedData._abortSuspend)
+                    {
+                        AbortSuspend();
+                    }
+                    else
+                    {
+                        // This function must be called from the same function that has the stackmark in it.
+                        unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
+                    }
                 }
             }
 
@@ -303,7 +351,7 @@ namespace System.Runtime.CompilerServices
         {
             public Action? _resumption;
             public Exception? _exception;
-            public bool _suspendActive;
+            public int _suspendActive;
             public bool _initialTaskEntry = true;
             public bool _completed;
             public byte _dummy;
@@ -346,6 +394,10 @@ namespace System.Runtime.CompilerServices
                     _abortSuspend = true;
                     return;
                 }
+
+                // Suspension has finished and we are resuming
+                _suspendActive = 0;
+
                 // Once we perform a resumption we no longer need to worry about handling the ultimate return data from the run of Tasklets
                 _initialTaskEntry = false;
 
@@ -558,32 +610,17 @@ namespace System.Runtime.CompilerServices
         // 3. Return values are to be returned by reference in all cases where the return value is not a simple object return or return of a simple value in the return value register (this makes the resumption function reasonable to write. Notably, floating point, and ref return will be returned by reference as well as generalized struct return, and return which would normally involve multiple return value registers)
         // 4. There are to be no refs to the outermost caller function exceptn for the valuetype return address (methods which begin on an instance valuetype will have the thunk box the valuetype and the runtime async method on the boxed instance)
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeSuspension_CaptureTasklets")]
-        private static unsafe partial Tasklet *CaptureCurrentStackIntoTasklets(StackCrawlMarkHandle stackMarkTop, ref byte returnValueHandle, [MarshalAs(UnmanagedType.U1)] bool useReturnValueHandle, void* taskAsyncData, out Tasklet* lastTasklet);
+        private static unsafe partial Tasklet *CaptureCurrentStackIntoTasklets(StackCrawlMarkHandle stackMarkTop, ref byte returnValueHandle, [MarshalAs(UnmanagedType.U1)] bool useReturnValueHandle, void* taskAsyncData, out Tasklet* lastTasklet, out int framesCaptured);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeSuspension_DeleteTasklet")]
         private static unsafe partial void DeleteTasklet(Tasklet *tasklet);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void UnwindToFunctionWithAsyncFrame(ref AsyncDataFrame dataFrame);
-
-        private static void SuspendIfSuspensionNotAborted()
-        {
-            ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
-            RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-            if (maintainedData._abortSuspend)
-            {
-                AbortSuspend();
-            }
-            else
-            {
-                UnwindToFunctionWithAsyncFrame(ref asyncFrame);
-            }
-        }
+        internal static extern unsafe void UnwindToFunctionWithAsyncFrame(Tasklet *topTasklet, nint framesToUnwind);
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        private static unsafe Action? GetOrCreateResumptionDelegate()
+        private static unsafe Action? GetOrCreateResumptionDelegate(ref StackCrawlMark stackMark)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
 
             asyncFrame._maintainedData ??= asyncFrame._createRuntimeMaintainedData!();
@@ -591,7 +628,7 @@ namespace System.Runtime.CompilerServices
             RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData;
 
             Tasklet* lastTasklet = null;
-            Tasklet* nextTaskletInStack = CaptureCurrentStackIntoTasklets(new StackCrawlMarkHandle(ref stackMark), ref maintainedData.GetReturnPointer(), maintainedData._initialTaskEntry, t_asyncData, out lastTasklet);
+            Tasklet* nextTaskletInStack = CaptureCurrentStackIntoTasklets(new StackCrawlMarkHandle(ref stackMark), ref maintainedData.GetReturnPointer(), maintainedData._initialTaskEntry, t_asyncData, out lastTasklet, out var framesCaptured);
             if (nextTaskletInStack == null)
                 throw new OutOfMemoryException();
 
@@ -600,7 +637,7 @@ namespace System.Runtime.CompilerServices
             maintainedData._nextTasklet = nextTaskletInStack;
 
             maintainedData._abortSuspend = false;
-            maintainedData._suspendActive = true;
+            maintainedData._suspendActive = framesCaptured;
 
             maintainedData._executionCtx = asyncFrame._currentThread._executionContext;
             maintainedData._syncCtx = asyncFrame._currentThread._synchronizationContext;
@@ -623,7 +660,7 @@ namespace System.Runtime.CompilerServices
             }
             maintainedData._nextTasklet = maintainedData._oldTaskletNext;
             maintainedData._oldTaskletNext = null;
-            maintainedData._suspendActive = false;
+            maintainedData._suspendActive = 0;
         }
 #endif
     }

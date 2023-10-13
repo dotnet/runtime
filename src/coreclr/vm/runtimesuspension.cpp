@@ -215,6 +215,7 @@ CheckRBX:
 struct TaskletCaptureData
 {
     bool inRunOfAsyncMethods;
+    int framesCaptured = 0;
     StackCrawlMark* stackMark;
     Tasklet* firstTasklet = NULL;
     Tasklet* lastTasklet = NULL;
@@ -226,7 +227,8 @@ struct TaskletCaptureData
     {
         if ((*newByRef >= currentStackTop) && (*newByRef < stackLimit))
         {
-            ActiveByRefsToStack.Push(newByRef);
+            ActiveByRefsToStack.PushNoThrow(newByRef);
+            // TODO PushNoThrow has a return value
         }
     }
 
@@ -287,7 +289,7 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+;        GC_NOTRIGGER;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
@@ -380,7 +382,7 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
         uint32_t offset;
 
         if (false) {}
-#define DISCOVER_RESTORED_REG(REGNAME) else if ((void*)pEnumData->pRD->pCallerContextPointers->REGNAME == (void*)pObject) { offset = pEnumData->GetOffsetForReg(RegisterToRestore::REGNAME); }
+#define DISCOVER_RESTORED_REG(REGNAME) else if ((void*)pEnumData->pRD->pCurrentContextPointers->REGNAME == (void*)pObject) { offset = pEnumData->GetOffsetForReg(RegisterToRestore::REGNAME); }
 #include "restoreregs_for_runtimesuspension.h"
 #undef DISCOVER_RESTORED_REG
         else
@@ -395,7 +397,8 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
 
         if (!isInterior)
         {
-            pEnumData->ObjectRefOffsets.Push(offset);
+            pEnumData->ObjectRefOffsets.PushNoThrow(offset);
+            // TODO PushNoThrow has a return value
         }
         else
         {
@@ -407,7 +410,8 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
                 byRefOffset = -byRefOffset;
             }
 
-            pEnumData->ByRefOffsets.Push(offset);
+            pEnumData->ByRefOffsets.PushNoThrow(offset);
+            // TODO PushNoThrow has a return value
         }
     };
 
@@ -415,7 +419,7 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
 
     pCM->EnumGcRefs(pCf->GetRegisterSet(),
                     pCf->GetCodeInfo(),
-                    flags,
+                    flags | NoGcDecoderValidation,
                     enumGCRefs,
                     &enumData,
                     NO_OVERRIDE_OFFSET);
@@ -426,6 +430,10 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
     memcpy(stackDataInfo.ObjectRefOffsets, enumData.ObjectRefOffsets.Ptr(), enumData.ObjectRefOffsets.Size() * sizeof(uint32_t));
     stackDataInfo.RegistersToRestore = (RegRestore*)malloc(savedRegRestoreData.Size() * sizeof(RegRestore));
     memcpy(stackDataInfo.RegistersToRestore, savedRegRestoreData.Ptr(), savedRegRestoreData.Size() * sizeof(RegRestore));
+
+    stackDataInfo.cByRefs = (uint32_t)enumData.ByRefOffsets.Size();
+    stackDataInfo.cObjectRefs = (uint32_t)enumData.ObjectRefOffsets.Size();
+    stackDataInfo.CbArgs = sizeofArgStack;
 
     StackDataInfo *pStackDataInfo = (StackDataInfo*)malloc(sizeof(StackDataInfo));
     *pStackDataInfo = stackDataInfo;
@@ -448,7 +456,7 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
         }
         else
         {
-            if (thRet.AsMethodTable()->IsValueType() || thRet.AsMethodTable()->ContainsPointers())
+            if (thRet.AsMethodTable()->IsValueType() && thRet.AsMethodTable()->ContainsPointers())
             {
                 taskletReturnType = TaskletReturnType::ObjectReference;
             }
@@ -471,7 +479,7 @@ PORTABILIT_ASSERT()
     memset(pTasklet, 0, sizeof(Tasklet));
     pTasklet->pStackData = pStackData;
     pTasklet->restoreIPAddress = (uintptr_t)GetControlPC(pCf->GetRegisterSet());
-    pTasklet->pStackDataInfo;
+    pTasklet->pStackDataInfo = pStackDataInfo;
     pTasklet->taskletReturnType = taskletReturnType;
 
     if (taskletCaptureData->firstTasklet == NULL)
@@ -484,6 +492,7 @@ PORTABILIT_ASSERT()
         taskletCaptureData->lastTasklet->pTaskletNextInStack = pTasklet;
         taskletCaptureData->lastTasklet = pTasklet;
     }
+    taskletCaptureData->framesCaptured++;
     
     // Apply byrefs to newly allocated stuff
     taskletCaptureData->ApplyByRefRelocsToNewlyAllocatedTasklet(byrefAdjustment);
@@ -492,9 +501,14 @@ PORTABILIT_ASSERT()
 }
 
 
-extern "C" Tasklet* QCALLTYPE RuntimeSuspension_CaptureTasklets(QCall::StackCrawlMarkHandle stackMark, uint8_t* returnValue, uint8_t useReturnValueHandle, void* taskAsyncData, Tasklet** lastTasklet)
+extern "C" Tasklet* QCALLTYPE RuntimeSuspension_CaptureTasklets(QCall::StackCrawlMarkHandle stackMark, uint8_t* returnValue, uint8_t useReturnValueHandle, void* taskAsyncData, Tasklet** lastTasklet, int32_t* pFramesCaptured)
 {
     GCX_COOP();
+
+    BEGINFORBIDGC();
+#ifdef _DEBUG
+    GCForbidLoaderUseHolder forbidLoaderUse;
+#endif
 
     TaskletCaptureData cdata;
     cdata.stackMark = stackMark;
@@ -503,7 +517,8 @@ extern "C" Tasklet* QCALLTYPE RuntimeSuspension_CaptureTasklets(QCall::StackCraw
 
     // We should have captured a full stack here. 
     *lastTasklet = cdata.lastTasklet;
-    _ASSERTE(FALSE);
+    *pFramesCaptured = cdata.framesCaptured;
+    ENDFORBIDGC();
     return cdata.firstTasklet;
 }
 

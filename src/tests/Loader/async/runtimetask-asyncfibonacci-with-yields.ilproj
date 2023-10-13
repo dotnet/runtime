@@ -3,6 +3,6 @@
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="runtimetask-asyncfibonacci-without-yields.il" />
+    <Compile Include="runtimetask-asyncfibonacci-with-yields.il" />
   </ItemGroup>
 </Project>

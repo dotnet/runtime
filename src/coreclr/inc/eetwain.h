@@ -103,6 +103,7 @@ enum ICodeManagerFlags
     NoReportUntracked
                     =   0x0080, // EnumGCRefs/EnumerateLiveSlots should *not* include
                                 // any untracked slots
+    NoGcDecoderValidation    =   0x0100, // Turn off GCDecoder validation
 };
 
 //*****************************************************************************
