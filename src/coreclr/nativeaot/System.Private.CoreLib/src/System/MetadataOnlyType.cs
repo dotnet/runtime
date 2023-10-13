@@ -200,7 +200,7 @@ namespace System
         object ICloneable.Clone() => this;
 
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
-            => (typeInfo == null) ? false : IsAssignableFrom(typeInfo.AsType());
+            => typeInfo != null && IsAssignableFrom(typeInfo.AsType());
 
         public override bool IsSecurityCritical => true;
         public override bool IsSecuritySafeCritical => false;
