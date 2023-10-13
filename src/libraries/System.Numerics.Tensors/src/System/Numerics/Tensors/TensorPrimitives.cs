@@ -317,7 +317,7 @@ namespace System.Numerics.Tensors
         public static int IndexOfMax(ReadOnlySpan<float> x)
         {
 #if NET8_0_OR_GREATER
-            return IndexOfMinMaxCore<MaxOperator>(x);
+            return IndexOfMinMaxCore<IndexOfMaxOperator>(x);
 #else
 
             int result = -1;
@@ -372,6 +372,9 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static int IndexOfMaxMagnitude(ReadOnlySpan<float> x)
         {
+#if NET8_0_OR_GREATER
+            return IndexOfMinMaxCore<IndexOfMaxMagnitudeOperator>(x);
+#else
             int result = -1;
 
             if (!x.IsEmpty)
@@ -409,6 +412,7 @@ namespace System.Numerics.Tensors
             }
 
             return result;
+#endif
         }
 
         /// <summary>Searches for the index of the smallest single-precision floating-point number in the specified tensor.</summary>
@@ -426,6 +430,9 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static int IndexOfMin(ReadOnlySpan<float> x)
         {
+#if NET8_0_OR_GREATER
+            return IndexOfMinMaxCore<IndexOfMinOperator>(x);
+#else
             int result = -1;
 
             if (!x.IsEmpty)
@@ -459,6 +466,7 @@ namespace System.Numerics.Tensors
             }
 
             return result;
+#endif
         }
 
         /// <summary>Searches for the index of the single-precision floating-point number with the smallest magnitude in the specified tensor.</summary>
@@ -477,6 +485,9 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static int IndexOfMinMagnitude(ReadOnlySpan<float> x)
         {
+#if NET8_0_OR_GREATER
+            return IndexOfMinMaxCore<IndexOfMinMagnitudeOperator>(x);
+#else
             int result = -1;
 
             if (!x.IsEmpty)
@@ -514,6 +525,7 @@ namespace System.Numerics.Tensors
             }
 
             return result;
+#endif
         }
 
         /// <summary>Computes the element-wise natural (base <c>e</c>) logarithm of single-precision floating-point numbers in the specified tensor.</summary>

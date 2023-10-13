@@ -1113,6 +1113,24 @@ namespace System.Numerics.Tensors.Tests
             }
         }
 
+        [Fact]
+        public static void IndexOfMinMagnitude_Temp()
+        {
+            int tensorLength = 5;
+            foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
+            {
+                using BoundedMemory<float> x = CreateTensor(tensorLength);
+                for (int i = 0; i < x.Length; i++)
+                {
+                    x[i] = i % 2 == 0 ? 42 : -42;
+                }
+
+                x[expected] = -41;
+
+                Assert.Equal(expected, TensorPrimitives.IndexOfMinMagnitude(x));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(TensorLengths))]
         public static void IndexOfMinMagnitude_FirstNaNReturned(int tensorLength)
