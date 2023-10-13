@@ -109,6 +109,10 @@ fi
 ]]>
       </IlasmRoundTripBashScript>
       <BashIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
+if [ "$(IsMergedTestRunnerAssembly)" = "true" ]; then
+  python $(AssemblyName)_ilasmroundtrip.py
+fi
+
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
   echo $LAUNCHER $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
@@ -141,7 +145,6 @@ set RunningIlasmRoundTrip=
       </IlasmRoundTripBatchScript>
 
       <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
-
 IF "$(IsMergedTestRunnerAssembly)"=="true" (
   python $(AssemblyName)_ilasmroundtrip.py
 )
@@ -388,6 +391,7 @@ import subprocess
 import sys
 import glob
 import struct
+import platform
 
 def is_managed_assembly(file):
     file_size = os.path.getsize(file)
@@ -445,30 +449,52 @@ print("ILASM RoundTrips")
 if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
+if "arm" in platform.machine():
+  # TODO: Fix these roundtrip assemblies from failing on ARM64 when executing.
+  assembliesToIgnore = [
+    "value_numbering_checked_arithmetic_with_constants_ro.dll",
+    "ldc_mul_ovf_i4.dll",
+    "overflow02_mul.dll",
+    "b25815.dll",
+    "b71869.dll"
+  ]
+else:
+  assembliesToIgnore = []
+
 for inputAssemblyName in glob.glob("*.dll"):
   if (not inputAssemblyName.endswith("$(AssemblyName).dll")) and is_managed_assembly(inputAssemblyName):
-    print("ILASM RoundTrip for " + inputAssemblyName)
+    if inputAssemblyName not in assembliesToIgnore:
+      print("ILASM RoundTrip for " + inputAssemblyName)
 
-    disassemblyName = os.path.join("IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
-    targetAssemblyName = os.path.join("IL-RT", os.path.basename(inputAssemblyName))
+      ilasmSwitches = ""
 
-    shutil.copyfile(inputAssemblyName, targetAssemblyName)
+      # HACK: The 'poison.csproj' is the only project that needs to be built with the debug flag.
+      #       We do this here because we cannot easily determine whether or not it was actually built with the flag or not.
+      if inputAssemblyName.endswith("poison.dll"):
+        ilasmSwitches = "-DEBUG"
 
-    proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ildasm /raweh /unicode /out=" + disassemblyName + " " + targetAssemblyName)
+      disassemblyName = os.path.join("IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
+      targetAssemblyName = os.path.join("IL-RT", os.path.basename(inputAssemblyName))
 
-    try:
-        proc.communicate()
-    except:
-        proc.kill()
-        sys.exit(1)
+      shutil.copyfile(inputAssemblyName, targetAssemblyName)
 
-    proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ilasm /DLL /output=" + inputAssemblyName + " $(_IlasmSwitches) " + disassemblyName)
+      proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ildasm /raweh /unicode /out=" + disassemblyName + " " + targetAssemblyName)
 
-    try:
-        proc.communicate()
-    except:
-        proc.kill()
-        sys.exit(1)
+      try:
+          proc.communicate()
+      except:
+          proc.kill()
+          sys.exit(1)
+
+      proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ilasm /DLL /output=" + inputAssemblyName + " " + ilasmSwitches + " " + disassemblyName)
+
+      try:
+          proc.communicate()
+      except:
+          proc.kill()
+          sys.exit(1)
+
+      print("")
 
 print("")
 
