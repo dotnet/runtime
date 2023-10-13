@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.20)
-
 project(System.Net.Security.Native C)
 
 add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
