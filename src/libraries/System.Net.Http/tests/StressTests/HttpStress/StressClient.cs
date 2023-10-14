@@ -140,10 +140,10 @@ namespace HttpStress
 
             async Task SendTestRequestToServer(int maxRetries)
             {
-                using HttpClient client = CreateHttpClient();
-                client.Timeout = TimeSpan.FromSeconds(5);
                 for (int remainingRetries = maxRetries; ; remainingRetries--)
                 {
+                    using HttpClient client = CreateHttpClient();
+                    client.Timeout = TimeSpan.FromSeconds(5);
                     var sw = Stopwatch.StartNew();
                     try
                     {

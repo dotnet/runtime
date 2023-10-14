@@ -370,7 +370,7 @@
     <value>Cannot access a closed stream.</value>
   </data>
   <data name="net_http_invalid_proxy_scheme" xml:space="preserve">
-    <value>Only the 'http', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.</value>
+    <value>Only the 'http', 'https', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.</value>
   </data>
   <data name="net_http_request_invalid_char_encoding" xml:space="preserve">
     <value>Request headers must contain only ASCII characters.</value>
@@ -534,6 +534,9 @@
   <data name="net_http_synchronous_reads_not_supported" xml:space="preserve">
     <value>Synchronous reads are not supported, use ReadAsync instead.</value>
   </data>
+  <data name="net_http_synchronous_writes_not_supported" xml:space="preserve">
+    <value>Synchronous writes are not supported, use WriteAsync instead.</value>
+  </data>
   <data name="net_socks_auth_failed" xml:space="preserve">
     <value>Failed to authenticate with the SOCKS server.</value>
   </data>
@@ -563,6 +566,9 @@
   </data>
   <data name="net_http_proxy_tunnel_returned_failure_status_code" xml:space="preserve">
     <value>The proxy tunnel request to proxy '{0}' failed with status code '{1}'."</value>
+  </data>
+  <data name="net_http_proxy_tunnel_error" xml:space="preserve">
+    <value>An error occurred while establishing a connection to the proxy tunnel.</value>
   </data>
   <data name="PlatformNotSupported_NetHttp" xml:space="preserve">
     <value>System.Net.Http is not supported on this platform.</value>

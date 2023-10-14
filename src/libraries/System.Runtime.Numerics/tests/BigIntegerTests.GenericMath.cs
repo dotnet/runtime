@@ -2499,11 +2499,11 @@ namespace System.Numerics.Tests
         [Fact]
         public static void TryConvertToTruncatingInt128Test()
         {
-            Assert.Equal(Zero, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.Zero));
-            Assert.Equal(One, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.One));
-            Assert.Equal(Int128MaxValue, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.MaxValue));
-            Assert.Equal(Int128MinValue, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.MinValue));
-            Assert.Equal(NegativeOne, NumberBaseHelper<Int128>.CreateTruncating<Int128>(Int128.NegativeOne));
+            Assert.Equal(Int128.Zero, NumberBaseHelper<Int128>.CreateTruncating<BigInteger>(Zero));
+            Assert.Equal(Int128.One, NumberBaseHelper<Int128>.CreateTruncating<BigInteger>(One));
+            Assert.Equal(Int128.MaxValue, NumberBaseHelper<Int128>.CreateTruncating<BigInteger>(Int128MaxValue));
+            Assert.Equal(Int128.MinValue, NumberBaseHelper<Int128>.CreateTruncating<BigInteger>(Int128MinValue));
+            Assert.Equal(Int128.NegativeOne, NumberBaseHelper<Int128>.CreateTruncating<BigInteger>(NegativeOne));
         }
 
         [Fact]

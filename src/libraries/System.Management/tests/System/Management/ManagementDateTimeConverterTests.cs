@@ -27,7 +27,14 @@ namespace System.Management.Tests
         {
             string dmtfFromDateTimeMinValue = ManagementDateTimeConverter.ToDmtfDateTime(DateTime.MinValue);
             DateTime convertedDate = ManagementDateTimeConverter.ToDateTime(dmtfFromDateTimeMinValue);
-            Assert.Equal(DateTimeKind.Unspecified, convertedDate.Kind);
+            if (PlatformDetection.IsNetFramework)
+            {
+                Assert.Equal(DateTimeKind.Unspecified, convertedDate.Kind);
+            }
+            else
+            {
+                Assert.Equal(DateTimeKind.Local, convertedDate.Kind);
+            }
             Assert.Equal(DateTime.MinValue, convertedDate);
         }
 

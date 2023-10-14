@@ -170,7 +170,7 @@ void CodeGen::genCodeForBBlist()
 
     BasicBlock* block;
 
-    for (block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (block = compiler->fgFirstBB; block != nullptr; block = block->Next())
     {
 
 #ifdef DEBUG
@@ -310,7 +310,7 @@ void CodeGen::genCodeForBBlist()
         //
         bool needLabel = (block->bbFlags & BBF_HAS_LABEL) != 0;
 
-        if (block == compiler->fgFirstColdBlock)
+        if (block->IsFirstColdBlock(compiler))
         {
 #ifdef DEBUG
             if (compiler->verbose)
@@ -319,7 +319,7 @@ void CodeGen::genCodeForBBlist()
             }
 #endif
             // We should never have a block that falls through into the Cold section
-            noway_assert(!block->bbPrev->bbFallsThrough());
+            noway_assert(!block->Prev()->bbFallsThrough());
 
             needLabel = true;
         }
@@ -330,12 +330,11 @@ void CodeGen::genCodeForBBlist()
         //
         // Note: We need to have set compCurBB before calling emitAddLabel
         //
-        if ((block->bbPrev != nullptr) && (block->bbPrev->bbJumpKind == BBJ_COND) &&
-            (block->bbWeight != block->bbPrev->bbWeight))
+        if (!block->IsFirst() && block->Prev()->KindIs(BBJ_COND) && (block->bbWeight != block->Prev()->bbWeight))
         {
             JITDUMP("Adding label due to BB weight difference: BBJ_COND " FMT_BB " with weight " FMT_WT
                     " different from " FMT_BB " with weight " FMT_WT "\n",
-                    block->bbPrev->bbNum, block->bbPrev->bbWeight, block->bbNum, block->bbWeight);
+                    block->Prev()->bbNum, block->Prev()->bbWeight, block->bbNum, block->bbWeight);
             needLabel = true;
         }
 
@@ -355,7 +354,7 @@ void CodeGen::genCodeForBBlist()
                                                              gcInfo.gcRegByrefSetCur, false DEBUG_ARG(block));
         }
 
-        if (block == compiler->fgFirstColdBlock)
+        if (block->IsFirstColdBlock(compiler))
         {
             // We require the block that starts the Cold section to have a label
             noway_assert(block->bbEmitCookie);
@@ -519,7 +518,7 @@ void CodeGen::genCodeForBBlist()
 #endif // DEBUG
 
 #if defined(DEBUG)
-        if (block->bbNext == nullptr)
+        if (block->IsLast())
         {
 // Unit testing of the emitter: generate a bunch of instructions into the last block
 // (it's as good as any, but better than the prologue, which can only be a single instruction
@@ -547,10 +546,14 @@ void CodeGen::genCodeForBBlist()
 
         /* Is this the last block, and are there any open scopes left ? */
 
-        bool isLastBlockProcessed = (block->bbNext == nullptr);
+        bool isLastBlockProcessed;
         if (block->isBBCallAlwaysPair())
         {
-            isLastBlockProcessed = (block->bbNext->bbNext == nullptr);
+            isLastBlockProcessed = block->Next()->IsLast();
+        }
+        else
+        {
+            isLastBlockProcessed = block->IsLast();
         }
 
         if (compiler->opts.compDbgInfo && isLastBlockProcessed)
@@ -615,11 +618,11 @@ void CodeGen::genCodeForBBlist()
             // Note: we may be generating a few too many NOPs for the case of call preceding an epilog. Technically,
             // if the next block is a BBJ_RETURN, an epilog will be generated, but there may be some instructions
             // generated before the OS epilog starts, such as a GS cookie check.
-            if ((block->bbNext == nullptr) || !BasicBlock::sameEHRegion(block, block->bbNext))
+            if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()))
             {
                 // We only need the NOP if we're not going to generate any more code as part of the block end.
 
-                switch (block->bbJumpKind)
+                switch (block->GetJumpKind())
                 {
                     case BBJ_ALWAYS:
                     case BBJ_THROW:
@@ -636,7 +639,7 @@ void CodeGen::genCodeForBBlist()
                         break;
 
                     case BBJ_NONE:
-                        if (block->bbNext == nullptr)
+                        if (block->IsLast())
                         {
                             // Call immediately before the end of the code; we should never get here    .
                             instGen(INS_BREAKPOINT); // This should never get executed
@@ -662,7 +665,7 @@ void CodeGen::genCodeForBBlist()
 
         /* Do we need to generate a jump or return? */
 
-        switch (block->bbJumpKind)
+        switch (block->GetJumpKind())
         {
             case BBJ_RETURN:
                 genExitCode(block);
@@ -679,10 +682,10 @@ void CodeGen::genCodeForBBlist()
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if ((block->bbNext == nullptr) || (block->bbNext->bbFlags & BBF_FUNCLET_BEG) ||
-                    !BasicBlock::sameEHRegion(block, block->bbNext) ||
-                    (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->bbNext)) ||
-                    block->bbNext == compiler->fgFirstColdBlock)
+                if (block->IsLast() || (block->Next()->bbFlags & BBF_FUNCLET_BEG) ||
+                    !BasicBlock::sameEHRegion(block, block->Next()) ||
+                    (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
+                    block->IsLastHotBlock(compiler))
                 {
                     instGen(INS_BREAKPOINT); // This should never get executed
                 }
@@ -746,7 +749,7 @@ void CodeGen::genCodeForBBlist()
                 // with a jump, do not remove jumps from such blocks.
                 // Do not remove a jump between hot and cold regions.
                 bool isRemovableJmpCandidate =
-                    !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->bbJumpDest);
+                    !block->hasAlign() && !compiler->fgInDifferentRegions(block, block->GetJumpDest());
 
 #ifdef TARGET_AMD64
                 // AMD64 requires an instruction after a call instruction for unwinding
@@ -755,10 +758,10 @@ void CodeGen::genCodeForBBlist()
                 isRemovableJmpCandidate = isRemovableJmpCandidate && !GetEmitter()->emitIsLastInsCall();
 #endif // TARGET_AMD64
 
-                inst_JMP(EJ_jmp, block->bbJumpDest, isRemovableJmpCandidate);
+                inst_JMP(EJ_jmp, block->GetJumpDest(), isRemovableJmpCandidate);
             }
 #else
-                inst_JMP(EJ_jmp, block->bbJumpDest);
+                inst_JMP(EJ_jmp, block->GetJumpDest());
 #endif // TARGET_XARCH
 
                 FALLTHROUGH;
@@ -779,14 +782,14 @@ void CodeGen::genCodeForBBlist()
                 // block, even if one is not otherwise needed, to be able to calculate the size of this
                 // loop (loop size is calculated by walking the instruction groups; see emitter::getLoopSize()).
 
-                if (block->bbJumpDest->isLoopAlign())
+                if (block->GetJumpDest()->isLoopAlign())
                 {
-                    GetEmitter()->emitSetLoopBackEdge(block->bbJumpDest);
+                    GetEmitter()->emitSetLoopBackEdge(block->GetJumpDest());
 
-                    if (block->bbNext != nullptr)
+                    if (!block->IsLast())
                     {
-                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->bbNext->bbNum);
-                        block->bbNext->bbFlags |= BBF_HAS_LABEL;
+                        JITDUMP("Mark " FMT_BB " as label: alignment end-of-loop\n", block->Next()->bbNum);
+                        block->Next()->bbFlags |= BBF_HAS_LABEL;
                     }
                 }
 #endif // FEATURE_LOOP_ALIGN
@@ -812,13 +815,13 @@ void CodeGen::genCodeForBBlist()
             assert(ShouldAlignLoops());
             assert(!block->isBBCallAlwaysPairTail());
 #if FEATURE_EH_CALLFINALLY_THUNKS
-            assert(block->bbJumpKind != BBJ_CALLFINALLY);
+            assert(!block->KindIs(BBJ_CALLFINALLY));
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->bbJumpKind == BBJ_ALWAYS));
+            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS)));
         }
 
-        if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
+        if (!block->IsLast() && block->Next()->isLoopAlign())
         {
             if (compiler->opts.compJitHideAlignBehindJmp)
             {
@@ -882,8 +885,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //    None.
 //
 // Assumptions:
-//    The lclVar must be a register candidate (lvRegCandidate)
-
+//    The lclVar must be a register candidate (lvIsRegCandidate())
+//
 void CodeGen::genSpillVar(GenTree* tree)
 {
     unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
@@ -892,7 +895,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     assert(varDsc->lvIsRegCandidate());
 
     // We don't actually need to spill if it is already living in memory
-    bool needsSpill = ((tree->gtFlags & GTF_VAR_DEF) == 0 && varDsc->lvIsInReg());
+    const bool needsSpill = ((tree->gtFlags & GTF_VAR_DEF) == 0) && varDsc->lvIsInReg();
     if (needsSpill)
     {
         // In order for a lclVar to have been allocated to a register, it must not have been aliasable, and can
@@ -949,12 +952,12 @@ void CodeGen::genSpillVar(GenTree* tree)
     {
         // We only have 'GTF_SPILL' and 'GTF_SPILLED' on a def of a write-thru lclVar
         // or a single-def var that is to be spilled at its definition.
-        assert((varDsc->IsAlwaysAliveInMemory()) && ((tree->gtFlags & GTF_VAR_DEF) != 0));
+        assert(varDsc->IsAlwaysAliveInMemory() && ((tree->gtFlags & GTF_VAR_DEF) != 0));
     }
 
     if (needsSpill)
     {
-        // We need this after "lvRegNum" has change because now we are sure that varDsc->lvIsInReg() is false.
+        // We need this after "lvRegNum" has changed because now we are sure that varDsc->lvIsInReg() is false.
         // "SiVarLoc" constructor uses the "LclVarDsc" of the variable.
         varLiveKeeper->siUpdateVariableLiveRange(varDsc, varNum);
     }
@@ -1211,39 +1214,48 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // Reset spilled flag, since we are going to load a local variable from its home location.
             unspillTree->gtFlags &= ~GTF_SPILLED;
 
-            GenTreeLclVar* lcl       = unspillTree->AsLclVar();
-            LclVarDsc*     varDsc    = compiler->lvaGetDesc(lcl);
-            var_types      spillType = varDsc->GetRegisterType(lcl);
-            assert(spillType != TYP_UNDEF);
+            GenTreeLclVar* lcl    = unspillTree->AsLclVar();
+            LclVarDsc*     varDsc = compiler->lvaGetDesc(lcl);
 
-// TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // Load local variable from its home location.
-            // Never allow truncating the locals here, otherwise a subsequent
-            // use of the local with a wider type would see the truncated
-            // value. We do allow wider loads as those can be efficient even
-            // when unaligned and might be smaller encoding wise (on xarch).
-            var_types lclLoadType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
-            assert(lclLoadType != TYP_UNDEF);
-            if (genTypeSize(spillType) < genTypeSize(lclLoadType))
+            // Pick type to reload register from stack with. Note that in
+            // general, the type of 'lcl' does not have any relation to the
+            // type of 'varDsc':
+            //
+            // * For normalize-on-load (NOL) locals it is wider under normal
+            // circumstances, where morph has added a cast on top. In some
+            // cases it is the same, when morph has used a subrange assertion
+            // to avoid normalizing.
+            //
+            // * For all locals it can be narrower in some cases, when
+            // lowering optimizes to use a smaller typed `cmp` (e.g. 32-bit cmp
+            // for 64-bit local, or 8-bit cmp for 16-bit local).
+            //
+            // * For byrefs it can differ in GC-ness (TYP_I_IMPL vs TYP_BYREF).
+            //
+            // In the NOL case the potential use of subrange assertions means
+            // we always have to normalize, even if 'lcl' is wide; we could
+            // have a GTF_SPILLED LCL_VAR<int>(NOL local) with a future
+            // LCL_VAR<ushort>(same NOL local), where the latter local then
+            // relies on the normalization to have happened here as part of
+            // unspilling.
+            //
+            var_types unspillType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
+
+            if (varTypeIsGC(lcl))
             {
-                spillType = lclLoadType;
+                unspillType = lcl->TypeGet();
             }
 
 #if defined(TARGET_LOONGARCH64)
-            if (varTypeIsFloating(spillType) && emitter::isGeneralRegister(tree->GetRegNum()))
+            if (varTypeIsFloating(unspillType) && emitter::isGeneralRegister(tree->GetRegNum()))
             {
-                spillType = spillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
+                unspillType = unspillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
             }
 #endif
-#elif defined(TARGET_ARM)
-// No normalizing for ARM
-#else
-            NYI("Unspilling not implemented for this target architecture.");
-#endif
+
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
             bool isLastUse = lcl->IsLastUse(0);
-            genUnspillLocal(lcl->GetLclNum(), spillType, lcl->AsLclVar(), tree->GetRegNum(), reSpill, isLastUse);
+            genUnspillLocal(lcl->GetLclNum(), unspillType, lcl->AsLclVar(), tree->GetRegNum(), reSpill, isLastUse);
         }
         else if (unspillTree->IsMultiRegLclVar())
         {
@@ -1868,13 +1880,10 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // Emit store instructions to store the registers produced by the GT_FIELD_LIST into the outgoing
 // argument area.
 
-#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
-        // storing of TYP_SIMD12 (i.e. Vector3) argument.
-        if (compMacOsArm64Abi() && (type == TYP_SIMD12))
+#if defined(FEATURE_SIMD)
+        if (type == TYP_SIMD12)
         {
-            // Need an additional integer register to extract upper 4 bytes from data.
-            regNumber tmpReg = nextArgNode->GetSingleTempReg();
-            GetEmitter()->emitStoreSimd12ToLclOffset(outArgVarNum, thisFieldOffset, reg, tmpReg);
+            GetEmitter()->emitStoreSimd12ToLclOffset(outArgVarNum, thisFieldOffset, reg, nextArgNode);
         }
         else
 #endif // FEATURE_SIMD
@@ -2082,10 +2091,11 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
 // node in codegen after code has been emitted for it.
 //
 // Arguments:
-//     tree   -  Gentree node
+//     tree   -  GenTree node
 //
 // Return Value:
 //     None.
+//
 void CodeGen::genProduceReg(GenTree* tree)
 {
 #ifdef DEBUG
@@ -2322,8 +2332,8 @@ void CodeGen::genEmitCallIndir(int                   callType,
     int argSize = 0;
 #endif // !defined(TARGET_X86)
 
-    regNumber iReg = (indir->Base()  != nullptr) ? indir->Base()->GetRegNum() : REG_NA;
-    regNumber xReg = (indir->Index() != nullptr) ? indir->Index()->GetRegNum() : REG_NA;
+    regNumber iReg = indir->HasBase()  ? indir->Base()->GetRegNum() : REG_NA;
+    regNumber xReg = indir->HasIndex() ? indir->Index()->GetRegNum() : REG_NA;
 
     // These should have been put in volatile registers to ensure they do not
     // get overridden by epilog sequence during tailcall.
@@ -2608,10 +2618,10 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 //
 void CodeGen::genCodeForJcc(GenTreeCC* jcc)
 {
-    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+    assert(compiler->compCurBB->KindIs(BBJ_COND));
     assert(jcc->OperIs(GT_JCC));
 
-    inst_JCC(jcc->gtCondition, compiler->compCurBB->bbJumpDest);
+    inst_JCC(jcc->gtCondition, compiler->compCurBB->GetJumpDest());
 }
 
 //------------------------------------------------------------------------

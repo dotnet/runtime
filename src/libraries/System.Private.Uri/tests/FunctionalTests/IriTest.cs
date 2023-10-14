@@ -617,7 +617,6 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [MemberData(nameof(Iri_ExpandingContents_TooLong))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Disable until the .NET FX CI machines get the latest patches.")]
         public static void Iri_ExpandingContents_ThrowsIfTooLong(string input)
         {
             Assert.Throws<UriFormatException>(() => new Uri(input));

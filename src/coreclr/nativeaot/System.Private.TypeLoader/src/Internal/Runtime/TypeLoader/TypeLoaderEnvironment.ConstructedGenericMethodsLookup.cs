@@ -196,9 +196,10 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        public bool TryGetGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out RuntimeTypeHandle[] genericMethodArgumentHandles)
+        public static bool TryGetGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out RuntimeTypeHandle[] genericMethodArgumentHandles)
         {
-            if (!TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out _, out genericMethodArgumentHandles))
+            TypeLoaderEnvironment instance = TypeLoaderEnvironment.InstanceOrNull;
+            if (instance == null || !instance.TryGetDynamicGenericMethodComponents(methodDictionary, out declaringType, out _, out genericMethodArgumentHandles))
                 if (!TryGetStaticGenericMethodComponents(methodDictionary, out declaringType, out _, out _, out genericMethodArgumentHandles))
                     return false;
 
@@ -363,7 +364,7 @@ namespace Internal.Runtime.TypeLoader
                 return true;
             }
         }
-        private unsafe bool TryGetStaticGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out TypeManagerHandle typeManager, out uint nameAndSigOffset, out RuntimeTypeHandle[] genericMethodArgumentHandles)
+        private static unsafe bool TryGetStaticGenericMethodComponents(IntPtr methodDictionary, out RuntimeTypeHandle declaringType, out TypeManagerHandle typeManager, out uint nameAndSigOffset, out RuntimeTypeHandle[] genericMethodArgumentHandles)
         {
             // Generic method dictionaries have a header that has the hash code in it. Locate the header
             IntPtr dictionaryHeader = IntPtr.Subtract(methodDictionary, IntPtr.Size);

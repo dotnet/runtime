@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (constructorDelegate == null)
             {
-                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
+                ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
             }
 
             state.Current.ReturnValue = constructorDelegate();

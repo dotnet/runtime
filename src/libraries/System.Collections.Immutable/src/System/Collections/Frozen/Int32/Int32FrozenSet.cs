@@ -25,10 +25,7 @@ namespace System.Collections.Frozen
             int[] entries = ArrayPool<int>.Shared.Rent(count);
             source.CopyTo(entries);
 
-            _hashTable = FrozenHashTable.Create(
-                count,
-                index => entries[index],
-                delegate { });
+            _hashTable = FrozenHashTable.Create(new Span<int>(entries, 0, count), hashCodesAreUnique: true);
 
             ArrayPool<int>.Shared.Return(entries);
         }

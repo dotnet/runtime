@@ -167,11 +167,6 @@
         <target state="translated">Le résultat ne peut pas être appelé sur un Match ayant échoué.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">Les remplacements d'expressions régulières avec des substitutions de groupes ne sont pas pris en charge avec RegexOptions.NonBacktracking.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">La collection est en lecture seule.</target>

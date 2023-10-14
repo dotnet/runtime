@@ -962,7 +962,7 @@ namespace System.Xml
 
             ArgumentNullException.ThrowIfNull(whitespace);
 
-            if (whitespace.AsSpan().IndexOfAnyExcept(" \t\r\n") >= 0)
+            if (whitespace.AsSpan().ContainsAnyExcept(" \t\r\n"))
             {
                 throw new ArgumentException(SR.XmlOnlyWhitespace, nameof(whitespace));
             }
@@ -1126,8 +1126,7 @@ namespace System.Xml
 
             if (_attributeValue != null)
             {
-                Span<char> chars = stackalloc char[2] { highChar, lowChar };
-                WriteAttributeText(new string(chars));
+                WriteAttributeText(new string([highChar, lowChar]));
             }
 
             if (!_isXmlnsAttribute)

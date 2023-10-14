@@ -32,7 +32,7 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
   echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
-  echo "                                  linux-musl, linux-bionic or haiku."
+  echo "                                  linux-musl, linux-bionic, tizen, or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -67,8 +67,8 @@ usage()
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net8.0 or net48."
-  echo "                             [Default: net8.0]"
+  echo "  --framework (-f)           Build framework: net9.0 or net48."
+  echo "                             [Default: net9.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -84,6 +84,7 @@ usage()
   echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
   echo "  --ninja                    Optional argument: set to true to use Ninja instead of Make to run the native build."
   echo "  --pgoinstrument            Optional argument: build PGO-instrumented runtime"
+  echo "  --fsanitize                Optional argument: Specify native sanitizers to instrument the native build with. Supported values are: 'address'."
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -132,19 +133,18 @@ usage()
 
 initDistroRid()
 {
-    source "$scriptroot"/native/init-distro-rid.sh
+    source "$scriptroot"/common/native/init-distro-rid.sh
 
     local passedRootfsDir=""
     local targetOs="$1"
     local targetArch="$2"
     local isCrossBuild="$3"
-    local isPortableBuild="$4"
 
-    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not OSX that doesn't use rootfs
-    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" ]]; then
+    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
-    initDistroRidGlobal "${targetOs}" "${targetArch}" "${isPortableBuild}" "${passedRootfsDir}"
+    initDistroRidGlobal "${targetOs}" "${targetArch}" "${passedRootfsDir}"
 }
 
 showSubsetHelp()
@@ -509,6 +509,26 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
+      -fsanitize)
+      if [ -z ${2+x} ]; then
+        echo "No value for -fsanitize is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      arguments="$arguments /p:EnableNativeSanitizers=$2"
+      shift 2
+      ;;
+
+      -fsanitize=*)
+      sanitizers="${opt/#-fsanitize=/}" # -fsanitize=address => address
+      arguments="$arguments /p:EnableNativeSanitizers=$sanitizers"
+      shift 2
+      ;;
+
+      -verbose)
+      arguments="$arguments /p:CoreclrVerbose=true"
+      shift 1
+      ;;
+
       *)
       extraargs="$extraargs $1"
       shift 1
@@ -533,7 +553,7 @@ if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError 0"
 fi
 
-initDistroRid "$os" "$arch" "$crossBuild" "$portableBuild"
+initDistroRid "$os" "$arch" "$crossBuild"
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.

@@ -192,10 +192,10 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "i", "\u0130", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "i", "\u0130", CompareOptions.IgnoreCase, -1 };
 
-            yield return new object[] { s_invariantCompare, "\u00C0", "A\u0300", CompareOptions.None, PlatformDetection.IsHybridGlobalizationOnOSX ? 1 : 0 };
+            yield return new object[] { s_invariantCompare, "\u00C0", "A\u0300", CompareOptions.None, 0 };
             yield return new object[] { s_invariantCompare, "\u00C0", "A\u0300", CompareOptions.Ordinal, 1 };
             yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.None, 1 };
-            yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.IgnoreCase, PlatformDetection.IsHybridGlobalizationOnOSX ? 1 : 0 };
+            yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.Ordinal, 1 };
             yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.OrdinalIgnoreCase, 1 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, -1 };

@@ -912,13 +912,12 @@ static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
     STATIC_CONTRACT_FAULT;
 
     HMODULE hMod;
-    UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+    ErrorModeHolder errorMode{};
     {
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
         hMod = WszLoadLibrary(lpLibFileName);
         *pLastError = GetLastError();
     }
-    SetErrorMode(last);
     return hMod;
 }
 
@@ -949,13 +948,12 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     STATIC_CONTRACT_FAULT;
 
     HMODULE hMod;
-    UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
+    ErrorModeHolder errorMode{};
     {
         INDEBUG(PEDecoder::ForceRelocForDLL(lpLibFileName));
-        hMod = WszLoadLibraryEx(lpLibFileName, hFile, dwFlags);
+        hMod = WszLoadLibrary(lpLibFileName, hFile, dwFlags);
         *pLastError = GetLastError();
     }
-    SetErrorMode(last);
     return hMod;
 }
 

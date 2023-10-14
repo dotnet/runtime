@@ -164,7 +164,7 @@ namespace System.Security.Cryptography
                     }
 
                     // Verify that all the padding bytes are 0s
-                    if (block.Slice(block.Length - padBytes, padBytes - 1).IndexOfAnyExcept((byte)0) >= 0)
+                    if (block.Slice(block.Length - padBytes, padBytes - 1).ContainsAnyExcept((byte)0))
                     {
                         throw new CryptographicException(SR.Cryptography_InvalidPadding);
                     }

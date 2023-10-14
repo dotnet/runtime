@@ -51,7 +51,7 @@ namespace System.Collections.Immutable.Tests
                         int[] values = Enumerable.Range(0, inputLength).Select(i => random.Next()).ToArray();
                         Debug.WriteLine("Adding {0} elements to the list.", inputLength);
                         expected.AddRange(values);
-                        actual = actual.AddRange(values);
+                        actual = actual.AddRange((IEnumerable<int>)values);
                         VerifyBalanced(actual);
                         break;
                     case Operation.Insert:
@@ -139,10 +139,10 @@ namespace System.Collections.Immutable.Tests
         public void AddRangeTest()
         {
             ImmutableList<int> list = ImmutableList<int>.Empty;
-            list = list.AddRange(new[] { 1, 2, 3 });
+            list = list.AddRange((IEnumerable<int>)new[] { 1, 2, 3 });
             list = list.AddRange(Enumerable.Range(4, 2));
-            list = list.AddRange(ImmutableList<int>.Empty.AddRange(new[] { 6, 7, 8 }));
-            list = list.AddRange(new int[0]);
+            list = list.AddRange(ImmutableList<int>.Empty.AddRange((IEnumerable<int>)new[] { 6, 7, 8 }));
+            list = list.AddRange((IEnumerable<int>)new int[0]);
             list = list.AddRange(ImmutableList<int>.Empty.AddRange(Enumerable.Range(9, 1000)));
             Assert.Equal(Enumerable.Range(1, 1008), list);
         }
@@ -165,7 +165,7 @@ namespace System.Collections.Immutable.Tests
             ImmutableList<string> emptyList = ImmutableList.Create<string>();
 
             // Adding an empty list to an empty list should yield the original list.
-            Assert.Same(emptyList, emptyList.AddRange(new string[0]));
+            Assert.Same(emptyList, emptyList.AddRange(Enumerable.Empty<string>()));
 
             // Adding a non-empty immutable list to an empty one should return the added list.
             ImmutableList<string> nonEmptyListDefaultComparer = ImmutableList.Create("5");
@@ -587,6 +587,9 @@ namespace System.Collections.Immutable.Tests
             list = ImmutableList.Create("a", "b");
             Assert.Equal(2, list.Count);
 
+            list = ImmutableList.Create((ReadOnlySpan<string>)new[] { "a", "b" });
+            Assert.Equal(2, list.Count);
+
             list = ImmutableList.CreateRange((IEnumerable<string>)new[] { "a", "b" });
             Assert.Equal(2, list.Count);
         }
@@ -817,7 +820,7 @@ namespace System.Collections.Immutable.Tests
             ImmutableList<int> list = new[] { 1, 2, 3 }.ToImmutableList();
 
             ref readonly int safeRef = ref list.ItemRef(1);
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(2, list.ItemRef(1));
 
@@ -836,7 +839,7 @@ namespace System.Collections.Immutable.Tests
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
-            return ImmutableList<T>.Empty.AddRange(contents);
+            return ImmutableList<T>.Empty.AddRange((IEnumerable<T>)contents);
         }
 
         protected override void RemoveAllTestHelper<T>(ImmutableList<T> list, Predicate<T> test)

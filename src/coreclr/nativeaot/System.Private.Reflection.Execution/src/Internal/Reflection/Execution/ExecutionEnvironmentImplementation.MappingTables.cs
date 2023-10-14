@@ -25,7 +25,6 @@ using System.Threading;
 
 using CanonicalFormKind = global::Internal.TypeSystem.CanonicalFormKind;
 
-
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Reflection.Execution
@@ -103,7 +102,7 @@ namespace Internal.Reflection.Execution
         public sealed override QTypeDefinition GetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle)
         {
             Debug.Assert(!RuntimeAugments.IsGenericType(runtimeTypeHandle));
-            if (!TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(runtimeTypeHandle, out QTypeDefinition qTypeDefinition))
+            if (!TypeLoaderEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out QTypeDefinition qTypeDefinition))
             {
                 // This should be unreachable unless there's a compiler bug
                 throw new InvalidOperationException();
@@ -126,7 +125,7 @@ namespace Internal.Reflection.Execution
         /// <param name="runtimeTypeHandle">Runtime type handle (MethodTable) for the given type</param>
         public sealed override unsafe bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle)
         {
-            return TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle);
+            return TypeLoaderEnvironment.TryGetNamedTypeForMetadata(qTypeDefinition, out runtimeTypeHandle);
         }
 
         //
@@ -304,7 +303,7 @@ namespace Internal.Reflection.Execution
             return TypeLoaderEnvironment.Instance.TryGetConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out runtimeTypeHandle);
         }
 
-        public sealed override MethodInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
+        public sealed override MethodBaseInvoker TryGetMethodInvoker(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
             MethodBase methodInfo = ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
 
@@ -566,74 +565,24 @@ namespace Internal.Reflection.Execution
         // ldftn reverse lookup hash. Must be cleared and reset if the module list changes. (All sets to
         // this variable must happen under a lock)
         private volatile KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] _ldftnReverseLookup_InvokeMap;
-        private Func<NativeFormatModuleInfo, FunctionPointersToOffsets> _computeLdFtnLookupInvokeMapInvokeMap = ComputeLdftnReverseLookup_InvokeMap;
 
         /// <summary>
-        /// Initialize a lookup array of module to function pointer/parser offset pair arrays. Do so in a manner that will allow
-        /// future work which will invalidate the cache (by setting it to null)
+        /// Initialize a lookup array of module to function pointer/parser offset pair arrays.
         /// </summary>
-        /// <param name="ldftnReverseLookupStatic">pointer to static which holds cache value. This is treated as a volatile variable</param>
-        /// <param name="lookupComputer"></param>
-        /// <returns></returns>
-        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_Helper(ref KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldftnReverseLookupStatic, Func<NativeFormatModuleInfo, FunctionPointersToOffsets> lookupComputer)
-        {
-            KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = Volatile.Read(ref ldftnReverseLookupStatic);
-
-            if (ldFtnReverseLookup != null)
-                return ldFtnReverseLookup;
-            else
-            {
-                lock (this)
-                {
-                    ldFtnReverseLookup = Volatile.Read(ref ldftnReverseLookupStatic);
-
-                    // double checked lock, safe due to use of volatile on s_ldftnReverseHashes
-                    if (ldFtnReverseLookup != null)
-                        return ldFtnReverseLookup;
-
-                    // FUTURE: add a module load callback to invalidate this cache if a new module is loaded.
-                    while (true)
-                    {
-                        int size = 0;
-                        foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
-                        {
-                            size++;
-                        }
-
-                        ldFtnReverseLookup = new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[size];
-                        int index = 0;
-                        bool restart = false;
-                        foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
-                        {
-                            // If the module list changes during execution of this code, rebuild from scratch
-                            if (index >= ldFtnReverseLookup.Length)
-                            {
-                                restart = true;
-                                break;
-                            }
-
-                            ldFtnReverseLookup[index] = new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, lookupComputer(module));
-                            index++;
-                        }
-
-                        if (restart)
-                            continue;
-
-                        // unless we need to repeat the module enumeration, only execute the body of this while loop once.
-                        break;
-                    }
-
-                    Volatile.Write(ref ldftnReverseLookupStatic, ldFtnReverseLookup);
-                    return ldFtnReverseLookup;
-                }
-            }
-        }
-
         private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_InvokeMap()
         {
-#pragma warning disable 0420 // GetLdFtnReverseLookups_Helper treats its first parameter as volatile by using explicit Volatile operations
-            return GetLdFtnReverseLookups_Helper(ref _ldftnReverseLookup_InvokeMap, _computeLdFtnLookupInvokeMapInvokeMap);
-#pragma warning restore 0420
+            KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = _ldftnReverseLookup_InvokeMap;
+            if (ldFtnReverseLookup == null)
+            {
+                var ldFtnReverseLookupBuilder = new ArrayBuilder<KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>>();
+                foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+                {
+                    ldFtnReverseLookupBuilder.Add(new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeLdftnReverseLookup_InvokeMap(module)));
+                }
+                ldFtnReverseLookup = ldFtnReverseLookupBuilder.ToArray();
+                _ldftnReverseLookup_InvokeMap = ldFtnReverseLookup;
+            }
+            return ldFtnReverseLookup;
         }
 
         internal unsafe void GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(IntPtr originalLdFtnResult, out IntPtr canonOriginalLdFtnResult, out IntPtr instantiationArgument)
@@ -832,7 +781,7 @@ namespace Internal.Reflection.Execution
                 {
                     if ((entryFlags & InvokeTableFlags.RequiresInstArg) != 0)
                     {
-                        bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(instantiationArgument, out declaringTypeHandle, out genericMethodTypeArgumentHandles);
+                        bool success = TypeLoaderEnvironment.TryGetGenericMethodComponents(instantiationArgument, out declaringTypeHandle, out genericMethodTypeArgumentHandles);
                         Debug.Assert(success);
                     }
                     else
@@ -1087,7 +1036,7 @@ namespace Internal.Reflection.Execution
             {
                 get
                 {
-                    ParameterInfo[] parameters = _methodBase.GetParametersNoCopy();
+                    ReadOnlySpan<ParameterInfo> parameters = _methodBase.GetParametersAsSpan();
                     LowLevelList<RuntimeTypeHandle> result = new LowLevelList<RuntimeTypeHandle>(parameters.Length);
 
                     for (int i = 0; i < parameters.Length; i++)
@@ -1132,7 +1081,7 @@ namespace Internal.Reflection.Execution
             {
                 get
                 {
-                    ParameterInfo[] parameters = _methodBase.GetParametersNoCopy();
+                    ReadOnlySpan<ParameterInfo> parameters = _methodBase.GetParametersAsSpan();
                     bool[] result = new bool[parameters.Length + 1];
 
                     MethodInfo reflectionMethodInfo = _methodBase as MethodInfo;
@@ -1152,8 +1101,8 @@ namespace Internal.Reflection.Execution
                 {
                     Debug.Assert(_metadataReader != null && !_methodHandle.Equals(default(MethodHandle)));
 
-                    _returnTypeAndParametersHandlesCache = new Handle[_methodBase.GetParametersNoCopy().Length + 1];
-                    _returnTypeAndParametersTypesCache = new Type[_methodBase.GetParametersNoCopy().Length + 1];
+                    _returnTypeAndParametersHandlesCache = new Handle[_methodBase.GetParametersAsSpan().Length + 1];
+                    _returnTypeAndParametersTypesCache = new Type[_methodBase.GetParametersAsSpan().Length + 1];
 
                     MethodSignature signature = _methodHandle.GetMethod(_metadataReader).Signature.GetMethodSignature(_metadataReader);
 
@@ -1167,7 +1116,7 @@ namespace Internal.Reflection.Execution
                     foreach (Handle paramSigHandle in signature.Parameters)
                     {
                         _returnTypeAndParametersHandlesCache[index] = paramSigHandle;
-                        _returnTypeAndParametersTypesCache[index] = _methodBase.GetParametersNoCopy()[index - 1].ParameterType;
+                        _returnTypeAndParametersTypesCache[index] = _methodBase.GetParametersAsSpan()[index - 1].ParameterType;
                         index++;
                     }
                 }

@@ -304,7 +304,7 @@ namespace System.Reflection.Runtime.General
                 bindingFlags |= BindingFlags.IgnoreCase;
             }
             RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
-            ParameterInfo[] parameters = invokeMethod.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = invokeMethod.GetParametersAsSpan();
             int numParameters = parameters.Length;
             Type[] parameterTypes = new Type[numParameters];
             for (int i = 0; i < numParameters; i++)
@@ -324,15 +324,6 @@ namespace System.Reflection.Runtime.General
             }
             return null;
         }
-
-#if FEATURE_COMINTEROP
-        public sealed override Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError)
-        {
-            // Note: "throwOnError" is a vacuous parameter. Any errors due to the CLSID not being registered or the server not being found will happen
-            // on the Activator.CreateInstance() call. GetTypeFromCLSID() merely wraps the data in a Type object without any validation.
-            return RuntimeCLSIDTypeInfo.GetRuntimeCLSIDTypeInfo(clsid, server);
-        }
-#endif
 
         public sealed override IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle)
         {
@@ -440,7 +431,7 @@ namespace System.Reflection.Runtime.General
 
             RuntimeMethodInfo invokeMethod = runtimeType.GetInvokeMethod();
 
-            MethodInvoker methodInvoker = invokeMethod.MethodInvoker;
+            MethodBaseInvoker methodInvoker = invokeMethod.MethodInvoker;
             IntPtr invokeThunk = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetDynamicInvokeThunk(methodInvoker);
 
             info = new DynamicInvokeInfo(invokeMethod, invokeThunk);

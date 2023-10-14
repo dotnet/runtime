@@ -7,11 +7,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
@@ -248,11 +246,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public delegate void MyEventHandler (object sender, int i);
 
 			[Kept]
-			// ILLink always keeps event methods when an event is kept, so this generates warnings
-			// on the event itself (since an event access is considered to reference the annotated add method),
-			// and on the add method (if it is accessed through reflection).
-			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--", ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--", ProducedBy = Tool.Trimmer)]
 			public event MyEventHandler RUCEvent {
 				[Kept]
@@ -940,7 +933,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class CompilerGeneratedCodeDAM
 		{
 			[Kept]
-			[ExpectedWarning ("IL2111", nameof (LambdaWithDAM))]
+			[ExpectedWarning ("IL2111")]
 			static void LambdaWithDAM ()
 			{
 				Action<Type> a =

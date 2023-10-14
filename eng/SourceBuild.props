@@ -1,3 +1,5 @@
+<!-- Whenever altering this or other SourceBuild* files, please include @dotnet/source-build-internal as a reviewer. -->
+
 <Project>
 
   <PropertyGroup>
@@ -51,6 +53,11 @@
 
   <Target Name="CategorizeRuntimeSupplementalArtifacts"
           BeforeTargets="GetCategorizedIntermediateNupkgContents">
+    <PropertyGroup>
+      <!-- Symbols archive is too big for main intermediate package, add it to a different one. -->
+      <SymbolsIntermediateNupkgCategory>runtime</SymbolsIntermediateNupkgCategory>
+    </PropertyGroup>
+
     <ItemGroup>
       <!--
         Runtime artifacts are too large to fit into a single package (Azure DevOps feeds 500 mb constraint).
@@ -61,10 +68,12 @@
       <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*Microsoft.DotNet.ILCompiler.*.nupkg" Category="ILCompiler" />
 
       <IntermediateNupkgArtifactFile
-        Include="
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz;
-          $(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
+        Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
         Category="Crossgen2Pack" />
+        
+        <IntermediateNupkgArtifactFile
+        Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*.tar.gz;"
+        Category="Crossgen2Archive" />
     </ItemGroup>
   </Target>
 

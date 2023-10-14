@@ -40,17 +40,6 @@ struct _MonoBundledSatelliteAssembly {
 	unsigned int size;
 };
 
-#ifndef DISABLE_DLLMAP
-typedef struct _MonoDllMap MonoDllMap;
-struct _MonoDllMap {
-	char *dll;
-	char *target;
-	char *func;
-	char *target_func;
-	MonoDllMap *next;
-};
-#endif
-
 typedef struct {
 	GHashTable *delegate_invoke_cache;
 	GHashTable *delegate_invoke_virtual_cache;
@@ -88,6 +77,7 @@ typedef struct {
 	GHashTable *cominterop_invoke_cache;
 	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
 	GHashTable *thunk_invoke_cache;
+	GHashTable *unsafe_accessor_cache;
 } MonoWrapperCaches;
 
 /* Lock-free allocator */
@@ -211,14 +201,6 @@ mono_global_loader_data_unlock (void);
 gpointer
 mono_lookup_pinvoke_call_internal (MonoMethod *method, MonoError *error);
 
-#ifndef DISABLE_DLLMAP
-void
-mono_dllmap_insert_internal (MonoImage *assembly, const char *dll, const char *func, const char *tdll, const char *tfunc);
-
-void
-mono_global_dllmap_cleanup (void);
-#endif
-
 void
 mono_global_loader_cache_init (void);
 
@@ -308,9 +290,6 @@ mono_alc_get_all_loaded_assemblies (void);
 
 GPtrArray*
 mono_alc_get_all (void);
-
-MONO_API void
-mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
 
 MonoMemoryManager *
 mono_mem_manager_new (MonoAssemblyLoadContext **alcs, int nalcs, gboolean collectible);

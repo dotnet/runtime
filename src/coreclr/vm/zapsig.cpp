@@ -186,13 +186,13 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 
     // We may need to emit an out-of-module escape sequence
     //
-    Module *pTypeHandleModule = pMT->GetModule_NoLogging();
+    Module *pTypeHandleModule = pMT->GetModule();
 
     // If the type handle's module is different that the this->pInfoModule
     // we will need to add an out-of-module escape for the type
     //
     DWORD index = 0;
-    mdToken token = pMT->GetCl_NoLogging();
+    mdToken token = pMT->GetCl();
 
     if (pTypeHandleModule != this->context.pInfoModule)
     {
@@ -1210,13 +1210,13 @@ BOOL ZapSig::EncodeMethod(
     }
     CONTRACTL_END;
 
-    TypeHandle ownerType = pMethod->GetMethodTable_NoLogging();
+    TypeHandle ownerType = pMethod->GetMethodTable();
 
     ZapSig::ExternalTokens externalTokens = ZapSig::NormalTokens;
     if (pInfoModule == NULL)
     {
         externalTokens = ZapSig::MulticoreJitTokens;
-        pInfoModule = pMethod->GetModule_NoLogging();
+        pInfoModule = pMethod->GetModule();
     }
 
     ZapSig zapSig(pInfoModule, pEncodeModuleContext, externalTokens,
@@ -1226,7 +1226,7 @@ BOOL ZapSig::EncodeMethod(
     //
     // output the sequence that represents the token for the method
     //
-    mdMethodDef methodToken               = pMethod->GetMemberDef_NoLogging();
+    mdMethodDef methodToken               = pMethod->GetMemberDef();
     DWORD       methodFlags               = 0;
     BOOL        fMethodNeedsInstantiation = pMethod->HasMethodInstantiation() && !pMethod->IsGenericMethodDefinition();
 

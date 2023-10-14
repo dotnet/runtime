@@ -1,5 +1,6 @@
 /* Copyright (C) 2022 Hewlett-Packard Co.
      Contributed by David Mosberger-Tang <davidm@hpl.hp.com>.
+
 This file is part of libunwind.
 
 Permission is hereby granted, free of charge, to any person obtaining

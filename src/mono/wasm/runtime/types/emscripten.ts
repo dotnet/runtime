@@ -72,6 +72,7 @@ export declare interface EmscriptenModule {
     onRuntimeInitialized?: () => any;
     postRun?: (() => any)[] | (() => any);
     onAbort?: { (error: any): void };
+    onExit?: { (code: number): void };
 }
 
 export type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;

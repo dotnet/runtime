@@ -129,6 +129,9 @@ namespace Microsoft.Extensions.Logging
     {
         public LoggerMessageAttribute() { }
         public LoggerMessageAttribute(int eventId, Microsoft.Extensions.Logging.LogLevel level, string message) { }
+        public LoggerMessageAttribute(Microsoft.Extensions.Logging.LogLevel level) { }
+        public LoggerMessageAttribute(Microsoft.Extensions.Logging.LogLevel level, string message) { }
+        public LoggerMessageAttribute(string message) { }
         public int EventId { get { throw null; } set { } }
         public string? EventName { get { throw null; } set { } }
         public Microsoft.Extensions.Logging.LogLevel Level { get { throw null; } set { } }

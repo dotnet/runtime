@@ -72,8 +72,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         [Theory]
         [MemberData(nameof(ValidValues_ICollection))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MinLengthAttribute in the .NET Framework doesn't support ICollection.Count. See https://github.com/dotnet/runtime/issues/21101")]
-        public void Validate_ICollection_NetCore_Valid(MinLengthAttribute attribute, object value)
+        public void Validate_ICollection_Valid(MinLengthAttribute attribute, object value)
         {
             attribute.Validate(value, new ValidationContext(new object()));
             Assert.True(attribute.IsValid(value));
@@ -81,21 +80,10 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
         [Theory]
         [MemberData(nameof(InvalidValues_ICollection))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MinLengthAttribute in the .NET Framework doesn't support ICollection.Count. See https://github.com/dotnet/runtime/issues/21101")]
-        public void Validate_ICollection_NetCore_Invalid(MinLengthAttribute attribute, object value)
+        public void Validate_ICollection_Invalid(MinLengthAttribute attribute, object value)
         {
             Assert.Throws<ValidationException>(() => attribute.Validate(value, new ValidationContext(new object())));
             Assert.False(attribute.IsValid(value));
-        }
-
-        [Theory]
-        [MemberData(nameof(ValidValues_ICollection))]
-        [MemberData(nameof(InvalidValues_ICollection))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "MinLengthAttribute in .NET Core supports ICollection.Count. See https://github.com/dotnet/runtime/issues/21101")]
-        public void Validate_ICollection_NetFx_ThrowsInvalidCastException(MinLengthAttribute attribute, object value)
-        {
-            Assert.Throws<InvalidCastException>(() => attribute.Validate(value, new ValidationContext(new object())));
-            Assert.Throws<InvalidCastException>(() => attribute.IsValid(value));
         }
 
         [Fact]

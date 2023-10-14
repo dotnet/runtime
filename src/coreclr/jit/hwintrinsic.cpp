@@ -495,8 +495,9 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported            = comp->compSupportsHWIntrinsic(isa);
-    bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+    bool     isIsaSupported            = comp->compSupportsHWIntrinsic(isa);
+    bool     isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+    uint32_t vectorByteLength          = 0;
 
 #ifdef TARGET_XARCH
     if (isHardwareAcceleratedProp)
@@ -505,17 +506,21 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         // but we want IsHardwareAccelerated to return true only when all of them are (there are
         // still can be cases where e.g. Sse41 might give an additional boost for Vector128, but it's
         // not important enough to bump the minimal Sse version here)
+
         if (strcmp(className, "Vector128") == 0)
         {
-            isa = InstructionSet_SSE2;
+            isa              = InstructionSet_SSE2;
+            vectorByteLength = 16;
         }
         else if (strcmp(className, "Vector256") == 0)
         {
-            isa = InstructionSet_AVX2;
+            isa              = InstructionSet_AVX2;
+            vectorByteLength = 32;
         }
         else if (strcmp(className, "Vector512") == 0)
         {
-            isa = InstructionSet_Vector512;
+            isa              = InstructionSet_AVX512F;
+            vectorByteLength = 64;
         }
     }
 #endif
@@ -548,7 +553,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         // When the compiler doesn't support ISA or when it does but the target hardware does
         // not and we aren't in a scenario with support for a dynamic check, we want to return false.
 
-        if (isIsaSupported && comp->compSupportsHWIntrinsic(isa))
+        if (isIsaSupported && comp->compSupportsHWIntrinsic(isa) &&
+            (vectorByteLength <= comp->getPreferredVectorByteLength()))
         {
             if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || comp->compExactlyDependsOn(isa))
             {
@@ -600,10 +606,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
     else if (isa == InstructionSet_Vector512)
     {
-        // We support Vector512 intrinsics when AVX512F, AVX512BW, AVX512DQ are available.
-        if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
-            !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512BW) &&
-            !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+        if (!comp->IsBaselineVector512IsaSupportedOpportunistically())
         {
             return NI_Illegal;
         }
@@ -916,8 +919,7 @@ bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 //
 static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
 {
-    return (category != HW_Category_Special) && HWIntrinsicInfo::RequiresCodegen(intrinsicId) &&
-           !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
+    return (category != HW_Category_Special) && !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
 }
 
 //------------------------------------------------------------------------
@@ -1069,9 +1071,53 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
-            // We don't have generic multireg APIs
             assert(sizeBytes == 0);
         }
+
+#ifdef TARGET_ARM64
+        else if ((intrinsic == NI_AdvSimd_LoadAndInsertScalar) || (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalar))
+        {
+            CorInfoType pSimdBaseJitType = CORINFO_TYPE_UNDEF;
+            var_types   retFieldType     = impNormStructType(sig->retTypeSigClass, &pSimdBaseJitType);
+
+            if (retFieldType == TYP_STRUCT)
+            {
+                CORINFO_CLASS_HANDLE structType;
+                unsigned int         sizeBytes = 0;
+
+                // LoadAndInsertScalar that returns 2,3 or 4 vectors
+                assert(pSimdBaseJitType == CORINFO_TYPE_UNDEF);
+                unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sig->retTypeSigClass);
+                assert(fieldCount > 1);
+                CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(sig->retTypeClass, 0);
+                CorInfoType          fieldType   = info.compCompHnd->getFieldType(fieldHandle, &structType);
+                simdBaseJitType                  = getBaseJitTypeAndSizeOfSIMDType(structType, &sizeBytes);
+                switch (fieldCount)
+                {
+                    case 2:
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x2
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2;
+                        break;
+                    case 3:
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x3
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3;
+                        break;
+                    case 4:
+                        intrinsic = sizeBytes == 8 ? NI_AdvSimd_LoadAndInsertScalarVector64x4
+                                                   : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4;
+                        break;
+                    default:
+                        assert("unsupported");
+                }
+            }
+            else
+            {
+                assert((retFieldType == TYP_SIMD8) || (retFieldType == TYP_SIMD16));
+                assert(isSupportedBaseType(intrinsic, simdBaseJitType));
+                retType = getSIMDTypeForSize(sizeBytes);
+            }
+        }
+#endif
         else
         {
             // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
@@ -1128,7 +1174,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
 #ifdef TARGET_ARM64
     if ((intrinsic == NI_AdvSimd_Insert) || (intrinsic == NI_AdvSimd_InsertScalar) ||
-        (intrinsic == NI_AdvSimd_LoadAndInsertScalar))
+        ((intrinsic >= NI_AdvSimd_LoadAndInsertScalar) && (intrinsic <= NI_AdvSimd_LoadAndInsertScalarVector64x4)) ||
+        ((intrinsic >= NI_AdvSimd_Arm64_LoadAndInsertScalar) &&
+         (intrinsic <= NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4)))
     {
         assert(sig->numArgs == 3);
         immOp = impStackTop(1).val;

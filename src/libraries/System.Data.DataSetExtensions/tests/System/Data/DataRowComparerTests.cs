@@ -287,7 +287,6 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix applied only for .NET Core, .NET Framework throws NullReferenceException")]
         public void Equals_NullStringValueInStringArray_CanBeCompared()
         {
             var table = new DataTable("Table");

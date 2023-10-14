@@ -1,17 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: Enum for the day of the week.
-**
-**
-============================================================*/
-
 namespace System
 {
+    /// <summary>
+    /// Specifies the day of the week.
+    /// </summary>
     public enum DayOfWeek
     {
         Sunday = 0,

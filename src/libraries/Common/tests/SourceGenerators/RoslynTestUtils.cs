@@ -22,11 +22,22 @@ namespace SourceGenerators.Tests
     internal static class RoslynTestUtils
     {
         /// <summary>
+        /// Creates a canonical Roslyn workspace for testing.
+        /// </summary>
+        public static AdhocWorkspace CreateTestWorkspace()
+        {
+            AdhocWorkspace workspace = new AdhocWorkspace();
+            workspace.AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()));
+            return workspace;
+        }
+
+        /// <summary>
         /// Creates a canonical Roslyn project for testing.
         /// </summary>
         /// <param name="references">Assembly references to include in the project.</param>
         /// <param name="includeBaseReferences">Whether to include references to the BCL assemblies.</param>
         public static Project CreateTestProject(
+            AdhocWorkspace workspace,
             IEnumerable<Assembly>? references,
             bool includeBaseReferences = true,
             LanguageVersion langVersion = LanguageVersion.Preview)
@@ -50,8 +61,8 @@ namespace SourceGenerators.Tests
                 }
             }
 
-            return new AdhocWorkspace()
-                .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
+            return workspace
+                .CurrentSolution
                 .AddProject("Test", "test.dll", "C#")
                 .WithMetadataReferences(refs)
                 .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable))
@@ -80,7 +91,7 @@ namespace SourceGenerators.Tests
             }
         }
 
-        private static Project WithDocuments(this Project project, IEnumerable<string> sources, IEnumerable<string>? sourceNames = null)
+        public static Project WithDocuments(this Project project, IEnumerable<string> sources, IEnumerable<string>? sourceNames = null)
         {
             int count = 0;
             Project result = project;
@@ -156,7 +167,8 @@ namespace SourceGenerators.Tests
             LanguageVersion langVersion = LanguageVersion.Preview,
             CancellationToken cancellationToken = default)
         {
-            Project proj = CreateTestProject(references, includeBaseReferences, langVersion);
+            using var workspace = CreateTestWorkspace();
+            Project proj = CreateTestProject(workspace, references, includeBaseReferences, langVersion);
             proj = proj.WithDocuments(sources);
             Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
             Compilation? comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
@@ -191,7 +203,8 @@ namespace SourceGenerators.Tests
             IEnumerable<Assembly> references,
             IEnumerable<string> sources)
         {
-            Project proj = CreateTestProject(references);
+            using var workspace = CreateTestWorkspace();
+            Project proj = CreateTestProject(workspace, references);
 
             proj = proj.WithDocuments(sources);
 
@@ -215,7 +228,8 @@ namespace SourceGenerators.Tests
             string? defaultNamespace = null,
             string? extraFile = null)
         {
-            Project proj = CreateTestProject(references);
+            using var workspace = CreateTestWorkspace();
+            Project proj = CreateTestProject(workspace, references);
 
             int count = sources.Count();
             proj = proj.WithDocuments(sources, sourceNames);

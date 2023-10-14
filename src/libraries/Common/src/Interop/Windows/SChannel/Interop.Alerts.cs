@@ -17,11 +17,8 @@ internal static partial class Interop
         // to be passed into ApplyControlToken
         // through a PkgParams buffer.
 
-        public const int SCHANNEL_RENEGOTIATE = 0;   // renegotiate a connection
         public const int SCHANNEL_SHUTDOWN = 1;   // gracefully close down a connection
         public const int SCHANNEL_ALERT = 2;   // build an error message
-        public const int SCHANNEL_SESSION = 3;   // session control
-
 
         // Alert token structure.
         [StructLayout(LayoutKind.Sequential)]

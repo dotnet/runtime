@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -26,8 +25,6 @@ namespace Microsoft.Interop
             _falseValue = falseValue;
             _compareToTrue = compareToTrue;
         }
-
-        public bool IsSupported(TargetFramework target, Version version) => true;
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
@@ -100,14 +97,15 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+            => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
     }
 
     /// <summary>
     /// Marshals a boolean value as 1 byte.
     /// </summary>
     /// <remarks>
-    /// This boolean type is the natural size of a boolean in the CLR (<see href="https://www.ecma-international.org/publications/standards/Ecma-335.htm">ECMA-335 (III.1.1.2)</see>).
+    /// This boolean type is the natural size of a boolean in the CLR (<see href="https://www.ecma-international.org/publications-and-standards/standards/ecma-335/">ECMA-335 (III.1.1.2)</see>).
     ///
     /// This is typically compatible with <see href="https://en.cppreference.com/w/c/types/boolean">C99</see>
     /// and <see href="https://en.cppreference.com/w/cpp/language/types">C++</see>, but those is implementation defined.

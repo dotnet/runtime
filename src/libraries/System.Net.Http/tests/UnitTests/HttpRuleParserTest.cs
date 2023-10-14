@@ -44,7 +44,8 @@ namespace System.Net.Http.Tests
         public void IsToken_ValidTokenChars_ConsideredValid(char token)
         {
             Assert.True(HttpRuleParser.IsToken(stackalloc[] { token }));
-            Assert.True(HttpRuleParser.IsToken(new ReadOnlySpan<byte>((byte)token)));
+            var byteToken = (byte)token;
+            Assert.True(HttpRuleParser.IsToken(new ReadOnlySpan<byte>(in byteToken)));
         }
 
         [Theory]
@@ -52,7 +53,8 @@ namespace System.Net.Http.Tests
         public void IsToken_InvalidTokenChars_ConsideredInvalid(char token)
         {
             Assert.False(HttpRuleParser.IsToken(stackalloc[] { token }));
-            Assert.False(HttpRuleParser.IsToken(new ReadOnlySpan<byte>((byte)token)));
+            var byteToken = (byte)token;
+            Assert.False(HttpRuleParser.IsToken(new ReadOnlySpan<byte>(in byteToken)));
         }
 
         [Fact]

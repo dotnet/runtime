@@ -1201,6 +1201,13 @@ public:
     //
     bool EndMerge(BasicBlock* block)
     {
+        // If this block is marked BBF_NO_CSE_IN (because of RBO), kill all CSEs.
+        //
+        if ((block->bbFlags & BBF_NO_CSE_IN) != 0)
+        {
+            BitVecOps::ClearD(m_comp->cseLivenessTraits, block->bbCseIn);
+        }
+
         // We can skip the calls kill step when our block doesn't have a callsite
         // or we don't have any available CSEs in our bbCseIn
         //
@@ -2801,6 +2808,10 @@ public:
             cseSsaNum               = lclDsc->lvPerSsaData.AllocSsaNum(allocator);
             ssaVarDsc               = lclDsc->GetPerSsaData(cseSsaNum);
         }
+        else
+        {
+            INDEBUG(lclDsc->lvIsMultiDefCSE = 1);
+        }
 
         // Verify that all of the ValueNumbers in this list are correct as
         // Morph will change them when it performs a mutating operation.
@@ -2881,6 +2892,7 @@ public:
                 if (isDef)
                 {
                     lclDsc->incRefCnts(curWeight, m_pCompiler);
+                    INDEBUG(lclDsc->lvIsHoist |= ((lst->tslTree->gtFlags & GTF_MAKE_CSE) != 0));
                 }
             }
             lst = lst->tslNext;
@@ -3311,6 +3323,30 @@ public:
             bool doCSE = PromotionCheck(&candidate);
 
 #ifdef DEBUG
+
+            if (doCSE)
+            {
+                const int attempt = m_pCompiler->optCSEattempt++;
+
+                if (m_pCompiler->info.compMethodHash() == (unsigned)JitConfig.JitCSEHash())
+                {
+                    // We can only mask the first 32 CSE attempts, so suppress anything beyond that.
+                    // Note methods with >= 32 CSEs are currently quite rare.
+                    //
+                    if (attempt >= 32)
+                    {
+                        doCSE = false;
+                        JITDUMP(FMT_CSE " attempt %u disabled, out of mask range\n", candidate.CseIndex(), attempt);
+                    }
+                    else
+                    {
+                        doCSE = ((1 << attempt) & ((unsigned)JitConfig.JitCSEMask())) != 0;
+                        JITDUMP(FMT_CSE " attempt %u mask 0x%08x: %s\n", candidate.CseIndex(), attempt,
+                                JitConfig.JitCSEMask(), doCSE ? "allowed" : "disabled");
+                    }
+                }
+            }
+
             if (m_pCompiler->verbose)
             {
                 if (doCSE)

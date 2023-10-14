@@ -20,8 +20,7 @@ class UnixNativeCodeManager : public ICodeManager
 
     libunwind::UnwindInfoSections m_UnwindInfoSections;
 
-    bool VirtualUnwind(REGDISPLAY* pRegisterSet);
-    bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda);
+    bool VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet);
 
 public:
     UnixNativeCodeManager(TADDR moduleBase,
@@ -60,11 +59,13 @@ public:
                           PInvokeTransitionFrame**      ppPreviousTransitionFrame);   // out
 
     uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
-                                                        REGDISPLAY *   pRegisterSet);
+                                                       REGDISPLAY *   pRegisterSet);
 
     bool IsUnwindable(PTR_VOID pvAddress);
 
-    int TrailingEpilogueInstructionsCount(PTR_VOID pvAddress); 
+    int IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddress);
+
+    int TrailingEpilogueInstructionsCount(MethodInfo * pMethodInfo, PTR_VOID pvAddress);
 
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                     REGDISPLAY *    pRegisterSet,       // in

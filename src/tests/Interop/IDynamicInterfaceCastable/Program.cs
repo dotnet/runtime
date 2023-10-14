@@ -30,6 +30,7 @@ namespace IDynamicInterfaceCastableTests
     public interface ITestGeneric<in T, out U>
     {
         U ReturnArg(T t);
+        V DoubleGenericArg<V>(V t);
     }
 
     public interface IDirectlyImplemented
@@ -140,6 +141,23 @@ namespace IDynamicInterfaceCastableTests
 
             return Unsafe.As<T, U>(ref t);
         }
+
+        V ITestGeneric<T, U>.DoubleGenericArg<V>(V v)
+        {
+            if (v is int i)
+            {
+                Assert.True(typeof(V) == typeof(int));
+                i *= 2;
+                return Unsafe.As<int, V>(ref i);
+            }
+            else if (v is string s)
+            {
+                Assert.True(typeof(V) == typeof(string));
+                s += s;
+                return Unsafe.As<string, V>(ref s);
+            }
+            throw new Exception("Unable to double");
+        }
     }
 
     [DynamicInterfaceCastableImplementation]
@@ -148,6 +166,23 @@ namespace IDynamicInterfaceCastableTests
         int ITestGeneric<int, int>.ReturnArg(int i)
         {
             return i;
+        }
+
+        V ITestGeneric<int, int>.DoubleGenericArg<V>(V v)
+        {
+            if (v is int i)
+            {
+                Assert.True(typeof(V) == typeof(int));
+                i *= 2;
+                return Unsafe.As<int, V>(ref i);
+            }
+            else if (v is string s)
+            {
+                Assert.True(typeof(V) == typeof(string));
+                s += s;
+                return Unsafe.As<string, V>(ref s);
+            }
+            throw new Exception("Unable to double");
         }
     }
 
@@ -374,6 +409,14 @@ namespace IDynamicInterfaceCastableTests
             Assert.Equal(expectedStr, testStr.ReturnArg(expectedStr));
             Assert.Equal(expectedStr, testVar.ReturnArg(expectedStr));
 
+            Console.WriteLine(" -- Validate generic method call");
+            Assert.Equal(expectedInt * 2, testInt.DoubleGenericArg<int>(42));
+            Assert.Equal(expectedStr + expectedStr, testInt.DoubleGenericArg<string>("str"));
+            Assert.Equal(expectedInt * 2, testStr.DoubleGenericArg<int>(42));
+            Assert.Equal(expectedStr + expectedStr, testStr.DoubleGenericArg<string>("str"));
+            Assert.Equal(expectedInt * 2, testVar.DoubleGenericArg<int>(42));
+            Assert.Equal(expectedStr + expectedStr, testVar.DoubleGenericArg<string>("str"));
+
             Console.WriteLine(" -- Validate delegate call");
             Func<int, int> funcInt = new Func<int, int>(testInt.ReturnArg);
             Assert.Equal(expectedInt, funcInt(expectedInt));
@@ -515,7 +558,8 @@ namespace IDynamicInterfaceCastableTests
             Console.WriteLine($" ---- {ex.GetType().Name}: {ex.Message}");
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

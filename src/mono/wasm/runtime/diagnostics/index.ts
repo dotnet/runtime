@@ -11,6 +11,7 @@ import type { VoidPtr } from "../types/emscripten";
 import { getController, startDiagnosticServer } from "./browser/controller";
 import * as memory from "../memory";
 import { mono_log_warn } from "../logging";
+import { mono_assert, runtimeHelpers } from "../globals";
 
 
 // called from C on the main thread
@@ -41,23 +42,22 @@ export async function mono_wasm_init_diagnostics(): Promise<void> {
     if (!MonoWasmThreads) {
         mono_log_warn("ignoring diagnostics options because this runtime does not support diagnostics");
         return;
-    } else {
-        const options = diagnostic_options_from_environment();
-        if (!options)
-            return;
-        diagnosticsInitialized = true;
-        if (!is_nullish(options?.server)) {
-            if (options.server.connectUrl === undefined || typeof (options.server.connectUrl) !== "string") {
-                throw new Error("server.connectUrl must be a string");
-            }
-            const url = options.server.connectUrl;
-            const suspend = boolsyOption(options.server.suspend);
-            const controller = await startDiagnosticServer(url);
-            if (controller) {
-                diagnosticsServerEnabled = true;
-                if (suspend) {
-                    suspendOnStartup = true;
-                }
+    }
+    const options = diagnostic_options_from_environment();
+    if (!options)
+        return;
+    diagnosticsInitialized = true;
+    if (!is_nullish(options?.server)) {
+        if (options.server.connectUrl === undefined || typeof (options.server.connectUrl) !== "string") {
+            throw new Error("server.connectUrl must be a string");
+        }
+        const url = options.server.connectUrl;
+        const suspend = boolsyOption(options.server.suspend);
+        const controller = await startDiagnosticServer(url);
+        if (controller) {
+            diagnosticsServerEnabled = true;
+            if (suspend) {
+                suspendOnStartup = true;
             }
         }
     }
@@ -81,7 +81,7 @@ function boolsyOption(x: string | boolean): boolean {
 ///  * DOTNET_DiagnosticPorts
 ///
 function diagnostic_options_from_environment(): DiagnosticOptions | null {
-    const val = memory.getEnv("DOTNET_DiagnosticPorts");
+    const val = runtimeHelpers.config.environmentVariables ? runtimeHelpers.config.environmentVariables["DOTNET_DiagnosticPorts"] : undefined;
     if (is_nullish(val))
         return null;
     // TODO: consider also parsing the DOTNET_EnableEventPipe and DOTNET_EventPipeOutputPath, DOTNET_EvnetPipeConfig variables
@@ -144,6 +144,7 @@ function diagnostic_options_from_ports_spec(val: string): DiagnosticOptions | nu
 }
 
 export function mono_wasm_diagnostic_server_on_runtime_server_init(out_options: VoidPtr): void {
+    mono_assert(MonoWasmThreads, "The diagnostic server requires threads to be enabled during build time.");
     if (diagnosticsServerEnabled) {
         /* called on the main thread when the runtime is sufficiently initialized */
         const controller = getController();

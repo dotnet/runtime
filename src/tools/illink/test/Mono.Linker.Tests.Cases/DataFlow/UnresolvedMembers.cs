@@ -2,11 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -18,7 +14,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// So it doesn't produce any of these warnings - which is also correct, because the code at runtime would never get there
 	// it would fail to JIT/run anyway.
 
-	[SkipPeVerify]
+	[SkipILVerify]
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[SetupCompileBefore ("UnresolvedLibrary.dll", new[] { "Dependencies/UnresolvedLibrary.cs" }, removeFromLinkerInput: true)]
 	[ExpectedNoWarnings]

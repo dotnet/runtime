@@ -70,7 +70,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>^(?&lt;proto&gt;\\w+)://[^/]+?(?&lt;port&gt;:\\d+)?/</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match if at the beginning of the string.<br/>
                     /// ○ "proto" capture group.<br/>
@@ -431,7 +433,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>href\\s*=\\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\\s]+))</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match the string "href".<br/>
                     /// ○ Match a whitespace character atomically any number of times.<br/>
@@ -727,7 +731,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>[A-Za-z]+</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match a character in the set [A-Za-z] atomically at least once.<br/>
                     /// </code>

@@ -25,7 +25,7 @@ namespace System.Net.Http
     // (8) HttpConnection.SendAsyncCore: Write request to connection and read response
     //                                   Also, handle cookie processing
     //
-    // Redirect and deompression handling are done above HttpConnectionPoolManager,
+    // Redirect and decompression handling are done above HttpConnectionPoolManager,
     // in RedirectHandler and DecompressionHandler respectively.
 
     /// <summary>Provides a set of connection pools, each for its own endpoint.</summary>

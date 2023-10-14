@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System;
+using System.Security.Cryptography;
 
 namespace HttpServer
 {
@@ -16,11 +17,13 @@ namespace HttpServer
         public int Finished { get; set; } = 0;
     }
 
+    public sealed record FileContent(byte[] buffer, string hash);
+
     public sealed class Program
     {
         private bool Verbose = false;
         private ConcurrentDictionary<string, Session> Sessions = new ConcurrentDictionary<string, Session>();
-        private Dictionary<string, byte[]> cache = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, FileContent> cache = new(StringComparer.OrdinalIgnoreCase);
 
         public static int Main()
         {
@@ -104,7 +107,7 @@ namespace HttpServer
                 ReceivePostAsync(context);
         }
 
-        private async Task<byte[]?> GetFileContent(string path)
+        private async Task<FileContent?> GetFileContent(string path)
         {
             if (Verbose)
                 await Console.Out.WriteLineAsync($"get content for: {path}");
@@ -124,9 +127,13 @@ namespace HttpServer
             if (Verbose)
                 await Console.Out.WriteLineAsync($"adding content to cache for: {path}");
 
-            cache[path] = content;
+            using HashAlgorithm hashAlgorithm = SHA256.Create();
+            byte[] hash = hashAlgorithm.ComputeHash(content);
+            var fc = new FileContent(content, "sha256-" + Convert.ToBase64String(hash));
 
-            return content;
+            cache[path] = fc;
+
+            return fc;
         }
 
         private async void ReceivePostAsync(HttpListenerContext context)
@@ -170,7 +177,7 @@ namespace HttpServer
             if (url == null)
                 return;
 
-            string path = url.LocalPath == "/" ? "index.html" : url.LocalPath;
+            string path = url.LocalPath.EndsWith("/") ? url.LocalPath + "index.html" : url.LocalPath;
             if (Verbose)
                 Console.WriteLine($"  serving: {path}");
 
@@ -189,14 +196,14 @@ namespace HttpServer
             else if (path.StartsWith("/"))
                 path = path.Substring(1);
 
-            byte[]? buffer;
+            FileContent? fc;
             try
             {
-                buffer = await GetFileContent(path);
+                fc = await GetFileContent(path);
 
-                if (buffer != null && throttleMbps > 0)
+                if (fc != null && throttleMbps > 0)
                 {
-                    double delaySeconds = (buffer.Length * 8) / (throttleMbps * 1024 * 1024);
+                    double delaySeconds = (fc.buffer.Length * 8) / (throttleMbps * 1024 * 1024);
                     int delayMs = (int)(delaySeconds * 1000);
                     if (session != null)
                     {
@@ -246,12 +253,20 @@ namespace HttpServer
                     }
                 }
             }
-            catch (Exception)
+            catch (System.IO.DirectoryNotFoundException)
             {
-                buffer = null;
+                if (Verbose)
+                    Console.WriteLine($"Not found: {path}");
+                fc = null;
+            }
+            catch (Exception ex)
+            {
+                if (Verbose)
+                    Console.WriteLine($"Exception: {ex}");
+                fc = null;
             }
 
-            if (buffer != null)
+            if (fc != null)
             {
                 string? contentType = null;
                 if (path.EndsWith(".wasm"))
@@ -270,7 +285,7 @@ namespace HttpServer
                 {
                     Console.WriteLine("Faking 500 " + url);
                     context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    await stream.WriteAsync(buffer, 0, 0).ConfigureAwait(false);
+                    await stream.WriteAsync(fc.buffer, 0, 0).ConfigureAwait(false);
                     await stream.FlushAsync();
                     context.Response.Close();
                     return;
@@ -279,23 +294,36 @@ namespace HttpServer
                 if (contentType != null)
                     context.Response.ContentType = contentType;
 
-                context.Response.ContentLength64 = buffer.Length;
-                context.Response.AppendHeader("cache-control", "public, max-age=31536000");
+                // context.Response.AppendHeader("cache-control", "public, max-age=31536000");
+                context.Response.AppendHeader("Cross-Origin-Embedder-Policy", "require-corp");
+                context.Response.AppendHeader("Cross-Origin-Opener-Policy", "same-origin");
+                context.Response.AppendHeader("ETag", fc.hash);
 
                 // test download re-try
                 if (url.Query.Contains("testAbort"))
                 {
                     Console.WriteLine("Faking abort " + url);
-                    await stream.WriteAsync(buffer, 0, 10).ConfigureAwait(false);
+                    context.Response.ContentLength64 = fc.buffer.Length;
+                    await stream.WriteAsync(fc.buffer, 0, 10).ConfigureAwait(false);
                     await stream.FlushAsync();
                     await Task.Delay(100);
                     context.Response.Abort();
                     return;
                 }
+                var ifNoneMatch = context.Request.Headers.Get("If-None-Match");
+                if (ifNoneMatch == fc.hash)
+                {
+                    context.Response.StatusCode = 304;
+                    await stream.FlushAsync();
+                    stream.Close();
+                    context.Response.Close();
+                    return;
+                }
 
                 try
                 {
-                    await stream.WriteAsync(buffer).ConfigureAwait(false);
+                    context.Response.ContentLength64 = fc.buffer.Length;
+                    await stream.WriteAsync(fc.buffer).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -312,6 +340,7 @@ namespace HttpServer
                     Console.WriteLine("  => not found");
 
                 context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                context.Response.Close();
             }
 
             if (Verbose)

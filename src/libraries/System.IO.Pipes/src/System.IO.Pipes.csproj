@@ -145,14 +145,14 @@
              Link="Common\Interop\Unix\Interop.FLock.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs"
              Link="Common\Interop\Unix\Interop.GetHostName.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPeerUserName.cs"
-             Link="Common\Interop\Unix\Interop.GetPeerUserName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs"
              Link="Common\Interop\Unix\Interop.Open.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
              Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pipe.cs"
              Link="Common\Interop\Unix\Interop.Pipe.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.GetPwUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.Pipe.cs"
              Link="Common\Interop\Unix\Interop.Read.Pipe.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs"

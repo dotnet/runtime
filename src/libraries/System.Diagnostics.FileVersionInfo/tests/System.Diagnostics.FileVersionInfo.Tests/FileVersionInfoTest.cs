@@ -104,7 +104,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFX throws ArgumentException in this case")]
         public void FileVersionInfo_RelativePath_CorrectFilePath()
         {
             string rootPath = (PlatformDetection.IsiOS || PlatformDetection.IstvOS) ? Path.GetTempPath() : string.Empty;

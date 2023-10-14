@@ -167,11 +167,6 @@
         <target state="translated">No se puede llamar al resultado si no se encuentra ninguna coincidencia.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">Los reemplazos de regex con sustituciones de grupos no se admiten con RegexOptions.NonBacktracking.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">La colección es de sólo lectura.</target>

@@ -63,7 +63,7 @@ namespace System.Net.Security.Tests
             using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
             {
                 yield return new object[] { new X509Certificate2(serverCert), new X509Certificate2(clientCert) };
-                yield return new object[] { new X509Certificate(serverCert.Export(X509ContentType.Pfx)), new X509Certificate(clientCert.Export(X509ContentType.Pfx)) };
+                yield return new object[] { new X509Certificate(serverCert.Export(X509ContentType.Pfx), (string)null), new X509Certificate(clientCert.Export(X509ContentType.Pfx), (string)null) };
             }
         }
 

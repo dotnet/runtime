@@ -252,9 +252,8 @@ public:
         *(reinterpret_cast<DWORD*>(BypassBuffer)) = SentinelValue;
         RipTargetFixup = 0;
         RipTargetFixupSize = 0;
-#elif TARGET_ARM64
+#elif defined(TARGET_ARM64)
         RipTargetFixup = 0;
-
 #endif
     }
 
@@ -303,8 +302,8 @@ public:
     BYTE    PatchBypass[MAX_INSTRUCTION_LENGTH];
 #if defined(TARGET_AMD64)
     // If you update this value, make sure that it fits in the data payload of a
-    // DebuggerHeapExecutableMemoryChunk. This will need to be bumped to 0x40 for AVX 512 support.
-    const static int cbBufferBypass = 0x20;
+    // DebuggerHeapExecutableMemoryChunk.
+    const static int cbBufferBypass = 0x40;
     BYTE    BypassBuffer[cbBufferBypass];
 
     UINT_PTR                RipTargetFixup;
@@ -1100,9 +1099,9 @@ class DebuggerController
     // Check whether there are any pathces in the patch table for the specified module.
     static bool ModuleHasPatches( Module* pModule );
 
-#if EnC_SUPPORTED
+#if FEATURE_METADATA_UPDATER
     static DebuggerControllerPatch *GetEnCPatch(const BYTE *address);
-#endif //EnC_SUPPORTED
+#endif //FEATURE_METADATA_UPDATER
 
     static DPOSS_ACTION ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                                 Thread *thread,
@@ -1916,7 +1915,7 @@ private:
 };
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 //---------------------------------------------------------------------------------------
 //
 // DebuggerEnCBreakpoint - used by edit and continue to support remapping
@@ -1964,7 +1963,7 @@ private:
     DebuggerJitInfo *m_jitInfo;
     TriggerType m_fTriggerType;
 };
-#endif //EnC_SUPPORTED
+#endif //FEATURE_METADATA_UPDATER
 
 /* ========================================================================= */
 

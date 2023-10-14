@@ -15,7 +15,7 @@ import { has_backing_array_buffer } from "./buffers";
 import { legacyManagedExports } from "./corebindings";
 import { get_js_owned_object_by_gc_handle_ref } from "./cs-to-js";
 import { legacyHelpers, wasm_type_symbol } from "./globals";
-import { assert_legacy_interop } from "../pthreads/shared";
+import { assert_legacy_interop } from "./method-binding";
 
 export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
     switch (true) {

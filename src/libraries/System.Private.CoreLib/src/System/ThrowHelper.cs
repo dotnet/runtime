@@ -530,6 +530,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowInvalidOperationException_InvalidUtf8()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_InvalidUtf8);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowFormatException_BadFormatSpecifier()
         {
             throw new FormatException(SR.Argument_BadFormatSpecifier);
@@ -693,6 +699,18 @@ namespace System
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
             if (!(default(T) == null) && value == null)
                 ThrowArgumentNullException(argName);
+        }
+
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowForUnsupportedSimdVectorBaseType<TVector, T>()
+            where TVector : ISimdVector<TVector, T>
+        {
+            if (!TVector.IsSupported)
+            {
+                ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
         }
 
         // Throws if 'T' is disallowed in Vector<T> in the Numerics namespace.

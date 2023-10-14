@@ -4,8 +4,9 @@
 /// <reference lib="webworker" />
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, ENVIRONMENT_IS_PTHREAD } from "../../globals";
-import { makeChannelCreatedMonoMessage } from "../shared";
+
+import { Module, ENVIRONMENT_IS_PTHREAD, mono_assert } from "../../globals";
+import { makeChannelCreatedMonoMessage, set_thread_info } from "../shared";
 import type { pthreadPtr } from "../shared/types";
 import { is_nullish } from "../../types/internal";
 import type { MonoThreadMessage } from "../shared";
@@ -16,8 +17,10 @@ import {
     dotnetPthreadAttached,
     WorkerThreadEventTarget
 } from "./events";
-import { preRunWorker } from "../../startup";
+import { postRunWorker, preRunWorker } from "../../startup";
 import { mono_log_debug } from "../../logging";
+import { mono_set_thread_id } from "../../logging";
+import { jiterpreter_allocate_tables } from "../../jiterpreter-support";
 
 // re-export some of the events types
 export {
@@ -53,9 +56,12 @@ export let pthread_self: PThreadSelf = null as any as PThreadSelf;
 ///    currentWorkerThreadEvents.addEventListener(dotnetPthreadCreated, (ev: WorkerThreadEvent) => {
 ///       mono_trace("thread created on worker with id", ev.pthread_ptr);
 ///    });
-export const currentWorkerThreadEvents: WorkerThreadEventTarget =
-    MonoWasmThreads ? new EventTarget() : null as any as WorkerThreadEventTarget; // treeshake if threads are disabled
+export let currentWorkerThreadEvents: WorkerThreadEventTarget = undefined as any;
 
+export function initWorkerThreadEvents() {
+    // treeshake if threads are disabled
+    currentWorkerThreadEvents = MonoWasmThreads ? new globalThis.EventTarget() : null as any as WorkerThreadEventTarget;
+}
 
 // this is the message handler for the worker that receives messages from the main thread
 // extend this with new cases as needed
@@ -78,13 +84,24 @@ function setupChannelToMainThread(pthread_ptr: pthreadPtr): PThreadSelf {
 
 
 /// This is an implementation detail function.
-/// Called in the worker thread from mono when a pthread becomes attached to the mono runtime.
-export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthreadPtr): void {
+/// Called in the worker thread (not main thread) from mono when a pthread becomes attached to the mono runtime.
+export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void {
     const self = pthread_self;
     mono_assert(self !== null && self.pthreadId == pthread_id, "expected pthread_self to be set already when attaching");
-    mono_log_debug("attaching pthread to runtime 0x" + pthread_id.toString(16));
+    mono_set_thread_id("0x" + pthread_id.toString(16));
+    mono_log_debug("attaching pthread to mono runtime 0x" + pthread_id.toString(16));
     preRunWorker();
+    set_thread_info(pthread_id, true, false, false);
+    jiterpreter_allocate_tables(Module);
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, self));
+}
+
+/// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
+export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void {
+    mono_log_debug("detaching pthread from mono runtime 0x" + pthread_id.toString(16));
+    postRunWorker();
+    set_thread_info(pthread_id, false, false, false);
+    mono_set_thread_id("");
 }
 
 /// This is an implementation detail function.

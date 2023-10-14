@@ -356,7 +356,54 @@ namespace System.Globalization
                 return ret;
             }
 
+            private interface IDigitParser
+            {
+                static abstract bool IsValidChar(char c);
+                static abstract bool IsHexOrBinaryParser();
+            }
+
+            private readonly struct IntegerDigitParser : IDigitParser
+            {
+                public static bool IsValidChar(char c) => char.IsAsciiDigit(c);
+
+                public static bool IsHexOrBinaryParser() => false;
+            }
+
+            private readonly struct HexDigitParser : IDigitParser
+            {
+                public static bool IsValidChar(char c) => HexConverter.IsHexChar((int)c);
+
+                public static bool IsHexOrBinaryParser() => true;
+            }
+
+            private readonly struct BinaryDigitParser : IDigitParser
+            {
+                public static bool IsValidChar(char c)
+                {
+                    return (uint)c - '0' <= 1;
+                }
+
+                public static bool IsHexOrBinaryParser() => true;
+            }
+
+
             private static unsafe bool ParseNumber(ref char* str, char* strEnd, NumberStyles options, scoped ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
+            {
+                if ((options & NumberStyles.AllowHexSpecifier) != 0)
+                {
+                    return ParseNumberStyle<HexDigitParser>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
+                }
+
+                if ((options & NumberStyles.AllowBinarySpecifier) != 0)
+                {
+                    return ParseNumberStyle<BinaryDigitParser>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
+                }
+
+                return ParseNumberStyle<IntegerDigitParser>(ref str, strEnd, options, ref number, sb, numfmt, parseDecimal);
+            }
+
+            private static unsafe bool ParseNumberStyle<TDigitParser>(ref char* str, char* strEnd, NumberStyles options, scoped ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
+                where TDigitParser : struct, IDigitParser
             {
                 Debug.Assert(str != null);
                 Debug.Assert(strEnd != null);
@@ -440,11 +487,11 @@ namespace System.Globalization
                 int digEnd = 0;
                 while (true)
                 {
-                    if (char.IsAsciiDigit(ch) || (((options & NumberStyles.AllowHexSpecifier) != 0) && char.IsBetween((char)(ch | 0x20), 'a', 'f')))
+                    if (TDigitParser.IsValidChar(ch))
                     {
                         state |= StateDigits;
 
-                        if (ch != '0' || (state & StateNonZero) != 0 || (bigNumber && ((options & NumberStyles.AllowHexSpecifier) != 0)))
+                        if (ch != '0' || (state & StateNonZero) != 0 || (bigNumber && TDigitParser.IsHexOrBinaryParser()))
                         {
                             if (digCount < maxParseDigits)
                             {
@@ -596,7 +643,7 @@ namespace System.Globalization
             [MethodImpl(MethodImplOptions.NoInlining)] // rare slow path that shouldn't impact perf of the main use case
             private static bool TrailingZeros(ReadOnlySpan<char> s, int index) =>
                 // For compatibility, we need to allow trailing zeros at the end of a number string
-                s.Slice(index).IndexOfAnyExcept('\0') < 0;
+                !s.Slice(index).ContainsAnyExcept('\0');
 
             internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, scoped ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
             {

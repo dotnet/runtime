@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Tests;
 using Xunit;
 
 [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Android, Browser, iOS, MacCatalyst, or tvOS.")]
@@ -100,6 +101,16 @@ public class TermInfoTests
             Assert.Equal(expectedBackground, TermInfo.ParameterizedStrings.Evaluate(info.Background, colorValue));
             Assert.InRange(info.MaxColors, 1, int.MaxValue);
         }
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests TermInfo
+    public void TermInfoClearIncludesE3WhenExpected()
+    {
+        // XTerm defines E3 for clearing scrollback buffer and tmux does not.
+        // This can't be added to TermInfoVerification because xterm-256color sometimes has E3 defined (e.g. on Ubuntu but not macOS)
+        Assert.Equal("\u001B[H\u001B[2J\u001B[3J", new XTermData().TerminalDb.Clear);
+        Assert.Equal("\u001B[H\u001B[J", new TmuxData().TerminalDb.Clear);
     }
 
     [Fact]

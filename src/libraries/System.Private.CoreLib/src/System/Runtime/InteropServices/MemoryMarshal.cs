@@ -244,7 +244,7 @@ namespace System.Runtime.InteropServices
         /// of the returned span will not be validated for safety, even by span-aware languages.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref T reference, int length) =>
+        public static ReadOnlySpan<T> CreateReadOnlySpan<T>(scoped ref readonly T reference, int length) =>
             new ReadOnlySpan<T>(ref Unsafe.AsRef(in reference), length);
 
         /// <summary>Creates a new read-only span for a null-terminated string.</summary>
@@ -257,10 +257,10 @@ namespace System.Runtime.InteropServices
             value != null ? new ReadOnlySpan<char>(value, string.wcslen(value)) :
             default;
 
-        /// <summary>Creates a new read-only span for a null-terminated UTF8 string.</summary>
+        /// <summary>Creates a new read-only span for a null-terminated UTF-8 string.</summary>
         /// <param name="value">The pointer to the null-terminated string of bytes.</param>
         /// <returns>A read-only span representing the specified null-terminated string, or an empty span if the pointer is null.</returns>
-        /// <remarks>The returned span does not include the null terminator, nor does it validate the well-formedness of the UTF8 data.</remarks>
+        /// <remarks>The returned span does not include the null terminator, nor does it validate the well-formedness of the UTF-8 data.</remarks>
         /// <exception cref="ArgumentException">The string is longer than <see cref="int.MaxValue"/>.</exception>
         [CLSCompliant(false)]
         public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) =>
@@ -382,8 +382,61 @@ namespace System.Runtime.InteropServices
         /// <returns>An <see cref="IEnumerable{T}"/> view of the given <paramref name="memory" /></returns>
         public static IEnumerable<T> ToEnumerable<T>(ReadOnlyMemory<T> memory)
         {
-            for (int i = 0; i < memory.Length; i++)
-                yield return memory.Span[i];
+            object? obj = memory.GetObjectStartLength(out int index, out int length);
+
+            // If the memory is empty, just return an empty array as the enumerable.
+            if (length is 0 || obj is null)
+            {
+                return Array.Empty<T>();
+            }
+
+            // If the object is a string, we can optimize. If it isn't a slice, just return the string as the
+            // enumerable. Otherwise, return an iterator dedicated to enumerating the object; while we could
+            // use the general one for any ReadOnlyMemory, that will incur a .Span access for every element.
+            if (typeof(T) == typeof(char) && obj is string str)
+            {
+                return (IEnumerable<T>)(object)(index == 0 && length == str.Length ?
+                    str :
+                    FromString(str, index, length));
+
+                static IEnumerable<char> FromString(string s, int offset, int count)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        yield return s[offset + i];
+                    }
+                }
+            }
+
+            // If the object is an array, we can optimize. If it isn't a slice, just return the array as the
+            // enumerable. Otherwise, return an iterator dedicated to enumerating the object.
+            if (RuntimeHelpers.ObjectHasComponentSize(obj)) // Same check as in TryGetArray to confirm that obj is a T[] or a U[] which is blittable to a T[].
+            {
+                T[] array = Unsafe.As<T[]>(obj);
+                index &= ReadOnlyMemory<T>.RemoveFlagsBitMask; // the array may be prepinned, so remove the high bit from the start index in the line below.
+                return index == 0 && length == array.Length ?
+                    array :
+                    FromArray(array, index, length);
+
+                static IEnumerable<T> FromArray(T[] array, int offset, int count)
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        yield return array[offset + i];
+                    }
+                }
+            }
+
+            // The ROM<T> wraps a MemoryManager<T>. The best we can do is iterate, accessing .Span on each MoveNext.
+            return FromMemoryManager(memory);
+
+            static IEnumerable<T> FromMemoryManager(ReadOnlyMemory<T> memory)
+            {
+                for (int i = 0; i < memory.Length; i++)
+                {
+                    yield return memory.Span[i];
+                }
+            }
         }
 
         /// <summary>Attempts to get the underlying <see cref="string"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
@@ -455,7 +508,7 @@ namespace System.Runtime.InteropServices
         /// Writes a structure of type T into a span of bytes.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void Write<T>(Span<byte> destination, ref T value)
+        public static unsafe void Write<T>(Span<byte> destination, in T value)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -474,7 +527,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool TryWrite<T>(Span<byte> destination, ref T value)
+        public static unsafe bool TryWrite<T>(Span<byte> destination, in T value)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())

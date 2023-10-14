@@ -12,11 +12,10 @@ namespace DefaultNamespace
     public class Bug
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             //Console.WriteLine (DateTime.GetNow().ToString());
             Console.WriteLine(DateTime.Now.ToString());
-            return 100;
         }
     }
 

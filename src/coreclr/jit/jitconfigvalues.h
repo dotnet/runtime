@@ -167,8 +167,7 @@ CONFIG_INTEGER(JitStressBiasedCSE, W("JitStressBiasedCSE"), 0x101)     // Intern
 CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable
                                                                        // stress modes listed in JitStressModeNames
 CONFIG_INTEGER(JitStressProcedureSplitting, W("JitStressProcedureSplitting"), 0) // Always split after the first basic
-                                                                                 // block. Skips functions with EH
-                                                                                 // for simplicity.
+                                                                                 // block.
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
 CONFIG_STRING(JitStressRegsRange, W("JitStressRegsRange")) // Only apply JitStressRegs to methods in this hash range
 
@@ -192,8 +191,9 @@ CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0) // Dump i
                                                                        // disassembled.
 CONFIG_INTEGER(JitDisasmSpilled, W("JitDisasmSpilled"), 0)      // Display native code when any register spilling occurs
 CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees for specified method
-CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 requests
-CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Only dump OSR requests for this offset
+CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 jit compilations
+CONFIG_INTEGER(JitDumpOSR, W("JitDumpOSR"), 1)                  // Dump OSR jit compilations
+CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Dump only OSR jit compilations with this offset
 CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
@@ -235,6 +235,7 @@ CONFIG_INTEGER(JitDumpFgBlockFlags, W("JitDumpFgBlockFlags"), 0) // 0 == don't d
 CONFIG_INTEGER(JitDumpFgLoopFlags, W("JitDumpFgLoopFlags"), 0)   // 0 == don't display loop flags; 1 == display flags
 CONFIG_INTEGER(JitDumpFgBlockOrder, W("JitDumpFgBlockOrder"), 0) // 0 == bbNext order;  1 == bbNum order; 2 == bbID
                                                                  // order
+CONFIG_INTEGER(JitDumpFgMemorySsa, W("JitDumpFgMemorySsa"), 0)   // non-zero: show memory phis + SSA/VNs
 
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
@@ -250,11 +251,13 @@ CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
 #endif                                                                     // defined(DEBUG)
 
-CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Print codegen for given methods
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                // Print codegen for given methods
+CONFIG_INTEGER(JitDisasmTesting, W("JitDisasmTesting"), 0) // Display BEGIN METHOD/END METHOD anchors for disasm testing
 CONFIG_INTEGER(JitDisasmDiffable, W("JitDisasmDiffable"), 0) // Make the disassembly diff-able
 CONFIG_INTEGER(JitDisasmSummary, W("JitDisasmSummary"), 0)   // Prints all jitted methods to the console
 CONFIG_INTEGER(JitDisasmWithAlignmentBoundaries, W("JitDisasmWithAlignmentBoundaries"), 0) // Print the alignment
                                                                                            // boundaries.
+CONFIG_INTEGER(JitDisasmWithCodeBytes, W("JitDisasmWithCodeBytes"), 0) // Print the instruction code bytes
 CONFIG_STRING(JitStdOutFile, W("JitStdOutFile")) // If set, sends JIT's stdout output to this file.
 
 // These are supported for backward compatibility, to be removed:
@@ -297,7 +300,7 @@ CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0) // Enable E
 
 // clang-format off
 
-CONFIG_INTEGER(PreferredVectorBitWidth,     W("PreferredVectorBitWidth"),   0) // The preferred width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
+CONFIG_INTEGER(PreferredVectorBitWidth,     W("PreferredVectorBitWidth"),   0) // The preferred decimal width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
 
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
@@ -374,6 +377,32 @@ CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 #define CONST_CSE_ENABLE_ALL 3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
 
+#if defined(DEBUG)
+// Allow fine-grained controls of CSEs done in a particular method
+//
+// Specify method that will respond to the CSEMask.
+// 0 means feature disabled and all methods run CSE normally.
+CONFIG_INTEGER(JitCSEHash, W("JitCSEHash"), 0)
+
+// Bitmask of allowed CSEs in methods specified by JitCSEHash.
+// These bits control the "cse attempts" made by normal jitting,
+// for the first 32 CSEs attempted (Note this is not the same as
+// the CSE candidate number, which reflects the order
+// in which CSEs were discovered).
+//
+// 0: do no CSEs
+// 1: do only the first CSE
+// 2: do only the second CSE
+// C: do only the third and fourth CSEs
+// F: do only the first four CSEs
+// ...etc...
+// FFFFFFFF : do all the CSEs normally done
+CONFIG_INTEGER(JitCSEMask, W("JitCSEMask"), 0)
+
+// Enable metric output in jit disasm & elsewhere
+CONFIG_INTEGER(JitMetrics, W("JitMetrics"), 0)
+#endif
+
 ///
 /// JIT
 ///
@@ -425,7 +454,7 @@ CONFIG_INTEGER(JitDoVNBasedDeadStoreRemoval, W("JitDoVNBasedDeadStoreRemoval"), 
                                                                                    // removal
 CONFIG_INTEGER(JitDoRedundantBranchOpts, W("JitDoRedundantBranchOpts"), 1) // Perform redundant branch optimizations
 CONFIG_STRING(JitEnableRboRange, W("JitEnableRboRange"))
-CONFIG_STRING(JitEnableTailMergeRange, W("JitEnableTailMergeRange"))
+CONFIG_STRING(JitEnableHeadTailMergeRange, W("JitEnableHeadTailMergeRange"))
 CONFIG_STRING(JitEnableVNBasedDeadStoreRemovalRange, W("JitEnableVNBasedDeadStoreRemovalRange"))
 CONFIG_STRING(JitEnableEarlyLivenessRange, W("JitEnableEarlyLivenessRange"))
 CONFIG_STRING(JitOnlyOptimizeRange,
@@ -439,8 +468,6 @@ CONFIG_METHODSET(JitOptRepeat, W("JitOptRepeat"))            // Runs optimizer m
 CONFIG_INTEGER(JitOptRepeatCount, W("JitOptRepeatCount"), 2) // Number of times to repeat opts when repeating
 CONFIG_INTEGER(JitDoIfConversion, W("JitDoIfConversion"), 1) // Perform If conversion
 #endif                                                       // defined(OPT_CONFIG)
-
-CONFIG_INTEGER(JitTelemetry, W("JitTelemetry"), 1) // If non-zero, gather JIT telemetry data
 
 // Max # of MapSelect's considered for a particular top-level invocation.
 CONFIG_INTEGER(JitVNMapSelBudget, W("JitVNMapSelBudget"), DEFAULT_MAP_SELECT_BUDGET)
@@ -527,12 +554,12 @@ CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualiza
 
 #define MAX_GDV_TYPE_CHECKS 5
 // Number of types to probe for polymorphic virtual call-sites to devirtualize them,
-// Max number is MAX_GDV_TYPE_CHECKS defined above ^
-CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, W("JitGuardedDevirtualizationMaxTypeChecks"), 1)
+// Max number is MAX_GDV_TYPE_CHECKS defined above ^. -1 means it's up to JIT to decide
+CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, W("JitGuardedDevirtualizationMaxTypeChecks"), -1)
 
 // Various policies for GuardedDevirtualization
 CONFIG_INTEGER(JitGuardedDevirtualizationChainLikelihood, W("JitGuardedDevirtualizationChainLikelihood"), 0x4B) // 75
-CONFIG_INTEGER(JitGuardedDevirtualizationChainStatements, W("JitGuardedDevirtualizationChainStatements"), 4)
+CONFIG_INTEGER(JitGuardedDevirtualizationChainStatements, W("JitGuardedDevirtualizationChainStatements"), 1)
 #if defined(DEBUG)
 CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRange"))
 CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualization"), 0)
@@ -575,6 +602,7 @@ CONFIG_STRING(JitEnablePatchpointRange, W("JitEnablePatchpointRange"))
 // Profile instrumentation options
 CONFIG_INTEGER(JitInterlockedProfiling, W("JitInterlockedProfiling"), 0)
 CONFIG_INTEGER(JitScalableProfiling, W("JitScalableProfiling"), 1)
+CONFIG_INTEGER(JitCounterPadding, W("JitCounterPadding"), 0) // number of unused extra slots per counter
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 
@@ -589,16 +617,16 @@ CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)           // Profile 
 CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect counts as 64-bit values.
 
 // Profile consumption options
-CONFIG_INTEGER(JitDisablePgo, W("JitDisablePgo"), 0) // Ignore pgo data for all methods
+CONFIG_INTEGER(JitDisablePGO, W("JitDisablePGO"), 0) // Ignore PGO data for all methods
 #if defined(DEBUG)
-CONFIG_STRING(JitEnablePgoRange, W("JitEnablePgoRange"))         // Enable pgo data for only some methods
+CONFIG_STRING(JitEnablePGORange, W("JitEnablePGORange"))         // Enable PGO data for only some methods
 CONFIG_INTEGER(JitRandomEdgeCounts, W("JitRandomEdgeCounts"), 0) // Substitute random values for edge counts
 CONFIG_INTEGER(JitCrossCheckDevirtualizationAndPGO, W("JitCrossCheckDevirtualizationAndPGO"), 0)
 CONFIG_INTEGER(JitNoteFailedExactDevirtualization, W("JitNoteFailedExactDevirtualization"), 0)
 CONFIG_INTEGER(JitRandomlyCollect64BitCounts, W("JitRandomlyCollect64BitCounts"), 0) // Collect 64-bit counts randomly
                                                                                      // for some methods.
 // 1: profile synthesis for root methods
-// 2: profile synthesis for root methods w/o pgo data
+// 2: profile synthesis for root methods w/o PGO data
 // 3: profile synthesis for root methods, blend with existing PGO data
 CONFIG_INTEGER(JitSynthesizeCounts, W("JitSynthesizeCounts"), 0)
 // Check if synthesis left consistent counts
@@ -619,11 +647,11 @@ CONFIG_INTEGER(JitForceControlFlowGuard, W("JitForceControlFlowGuard"), 0);
 // 2: Default behavior, depends on platform (yes on x64, no on arm64)
 CONFIG_INTEGER(JitCFGUseDispatcher, W("JitCFGUseDispatcher"), 2)
 
-// Enable tail merging
-CONFIG_INTEGER(JitEnableTailMerge, W("JitEnableTailMerge"), 1)
+// Enable head and tail merging
+CONFIG_INTEGER(JitEnableHeadTailMerge, W("JitEnableHeadTailMerge"), 1)
 
 // Enable physical promotion
-CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 0)
+CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

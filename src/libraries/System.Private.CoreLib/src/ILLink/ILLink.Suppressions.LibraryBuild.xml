@@ -19,7 +19,7 @@
       <argument>ILLink</argument>
       <argument>IL2026</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.StartupHookProvider.ProcessStartupHooks()</property>
+      <property name="Target">M:System.StartupHookProvider.ProcessStartupHooks(System.String)</property>
       <property name="Justification">This warning is left in the product so developers get an ILLink warning when trimming an app with System.StartupHookProvider.IsSupported=true.</property>
     </attribute>
   </assembly>

@@ -97,12 +97,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Add SDK versions
             AddAvailableSdkVersions("9999.3.600");
 
+            // Add empty SDK version that is an exact match - should not be used
+            Directory.CreateDirectory(Path.Combine(ExecutableDotNet.BinPath, "sdk", "9999.3.4-global-dummy"));
+
             // Specified SDK version: 9999.3.4-global-dummy
-            // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.3, 9999.3.4, 9999.3.5-dummy, 9999.3.600
+            // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.3, 9999.3.4, 9999.3.5-dummy, 9999.3.600, 9999.3.4-global.dummy (empty)
             // Expected: 9999.3.5-dummy from exe dir
             RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.3.5-dummy"));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.3.5-dummy"))
+                .And.HaveStdErrContaining("Ignoring version [9999.3.4-global-dummy] without dotnet.dll");
 
             // Add SDK versions
             AddAvailableSdkVersions("9999.3.4-global-dummy");
@@ -313,13 +317,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Add SDK versions
             AddAvailableSdkVersions("9999.0.52000000");
 
+            // Add empty SDK version that is higher than any available version - should not be used
+            Directory.CreateDirectory(Path.Combine(ExecutableDotNet.BinPath, "sdk", "9999.1.0"));
+
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10, 9999.0.3, 9999.0.100, 9999.0.80, 9999.0.5500000, 9999.0.52000000
             // Expected: 9999.0.52000000 from exe dir
             RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.52000000"));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.52000000"))
+                .And.HaveStdErrContaining("Ignoring version [9999.1.0] without dotnet.dll");
 
             // Verify we have the expected SDK versions
             RunTest("--list-sdks")
@@ -331,7 +339,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("9999.0.100")
                 .And.HaveStdOutContaining("9999.0.80")
                 .And.HaveStdOutContaining("9999.0.5500000")
-                .And.HaveStdOutContaining("9999.0.52000000");
+                .And.HaveStdOutContaining("9999.0.52000000")
+                .And.NotHaveStdOutContaining("9999.1.0");
         }
 
         [Theory]

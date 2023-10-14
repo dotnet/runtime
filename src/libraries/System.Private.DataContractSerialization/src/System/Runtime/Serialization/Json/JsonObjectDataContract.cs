@@ -70,7 +70,7 @@ namespace System.Runtime.Serialization.Json
                 throw new XmlException(SR.Format(SR.XmlInvalidConversion, value, Globals.TypeOfInt));
             }
 
-            if (value.AsSpan().IndexOfAny('.', 'e', 'E') < 0)
+            if (!value.AsSpan().ContainsAny('.', 'e', 'E'))
             {
                 int intValue;
                 if (int.TryParse(value, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out intValue))

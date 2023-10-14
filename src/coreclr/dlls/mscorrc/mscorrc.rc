@@ -525,7 +525,6 @@ BEGIN
     IDS_CLASSLOAD_TOO_MANY_METHODS          "Type '%1' from assembly '%2' contains more methods than the current implementation allows."
     IDS_CLASSLOAD_MI_CANNOT_OVERRIDE        "Cannot override runtime implemented method '%3' on type '%1' from assembly '%2'."
 
-    IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR   "Collectible type '%1' has unsupported FixedAddressValueTypeAttribute applied to a field."
     IDS_EE_JIT_COMPILER_ERROR               "The JIT compiler encountered invalid IL code or an internal limitation."
     IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED  "Invalid managed/unmanaged type combination (Marshaling to and from COM VARIANTs isn't supported)."
     IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED      "Invalid managed/unmanaged type combination (Marshaling to and from COM interface pointers isn't supported)."
@@ -606,6 +605,7 @@ BEGIN
         BFA_GENERIC_METHODS_INST                "Generic methods should always be mcInstantiated."
         BFA_BAD_FIELD_TOKEN                     "Field token out of range."
         BFA_INVALID_FIELD_ACC_FLAGS             "Invalid Field Access Flags."
+        BFA_INVALID_UNSAFEACCESSOR              "Invalid usage of UnsafeAccessorAttribute."
         BFA_FIELD_LITERAL_AND_INIT              "Field is Literal and InitOnly."
         BFA_NONSTATIC_GLOBAL_FIELD              "Non-Static Global Field."
         BFA_INSTANCE_FIELD_IN_INT               "Instance Field in an Interface."

@@ -171,7 +171,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
         public void VerifyRuntimeNameOnNetCoreApp()
         {
             Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET"), RuntimeInformation.FrameworkDescription);

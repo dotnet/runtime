@@ -10,9 +10,9 @@
       Public properties (optional):
       - $(WasmAppDir)        - AppBundle dir (Defaults to `$(OutputPath)\$(Configuration)\AppBundle`)
       - $(WasmMainAssemblyFileName)- Defaults to $(TargetFileName)
-      - $(WasmBuildNative)   - Whenever to build the native executable. Defaults to false.
-      - $(WasmNativeStrip)   - Whenever to strip the native executable. Defaults to true.
-      - $(WasmLinkIcalls)    - Whenever to link out unused icalls. Defaults to $(WasmBuildNative).
+      - $(WasmBuildNative)   - Whether to build the native executable. Defaults to false.
+      - $(WasmNativeStrip)   - Whether to strip the native executable. Defaults to true.
+      - $(WasmLinkIcalls)    - Whether to link out unused icalls. Defaults to $(WasmBuildNative).
       - $(RunAOTCompilation) - Defaults to false.
 
       - $(WasmDebugLevel)
@@ -23,12 +23,14 @@
       - $(WasmNativeDebugSymbols) - Build with native debug symbols, useful only with `$(RunAOTCompilation)`, or `$(WasmBuildNative)`
                                     Defaults to true.
       - $(WasmEmitSymbolMap)      - Generates a `dotnet.native.js.symbols` file with a map of wasm function number to name.
-      - $(WasmDedup)         - Whenever to dedup generic instances when using AOT. Defaults to true.
+      - $(WasmEmitSourceMap)      - Generates `dotnet.runtime.js.map` and `dotnet.js.map` files with a TypeScript source map.
+      - $(WasmDedup)         - Whether to dedup generic instances when using AOT. Defaults to true.
 
       - $(WasmProfilers)     - Profilers to use
       - $(AOTProfilePath)    - profile data file to be used for profile-guided optimization
-      - $(InvariantGlobalization)       - Whenever to disable ICU. Defaults to false.
-      - $(HybridGlobalization)          - Whenever to enable reduced ICU + native platform functions. Defaults to false and can be set only for InvariantGlobalization=false, WasmIncludeFullIcuData=false and empty WasmIcuDataFileName.
+      - $(InvariantGlobalization)       - Whether to disable ICU. Defaults to false.
+      - $(InvariantTimezone)            - Whether to disable Timezone database. Defaults to false.
+      - $(HybridGlobalization)          - Whether to enable reduced ICU + native platform functions. Defaults to false and can be set only for InvariantGlobalization=false, WasmIncludeFullIcuData=false and empty WasmIcuDataFileName.
 
       - $(WasmResolveAssembliesBeforeBuild) - Resolve the assembly dependencies. Defaults to false
       - $(WasmAssemblySearchPaths)          - used for resolving assembly dependencies
@@ -55,6 +57,8 @@
       - $(EmccInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 16777216 or size of the DLLs, whichever is larger.
                                               Corresponds to `-s INITIAL_MEMORY=...` emcc arg.
                                               (previously named EmccTotalMemory, which is still kept as an alias)
+      - $(EmccMaximumHeapSize)              - Maximum heap size specified with `emcc`. Default value: 2147483648 or size of the DLLs, whichever is larger.
+                                              Corresponds to `-s MAXIMUM_MEMORY=...` emcc arg.
       - $(EmccStackSize)                    - Stack size. Default value: 5MB.
                                               Corresponds to `-s STACK_SIZE=...` emcc arg.
 
@@ -77,6 +81,14 @@
       - $(WasmAllowUndefinedSymbols)        - Controls whether undefined symbols are allowed or not,
                                               if true, appends 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=0' as arguments for wasm-ld,
                                               if false (default), removes 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=1'.
+      - $(WasmRuntimeAssetsLocation)        - Allows to override a location for build generated files. 
+                                              Defaults to '_framework', if you want to put framework files in the same directory as user files, use './' value.
+                                              Output structure
+                                              - AppBundle directly contains user files
+                                              - AppBundle/_framework contains generated files (dlls, runtime scripts, icu)
+                                              - AppBundle/_content contains web files from nuget packages (css, js, etc)
+      - $(WasmStripILAfterAOT)                      - Set to true to enable trimming away AOT compiled methods body (IL code)
+                                              Defaults to false.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -135,6 +147,14 @@
 
     <!-- by default, package assemblies as webcil -->
     <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''">true</WasmEnableWebcil>
+    <WasmAssemblyExtension Condition="'$(WasmEnableWebcil)' == 'true'">.wasm</WasmAssemblyExtension>
+    <WasmAssemblyExtension Condition="'$(WasmEnableWebcil)' != 'true'">.dll</WasmAssemblyExtension>
+
+    <!-- by default, method body IL code trimming is disabled -->
+    <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">false</WasmStripILAfterAOT>
+
+    <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
+    <BlazorCacheBootResources Condition="'$(BlazorCacheBootResources)' == ''">true</BlazorCacheBootResources>
   </PropertyGroup>
 
   <ItemGroup>
@@ -144,6 +164,10 @@
     <SupportedPlatform Condition="'$(IsBrowserWasmProject)' == 'true'" Remove="@(SupportedPlatform)" />
     <SupportedPlatform Condition="'$(IsBrowserWasmProject)' == 'true'" Include="browser" />
   </ItemGroup>
+
+  <PropertyGroup Label="Feature switches default values">
+    <MetricsSupport Condition="'$(MetricsSupport)' == ''">false</MetricsSupport>
+  </PropertyGroup>
 
   <PropertyGroup Label="Identify app bundle directory to run from">
     <!-- Allow running from custom WasmAppDir -->
@@ -158,7 +182,15 @@
 
       The path might not have been created yet, for example when creating a new project in VS, so don't use an Exists() check
     -->
-    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">$([System.IO.Path]::Combine($(OutputPath), 'browser-wasm', 'AppBundle'))</_AppBundleDirForRunCommand>
+
+    <!-- This is the only case where OutputPath needs an additional part -->
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and '$(UseArtifactsOutput)' == '' and '$(AppendRuntimeIdentifierToOutputPath)' != 'false'">$([System.IO.Path]::Combine($(OutputPath), 'browser-wasm', 'AppBundle'))</_AppBundleDirForRunCommand>
+
+    <!--
+      In case of UseArtifactsOutput==true, the path is like `OutputPath=./bin/wc0/debug_browser-wasm/`. And
+      it remains the same even if `AppendRuntimeIdentifierToOutputPath`==true .
+    -->
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">$([System.IO.Path]::Combine($(OutputPath), 'AppBundle'))</_AppBundleDirForRunCommand>
 
     <!-- Ensure the path is absolute. In case of VS, the cwd might not be the correct one, so explicitly
          use $(MSBuildProjectDirectory). -->
@@ -257,6 +289,19 @@
       <_WasmShouldAOT Condition="'$(_WasmShouldAOT)' == ''">false</_WasmShouldAOT>
     </PropertyGroup>
 
+    <ItemGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
+      <!-- find the path with the assemblies, so we don't have to hardcode the tfm.
+           Cannot use System.Private.Corelib since that is in a different directory -->
+      <_SystemRuntimePathItem Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\net*\System.Runtime.dll" />
+    </ItemGroup>
+
+    <Error Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == '' and @(_SystemRuntimePathItem->Count()) == 0" Text="Could not find System.Runtime.dll in $(MicrosoftNetCoreAppRuntimePackRidDir). This is likely a setup issue." />
+    <Error Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == '' and @(_SystemRuntimePathItem->Count()) > 1" Text="Found more than one System.Runtime.dll. This is likely a setup issue." />
+
+    <PropertyGroup Condition="'$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)' == ''">
+      <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([System.IO.Path]::GetDirectoryName(%(_SystemRuntimePathItem.Identity)))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
+    </PropertyGroup>
+
     <MakeDir Directories="$(WasmCachePath)" Condition="'$(WasmCachePath)' != '' and !Exists($(WasmCachePath))" />
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
   </Target>
@@ -327,6 +372,8 @@
   <Target Name="_GetWasmGenerateAppBundleDependencies">
     <Warning Condition="'$(InvariantGlobalization)' == 'true' and '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <Warning Condition="'$(WasmIcuDataFileName)' != '' and '$(HybridGlobalization)' == 'true'" Text="%24(WasmIcuDataFileName) has no effect when %24(HybridGlobalization) is set to true." />
+    <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." /> 
+ 
     <PropertyGroup>
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.js'">true</_HasDotnetJsWorker>
@@ -348,11 +395,15 @@
                        Condition="'$(WasmEmitSymbolMap)' == 'true' and
                                   '$(_HasDotnetJsSymbols)' != 'true' and
                                   Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols')" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.map"
+                       Condition="'$(WasmEmitSourceMap)' != 'false'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js.map"
+                       Condition="'$(WasmEmitSourceMap)' != 'false'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
       <_HybridGlobalizationDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
-      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*"  Exclude="@(_HybridGlobalizationDataFiles)"/>
+      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*"  Exclude="@(_HybridGlobalizationDataFiles);$(_WasmIcuDataFileName)"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
       <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
@@ -360,6 +411,8 @@
       <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
     </ItemGroup>
 
+    <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->'%(Filename)')."/>
+    <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(WasmIcuDataFileName)' != '' and !$([System.IO.Path]::GetFileName('$(WasmIcuDataFileName)').StartsWith('icudt'))" Text="Custom ICU file name in path %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) must start with 'icudt'."/>
   </Target>
 
   <Target Name="_WasmGenerateAppBundle"
@@ -367,12 +420,10 @@
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'"
           DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies">
-    <Error Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(_WasmIcuDataFileName)')" Text="File in location %24(WasmIcuDataFileName)=$(WasmIcuDataFileName) cannot be found neither when used as absolute path nor a relative runtime pack path. You might want to pass one of the values: @(_IcuAvailableDataFiles->' %(Filename)')."/>
-    <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." />
-
+          
     <PropertyGroup>
-      <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</_WasmAppIncludeThreadsWorker>
-      <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.js -->
+      <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread'">true</_WasmAppIncludeThreadsWorker>
+      <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.native.js -->
       <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == ''">-1</_WasmPThreadPoolSize>
     </PropertyGroup>
 
@@ -402,6 +453,10 @@
       IncludeThreadsWorker="$(_WasmAppIncludeThreadsWorker)"
       PThreadPoolSize="$(_WasmPThreadPoolSize)"
       UseWebcil="$(WasmEnableWebcil)"
+      WasmIncludeFullIcuData="$(WasmIncludeFullIcuData)"
+      WasmIcuDataFileName="$(WasmIcuDataFileName)"
+      RuntimeAssetsLocation="$(WasmRuntimeAssetsLocation)"
+      CacheBootResources="$(BlazorCacheBootResources)"
       >
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
@@ -424,7 +479,7 @@
     </PropertyGroup>
 
     <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunV8ScriptPath)." />
-    
+
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
       Lines="$(V8ScriptShebang);v8 --expose_wasm --module $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"

@@ -2135,11 +2135,6 @@ HRESULT CordbThread::InterceptCurrentException(ICorDebugFrame * pFrame)
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
-    // Continuable exceptions are not implemented on Unix-like platforms.
-    return E_NOTIMPL;
-
-#else  // !FEATURE_DBGIPC_TRANSPORT_DI
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -2216,7 +2211,6 @@ HRESULT CordbThread::InterceptCurrentException(ICorDebugFrame * pFrame)
     }
     EX_CATCH_HRESULT(hr);
     return hr;
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
 }
 
 //---------------------------------------------------------------------------------------
@@ -8581,10 +8575,10 @@ HRESULT CordbJITILFrame::RemapFunction(ULONG32 nOffset)
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
     {
-#if !defined(FEATURE_ENC_SUPPORTED)
+#if !defined(FEATURE_REMAP_FUNCTION)
         ThrowHR(E_NOTIMPL);
 
-#else  // FEATURE_ENC_SUPPORTED
+#else  // FEATURE_REMAP_FUNCTION
         // Can only be called on leaf frame.
         if (!m_nativeFrame->IsLeafFrame())
         {
@@ -8601,7 +8595,7 @@ HRESULT CordbJITILFrame::RemapFunction(ULONG32 nOffset)
         // Tell the left-side to do the remap
         hr = m_nativeFrame->m_pThread->SetRemapIP(nOffset);
 
-#endif // FEATURE_ENC_SUPPORTED
+#endif // FEATURE_REMAP_FUNCTION
     }
     PUBLIC_API_END(hr);
 

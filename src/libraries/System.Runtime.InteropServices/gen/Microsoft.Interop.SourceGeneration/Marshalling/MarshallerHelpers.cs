@@ -1,73 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
     public static class MarshallerHelpers
     {
-        public static readonly TypeSyntax SystemIntPtrType = ParseTypeName(TypeNames.System_IntPtr);
-
-        public static ForStatementSyntax GetForLoop(ExpressionSyntax lengthExpression, string indexerIdentifier)
-        {
-            // for(int <indexerIdentifier> = 0; <indexerIdentifier> < <lengthIdentifier>; ++<indexerIdentifier>)
-            //      ;
-            return ForStatement(EmptyStatement())
-            .WithDeclaration(
-                VariableDeclaration(
-                    PredefinedType(
-                        Token(SyntaxKind.IntKeyword)))
-                .WithVariables(
-                    SingletonSeparatedList(
-                        VariableDeclarator(
-                            Identifier(indexerIdentifier))
-                        .WithInitializer(
-                            EqualsValueClause(
-                                LiteralExpression(
-                                    SyntaxKind.NumericLiteralExpression,
-                                    Literal(0)))))))
-            .WithCondition(
-                BinaryExpression(
-                    SyntaxKind.LessThanExpression,
-                    IdentifierName(indexerIdentifier),
-                    lengthExpression))
-            .WithIncrementors(
-                SingletonSeparatedList<ExpressionSyntax>(
-                    PrefixUnaryExpression(
-                        SyntaxKind.PreIncrementExpression,
-                        IdentifierName(indexerIdentifier))));
-        }
-
-        public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, bool initializeToDefault)
-        {
-            return Declare(typeSyntax, identifier, initializeToDefault ? LiteralExpression(SyntaxKind.DefaultLiteralExpression) : null);
-        }
-
-        public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, ExpressionSyntax? initializer)
-        {
-            VariableDeclaratorSyntax decl = VariableDeclarator(identifier);
-            if (initializer is not null)
-            {
-                decl = decl.WithInitializer(
-                    EqualsValueClause(
-                        initializer));
-            }
-
-            // <type> <identifier>;
-            // or
-            // <type> <identifier> = <initializer>;
-            return LocalDeclarationStatement(
-                VariableDeclaration(
-                    typeSyntax,
-                    SingletonSeparatedList(decl)));
-        }
+        public static readonly TypeSyntax SystemIntPtrType = TypeSyntaxes.System_IntPtr;
 
         public static RefKind GetRefKindForByValueContentsKind(this ByValueContentsMarshalKind byValue)
         {
@@ -87,45 +33,33 @@ namespace Microsoft.Interop
             if (spanElementTypeSyntax is PointerTypeSyntax)
             {
                 // Pointers cannot be passed to generics, so use IntPtr for this case.
-                spanElementTypeSyntax = SystemIntPtrType;
+                spanElementTypeSyntax = TypeSyntaxes.System_IntPtr;
             }
             return spanElementTypeSyntax;
         }
 
 
-        // Marshal.SetLastSystemError(<errorCode>);
+        /// <summary>
+        /// <c>Marshal.SetLastSystemError(<paramref name="errorCode"/>);</c>
+        /// </summary>
         public static StatementSyntax CreateClearLastSystemErrorStatement(int errorCode) =>
-            ExpressionStatement(
-                InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
-                        IdentifierName("SetLastSystemError")),
-                    ArgumentList(SingletonSeparatedList(
-                        Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(errorCode)))))));
+            MethodInvocationStatement(
+                TypeSyntaxes.System_Runtime_InteropServices_Marshal,
+                IdentifierName("SetLastSystemError"),
+                Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(errorCode))));
 
-        // <lastError> = Marshal.GetLastSystemError();
+        /// <summary>
+        /// <code><paramref name="lastErrorIdentifier"/> = Marshal.GetLastSystemError();</code>
+        /// </summary>
         public static StatementSyntax CreateGetLastSystemErrorStatement(string lastErrorIdentifier) =>
-            ExpressionStatement(
-                AssignmentExpression(
-                    SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(lastErrorIdentifier),
-                    InvocationExpression(
-                        MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
-                        IdentifierName("GetLastSystemError")))));
+            AssignmentStatement(IdentifierName(lastErrorIdentifier), MethodInvocation(TypeSyntaxes.System_Runtime_InteropServices_Marshal, IdentifierName("GetLastSystemError")));
 
-        // Marshal.SetLastPInvokeError(<lastError>);
+        //
+        /// <summary>
+        /// <code>Marshal.SetLastPInvokeError(<paramref name="lastErrorIdentifier"/>);</code>
+        /// </summary>
         public static StatementSyntax CreateSetLastPInvokeErrorStatement(string lastErrorIdentifier) =>
-            ExpressionStatement(
-                InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
-                        IdentifierName("SetLastPInvokeError")),
-                    ArgumentList(SingletonSeparatedList(
-                        Argument(IdentifierName(lastErrorIdentifier))))));
+            MethodInvocationStatement(TypeSyntaxes.System_Runtime_InteropServices_Marshal, IdentifierName("SetLastPInvokeError"), Argument(IdentifierName(lastErrorIdentifier)));
 
         public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
         {
@@ -145,6 +79,11 @@ namespace Microsoft.Interop
         public static string GetNumElementsIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             return context.GetAdditionalIdentifier(info, "numElements");
+        }
+
+        public static string GetLastIndexMarshalledIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.GetAdditionalIdentifier(info, "lastIndexMarshalled");
         }
 
         internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
@@ -301,35 +240,26 @@ namespace Microsoft.Interop
             }
         }
 
+        // private static readonly InvocationExpressionSyntax SkipInitInvocation =
         public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubCodeContext context)
         {
-            (TargetFramework fmk, _) = context.GetTargetFramework();
             if (info.ManagedType is not PointerTypeInfo
                 && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
-                && fmk is TargetFramework.Net)
+                && context.CodeEmitOptions.SkipInit)
             {
                 // Use the Unsafe.SkipInit<T> API when available and
                 // managed type is usable as a generic parameter.
                 return ExpressionStatement(
-                    InvocationExpression(
-                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
-                            IdentifierName("SkipInit")))
-                    .WithArgumentList(
-                        ArgumentList(SingletonSeparatedList(
-                            Argument(IdentifierName(info.InstanceIdentifier))
-                            .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))))));
+                    MethodInvocation(TypeSyntaxes.System_Runtime_CompilerServices_Unsafe, IdentifierName("SkipInit"),
+                                Argument(IdentifierName(info.InstanceIdentifier))
+                                .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))));
             }
             else
             {
                 // Assign out params to default
-                return ExpressionStatement(
-                    AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(info.InstanceIdentifier),
-                        LiteralExpression(
-                            SyntaxKind.DefaultLiteralExpression,
-                            Token(SyntaxKind.DefaultKeyword))));
+                return AssignmentStatement(
+                    IdentifierName(info.InstanceIdentifier),
+                    LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword)));
             }
         }
 
@@ -389,6 +319,66 @@ namespace Microsoft.Interop
                     return MarshalDirection.ManagedToUnmanaged;
             }
             throw new UnreachableException("An element is either a return value or passed by value or by ref.");
+        }
+
+        /// <summary>
+        /// Returns which stage cleanup should be performed for the parameter.
+        /// </summary>
+        public static StubCodeContext.Stage GetCleanupStage(TypePositionInfo info, StubCodeContext context)
+        {
+            // Unmanaged to managed doesn't properly handle lifetimes right now and will default to the original behavior.
+            // Failures will only occur when marshalling fails, and would only cause leaks, not double frees.
+            // See https://github.com/dotnet/runtime/issues/89483 for more details
+            if (context.Direction is MarshalDirection.UnmanagedToManaged)
+                return StubCodeContext.Stage.CleanupCallerAllocated;
+
+            return GetMarshalDirection(info, context) switch
+            {
+                MarshalDirection.UnmanagedToManaged => StubCodeContext.Stage.CleanupCalleeAllocated,
+                MarshalDirection.ManagedToUnmanaged => StubCodeContext.Stage.CleanupCallerAllocated,
+                MarshalDirection.Bidirectional => StubCodeContext.Stage.CleanupCallerAllocated,
+                _ => throw new UnreachableException()
+            };
+        }
+
+        /// <summary>
+        /// Ensure that the count of a collection is available at call time if the parameter is not an out parameter.
+        /// It only looks at an indirection level of 0 (the size of the outer array), so there are some holes in
+        /// analysis if the parameter is a multidimensional array, but that case seems very unlikely to be hit.
+        /// </summary>
+        public static void ValidateCountInfoAvailableAtCall(MarshalDirection stubDirection, TypePositionInfo info, GeneratorDiagnosticsBag generatorDiagnostics, IMethodSymbol symbol, DiagnosticDescriptor outParamDescriptor, DiagnosticDescriptor returnValueDescriptor)
+        {
+            // In managed to unmanaged stubs, we can always just get the length of managed object
+            // We only really need to be concerned about unmanaged to managed stubs
+            if (stubDirection is MarshalDirection.ManagedToUnmanaged)
+                return;
+
+            if (!(info.RefKind is RefKind.Out
+                    || info.ManagedIndex is TypePositionInfo.ReturnIndex)
+                && info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
+                && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo)
+            {
+                if (countInfo.ElementInfo.IsByRef && countInfo.ElementInfo.RefKind is RefKind.Out)
+                {
+                    Location location = TypePositionInfo.GetLocation(info, symbol);
+                    generatorDiagnostics.ReportDiagnostic(
+                        DiagnosticInfo.Create(
+                            outParamDescriptor,
+                            location,
+                            info.InstanceIdentifier,
+                            countInfo.ElementInfo.InstanceIdentifier));
+                }
+                else if (countInfo.ElementInfo.ManagedIndex is TypePositionInfo.ReturnIndex)
+                {
+                    Location location = TypePositionInfo.GetLocation(info, symbol);
+                    generatorDiagnostics.ReportDiagnostic(
+                        DiagnosticInfo.Create(
+                            returnValueDescriptor,
+                            location,
+                            info.InstanceIdentifier));
+                }
+                // If the parameter is multidimensional and a higher indirection level parameter is ByValue [Out], then we should warn.
+            }
         }
     }
 }

@@ -1,0 +1,34 @@
+<Project>
+
+  <PropertyGroup>
+    <GeneratorProjectBaseTargetPath>analyzers/dotnet</GeneratorProjectBaseTargetPath>
+    <GeneratorProjectBaseTargetPath Condition="'$(AnalyzerLanguage)' != ''">$(GeneratorProjectBaseTargetPath)/$(AnalyzerLanguage)</GeneratorProjectBaseTargetPath>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <GeneratorProjectBaseTargetPath>$(GeneratorProjectBaseTargetPath)</GeneratorProjectBaseTargetPath>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
+
+  <Target Name="GetAnalyzerPackFiles"
+          DependsOnTargets="$(GenerateNuspecDependsOn)"
+          Returns="@(_AnalyzerPackFile)">
+    <PropertyGroup>
+      <_analyzerPath>analyzers/dotnet</_analyzerPath>
+      <_analyzerPath Condition="'$(AnalyzerRoslynVersion)' != ''">$(_analyzerPath)/roslyn$(AnalyzerRoslynVersion)</_analyzerPath>
+      <_analyzerPath Condition="'$(AnalyzerLanguage)' != ''">$(_analyzerPath)/$(AnalyzerLanguage)</_analyzerPath>
+    </PropertyGroup>
+
+    <!-- Filter on netstandard2.0 so that generator projects can multi-target for the purpose of enabling nullable reference type compiler checks. -->
+    <ItemGroup>
+      <_AnalyzerPackFile Include="@(_BuildOutputInPackage->WithMetadataValue('TargetFramework', 'netstandard2.0'))" IsSymbol="false" />
+      <_AnalyzerPackFile Include="@(_TargetPathsToSymbols->WithMetadataValue('TargetFramework', 'netstandard2.0'))" IsSymbol="true" />
+      <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
+    </ItemGroup>
+
+    <Error Text="Analyzers must target netstandard2.0 since they run in the compiler which targets netstandard2.0. $(MSBuildProjectFullPath) targets '$([MSBuild]::ValueOrDefault('$(TargetFrameworks)', '$(TargetFramework)'))' instead."
+           Condition="'@(_AnalyzerPackFile)' == ''" />
+  </Target>
+
+</Project>

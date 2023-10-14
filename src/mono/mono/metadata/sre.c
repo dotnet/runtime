@@ -388,7 +388,8 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 	if (!cattrs || !mono_array_length_internal (cattrs))
 		return;
 
-	ainfo = mono_custom_attrs_from_builders (image, image, cattrs);
+	// setting custom attributes should not take attribute visibility into account
+	ainfo = mono_custom_attrs_from_builders (image, image, cattrs, FALSE);
 
 	mono_loader_lock ();
 	tmp = (MonoCustomAttrInfo *)mono_image_property_lookup (image, obj, MONO_PROP_DYNAMIC_CATTR);
@@ -1188,13 +1189,13 @@ leave:
 static gpointer
 register_assembly (MonoReflectionAssembly *res, MonoAssembly *assembly)
 {
-	return CACHE_OBJECT (MonoReflectionAssembly *, mono_mem_manager_get_ambient (), assembly, &res->object, NULL);
+	return CACHE_OBJECT (MonoReflectionAssembly *, mono_mem_manager_get_ambient (), MONO_REFL_CACHE_NO_HOT_RELOAD_INVALIDATE, assembly, &res->object, NULL);
 }
 
 static MonoReflectionModuleBuilderHandle
 register_module (MonoReflectionModuleBuilderHandle res, MonoDynamicImage *module)
 {
-	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, mono_mem_manager_get_ambient (), module, MONO_HANDLE_CAST (MonoObject, res), NULL);
+	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, mono_mem_manager_get_ambient (), MONO_REFL_CACHE_NO_HOT_RELOAD_INVALIDATE, module, MONO_HANDLE_CAST (MonoObject, res), NULL);
 }
 
 /*
@@ -1288,6 +1289,7 @@ image_module_basic_init (MonoReflectionModuleBuilderHandle moduleb, MonoError *e
 		 * determined at assembly save time.
 		 */
 		/*image = (MonoDynamicImage*)ab->dynamic_assembly->assembly.image; */
+		MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 		MonoStringHandle abname = MONO_HANDLE_NEW_GET (MonoString, ab, name);
 		char *name = mono_string_handle_to_utf8 (abname, error);
 		return_val_if_nok (error, FALSE);
@@ -1299,6 +1301,7 @@ image_module_basic_init (MonoReflectionModuleBuilderHandle moduleb, MonoError *e
 		}
 		MonoDynamicAssembly *dynamic_assembly = MONO_HANDLE_GETVAL (ab, dynamic_assembly);
 		image = mono_dynamic_image_create (dynamic_assembly, name, fqname);
+		image->image.alc = alc;
 
 		MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoReflectionModule, moduleb), image, MonoImage*, &image->image);
 		MONO_HANDLE_SETVAL (moduleb, dynamic_image, MonoDynamicImage*, image);
@@ -3087,7 +3090,8 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				if (pb->cattrs) {
 					if (!method_aux->param_cattr)
 						method_aux->param_cattr = image_g_new0 (image, MonoCustomAttrInfo*, m->signature->param_count + 1);
-					method_aux->param_cattr [i] = mono_custom_attrs_from_builders (image, klass->image, pb->cattrs);
+					// setting custom attributes should not take attribute visibility into account
+					method_aux->param_cattr [i] = mono_custom_attrs_from_builders (image, klass->image, pb->cattrs, FALSE);
 				}
 			}
 		}

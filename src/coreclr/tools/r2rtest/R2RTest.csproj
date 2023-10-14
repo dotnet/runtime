@@ -11,17 +11,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build">
-      <Version>16.0.461</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Build.Framework">
-      <Version>16.0.461</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
-      <Version>$(TraceEventVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.CommandLine">
-      <Version>$(SystemCommandLineVersion)</Version>
-    </PackageReference>
+    <Compile Include="..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\aot\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
 </Project>

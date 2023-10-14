@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using Microsoft.DotNet.Cli.Build;
+using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -49,6 +50,15 @@ namespace Microsoft.DotNet.CoreSetup.Test
             };
         }
 
+        public static TestApp CreateFromBuiltAssets(string appName)
+        {
+            TestApp app = CreateEmpty(appName);
+            TestArtifact.CopyRecursive(
+                Path.Combine(RepoDirectoriesProvider.Default.TestAssetsOutput, appName),
+                app.Location);
+            return app;
+        }
+
         public void PopulateFrameworkDependent(string fxName, string fxVersion, Action<NetCoreAppBuilder> customizer = null)
         {
             var builder = NetCoreAppBuilder.PortableForNETCoreApp(this);
@@ -65,6 +75,23 @@ namespace Microsoft.DotNet.CoreSetup.Test
             builder.Build(this);
         }
 
+        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true)
+            => CreateAppHost(Binaries.AppHost.FilePath, isWindowsGui, copyResources);
+
+        public void CreateSingleFileHost(bool isWindowsGui = false, bool copyResources = true)
+            => CreateAppHost(Binaries.SingleFileHost.FilePath, isWindowsGui, copyResources);
+
+        public void CreateAppHost(string hostSourcePath, bool isWindowsGui = false, bool copyResources = true)
+        {
+            // Use the live-built apphost and HostModel to create the apphost to run
+            HostWriter.CreateAppHost(
+                hostSourcePath,
+                AppExe,
+                Path.GetFileName(AppDll),
+                windowsGraphicalUserInterface: isWindowsGui,
+                assemblyToCopyResourcesFrom: copyResources ? AppDll : null);
+        }
+
         public enum MockedComponent
         {
             None,       // Product components
@@ -76,9 +103,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             var builder = NetCoreAppBuilder.ForNETCoreApp(Name, RepoDirectoriesProvider.Default.TargetRID);
 
-            // Update the .runtimeconfig.json
+            // Update the .runtimeconfig.json - add included framework and remove any existing NETCoreApp framework
             builder.WithRuntimeConfig(c =>
-                c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion));
+                c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion)
+                    .RemoveFramework(Constants.MicrosoftNETCoreApp));
 
             // Add main project assembly
             builder.WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()));
@@ -89,7 +117,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 if (mock == MockedComponent.None)
                 {
                     // All product components
-                    var (assemblies, nativeLibraries) = GetRuntimeFiles();
+                    var (assemblies, nativeLibraries) = Binaries.GetRuntimeFiles();
                     l.WithAssemblyGroup(string.Empty, g =>
                     {
                         foreach (var file in assemblies)
@@ -160,29 +188,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             HostPolicyDll = Path.Combine(Location, Binaries.HostPolicy.FileName);
             HostFxrDll = Path.Combine(Location, Binaries.HostFxr.FileName);
             CoreClrDll = Path.Combine(Location, Binaries.CoreClr.FileName);
-        }
-
-        private static (IEnumerable<string> Assemblies, IEnumerable<string> NativeLibraries) GetRuntimeFiles()
-        {
-            var runtimePackDir = new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet).GreatestVersionSharedFxPath;
-            var assemblies = Directory.GetFiles(runtimePackDir, "*.dll").Where(f => IsAssembly(f));
-
-            (string prefix, string suffix) = Binaries.GetSharedLibraryPrefixSuffix();
-            var nativeLibraries = Directory.GetFiles(runtimePackDir, $"{prefix}*{suffix}").Where(f => !IsAssembly(f));
-
-            return (assemblies, nativeLibraries);
-
-            static bool IsAssembly(string filePath)
-            {
-                if (Path.GetExtension(filePath) != ".dll")
-                    return false;
-
-                using (var fs = File.OpenRead(filePath))
-                using (var peReader = new System.Reflection.PortableExecutable.PEReader(fs))
-                {
-                    return peReader.HasMetadata && peReader.GetMetadataReader().IsAssembly;
-                }
-            }
         }
     }
 }

@@ -46,11 +46,6 @@ namespace System.Text.Unicode
         /// </remarks>
         public static unsafe OperationStatus FromUtf16(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
-
-            _ = source.Length;
-            _ = destination.Length;
-
             fixed (char* pOriginalSource = &MemoryMarshal.GetReference(source))
             fixed (byte* pOriginalDestination = &MemoryMarshal.GetReference(destination))
             {
@@ -137,10 +132,8 @@ namespace System.Text.Unicode
         /// </remarks>
         public static unsafe OperationStatus ToUtf16(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
-            // Throwaway span accesses - workaround for https://github.com/dotnet/runtime/issues/12332
-
-            _ = source.Length;
-            _ = destination.Length;
+            // NOTE: Changes to this method should be kept in sync with ToUtf16PreservingReplacement below.
+            // See it for an explanation of the differences
 
             // We'll be mutating these values throughout our loop.
 
@@ -223,7 +216,106 @@ namespace System.Text.Unicode
             }
         }
 
-        /// <summary>Writes the specified interpolated string to the UTF8 byte span.</summary>
+        internal static unsafe OperationStatus ToUtf16PreservingReplacement(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
+        {
+            // NOTE: Changes to this method should be kept in sync with ToUtf16 above.
+            //
+            // This method exists to allow certain internal comparisons to function as expected under ICU.
+            // Essentially, ICU treats invalid UTF-16 sequences as opaque characters that only compare
+            // equal to themselves. This means "\uD800\uD801".StartsWith("\uD800") returns true. To support
+            // similar for UTF-8 and allow comparisons like "\xFF\xFE"u8.CultureAwareStartsWith("\xFF"u8)
+            // to also return true, we replace each character in an invalid UTF-8 sequence such that it
+            // becomes 0xDF?? where ?? is the individual UTF-8 byte. Thus the above becomes 0xDFFF, 0xDFFE.
+            // This allows them to compare as invalid UTF-16 sequences and thus only match with the same
+            // invalid sequence.
+
+            // We'll be mutating these values throughout our loop.
+
+            fixed (byte* pOriginalSource = &MemoryMarshal.GetReference(source))
+            fixed (char* pOriginalDestination = &MemoryMarshal.GetReference(destination))
+            {
+                // We're going to bulk transcode as much as we can in a loop, iterating
+                // every time we see bad data that requires replacement.
+
+                OperationStatus operationStatus = OperationStatus.Done;
+                byte* pInputBufferRemaining = pOriginalSource;
+                char* pOutputBufferRemaining = pOriginalDestination;
+
+                while (!source.IsEmpty)
+                {
+                    // We've pinned the spans at the entry point to this method.
+                    // It's safe for us to use Unsafe.AsPointer on them during this loop.
+
+                    operationStatus = Utf8Utility.TranscodeToUtf16(
+                        pInputBuffer: (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(source)),
+                        inputLength: source.Length,
+                        pOutputBuffer: (char*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(destination)),
+                        outputCharsRemaining: destination.Length,
+                        pInputBufferRemaining: out pInputBufferRemaining,
+                        pOutputBufferRemaining: out pOutputBufferRemaining);
+
+                    // If we finished the operation entirely or we ran out of space in the destination buffer,
+                    // or if we need more input data and the caller told us that there's possibly more data
+                    // coming, return immediately.
+
+                    if (operationStatus <= OperationStatus.DestinationTooSmall
+                        || (operationStatus == OperationStatus.NeedMoreData && !isFinalBlock))
+                    {
+                        break;
+                    }
+
+                    // We encountered invalid data, or we need more data but the caller told us we're
+                    // at the end of the stream. In either case treat this as truly invalid.
+                    // If the caller didn't tell us to replace invalid sequences, return immediately.
+
+                    if (!replaceInvalidSequences)
+                    {
+                        operationStatus = OperationStatus.InvalidData; // status code may have been NeedMoreData - force to be error
+                        break;
+                    }
+
+                    // We're going to attempt to write U+DF?? to the destination buffer for each invalid byte
+                    //
+                    // Figure out how many bytes of the source we must skip over before we should retry
+                    // the operation. This might be more than 1 byte.
+                    //
+                    // Check if we even have enough space to do so?
+
+                    source = source.Slice((int)(pInputBufferRemaining - (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(source))));
+                    destination = destination.Slice((int)(pOutputBufferRemaining - (char*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(destination))));
+
+                    Debug.Assert(!source.IsEmpty, "Expected 'Done' if source is fully consumed.");
+                    Rune.DecodeFromUtf8(source, out _, out int bytesConsumedJustNow);
+
+                    if (destination.Length < bytesConsumedJustNow)
+                    {
+                        operationStatus = OperationStatus.DestinationTooSmall;
+                        break;
+                    }
+
+                    for (int i = 0; i < bytesConsumedJustNow; i++)
+                    {
+                        destination[i] = (char)(0xDF00 | source[i]);
+                    }
+
+                    destination = destination.Slice(bytesConsumedJustNow);
+                    source = source.Slice(bytesConsumedJustNow);
+
+                    operationStatus = OperationStatus.Done; // we patched the error - if we're about to break out of the loop this is a success case
+
+                    pInputBufferRemaining = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(source));
+                    pOutputBufferRemaining = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(destination));
+                }
+
+                // Not possible to make any further progress - report to our caller how far we got.
+
+                bytesRead = (int)(pInputBufferRemaining - pOriginalSource);
+                charsWritten = (int)(pOutputBufferRemaining - pOriginalDestination);
+                return operationStatus;
+            }
+        }
+
+        /// <summary>Writes the specified interpolated string to the UTF-8 byte span.</summary>
         /// <param name="destination">The span to which the interpolated string should be formatted.</param>
         /// <param name="handler">The interpolated string.</param>
         /// <param name="bytesWritten">The number of characters written to the span.</param>
@@ -242,7 +334,7 @@ namespace System.Text.Unicode
             return false;
         }
 
-        /// <summary>Writes the specified interpolated string to the UTF8 byte span.</summary>
+        /// <summary>Writes the specified interpolated string to the UTF-8 byte span.</summary>
         /// <param name="destination">The span to which the interpolated string should be formatted.</param>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string.</param>
@@ -253,12 +345,12 @@ namespace System.Text.Unicode
             // is the same as the non-provider overload.
             TryWrite(destination, ref handler, out bytesWritten);
 
-        /// <summary>Provides a handler used by the language compiler to format interpolated strings into UTF8 byte spans.</summary>
+        /// <summary>Provides a handler used by the language compiler to format interpolated strings into UTF-8 byte spans.</summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [InterpolatedStringHandler]
         public ref struct TryWriteInterpolatedStringHandler
         {
-            /// <summary>The destination UTF8 buffer.</summary>
+            /// <summary>The destination UTF-8 buffer.</summary>
             private readonly Span<byte> _destination;
             /// <summary>Optional provider to pass to IFormattable.ToString, ISpanFormattable.TryFormat, and IUtf8SpanFormattable.TryFormat calls.</summary>
             private readonly IFormatProvider? _provider;
@@ -269,7 +361,7 @@ namespace System.Text.Unicode
             /// <summary>Whether <see cref="_provider"/> provides an ICustomFormatter.</summary>
             private readonly bool _hasCustomFormatter;
 
-            /// <summary>Creates a handler used to write an interpolated string into a UTF8 <see cref="Span{Byte}"/>.</summary>
+            /// <summary>Creates a handler used to write an interpolated string into a UTF-8 <see cref="Span{Byte}"/>.</summary>
             /// <param name="literalLength">The number of constant characters outside of interpolation expressions in the interpolated string.</param>
             /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
             /// <param name="destination">The destination buffer.</param>
@@ -284,7 +376,7 @@ namespace System.Text.Unicode
                 _hasCustomFormatter = false;
             }
 
-            /// <summary>Creates a handler used to write an interpolated string into a UTF8 <see cref="Span{Byte}"/>.</summary>
+            /// <summary>Creates a handler used to write an interpolated string into a UTF-8 <see cref="Span{Byte}"/>.</summary>
             /// <param name="literalLength">The number of constant characters outside of interpolation expressions in the interpolated string.</param>
             /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
             /// <param name="destination">The destination buffer.</param>
@@ -303,15 +395,28 @@ namespace System.Text.Unicode
             /// <summary>Writes the specified string to the handler.</summary>
             /// <param name="value">The string to write.</param>
             /// <returns>true if the value could be formatted to the span; otherwise, false.</returns>
-            public bool AppendLiteral(string value) => AppendFormatted(value.AsSpan());
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] // we want 'value' exposed to the JIT as a constant
+            public bool AppendLiteral(string value)
+            {
+                if (value is not null)
+                {
+                    Span<byte> dest = _destination.Slice(_pos);
 
-            // TODO https://github.com/dotnet/csharplang/issues/7072:
-            // Add this if/when C# supports u8 literals with string interpolation.
-            // If that happens prior to this type being released, the above AppendLiteral(string)
-            // should also be removed.  If that doesn't happen, we should look into ways to optimize
-            // the above AppendLiteral, such as by making the underlying encoding operation a JIT
-            // intrinsic that can emit substitute a "abc"u8 equivalent for an "abc" string literal.
-            //public bool AppendLiteral(scoped ReadOnlySpan<byte> value) => AppendFormatted(value);
+                    // The 99.999% for AppendLiteral is to be called with a const string.
+                    // ReadUtf8 is a JIT intrinsic that can do the UTF8 encoding at JIT time.
+                    int bytesWritten = UTF8Encoding.UTF8EncodingSealed.ReadUtf8(
+                        ref value.GetRawStringData(), value.Length,
+                        ref MemoryMarshal.GetReference(dest), dest.Length);
+                    if (bytesWritten < 0)
+                    {
+                        return Fail();
+                    }
+
+                    _pos += bytesWritten;
+                }
+
+                return true;
+            }
 
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
@@ -481,7 +586,7 @@ namespace System.Text.Unicode
                 return Fail();
             }
 
-            /// <summary>Writes the specified span of UTF8 bytes to the handler.</summary>
+            /// <summary>Writes the specified span of UTF-8 bytes to the handler.</summary>
             /// <param name="utf8Value">The span to write.</param>
             public bool AppendFormatted(scoped ReadOnlySpan<byte> utf8Value)
             {
@@ -494,7 +599,7 @@ namespace System.Text.Unicode
                 return Fail();
             }
 
-            /// <summary>Writes the specified span of UTF8 bytes to the handler.</summary>
+            /// <summary>Writes the specified span of UTF-8 bytes to the handler.</summary>
             /// <param name="utf8Value">The span to write.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
             /// <param name="format">The format string.</param>
@@ -702,5 +807,13 @@ namespace System.Text.Unicode
                 return false;
             }
         }
+
+        /// <summary>
+        /// Validates that the value is well-formed UTF-8.
+        /// </summary>
+        /// <param name="value">The <see cref="ReadOnlySpan{T}"/> string.</param>
+        /// <returns><c>true</c> if value is well-formed UTF-8, <c>false</c> otherwise.</returns>
+        public static unsafe bool IsValid(ReadOnlySpan<byte> value) =>
+            Utf8Utility.GetIndexOfFirstInvalidUtf8Sequence(value, out _) < 0;
     }
 }

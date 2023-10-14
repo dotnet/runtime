@@ -6,9 +6,10 @@ MONO_CONFIG?=Debug
 MONO_ARCH?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${arch})
 TARGET_OS?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${os})
 AOT?=false
+USE_LLVM?=false
+StripILCode?=false
+TrimmingEligibleMethodsOutputDirectory?= #<path-to-a-writable-directory>
 
-#NET_TRACE_PATH=<path-to-trace-of-sample>
-#PGO_BINARY_PATH=<path-to-dotnet-pgo-executable>
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
 MONO_ENV_OPTIONS ?=
@@ -18,9 +19,11 @@ publish:
 	-c $(MONO_CONFIG) \
 	-r $(TARGET_OS)-$(MONO_ARCH) \
 	/p:RunAOTCompilation=$(AOT) \
-	'/p:NetTracePath="$(NET_TRACE_PATH)"' \
-	'/p:PgoBinaryPath="$(PGO_BINARY_PATH)"' \
-	'/p:MibcProfilePath="$(MIBC_PROFILE_PATH)"'
+	/p:MonoEnableLLVM=$(USE_LLVM) \
+	/p:StripILCode=$(StripILCode) \
+	/p:TrimmingEligibleMethodsOutputDirectory=$(TrimmingEligibleMethodsOutputDirectory) \
+	'/p:MibcProfilePath="$(MIBC_PROFILE_PATH)"' \
+	/bl
 
 run: publish
 	DOTNET_DebugWriteToStdErr=1 \

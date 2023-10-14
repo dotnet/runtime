@@ -23,7 +23,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-logger-internals.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-mmap.h>
@@ -43,7 +43,6 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/coree.h>
 
 static MonoJitInfoTable * volatile jit_info_table;
 static MonoJitInfoTable * volatile aot_modules;

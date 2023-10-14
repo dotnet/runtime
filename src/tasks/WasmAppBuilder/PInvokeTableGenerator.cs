@@ -17,37 +17,29 @@ internal sealed class PInvokeTableGenerator
 
     private TaskLoggingHelper Log { get; set; }
     private readonly Func<string, string> _fixupSymbolName;
+    private readonly HashSet<string> signatures = new();
+    private readonly List<PInvoke> pinvokes = new();
+    private readonly List<PInvokeCallback> callbacks = new();
+    private readonly PInvokeCollector _pinvokeCollector;
 
     public PInvokeTableGenerator(Func<string, string> fixupSymbolName, TaskLoggingHelper log)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
+        _pinvokeCollector = new(log);
     }
 
-    public IEnumerable<string> Generate(string[] pinvokeModules, IEnumerable<string> assemblies, string outputPath)
+    public void ScanAssembly(Assembly asm)
+    {
+        foreach (Type type in asm.GetTypes())
+            _pinvokeCollector.CollectPInvokes(pinvokes, callbacks, signatures, type);
+    }
+
+    public IEnumerable<string> Generate(string[] pinvokeModules, string outputPath)
     {
         var modules = new Dictionary<string, string>();
         foreach (var module in pinvokeModules)
             modules[module] = module;
-
-        var signatures = new List<string>();
-
-        var pinvokes = new List<PInvoke>();
-        var callbacks = new List<PInvokeCallback>();
-
-        var resolver = new PathAssemblyResolver(assemblies);
-        using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
-
-        foreach (var asmPath in assemblies)
-        {
-            if (!File.Exists(asmPath))
-                throw new LogAsErrorException($"Cannot find assembly {asmPath}");
-
-            Log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for pinvokes");
-            var a = mlc.LoadFromAssemblyPath(asmPath);
-            foreach (var type in a.GetTypes())
-                CollectPInvokes(pinvokes, callbacks, signatures, type);
-        }
 
         string tmpFileName = Path.GetTempFileName();
         try
@@ -55,7 +47,7 @@ internal sealed class PInvokeTableGenerator
             using (var w = File.CreateText(tmpFileName))
             {
                 EmitPInvokeTable(w, modules, pinvokes);
-                EmitNativeToInterp(w, ref callbacks);
+                EmitNativeToInterp(w, callbacks);
             }
 
             if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
@@ -69,111 +61,6 @@ internal sealed class PInvokeTableGenerator
         }
 
         return signatures;
-    }
-
-    private void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, List<string> signatures, Type type)
-    {
-        foreach (var method in type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
-        {
-            try
-            {
-                CollectPInvokesForMethod(method);
-                if (DoesMethodHaveCallbacks(method))
-                    callbacks.Add(new PInvokeCallback(method));
-            }
-            catch (Exception ex) when (ex is not LogAsErrorException)
-            {
-                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
-                        $"Could not get pinvoke, or callbacks for method '{type.FullName}::{method.Name}' because '{ex.Message}'");
-            }
-        }
-
-        if (HasAttribute(type, "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"))
-        {
-            var method = type.GetMethod("Invoke");
-
-            if (method != null)
-            {
-                string? signature = SignatureMapper.MethodToSignature(method!);
-                if (signature == null)
-                    throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
-
-
-                Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
-                signatures.Add(signature);
-            }
-        }
-
-        void CollectPInvokesForMethod(MethodInfo method)
-        {
-            if ((method.Attributes & MethodAttributes.PinvokeImpl) != 0)
-            {
-                var dllimport = method.CustomAttributes.First(attr => attr.AttributeType.Name == "DllImportAttribute");
-                var module = (string)dllimport.ConstructorArguments[0].Value!;
-                var entrypoint = (string)dllimport.NamedArguments.First(arg => arg.MemberName == "EntryPoint").TypedValue.Value!;
-                pinvokes.Add(new PInvoke(entrypoint, module, method));
-
-                string? signature = SignatureMapper.MethodToSignature(method);
-                if (signature == null)
-                {
-                    throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
-                }
-
-                Log.LogMessage(MessageImportance.Low, $"Adding pinvoke signature {signature} for method '{type.FullName}.{method.Name}'");
-                signatures.Add(signature);
-            }
-        }
-
-        bool DoesMethodHaveCallbacks(MethodInfo method)
-        {
-            if (!MethodHasCallbackAttributes(method))
-                return false;
-
-            if (TryIsMethodGetParametersUnsupported(method, out string? reason))
-            {
-                Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
-                        $"Skipping callback '{method.DeclaringType!.FullName}::{method.Name}' because '{reason}'.");
-                return false;
-            }
-
-            if (method.DeclaringType != null && HasAssemblyDisableRuntimeMarshallingAttribute(method.DeclaringType.Assembly))
-                return true;
-
-            // No DisableRuntimeMarshalling attribute, so check if the params/ret-type are
-            // blittable
-            bool isVoid = method.ReturnType.FullName == "System.Void";
-            if (!isVoid && !IsBlittable(method.ReturnType))
-                Error($"The return type '{method.ReturnType.FullName}' of pinvoke callback method '{method}' needs to be blittable.");
-
-            foreach (var p in method.GetParameters())
-            {
-                if (!IsBlittable(p.ParameterType))
-                    Error("Parameter types of pinvoke callback method '" + method + "' needs to be blittable.");
-            }
-
-            return true;
-        }
-
-        static bool MethodHasCallbackAttributes(MethodInfo method)
-        {
-            foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(method))
-            {
-                try
-                {
-                    if (cattr.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute" ||
-                        cattr.AttributeType.Name == "MonoPInvokeCallbackAttribute")
-                    {
-                        return true;
-                    }
-                }
-                catch
-                {
-                    // Assembly not found, ignore
-                }
-            }
-
-            return false;
-        }
     }
 
     private static bool HasAttribute(MemberInfo element, params string[] attributeNames)
@@ -373,7 +260,7 @@ internal sealed class PInvokeTableGenerator
         return sb.ToString();
     }
 
-    private void EmitNativeToInterp(StreamWriter w, ref List<PInvokeCallback> callbacks)
+    private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
         // Generate native->interp entry functions
         // These are called by native code, so they need to obtain
@@ -515,56 +402,4 @@ internal sealed class PInvokeTableGenerator
     }
 
     private static void Error(string msg) => throw new LogAsErrorException(msg);
-}
-
-#pragma warning disable CA1067
-internal sealed class PInvoke : IEquatable<PInvoke>
-#pragma warning restore CA1067
-{
-    public PInvoke(string entryPoint, string module, MethodInfo method)
-    {
-        EntryPoint = entryPoint;
-        Module = module;
-        Method = method;
-    }
-
-    public string EntryPoint;
-    public string Module;
-    public MethodInfo Method;
-    public bool Skip;
-
-    public bool Equals(PInvoke? other)
-        => other != null &&
-            string.Equals(EntryPoint, other.EntryPoint, StringComparison.Ordinal) &&
-            string.Equals(Module, other.Module, StringComparison.Ordinal) &&
-            string.Equals(Method.ToString(), other.Method.ToString(), StringComparison.Ordinal);
-
-    public override string ToString() => $"{{ EntryPoint: {EntryPoint}, Module: {Module}, Method: {Method}, Skip: {Skip} }}";
-}
-
-internal sealed class PInvokeComparer : IEqualityComparer<PInvoke>
-{
-    public bool Equals(PInvoke? x, PInvoke? y)
-    {
-        if (x == null && y == null)
-            return true;
-        if (x == null || y == null)
-            return false;
-
-        return x.Equals(y);
-    }
-
-    public int GetHashCode(PInvoke pinvoke)
-        => $"{pinvoke.EntryPoint}{pinvoke.Module}{pinvoke.Method}".GetHashCode();
-}
-
-internal sealed class PInvokeCallback
-{
-    public PInvokeCallback(MethodInfo method)
-    {
-        Method = method;
-    }
-
-    public MethodInfo Method;
-    public string? EntryName;
 }

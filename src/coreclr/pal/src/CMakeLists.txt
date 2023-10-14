@@ -33,8 +33,6 @@ if(CORECLR_SET_RPATH)
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
 
-cmake_policy(SET CMP0042 NEW)
-
 # Include directories
 
 include_directories(include)
@@ -86,18 +84,18 @@ add_definitions(-DLP64COMPATIBLE)
 add_definitions(-DCORECLR)
 add_definitions(-DPIC)
 
-if(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_HOST_ALPINE_LINUX)
+if(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
   # Currently the _xstate is not available on Alpine Linux
   add_definitions(-DXSTATE_SUPPORTED)
-endif(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_HOST_ALPINE_LINUX)
+endif(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_LINUX_MUSL)
 
-if(CLR_CMAKE_HOST_ALPINE_LINUX)
+if(CLR_CMAKE_TARGET_LINUX_MUSL)
   # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
   add_definitions(-DDONT_SET_RLIMIT_NOFILE)
   # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
-endif(CLR_CMAKE_HOST_ALPINE_LINUX)
+endif(CLR_CMAKE_TARGET_LINUX_MUSL)
 
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
@@ -106,7 +104,6 @@ set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/context2.S
   arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
   arch/${PAL_ARCH_SOURCES_DIR}/exceptionhelper.S
-  arch/${PAL_ARCH_SOURCES_DIR}/processor.cpp
 )
 
 if(NOT CLR_CMAKE_TARGET_OSX)
@@ -152,7 +149,7 @@ set(SOURCES
   loader/module.cpp
   locale/unicode.cpp
   locale/unicodedata.cpp
-  locale/utf8.cpp
+  ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
@@ -162,7 +159,6 @@ set(SOURCES
   misc/error.cpp
   misc/errorstrings.cpp
   misc/fmtmessage.cpp
-  misc/jitsupport.cpp
   misc/miscpalapi.cpp
   misc/perfjitdump.cpp
   misc/strutil.cpp
@@ -259,12 +255,7 @@ endif(NOT FEATURE_CROSSBITNESS)
 # > warning for library: libtracepointprovider.a the table of contents is empty (no object file members in the library define global symbols)
 #
 if(CLR_CMAKE_TARGET_LINUX)
-  add_library(tracepointprovider_obj
-    OBJECT
-    misc/tracepointprovider.cpp
-  )
-  add_library(tracepointprovider INTERFACE)
-  target_sources(tracepointprovider INTERFACE $<TARGET_OBJECTS:tracepointprovider_obj>)
+  add_library(tracepointprovider OBJECT misc/tracepointprovider.cpp)
 endif(CLR_CMAKE_TARGET_LINUX)
 
 if(CLR_CMAKE_TARGET_OSX)
@@ -316,9 +307,9 @@ if(CLR_CMAKE_TARGET_LINUX)
   endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
   # bundled libunwind requires using libucontext on alpine and x86 and ppc64le
-  if(CLR_CMAKE_TARGET_ALPINE_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
     target_link_libraries(coreclrpal PUBLIC ucontext)
-  endif(CLR_CMAKE_TARGET_ALPINE_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
 
 endif(CLR_CMAKE_TARGET_LINUX)
 

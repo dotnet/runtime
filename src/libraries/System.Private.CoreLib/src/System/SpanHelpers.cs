@@ -415,7 +415,37 @@ namespace System
             nint remainder = (nint)length;
             nint offset = 0;
 
-            if (Avx2.IsSupported && remainder >= Vector256<int>.Count * 2)
+            if (Vector512.IsHardwareAccelerated && remainder >= Vector512<int>.Count * 2)
+            {
+                nint lastOffset = remainder - Vector512<int>.Count;
+                do
+                {
+                    // Load in values from beginning and end of the array.
+                    Vector512<int> tempFirst = Vector512.LoadUnsafe(ref buf, (nuint)offset);
+                    Vector512<int> tempLast = Vector512.LoadUnsafe(ref buf, (nuint)lastOffset);
+
+                    // Shuffle to reverse each vector:
+                    //     +---------------+
+                    //     | A | B | C | D |
+                    //     +---------------+
+                    //          --->
+                    //     +---------------+
+                    //     | D | C | B | A |
+                    //     +---------------+
+                    tempFirst = Vector512.Shuffle(tempFirst, Vector512.Create(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+                    tempLast = Vector512.Shuffle(tempLast, Vector512.Create(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+                    // Store the reversed vectors
+                    tempLast.StoreUnsafe(ref buf, (nuint)offset);
+                    tempFirst.StoreUnsafe(ref buf, (nuint)lastOffset);
+
+                    offset += Vector512<int>.Count;
+                    lastOffset -= Vector512<int>.Count;
+                } while (lastOffset >= offset);
+
+                remainder = lastOffset + Vector512<int>.Count - offset;
+            }
+            else if (Avx2.IsSupported && remainder >= Vector256<int>.Count * 2)
             {
                 nint lastOffset = remainder - Vector256<int>.Count;
                 do
@@ -490,7 +520,37 @@ namespace System
             nint remainder = (nint)length;
             nint offset = 0;
 
-            if (Avx2.IsSupported && remainder >= Vector256<long>.Count * 2)
+            if (Vector512.IsHardwareAccelerated && remainder >= Vector512<long>.Count * 2)
+            {
+                nint lastOffset = remainder - Vector512<long>.Count;
+                do
+                {
+                    // Load in values from beginning and end of the array.
+                    Vector512<long> tempFirst = Vector512.LoadUnsafe(ref buf, (nuint)offset);
+                    Vector512<long> tempLast = Vector512.LoadUnsafe(ref buf, (nuint)lastOffset);
+
+                    // Shuffle to reverse each vector:
+                    //     +-------+
+                    //     | A | B |
+                    //     +-------+
+                    //          --->
+                    //     +-------+
+                    //     | B | A |
+                    //     +-------+
+                    tempFirst = Vector512.Shuffle(tempFirst, Vector512.Create(7, 6, 5, 4, 3, 2, 1, 0));
+                    tempLast = Vector512.Shuffle(tempLast, Vector512.Create(7, 6, 5, 4, 3, 2, 1, 0));
+
+                    // Store the reversed vectors
+                    tempLast.StoreUnsafe(ref buf, (nuint)offset);
+                    tempFirst.StoreUnsafe(ref buf, (nuint)lastOffset);
+
+                    offset += Vector512<long>.Count;
+                    lastOffset -= Vector512<long>.Count;
+                } while (lastOffset >= offset);
+
+                remainder = lastOffset + Vector512<long>.Count - offset;
+            }
+            else if (Avx2.IsSupported && remainder >= Vector256<long>.Count * 2)
             {
                 nint lastOffset = remainder - Vector256<long>.Count;
                 do

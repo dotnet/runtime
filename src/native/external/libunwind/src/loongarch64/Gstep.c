@@ -33,11 +33,10 @@ loongarch64_handle_signal_frame (unw_cursor_t *cursor)
   struct cursor *c = (struct cursor *) cursor;
   unw_word_t sc_addr, sp_addr = c->dwarf.cfa;
   unw_word_t ra, fp;
-  int ret;
+  int i, ret;
 
   if (unw_is_signal_frame (cursor)) {
-    sc_addr = sp_addr + LINUX_SF_TRAMP_SIZE + sizeof (siginfo_t) +
-              LINUX_UC_MCONTEXT_OFF;
+    sc_addr = sp_addr + sizeof (siginfo_t) + LINUX_UC_MCONTEXT_OFF;
   } else {
     c->sigcontext_format = LOONGARCH64_SCF_NONE;
     return -UNW_EUNSPEC;
@@ -50,6 +49,9 @@ loongarch64_handle_signal_frame (unw_cursor_t *cursor)
   c->sigcontext_sp = c->dwarf.cfa;
   c->sigcontext_pc = c->dwarf.ip;
   c->sigcontext_format = LOONGARCH64_SCF_LINUX_RT_SIGFRAME;
+
+  for (i = 0; i < DWARF_NUM_PRESERVED_REGS; ++i)
+    c->dwarf.loc[i] = DWARF_NULL_LOC;
 
     /* Update the dwarf cursor.
      Set the location of the registers to the corresponding addresses of the

@@ -151,10 +151,6 @@ namespace Internal.Reflection.Augments
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
         public abstract Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure);
 
-#if FEATURE_COMINTEROP
-        public abstract Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError);
-#endif
-
         public abstract IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle);
 
         public abstract void RunModuleConstructor(Module module);

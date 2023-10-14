@@ -16,6 +16,19 @@ using Microsoft.Build.Utilities;
 
 internal static class Utils
 {
+    public enum HashAlgorithmType
+    {
+        SHA256,
+        SHA384,
+        SHA512
+    };
+
+    public enum HashEncodingType
+    {
+        Base64,
+        Base64Safe
+    };
+
     public static string WebcilInWasmExtension = ".wasm";
 
     private static readonly object s_SyncObj = new object();
@@ -213,13 +226,75 @@ internal static class Utils
         return areDifferent;
     }
 
+    private static string ToBase64SafeString(byte[] data)
+    {
+        if (data.Length == 0)
+            return string.Empty;
+
+        int outputLength = ((4 * data.Length / 3) + 3) & ~3;
+        char[] base64Safe = new char[outputLength];
+        int base64SafeLength = Convert.ToBase64CharArray(data, 0, data.Length, base64Safe, 0, Base64FormattingOptions.None);
+
+        //RFC3548, URL and Filename Safe Alphabet.
+        for (int i = 0; i < base64SafeLength; i++)
+        {
+            if (base64Safe[i] == '+')
+                base64Safe[i] = '-';
+            else if (base64Safe[i] == '/')
+                base64Safe[i] = '_';
+        }
+
+        return new string(base64Safe);
+    }
+
+    private static byte[] ComputeHashFromStream(Stream stream, HashAlgorithmType algorithm)
+    {
+        if (algorithm == HashAlgorithmType.SHA512)
+        {
+            using HashAlgorithm hashAlgorithm = SHA512.Create();
+            return hashAlgorithm.ComputeHash(stream);
+        }
+        else if (algorithm == HashAlgorithmType.SHA384)
+        {
+            using HashAlgorithm hashAlgorithm = SHA384.Create();
+            return hashAlgorithm.ComputeHash(stream);
+        }
+        else if (algorithm == HashAlgorithmType.SHA256)
+        {
+            using HashAlgorithm hashAlgorithm = SHA256.Create();
+            return hashAlgorithm.ComputeHash(stream);
+        }
+        else
+        {
+            throw new ArgumentException($"Unsupported hash algorithm: {algorithm}");
+        }
+    }
+
+    private static string EncodeHash(byte[] data, HashEncodingType encoding)
+    {
+        if (encoding == HashEncodingType.Base64)
+        {
+            return Convert.ToBase64String(data);
+        }
+        else if (encoding == HashEncodingType.Base64Safe)
+        {
+            return ToBase64SafeString(data);
+        }
+        else
+        {
+            throw new ArgumentException($"Unsupported hash encoding: {encoding}");
+        }
+    }
+
     public static string ComputeHash(string filepath)
     {
-        using var stream = File.OpenRead(filepath);
-        using HashAlgorithm hashAlgorithm = SHA512.Create();
+        return ComputeHashEx(filepath);
+    }
 
-        byte[] hash = hashAlgorithm.ComputeHash(stream);
-        return Convert.ToBase64String(hash);
+    public static string ComputeHashEx(string filepath, HashAlgorithmType algorithm = HashAlgorithmType.SHA512, HashEncodingType encoding = HashEncodingType.Base64)
+    {
+        using var stream = File.OpenRead(filepath);
+        return EncodeHash(ComputeHashFromStream(stream, algorithm), encoding);
     }
 
     public static string ComputeIntegrity(string filepath)
@@ -269,6 +344,33 @@ internal static class Utils
         }
     }
 #endif
+
+    public static bool IsWindows()
+    {
+#if NETCOREAPP
+        return OperatingSystem.IsWindows();
+#else
+        return true;
+#endif
+    }
+
+    public static bool IsMacOS()
+    {
+#if NETCOREAPP
+        return OperatingSystem.IsMacOS();
+#else
+        return false;
+#endif
+    }
+
+    public static bool IsLinux()
+    {
+#if NETCOREAPP
+        return OperatingSystem.IsLinux();
+#else
+        return false;
+#endif
+    }
 
     public static bool IsManagedAssembly(string filePath)
     {

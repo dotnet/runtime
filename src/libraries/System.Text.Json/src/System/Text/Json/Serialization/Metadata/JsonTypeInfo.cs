@@ -215,6 +215,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public IList<JsonPropertyInfo> Properties => PropertyList;
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonPropertyInfoList PropertyList
         {
             get
@@ -350,6 +351,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Return the JsonTypeInfo for the element type, or null if the type is not an enumerable or dictionary.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonTypeInfo? ElementTypeInfo
         {
             get
@@ -375,6 +377,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Return the JsonTypeInfo for the key type, or null if the type is not a dictionary.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonTypeInfo? KeyTypeInfo
         {
             get
@@ -549,17 +552,14 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (value is not null)
+                if (Kind != JsonTypeInfoKind.Object)
                 {
-                    if (Kind != JsonTypeInfoKind.Object)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
-                    }
+                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
+                }
 
-                    if (!JsonSerializer.IsValidCreationHandlingValue(value.Value))
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(value));
-                    }
+                if (value is not null && !JsonSerializer.IsValidCreationHandlingValue(value.Value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
                 _preferredPropertyObjectCreationHandling = value;
@@ -681,7 +681,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 ConfigureProperties();
 
-                if (Converter.ConstructorIsParameterized)
+                if (DetermineUsesParameterizedConstructor())
                 {
                     ConfigureConstructorParameters();
                 }
@@ -708,6 +708,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// a type discriminator for the current type. Consulted
         /// when serializing polymorphic values as objects.
         /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal JsonTypeInfo? AncestorPolymorphicType
         {
             get
@@ -803,6 +804,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// to establish a base case for recursive types and any JsonIgnored property types.
         /// </summary>
         private bool IsCompatibleWithCurrentOptions { get; set; } = true;
+
+        /// <summary>
+        /// Determine if the current configuration is compatible with using a parameterized constructor.
+        /// </summary>
+        internal bool DetermineUsesParameterizedConstructor()
+            => Converter.ConstructorIsParameterized && CreateObject is null;
 
 #if DEBUG
         internal string GetPropertyDebugInfo(ReadOnlySpan<byte> unescapedPropertyName)
@@ -920,7 +927,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonTypeInfo jsonTypeInfo;
 
-            if (converter.TypeToConvert == type)
+            if (converter.Type == type)
             {
                 // For performance, avoid doing a reflection-based instantiation
                 // if the converter type matches that of the declared type.
@@ -967,7 +974,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             VerifyMutable();
-            JsonPropertyInfo propertyInfo = CreatePropertyUsingReflection(propertyType);
+            JsonPropertyInfo propertyInfo = CreatePropertyUsingReflection(propertyType, declaringType: null);
             propertyInfo.Name = name;
 
             return propertyInfo;
@@ -1103,7 +1110,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal void ConfigureConstructorParameters()
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
-            Debug.Assert(Converter.ConstructorIsParameterized);
+            Debug.Assert(DetermineUsesParameterizedConstructor());
             Debug.Assert(PropertyCache is not null);
             Debug.Assert(ParameterCache is null);
 
@@ -1260,6 +1267,7 @@ namespace System.Text.Json.Serialization.Metadata
 #endif
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal bool SupportsPolymorphicDeserialization
         {
             get
@@ -1347,6 +1355,8 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(!_jsonTypeInfo.IsConfigured);
                 Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
+
+                // Algorithm should be kept in sync with the Roslyn equivalent in JsonSourceGenerator.Parser.cs
                 string memberName = jsonPropertyInfo.MemberName;
 
                 if (state.AddedProperties.TryAdd(jsonPropertyInfo.Name, (jsonPropertyInfo, Count)))
@@ -1368,33 +1378,15 @@ namespace System.Text.Json.Serialization.Metadata
                     }
                     else
                     {
-                        bool ignoreCurrentProperty;
-
-                        if (!_jsonTypeInfo.Type.IsInterface)
-                        {
-                            ignoreCurrentProperty =
-                                // Does the current property have `JsonIgnoreAttribute`?
-                                jsonPropertyInfo.IsIgnored ||
-                                // Is the current property hidden by the previously cached property
-                                // (with `new` keyword, or by overriding)?
-                                other.MemberName == memberName ||
-                                // Was a property with the same CLR name ignored? That property hid the current property,
-                                // thus, if it was ignored, the current property should be ignored too.
-                                state.IgnoredProperties?.ContainsKey(memberName) == true;
-                        }
-                        else
-                        {
-                            // Unlike classes, interface hierarchies reject all naming conflicts for non-ignored properties.
-                            // Conflicts like this are possible in two cases:
-                            // 1. Diamond ambiguity in property names, or
-                            // 2. Linear interface hierarchies that use properties with DIMs.
-                            //
-                            // Diamond ambiguities are not supported. Assuming there is demand, we might consider
-                            // adding support for DIMs in the future, however that would require adding more APIs
-                            // for the case of source gen.
-
-                            ignoreCurrentProperty = jsonPropertyInfo.IsIgnored;
-                        }
+                        bool ignoreCurrentProperty =
+                            // Does the current property have `JsonIgnoreAttribute`?
+                            jsonPropertyInfo.IsIgnored ||
+                            // Is the current property hidden by the previously cached property
+                            // (with `new` keyword, or by overriding)?
+                            jsonPropertyInfo.IsOverriddenOrShadowedBy(other) ||
+                            // Was a property with the same CLR name ignored? That property hid the current property,
+                            // thus, if it was ignored, the current property should be ignored too.
+                            (state.IgnoredProperties?.TryGetValue(memberName, out JsonPropertyInfo? ignored) == true && jsonPropertyInfo.IsOverriddenOrShadowedBy(ignored));
 
                         if (!ignoreCurrentProperty)
                         {
@@ -1405,8 +1397,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (jsonPropertyInfo.IsIgnored)
                 {
-                    state.IgnoredProperties ??= new();
-                    state.IgnoredProperties[memberName] = jsonPropertyInfo;
+                    (state.IgnoredProperties ??= new())[memberName] = jsonPropertyInfo;
                 }
             }
         }

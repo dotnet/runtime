@@ -18,13 +18,13 @@ namespace System.Text.Json.Serialization.Converters
 
         public sealed override object ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
+            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type, this);
             return null!;
         }
 
         internal sealed override object ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
+            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type, this);
             return null!;
         }
 
@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             Type runtimeType = value.GetType();
-            if (runtimeType == TypeToConvert)
+            if (runtimeType == Type)
             {
                 ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(runtimeType, this);
             }
@@ -131,7 +131,7 @@ namespace System.Text.Json.Serialization.Converters
 
             Debug.Assert(options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode);
 
-            JsonNode node = JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options)!;
+            JsonNode? node = JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options);
 
             if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve &&
                 JsonSerializer.TryHandleReferenceFromJsonNode(ref reader, ref state, node, out referenceValue))

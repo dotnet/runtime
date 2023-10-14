@@ -263,7 +263,7 @@ namespace Microsoft.Extensions.Logging
             return TryFormatArgumentIfNullOrEnumerable(value, ref stringValue) ? stringValue : value!;
         }
 
-        private static bool TryFormatArgumentIfNullOrEnumerable(object? value, [NotNullWhen(true)] ref object? stringValue)
+        private static bool TryFormatArgumentIfNullOrEnumerable<T>(T? value, [NotNullWhen(true)] ref object? stringValue)
         {
             if (value == null)
             {

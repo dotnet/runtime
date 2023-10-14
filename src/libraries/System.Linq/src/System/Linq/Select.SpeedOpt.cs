@@ -13,9 +13,7 @@ namespace System.Linq
         static partial void CreateSelectIPartitionIterator<TResult, TSource>(
             Func<TSource, TResult> selector, IPartition<TSource> partition, ref IEnumerable<TResult>? result)
         {
-            result = partition is EmptyPartition<TSource> ?
-                EmptyPartition<TResult>.Instance :
-                new SelectIPartitionIterator<TSource, TResult>(partition, selector);
+            result = new SelectIPartitionIterator<TSource, TResult>(partition, selector);
         }
 
         private sealed partial class SelectEnumerableIterator<TSource, TResult> : IIListProvider<TResult>

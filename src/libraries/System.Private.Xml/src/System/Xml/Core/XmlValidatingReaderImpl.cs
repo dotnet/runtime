@@ -1082,7 +1082,7 @@ namespace System.Xml
             if (tempResolver == null && !_coreReaderImpl.IsResolverSet)
             {
                 // it is safe to return valid resolver as it'll be used in the schema validation
-                return s_tempResolver ??= new XmlUrlResolver();
+                return s_tempResolver ??= XmlReaderSettings.GetDefaultPermissiveResolver();
             }
 
             return tempResolver;

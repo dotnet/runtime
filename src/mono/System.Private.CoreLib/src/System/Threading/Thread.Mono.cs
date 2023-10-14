@@ -29,7 +29,6 @@ namespace System.Threading
         private ThreadState state;
         private object? abort_exc;
         private int abort_state_handle;
-        /* thread_id is only accessed from unmanaged code */
         internal long thread_id;
         private IntPtr debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
         private UIntPtr static_data; /* GC-tracked */

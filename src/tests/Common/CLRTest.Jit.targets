@@ -43,8 +43,8 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GetIlasmRoundTripBashScript"
           Returns="$(IlasmRoundTripBashScript);$(BashIlrtTestLaunchCmds)">
     <PropertyGroup>
-      <DisassemblyName>$(AssemblyName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>$(AssemblyName).asm.dll</TargetAssemblyName>
+      <DisassemblyName>IL-RT/$(AssemblyName).il</DisassemblyName>
+      <TargetAssemblyName>IL-RT/$(AssemblyName).dll</TargetAssemblyName>
 
       <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 # IlasmRoundTrip Script
@@ -62,8 +62,10 @@ export RunningIlasmRoundTrip=
 
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
-  echo "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(InputAssemblyName)
-  "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(InputAssemblyName)
+  mkdir IL-RT
+  cp $(InputAssemblyName) $(TargetAssemblyName)
+  echo "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(TargetAssemblyName)
+  "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(TargetAssemblyName)
   ERRORLEVEL=$?
   if [ $ERRORLEVEL -ne 0 ]
   then
@@ -79,8 +81,8 @@ then
   ilasm_count=1
   while true
   do
-    echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    echo "$CORE_ROOT/ilasm" -output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    "$CORE_ROOT/ilasm" -output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
     ERRORLEVEL=$?
     if [ $ERRORLEVEL -eq 0 ]
     then
@@ -109,8 +111,8 @@ fi
       <BashIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
-  echo $LAUNCHER $(TargetAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
-  $LAUNCHER $(TargetAssemblyName) "${CLRTestExecutionArguments[@]}"
+  echo $LAUNCHER $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
+  $LAUNCHER $(InputAssemblyName) "${CLRTestExecutionArguments[@]}"
   ERRORLEVEL=$?
   if [ $ERRORLEVEL -ne $CLRTestExpectedExitCode ]
   then
@@ -126,8 +128,8 @@ fi
   <Target Name="GetIlasmRoundTripBatchScript"
           Returns="$(IlasmRoundTripBatchScript);$(BatchIlrtTestLaunchCmds)">
     <PropertyGroup>
-      <DisassemblyName>$(AssemblyName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>$(AssemblyName).asm.dll</TargetAssemblyName>
+      <DisassemblyName>IL-RT\$(AssemblyName).il</DisassemblyName>
+      <TargetAssemblyName>IL-RT\$(AssemblyName).dll</TargetAssemblyName>
 
       <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 REM IlasmRoundTrip Script
@@ -144,8 +146,10 @@ REM Disable Ilasm round-tripping for Linker tests.
 REM Todo: Ilasm round-trip on linked binaries.
 IF NOT DEFINED DoLink (
   IF DEFINED RunningIlasmRoundTrip (
-    ECHO %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
-    %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(InputAssemblyName)
+    mkdir IL-RT
+    copy $(InputAssemblyName) $(TargetAssemblyName)
+    ECHO %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(TargetAssemblyName)
+    %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(TargetAssemblyName)
 
     IF NOT "!ERRORLEVEL!"=="0" (
       ECHO EXECUTION OF ILDASM - FAILED !ERRORLEVEL!
@@ -158,8 +162,8 @@ IF NOT DEFINED DoLink (
 
    set ilasm_count=1
 :Try_ilasm
-    ECHO %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    ECHO %CORE_ROOT%\ilasm.exe /output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+    %CORE_ROOT%\ilasm.exe /output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
     IF NOT "!ERRORLEVEL!"=="0" (
       ECHO EXECUTION OF ILASM - Try !ilasm_count! FAILED with status !ERRORLEVEL! 
       IF !ilasm_count! LEQ 3 (
@@ -178,8 +182,8 @@ IF NOT DEFINED DoLink (
       <BatchIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
 IF NOT DEFINED DoLink (
   if defined RunningIlasmRoundTrip (
-    ECHO %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments%
-    %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments%
+    ECHO %LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments%
+    %LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments%
     IF NOT "!ERRORLEVEL!"=="%CLRTestExpectedExitCode%" (
       ECHO END EXECUTION OF IL{D}ASM BINARY - FAILED !ERRORLEVEL! vs %CLRTestExpectedExitCode%
       Exit /b 1
@@ -233,6 +237,7 @@ if [[ ( -z "$DOTNET_JitStress" ) && ( -z "$DOTNET_JitStressRegs" ) && ( -z "$DOT
   @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
     ERRORLEVEL=$?
     export DOTNET_JitDisasm=`cat $(BashDisasmListOutputFile)`
+    export DOTNET_JitDisasmTesting=1
     export DOTNET_JitDiffableDasm=1
     export DOTNET_JitStdOutFile=$(BashDisasmOutputFile)
     rm -f $(BashDisasmOutputFile)
@@ -280,6 +285,7 @@ IF "%DOTNET_JitStress%"=="" IF "%DOTNET_JitStressRegs%"=="" IF "%DOTNET_Tailcall
       Exit /b 1
     )', '%0d%0a')
     for /F "delims=" %%g in ($(BatchDisasmListOutputFile)) do set DOTNET_JitDisasm=%%g
+    set DOTNET_JitDisasmTesting=1
     set DOTNET_JitDiffableDasm=1
     set DOTNET_JitStdOutFile=$(BatchDisasmOutputFile)
     del $(BatchDisasmOutputFile) >nul 2>&1

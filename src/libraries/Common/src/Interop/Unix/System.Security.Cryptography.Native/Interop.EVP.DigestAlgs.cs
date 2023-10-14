@@ -17,9 +17,13 @@ internal static partial class Interop
         private static volatile IntPtr s_evpSha3_256;
         private static volatile IntPtr s_evpSha3_384;
         private static volatile IntPtr s_evpSha3_512;
+        private static volatile IntPtr s_evpSha3_Shake128;
+        private static volatile IntPtr s_evpSha3_Shake256;
         private static volatile bool s_evpSha3_256Cached;
         private static volatile bool s_evpSha3_384Cached;
         private static volatile bool s_evpSha3_512Cached;
+        private static volatile bool s_evpSha3_Shake128Cached;
+        private static volatile bool s_evpSha3_Shake256Cached;
 
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpMd5();
@@ -93,6 +97,33 @@ internal static partial class Interop
             return s_evpSha3_512;
         }
 
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial IntPtr CryptoNative_EvpShake128();
+
+        private static IntPtr EvpShake128()
+        {
+            if (!s_evpSha3_Shake128Cached)
+            {
+                s_evpSha3_Shake128 = CryptoNative_EvpShake128();
+                s_evpSha3_Shake128Cached = true;
+            }
+
+            return s_evpSha3_Shake128;
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial IntPtr CryptoNative_EvpShake256();
+
+        private static IntPtr EvpShake256()
+        {
+            if (!s_evpSha3_Shake256Cached)
+            {
+                s_evpSha3_Shake256 = CryptoNative_EvpShake256();
+                s_evpSha3_Shake256Cached = true;
+            }
+
+            return s_evpSha3_Shake256;
+        }
 
         internal static IntPtr HashAlgorithmToEvp(string hashAlgorithmId)
         {
@@ -111,6 +142,12 @@ internal static partial class Interop
                 case HashAlgorithmNames.SHA3_512:
                     IntPtr sha3_512 = EvpSha3_512();
                     return sha3_512 != 0 ? sha3_512 : throw new PlatformNotSupportedException();
+                case HashAlgorithmNames.SHAKE128:
+                    IntPtr shake128 = EvpShake128();
+                    return shake128 != 0 ? shake128 : throw new PlatformNotSupportedException();
+                case HashAlgorithmNames.SHAKE256:
+                    IntPtr shake256 = EvpShake256();
+                    return shake256 != 0 ? shake256 : throw new PlatformNotSupportedException();
                 case nameof(HashAlgorithmName.MD5): return EvpMd5();
                 default:
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
@@ -133,6 +170,10 @@ internal static partial class Interop
                     return EvpSha3_384() != 0;
                 case HashAlgorithmNames.SHA3_512:
                     return EvpSha3_512() != 0;
+                case HashAlgorithmNames.SHAKE128:
+                    return EvpShake128() != 0;
+                case HashAlgorithmNames.SHAKE256:
+                    return EvpShake256() != 0;
                 default:
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
             }

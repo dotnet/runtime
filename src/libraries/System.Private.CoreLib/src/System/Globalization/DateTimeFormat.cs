@@ -320,7 +320,7 @@ namespace System
                 }
                 else
                 {
-                    result.Append(TChar.CastFrom(ch));
+                    AppendChar(ref result, ch);
                 }
             }
 

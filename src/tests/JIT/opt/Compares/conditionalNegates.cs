@@ -129,4 +129,23 @@ public class ConditionalNegateTest
         int result = op1 < 51 ? -(op1 >> 3) : op2;
         Assert.Equal(expected, result);
     }
+
+    [Theory]
+    [InlineData(1, -1)]
+    [InlineData(55, ~55)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void cneg_mixed_not_and_neg_oper(int op1, int expected)
+    {
+        //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #52
+        //ARM64-FULL-LINE-NEXT: csneg {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        if (op1 <= 52)
+        {
+            op1 = -op1;
+        }
+        else
+        {
+            op1 = ~op1;
+        }
+        Assert.Equal(expected, op1);
+    }
 }

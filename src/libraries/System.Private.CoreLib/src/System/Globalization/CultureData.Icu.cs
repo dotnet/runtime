@@ -138,13 +138,9 @@ namespace System.Globalization
             _bNeutral = TwoLetterISOCountryName.Length == 0;
             _sSpecificCulture = _bNeutral ? IcuLocaleData.GetSpecificCultureName(_sRealName) : _sRealName;
 
-            if (_bNeutral && collationStart > 0)
-            {
-                return false; // neutral cultures cannot have collation
-            }
-
             // Remove the sort from sName unless custom culture
-            _sName = collationStart < 0 ? _sRealName : _sRealName.Substring(0, collationStart);
+            // To ensure compatibility, it is necessary to allow the creation of cultures like zh_CN (using ICU notation) in the case of _bNeutral.
+            _sName = collationStart < 0 || _bNeutral ? _sRealName : _sRealName.Substring(0, collationStart);
 
             return true;
         }

@@ -101,7 +101,7 @@ if [[ "$__TargetOS" == android && -z "$ROOTFS_DIR" ]]; then
     __CMakeArgs="-DANDROID_STL=none $__CMakeArgs"
 elif [[ "$__TargetOS" == linux-bionic && -z "$ROOTFS_DIR" ]]; then
     # Android SDK defaults to c++_static; we only need C support
-    __CMakeArgs="-DFORCE_ANDROID_OPENSSL=1 -DANDROID_STL=none $__CMakeArgs"
+    __CMakeArgs="-DFORCE_ANDROID_OPENSSL=1 -DANDROID_STL=none -DANDROID_FORCE_ICU_DATA_DIR=1 $__CMakeArgs"
 elif [[ "$__TargetOS" == iossimulator ]]; then
     # set default iOS simulator deployment target
     # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props

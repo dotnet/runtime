@@ -12,7 +12,6 @@ namespace System.Collections.Frozen.Tests
     public class FrozenFromKnownValuesTests
     {
         public static IEnumerable<object[]> Int32StringData() =>
-            from optimizeForReading in new[] { false, true }
             from keys in new int[][]
             {
                 new int[] { 0 },
@@ -22,10 +21,9 @@ namespace System.Collections.Frozen.Tests
                 new int[] { -1, 0, 2, 4, 6, 8, 10 },
                 Enumerable.Range(42, 100).ToArray(),
             }
-            select new object[] { optimizeForReading, keys.ToDictionary(i => i, i => i.ToString()) };
+            select new object[] { keys.ToDictionary(i => i, i => i.ToString()) };
 
         public static IEnumerable<object[]> StringStringData() =>
-            from optimizeForReading in new[] { false, true }
             from comparer in new[] { StringComparer.Ordinal, StringComparer.OrdinalIgnoreCase }
             from keys in new string[][]
             {
@@ -145,37 +143,35 @@ namespace System.Collections.Frozen.Tests
                 Enumerable.Range(0, 100).Select(i => $"ABCDEFGH\U0001F600{i:D2}").ToArray(), // right justified substring non-ascii
                 Enumerable.Range(0, 20).Select(i => i.ToString("D2")).Select(s => (char)(s[0] + 128) + "" + (char)(s[1] + 128)).ToArray(), // left-justified non-ascii
             }
-            select new object[] { optimizeForReading, keys.ToDictionary(i => i, i => i, comparer) };
+            select new object[] { keys.ToDictionary(i => i, i => i, comparer) };
 
         [Theory]
         [MemberData(nameof(StringStringData))]
-        public void FrozenDictionary_StringString(bool optimizeForReading, Dictionary<string, string> source) =>
-            FrozenDictionaryWorker(optimizeForReading, source);
+        public void FrozenDictionary_StringString(Dictionary<string, string> source) =>
+            FrozenDictionaryWorker(source);
 
         [Theory]
         [MemberData(nameof(Int32StringData))]
-        public void FrozenDictionary_Int32String(bool optimizeForReading, Dictionary<int, string> source)
+        public void FrozenDictionary_Int32String(Dictionary<int, string> source)
         {
-            FrozenDictionaryWorker(optimizeForReading, source);
-            FrozenDictionaryWorker(optimizeForReading, source.ToDictionary(i => (sbyte)i.Key, i => i.Value));
-            FrozenDictionaryWorker(optimizeForReading, source.ToDictionary(i => (short)i.Key, i => i.Value));
-            FrozenDictionaryWorker(optimizeForReading, source.ToDictionary(i => i.Key, i => i.Value));
-            FrozenDictionaryWorker(optimizeForReading, source.ToDictionary(i => (long)i.Key, i => i.Value));
+            FrozenDictionaryWorker(source);
+            FrozenDictionaryWorker(source.ToDictionary(i => (sbyte)i.Key, i => i.Value));
+            FrozenDictionaryWorker(source.ToDictionary(i => (short)i.Key, i => i.Value));
+            FrozenDictionaryWorker(source.ToDictionary(i => i.Key, i => i.Value));
+            FrozenDictionaryWorker(source.ToDictionary(i => (long)i.Key, i => i.Value));
 
-            FrozenDictionaryWorker(optimizeForReading, source.ToDictionary(i => (byte)i.Key, i => i.Value));
-            FrozenDictionaryWorker(optimizeForReading, source.ToDictionary(i => (ushort)i.Key, i => i.Value));
-            FrozenDictionaryWorker(optimizeForReading, source.ToDictionary(i => (uint)i.Key, i => i.Value));
-            FrozenDictionaryWorker(optimizeForReading, source.ToDictionary(i => (ulong)i.Key, i => i.Value));
+            FrozenDictionaryWorker(source.ToDictionary(i => (byte)i.Key, i => i.Value));
+            FrozenDictionaryWorker(source.ToDictionary(i => (ushort)i.Key, i => i.Value));
+            FrozenDictionaryWorker(source.ToDictionary(i => (uint)i.Key, i => i.Value));
+            FrozenDictionaryWorker(source.ToDictionary(i => (ulong)i.Key, i => i.Value));
 
-            FrozenDictionaryWorker(optimizeForReading, source.ToDictionary(i => TimeSpan.FromTicks(i.Key), i => i.Value));
-            FrozenDictionaryWorker(optimizeForReading, source.ToDictionary(i => new Guid((ushort)i.Key, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), i => i.Value));
+            FrozenDictionaryWorker(source.ToDictionary(i => TimeSpan.FromTicks(i.Key), i => i.Value));
+            FrozenDictionaryWorker(source.ToDictionary(i => new Guid((ushort)i.Key, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), i => i.Value));
         }
 
-        private static void FrozenDictionaryWorker<TKey, TValue>(bool optimizeForReading, Dictionary<TKey, TValue> source)
+        private static void FrozenDictionaryWorker<TKey, TValue>(Dictionary<TKey, TValue> source)
         {
-            FrozenDictionary<TKey, TValue> frozen = optimizeForReading ?
-                source.ToFrozenDictionary(source.Comparer, true) :
-                source.ToFrozenDictionary(source.Comparer);
+            FrozenDictionary<TKey, TValue> frozen = source.ToFrozenDictionary(source.Comparer);
 
             Assert.NotNull(frozen);
 
@@ -217,9 +213,7 @@ namespace System.Collections.Frozen.Tests
                     KeyValuePair<TKey, TValue> first = source.First();
                     source.Remove(first.Key);
 
-                    frozen = optimizeForReading ?
-                        source.ToFrozenDictionary(source.Comparer, true) :
-                        source.ToFrozenDictionary(source.Comparer);
+                    frozen = source.ToFrozenDictionary(source.Comparer);
 
                     Assert.False(frozen.TryGetValue(first.Key, out TValue value));
                     Assert.Equal(default, value);
@@ -235,31 +229,29 @@ namespace System.Collections.Frozen.Tests
 
         [Theory]
         [MemberData(nameof(StringStringData))]
-        public void FrozenSet_StringString(bool optimizeForReading, Dictionary<string, string> source) =>
-            FrozenSetWorker(optimizeForReading, source);
+        public void FrozenSet_StringString(Dictionary<string, string> source) =>
+            FrozenSetWorker(source);
 
         [Theory]
         [MemberData(nameof(Int32StringData))]
-        public void FrozenSet_Int32String(bool optimizeForReading, Dictionary<int, string> source)
+        public void FrozenSet_Int32String(Dictionary<int, string> source)
         {
-            FrozenSetWorker(optimizeForReading, source);
-            FrozenSetWorker(optimizeForReading, source.ToDictionary(i => (sbyte)i.Key, i => i.Value));
-            FrozenSetWorker(optimizeForReading, source.ToDictionary(i => (byte)i.Key, i => i.Value));
-            FrozenSetWorker(optimizeForReading, source.ToDictionary(i => (short)i.Key, i => i.Value));
-            FrozenSetWorker(optimizeForReading, source.ToDictionary(i => (ushort)i.Key, i => i.Value));
-            FrozenSetWorker(optimizeForReading, source.ToDictionary(i => (int)i.Key, i => i.Value));
-            FrozenSetWorker(optimizeForReading, source.ToDictionary(i => (uint)i.Key, i => i.Value));
-            FrozenSetWorker(optimizeForReading, source.ToDictionary(i => (long)i.Key, i => i.Value));
-            FrozenSetWorker(optimizeForReading, source.ToDictionary(i => (ulong)i.Key, i => i.Value));
-            FrozenSetWorker(optimizeForReading, source.ToDictionary(i => TimeSpan.FromTicks(i.Key), i => i.Value));
-            FrozenSetWorker(optimizeForReading, source.ToDictionary(i => new Guid((ushort)i.Key, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), i => i.Value));
+            FrozenSetWorker(source);
+            FrozenSetWorker(source.ToDictionary(i => (sbyte)i.Key, i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => (byte)i.Key, i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => (short)i.Key, i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => (ushort)i.Key, i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => (int)i.Key, i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => (uint)i.Key, i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => (long)i.Key, i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => (ulong)i.Key, i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => TimeSpan.FromTicks(i.Key), i => i.Value));
+            FrozenSetWorker(source.ToDictionary(i => new Guid((ushort)i.Key, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), i => i.Value));
         }
 
-        private void FrozenSetWorker<TKey, TValue>(bool optimizeForReading, Dictionary<TKey, TValue> source)
+        private void FrozenSetWorker<TKey, TValue>(Dictionary<TKey, TValue> source)
         {
-            FrozenSet<TKey> frozen = optimizeForReading ?
-                source.Select(p => p.Key).ToFrozenSet(source.Comparer, true) :
-                source.Select(p => p.Key).ToFrozenSet(source.Comparer);
+            FrozenSet<TKey> frozen = source.Select(p => p.Key).ToFrozenSet(source.Comparer);
 
             Assert.NotNull(frozen);
 
@@ -314,9 +306,7 @@ namespace System.Collections.Frozen.Tests
                     KeyValuePair<TKey, TValue> first = source.First();
                     source.Remove(first.Key);
 
-                    frozen = optimizeForReading ?
-                        source.Select(p => p.Key).ToFrozenSet(source.Comparer, true) :
-                        source.Select(p => p.Key).ToFrozenSet(source.Comparer);
+                    frozen = source.Select(p => p.Key).ToFrozenSet(source.Comparer);
 
                     Assert.False(frozen.Contains(first.Key));
 

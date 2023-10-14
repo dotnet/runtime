@@ -44,7 +44,7 @@ namespace Microsoft.NET.HostModel.Tests
             var repoDirectories = new RepoDirectoriesProvider(microsoftNETCoreAppVersion: mnaVersion);
             var fixture = new TestProjectFixture("StandaloneApp3x", repoDirectories, framework: netCoreAppFramework, assemblyName: "StandaloneApp");
 
-            fixture.PublishProject(runtime: fixture.CurrentRid, outputDirectory: BundleHelper.GetPublishPath(fixture), restore: true);
+            fixture.PublishProject(runtime: fixture.CurrentRid, selfContained: true, outputDirectory: BundleHelper.GetPublishPath(fixture), restore: true);
 
             return fixture;
         }

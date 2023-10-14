@@ -70,6 +70,77 @@ inline static int32_t Common_Write(intptr_t fd, const void* buffer, int32_t buff
     return (int32_t)count;
 }
 
+inline static int16_t Common_ConvertPollEventsPalToPlatform(int16_t palEvents)
+{
+    // we need to do this for platforms like AIX where PAL_POLL* doesn't
+    // match up to their reality; this is PollEvent -> system polling
+    int16_t platformEvents = 0;
+
+    if ((palEvents & PAL_POLLIN) != 0)
+    {
+        platformEvents |= POLLIN;
+    }
+#ifdef POLLPRI // not available in WASI
+    if ((palEvents & PAL_POLLPRI) != 0)
+    {
+        platformEvents |= POLLPRI;
+    }
+#endif
+    if ((palEvents & PAL_POLLOUT) != 0)
+    {
+        platformEvents |= POLLOUT;
+    }
+    if ((palEvents & PAL_POLLERR) != 0)
+    {
+        platformEvents |= POLLERR;
+    }
+    if ((palEvents & PAL_POLLHUP) != 0)
+    {
+        platformEvents |= POLLHUP;
+    }
+    if ((palEvents & PAL_POLLNVAL) != 0)
+    {
+        platformEvents |= POLLNVAL;
+    }
+
+    return platformEvents;
+}
+
+inline static int16_t Common_ConvertPollEventsPlatformToPal(int16_t platformEvents)
+{
+    // same as the other function, just system -> PollEvent
+    int16_t palEvents = 0;
+
+    if ((platformEvents & POLLIN) != 0)
+    {
+        palEvents |= PAL_POLLIN;
+    }
+#ifdef POLLPRI // not available in WASI
+    if ((platformEvents & POLLPRI) != 0)
+    {
+        palEvents |= PAL_POLLPRI;
+    }
+#endif
+    if ((platformEvents & POLLOUT) != 0)
+    {
+        palEvents |= PAL_POLLOUT;
+    }
+    if ((platformEvents & POLLERR) != 0)
+    {
+        palEvents |= PAL_POLLERR;
+    }
+    if ((platformEvents & POLLHUP) != 0)
+    {
+        palEvents |= PAL_POLLHUP;
+    }
+    if ((platformEvents & POLLNVAL) != 0)
+    {
+        palEvents |= PAL_POLLNVAL;
+    }
+
+    return palEvents;
+}
+
 inline static int32_t Common_Poll(PollEvent* pollEvents, uint32_t eventCount, int32_t milliseconds, uint32_t* triggered)
 {
     if (pollEvents == NULL || triggered == NULL)
@@ -102,34 +173,7 @@ inline static int32_t Common_Poll(PollEvent* pollEvents, uint32_t eventCount, in
     {
         const PollEvent* event = &pollEvents[i];
         pollfds[i].fd = event->FileDescriptor;
-        // we need to do this for platforms like AIX where PAL_POLL* doesn't
-        // match up to their reality; this is PollEvent -> system polling
-        switch (event->Events)
-        {
-            case PAL_POLLIN:
-                pollfds[i].events = POLLIN;
-                break;
-#ifdef POLLPRI // not available in WASI
-            case PAL_POLLPRI:
-                pollfds[i].events = POLLPRI;
-                break;
-#endif
-            case PAL_POLLOUT:
-                pollfds[i].events = POLLOUT;
-                break;
-            case PAL_POLLERR:
-                pollfds[i].events = POLLERR;
-                break;
-            case PAL_POLLHUP:
-                pollfds[i].events = POLLHUP;
-                break;
-            case PAL_POLLNVAL:
-                pollfds[i].events = POLLNVAL;
-                break;
-            default:
-                pollfds[i].events = event->Events;
-                break;
-        }
+        pollfds[i].events = Common_ConvertPollEventsPalToPlatform(event->Events);
         pollfds[i].revents = 0;
     }
 
@@ -151,35 +195,8 @@ inline static int32_t Common_Poll(PollEvent* pollEvents, uint32_t eventCount, in
     {
         const struct pollfd* pfd = &pollfds[i];
         assert(pfd->fd == pollEvents[i].FileDescriptor);
-        assert(pfd->events == pollEvents[i].Events);
-
-        // same as the other switch, just system -> PollEvent
-        switch (pfd->revents)
-        {
-            case POLLIN:
-                pollEvents[i].TriggeredEvents = PAL_POLLIN;
-                break;
-#ifdef POLLPRI // not available in WASI
-            case POLLPRI:
-                pollEvents[i].TriggeredEvents = PAL_POLLPRI;
-                break;
-#endif
-            case POLLOUT:
-                pollEvents[i].TriggeredEvents = PAL_POLLOUT;
-                break;
-            case POLLERR:
-                pollEvents[i].TriggeredEvents = PAL_POLLERR;
-                break;
-            case POLLHUP:
-                pollEvents[i].TriggeredEvents = PAL_POLLHUP;
-                break;
-            case POLLNVAL:
-                pollEvents[i].TriggeredEvents = PAL_POLLNVAL;
-                break;
-            default:
-                pollEvents[i].TriggeredEvents = (int16_t)pfd->revents;
-                break;
-        }
+        assert(pfd->events == Common_ConvertPollEventsPalToPlatform(pollEvents[i].Events));
+        pollEvents[i].TriggeredEvents = Common_ConvertPollEventsPlatformToPal(pfd->revents);
     }
 
     *triggered = (uint32_t)rv;

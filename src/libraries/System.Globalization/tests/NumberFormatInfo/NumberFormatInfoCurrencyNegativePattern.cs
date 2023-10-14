@@ -60,6 +60,7 @@ namespace System.Globalization.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(15)]
+        [InlineData(16)]
         public void CurrencyNegativePattern_Set_GetReturnsExpected(int newCurrencyNegativePattern)
         {
             NumberFormatInfo format = new NumberFormatInfo();
@@ -69,7 +70,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [InlineData(-1)]
-        [InlineData(16)]
+        [InlineData(17)]
         public void CurrencyNegativePattern_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
         {
             var format = new NumberFormatInfo();

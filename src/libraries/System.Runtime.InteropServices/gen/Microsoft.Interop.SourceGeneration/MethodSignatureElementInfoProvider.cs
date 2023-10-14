@@ -12,11 +12,11 @@ namespace Microsoft.Interop
     public sealed class MethodSignatureElementInfoProvider : IElementInfoProvider
     {
         private readonly Compilation _compilation;
-        private readonly IGeneratorDiagnostics _generatorDiagnostics;
+        private readonly GeneratorDiagnosticsBag _generatorDiagnostics;
         private readonly IMethodSymbol _method;
         private readonly ImmutableArray<IUseSiteAttributeParser> _useSiteAttributeParsers;
 
-        public MethodSignatureElementInfoProvider(Compilation compilation, IGeneratorDiagnostics generatorDiagnostics, IMethodSymbol method, ImmutableArray<IUseSiteAttributeParser> useSiteAttributeParsers)
+        public MethodSignatureElementInfoProvider(Compilation compilation, GeneratorDiagnosticsBag generatorDiagnostics, IMethodSymbol method, ImmutableArray<IUseSiteAttributeParser> useSiteAttributeParsers)
         {
             _compilation = compilation;
             _generatorDiagnostics = generatorDiagnostics;

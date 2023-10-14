@@ -113,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _instructionSetsSupport.CompareTo(((ReadyToRunInstructionSetSupportSignature)other)._instructionSetsSupport);
+            return string.CompareOrdinal(_instructionSetsSupport, ((ReadyToRunInstructionSetSupportSignature)other)._instructionSetsSupport);
         }
     }
 }

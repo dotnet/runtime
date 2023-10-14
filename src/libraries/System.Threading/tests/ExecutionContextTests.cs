@@ -11,6 +11,7 @@ namespace System.Threading.Tests
     public static class ExecutionContextTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void CreateCopyTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -62,6 +63,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void FlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -179,6 +181,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void CaptureThenSuppressThenRunFlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -265,6 +268,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void AsyncFlowControlTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>

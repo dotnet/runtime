@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 
 #nullable enable
@@ -25,6 +24,15 @@ namespace Wasm.Build.Tests
         public string                           BuiltNuGetsPath               { get; init; }
 
         public bool UseWebcil { get; init; }
+        public bool IsWorkloadWithMultiThreadingForDefaultFramework { get; init; }
+        public bool IsRunningOnCI => EnvironmentVariables.IsRunningOnCI;
+
+        /* This will trigger importing WasmOverridePacks.targets for the tests,
+         * which will override the runtime pack with with the locally built one.
+         * But note that this only partially helps with "switching workloads" because
+         * the tasks/targets, aot compiler, etc would still be from the old version
+         */
+        public static readonly bool             UseWBTOverridePackTargets = false;
 
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
@@ -96,6 +104,14 @@ namespace Wasm.Build.Tests
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
 
+            IsWorkloadWithMultiThreadingForDefaultFramework = IsMultiThreadingRuntimePackAvailableFor(BuildTestBase.DefaultTargetFramework);
+            if (IsWorkload && EnvironmentVariables.IsRunningOnCI && !IsWorkloadWithMultiThreadingForDefaultFramework)
+            {
+                throw new Exception(
+                            "Expected the multithreading runtime pack to be available when running on CI." +
+                            $" {nameof(IsRunningOnCI)} is true but {nameof(IsWorkloadWithMultiThreadingForDefaultFramework)} is false.");
+            }
+
             UseWebcil = EnvironmentVariables.UseWebcil;
 
             if (EnvironmentVariables.BuiltNuGetsPath is null || !Directory.Exists(EnvironmentVariables.BuiltNuGetsPath))
@@ -106,14 +122,20 @@ namespace Wasm.Build.Tests
             // `runtime` repo's build environment sets these, and they
             // mess up the build for the test project, which is using a different
             // dotnet
+            EnvVars["DOTNET_ROOT"] = sdkForWorkloadPath;
             EnvVars["DOTNET_INSTALL_DIR"] = sdkForWorkloadPath;
             EnvVars["DOTNET_MULTILEVEL_LOOKUP"] = "0";
             EnvVars["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
             EnvVars["EM_WORKAROUND_PYTHON_BUG_34780"] = "1";
+            if (UseWBTOverridePackTargets && IsWorkload)
+                EnvVars["WBTOverrideRuntimePack"] = "true";
 
-            // helps with debugging
-            EnvVars["WasmNativeStrip"] = "false";
+            if (!UseWebcil)
+            {
+                // Default is 'true'
+                EnvVars["WasmEnableWebCil"] = "false";
+            }
 
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -139,10 +161,18 @@ namespace Wasm.Build.Tests
 
         // FIXME: error checks
         public string GetRuntimePackVersion(string tfm = BuildTestBase.DefaultTargetFramework) => s_runtimePackVersions[tfm];
-        public string GetRuntimePackDir(string tfm = BuildTestBase.DefaultTargetFramework)
-            => Path.Combine(WorkloadPacksDir, $"Microsoft.NETCore.App.Runtime.Mono.{DefaultRuntimeIdentifier}", GetRuntimePackVersion(tfm));
-        public string GetRuntimeNativeDir(string tfm = BuildTestBase.DefaultTargetFramework)
-            => Path.Combine(GetRuntimePackDir(tfm), "runtimes", DefaultRuntimeIdentifier, "native");
+        public string GetRuntimePackDir(string tfm = BuildTestBase.DefaultTargetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
+            => Path.Combine(WorkloadPacksDir,
+                    runtimeType is RuntimeVariant.SingleThreaded
+                        ? $"Microsoft.NETCore.App.Runtime.Mono.{DefaultRuntimeIdentifier}"
+                        : $"Microsoft.NETCore.App.Runtime.Mono.multithread.{DefaultRuntimeIdentifier}",
+                    GetRuntimePackVersion(tfm));
+        public string GetRuntimeNativeDir(string tfm = BuildTestBase.DefaultTargetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
+            => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");
+        public bool IsMultiThreadingRuntimePackAvailableFor(string tfm)
+            => IsWorkload && File.Exists(Path.Combine(GetRuntimeNativeDir(tfm, RuntimeVariant.MultiThreaded), "dotnet.native.worker.js"));
+
+        public static string WasmOverridePacksTargetsPath = Path.Combine(TestDataPath, "WasmOverridePacks.targets");
 
         protected static string s_directoryBuildPropsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.targets"));

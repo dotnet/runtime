@@ -56,3 +56,21 @@ extends:
             readyToRun: true
             displayNameArgs: R2R_CG2
             liveLibrariesBuildConfig: Release
+
+      # Run pri0 tests with hot/cold splitting enabled (only supported on x64 at the moment)
+      # TODO: test on arm64 once supported
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          - osx_x64
+          - windows_x64
+          jobParameters:
+            testGroup: innerloop
+            readyToRun: true
+            hotColdSplitting: true
+            displayNameArgs: R2R_CG2_HotColdSplitting
+            liveLibrariesBuildConfig: Release

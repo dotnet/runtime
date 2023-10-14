@@ -53,7 +53,12 @@ namespace System.Net.Security
         {
             get
             {
-                return _selectedClientCertificate;
+                if (_selectedClientCertificate != null && CertificateValidationPal.IsLocalCertificateUsed(_credentialsHandle, _securityContext!))
+                {
+                    return _selectedClientCertificate;
+                }
+
+                return null;
             }
         }
 
@@ -545,7 +550,9 @@ namespace System.Net.Security
                     _sslAuthenticationOptions.EnabledSslProtocols,
                     _sslAuthenticationOptions.IsServer,
                     _sslAuthenticationOptions.EncryptionPolicy,
-                    _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck);
+                    _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
+                    _sslAuthenticationOptions.AllowTlsResume,
+                    sendTrustList: false);
 
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
@@ -689,6 +696,8 @@ namespace System.Net.Security
                                                                 _sslAuthenticationOptions.EnabledSslProtocols,
                                                                 _sslAuthenticationOptions.IsServer,
                                                                 _sslAuthenticationOptions.EncryptionPolicy,
+                                                                _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
+                                                                _sslAuthenticationOptions.AllowTlsResume,
                                                                 sendTrustedList);
             if (cachedCredentialHandle != null)
             {
@@ -805,16 +814,14 @@ namespace System.Net.Security
                         cachedCreds = _sslAuthenticationOptions.IsServer
                                         ? AcquireServerCredentials(ref thumbPrint)
                                         : AcquireClientCredentials(ref thumbPrint);
-
-                        if (cachedCreds && _sslAuthenticationOptions.IsServer)
-                        {
-                            sendTrustList = _sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake ?? false;
-                        }
                     }
 
                     if (_sslAuthenticationOptions.IsServer)
                     {
+                        sendTrustList = _sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake ?? false;
+
                         token = SslStreamPal.AcceptSecurityContext(
+
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       inputBuffer,
@@ -888,6 +895,7 @@ namespace System.Net.Security
                             _sslAuthenticationOptions.IsServer,
                             _sslAuthenticationOptions.EncryptionPolicy,
                             _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
+                            _sslAuthenticationOptions.AllowTlsResume,
                             sendTrustList);
                     }
                 }
@@ -923,6 +931,14 @@ namespace System.Net.Security
             Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
 
             SslStreamPal.QueryContextConnectionInfo(_securityContext!, ref _connectionInfo);
+#if DEBUG
+            if (NetEventSource.Log.IsEnabled())
+            {
+                // This keeps the property alive only for tests via reflection
+                // Otherwise it could be optimized out as it is not used by production code.
+                NetEventSource.Info(this, $"TLS resumed {_connectionInfo.TlsResumed}");
+            }
+#endif
         }
 
         /*++

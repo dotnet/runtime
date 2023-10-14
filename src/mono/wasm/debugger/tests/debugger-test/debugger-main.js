@@ -3,11 +3,12 @@
 
 "use strict";
 
-import { dotnet, exit } from './dotnet.js'
+import { dotnet, exit } from './_framework/dotnet.js'
 
 try {
     const runtime = await dotnet
         .withEnvironmentVariable("DOTNET_MODIFIABLE_ASSEMBLIES", "debug")
+        .withConfig({ maxParallelDownloads: 10 })
         // For custom logging patch the functions below
         //.withDiagnosticTracing(true)
         //.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")

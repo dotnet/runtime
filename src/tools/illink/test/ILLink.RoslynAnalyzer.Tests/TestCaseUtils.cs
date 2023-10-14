@@ -24,24 +24,24 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		private static readonly string MonoLinkerTestsCases = "Mono.Linker.Tests.Cases";
 
-		public static readonly ReferenceAssemblies Net6PreviewAssemblies =
+		public static readonly ReferenceAssemblies NetCoreAppReferencessemblies =
 		new ReferenceAssemblies (
 				"net8.0",
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0-alpha.1.23060.19"),
+				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0-rc.1.23419.4"),
 				Path.Combine ("ref", "net8.0"))
 			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
 
-		private static ImmutableArray<MetadataReference> s_net6Refs;
+		private static ImmutableArray<MetadataReference> s_netcoreappRefs;
 		public static async ValueTask<ImmutableArray<MetadataReference>> GetNet6References ()
 		{
-			if (s_net6Refs.IsDefault) {
-				var refs = await Net6PreviewAssemblies.ResolveAsync (null, default);
-				ImmutableInterlocked.InterlockedInitialize (ref s_net6Refs, refs);
+			if (s_netcoreappRefs.IsDefault) {
+				var refs = await NetCoreAppReferencessemblies.ResolveAsync (null, default);
+				ImmutableInterlocked.InterlockedInitialize (ref s_netcoreappRefs, refs);
 			}
-			return s_net6Refs;
+			return s_netcoreappRefs;
 		}
 
-		public static string FindTestDir (string rootDir, string suiteName)
+		public static string FindTestSuiteDir (string rootDir, string suiteName)
 		{
 			string[] suiteParts = suiteName.Split ('.');
 			string currentDir = rootDir;
@@ -60,20 +60,29 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			GetDirectoryPaths (out string rootSourceDir, out string testAssemblyPath);
 			Debug.Assert (Path.GetFileName (rootSourceDir) == MonoLinkerTestsCases);
-			var testDir = FindTestDir (rootSourceDir, suiteName);
-			var testPath = Path.Combine (testDir, $"{testName}.cs");
+			var testSuiteDir = FindTestSuiteDir (rootSourceDir, suiteName);
+			Assert.True (Directory.Exists (testSuiteDir));
+			var testCaseDir = Path.Combine (testSuiteDir, testName);
+			string testPath;
+			if (Directory.Exists (testCaseDir)) {
+				testPath = Path.Combine (testCaseDir, $"Program.cs");
+			} else {
+				testCaseDir = testSuiteDir;
+				testPath = Path.Combine (testSuiteDir, $"{testName}.cs");
+			}
 			Assert.True (File.Exists (testPath));
 			var tree = SyntaxFactory.ParseSyntaxTree (
 				SourceText.From (File.OpenRead (testPath), Encoding.UTF8),
 				path: testPath);
 
-			var testDependenciesSource = GetTestDependencies (testDir, tree)
+			var testDependenciesSource = GetTestDependencies (testCaseDir, tree)
 				.Where (f => Path.GetExtension (f) == ".cs")
 				.Select (f => SyntaxFactory.ParseSyntaxTree (SourceText.From (File.OpenRead (f))));
 			var additionalFiles = GetAdditionalFiles (rootSourceDir, tree);
 
 			var (comp, model, exceptionDiagnostics) = await TestCaseCompilation.CreateCompilation (
 					tree,
+					consoleApplication: false,
 					msbuildProperties,
 					additionalSources: testDependenciesSource,
 					additionalFiles: additionalFiles);
@@ -86,7 +95,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			testChecker.Check (allowMissingWarnings);
 		}
 
-		private static IEnumerable<string> GetTestDependencies (string testDir, SyntaxTree testSyntaxTree)
+		private static IEnumerable<string> GetTestDependencies (string testCaseDir, SyntaxTree testSyntaxTree)
 		{
 			foreach (var attribute in testSyntaxTree.GetRoot ().DescendantNodes ().OfType<AttributeSyntax> ()) {
 				var attributeName = attribute.Name.ToString ();
@@ -100,7 +109,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 						if (arrayExpression is not (ArrayCreationExpressionSyntax or ImplicitArrayCreationExpressionSyntax))
 							throw new InvalidOperationException ();
 						foreach (var sourceFile in args["#1"].DescendantNodes ().OfType<LiteralExpressionSyntax> ())
-							yield return Path.Combine (testDir, LinkerTestBase.GetStringFromExpression (sourceFile));
+							yield return Path.Combine (testCaseDir, LinkerTestBase.GetStringFromExpression (sourceFile));
 						break;
 					}
 				case "SandboxDependency": {
@@ -118,7 +127,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 						}
 						if (!sourceFile.EndsWith (".cs"))
 							throw new NotSupportedException ();
-						yield return Path.Combine (testDir, sourceFile);
+						yield return Path.Combine (testCaseDir, sourceFile);
 						break;
 					}
 				default:
@@ -161,7 +170,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			const string tfm = "net8.0";
 
-			rootSourceDirectory = Path.GetFullPath(Path.Combine(LinkerTestDirectory, "Mono.Linker.Tests.Cases"));
+			rootSourceDirectory = Path.GetFullPath(Path.Combine(LinkerTestDirectory, MonoLinkerTestsCases));
 			testAssemblyPath = Path.GetFullPath(Path.Combine(artifactsBinDirectory, "ILLink.RoslynAnalyzer.Tests", configuration, tfm));
 		}
 

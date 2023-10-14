@@ -251,6 +251,10 @@ COMPlusFrameHandlerRevCom proto c
 .safeseh COMPlusFrameHandlerRevCom
 endif
 
+ifdef HAS_ADDRESS_SANITIZER
+EXTERN ___asan_handle_no_return:PROC
+endif
+
 ; Note that RtlUnwind trashes EBX, ESI and EDI, so this wrapper preserves them
 CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, callback :DWORD, pExceptionRecord :DWORD, retVal :DWORD
 
@@ -268,6 +272,10 @@ CallRtlUnwind PROC stdcall public USES ebx esi edi, pEstablisherFrame :DWORD, ca
 CallRtlUnwind ENDP
 
 _ResumeAtJitEHHelper@4 PROC public
+        ; Call ___asan_handle_no_return here as we are not going to return.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         mov     edx, [esp+4]     ; edx = pContext (EHContext*)
 
         mov     ebx, [edx+EHContext_Ebx]
@@ -293,6 +301,10 @@ _ResumeAtJitEHHelper@4 ENDP
 ; int __stdcall CallJitEHFilterHelper(size_t *pShadowSP, EHContext *pContext);
 ;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
 _CallJitEHFilterHelper@8 PROC public
+        ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         push    ebp
         mov     ebp, esp
         push    ebx
@@ -334,6 +346,10 @@ _CallJitEHFilterHelper@8 ENDP
 ; void __stdcall CallJITEHFinallyHelper(size_t *pShadowSP, EHContext *pContext);
 ;   on entry, only the pContext->Esp, Ebx, Esi, Edi, Ebp, and Eip are initialized
 _CallJitEHFinallyHelper@8 PROC public
+        ; Call ___asan_handle_no_return here as we touch registers that ASAN uses.
+ifdef HAS_ADDRESS_SANITIZER
+        call    ___asan_handle_no_return
+endif
         push    ebp
         mov     ebp, esp
         push    ebx

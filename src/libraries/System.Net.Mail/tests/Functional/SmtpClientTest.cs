@@ -313,8 +313,6 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/31719")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and may not time out for low values")]
         [SkipOnPlatform(TestPlatforms.OSX, "on OSX, not all synchronous operations (e.g. connect) can be aborted by closing the socket.")]
         public void TestZeroTimeout()
         {
@@ -339,7 +337,6 @@ namespace System.Net.Mail.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and could hang in case of null or empty body")]
         [Theory]
         [InlineData("howdydoo")]
         [InlineData("")]

@@ -393,7 +393,11 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_I4:
 		return OP_LOADI4_MEMBASE;
 	case MONO_TYPE_U4:
+#ifdef TARGET_RISCV64
+		return OP_LOADI4_MEMBASE;
+#else
 		return OP_LOADU4_MEMBASE;
+#endif
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
@@ -656,7 +660,9 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	inst->backend.is_pinvoke = 0;
 	inst->dreg = vreg;
 
-	if (mono_class_has_failure (inst->klass))
+	// In AOT, we do not set the exception so that the compilation can succeed. To indicate
+	// the error, an exception is thrown in run-time.
+	if (!cfg->compile_aot && mono_class_has_failure (inst->klass))
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
 
 	if (cfg->compute_gc_maps) {
@@ -1347,7 +1353,10 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			size = mini_type_stack_size (t, &ialign);
 			align = ialign;
 
-			if (mono_class_has_failure (mono_class_from_mono_type_internal (t)))
+			// In AOT, we do not set the exception but allow the compilation to succeed. The error will be
+			// indicated in runtime by throwing an exception when an operation with the invalid object is
+			// attempted.
+			if (!cfg->compile_aot && mono_class_has_failure (mono_class_from_mono_type_internal (t)))
 				mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
 
 			if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (t)))
@@ -3542,7 +3551,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 		cfg->opt &= ~MONO_OPT_LINEARS;
 
-		/* FIXME: */
 		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 
@@ -4301,7 +4309,7 @@ mini_handle_call_res_devirt (MonoMethod *cmethod)
 
 		// EqualityComparer<T>.Default returns specific types depending on T
 		// FIXME: Special case more types: byte, string, nullable, enum ?
-		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_U1 && param_type->type != MONO_TYPE_STRING) {
+		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_STRING) {
 			MonoClass *gcomparer_inst;
 
 			memset (&ctx, 0, sizeof (ctx));
@@ -4568,6 +4576,9 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 	const char *klass_name = m_class_get_name (klass);
 	if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
 		*nelems = 4;
+		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector2")) {
+		*nelems = 2;
 		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];

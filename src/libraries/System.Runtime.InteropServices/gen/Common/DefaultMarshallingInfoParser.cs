@@ -8,7 +8,7 @@ namespace Microsoft.Interop
 {
     internal static class DefaultMarshallingInfoParser
     {
-        public static MarshallingInfoParser Create(StubEnvironment env, IGeneratorDiagnostics diagnostics, IMethodSymbol method, InteropAttributeCompilationData interopAttributeData, AttributeData unparsedAttributeData)
+        public static MarshallingInfoParser Create(StubEnvironment env, GeneratorDiagnosticsBag diagnostics, IMethodSymbol method, InteropAttributeCompilationData interopAttributeData, AttributeData unparsedAttributeData)
         {
 
             // Compute the current default string encoding value.
@@ -31,7 +31,7 @@ namespace Microsoft.Interop
             var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, interopAttributeData.StringMarshallingCustomType);
 
             var useSiteAttributeParsers = ImmutableArray.Create<IUseSiteAttributeParser>(
-                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
+                    new MarshalAsAttributeParser(diagnostics, defaultInfo),
                     new MarshalUsingAttributeParser(env.Compilation, diagnostics));
 
             return new MarshallingInfoParser(
@@ -39,7 +39,7 @@ namespace Microsoft.Interop
                 new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers),
                 useSiteAttributeParsers,
                 ImmutableArray.Create<IMarshallingInfoAttributeParser>(
-                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
+                    new MarshalAsWithCustomMarshallersParser(env.Compilation, diagnostics, new MarshalAsAttributeParser(diagnostics, defaultInfo)),
                     new MarshalUsingAttributeParser(env.Compilation, diagnostics),
                     new NativeMarshallingAttributeParser(env.Compilation, diagnostics),
                     new ComInterfaceMarshallingInfoProvider(env.Compilation)),

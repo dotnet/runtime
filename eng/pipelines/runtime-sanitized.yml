@@ -1,7 +1,13 @@
 # This pipeline provides an easy mechanism for us to run runtime and libaries tests with native sanitizers enabled
-# without having to compilcate the runtime.yml pipeline. This pipeline is intended to be run on a rolling basis
-# but a schedule is yet to be determined.
+# without having to compilcate the runtime.yml pipeline.
 trigger: none
+
+schedules:
+- cron: "0 11 * * 2"
+  displayName: Tuesday at 3:00 AM (UTC-8:00)
+  branches:
+    include:
+    - main
 
 variables:
   - template: /eng/pipelines/common/variables.yml
@@ -10,5 +16,98 @@ extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
-    - stage: Build
+    - stage: AddressSanitizer
       jobs:
+      #
+      # Build the whole product with CoreCLR and run runtime tests with AddressSanitizer
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Checked
+          runtimeFlavor: coreclr
+          platforms:
+            - linux_x64
+            - osx_x64
+          variables:
+            - name: _nativeSanitizersArg
+              value: -fsanitize address
+          jobParameters:
+            nameSuffix: CoreCLR_RuntimeTests
+            buildArgs: -s clr+libs -c $(_BuildConfig) $(_nativeSanitizersArg)
+            timeoutInMinutes: 300
+            # extra steps, run tests
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  scenarios:
+                    - normal
+                    - no_tiered_compilation
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: outerloop
+                  sanitizers: 'address'
+
+      #
+      # Build the whole product with CoreCLR and run libraries tests with AddressSanitizer
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Debug
+          runtimeFlavor: coreclr
+          platforms:
+            - linux_x64
+            - osx_x64
+          variables:
+            - name: _nativeSanitizersArg
+              value: -fsanitize address
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: CoreCLR_LibrariesTests
+            buildArgs: -s clr+libs+libs.tests -c $(_BuildConfig) -rc Checked $(_nativeSanitizersArg) /p:ArchiveTests=true
+            timeoutInMinutes: 180
+            # extra steps, run tests
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Libraries_$(_BuildConfig)
+                  scenarios:
+                    - normal
+
+      #
+      # NativeAOT release build and smoke tests with AddressSanitizer
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: release
+          platforms:
+            - linux_x64
+            - osx_x64
+          variables:
+            - name: _nativeSanitizersArg
+              value: -fsanitize address
+          jobParameters:
+            testGroup: innerloop
+            timeoutInMinutes: 120
+            nameSuffix: NativeAOT
+            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release $(_nativeSanitizersArg)
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: nativeaot tree nativeaot
+                  liveLibrariesBuildConfig: Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  sanitizers: 'address'
+                  liveLibrariesBuildConfig: Release

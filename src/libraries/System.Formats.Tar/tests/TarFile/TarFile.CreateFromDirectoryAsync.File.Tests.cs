@@ -263,7 +263,7 @@ namespace System.Formats.Tar.Tests
 
             TarEntry entry = await reader.GetNextEntryAsync();
             Assert.NotNull(entry);
-            Assert.Equal("subDirectory/", entry.Name);
+            Assert.Equal("subDirectory", entry.Name);
             Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
 
             Assert.Null(await reader.GetNextEntryAsync()); // file.txt should not be found

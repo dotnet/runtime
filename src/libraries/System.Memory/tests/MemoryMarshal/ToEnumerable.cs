@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
-using Xunit;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace System.MemoryTests
 {
@@ -81,9 +82,36 @@ namespace System.MemoryTests
         {
             int[] a = { 91, 92, 93 };
             var memory = new Memory<int>(a);
-            IEnumerable<int> enumer = MemoryMarshal.ToEnumerable<int>(memory);
+            IEnumerable<int> enumer = MemoryMarshal.ToEnumerable<int>(memory.Slice(1));
             IEnumerator<int> enumerat = enumer.GetEnumerator();
             Assert.Same(enumer, enumerat);
+        }
+
+        [Fact]
+        public static void ToEnumerableChars()
+        {
+            ReadOnlyMemory<char>[] memories = new[]
+            {
+                new char[] { 'a', 'b', 'c' }.AsMemory(), // array
+                "abc".AsMemory(), // string
+                new WrapperMemoryManager<char>(new char[] { 'a', 'b', 'c' }.AsMemory()).Memory // memory manager
+            };
+
+            foreach (ReadOnlyMemory<char> memory in memories)
+            {
+                Assert.Equal(new char[] { 'a', 'b', 'c' }, MemoryMarshal.ToEnumerable(memory));
+                Assert.Equal(new char[] { 'a', 'b' }, MemoryMarshal.ToEnumerable(memory.Slice(0, 2)));
+                Assert.Equal(new char[] { 'b', 'c' }, MemoryMarshal.ToEnumerable(memory.Slice(1)));
+                Assert.Same(Array.Empty<char>(), MemoryMarshal.ToEnumerable(memory.Slice(3)));
+            }
+        }
+
+        private sealed class WrapperMemoryManager<T>(Memory<T> memory) : MemoryManager<T>
+        {
+            public override Span<T> GetSpan() => memory.Span;
+            public override MemoryHandle Pin(int elementIndex = 0) => throw new NotSupportedException();
+            public override void Unpin() => throw new NotSupportedException();
+            protected override void Dispose(bool disposing) { }
         }
     }
 }

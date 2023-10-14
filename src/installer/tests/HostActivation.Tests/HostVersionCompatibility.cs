@@ -19,149 +19,111 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void Latest_Host_Is_Backwards_Compatible_With_Older_Runtime_20()
+        public void LatestHost_OldRuntime_BackwardsCompatible_60()
         {
-            Latest_Host_Is_Backwards_Compatible_With_Older_Runtime(sharedTestState.Fixture20);
+            LatestHost_OldRuntime_BackwardsCompatible(sharedTestState.Fixture60);
         }
 
-        [Fact]
-        public void Latest_Host_Is_Backwards_Compatible_With_Older_Runtime_21()
+        private void LatestHost_OldRuntime_BackwardsCompatible(TestProjectFixture previousVersionFixture)
         {
-            Latest_Host_Is_Backwards_Compatible_With_Older_Runtime(sharedTestState.Fixture21);
-        }
-
-        private void Latest_Host_Is_Backwards_Compatible_With_Older_Runtime(TestProjectFixture previousVersionFixture)
-        {
-            if (!IsRidSupported())
-            {
-                return;
-            }
-
             TestProjectFixture fixture = previousVersionFixture.Copy();
             string appExe = fixture.TestProject.AppExe;
 
-            Assert.NotEqual(fixture.Framework, sharedTestState.FixtureLatest.Framework);
-            Assert.NotEqual(fixture.RepoDirProvider.MicrosoftNETCoreAppVersion, sharedTestState.FixtureLatest.RepoDirProvider.MicrosoftNETCoreAppVersion);
-
-            // Baseline (no changes)
-            Command.Create(appExe)
-                .EnableTracingAndCaptureOutputs()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {fixture.RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            Assert.NotEqual(fixture.Framework, RepoDirectoriesProvider.Default.Tfm);
+            Assert.NotEqual(fixture.RepoDirProvider.MicrosoftNETCoreAppVersion, RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion);
 
             // Use the newer apphost
             // This emulates the case when:
             //  1) Newer runtime installed
             //  2) Newer runtime uninstalled (installer preserves newer apphost)
-            File.Copy(sharedTestState.FixtureLatest.TestProject.AppExe, fixture.TestProject.AppExe, true);
+            fixture.TestProject.BuiltApp.CreateAppHost();
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {sharedTestState.FixtureLatest.RepoDirProvider.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdErrContaining($"--- Invoked apphost [version: {RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion}");
 
             // Use the newer apphost and hostFxr
             // This emulates the case when:
             //  1) Newer runtime installed
             //  2) A roll-forward to the newer runtime did not occur
-            File.Copy(sharedTestState.FixtureLatest.TestProject.HostFxrDll, fixture.TestProject.HostFxrDll, true);
+            File.Copy(Binaries.HostFxr.FilePath, fixture.TestProject.HostFxrDll, true);
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {sharedTestState.FixtureLatest.RepoDirProvider.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdErrContaining($"--- Invoked apphost [version: {RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion}");
         }
 
         [Fact]
-        public void Old_Host_Is_Forward_Compatible_With_Latest_Runtime_20()
+        public void OldHost_LatestRuntime_ForwardCompatible_60()
         {
-            Old_Host_Is_Forward_Compatible_With_Latest_Runtime(sharedTestState.Fixture20);
+            OldHost_LatestRuntime_ForwardCompatible(sharedTestState.Fixture60);
         }
 
-        [Fact]
-        public void Old_Host_Is_Forward_Compatible_With_Latest_Runtime_21()
+        private void OldHost_LatestRuntime_ForwardCompatible(TestProjectFixture previousVersionFixture)
         {
-            Old_Host_Is_Forward_Compatible_With_Latest_Runtime(sharedTestState.Fixture21);
-        }
-
-        private void Old_Host_Is_Forward_Compatible_With_Latest_Runtime(TestProjectFixture previousVersionFixture)
-        {
-            if (!IsRidSupported())
-            {
-                return;
-            }
-
             TestProjectFixture fixture = sharedTestState.FixtureLatest.Copy();
             string appExe = fixture.TestProject.AppExe;
 
             Assert.NotEqual(fixture.Framework, previousVersionFixture.Framework);
             Assert.NotEqual(fixture.RepoDirProvider.MicrosoftNETCoreAppVersion, previousVersionFixture.RepoDirProvider.MicrosoftNETCoreAppVersion);
 
-            // Baseline (no changes)
-            Command.Create(appExe)
-                .EnableTracingAndCaptureOutputs()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {fixture.RepoDirProvider.MicrosoftNETCoreAppVersion}");
-
-            // Use the older apphost and hostfxr
+            // Use the older apphost
             // This emulates the case when:
-            //  1) One-off deployment of older runtime (not in global location)
-            //  2) Older apphost executed, but found newer runtime because of multi-level lookup
-            //     Note that we currently don't have multi-level on hostfxr so we will always find the older\one-off hostfxr
+            //  1) Newer runtime installed
+            //  2) App rolls forward to newer runtime
             File.Copy(previousVersionFixture.TestProject.AppExe, fixture.TestProject.AppExe, true);
-            File.Copy(previousVersionFixture.TestProject.HostFxrDll, fixture.TestProject.HostFxrDll, true);
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
                 .And.HaveStdErrContaining($"--- Invoked apphost [version: {previousVersionFixture.RepoDirProvider.MicrosoftNETCoreAppVersion}");
-        }
 
-        private static bool IsRidSupported()
-        {
-            // Some current Linux RIDs are not supported in 2.0\2.1; just test for Ubuntu 16.
-            return (
-                OperatingSystem.IsWindows() ||
-                OperatingSystem.IsMacOS() ||
-                (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier == "ubuntu.16.04-x64")
-            );
+            // Use the older apphost and hostfxr
+            // This emulates the case when:
+            //  1) One-off deployment of older runtime (not in global location)
+            //  2) Older apphost executed, but found newer runtime because of multi-level lookup on Windows
+            //     Note that we don't have multi-level on hostfxr so we will always find the older\one-off hostfxr
+            if (OperatingSystem.IsWindows())
+            {
+                File.Copy(previousVersionFixture.TestProject.HostFxrDll, fixture.TestProject.HostFxrDll, true);
+                Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("Hello World")
+                    .And.HaveStdErrContaining($"--- Invoked apphost [version: {previousVersionFixture.RepoDirProvider.MicrosoftNETCoreAppVersion}");
+            }
         }
 
         public class SharedTestState : IDisposable
         {
             private static RepoDirectoriesProvider RepoDirectories { get; set; }
 
-            public TestProjectFixture Fixture20 { get; }
-            public TestProjectFixture Fixture21 { get; }
+            public TestProjectFixture Fixture60 { get; }
             public TestProjectFixture FixtureLatest { get; }
 
             public SharedTestState()
             {
                 RepoDirectories = new RepoDirectoriesProvider();
 
-                // If these versions are changed, also change the corresponding .csproj
-                Fixture20 = CreateTestFixture("StandaloneApp20", "netcoreapp2.0", "2.0.7");
-                Fixture21 = CreateTestFixture("StandaloneApp21", "netcoreapp2.1", "2.1.0");
+                Fixture60 = CreateTestFixture("StandaloneApp6x", "net6.0", "6.0");
 
                 var fixtureLatest = new TestProjectFixture("StandaloneApp", RepoDirectories);
                 fixtureLatest
                     .EnsureRestoredForRid(fixtureLatest.CurrentRid)
-                    .PublishProject(runtime: fixtureLatest.CurrentRid);
+                    .PublishProject(runtime: fixtureLatest.CurrentRid, selfContained: true);
 
                 FixtureLatest = fixtureLatest;
             }
 
             public void Dispose()
             {
-                Fixture20.Dispose();
-                Fixture21.Dispose();
+                Fixture60.Dispose();
                 FixtureLatest.Dispose();
             }
 
@@ -171,13 +133,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Use standalone instead of framework-dependent for ease of deployment.
                 var publishFixture = new TestProjectFixture(testName, repoDirectories, framework: netCoreAppFramework, assemblyName: "StandaloneApp");
-
-                if (IsRidSupported())
-                {
-                    publishFixture
-                        .EnsureRestoredForRid(publishFixture.CurrentRid)
-                        .PublishProject(runtime: publishFixture.CurrentRid);
-                }
+                publishFixture
+                    .EnsureRestoredForRid(publishFixture.CurrentRid)
+                    .PublishProject(runtime: publishFixture.CurrentRid, selfContained: true);
 
                 return publishFixture;
             }

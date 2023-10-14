@@ -66,6 +66,7 @@ namespace System
         public static bool IsS390xProcess => (int)RuntimeInformation.ProcessArchitecture == 5; // Architecture.S390x
         public static bool IsArmv6Process => (int)RuntimeInformation.ProcessArchitecture == 7; // Architecture.Armv6
         public static bool IsPpc64leProcess => (int)RuntimeInformation.ProcessArchitecture == 8; // Architecture.Ppc64le
+        public static bool IsRiscV64Process => (int)RuntimeInformation.ProcessArchitecture == 9; // Architecture.RiscV64;
         public static bool IsX64Process => RuntimeInformation.ProcessArchitecture == Architecture.X64;
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
@@ -102,6 +103,9 @@ namespace System
         public static bool IsReleaseRuntime => s_isReleaseRuntime.Value;
         public static bool IsDebugRuntime => s_isDebugRuntime.Value;
 
+        public static bool IsReleaseLibrary(Assembly assembly) => !IsDebuggable(assembly);
+        public static bool IsDebugLibrary(Assembly assembly) => IsDebuggable(assembly);
+
         // For use as needed on tests that time out when run on a Debug runtime.
         // Not relevant for timeouts on external activities, such as network timeouts.
         public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
@@ -116,7 +120,8 @@ namespace System
         public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
-        public static bool IsThreadingSupported => !IsBrowser && !IsWasi;
+        public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
+        public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
@@ -183,6 +188,7 @@ namespace System
 
         public static bool IsInvokingStaticConstructorsSupported => !IsNativeAot;
         public static bool IsInvokingFinalizersSupported => !IsNativeAot;
+        public static bool IsTypeEquivalenceSupported => !IsNativeAot && !IsMonoRuntime && IsWindows;
 
         public static bool IsMetadataUpdateSupported => !IsNativeAot;
 
@@ -252,6 +258,7 @@ namespace System
         public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
         public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
+        public static bool OpenSslNotPresentOnSystem => !OpenSslPresentOnSystem;
 
         public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
@@ -363,6 +370,7 @@ namespace System
         public static bool IsNotHybridGlobalizationOnBrowser => !IsHybridGlobalizationOnBrowser;
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
+        public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
 
         public static bool IsSubstAvailable
@@ -423,6 +431,7 @@ namespace System
                 return Registry.GetValue(key, "ContainerType", defaultValue: null) != null;
             }
 
+            // '/.dockerenv' - is to check if this is running in a codespace
             return (IsLinux && File.Exists("/.dockerenv"));
         }
 
@@ -653,6 +662,13 @@ namespace System
 
             return assemblyConfigurationAttribute != null &&
                 string.Equals(assemblyConfigurationAttribute.Configuration, configuration, StringComparison.InvariantCulture);
+        }
+
+        private static bool IsDebuggable(Assembly assembly)
+        {
+            DebuggableAttribute debuggableAttribute = assembly.GetCustomAttribute<DebuggableAttribute>();
+
+            return debuggableAttribute != null && debuggableAttribute.IsJITTrackingEnabled;
         }
 
         private static bool GetSupportsSha3()

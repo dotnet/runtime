@@ -119,17 +119,19 @@ namespace System.Diagnostics
         public static System.Diagnostics.TraceListenerCollection Listeners { get { throw null; } }
         public static bool UseGlobalLock { get { throw null; } set { } }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public static void Assert(bool condition) { }
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public static void Assert(bool condition, string? message) { }
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public static void Assert(bool condition, string? message, string? detailMessage) { }
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string? detailMessage) { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void Close() { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public static void Fail(string? message) { }
+        [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
+        public static void Fail(string? message) { throw null; }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
-        public static void Fail(string? message, string? detailMessage) { }
+        [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
+        public static void Fail(string? message, string? detailMessage) { throw null; }
         [System.Diagnostics.ConditionalAttribute("TRACE")]
         public static void Flush() { }
         [System.Diagnostics.ConditionalAttribute("TRACE")]

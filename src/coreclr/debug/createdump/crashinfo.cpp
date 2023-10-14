@@ -22,6 +22,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_gatherFrames(options.CrashReport),
     m_crashThread(options.CrashThread),
     m_signal(options.Signal),
+    m_exceptionRecord(options.ExceptionRecord),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr),
     m_cbModuleMappings(0),
@@ -39,7 +40,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_siginfo.si_signo = options.Signal;
     m_siginfo.si_code = options.SignalCode;
     m_siginfo.si_errno = options.SignalErrno;
-    m_siginfo.si_addr = options.SignalAddress;
+    m_siginfo.si_addr = (void*)options.SignalAddress;
 }
 
 CrashInfo::~CrashInfo()
@@ -193,6 +194,9 @@ CrashInfo::GatherCrashInfo(DumpType dumpType)
     {
         return false;
     }
+    // Add the special (fake) memory region for the special diagnostics info
+    MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + SpecialDiagInfoSize);
+    m_memoryRegions.insert(special);
 #ifdef __APPLE__
     InitializeOtherMappings();
 #endif
@@ -280,10 +284,11 @@ GetHResultString(HRESULT hr)
 bool
 CrashInfo::InitializeDAC(DumpType dumpType)
 {
-    // Don't attempt to load the DAC if the app model doesn't support it by default. The default for single-file is a
-    // full dump, but if the dump type requested is a mini, triage or heap and the DAC is side-by-side to the single-file
-    // application the core dump will be generated.
-    if (dumpType == DumpType::Full && (m_appModel == AppModelType::SingleFile || m_appModel == AppModelType::NativeAOT))
+    // Don't attempt to load the DAC if the app model doesn't support it by default. The default for single-file is
+    // a full dump, but if the dump type requested is a mini, triage or heap and the DAC is next to the single-file
+    // application the core dump will be generated. For NativeAOT, there is currently no DAC available so never
+    // attempt to load it.
+    if ((dumpType == DumpType::Full && m_appModel == AppModelType::SingleFile) || m_appModel == AppModelType::NativeAOT)
     {
         return true;
     }
@@ -483,19 +488,24 @@ CrashInfo::EnumerateManagedModules()
 bool
 CrashInfo::UnwindAllThreads()
 {
-    TRACE("UnwindAllThreads: STARTED (%d)\n", m_dataTargetPagesAdded);
-    ReleaseHolder<ISOSDacInterface> pSos = nullptr;
-    if (m_pClrDataProcess != nullptr) {
-        m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
-    }
-    // For each native and managed thread
-    for (ThreadInfo* thread : m_threads)
+    // Don't unwind any threads if Native AOT since there isn't a DAC to get the remote
+    // unwinder support and they are full dumps.
+    if (m_appModel != AppModelType::NativeAOT)
     {
-        if (!thread->UnwindThread(m_pClrDataProcess, pSos)) {
-            return false;
+        TRACE("UnwindAllThreads: STARTED (%d)\n", m_dataTargetPagesAdded);
+        ReleaseHolder<ISOSDacInterface> pSos = nullptr;
+        if (m_pClrDataProcess != nullptr) {
+            m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
         }
+        // For each native and managed thread
+        for (ThreadInfo* thread : m_threads)
+        {
+            if (!thread->UnwindThread(m_pClrDataProcess, pSos)) {
+                return false;
+            }
+        }
+        TRACE("UnwindAllThreads: FINISHED (%d)\n", m_dataTargetPagesAdded);
     }
-    TRACE("UnwindAllThreads: FINISHED (%d)\n", m_dataTargetPagesAdded);
     return true;
 }
 
@@ -789,7 +799,7 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
         }
 
         uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
-        uint64_t seekResult = lseek64(m_fdPagemap, (off64_t) pagemapOffset, SEEK_SET);
+        uint64_t seekResult = lseek(m_fdPagemap, (off_t) pagemapOffset, SEEK_SET);
         if (seekResult != pagemapOffset)
         {
             int seekErrno = errno;
@@ -959,9 +969,9 @@ FormatString(const char* format, ...)
     ArrayHolder<char> buffer = new char[MAX_LONGPATH + 1];
     va_list args;
     va_start(args, format);
-    int result = vsprintf_s(buffer, MAX_LONGPATH, format, args);
+    int result = vsnprintf(buffer, MAX_LONGPATH, format, args);
     va_end(args);
-    return result > 0 ? std::string(buffer) : std::string();
+    return result > 0 && result < MAX_LONGPATH ? std::string(buffer) : std::string();
 }
 
 //
@@ -971,15 +981,16 @@ std::string
 ConvertString(const WCHAR* str)
 {
     if (str == nullptr)
-        return{};
+        return { };
 
-    int len = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+    size_t cch = u16_strlen(str) + 1;
+    int len = minipal_get_length_utf16_to_utf8((CHAR16_T*)str, cch, 0);
     if (len == 0)
-        return{};
+        return { };
 
     ArrayHolder<char> buffer = new char[len + 1];
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, buffer, len + 1, nullptr, nullptr);
-    return std::string{ buffer };
+    minipal_convert_utf16_to_utf8((CHAR16_T*)str, cch, buffer, len + 1, 0);
+    return std::string { buffer };
 }
 
 //

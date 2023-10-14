@@ -25,6 +25,9 @@ namespace System.Text.Json.Tests
                 Assert.Equal(json, clone.GetRawText());
                 Assert.NotSame(doc, clone.SniffDocument());
                 Assert.NotSame(doc, clone2.SniffDocument());
+
+                Assert.False(clone.SniffDocument().IsDisposable());
+                Assert.False(clone2.SniffDocument().IsDisposable());
             }
 
             // After document Dispose
@@ -50,6 +53,7 @@ namespace System.Text.Json.Tests
                 Assert.NotSame(doc, clone.SniffDocument());
                 Assert.Same(middle.SniffDocument(), clone.SniffDocument());
                 Assert.Same(inner.SniffDocument(), clone.SniffDocument());
+                Assert.False(clone.SniffDocument().IsDisposable());
             }
 
             // After document Dispose
@@ -160,11 +164,18 @@ null
             Assert.Equal(innerJson, clone.GetRawText());
         }
 
-        private static JsonDocument SniffDocument(this JsonElement element)
+        internal static JsonDocument SniffDocument(this JsonElement element)
         {
-            return (JsonDocument)typeof(JsonElement).
-                GetField("_parent", BindingFlags.Instance|BindingFlags.NonPublic).
-                GetValue(element);
+            return (JsonDocument)typeof(JsonElement)
+                .GetField("_parent", BindingFlags.Instance | BindingFlags.NonPublic)
+                .GetValue(element);
+        }
+
+        internal static bool IsDisposable(this JsonDocument document)
+        {
+            return (bool)typeof(JsonDocument)
+                .GetProperty("IsDisposable", BindingFlags.Instance | BindingFlags.NonPublic)
+                .GetValue(document);
         }
     }
 }

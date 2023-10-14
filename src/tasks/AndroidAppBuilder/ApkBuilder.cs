@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Android.Build;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -337,7 +338,6 @@ public partial class ApkBuilder
         string monodroidSource = (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
-            .Replace("%ProjectName%", ProjectName)
             .Replace("%MonoInclude%", monoRuntimeHeaders)
             .Replace("%NativeLibrariesToLink%", nativeLibraries)
             .Replace("%MONODROID_SOURCE%", monodroidSource)
@@ -391,6 +391,9 @@ public partial class ApkBuilder
         Regex checkNumerics = DotNumberRegex();
         if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
             ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
+
+        if (!string.IsNullOrEmpty(ProjectName) && ProjectName.Contains('-'))
+            ProjectName = ProjectName.Replace("-", "_");
 
         string packageId = $"net.dot.{ProjectName}";
 

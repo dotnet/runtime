@@ -54,6 +54,7 @@ internal static partial class Interop
             HashAlgorithmNames.MD5 => EvpMd5(),
             HashAlgorithmNames.SHA3_256 or HashAlgorithmNames.SHA3_384 or HashAlgorithmNames.SHA3_512 =>
                 throw new PlatformNotSupportedException(),
+            HashAlgorithmNames.SHAKE128 or HashAlgorithmNames.SHAKE256 => throw new PlatformNotSupportedException(),
             _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId))
         };
 
@@ -70,6 +71,8 @@ internal static partial class Interop
                 case HashAlgorithmNames.SHA3_256:
                 case HashAlgorithmNames.SHA3_384:
                 case HashAlgorithmNames.SHA3_512:
+                case HashAlgorithmNames.SHAKE128:
+                case HashAlgorithmNames.SHAKE256:
                     return false;
                 default:
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));

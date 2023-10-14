@@ -152,7 +152,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        protected sealed override MethodInvoker UncachedMethodInvoker
+        protected sealed override MethodBaseInvoker UncachedMethodInvoker
         {
             get
             {
@@ -162,7 +162,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (this.IsStatic)
                     throw new MemberAccessException(SR.Acc_NotClassInit);
 
-                MethodInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
+                MethodBaseInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
                 if (invoker != null)
                     return invoker;
 

@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import type { EmscriptenReplacements } from "./types/internal";
 import type { TypedArray } from "./types/emscripten";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
 import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
-import { mono_log_info } from "./logging";
 
 const dummyPerformance = {
     now: function () {
@@ -28,16 +26,12 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
         Module.locateFile = loaderHelpers.locateFile;
     }
 
-    if (BuildConfiguration === "Debug") {
-        mono_log_info(`starting script ${loaderHelpers.scriptUrl}`);
-        mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
-    }
-
     // prefer fetch_like over global fetch for assets
     replacements.fetch = loaderHelpers.fetch_like;
 
     // misc
-    replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
+    replacements.noExitRuntime = ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_PTHREAD;
+    replacements.ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WORKER;
 
     // threads
     if (MonoWasmThreads) {

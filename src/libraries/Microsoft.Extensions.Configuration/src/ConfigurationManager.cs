@@ -229,10 +229,7 @@ namespace Microsoft.Extensions.Configuration
                 _sources.CopyTo(array, arrayIndex);
             }
 
-            public IEnumerator<IConfigurationSource> GetEnumerator()
-            {
-                return _sources.GetEnumerator();
-            }
+            public List<IConfigurationSource>.Enumerator GetEnumerator() => _sources.GetEnumerator();
 
             public int IndexOf(IConfigurationSource source)
             {
@@ -258,10 +255,9 @@ namespace Microsoft.Extensions.Configuration
                 _config.ReloadSources();
             }
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            IEnumerator<IConfigurationSource> IEnumerable<IConfigurationSource>.GetEnumerator() => GetEnumerator();
         }
 
         private sealed class ConfigurationBuilderProperties : IDictionary<string, object>

@@ -28,6 +28,13 @@ internal static partial class Interop
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void DeregisterGCRoot(IntPtr handle);
 
+#if FEATURE_WASM_THREADS
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InstallWebWorkerInterop(bool installJSSynchronizationContext);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void UninstallWebWorkerInterop(bool uninstallJSSynchronizationContext);
+#endif
+
         #region Legacy
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

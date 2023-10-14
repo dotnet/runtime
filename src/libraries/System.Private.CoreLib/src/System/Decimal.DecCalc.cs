@@ -101,7 +101,8 @@ namespace System
             private const int MaxInt64Scale = 19;
 
             // Fast access for 10^n where n is 0-9
-            private static ReadOnlySpan<uint> UInt32Powers10 => new uint[] {
+            private static ReadOnlySpan<uint> UInt32Powers10 =>
+            [
                 1,
                 10,
                 100,
@@ -112,10 +113,11 @@ namespace System
                 10000000,
                 100000000,
                 1000000000
-            };
+            ];
 
             // Fast access for 10^n where n is 1-19
-            private static ReadOnlySpan<ulong> UInt64Powers10 => new ulong[] {
+            private static ReadOnlySpan<ulong> UInt64Powers10 =>
+            [
                 10,
                 100,
                 1000,
@@ -135,9 +137,10 @@ namespace System
                 100000000000000000,
                 1000000000000000000,
                 10000000000000000000,
-            };
+            ];
 
-            private static ReadOnlySpan<double> DoublePowers10 => new double[] {
+            private static ReadOnlySpan<double> DoublePowers10 =>
+            [
                 1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
                 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
                 1e20, 1e21, 1e22, 1e23, 1e24, 1e25, 1e26, 1e27, 1e28, 1e29,
@@ -147,7 +150,7 @@ namespace System
                 1e60, 1e61, 1e62, 1e63, 1e64, 1e65, 1e66, 1e67, 1e68, 1e69,
                 1e70, 1e71, 1e72, 1e73, 1e74, 1e75, 1e76, 1e77, 1e78, 1e79,
                 1e80
-            };
+            ];
 
 #region Decimal Math Helpers
 
@@ -196,7 +199,7 @@ namespace System
                     high++;
 
                 if (high > uint.MaxValue)
-                    Number.ThrowOverflowException(TypeCode.Decimal);
+                    Number.ThrowOverflowException(SR.Overflow_Decimal);
                 result.Low64 = low;
                 result.High = (uint)high;
             }
@@ -681,7 +684,7 @@ PosRem:
                 return scale;
 
 ThrowOverflow:
-                Number.ThrowOverflowException(TypeCode.Decimal);
+                Number.ThrowOverflowException(SR.Overflow_Decimal);
                 return 0;
             }
 
@@ -725,7 +728,7 @@ ThrowOverflow:
             private static int OverflowUnscale(ref Buf12 bufQuo, int scale, bool sticky)
             {
                 if (--scale < 0)
-                    Number.ThrowOverflowException(TypeCode.Decimal);
+                    Number.ThrowOverflowException(SR.Overflow_Decimal);
 
                 Debug.Assert(bufQuo.U2 == 0);
 
@@ -837,7 +840,7 @@ ThrowOverflow:
                 // positive if it isn't already.
                 //
                 if (curScale + scale < 0)
-                    Number.ThrowOverflowException(TypeCode.Decimal);
+                    Number.ThrowOverflowException(SR.Overflow_Decimal);
 
                 return curScale;
             }
@@ -1107,7 +1110,7 @@ AlignedScale:
                     // Divide the value by 10, dropping the scale factor.
                     //
                     if ((flags & ScaleMask) == 0)
-                        Number.ThrowOverflowException(TypeCode.Decimal);
+                        Number.ThrowOverflowException(SR.Overflow_Decimal);
                     flags -= 1 << ScaleShift;
 
                     const uint den = 10;
@@ -1534,7 +1537,7 @@ ReturnZero:
                     return; // result should be zeroed out
 
                 if (exp > 96)
-                    Number.ThrowOverflowException(TypeCode.Decimal);
+                    Number.ThrowOverflowException(SR.Overflow_Decimal);
 
                 uint flags = 0;
                 if (input < 0)
@@ -1701,7 +1704,7 @@ ReturnZero:
                     return; // result should be zeroed out
 
                 if (exp > 96)
-                    Number.ThrowOverflowException(TypeCode.Decimal);
+                    Number.ThrowOverflowException(SR.Overflow_Decimal);
 
                 uint flags = 0;
                 if (input < 0)
@@ -2170,7 +2173,7 @@ RoundUp:
                 }
 
 ThrowOverflow:
-                Number.ThrowOverflowException(TypeCode.Decimal);
+                Number.ThrowOverflowException(SR.Overflow_Decimal);
             }
 
             /// <summary>

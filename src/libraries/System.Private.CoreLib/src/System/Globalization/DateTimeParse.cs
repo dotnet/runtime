@@ -13,6 +13,10 @@ namespace System
     {
         internal const int MaxDateTimeNumberDigits = 8;
 
+        internal const char TimeDelimiter = ':';
+        internal const char TimeFractionDelimiterComma = ',';
+        internal const char TimeFractionDelimiterDot = '.';
+
         internal static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, DateTimeStyles style)
         {
             DateTimeResult result = default; // The buffer to store the parsing result.
@@ -80,7 +84,7 @@ namespace System
         {
             if (s.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format_BadDateTime);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -167,13 +171,13 @@ namespace System
         {
             if (formats == null)
             {
-                result.SetFailure(ParseFailureKind.ArgumentNull_String, null, nameof(formats));
+                result.SetFailure(ParseFailureKind.ArgumentNull_String);
                 return false;
             }
 
             if (s.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format_BadDateTime);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -521,7 +525,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 str.ConsumeSubString(sub);
                 // See if we have minutes
                 sub = str.GetSubString();
-                if (sub.length == 1 && sub[0] == ':')
+                if (sub.length == 1 && sub[0] == TimeDelimiter)
                 {
                     // Parsing "+8:00" or "+08:00"
                     str.ConsumeSubString(sub);
@@ -642,7 +646,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         if (str.Index < str.Length - 1)
                         {
                             char nextCh = str.Value[str.Index];
-                            if (nextCh == '.')
+                            if ((nextCh == TimeFractionDelimiterDot)
+                                || (nextCh == TimeFractionDelimiterComma))
                             {
                                 // While ParseFraction can fail, it just means that there were no digits after
                                 // the dot. In this case ParseFraction just removes the dot. This is actually
@@ -1225,7 +1230,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             else if (ch == '\0')
             {
                 // Nulls are only valid if they are the only trailing character
-                if (str.Value.Slice(str.Index + 1).IndexOfAnyExcept('\0') >= 0)
+                if (str.Value.Slice(str.Index + 1).ContainsAnyExcept('\0'))
                 {
                     return false;
                 }
@@ -1901,14 +1906,30 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     result.flags |= ParseFlags.HaveDate;
                     return true; // MD + Year
                 }
-            }
-            else
-            {
-                if (SetDateYMD(ref result, raw.year, n2, n1))
+#if TARGET_BROWSER
+                // if we are parsing the datetime string with custom format then the CultureInfo format `order`
+                // does not matter and DM + Year is also possible for NNY
+                if (GlobalizationMode.Hybrid && SetDateYDM(ref result, raw.year, n1, n2))
                 {
                     result.flags |= ParseFlags.HaveDate;
                     return true; // DM + Year
                 }
+#endif
+            }
+            else
+            {
+                if (SetDateYDM(ref result, raw.year, n1, n2))
+                {
+                    result.flags |= ParseFlags.HaveDate;
+                    return true; // DM + Year
+                }
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid && SetDateYMD(ref result, raw.year, n1, n2))
+                {
+                    result.flags |= ParseFlags.HaveDate;
+                    return true; // MD + Year
+                }
+#endif
             }
             result.SetBadDateTimeFailure();
             return false;
@@ -2485,7 +2506,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         {
             if (s.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format_BadDateTime);
+                result.SetBadDateTimeFailure();
                 return false;
             }
 
@@ -2961,7 +2982,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
             str.SkipWhiteSpaces();
-            if (!str.Match(':'))
+            if (!str.Match(TimeDelimiter))
             {
                 result.SetBadDateTimeFailure();
                 return false;
@@ -2973,7 +2994,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
             str.SkipWhiteSpaces();
-            if (str.Match(':'))
+            if (str.Match(TimeDelimiter))
             {
                 str.SkipWhiteSpaces();
                 if (!ParseDigits(ref str, 2, out second))
@@ -2981,7 +3002,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     result.SetBadDateTimeFailure();
                     return false;
                 }
-                if (str.Match('.'))
+                if ((str.Match(TimeFractionDelimiterDot))
+                    || (str.Match(TimeFractionDelimiterComma)))
                 {
                     if (!ParseFraction(ref str, out partSecond))
                     {
@@ -3330,9 +3352,9 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 {
                     // Scan the month names (note that some calendars has 13 months) and find
                     // the matching month name which has the max string length.
-                    // We need to do this because some cultures (e.g. "cs-CZ") which have
-                    // abbreviated month names with the same prefix.
-                    int monthsInYear = (dtfi.GetMonthName(13).Length == 0 ? 12 : 13);
+                    // We need to do this because some cultures which have abbreviated
+                    // month names with the same prefix (e.g. "vi-VN" culture has those conflicts "Thg1", "Thg10", "Thg11")
+                    int monthsInYear = (dtfi.GetAbbreviatedMonthName(13).Length == 0 ? 12 : 13);
                     for (int i = 1; i <= monthsInYear; i++)
                     {
                         string searchStr = dtfi.GetAbbreviatedMonthName(i);
@@ -5157,33 +5179,33 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             switch (result.failure)
             {
                 case ParseFailureKind.ArgumentNull_String:
-                    return new ArgumentNullException(result.failureArgumentName, SR.ArgumentNull_String);
+                    return new ArgumentNullException("formats", SR.ArgumentNull_String);
                 case ParseFailureKind.Format_BadDatePattern:
-                    return new FormatException(SR.Format(SR.Format_BadDatePattern, result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.Format_BadDatePattern, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_BadDateTime:
-                    return new FormatException(SR.Format(SR.Format_BadDateTime, result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.Format_BadDateTime, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_BadDateTimeCalendar:
-                    return new FormatException(SR.Format(SR.Format_BadDateTimeCalendar, new string(result.originalDateTimeString), result.calendar));
+                    return new FormatException(SR.Format(SR.Format_BadDateTimeCalendar, new string(result.failureSpanArgument), result.calendar));
                 case ParseFailureKind.Format_BadDayOfWeek:
-                    return new FormatException(SR.Format(SR.Format_BadDayOfWeek, new string(result.originalDateTimeString)));
+                    return new FormatException(SR.Format(SR.Format_BadDayOfWeek, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_BadFormatSpecifier:
-                    return new FormatException(SR.Format(SR.Format_BadFormatSpecifier, new string(result.failedFormatSpecifier)));
+                    return new FormatException(SR.Format(SR.Format_BadFormatSpecifier, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_BadQuote:
-                    return new FormatException(SR.Format(SR.Format_BadQuote, result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.Format_BadQuote, (char)result.failureIntArgument));
                 case ParseFailureKind.Format_DateOutOfRange:
-                    return new FormatException(SR.Format(SR.Format_DateOutOfRange, new string(result.originalDateTimeString)));
+                    return new FormatException(SR.Format(SR.Format_DateOutOfRange, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_MissingIncompleteDate:
-                    return new FormatException(SR.Format(SR.Format_MissingIncompleteDate, new string(result.originalDateTimeString)));
+                    return new FormatException(SR.Format(SR.Format_MissingIncompleteDate, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_NoFormatSpecifier:
                     return new FormatException(SR.Format_NoFormatSpecifier);
                 case ParseFailureKind.Format_OffsetOutOfRange:
-                    return new FormatException(SR.Format(SR.Format_OffsetOutOfRange, new string(result.originalDateTimeString)));
+                    return new FormatException(SR.Format(SR.Format_OffsetOutOfRange, new string(result.failureSpanArgument)));
                 case ParseFailureKind.Format_RepeatDateTimePattern:
-                    return new FormatException(SR.Format(SR.Format_RepeatDateTimePattern, result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.Format_RepeatDateTimePattern, (char)result.failureIntArgument));
                 case ParseFailureKind.Format_UnknownDateTimeWord:
-                    return new FormatException(SR.Format(SR.Format_UnknownDateTimeWord, new string(result.originalDateTimeString), result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.Format_UnknownDateTimeWord, new string(result.failureSpanArgument), result.failureIntArgument));
                 case ParseFailureKind.Format_UTCOutOfRange:
-                    return new FormatException(SR.Format(SR.Format_UTCOutOfRange, new string(result.originalDateTimeString)));
+                    return new FormatException(SR.Format(SR.Format_UTCOutOfRange, new string(result.failureSpanArgument)));
                 default:
                     Debug.Fail("Unknown DateTimeParseFailure: " + result.failure.ToString());
                     return null!;
@@ -6066,14 +6088,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         internal DateTime parsedDate;
 
         internal ParseFailureKind failure;
-        internal object? failureMessageFormatArgument;
-        internal string failureArgumentName;
-        internal ReadOnlySpan<char> originalDateTimeString;
-        internal ReadOnlySpan<char> failedFormatSpecifier;
+        internal ReadOnlySpan<char> failureSpanArgument; // initially the original date time string, but may be overwritten
+        internal int failureIntArgument;
 
         internal void Init(ReadOnlySpan<char> originalDateTimeString)
         {
-            this.originalDateTimeString = originalDateTimeString;
+            this.failureSpanArgument = originalDateTimeString;
             Year = -1;
             Month = -1;
             Day = -1;
@@ -6096,32 +6116,29 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         internal void SetBadFormatSpecifierFailure(ReadOnlySpan<char> failedFormatSpecifier)
         {
             this.failure = ParseFailureKind.Format_BadFormatSpecifier;
-            this.failedFormatSpecifier = failedFormatSpecifier;
+            this.failureSpanArgument = failedFormatSpecifier;
         }
 
         internal void SetBadDateTimeFailure()
         {
             this.failure = ParseFailureKind.Format_BadDateTime;
-            this.failureMessageFormatArgument = null;
         }
 
         internal void SetFailure(ParseFailureKind failure)
         {
             this.failure = failure;
-            this.failureMessageFormatArgument = null;
         }
 
-        internal void SetFailure(ParseFailureKind failure, object? failureMessageFormatArgument)
+        internal void SetFailure(ParseFailureKind failure, string failureStringArgument)
         {
             this.failure = failure;
-            this.failureMessageFormatArgument = failureMessageFormatArgument;
+            this.failureSpanArgument = failureStringArgument;
         }
 
-        internal void SetFailure(ParseFailureKind failure, object? failureMessageFormatArgument, string failureArgumentName)
+        internal void SetFailure(ParseFailureKind failure, int failureIntArgument)
         {
             this.failure = failure;
-            this.failureMessageFormatArgument = failureMessageFormatArgument;
-            this.failureArgumentName = failureArgumentName;
+            this.failureIntArgument = failureIntArgument;
         }
     }
 

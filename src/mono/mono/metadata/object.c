@@ -43,7 +43,6 @@
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/metadata-update.h>
-#include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-memory-model.h>
@@ -327,7 +326,7 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 
 	mono_mem_manager_init_reflection_hashes (mem_manager);
 
-	/* 
+	/*
 	 * If the initializing thread was rudely aborted, the exception is not stored
 	 * in the hash.
 	 */
@@ -834,6 +833,11 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 		while ((field = mono_class_get_fields_internal (p, &iter))) {
 			MonoType *type;
 
+			/* metadata-update: added fields aren't stored in the object, don't
+			 * contribute to the GC descriptor. */
+			if (m_field_is_from_update (field))
+				continue;
+
 			if (static_fields) {
 				if (!(field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA)))
 					continue;
@@ -846,11 +850,6 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			/* FIXME: should not happen, flag as type load error */
 			if (m_type_is_byref (field->type))
 				break;
-
-			/* metadadta-update: added fields aren't stored in the object, don't
-			 * contribute to the GC descriptor. */
-			if (m_field_is_from_update (field))
-				continue;
 
 			int field_offset = m_field_get_offset (field);
 
@@ -2211,12 +2210,12 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		/* metadata-update: added fields are stored external to the object, and don't contribute to the bitmap */
+		if (m_field_is_from_update (field))
+			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 		if (mono_field_is_deleted (field))
-			continue;
-		/* metadata-update: added fields are stored external to the object, and don't contribute to the bitmap */
-		if (m_field_is_from_update (field))
 			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
 			gint32 special_static = m_class_has_no_special_static_fields (klass) ? SPECIAL_STATIC_NONE : field_is_special_static (klass, field);
@@ -4115,6 +4114,31 @@ free_main_args (void)
 	main_args = NULL;
 }
 
+ /**
+ * utf8_from_external:
+ * \param in pointer to the string buffer.
+ * Tries to turn a NULL-terminated string into UTF8.
+ *
+ * First, see if it's valid UTF-8, in which case there's nothing more
+ * to be done. If the conversion doesn't succeed, return NULL.
+ *
+ * Callers must free the returned string if not NULL.
+ */
+static gchar *
+utf8_from_external (const gchar *in)
+{
+	if (in == NULL) {
+		return NULL;
+	}
+
+	if (g_utf8_validate (in, -1, NULL)) {
+		return g_strdup (in);
+	}
+
+	return NULL;
+}
+
+
 /**
  * mono_runtime_set_main_args:
  * \param argc number of arguments from the command line
@@ -4135,7 +4159,7 @@ mono_runtime_set_main_args (int argc, char* argv[])
 	for (i = 0; i < argc; ++i) {
 		gchar *utf8_arg;
 
-		utf8_arg = mono_utf8_from_external (argv[i]);
+		utf8_arg = utf8_from_external (argv[i]);
 		if (utf8_arg == NULL) {
 			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv [i]);
 			exit (-1);
@@ -4178,7 +4202,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 						    basename,
 						    (const char*)NULL);
 
-		utf8_fullpath = mono_utf8_from_external (fullpath);
+		utf8_fullpath = utf8_from_external (fullpath);
 		if(utf8_fullpath == NULL) {
 			/* Printing the arg text will cause glib to
 			 * whinge about "Invalid UTF-8", but at least
@@ -4192,7 +4216,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 		g_free (fullpath);
 		g_free (basename);
 	} else {
-		utf8_fullpath = mono_utf8_from_external (argv[0]);
+		utf8_fullpath = utf8_from_external (argv[0]);
 		if(utf8_fullpath == NULL) {
 			g_print ("\nCannot determine the text encoding for the assembly location: %s\n", argv[0]);
 			exit (-1);
@@ -4204,7 +4228,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 	for (i = 1; i < argc; ++i) {
 		gchar *utf8_arg;
 
-		utf8_arg=mono_utf8_from_external (argv[i]);
+		utf8_arg=utf8_from_external (argv[i]);
 		if(utf8_arg==NULL) {
 			/* Ditto the comment about Invalid UTF-8 here */
 			g_print ("\nCannot determine the text encoding for argument %d (%s).\n", i, argv[i]);
@@ -4233,7 +4257,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 			 * we've checked all these args for the
 			 * main_args array.
 			 */
-			gchar *str = mono_utf8_from_external (argv [i]);
+			gchar *str = utf8_from_external (argv [i]);
 			MonoString *arg = mono_string_new_checked (str, error);
 			mono_error_assert_ok (error);
 			mono_array_setref_internal (args, i, arg);
@@ -5097,10 +5121,10 @@ again:
 			else
 				t = m_class_get_byval_arg (t->data.generic_class->container_class);
 			goto again;
-		case MONO_TYPE_PTR: {
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 			result = *(gpointer*)params_byref [i];
 			break;
-		}
 		default:
 			g_error ("type 0x%x not handled in ves_icall_InternalInvoke", t->type);
 	}
@@ -6361,7 +6385,7 @@ mono_string_new_utf8_len (const char *text, guint length, MonoError *error)
 	gunichar2 *ut = NULL;
 	glong items_written;
 
-	ut = eg_utf8_to_utf16_with_nuls (text, length, NULL, &items_written, &eg_error);
+	ut = g_utf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
 
 	if (eg_error) {
 		o = NULL_HANDLE_STRING;
@@ -6472,7 +6496,7 @@ mono_string_new_wtf8_len_checked (const char *text, guint length, MonoError *err
 	gunichar2 *ut = NULL;
 	glong items_written;
 
-	ut = eg_wtf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
+	ut = g_wtf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
 
 	if (!eg_error)
 		o = mono_string_new_utf16_checked (ut, items_written, error);
@@ -8135,7 +8159,11 @@ mono_runtime_run_startup_hooks (void)
 	mono_error_cleanup (error);
 	if (!method)
 		return;
-	mono_runtime_invoke_checked (method, NULL, NULL, error);
+
+	gpointer args [1];
+	args[0] = mono_string_empty_internal (mono_domain_get ());
+
+	mono_runtime_invoke_checked (method, NULL, args, error);
 	// runtime hooks design doc says not to catch exceptions from the hooks
 	mono_error_raise_exception_deprecated (error);
 }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -111,6 +112,12 @@ namespace Microsoft.Interop.Analyzers
                 var generatedDeclaration = member;
 
                 generatedDeclaration = AddExplicitDefaultBoolMarshalling(gen, method, generatedDeclaration, "VariantBool");
+
+                if (method.MethodImplementationFlags.HasFlag(MethodImplAttributes.PreserveSig))
+                {
+                    generatedDeclaration = AddHResultStructAsErrorMarshalling(gen, method, generatedDeclaration);
+                }
+
                 editor.ReplaceNode(member, generatedDeclaration);
             }
 

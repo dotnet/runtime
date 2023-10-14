@@ -178,6 +178,7 @@ struct InterpMethod {
 	unsigned int needs_thread_attach : 1;
 	// If set, this method is MulticastDelegate.Invoke
 	unsigned int is_invoke : 1;
+	unsigned int is_verbose : 1;
 #if HOST_BROWSER
 	unsigned int contains_traces : 1;
 	guint16 *backward_branch_offsets;
@@ -318,6 +319,9 @@ mono_mint_type (MonoType *type);
 
 int
 mono_interp_type_size (MonoType *type, int mt, int *align_p);
+
+gboolean
+interp_jit_call_can_be_supported (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only);
 
 #if HOST_BROWSER
 

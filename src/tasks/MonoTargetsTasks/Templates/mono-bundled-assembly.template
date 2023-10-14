@@ -1,0 +1,7 @@
+const MonoBundledAssemblyResource %ResourceName% = {
+    .resource = { .type = MONO_BUNDLED_ASSEMBLY,
+                  .id = "%ResourceID%" },
+    .assembly = { .name = "%RegisteredFilename%",
+                  .data = %ResourceDataSymbol%_data,
+                  .size = %Len% }%MonoBundledSymbolData%
+};

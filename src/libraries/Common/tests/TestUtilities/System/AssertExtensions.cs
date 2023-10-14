@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,26 @@ namespace System
     public static class AssertExtensions
     {
         private static bool IsNetFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework");
+
+
+        /// <summary>
+        /// Helper for AOT tests that verifies that the compile succeeds, or throws PlatformNotSupported
+        /// when AOT is enabled.
+        /// </summary>
+        public static void ThrowsOnAot<T>(Action action)
+            where T : Exception
+        {
+#if NETCOREAPP // Dynamic code is always supported on .NET Framework
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                Assert.Throws<T>(action);
+            }
+            else
+#endif
+            {
+                action();
+            }
+        }
 
         public static void Throws<T>(Action action, string expectedMessage)
             where T : Exception

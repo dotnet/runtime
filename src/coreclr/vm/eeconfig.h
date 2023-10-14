@@ -76,6 +76,7 @@ public:
     unsigned int  GenOptimizeType(void)                     const {LIMITED_METHOD_CONTRACT;  return iJitOptimizeType; }
     bool          JitFramed(void)                           const {LIMITED_METHOD_CONTRACT;  return fJitFramed; }
     bool          JitMinOpts(void)                          const {LIMITED_METHOD_CONTRACT;  return fJitMinOpts; }
+    bool          JitEnableOptionalRelocs(void)             const {LIMITED_METHOD_CONTRACT;  return fJitEnableOptionalRelocs; }
 
     // Tiered Compilation config
 #if defined(FEATURE_TIERED_COMPILATION)
@@ -93,6 +94,7 @@ public:
 #if defined(FEATURE_PGO)
     bool          TieredPGO(void) const { LIMITED_METHOD_CONTRACT;  return fTieredPGO; }
     bool          TieredPGO_InstrumentOnlyHotCode(void) const { LIMITED_METHOD_CONTRACT;  return tieredPGO_InstrumentOnlyHotCode; }
+    DWORD         TieredPGO_ScalableCountThreshold() const { LIMITED_METHOD_CONTRACT;  return tieredPGO_ScalableCountThreshold; }
 #endif
 
 #if defined(FEATURE_READYTORUN)
@@ -478,6 +480,7 @@ private: //----------------------------------------------------------------
     bool fTrackDynamicMethodDebugInfo; //  Enable/Disable tracking dynamic method debug info
     bool fJitFramed;                   // Enable/Disable EBP based frames
     bool fJitMinOpts;                  // Enable MinOpts for all jitted methods
+    bool fJitEnableOptionalRelocs;     // Allow optional relocs
 
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
 
@@ -656,6 +659,7 @@ private: //----------------------------------------------------------------
 #if defined(FEATURE_PGO)
     bool fTieredPGO;
     bool tieredPGO_InstrumentOnlyHotCode;
+    DWORD tieredPGO_ScalableCountThreshold;
 #endif
 
 #if defined(FEATURE_READYTORUN)

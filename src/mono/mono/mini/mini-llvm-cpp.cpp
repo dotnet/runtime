@@ -37,6 +37,15 @@
 #pragma warning(disable:4800) // type' : forcing value to bool 'true' or 'false' (performance warning)
 #endif
 
+// ArrayRef API is deprecated on C++17
+#if defined(__clang__) && (_LIBCPP_STD_VER > 17 || defined(__APPLE__))
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif
+
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
@@ -183,11 +192,7 @@ mono_llvm_build_cmpxchg (LLVMBuilderRef builder, LLVMValueRef ptr, LLVMValueRef 
 {
 	AtomicCmpXchgInst *ins;
 
-#if LLVM_API_VERSION >= 1300
 	ins = unwrap(builder)->CreateAtomicCmpXchg (unwrap(ptr), unwrap (cmp), unwrap (val), MaybeAlign (), SequentiallyConsistent, SequentiallyConsistent);
-#else
-	ins = unwrap(builder)->CreateAtomicCmpXchg (unwrap(ptr), unwrap (cmp), unwrap (val), SequentiallyConsistent, SequentiallyConsistent);
-#endif
 	return wrap (ins);
 }
 
@@ -215,11 +220,7 @@ mono_llvm_build_atomic_rmw (LLVMBuilderRef builder, AtomicRMWOp op, LLVMValueRef
 		break;
 	}
 
-#if LLVM_API_VERSION >= 1300
 	ins = unwrap (builder)->CreateAtomicRMW (aop, unwrap (ptr), unwrap (val), MaybeAlign (), SequentiallyConsistent);
-#else
-	ins = unwrap (builder)->CreateAtomicRMW (aop, unwrap (ptr), unwrap (val), SequentiallyConsistent);
-#endif
 	return wrap (ins);
 }
 
@@ -303,7 +304,11 @@ mono_llvm_replace_uses_of (LLVMValueRef var, LLVMValueRef v)
 LLVMValueRef
 mono_llvm_create_constant_data_array (const uint8_t *data, int len)
 {
+#if LLVM_API_VERSION >= 1600
+	return wrap(ConstantDataArray::get (*unwrap(LLVMGetGlobalContext ()), ArrayRef(data, len)));
+#else
 	return wrap(ConstantDataArray::get (*unwrap(LLVMGetGlobalContext ()), makeArrayRef(data, len)));
+#endif
 }
 
 void
@@ -325,11 +330,7 @@ add_ret_attr (LLVMValueRef wrapped_calli, Attribute::AttrKind Kind)
 {
 	Instruction *calli = unwrap<Instruction> (wrapped_calli);
 
-#if LLVM_API_VERSION >= 1400
 	dyn_cast<CallBase>(calli)->addRetAttr (Kind);
-#else
-	dyn_cast<CallBase>(calli)->addAttribute (AttributeList::ReturnIndex, Kind);
-#endif
 }
 
 void
@@ -442,11 +443,7 @@ mono_llvm_set_alignment_ret (LLVMValueRef call, int alignment)
 	Instruction *ins = unwrap<Instruction> (call);
 	auto &ctx = ins->getContext ();
 
-#if LLVM_API_VERSION >= 1400
 	dyn_cast<CallBase>(ins)->addRetAttr (Attribute::getWithAlignment(ctx, to_align (alignment)));
-#else
-	dyn_cast<CallBase>(ins)->addAttribute (AttributeList::ReturnIndex, Attribute::getWithAlignment(ctx, to_align (alignment)));
-#endif
 }
 
 static Attribute::AttrKind
@@ -505,11 +502,7 @@ mono_llvm_add_param_attr_with_type (LLVMValueRef param, AttrKind kind, LLVMTypeR
 
 	switch (kind) {
 	case LLVM_ATTR_STRUCT_RET:
-#if LLVM_API_VERSION >= 1400
 		func->addParamAttr (n, Attribute::getWithStructRetType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
-#else
-		func->addParamAttr (n, convert_attr (kind));
-#endif
 		break;
 	default:
 		g_assert_not_reached ();
@@ -527,17 +520,12 @@ mono_llvm_add_param_byval_attr (LLVMValueRef param, LLVMTypeRef type)
 void
 mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind)
 {
-#if LLVM_API_VERSION >= 1400
 	unwrap<CallBase> (val)->addParamAttr (index - 1, convert_attr (kind));
-#else
-	unwrap<CallBase> (val)->addAttribute (index, convert_attr (kind));
-#endif
 }
 
 void
 mono_llvm_add_instr_attr_with_type (LLVMValueRef val, int index, AttrKind kind, LLVMTypeRef type)
 {
-#if LLVM_API_VERSION >= 1400
 	Attribute attr;
 
 	switch (kind) {
@@ -548,19 +536,12 @@ mono_llvm_add_instr_attr_with_type (LLVMValueRef val, int index, AttrKind kind, 
 	default:
 		g_assert_not_reached ();
 	}
-#else
-	unwrap<CallBase> (val)->addAttribute (index, convert_attr (kind));
-#endif
 }
 
 void
 mono_llvm_add_instr_byval_attr (LLVMValueRef val, int index, LLVMTypeRef type)
 {
-#if LLVM_API_VERSION >= 1400
 	unwrap<CallBase> (val)->addParamAttr (index - 1, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
-#else
-	unwrap<CallBase> (val)->addAttribute (index, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
-#endif
 }
 
 void*
@@ -766,7 +747,7 @@ mono_llvm_register_overloaded_intrinsic (LLVMModuleRef module, IntrinsicId id, L
 unsigned int
 mono_llvm_get_prim_size_bits (LLVMTypeRef type)
 {
-	return unwrap (type)->getPrimitiveSizeInBits ();
+	return GUINT64_TO_INT (unwrap (type)->getPrimitiveSizeInBits ());
 }
 
 /*
@@ -784,27 +765,17 @@ mono_llvm_inline_asm (LLVMBuilderRef builder, LLVMTypeRef type,
 {
 	const auto asmstr_len = strlen (asmstr);
 	const auto constraints_len = strlen (constraints);
-#if LLVM_API_VERSION >= 1300
 	const auto asmval = LLVMGetInlineAsm (type,
 		const_cast<char *>(asmstr), asmstr_len,
 		const_cast<char *>(constraints), constraints_len,
 		(flags & LLVM_ASM_SIDE_EFFECT) != 0, (flags & LLVM_ASM_ALIGN_STACK) != 0,
 										  LLVMInlineAsmDialectATT, TRUE);
-#else
-	const auto asmval = LLVMGetInlineAsm (type,
-		const_cast<char *>(asmstr), asmstr_len,
-		const_cast<char *>(constraints), constraints_len,
-		(flags & LLVM_ASM_SIDE_EFFECT) != 0, (flags & LLVM_ASM_ALIGN_STACK) != 0,
-		LLVMInlineAsmDialectATT);
-#endif
 	return LLVMBuildCall2 (builder, type, asmval, args, num_args, name);
 }
 
-#if LLVM_API_VERSION >= 1400
 LLVMTypeRef
 mono_llvm_get_ptr_type (void)
 {
 	PointerType *t = PointerType::get (*unwrap (LLVMGetGlobalContext ()), 0);
 	return wrap (t);
 }
-#endif

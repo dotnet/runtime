@@ -459,7 +459,7 @@ namespace System.Reflection.Tests
                 yield return typeof(int).MakePointerType();
 
                 yield return typeof(GenericTestClass<>).GetTypeInfo().GenericTypeParameters[0];
-                if (PlatformDetection.IsWindows)
+                if (PlatformDetection.IsBuiltInComEnabled)
                     yield return Type.GetTypeFromCLSID(new Guid("DCA66D18-E253-4695-9E08-35B54420AFA2"));
             }
         }
@@ -538,9 +538,8 @@ namespace System.Reflection.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34328", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public static void HasSameMetadataDefinitionAs_CornerCase_CLSIDConstructor()
         {
             // HasSameMetadataDefinitionAs on a GetTypeFromCLSID type is uninteresting (they'll never be an actual member of a type)

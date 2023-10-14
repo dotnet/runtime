@@ -550,7 +550,7 @@ namespace System.Text.Tests
             var builder = new StringBuilder(0, 5);
             builder.Append("Hello");
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("repeatCount", "requiredLength", () => builder.Append('a'));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append('a'));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("repeatCount", "requiredLength", () => builder.Append('a', 1));
         }
 

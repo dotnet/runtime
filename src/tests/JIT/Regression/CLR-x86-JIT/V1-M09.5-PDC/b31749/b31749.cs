@@ -20,11 +20,10 @@ namespace Test
             return new uint[4];
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             BB a = new BB();
             Method2(Method2(0u, a)[2], a);
-            return 100;
         }
     }
 }

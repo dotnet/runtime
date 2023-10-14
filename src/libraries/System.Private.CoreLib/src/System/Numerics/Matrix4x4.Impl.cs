@@ -424,11 +424,12 @@ namespace System.Numerics
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static Impl CreateLookAt(in Vector3 cameraPosition, in Vector3 cameraTarget, in Vector3 cameraUpVector)
+            public static Impl CreateLookTo(in Vector3 cameraPosition, in Vector3 cameraDirection, in Vector3 cameraUpVector)
             {
-                Vector3 axisZ = Vector3.Normalize(cameraPosition - cameraTarget);
+                Vector3 axisZ = Vector3.Normalize(-cameraDirection);
                 Vector3 axisX = Vector3.Normalize(Vector3.Cross(cameraUpVector, axisZ));
                 Vector3 axisY = Vector3.Cross(axisZ, axisX);
+                Vector3 negativeCameraPosition = -cameraPosition;
 
                 Impl result;
 
@@ -451,9 +452,47 @@ namespace System.Numerics
                     0
                 );
                 result.W = new Vector4(
-                    -Vector3.Dot(axisX, cameraPosition),
-                    -Vector3.Dot(axisY, cameraPosition),
-                    -Vector3.Dot(axisZ, cameraPosition),
+                    Vector3.Dot(axisX, negativeCameraPosition),
+                    Vector3.Dot(axisY, negativeCameraPosition),
+                    Vector3.Dot(axisZ, negativeCameraPosition),
+                    1
+                );
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Impl CreateLookToLeftHanded(in Vector3 cameraPosition, in Vector3 cameraDirection, in Vector3 cameraUpVector)
+            {
+                Vector3 axisZ = Vector3.Normalize(cameraDirection);
+                Vector3 axisX = Vector3.Normalize(Vector3.Cross(cameraUpVector, axisZ));
+                Vector3 axisY = Vector3.Cross(axisZ, axisX);
+                Vector3 negativeCameraPosition = -cameraPosition;
+
+                Impl result;
+
+                result.X = new Vector4(
+                    axisX.X,
+                    axisY.X,
+                    axisZ.X,
+                    0
+                );
+                result.Y = new Vector4(
+                    axisX.Y,
+                    axisY.Y,
+                    axisZ.Y,
+                    0
+                );
+                result.Z = new Vector4(
+                    axisX.Z,
+                    axisY.Z,
+                    axisZ.Z,
+                    0
+                );
+                result.W = new Vector4(
+                    Vector3.Dot(axisX, negativeCameraPosition),
+                    Vector3.Dot(axisY, negativeCameraPosition),
+                    Vector3.Dot(axisZ, negativeCameraPosition),
                     1
                 );
 
@@ -463,12 +502,29 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateOrthographic(float width, float height, float zNearPlane, float zFarPlane)
             {
+                float range = 1.0f / (zNearPlane - zFarPlane);
+
                 Impl result;
 
                 result.X = new Vector4(2.0f / width, 0, 0, 0);
                 result.Y = new Vector4(0, 2.0f / height, 0, 0);
-                result.Z = new Vector4(0, 0, 1.0f / (zNearPlane - zFarPlane), 0);
-                result.W = new Vector4(0, 0, zNearPlane / (zNearPlane - zFarPlane), 1);
+                result.Z = new Vector4(0, 0, range, 0);
+                result.W = new Vector4(0, 0, range * zNearPlane, 1);
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Impl CreateOrthographicLeftHanded(float width, float height, float zNearPlane, float zFarPlane)
+            {
+                float range = 1.0f / (zFarPlane - zNearPlane);
+
+                Impl result;
+
+                result.X = new Vector4(2.0f / width, 0, 0, 0);
+                result.Y = new Vector4(0, 2.0f / height, 0, 0);
+                result.Z = new Vector4(0, 0, range, 0);
+                result.W = new Vector4(0, 0, -range * zNearPlane, 1);
 
                 return result;
             }
@@ -476,15 +532,41 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
             {
+                float reciprocalWidth = 1.0f / (right - left);
+                float reciprocalHeight = 1.0f / (top - bottom);
+                float range = 1.0f / (zNearPlane - zFarPlane);
+
                 Impl result;
 
-                result.X = new Vector4(2.0f / (right - left), 0, 0, 0);
-                result.Y = new Vector4(0, 2.0f / (top - bottom), 0, 0);
-                result.Z = new Vector4(0, 0, 1.0f / (zNearPlane - zFarPlane), 0);
+                result.X = new Vector4(reciprocalWidth + reciprocalWidth, 0, 0, 0);
+                result.Y = new Vector4(0, reciprocalHeight + reciprocalHeight, 0, 0);
+                result.Z = new Vector4(0, 0, range, 0);
                 result.W = new Vector4(
-                    (left + right) / (left - right),
-                    (top + bottom) / (bottom - top),
-                    zNearPlane / (zNearPlane - zFarPlane),
+                    -(left + right) * reciprocalWidth,
+                    -(top + bottom) * reciprocalHeight,
+                    range * zNearPlane,
+                    1
+                );
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Impl CreateOrthographicOffCenterLeftHanded(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
+            {
+                float reciprocalWidth = 1.0f / (right - left);
+                float reciprocalHeight = 1.0f / (top - bottom);
+                float range = 1.0f / (zFarPlane - zNearPlane);
+
+                Impl result;
+
+                result.X = new Vector4(reciprocalWidth + reciprocalWidth, 0, 0, 0);
+                result.Y = new Vector4(0, reciprocalHeight + reciprocalHeight, 0, 0);
+                result.Z = new Vector4(0, 0, range, 0);
+                result.W = new Vector4(
+                    -(left + right) * reciprocalWidth,
+                    -(top + bottom) * reciprocalHeight,
+                    -range * zNearPlane,
                     1
                 );
 
@@ -498,14 +580,35 @@ namespace System.Numerics
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
-                float negFarRange = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
+                float dblNearPlaneDistance = nearPlaneDistance + nearPlaneDistance;
+                float range = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
 
                 Impl result;
 
-                result.X = new Vector4(2.0f * nearPlaneDistance / width, 0, 0, 0);
-                result.Y = new Vector4(0, 2.0f * nearPlaneDistance / height, 0, 0);
-                result.Z = new Vector4(0, 0, negFarRange, -1.0f);
-                result.W = new Vector4(0, 0, nearPlaneDistance * negFarRange, 0);
+                result.X = new Vector4(dblNearPlaneDistance / width, 0, 0, 0);
+                result.Y = new Vector4(0, dblNearPlaneDistance / height, 0, 0);
+                result.Z = new Vector4(0, 0, range, -1.0f);
+                result.W = new Vector4(0, 0, range * nearPlaneDistance, 0);
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Impl CreatePerspectiveLeftHanded(float width, float height, float nearPlaneDistance, float farPlaneDistance)
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
+
+                float dblNearPlaneDistance = nearPlaneDistance + nearPlaneDistance;
+                float range = float.IsPositiveInfinity(farPlaneDistance) ? 1.0f : farPlaneDistance / (farPlaneDistance - nearPlaneDistance);
+
+                Impl result;
+
+                result.X = new Vector4(dblNearPlaneDistance / width, 0, 0, 0);
+                result.Y = new Vector4(0, dblNearPlaneDistance / height, 0, 0);
+                result.Z = new Vector4(0, 0, range, 1.0f);
+                result.W = new Vector4(0, 0, -range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -514,22 +617,46 @@ namespace System.Numerics
             public static Impl CreatePerspectiveFieldOfView(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
             {
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(fieldOfView, 0.0f);
-                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(fieldOfView, MathF.PI);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(fieldOfView, float.Pi);
 
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
-                float scaleY = 1.0f / MathF.Tan(fieldOfView * 0.5f);
-                float scaleX = scaleY / aspectRatio;
-                float negFarRange = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
+                float height = 1.0f / MathF.Tan(fieldOfView * 0.5f);
+                float width = height / aspectRatio;
+                float range = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
 
                 Impl result;
 
-                result.X = new Vector4(scaleX, 0, 0, 0);
-                result.Y = new Vector4(0, scaleY, 0, 0);
-                result.Z = new Vector4(0, 0, negFarRange, -1.0f);
-                result.W = new Vector4(0, 0, nearPlaneDistance * negFarRange, 0);
+                result.X = new Vector4(width, 0, 0, 0);
+                result.Y = new Vector4(0, height, 0, 0);
+                result.Z = new Vector4(0, 0, range, -1.0f);
+                result.W = new Vector4(0, 0, range * nearPlaneDistance, 0);
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Impl CreatePerspectiveFieldOfViewLeftHanded(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(fieldOfView, 0.0f);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(fieldOfView, float.Pi);
+
+                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
+
+                float height = 1.0f / MathF.Tan(fieldOfView * 0.5f);
+                float width = height / aspectRatio;
+                float range = float.IsPositiveInfinity(farPlaneDistance) ? 1.0f : farPlaneDistance / (farPlaneDistance - nearPlaneDistance);
+
+                Impl result;
+
+                result.X = new Vector4(width, 0, 0, 0);
+                result.Y = new Vector4(0, height, 0, 0);
+                result.Z = new Vector4(0, 0, range, 1.0f);
+                result.W = new Vector4(0, 0, -range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -541,19 +668,49 @@ namespace System.Numerics
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
-                float negFarRange = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
+                float dblNearPlaneDistance = nearPlaneDistance + nearPlaneDistance;
+                float reciprocalWidth = 1.0f / (right - left);
+                float reciprocalHeight = 1.0f / (top - bottom);
+                float range = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
 
                 Impl result;
 
-                result.X = new Vector4(2.0f * nearPlaneDistance / (right - left), 0, 0, 0);
-                result.Y = new Vector4(0, 2.0f * nearPlaneDistance / (top - bottom), 0, 0);
+                result.X = new Vector4(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
+                result.Y = new Vector4(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
                 result.Z = new Vector4(
-                    (left + right) / (right - left),
-                    (top + bottom) / (top - bottom),
-                    negFarRange,
+                    (left + right) * reciprocalWidth,
+                    (top + bottom) * reciprocalHeight,
+                    range,
                     -1.0f
                 );
-                result.W = new Vector4(0, 0, nearPlaneDistance * negFarRange, 0);
+                result.W = new Vector4(0, 0, range * nearPlaneDistance, 0);
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Impl CreatePerspectiveOffCenterLeftHanded(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(nearPlaneDistance, 0.0f);
+                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
+
+                float dblNearPlaneDistance = nearPlaneDistance + nearPlaneDistance;
+                float reciprocalWidth = 1.0f / (right - left);
+                float reciprocalHeight = 1.0f / (top - bottom);
+                float range = float.IsPositiveInfinity(farPlaneDistance) ? 1.0f : farPlaneDistance / (farPlaneDistance - nearPlaneDistance);
+
+                Impl result;
+
+                result.X = new Vector4(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
+                result.Y = new Vector4(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
+                result.Z = new Vector4(
+                    -(left + right) * reciprocalWidth,
+                    -(top + bottom) * reciprocalHeight,
+                    range,
+                    1.0f
+                );
+                result.W = new Vector4(0, 0, -range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -828,6 +985,41 @@ namespace System.Numerics
                 result.Y = Vector4.UnitY;
                 result.Z = Vector4.UnitZ;
                 result.W = new Vector4(positionX, positionY, positionZ, 1);
+
+                return result;
+            }
+
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Impl CreateViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+            {
+                Impl result;
+
+                // 4x SIMD fields to get a lot better codegen
+                result.W = new Vector4(width, height, 0f, 0f);
+                result.W *= new Vector4(0.5f, 0.5f, 0f, 0f);
+
+                result.X = new Vector4(result.W.X, 0f, 0f, 0f);
+                result.Y = new Vector4(0f, -result.W.Y, 0f, 0f);
+                result.Z = new Vector4(0f, 0f, minDepth - maxDepth, 0f);
+                result.W += new Vector4(x, y, minDepth, 1f);
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Impl CreateViewportLeftHanded(float x, float y, float width, float height, float minDepth, float maxDepth)
+            {
+                Impl result;
+
+                // 4x SIMD fields to get a lot better codegen
+                result.W = new Vector4(width, height, 0f, 0f);
+                result.W *= new Vector4(0.5f, 0.5f, 0f, 0f);
+
+                result.X = new Vector4(result.W.X, 0f, 0f, 0f);
+                result.Y = new Vector4(0f, -result.W.Y, 0f, 0f);
+                result.Z = new Vector4(0f, 0f, maxDepth - minDepth, 0f);
+                result.W += new Vector4(x, y, minDepth, 1f);
 
                 return result;
             }

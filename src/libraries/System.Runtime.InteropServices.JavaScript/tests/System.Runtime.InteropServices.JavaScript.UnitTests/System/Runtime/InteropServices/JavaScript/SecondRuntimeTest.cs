@@ -12,9 +12,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public partial class SecondRuntimeTest
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))]
-        public static async Task RunSecondRuntimeAndTestStaticState() 
+        public static async Task RunSecondRuntimeAndTestStaticState()
         {
-            await JSHost.ImportAsync("SecondRuntimeTest", "./SecondRuntimeTest.js");
+            await JSHost.ImportAsync("SecondRuntimeTest", "../SecondRuntimeTest.js");
 
             Interop.State = 42;
             var state2 = await Interop.RunSecondRuntimeAndTestStaticState();

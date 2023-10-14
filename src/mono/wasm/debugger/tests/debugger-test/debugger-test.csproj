@@ -8,7 +8,7 @@
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
     <OutputType>library</OutputType>
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
-    <_WasmPThreadPoolSize Condition="'$(WasmEnableThreads)'=='true'">10</_WasmPThreadPoolSize>
+    <_WasmPThreadPoolSize Condition="'$(MonoWasmBuildVariant)' == 'multithread'">10</_WasmPThreadPoolSize>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
@@ -52,7 +52,13 @@
   <Target Name="PrepareForWasmBuildApp" DependsOnTargets="Build">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)native')"
            Text="Cannot find %24(MicrosoftNetCoreAppRuntimePackRidDir)=$(MicrosoftNetCoreAppRuntimePackRidDir)native. Make sure to set the runtime configuration with %24(RuntimeConfiguration). Current value: $(RuntimeConfiguration)" />
-
+    <ItemGroup>
+      <!-- Remove pdb from System.Private.CoreLib to have the same scenario that we have in a Blazor/Wasm user app -->
+      <FilesToDelete Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native/System.Private.CoreLib.pdb"/>
+      <!-- Remove pdb from all libraries in CI to improve CI performance and have the same scenario that we have in a Blazor/Wasm user app -->
+      <FilesToDelete Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib/$(AspNetCoreAppCurrent)/*.pdb" Exclude="$(MicrosoftNetCoreAppRuntimePackRidDir)lib/$(AspNetCoreAppCurrent)/System.Console.pdb"/>
+    </ItemGroup>
+    <Delete Files="@(FilesToDelete)"/>
     <PropertyGroup>
       <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
       <WasmAppDir>$(AppDir)</WasmAppDir>
@@ -115,8 +121,6 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
   </ItemGroup>
 
