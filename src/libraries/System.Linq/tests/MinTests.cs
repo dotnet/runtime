@@ -11,7 +11,7 @@ namespace System.Linq.Tests
     {
         public static IEnumerable<object[]> Min_AllTypes_TestData()
         {
-            for (int length = 2; length < 33; length++)
+            for (int length = 2; length < 65; length++)
             {
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i)), (byte)length };
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i).ToArray()), (byte)length };
