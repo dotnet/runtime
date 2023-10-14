@@ -16,9 +16,11 @@ namespace System.Linq.Tests
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i)), (byte)length };
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i).ToArray()), (byte)length };
 
-                // dont generate testdata outside of the datatype bounds
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Where(i => i <= sbyte.MaxValue).Select(i => (sbyte)i)), (sbyte)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Where(i => i <= sbyte.MaxValue).Select(i => (sbyte)i).ToArray()), (sbyte)length };
+                // Unit Tests does +T.One so we should generate data up to one value below sbyte.MaxValue, otherwise the type overflows
+                if ((length + length) < sbyte.MaxValue) {
+                    yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i)), (sbyte)length };
+                    yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i).ToArray()), (sbyte)length };
+                }
 
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i)), (ushort)length };
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i).ToArray()), (ushort)length };
@@ -68,8 +70,7 @@ namespace System.Linq.Tests
             T first = source.First();
             Assert.Equal(first, source.Min(Comparer<T>.Create((x, y) => x == first ? -1 : 1)));
 
-            if(expected != T.MaxValue)
-                Assert.Equal(expected + T.One, source.Min(x => x + T.One));
+            Assert.Equal(expected + T.One, source.Min(x => x + T.One));
         }
 
         [Fact]
