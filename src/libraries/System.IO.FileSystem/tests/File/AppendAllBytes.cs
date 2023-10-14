@@ -16,9 +16,14 @@ namespace System.IO.Tests
         {
             string path = GetTestFilePath();
 
-            Assert.Throws<ArgumentNullException>(() => File.AppendAllBytes(null, new byte[] { 1, 2, 3 }));
-            Assert.Throws<ArgumentException>(() => File.AppendAllBytes(string.Empty, new byte[] { 1, 2, 3 }));
+            Assert.Throws<ArgumentNullException>(() => File.AppendAllBytes(null, new byte[0]));
             Assert.Throws<ArgumentNullException>(() => File.AppendAllBytes(path, null));
+        }
+
+        [Fact]
+        public void InvalidParameters()
+        {
+            Assert.Throws<ArgumentException>(() => File.AppendAllBytes(string.Empty, new byte[0]));
         }
 
 
@@ -27,15 +32,73 @@ namespace System.IO.Tests
         {
             string path = GetTestFilePath();
 
-            byte[] initialBytes = new byte[] { 1, 2, 3 };
-            byte[] additionalBytes = new byte[] { 4, 5, 6 };
+            byte[] initialBytes = Encoding.UTF8.GetBytes("bytes");
+            byte[] additionalBytes = Encoding.UTF8.GetBytes("additional bytes");
 
             File.WriteAllBytes(path, initialBytes);
             File.AppendAllBytes(path, additionalBytes);
 
             byte[] result = File.ReadAllBytes(path);
 
-            Assert.True(result.SequenceEqual(new byte[] { 1, 2, 3, 4, 5, 6 }));
+            byte[] expectedBytes = initialBytes.Concat(additionalBytes).ToArray();
+
+            Assert.True(result.SequenceEqual(expectedBytes));
         }
+
+
+        [Fact]
+        public void EmptyContentCreatesFile()
+        {
+            string path = GetTestFilePath();
+            File.AppendAllBytes(path, new byte[0]);
+            Assert.True(File.Exists(path));
+            Assert.Empty(File.ReadAllBytes(path));
+            File.Delete(path);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
+        public void OpenFile_ThrowsIOException()
+        {
+            string path = GetTestFilePath();
+            byte[] bytes = Encoding.UTF8.GetBytes("bytes");
+
+            using (File.Create(path))
+            {
+                Assert.Throws<IOException>(() => File.AppendAllBytes(path, bytes));
+                Assert.Throws<IOException>(() => File.ReadAllBytes(path));
+            }
+        }
+
+        /// <summary>
+        /// On Unix, modifying a file that is ReadOnly will fail under normal permissions.
+        /// If the test is being run under the superuser, however, modification of a ReadOnly
+        /// file is allowed. On Windows, modifying a file that is ReadOnly will always fail.
+        /// </summary>
+        [Fact]
+        public void AppendToReadOnlyFileAsync()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+            File.SetAttributes(path, FileAttributes.ReadOnly);
+            byte[] dataToAppend = Encoding.UTF8.GetBytes("bytes");
+
+            try
+            {
+                if (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess)
+                {
+                    File.AppendAllBytes(path, dataToAppend);
+                    Assert.Equal(dataToAppend, File.ReadAllBytes(path));
+                }
+                else
+                {
+                    Assert.Throws<UnauthorizedAccessException>(() => File.AppendAllBytes(path, dataToAppend));
+                }
+            }
+            finally
+            {
+                File.SetAttributes(path, FileAttributes.Normal);
+            }
+        }
+
     }
 }
