@@ -5107,12 +5107,15 @@ size_t& generation_allocated_since_last_pin (generation* inst)
 inline
 float generation_allocator_efficiency (generation* inst)
 {
-    if ((generation_free_list_allocated (inst) + generation_free_obj_space (inst)) != 0)
-    {
-        return ((float) (generation_free_list_allocated (inst)) / (float)(generation_free_list_allocated (inst) + generation_free_obj_space (inst)));
-    }
-    else
-        return 0;
+    // Because of speculative execution, it is not always safe to do the following code if sum is equal to zero
+    // if (sum!=0.0f)
+    //   return ... / sum;
+    // To prevent this, add a small value to the divider.
+    // It will not change the result if sum is not zero because in this
+    // case sum>1.0 and precision of float is limited to 7 digits
+
+    float sum = (float)(generation_free_list_allocated (inst) + generation_free_obj_space (inst));
+    return ((float) (generation_free_list_allocated (inst))) / (sum + 1.0e-10f);
 }
 inline
 size_t generation_unusable_fragmentation (generation* inst)
