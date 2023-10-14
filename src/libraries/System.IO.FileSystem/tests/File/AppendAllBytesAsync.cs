@@ -53,7 +53,6 @@ namespace System.IO.Tests
             await File.AppendAllBytesAsync(path, new byte[0]);
             Assert.True(File.Exists(path));
             Assert.Empty(await File.ReadAllBytesAsync(path));
-            File.Delete(path);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
