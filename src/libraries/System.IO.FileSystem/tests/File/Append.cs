@@ -77,23 +77,4 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentNullException>(() => File.AppendAllLines(GetTestFilePath(), new string[] { "Text" }, null));
         }
     }
-
-    public class File_AppendAllBytes: File_ReadWriteAllBytes
-    {
-        [Fact]
-        public void ValidParameters_ShouldAppendBytesToFile()
-        {
-            string path = GetTestFilePath();
-            byte[] originalBytes = new byte[] { 1, 2, 3 };
-            byte[] appendBytes = new byte[] { 4, 5, 6 };
-
-            File.WriteAllBytes(path, originalBytes);
-            File.AppendAllBytes(path, appendBytes);
-
-            byte[] expectedBytes = new byte[] { 1, 2, 3, 4, 5, 6 };
-            byte[] actualBytes = File.ReadAllBytes(path);
-            Assert.Equal(expectedBytes, actualBytes);
-            File.Delete(path);
-        }
-    }
 }

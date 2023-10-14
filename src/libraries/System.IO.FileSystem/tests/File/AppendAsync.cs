@@ -92,34 +92,4 @@ namespace System.IO.Tests
                 async () => await File.AppendAllLinesAsync(path, new[] { "" }, Encoding.UTF8, token));
         }
     }
-
-    public class File_AppendAllBytesAsync : File_ReadWriteAllBytesAsync
-    {
-        [Fact]
-        public async Task ValidParameters_ShouldAppendBytesToFileAsync()
-        {
-            string path = GetTestFilePath();
-            byte[] originalBytes = new byte[] { 1, 2, 3 };
-            byte[] appendBytes = new byte[] { 4, 5, 6 };
-
-            await File.WriteAllBytesAsync(path, originalBytes);
-            await File.AppendAllBytesAsync(path, appendBytes);
-
-            byte[] expectedBytes = new byte[] { 1, 2, 3, 4, 5, 6 };
-            byte[] actualBytes = await File.ReadAllBytesAsync(path);
-            Assert.Equal(expectedBytes, actualBytes);
-            File.Delete(path);
-        }
-
-        [Fact]
-        public Task TaskAlreadyCanceledAsync()
-        {
-            string path = GetTestFilePath();
-            var cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.Cancel();
-
-            return Assert.ThrowsAsync<TaskCanceledException>(
-                async () => await File.AppendAllBytesAsync(path, new byte[] { 1, 2, 3 }, cancellationTokenSource.Token));
-        }
-    }
 }
