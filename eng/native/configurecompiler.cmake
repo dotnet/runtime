@@ -69,7 +69,8 @@ if (MSVC)
   add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
   # Load all imported DLLs from the System32 directory.
-  add_link_options($<$<NOT:$<BOOL:${NO_SYSTEM32}>>:/DEPENDENTLOADFLAG:0x800>)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEPENDENTLOADFLAG:0x800")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEPENDENTLOADFLAG:0x800")
 
   # Linker flags
   #

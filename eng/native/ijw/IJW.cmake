@@ -65,8 +65,8 @@ if (CLR_CMAKE_HOST_WIN32)
   set_directory_properties(PROPERTIES COMPILE_OPTIONS "${dirCompileOptions}")
 
   # IJW tests needs to load DLLs from somewhere other than System32
-  # Setting NO_SYSTEM32 removes /DEPENDENTLOADFLAG:0x800 from link arguments
-  set(NO_SYSTEM32 1)
+  string(REPLACE "/DEPENDENTLOADFLAG:0x800" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+  string(REPLACE "/DEPENDENTLOADFLAG:0x800" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
 
   set(CLR_SDK_REF_PACK_OUTPUT "")
   set(CLR_SDK_REF_PACK_DISCOVERY_ERROR "")
