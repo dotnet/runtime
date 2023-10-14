@@ -497,7 +497,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    if (!BasicBlock::sameEHRegion(m_b1, m_b2))
+    if (!BasicBlock::sameEHRegion(m_b1, m_b2) || ((m_b2->bbFlags & BBF_DONT_REMOVE) != 0))
     {
         // Conditions aren't in the same EH region
         return false;
