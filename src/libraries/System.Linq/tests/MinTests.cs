@@ -16,8 +16,9 @@ namespace System.Linq.Tests
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i)), (byte)length };
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i).ToArray()), (byte)length };
 
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i)), (sbyte)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i).ToArray()), (sbyte)length };
+                // dont generate testdata outside of the datatype bounds
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Where(i => i <= sbyte.MaxValue).Select(i => (sbyte)i)), (sbyte)length };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Where(i => i <= sbyte.MaxValue).Select(i => (sbyte)i).ToArray()), (sbyte)length };
 
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i)), (ushort)length };
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i).ToArray()), (ushort)length };
