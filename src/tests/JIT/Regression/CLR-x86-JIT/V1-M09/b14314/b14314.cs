@@ -30,11 +30,10 @@ namespace DefaultNamespace
     public class Finalize
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Class1 Cls = new Class1();
             Cls.Method();
-            return 100;
         }
     }
 }

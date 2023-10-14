@@ -142,6 +142,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.InlineArrayTests))]
+		public void InlineArrayTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.InteropTests))]
 		public void InteropTests (TestCase testCase)
 		{

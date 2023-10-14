@@ -47,7 +47,7 @@ namespace Microsoft.Interop
             return provider.Select((node, ct) => node.NormalizeWhitespace());
         }
 
-        public static (IncrementalValuesProvider<T>,  IncrementalValuesProvider<T2>) Split<T, T2>(this IncrementalValuesProvider<(T, T2)> provider)
+        public static (IncrementalValuesProvider<T>, IncrementalValuesProvider<T2>) Split<T, T2>(this IncrementalValuesProvider<(T, T2)> provider)
         {
             return (provider.Select(static (data, ct) => data.Item1), provider.Select(static (data, ct) => data.Item2));
         }

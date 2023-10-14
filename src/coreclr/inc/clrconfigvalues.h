@@ -259,6 +259,8 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("le
 CONFIG_DWORD_INFO(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableNewExceptionHandling, W("EnableNewExceptionHandling"), 0, "Enable new exception handling.");
+
 
 ///
 /// Garbage collector
@@ -616,6 +618,10 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode, W("TieredP
 
 // By default, we only use optimizations in instrumented tiers for hot R2R code only.
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_InstrumentedTierAlwaysOptimized, W("TieredPGO_InstrumentedTierAlwaysOptimized"), 0, "Always use optimizations inside instrumented tiers")
+
+// If scalable counters are used, set the threshold for approximate counting.
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_ScalableCountThreshold, W("TieredPGO_ScalableCountThreshold"), 13, "Log2 threshold where counting becomes approximate")
+
 #endif
 
 ///
@@ -791,6 +797,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rdm,               W("EnableArm64Rd
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha1,              W("EnableArm64Sha1"),           1, "Allows Arm64 Sha1+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha256,            W("EnableArm64Sha256"),         1, "Allows Arm64 Sha256+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc,              W("EnableArm64Rcpc"),           1, "Allows Arm64 Rcpc+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc2,             W("EnableArm64Rcpc2"),          1, "Allows Arm64 Rcpc2+ hardware intrinsics to be disabled")
 #endif
 
 ///

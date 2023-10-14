@@ -39,10 +39,9 @@ public class Program
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         string s = "skip"; // Test checks commpilation process.
         VerifyMacvalueSSlV2(s);
-        return 100;
     }
 }

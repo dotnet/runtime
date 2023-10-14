@@ -9,6 +9,10 @@
 // Number of characters in a string literal. Excludes terminating NULL.
 #define STRING_LENGTH(str) (ARRAY_SIZE(str) - 1)
 
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
 #if defined(_MSC_VER)
 #  if defined(__SANITIZE_ADDRESS__)
 #    define HAS_ADDRESS_SANITIZER

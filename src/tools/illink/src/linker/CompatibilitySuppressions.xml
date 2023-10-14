@@ -999,6 +999,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.AnnotationStore.get_TypeMapInfo</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetAction(Mono.Cecil.MethodDefinition)</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
@@ -1269,6 +1275,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.#ctor(Mono.Linker.Pipeline,Mono.Linker.ILogger,System.String,Mono.Linker.UnintializedContextFactory)</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.#ctor(Mono.Linker.Pipeline,Mono.Linker.ILogger,System.String)</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
@@ -1432,6 +1444,12 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_IgnoreUnresolved</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.get_KeepMembersForDebugger</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
@@ -1876,6 +1894,12 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_IgnoreUnresolved(System.Boolean)</Target>
+    <Left>ref/net8.0/illink.dll</Left>
+    <Right>lib/net8.0/illink.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:Mono.Linker.LinkContext.set_KeepMembersForDebugger(System.Boolean)</Target>
     <Left>ref/net8.0/illink.dll</Left>
     <Right>lib/net8.0/illink.dll</Right>
   </Suppression>

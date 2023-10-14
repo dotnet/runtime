@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -79,6 +81,37 @@ namespace System.IO.Tests
 
                 // [] Pass in a closed stream
                 Assert.Throws<ObjectDisposedException>(() => ms2.WriteTo(readonlyStream));
+            }
+        }
+
+        public static IEnumerable<object[]> MemoryStream_PositionOverflow_Throws_MemberData() =>
+            from mode in Enum.GetValues<SeekMode>()
+            from bufferContext in
+                new (int bufferSize, int origin)[]
+                {
+                    (0, 0),
+                    (1, 0),
+                    (1, 1),
+                    (10, 0),
+                    (10, 5),
+                    (10, 10),
+                    (Array.MaxLength, 0),
+                    (Array.MaxLength, Array.MaxLength)
+                }
+            select new object[] {mode, bufferContext.bufferSize, bufferContext.origin};
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [MemberData(nameof(MemoryStream_PositionOverflow_Throws_MemberData))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "https://github.com/dotnet/runtime/issues/92467")]
+        public void MemoryStream_SeekOverflow_Throws(SeekMode mode, int bufferSize, int origin)
+        {
+            byte[] buffer = new byte[bufferSize];
+            using (MemoryStream ms = new MemoryStream(buffer, origin, buffer.Length - origin, true))
+            {
+                Seek(mode, ms, int.MaxValue - origin);
+                Assert.Throws<ArgumentOutOfRangeException>(() => Seek(mode, ms, (long)int.MaxValue - origin + 1));
+                Assert.ThrowsAny<Exception>(() => Seek(mode, ms, long.MinValue + 1));
+                Assert.ThrowsAny<Exception>(() => Seek(mode, ms, long.MaxValue - 1));
             }
         }
 

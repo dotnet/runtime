@@ -12,7 +12,7 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, 1, "A.D." };
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, 0, "A.D." };
-            
+
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 var enUSFormat = new CultureInfo("en-US").DateTimeFormat;
@@ -33,9 +33,8 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, 1, "сл.Хр." };
                 yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, 0, "খৃষ্টাব্দ" };
                 yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, 1, "খৃষ্টাব্দ" };
-                string bangladeshEra = PlatformDetection.IsNodeJS ? "খৃষ্টাব্দ" : "খ্রিঃ";
-                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 0, bangladeshEra };
-                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 1, bangladeshEra };
+                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 0, "খ্রিঃ" };
+                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 1, "খ্রিঃ" };
                 yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, 0, "dC" };
                 yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, 1, "dC" };
                 yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, 0, "dC" };
@@ -270,11 +269,10 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("en-US").DateTimeFormat, 1, "AD" };
                 yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, 0, "d. C." };
                 yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, 1, "d. C." };
-                string spanishEra = PlatformDetection.IsNodeJS ? "d. C." : "d.C.";
-                yield return new object[] { new CultureInfo("es-419").DateTimeFormat, 0, spanishEra };
-                yield return new object[] { new CultureInfo("es-419").DateTimeFormat, 1, spanishEra};
-                yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, 0, spanishEra };
-                yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, 1, spanishEra };
+                yield return new object[] { new CultureInfo("es-419").DateTimeFormat, 0, "d.C." };
+                yield return new object[] { new CultureInfo("es-419").DateTimeFormat, 1, "d.C."};
+                yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, 0, "d.C." };
+                yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, 1, "d.C." };
                 yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, 0, "pKr" };
                 yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, 1, "pKr" };
                 yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, 0, "ه.ش" }; // ه‍.ش.
@@ -389,9 +387,8 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("tr-TR").DateTimeFormat, 1, "MS" };
                 yield return new object[] { new CultureInfo("uk-UA").DateTimeFormat, 0, "н. е." };
                 yield return new object[] { new CultureInfo("uk-UA").DateTimeFormat, 1, "н. е." };
-                string vietnameseEra = PlatformDetection.IsNodeJS ? "Sau CN" : "CN"; // dotnet: sau CN
-                yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, 0, vietnameseEra };
-                yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, 1, vietnameseEra };
+                yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, 0, "CN" }; // sau CN
+                yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, 1, "CN" }; // sau CN
                 yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, 0, "公元" };
                 yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, 1, "公元" };
                 yield return new object[] { new CultureInfo("zh-Hans-HK").DateTimeFormat, 0, "公元" };

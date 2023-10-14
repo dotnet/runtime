@@ -7,6 +7,7 @@ using System.Diagnostics;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
@@ -52,18 +53,22 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 			var oldInterproceduralState = interproceduralState.Clone ();
 
-			if (Context.OwningSymbol is not IMethodSymbol owningMethod)
+			if (OperationBlock is IAttributeOperation attribute) {
+				AnalyzeAttribute (Context.OwningSymbol, attribute);
 				return;
+			}
 
-			Debug.Assert (owningMethod.MethodKind is not (MethodKind.LambdaMethod or MethodKind.LocalFunction));
-			var startMethod = new MethodBodyValue (owningMethod, Context.GetControlFlowGraph (OperationBlock));
+
+			Debug.Assert (Context.OwningSymbol is not IMethodSymbol methodSymbol ||
+				methodSymbol.MethodKind is not (MethodKind.LambdaMethod or MethodKind.LocalFunction));
+			var startMethod = new MethodBodyValue (Context.OwningSymbol, Context.GetControlFlowGraph (OperationBlock));
 			interproceduralState.TrackMethod (startMethod);
 
 			while (!interproceduralState.Equals (oldInterproceduralState)) {
 				oldInterproceduralState = interproceduralState.Clone ();
 
 				foreach (var method in oldInterproceduralState.Methods) {
-					if (method.Method.IsInRequiresUnreferencedCodeAttributeScope (out _))
+					if (method.OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _))
 						continue;
 
 					AnalyzeMethod (method, ref interproceduralState);
@@ -71,11 +76,19 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 		}
 
+		void AnalyzeAttribute (ISymbol owningSymbol, IAttributeOperation attribute)
+		{
+			var cfg = Context.GetControlFlowGraph (attribute);
+			var lValueFlowCaptures = LValueFlowCapturesProvider.CreateLValueFlowCaptures (cfg);
+			var visitor = GetVisitor (owningSymbol, cfg, lValueFlowCaptures, default);
+			Fixpoint (new ControlFlowGraphProxy (cfg), Lattice, visitor);
+		}
+
 		void AnalyzeMethod (MethodBodyValue method, ref InterproceduralState<TValue, TLattice> interproceduralState)
 		{
 			var cfg = method.ControlFlowGraph;
 			var lValueFlowCaptures = LValueFlowCapturesProvider.CreateLValueFlowCaptures (cfg);
-			var visitor = GetVisitor (method.Method, cfg, lValueFlowCaptures, interproceduralState);
+			var visitor = GetVisitor (method.OwningSymbol, cfg, lValueFlowCaptures, interproceduralState);
 			Fixpoint (new ControlFlowGraphProxy (cfg), Lattice, visitor);
 
 			// The interprocedural state struct is stored as a field of the visitor and modified
@@ -84,7 +97,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		}
 
 		protected abstract TTransfer GetVisitor (
-			IMethodSymbol method,
+			ISymbol owningSymbol,
 			ControlFlowGraph methodCFG,
 			ImmutableDictionary<CaptureId, FlowCaptureKind> lValueFlowCaptures,
 			InterproceduralState<TValue, TLattice> interproceduralState);

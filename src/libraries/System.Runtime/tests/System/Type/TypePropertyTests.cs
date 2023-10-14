@@ -406,7 +406,7 @@ namespace System.Tests.Types
 
     public abstract class InterfaceTypeTestBase : TypePropertyTestBase
     {
-        public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.ClassSemanticsMask | TypeAttributes.Abstract;
+        public override TypeAttributes Attributes => TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.ClassSemanticsMask | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit;
 
         public override Type BaseType => null;
     }

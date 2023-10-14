@@ -15,7 +15,7 @@ namespace Mono.Linker.Tests.TestCasesRunner.ILVerification;
 
 public class ILChecker
 {
-	public virtual void Check (LinkedTestCaseResult linkResult, AssemblyDefinition original)
+	public virtual void Check (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 	{
 		ProcessSkipAttributes (linkResult, original, out bool skipCheckEntirely, out HashSet<string> assembliesToSkip);
 
@@ -78,14 +78,14 @@ public class ILChecker
 		}
 	}
 
-	private static bool DisableILDiffing (LinkedTestCaseResult linkResult, AssemblyDefinition original)
+	private static bool DisableILDiffing (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 	{
 		return linkResult.TestCase.FindTypeDefinition (original)
 			.CustomAttributes
 			.FirstOrDefault (attr => attr.AttributeType.Name == nameof(DisableILVerifyDiffingAttribute)) != null;
 	}
 
-	private static void ProcessExpectILFailures (LinkedTestCaseResult linkResult, AssemblyDefinition original, out bool expectILFailures, out List<string> failureMessages)
+	private static void ProcessExpectILFailures (TrimmedTestCaseResult linkResult, AssemblyDefinition original, out bool expectILFailures, out List<string> failureMessages)
 	{
 		var attrs = linkResult.TestCase.FindTypeDefinition (original).CustomAttributes.Where (attr => attr.AttributeType.Name == nameof(ExpectILFailureAttribute)).ToArray ();
 		expectILFailures = attrs.Length > 0;
@@ -96,7 +96,7 @@ public class ILChecker
 		}
 	}
 
-	private void ProcessSkipAttributes (LinkedTestCaseResult linkResult, AssemblyDefinition original, out bool skipCheckEntirely, out HashSet<string> assembliesToSkip)
+	private void ProcessSkipAttributes (TrimmedTestCaseResult linkResult, AssemblyDefinition original, out bool skipCheckEntirely, out HashSet<string> assembliesToSkip)
 	{
 		var attrs = linkResult.TestCase.FindTypeDefinition (original).CustomAttributes.Where (attr => attr.AttributeType.Name == nameof(SkipILVerifyAttribute));
 		skipCheckEntirely = false;

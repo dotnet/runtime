@@ -1,4 +1,11 @@
 <Project>
+  <PropertyGroup Condition="'$(UsingMicrosoftNoTargetsSdk)' == 'true' or
+                            '$(UsingMicrosoftDotNetSharedFrameworkSdk)' == 'true' or
+                            '$(MSBuildProjectExtension)' == '.pkgproj' or
+                            '$(UsingMicrosoftTraversalSdk)' == 'true'">
+    <!-- Explicitly disable running analyzers to avoid trying to discover the correct ILLink tool pack for a project that has no sources. -->
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
   <PropertyGroup>
     <!-- Disable analyzers in sourcebuild -->
     <RunAnalyzers Condition="'$(DotNetBuildFromSource)' == 'true'">false</RunAnalyzers>
@@ -6,14 +13,16 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(RunAnalyzers)' != 'false'">
     <EnableSingleFileAnalyzer Condition="
-      '$(EnableSingleFileAnalyzer)' == '' And
-      '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</EnableSingleFileAnalyzer>
+      '$(EnableSingleFileAnalyzer)' == '' and
+      '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+      '$(IsSourceProject)' == 'true'">true</EnableSingleFileAnalyzer>
   </PropertyGroup>
   <ItemGroup Condition="'$(RunAnalyzers)' != 'false'">
     <EditorConfigFiles Include="$(MSBuildThisFileDirectory)CodeAnalysis.src.globalconfig" />
     <PackageReference Include="Microsoft.DotNet.CodeAnalysis" Version="$(MicrosoftDotNetCodeAnalysisVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="$(MicrosoftCodeAnalysisNetAnalyzersVersion)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="$(MicrosoftCodeAnalysisCSharpCodeStyleVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
     <PackageReference Include="StyleCop.Analyzers" Version="$(StyleCopAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsTestProject)' == 'true'">

@@ -46,7 +46,8 @@ internal static class DevServer
                 services.AddSingleton(Options.Create(options));
                 services.AddSingleton(realUrlsAvailableTcs);
                 services.AddRouting();
-            });
+            })
+            .UseUrls(options.Urls);
 
 
         IWebHost? host = builder.Build();
@@ -70,8 +71,7 @@ internal static class DevServer
             [WebHostDefaults.EnvironmentKey] = "Development",
             ["Logging:LogLevel:Microsoft"] = "Warning",
             ["Logging:LogLevel:Microsoft.Hosting.Lifetime"] = "Information",
-            [WebHostDefaults.StaticWebAssetsKey] = options.StaticWebAssetsPath,
-            ["ApplyCopHeaders"] = options.WebServerUseCrossOriginPolicy.ToString()
+            [WebHostDefaults.StaticWebAssetsKey] = options.StaticWebAssetsPath
         };
 
         config.AddInMemoryCollection(inMemoryConfiguration);

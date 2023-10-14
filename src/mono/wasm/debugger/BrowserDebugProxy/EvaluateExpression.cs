@@ -201,7 +201,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string node_str = ies.ToString();
                         if (!methodCallToParamName.TryGetValue(node_str, out string id_name))
                         {
-                            throw new Exception($"BUG: Expected to find an id name for the member access string: {node_str}");
+                            throw new Exception($"BUG: Expected to find an id name for the invokation expression string: {node_str}");
                         }
                         AddLocalVariableWithValue(id_name, value);
                     }
@@ -387,12 +387,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var values = new List<JObject>();
             JObject index = null;
+            List<JObject> nestedIndexers = new();
             IEnumerable<ElementAccessExpressionSyntax> elementAccesses = replacer.elementAccess;
             foreach (ElementAccessExpressionSyntax elementAccess in elementAccesses.Reverse())
             {
-                index = await resolver.Resolve(elementAccess, replacer.memberAccessValues, index, replacer.variableDefinitions, token);
+                index = await resolver.Resolve(elementAccess, replacer.memberAccessValues, nestedIndexers, replacer.variableDefinitions, token);
                 if (index == null)
                     throw new ReturnAsErrorException($"Failed to resolve element access for {elementAccess}", "ReferenceError");
+                nestedIndexers.Add(index);
             }
             values.Add(index);
             return values;

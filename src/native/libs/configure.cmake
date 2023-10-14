@@ -9,11 +9,6 @@ include(CheckTypeSize)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
 
-# CMP0075 Include file check macros honor CMAKE_REQUIRED_LIBRARIES.
-if(POLICY CMP0075)
-    cmake_policy(SET CMP0075 NEW)
-endif()
-
 if (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.

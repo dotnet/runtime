@@ -240,6 +240,7 @@ HRESULT EEConfig::Init()
 #if defined(FEATURE_PGO)
     fTieredPGO = false;
     tieredPGO_InstrumentOnlyHotCode = false;
+    tieredPGO_ScalableCountThreshold = 13;
 #endif
 
 #if defined(FEATURE_READYTORUN)
@@ -721,7 +722,7 @@ HRESULT EEConfig::sync()
         fTieredCompilation_CallCounting = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCounting) != 0;
 
         DWORD tieredCompilation_ConfiguredCallCountThreshold =
-            Configuration::GetKnobDWORDValue(W("System.Runtime.TC_CallCountThreshold"), CLRConfig::EXTERNAL_TC_CallCountThreshold);
+            Configuration::GetKnobDWORDValue(W("System.Runtime.TieredCompilation.CallCountThreshold"), CLRConfig::EXTERNAL_TC_CallCountThreshold);
 
         if (tieredCompilation_ConfiguredCallCountThreshold == 0)
         {
@@ -737,7 +738,7 @@ HRESULT EEConfig::sync()
         }
 
         tieredCompilation_CallCountingDelayMs =
-            Configuration::GetKnobDWORDValue(W("System.Runtime.TC_CallCountingDelayMs"), CLRConfig::EXTERNAL_TC_CallCountingDelayMs);
+            Configuration::GetKnobDWORDValue(W("System.Runtime.TieredCompilation.CallCountingDelayMs"), CLRConfig::EXTERNAL_TC_CallCountingDelayMs);
         
         bool hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
         if (hasSingleProcessor)
@@ -781,6 +782,13 @@ HRESULT EEConfig::sync()
         // Also, consider DynamicPGO enabled if WritePGOData is set
         fTieredPGO |= CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) != 0;
         tieredPGO_InstrumentOnlyHotCode = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode) == 1;
+
+        DWORD scalableCountThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_ScalableCountThreshold);
+
+        if ((scalableCountThreshold > 0) && (scalableCountThreshold < 20))
+        {
+            tieredPGO_ScalableCountThreshold = scalableCountThreshold;
+        }
 
         // We need quick jit for TieredPGO
         if (!fTieredCompilation_QuickJit)

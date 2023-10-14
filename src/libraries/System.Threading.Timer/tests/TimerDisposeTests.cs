@@ -50,6 +50,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task DisposeAsync_DisposeDelayedUntilCallbacksComplete()
         {
             using (var b = new Barrier(2))
@@ -72,6 +73,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task DisposeAsync_MultipleDisposesBeforeCompletionReturnSameTask()
         {
             using (var b = new Barrier(2))
@@ -97,6 +99,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task DisposeAsync_AfterDisposeWorks()
         {
             using (var b = new Barrier(2))
@@ -120,6 +123,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task DisposeAsync_AfterDisposeWaitHandleThrows()
         {
             using (var b = new Barrier(2))
@@ -142,6 +146,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91545", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task DisposeAsync_ThenDisposeWaitHandleReturnsFalse()
         {
             using (var b = new Barrier(2))

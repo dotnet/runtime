@@ -809,7 +809,7 @@ FCIMPL4(Object*, ArrayNative::CreateInstance, ReflectClassBaseObject* pElementTy
         // Find the Array class...
         TypeHandle typeHnd = ClassLoader::LoadArrayTypeThrowing(elementType, kind, rank);
 
-        _ASSERTE(rank < MAX_RANK); // Ensures that the stack buffer size allocations below won't overlow
+        _ASSERTE(rank <= MAX_RANK); // Ensures that the stack buffer size allocations below won't overflow
 
         DWORD boundsSize = 0;
         INT32* bounds;

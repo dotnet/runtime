@@ -109,10 +109,6 @@ namespace System.IO.Tests
             from mode in Enum.GetValues<SeekMode>()
             select new object[] { mode };
 
-        public static IEnumerable<object[]> AllSeekModesAndValue(object value) =>
-            from mode in Enum.GetValues<SeekMode>()
-            select new object[] { mode, value };
-
         public static async Task<int> ReadAsync(ReadWriteMode mode, Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             if (mode == ReadWriteMode.SyncByte)
@@ -1792,7 +1788,7 @@ namespace System.IO.Tests
                     int n = 0;
                     while (n < readerBytes.Length)
                     {
-                        int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n);
+                        int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n).WaitAsync(TimeSpan.FromSeconds(30));
                         Assert.InRange(r, 1, readerBytes.Length - n);
                         n += r;
                     }

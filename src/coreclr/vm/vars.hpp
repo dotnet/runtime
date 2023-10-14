@@ -389,6 +389,11 @@ GVAL_DECL(DWORD,            g_debuggerWordTLSIndex);
 #endif
 GVAL_DECL(DWORD,            g_TlsIndex);
 
+#ifdef FEATURE_EH_FUNCLETS
+GPTR_DECL(MethodTable,      g_pEHClass);
+GVAL_DECL(bool,             g_isNewExceptionHandlingEnabled);
+#endif
+
 // Global System Information
 extern SYSTEM_INFO g_SystemInfo;
 
@@ -472,7 +477,7 @@ EXTERN DWORD g_fFastExitProcess;
 EXTERN BOOL g_fFatalErrorOccurredOnGCThread;
 EXTERN Volatile<LONG> g_fForbidEnterEE;
 GVAL_DECL(bool, g_fProcessDetach);
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 GVAL_DECL(bool, g_metadataUpdatesApplied);
 #endif
 EXTERN bool g_fManagedAttach;

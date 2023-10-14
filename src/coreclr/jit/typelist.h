@@ -37,7 +37,6 @@ tf     )
 DEF_TP(UNDEF   ,"<UNDEF>" , TYP_UNDEF,   0,  0,  0,   0, 0, VTR_INT,   availableIntRegs,    RBM_INT_CALLEE_SAVED,    RBM_INT_CALLEE_TRASH,    VTF_ANY)
 DEF_TP(VOID    ,"void"    , TYP_VOID,    0,  0,  0,   0, 0, VTR_INT,   availableIntRegs,    RBM_INT_CALLEE_SAVED,    RBM_INT_CALLEE_TRASH,    VTF_ANY)
 
-DEF_TP(BOOL    ,"bool"    , TYP_INT,     1,  1,  4,   1, 1, VTR_INT,   availableIntRegs,    RBM_INT_CALLEE_SAVED,    RBM_INT_CALLEE_TRASH,    VTF_INT|VTF_UNS)
 DEF_TP(BYTE    ,"byte"    , TYP_INT,     1,  1,  4,   1, 1, VTR_INT,   availableIntRegs,    RBM_INT_CALLEE_SAVED,    RBM_INT_CALLEE_TRASH,    VTF_INT)
 DEF_TP(UBYTE   ,"ubyte"   , TYP_INT,     1,  1,  4,   1, 1, VTR_INT,   availableIntRegs,    RBM_INT_CALLEE_SAVED,    RBM_INT_CALLEE_TRASH,    VTF_INT|VTF_UNS)
 

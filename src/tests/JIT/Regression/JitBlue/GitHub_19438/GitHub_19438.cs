@@ -65,7 +65,7 @@ namespace GitHub_19438
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             const int iterationCount = 10;
             const int itemCount = 1000000;
@@ -120,8 +120,6 @@ namespace GitHub_19438
                 GC.Collect();
             }
             Console.WriteLine("Vector4 Average Time: " + totalTaskTime / iterationCount + "ms");
-
-            return 100;
         }
     }
 }

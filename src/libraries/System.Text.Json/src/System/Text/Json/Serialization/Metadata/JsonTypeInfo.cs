@@ -552,17 +552,14 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (value is not null)
+                if (Kind != JsonTypeInfoKind.Object)
                 {
-                    if (Kind != JsonTypeInfoKind.Object)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
-                    }
+                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
+                }
 
-                    if (!JsonSerializer.IsValidCreationHandlingValue(value.Value))
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(value));
-                    }
+                if (value is not null && !JsonSerializer.IsValidCreationHandlingValue(value.Value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
                 _preferredPropertyObjectCreationHandling = value;
@@ -684,7 +681,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 ConfigureProperties();
 
-                if (Converter.ConstructorIsParameterized)
+                if (DetermineUsesParameterizedConstructor())
                 {
                     ConfigureConstructorParameters();
                 }
@@ -807,6 +804,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// to establish a base case for recursive types and any JsonIgnored property types.
         /// </summary>
         private bool IsCompatibleWithCurrentOptions { get; set; } = true;
+
+        /// <summary>
+        /// Determine if the current configuration is compatible with using a parameterized constructor.
+        /// </summary>
+        internal bool DetermineUsesParameterizedConstructor()
+            => Converter.ConstructorIsParameterized && CreateObject is null;
 
 #if DEBUG
         internal string GetPropertyDebugInfo(ReadOnlySpan<byte> unescapedPropertyName)
@@ -1107,7 +1110,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal void ConfigureConstructorParameters()
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
-            Debug.Assert(Converter.ConstructorIsParameterized);
+            Debug.Assert(DetermineUsesParameterizedConstructor());
             Debug.Assert(PropertyCache is not null);
             Debug.Assert(ParameterCache is null);
 
