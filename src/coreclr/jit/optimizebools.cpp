@@ -66,6 +66,7 @@ private:
 public:
     bool optOptimizeBoolsCondBlock();
     bool optOptimizeCompareChainCondBlock();
+    bool optOptimizeRangeTests();
     bool optOptimizeBoolsReturnBlock(BasicBlock* b3);
 #ifdef DEBUG
     void optOptimizeBoolsGcStress();
@@ -402,6 +403,227 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
     }
 
     return false;
+}
+
+static bool IsConstantRangeTest(const BasicBlock* block, GenTree** lcl, GenTreeIntCon** cns, genTreeOps* cmpOp)
+{
+    // NOTE: caller is expected to check that a block has multiple statements or not
+    const GenTree* rootNode = block->lastStmt()->GetRootNode();
+    assert(block->KindIs(BBJ_COND) && rootNode->OperIs(GT_JTRUE));
+    const GenTree* tree = rootNode->gtGetOp1();
+
+    if (!tree->OperIs(GT_LE, GT_LT, GT_GT, GT_GE) || tree->IsUnsigned())
+    {
+        return false;
+    }
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+    if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->TypeIs(op2->TypeGet()))
+    {
+        if (op2->IsCnsIntOrI())
+        {
+            // X relop CNS
+            *lcl   = op1;
+            *cns   = op2->AsIntCon();
+            *cmpOp = tree->OperGet();
+            return true;
+        }
+        if (op1->IsCnsIntOrI())
+        {
+            // CNS relop X
+            *lcl = op2;
+            *cns = op1->AsIntCon();
+
+            // Normalize to "X relop CNS"
+            *cmpOp = GenTree::SwapRelop(tree->OperGet());
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool GetClosedRange(
+    genTreeOps cmp1, genTreeOps cmp2, ssize_t cns1, ssize_t cns2, ssize_t* pRangeStart, ssize_t* pRangeEnd)
+{
+    const bool range1IsStart = (cmp1 == GT_GE) || (cmp1 == GT_GT);
+    const bool range1IsEnd   = (cmp1 == GT_LE) || (cmp1 == GT_LT);
+    const bool range1IsIncl  = (cmp1 == GT_GE) || (cmp1 == GT_LE);
+
+    const bool range2IsStart = (cmp2 == GT_GE) || (cmp2 == GT_GT);
+    const bool range2IsEnd   = (cmp2 == GT_LE) || (cmp2 == GT_LT);
+    const bool range2IsIncl  = (cmp2 == GT_GE) || (cmp2 == GT_LE);
+
+    // Is it a closed range?
+    if ((range1IsStart == range2IsStart) || (range1IsEnd == range2IsEnd))
+    {
+        return false;
+    }
+
+    if (range1IsStart)
+    {
+        assert(range2IsEnd);
+        *pRangeStart = range1IsIncl ? cns1 : cns1 + 1;
+        *pRangeEnd   = range2IsIncl ? cns2 : cns2 - 1;
+    }
+    else
+    {
+        assert(range1IsEnd && range2IsStart);
+        *pRangeStart = range2IsIncl ? cns2 : cns2 + 1;
+        *pRangeEnd   = range1IsIncl ? cns1 : cns1 - 1;
+    }
+
+    if ((*pRangeStart >= *pRangeEnd) || (*pRangeStart < 0) || (*pRangeEnd < 0))
+    {
+        return false;
+    }
+    return true;
+}
+
+bool OptBoolsDsc::optOptimizeRangeTests()
+{
+    assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
+    assert(m_b1->KindIs(BBJ_COND) && m_b2->KindIs(BBJ_COND) && m_b1->NextIs(m_b2));
+
+    GenTree*       testVar1;
+    GenTree*       testVar2;
+    GenTreeIntCon* testCns1;
+    GenTreeIntCon* testCns2;
+    genTreeOps     testCmp1;
+    genTreeOps     testCmp2;
+
+    if (m_b2->isRunRarely() || !IsConstantRangeTest(m_b1, &testVar1, &testCns1, &testCmp1))
+    {
+        return false;
+    }
+
+    if (!BasicBlock::sameEHRegion(m_b1, m_b2))
+    {
+        // Conditions aren't in the same EH region
+        return false;
+    }
+
+    if (m_b1->HasJumpTo(m_b1) || m_b1->HasJumpTo(m_b2) || m_b2->HasJumpTo(m_b2) || m_b2->HasJumpTo(m_b1))
+    {
+        // Ignoring weird cases like a condition jumping to itself or when JumpDest == Next
+        return false;
+    }
+
+    // We're interested in just two shapes for e.g. "X > 10 && X < 100" range test:
+    //
+    // Shape 1: both conditions jump to NotInRange
+    //
+    // if (X <= 10)
+    //     goto NotInRange;
+    //
+    // if (X >= 100)
+    //     goto NotInRange
+    //
+    // InRange:
+    // ...
+
+    // Shape 2: 2nd block jumps to InRange
+    //
+    // if (X <= 10)
+    //     goto NotInRange;
+    //
+    // if (X > 100)
+    //     goto InRange
+    //
+    // NotInRange:
+    // ...
+
+    BasicBlock* notInRangeBb = m_b1->GetJumpDest();
+    BasicBlock* inRangeBb;
+
+    if (notInRangeBb == m_b2->GetJumpDest())
+    {
+        // Shape 1
+        inRangeBb = m_b2->Next();
+    }
+    else if (notInRangeBb == m_b2->Next())
+    {
+        // Shape 2
+        inRangeBb = m_b2->GetJumpDest();
+    }
+    else
+    {
+        // Unknown shape
+        return false;
+    }
+
+    if (!m_b2->hasSingleStmt() || !IsConstantRangeTest(m_b2, &testVar2, &testCns2, &testCmp2))
+    {
+        // The 2nd block has to be single-statement to avoid side-effects between the two conditions.
+        return false;
+    }
+
+    if (!testVar2->OperIs(GT_LCL_VAR) || !GenTree::Compare(testVar1->gtEffectiveVal(), testVar2))
+    {
+        // Variables don't match in two conditions
+        return false;
+    }
+
+    if (m_b2->GetUniquePred(m_comp) != m_b1)
+    {
+        // Second block has more than one predecessor - we won't be able to remove it.
+        return false;
+    }
+
+    // First condition always jumps-if-true to NotInRange, so let's reverse it to be "InRange" as
+    // a canonical form.
+    testCmp1 = GenTree::ReverseRelop(testCmp1);
+
+    // For the 2nd condition it depends on the BB shape (see above).
+    testCmp2 = m_b2->HasJumpTo(notInRangeBb) ? GenTree::ReverseRelop(testCmp2) : testCmp2;
+
+    ssize_t rangeStartIncl;
+    ssize_t rangeEndIncl;
+    if (!GetClosedRange(testCmp1, testCmp2, testCns1->IconValue(), testCns2->IconValue(), &rangeStartIncl,
+                        &rangeEndIncl))
+    {
+        // The range we test via two conditions is not a closed range
+        // TODO: We should support overlapped ranges here, e.g. "X > 10 && x > 100" -> "X > 100"
+        return false;
+    }
+
+    if (!FitsIn(testVar1->TypeGet(), rangeStartIncl) || !FitsIn(testVar1->TypeGet(), rangeEndIncl))
+    {
+        return false;
+    }
+
+    genTreeOps newCmp = GT_GT;
+    m_comp->fgAddRefPred(inRangeBb, m_b1);
+    if (m_b1->HasJumpTo(m_b2->Next()))
+    {
+        // Re-direct firstBlock to jump to inRangeBb
+        newCmp = GenTree::ReverseRelop(newCmp);
+        m_b1->SetJumpDest(inRangeBb);
+    }
+
+    // Remove the 2nd condition block as we no longer need it
+    m_comp->fgRemoveRefPred(m_b2, m_b1);
+    m_comp->fgRemoveBlock(m_b2, true);
+
+    Statement* stmt = m_b1->lastStmt();
+    GenTreeOp* cmp  = stmt->GetRootNode()->gtGetOp1()->AsOp();
+    if (rangeStartIncl == 0)
+    {
+        cmp->gtOp1 = testVar1;
+    }
+    else
+    {
+        cmp->gtOp1 = m_comp->gtNewOperNode(GT_SUB, testVar1->TypeGet(), testVar1,
+                                           m_comp->gtNewIconNode(rangeStartIncl, testVar1->TypeGet()));
+    }
+    cmp->gtOp2->BashToConst(rangeEndIncl - rangeStartIncl, testVar1->TypeGet());
+    cmp->SetOper(newCmp);
+    cmp->SetUnsigned();
+
+    m_comp->gtSetStmtInfo(stmt);
+    m_comp->fgSetStmtSeq(stmt);
+    m_comp->gtUpdateStmtSideEffects(stmt);
+    return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -1504,6 +1726,12 @@ PhaseStatus Compiler::optOptimizeBools()
                 if (optBoolsDsc.optOptimizeBoolsCondBlock())
                 {
                     change = true;
+                    numCond++;
+                }
+                else if (optBoolsDsc.optOptimizeRangeTests())
+                {
+                    change = true;
+                    retry  = true;
                     numCond++;
                 }
 #ifdef TARGET_ARM64
