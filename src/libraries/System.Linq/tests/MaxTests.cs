@@ -67,7 +67,8 @@ namespace System.Linq.Tests
             T first = source.First();
             Assert.Equal(first, source.Max(Comparer<T>.Create((x, y) => x == first ? 1 : -1)));
 
-            Assert.Equal(expected + T.One, source.Max(x => x + T.One));
+            if(expected != T.MaxValue)
+                Assert.Equal(expected + T.One, source.Max(x => x + T.One));
         }
 
         [Fact]
