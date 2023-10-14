@@ -347,6 +347,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/AssertionPropagation/ArrBoundElim/**">
             <Issue>https://github.com/dotnet/runtime/issues/93441</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/ConstantFolding/value_numbering_checked_arithmetic_with_constants_ro/**">
+           <Issue>https://github.com/dotnet/runtime/issues/93506</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x64 Unix failures on CoreCLR. -->
