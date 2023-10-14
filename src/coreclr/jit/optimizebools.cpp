@@ -405,6 +405,7 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
     return false;
 }
 
+// Does block represent a conditional branch with a constant range test? E.g. "if (X > 10)"
 static bool IsConstantRangeTest(const BasicBlock* block, GenTree** lcl, GenTreeIntCon** cns, genTreeOps* cmpOp)
 {
     // NOTE: caller is expected to check that a block has multiple statements or not
@@ -412,6 +413,7 @@ static bool IsConstantRangeTest(const BasicBlock* block, GenTree** lcl, GenTreeI
     assert(block->KindIs(BBJ_COND) && rootNode->OperIs(GT_JTRUE));
     const GenTree* tree = rootNode->gtGetOp1();
 
+    // We're only interested in continuous range tests
     if (!tree->OperIs(GT_LE, GT_LT, GT_GT, GT_GE) || tree->IsUnsigned())
     {
         return false;
@@ -419,6 +421,8 @@ static bool IsConstantRangeTest(const BasicBlock* block, GenTree** lcl, GenTreeI
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
+
+    // Floating point comparisons are not supported
     if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->TypeIs(op2->TypeGet()))
     {
         if (op2->IsCnsIntOrI())
@@ -443,6 +447,8 @@ static bool IsConstantRangeTest(const BasicBlock* block, GenTree** lcl, GenTreeI
     return false;
 }
 
+// Given two ranges, return true if they intersect and form a closed range.
+// Returns its bounds in pRangeStart and pRangeEnd (both are inclusive).
 static bool GetClosedRange(
     genTreeOps cmp1, genTreeOps cmp2, ssize_t cns1, ssize_t cns2, ssize_t* pRangeStart, ssize_t* pRangeEnd)
 {
@@ -454,7 +460,6 @@ static bool GetClosedRange(
     const bool range2IsEnd   = (cmp2 == GT_LE) || (cmp2 == GT_LT);
     const bool range2IsIncl  = (cmp2 == GT_GE) || (cmp2 == GT_LE);
 
-    // Is it a closed range?
     if ((range1IsStart == range2IsStart) || (range1IsEnd == range2IsEnd))
     {
         return false;
@@ -480,11 +485,21 @@ static bool GetClosedRange(
     return true;
 }
 
+//------------------------------------------------------------------------------
+// optOptimizeRangeTests : Optimize two conditional blocks representing a constant range test.
+//    E.g. "X >= 10 && X <= 100" is optimized to "(X - 10) <= 90".
+//
+// Return Value:
+//    True if m_b1 and m_b2 are merged.
+//
 bool OptBoolsDsc::optOptimizeRangeTests()
 {
     assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
     assert(m_b1->KindIs(BBJ_COND) && m_b2->KindIs(BBJ_COND) && m_b1->NextIs(m_b2));
 
+    // Locals representing parts of the range test in both conditions
+    // if ((testVar1 testCmp1 testCns1) && (testVar2 testCmp2 testCns2))
+    //
     GenTree*       testVar1;
     GenTree*       testVar2;
     GenTreeIntCon* testCns1;
@@ -494,6 +509,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
 
     if (m_b2->isRunRarely() || !IsConstantRangeTest(m_b1, &testVar1, &testCns1, &testCmp1))
     {
+        // m_b2 is either cold or not a constant range test
         return false;
     }
 
@@ -511,39 +527,34 @@ bool OptBoolsDsc::optOptimizeRangeTests()
 
     // We're interested in just two shapes for e.g. "X > 10 && X < 100" range test:
     //
-    // Shape 1: both conditions jump to NotInRange
-    //
-    // if (X <= 10)
-    //     goto NotInRange;
-    //
-    // if (X >= 100)
-    //     goto NotInRange
-    //
-    // InRange:
-    // ...
-
-    // Shape 2: 2nd block jumps to InRange
-    //
-    // if (X <= 10)
-    //     goto NotInRange;
-    //
-    // if (X > 100)
-    //     goto InRange
-    //
-    // NotInRange:
-    // ...
-
     BasicBlock* notInRangeBb = m_b1->GetJumpDest();
     BasicBlock* inRangeBb;
-
     if (notInRangeBb == m_b2->GetJumpDest())
     {
-        // Shape 1
+        // Shape 1: both conditions jump to NotInRange
+        //
+        // if (X <= 10)
+        //     goto NotInRange;
+        //
+        // if (X >= 100)
+        //     goto NotInRange
+        //
+        // InRange:
+        // ...
         inRangeBb = m_b2->Next();
     }
     else if (notInRangeBb == m_b2->Next())
     {
-        // Shape 2
+        // Shape 2: 2nd block jumps to InRange
+        //
+        // if (X <= 10)
+        //     goto NotInRange;
+        //
+        // if (X > 100)
+        //     goto InRange
+        //
+        // NotInRange:
+        // ...
         inRangeBb = m_b2->GetJumpDest();
     }
     else
@@ -552,21 +563,35 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    if (!m_b2->hasSingleStmt() || !IsConstantRangeTest(m_b2, &testVar2, &testCns2, &testCmp2))
+    if (!m_b2->hasSingleStmt() || !IsConstantRangeTest(m_b2, &testVar2, &testCns2, &testCmp2) ||
+        m_b2->GetUniquePred(m_comp) != m_b1)
     {
         // The 2nd block has to be single-statement to avoid side-effects between the two conditions.
+        // Also, make sure m_b2 has no other predecessors.
         return false;
     }
 
     if (!testVar2->OperIs(GT_LCL_VAR) || !GenTree::Compare(testVar1->gtEffectiveVal(), testVar2))
     {
         // Variables don't match in two conditions
-        return false;
-    }
-
-    if (m_b2->GetUniquePred(m_comp) != m_b1)
-    {
-        // Second block has more than one predecessor - we won't be able to remove it.
+        // We use gtEffectiveVal() for the first block's variable to ignore COMMAs, e.g.
+        //
+        // m_b1:
+        //   *  JTRUE     void
+        //   \--*  LT        int
+        //      +--*  COMMA     int
+        //      |  +--*  STORE_LCL_VAR int    V03 cse0
+        //      |  |  \--*  CAST      int <- ushort <- int
+        //      |  |     \--*  LCL_VAR   int    V01 arg1
+        //      |  \--*  LCL_VAR   int    V03 cse0
+        //      \--*  CNS_INT   int    97
+        //
+        // m_b2:
+        //   *  JTRUE     void
+        //   \--*  GT        int
+        //      +--*  LCL_VAR   int    V03 cse0
+        //      \--*  CNS_INT   int    122
+        //
         return false;
     }
 
@@ -577,18 +602,18 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     // For the 2nd condition it depends on the BB shape (see above).
     testCmp2 = m_b2->HasJumpTo(notInRangeBb) ? GenTree::ReverseRelop(testCmp2) : testCmp2;
 
-    ssize_t rangeStartIncl;
-    ssize_t rangeEndIncl;
-    if (!GetClosedRange(testCmp1, testCmp2, testCns1->IconValue(), testCns2->IconValue(), &rangeStartIncl,
-                        &rangeEndIncl))
+    ssize_t rangeStart;
+    ssize_t rangeEnd;
+    if (!GetClosedRange(testCmp1, testCmp2, testCns1->IconValue(), testCns2->IconValue(), &rangeStart, &rangeEnd))
     {
         // The range we test via two conditions is not a closed range
         // TODO: We should support overlapped ranges here, e.g. "X > 10 && x > 100" -> "X > 100"
         return false;
     }
 
-    if (!FitsIn(testVar1->TypeGet(), rangeStartIncl) || !FitsIn(testVar1->TypeGet(), rangeEndIncl))
+    if (!FitsIn(testVar1->TypeGet(), rangeStart) || !FitsIn(testVar1->TypeGet(), rangeEnd))
     {
+        // Make sure constants fit into the types we work with
         return false;
     }
 
@@ -607,18 +632,23 @@ bool OptBoolsDsc::optOptimizeRangeTests()
 
     Statement* stmt = m_b1->lastStmt();
     GenTreeOp* cmp  = stmt->GetRootNode()->gtGetOp1()->AsOp();
-    if (rangeStartIncl == 0)
+    if (rangeStart == 0)
     {
+        // We don't need to subtract anything, it's already 0-based
         cmp->gtOp1 = testVar1;
     }
     else
     {
+        // We need to subtract the rangeStartIncl from the variable to make the range start from 0
         cmp->gtOp1 = m_comp->gtNewOperNode(GT_SUB, testVar1->TypeGet(), testVar1,
-                                           m_comp->gtNewIconNode(rangeStartIncl, testVar1->TypeGet()));
+                                           m_comp->gtNewIconNode(rangeStart, testVar1->TypeGet()));
     }
-    cmp->gtOp2->BashToConst(rangeEndIncl - rangeStartIncl, testVar1->TypeGet());
+    cmp->gtOp2->BashToConst(rangeEnd - rangeStart, testVar1->TypeGet());
     cmp->SetOper(newCmp);
     cmp->SetUnsigned();
+
+    JITDUMP("Optimizing two conditional blocks representing a constant range test:\n")
+    DISPTREE(cmp)
 
     m_comp->gtSetStmtInfo(stmt);
     m_comp->fgSetStmtSeq(stmt);
