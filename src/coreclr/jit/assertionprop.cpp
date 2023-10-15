@@ -4454,14 +4454,14 @@ GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, Gen
 //
 bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir)
 {
-    assert(indir->OperIsIndir() || indir->OperIs(GT_ARR_LENGTH));
+    assert(indir->OperIsIndir() || indir->OperIsArrLength());
 
     if (!(indir->gtFlags & GTF_EXCEPT))
     {
         return false;
     }
 
-    GenTree* addr = indir->OperIs(GT_ARR_LENGTH) ? indir->AsArrLen()->ArrRef() : indir->AsIndir()->Addr();
+    GenTree* addr = indir->OperIsArrLength() ? indir->AsArrCommon()->ArrRef() : indir->AsIndir()->Addr();
 #ifdef DEBUG
     bool           vnBased = false;
     AssertionIndex index   = NO_ASSERTION_INDEX;
@@ -4478,7 +4478,7 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 #endif
         indir->gtFlags &= ~GTF_EXCEPT;
         indir->gtFlags |= GTF_IND_NONFAULTING;
-        if (!indir->OperIs(GT_ARR_LENGTH))
+        if (!indir->OperIsArrLength())
         {
             // Set this flag to prevent reordering
             indir->SetHasOrderingSideEffect();
@@ -4793,7 +4793,6 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_STOREIND:
         case GT_NULLCHECK:
         case GT_STORE_DYN_BLK:
-        case GT_ARR_LENGTH:
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_BOUNDS_CHECK:
@@ -5860,7 +5859,7 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
     {
         newTree = optNonNullAssertionProp_Call(empty, tree->AsCall());
     }
-    else if (tree->OperIsIndir())
+    else if (tree->OperIsIndir() || tree->OperIsArrLength())
     {
         newTree = optAssertionProp_Ind(empty, tree, stmt);
     }
