@@ -407,9 +407,18 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 
 // Given two ranges, return true if they intersect and form a closed range.
 // Returns its bounds in pRangeStart and pRangeEnd (both are inclusive).
-static bool GetClosedRange(
-    genTreeOps cmp1, genTreeOps cmp2, ssize_t cns1, ssize_t cns2, ssize_t* pRangeStart, ssize_t* pRangeEnd)
+static bool GetIntersection(var_types  type,
+                            genTreeOps cmp1,
+                            genTreeOps cmp2,
+                            ssize_t    cns1,
+                            ssize_t    cns2,
+                            ssize_t*   pRangeStart,
+                            ssize_t*   pRangeEnd)
 {
+    // We have two conditionals:
+    // "X [>,>=,<,<=] cns1" and "X [>,>=,<,<=] cns2" (X is always LHS)
+    // Calculate the intersection of the two ranges, if any.
+    //
     const bool range1IsStart = (cmp1 == GT_GE) || (cmp1 == GT_GT);
     const bool range1IsEnd   = (cmp1 == GT_LE) || (cmp1 == GT_LT);
     const bool range1IsIncl  = (cmp1 == GT_GE) || (cmp1 == GT_LE);
@@ -420,6 +429,7 @@ static bool GetClosedRange(
 
     if ((range1IsStart == range2IsStart) || (range1IsEnd == range2IsEnd))
     {
+        // Ranges have the same direction (we don't yet support that yet).
         return false;
     }
 
@@ -440,12 +450,19 @@ static bool GetClosedRange(
     if ((*pRangeStart >= *pRangeEnd) || (*pRangeStart < 0) || (*pRangeEnd < 0))
     {
         // TODO: If ranges don't intersect we might be able to fold the condition to true/false.
+        // TODO: support negative ranges.
         return false;
     }
+
+    if (!FitsIn(type, *pRangeStart) || !FitsIn(type, *pRangeEnd))
+    {
+        return false;
+    }
+
     return true;
 }
 
-// Given a compare node, return true if it is a constant range test.
+// Given a compare node, return true if it is a constant range test, e.g. "X > 10"
 bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cnsNode, genTreeOps* cmp)
 {
     if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT) && !tree->IsUnsigned())
@@ -489,6 +506,7 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
 
     // Make sure both conditions are constant range checks, e.g. "X > CNS"
     // TODO: support more cases, e.g. "X >= 0 && X < array.Length" -> "(uint)X < array.Length"
+    // Basically, we can use GenTree::IsNeverNegative() for it.
     if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
         !IsConstantRangeTest(cmp2, &var2Node, &cns2Node, &cmp2Op))
     {
@@ -521,24 +539,20 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
         //      +--*  LCL_VAR   int    V03 cse0
         //      \--*  CNS_INT   int    122
         //
+        // For the m_b2 we require the variable to be just a local with no side-effects (hence, no statements)
         return false;
     }
 
     ssize_t rangeStart;
     ssize_t rangeEnd;
-    if (!GetClosedRange(cmp1Op, cmp2Op, cns1Node->IconValue(), cns2Node->IconValue(), &rangeStart, &rangeEnd))
+    if (!GetIntersection(var1Node->TypeGet(), cmp1Op, cmp2Op, cns1Node->IconValue(), cns2Node->IconValue(), &rangeStart,
+                         &rangeEnd))
     {
         // The range we test via two conditions is not a closed range
         // TODO: We should support overlapped ranges here, e.g. "X > 10 && x > 100" -> "X > 100"
         return false;
     }
     assert(rangeStart < rangeEnd);
-
-    if (!FitsIn(var1Node->TypeGet(), rangeStart) || !FitsIn(var1Node->TypeGet(), rangeEnd))
-    {
-        // Make sure constants fit into the types we work with
-        return false;
-    }
 
     if (rangeStart == 0)
     {
@@ -566,7 +580,8 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
 //
 bool OptBoolsDsc::optOptimizeRangeTests()
 {
-    assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
+    // At this point we have two consecutive conditional blocks (BBJ_COND): m_b1 and m_b2
+    assert((m_b1 != nullptr) && (m_b2 != nullptr) && (m_b3 == nullptr));
     assert(m_b1->KindIs(BBJ_COND) && m_b2->KindIs(BBJ_COND) && m_b1->NextIs(m_b2));
 
     if (m_b2->isRunRarely())
@@ -626,13 +641,14 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    if (!m_b2->hasSingleStmt() || m_b2->GetUniquePred(m_comp) != m_b1)
+    if (!m_b2->hasSingleStmt() || (m_b2->GetUniquePred(m_comp) != m_b1))
     {
         // The 2nd block has to be single-statement to avoid side-effects between the two conditions.
         // Also, make sure m_b2 has no other predecessors.
         return false;
     }
 
+    // m_b1 and m_b2 are both BBJ_COND blocks with GT_JTRUE(cmp) root nodes
     GenTreeOp* cmp1 = m_b1->lastStmt()->GetRootNode()->gtGetOp1()->AsOp();
     GenTreeOp* cmp2 = m_b2->lastStmt()->GetRootNode()->gtGetOp1()->AsOp();
 
@@ -648,7 +664,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     }
 
     m_comp->fgAddRefPred(inRangeBb, m_b1);
-    if (m_b1->HasJumpTo(m_b2->Next()))
+    if (!cmp2IsReversed)
     {
         // Re-direct firstBlock to jump to inRangeBb
         m_b1->SetJumpDest(inRangeBb);
