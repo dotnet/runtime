@@ -14,19 +14,6 @@ namespace System.Reflection.Runtime.TypeInfos
     internal abstract class RuntimeTypeDefinitionTypeInfo : RuntimeTypeInfo
     {
         public sealed override bool IsTypeDefinition => true;
-        public abstract override bool IsGenericTypeDefinition { get; }
-        public sealed override bool HasElementType => false;
-        public sealed override bool IsArray => false;
-        public sealed override bool IsSZArray => false;
-        public sealed override bool IsVariableBoundArray => false;
-        public sealed override bool IsByRef => false;
-        public sealed override bool IsPointer => false;
-        public sealed override bool IsConstructedGenericType => false;
-        public sealed override bool IsGenericParameter => false;
-        public sealed override bool IsGenericTypeParameter => false;
-        public sealed override bool IsGenericMethodParameter => false;
-
-        public abstract override bool IsByRefLike { get; }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {

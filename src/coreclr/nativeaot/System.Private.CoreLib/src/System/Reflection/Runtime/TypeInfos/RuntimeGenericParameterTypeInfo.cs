@@ -22,19 +22,7 @@ namespace System.Reflection.Runtime.TypeInfos
             _position = position;
         }
 
-        public sealed override bool IsTypeDefinition => false;
-        public sealed override bool IsGenericTypeDefinition => false;
-        public sealed override bool HasElementType => false;
-        public sealed override bool IsArray => false;
-        public sealed override bool IsSZArray => false;
-        public sealed override bool IsVariableBoundArray => false;
-        public sealed override bool IsByRef => false;
-        public sealed override bool IsPointer => false;
-        public sealed override bool IsConstructedGenericType => false;
         public sealed override bool IsGenericParameter => true;
-        public abstract override bool IsGenericTypeParameter { get; }
-        public abstract override bool IsGenericMethodParameter { get; }
-        public sealed override bool IsByRefLike => false;
 
         public sealed override Assembly Assembly
         {

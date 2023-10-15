@@ -40,19 +40,19 @@ namespace System.Reflection.Runtime.TypeInfos
         {
         }
 
-        public abstract bool IsTypeDefinition { get; }
-        public abstract bool IsGenericTypeDefinition { get; }
-        public abstract bool HasElementType { get; }
-        public abstract bool IsArray { get; }
-        public abstract bool IsSZArray { get; }
-        public abstract bool IsVariableBoundArray { get; }
-        public abstract bool IsByRef { get; }
-        public abstract bool IsPointer { get; }
-        public abstract bool IsGenericParameter { get; }
-        public abstract bool IsGenericTypeParameter { get; }
-        public abstract bool IsGenericMethodParameter { get; }
-        public abstract bool IsConstructedGenericType { get; }
-        public abstract bool IsByRefLike { get; }
+        public virtual bool IsTypeDefinition => false;
+        public virtual bool IsGenericTypeDefinition => false;
+        public virtual bool HasElementType => false;
+        public virtual bool IsArray => false;
+        public virtual bool IsSZArray => false;
+        public virtual bool IsVariableBoundArray => false;
+        public virtual bool IsByRef => false;
+        public virtual bool IsPointer => false;
+        public virtual bool IsGenericParameter => false;
+        public virtual bool IsGenericTypeParameter => false;
+        public virtual bool IsGenericMethodParameter => false;
+        public virtual bool IsConstructedGenericType => false;
+        public virtual bool IsByRefLike => false;
 
         public abstract string Name { get; }
 
@@ -171,7 +171,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public MemberInfo[] GetDefaultMembers()
         {
             string? defaultMemberName = GetDefaultMemberName();
-            return defaultMemberName != null ? this.ToType().GetMember(defaultMemberName) : Array.Empty<MemberInfo>();
+            return defaultMemberName != null ? GetMember(defaultMemberName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public) : Array.Empty<MemberInfo>();
         }
 
         public InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)

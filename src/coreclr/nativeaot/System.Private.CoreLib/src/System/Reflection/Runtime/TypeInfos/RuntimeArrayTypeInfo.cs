@@ -32,11 +32,9 @@ namespace System.Reflection.Runtime.TypeInfos
             return _rank;
         }
 
-        public sealed override bool IsArray => true;
-        public sealed override bool IsSZArray => !_multiDim;
-        public sealed override bool IsVariableBoundArray => _multiDim;
-        public sealed override bool IsByRef => false;
-        public sealed override bool IsPointer => false;
+        public override bool IsArray => true;
+        public override bool IsSZArray => !_multiDim;
+        public override bool IsVariableBoundArray => _multiDim;
 
 #pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
         public sealed override TypeAttributes Attributes =>

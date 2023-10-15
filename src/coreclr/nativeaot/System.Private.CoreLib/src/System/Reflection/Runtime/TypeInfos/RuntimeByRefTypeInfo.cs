@@ -19,13 +19,9 @@ namespace System.Reflection.Runtime.TypeInfos
         {
         }
 
-        public sealed override bool IsArray => false;
-        public sealed override bool IsSZArray => false;
-        public sealed override bool IsVariableBoundArray => false;
-        public sealed override bool IsByRef => true;
-        public sealed override bool IsPointer => false;
+        public override bool IsByRef => true;
 
-        protected sealed override string Suffix
+        protected override string Suffix
         {
             get
             {

@@ -250,10 +250,6 @@ namespace System
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
             => GetRuntimeTypeInfo().GetFields(bindingAttr);
 
-        [DynamicallyAccessedMembers(GetAllMembers)]
-        public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
-            => GetRuntimeTypeInfo().GetMembers(bindingAttr);
-
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
             => GetRuntimeTypeInfo().GetMethodImpl(name, RuntimeTypeInfo.GenericParameterCountAny, bindingAttr, binder, callConvention, types, modifiers);
@@ -281,6 +277,21 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
             => GetRuntimeTypeInfo().GetProperties(bindingAttr);
+
+        [DynamicallyAccessedMembers(GetAllMembers)]
+        public override MemberInfo[] GetMember(string name, BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetMember(name, bindingAttr);
+
+        [DynamicallyAccessedMembers(GetAllMembers)]
+        public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetMember(name, type, bindingAttr);
+
+        [DynamicallyAccessedMembers(GetAllMembers)]
+        public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
+            => GetRuntimeTypeInfo().GetMembers(bindingAttr);
+
+        public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
+            => GetRuntimeTypeInfo().GetMemberWithSameMetadataDefinitionAs(member);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)

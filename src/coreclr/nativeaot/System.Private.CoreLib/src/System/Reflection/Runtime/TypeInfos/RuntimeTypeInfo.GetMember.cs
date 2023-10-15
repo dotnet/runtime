@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Reflection.Runtime.BindingFlagSupport;
+using System.Reflection.Runtime.General;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -113,12 +114,10 @@ namespace System.Reflection.Runtime.TypeInfos
             return null;
         }
 
-#pragma warning disable CA1822
         public MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {
             ArgumentNullException.ThrowIfNull(member);
 
-#if false // TODO
             // Need to walk up the inheritance chain if member is not found
             // Leverage the existing cache mechanism on per type to store members
             RuntimeTypeInfo? runtimeType = this;
@@ -127,12 +126,11 @@ namespace System.Reflection.Runtime.TypeInfos
                 MemberInfo result = runtimeType.GetDeclaredMemberWithSameMetadataDefinitionAs(member);
                 if (result != null)
                     return result;
-                runtimeType = runtimeType.BaseType as RuntimeTypeInfo;
+                runtimeType = runtimeType.BaseType?.ToRuntimeTypeInfo();
             }
-#endif
+
             throw new ArgumentException(SR.Format(SR.Arg_MemberInfoNotFound, member.Name), nameof(member));
         }
-#pragma warning restore CS1822
 
         private MemberInfo GetDeclaredMemberWithSameMetadataDefinitionAs(MemberInfo member)
         {

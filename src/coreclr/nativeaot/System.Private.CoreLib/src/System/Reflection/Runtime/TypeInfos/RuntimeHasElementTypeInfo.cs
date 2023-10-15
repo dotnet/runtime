@@ -23,19 +23,7 @@ namespace System.Reflection.Runtime.TypeInfos
             _key = key;
         }
 
-        public sealed override bool IsTypeDefinition => false;
-        public sealed override bool IsGenericTypeDefinition => false;
         public sealed override bool HasElementType => true;
-        public abstract override bool IsArray { get; }
-        public abstract override bool IsSZArray { get; }
-        public abstract override bool IsVariableBoundArray { get; }
-        public abstract override bool IsByRef { get; }
-        public abstract override bool IsPointer { get; }
-        public sealed override bool IsConstructedGenericType => false;
-        public sealed override bool IsGenericParameter => false;
-        public sealed override bool IsGenericTypeParameter => false;
-        public sealed override bool IsGenericMethodParameter => false;
-        public sealed override bool IsByRefLike => false;
 
         //
         // Implements IKeyedItem.PrepareKey.
