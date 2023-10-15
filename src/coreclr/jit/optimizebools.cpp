@@ -415,47 +415,55 @@ static bool GetIntersection(var_types  type,
                             ssize_t*   pRangeStart,
                             ssize_t*   pRangeEnd)
 {
-    // We have two conditionals:
-    // "X [>,>=,<,<=] cns1" and "X [>,>=,<,<=] cns2" (X is always LHS)
-    // Calculate the intersection of the two ranges, if any.
-    //
-    const bool range1IsStart = (cmp1 == GT_GE) || (cmp1 == GT_GT);
-    const bool range1IsEnd   = (cmp1 == GT_LE) || (cmp1 == GT_LT);
-    const bool range1IsIncl  = (cmp1 == GT_GE) || (cmp1 == GT_LE);
+    if ((cns1 < 0) || (cns2 < 0))
+    {
+        // We don't yet support negative ranges.
+        return false;
+    }
 
-    const bool range2IsStart = (cmp2 == GT_GE) || (cmp2 == GT_GT);
-    const bool range2IsEnd   = (cmp2 == GT_LE) || (cmp2 == GT_LT);
-    const bool range2IsIncl  = (cmp2 == GT_GE) || (cmp2 == GT_LE);
+    // Convert to a canonical form with GT_GE or GT_LE (inclusive).
+    auto normalize = [](genTreeOps* cmp, ssize_t* cns) {
+        if (*cmp == GT_GT)
+        {
+            // "X > cns" -> "X >= cns + 1"
+            *cns = *cns + 1;
+            *cmp = GT_GE;
+        }
+        if (*cmp == GT_LT)
+        {
+            // "X < cns" -> "X <= cns - 1"
+            *cns = *cns - 1;
+            *cmp = GT_LE;
+        }
+        // whether these overflow or not is checked below.
+    };
+    normalize(&cmp1, &cns1);
+    normalize(&cmp2, &cns2);
 
-    if ((range1IsStart == range2IsStart) || (range1IsEnd == range2IsEnd))
+    if (cmp1 == cmp2)
     {
         // Ranges have the same direction (we don't yet support that yet).
         return false;
     }
 
-    // Report the intersection of the two ranges, add +/- 1 to make the bounds inclusive.
-    if (range1IsStart)
+    if (cmp1 == GT_GE)
     {
-        assert(range2IsEnd);
-        *pRangeStart = range1IsIncl ? cns1 : cns1 + 1;
-        *pRangeEnd   = range2IsIncl ? cns2 : cns2 - 1;
+        *pRangeStart = cns1;
+        *pRangeEnd   = cns2;
     }
     else
     {
-        assert(range1IsEnd && range2IsStart);
-        *pRangeStart = range2IsIncl ? cns2 : cns2 + 1;
-        *pRangeEnd   = range1IsIncl ? cns1 : cns1 - 1;
+        assert(cmp1 == GT_LE);
+        *pRangeStart = cns2;
+        *pRangeEnd   = cns1;
     }
 
-    if ((*pRangeStart >= *pRangeEnd) || (*pRangeStart < 0) || (*pRangeEnd < 0))
+    if ((*pRangeStart >= *pRangeEnd) || (*pRangeStart < 0) || (*pRangeEnd < 0) || !FitsIn(type, *pRangeStart) ||
+        !FitsIn(type, *pRangeEnd))
     {
         // TODO: If ranges don't intersect we might be able to fold the condition to true/false.
-        // TODO: support negative ranges.
-        return false;
-    }
-
-    if (!FitsIn(type, *pRangeStart) || !FitsIn(type, *pRangeEnd))
-    {
+        // Also, check again if any of the ranges are negative (in case of overflow after normalization)
+        // and fits into the given type.
         return false;
     }
 
