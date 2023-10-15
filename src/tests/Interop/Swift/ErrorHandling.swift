@@ -1,9 +1,22 @@
-enum MyError: Error {
+import Foundation
+
+public enum MyError: Error {
     case runtimeError(String)
+    case runtimeErrorTest(String)
 }
 
-public func someFuncThatMightThrow () throws -> Int {
-    print("Hello from Swift");
-    throw MyError.runtimeError ("Catch me if you can");
-    return 42;
+public func someFuncThatMightThrow (dummy: UnsafeRawPointer, willThrow: Bool) throws -> Int {
+    if willThrow { throw MyError.runtimeError ("Catch me if you can!"); }
+    else { return 42; }
+}
+
+public func handleError(from pointer: UnsafePointer<MyError>) {
+    let errorInstance = pointer.pointee
+    
+    switch errorInstance {
+    case .runtimeError(let message):
+        print (message);
+    default:
+        print ("Unhandled error!")
+    }
 }

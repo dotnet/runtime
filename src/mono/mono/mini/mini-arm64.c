@@ -2770,6 +2770,17 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		ins->inst_offset = offset;
 		offset += size;
 	}
+	ins = cfg->arch.interop_var;
+	if (ins) {
+		size = 8;
+		align = 8;
+		offset += align - 1;
+		offset &= ~(align - 1);
+		ins->opcode = OP_REGOFFSET;
+		ins->inst_basereg = cfg->frame_reg;
+		ins->inst_offset = offset;
+		offset += size;
+	}
 
 	/* Locals */
 	offsets = mono_allocate_stack_slots (cfg, FALSE, &locals_stack_size, &locals_stack_align);
@@ -3079,10 +3090,10 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		}
 		case ArgSwiftError: {
-			// Create an extra variable and save call->args[0]->dreg
+			// Create an extra variable and save arg
 			MonoInst *ins;
 			ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-			ins->backend.data = GUINT_TO_POINTER (call->args[0]->dreg);
+			ins->flags |= MONO_INST_VOLATILE;
 			cfg->arch.interop_var = ins;
 			break;
 		}
@@ -3604,8 +3615,16 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 
 	// Move value from R21 to the arg dreg
 	if (call->signature->call_convention == MONO_CALL_SWIFTCALL) {
-		gint32 error_dreg = GPOINTER_TO_INT32 (cfg->arch.interop_var->backend.data);
-		arm_movx (code, error_dreg, ARMREG_R21);
+		// code = emit_ldrx (code, ARMREG_IP0, cfg->args [0]->inst_basereg, cfg->args [0]->inst_offset);
+		// arm_strx (code, ARMREG_R21, ARMREG_IP0, 0);
+
+		code = emit_ldrx (code, ARMREG_IP0, cfg->arch.interop_var->inst_basereg, cfg->arch.interop_var->inst_offset);
+		arm_ldrx (code, ARMREG_IP0, ARMREG_IP0, 0);
+		// Don't change R21 register
+		arm_movx (code, ARMREG_IP1, ARMREG_R21);
+		// Fixed offset
+		arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, 0x48);
+		arm_strx (code, ARMREG_IP1, ARMREG_IP0, 0);
 	}
 
 	return code;
@@ -6073,6 +6092,17 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			code = emit_imm64 (code, ARMREG_IP0, (guint64)bp_trampoline);
 			code = emit_strx (code, ARMREG_IP0, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
 		}
+	}
+
+	/* Initialize interop_var */
+	if (cfg->arch.interop_var) {
+		MonoInst *ins = cfg->arch.interop_var;
+		g_assert (ins->opcode == OP_REGOFFSET);
+
+		// Reset R21 register
+		code = emit_imm (code, ARMREG_R21, 0);
+		code = emit_addx_imm (code, ARMREG_IP0, cfg->args[0]->inst_basereg, cfg->args[0]->inst_offset);
+		code = emit_strx (code, ARMREG_IP0, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset));
 	}
 
 	max_offset = 0;
