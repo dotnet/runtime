@@ -894,7 +894,8 @@ public class ComVisibleServer
         Assert.Equal(Helpers.E_NOINTERFACE, CCWTest_NestedInterfaceGenericVisibleTrue((object)nestedGenericServer, out fooSuccessVal));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

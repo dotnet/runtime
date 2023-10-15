@@ -265,7 +265,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
         }
 
         // The first block has an implicit ref count which we must
-        // remove. Note the ref count could be greater that one, if
+        // remove. Note the ref count could be greater than one, if
         // the first block is not scratch and is targeted by a
         // branch.
         assert(fgFirstBB->bbRefs >= 1);
@@ -379,6 +379,55 @@ void Compiler::fgRemoveReturnBlock(BasicBlock* block)
     }
 }
 
+//------------------------------------------------------------------------
+// fgConvertBBToThrowBB: Change a given block to a throw block.
+//
+// Arguments:
+//   block - block in question
+//
+void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
+{
+    JITDUMP("Converting " FMT_BB " to BBJ_THROW\n", block->bbNum);
+    assert(fgPredsComputed);
+
+    // Ordering of the following operations matters.
+    // First, note if we are looking at the first block of a call always pair.
+    const bool isCallAlwaysPair = block->isBBCallAlwaysPair();
+
+    // Scrub this block from the pred lists of any successors
+    fgRemoveBlockAsPred(block);
+
+    // Update jump kind after the scrub.
+    block->SetJumpKind(BBJ_THROW DEBUG_ARG(this));
+
+    // Any block with a throw is rare
+    block->bbSetRunRarely();
+
+    // If we've converted a BBJ_CALLFINALLY block to a BBJ_THROW block,
+    // then mark the subsequent BBJ_ALWAYS block as unreferenced.
+    //
+    // Must do this after we update bbJumpKind of block.
+    if (isCallAlwaysPair)
+    {
+        BasicBlock* leaveBlk = block->Next();
+        noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
+
+        leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
+
+        // leaveBlk is now unreachable, so scrub the pred lists.
+        for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
+        {
+            fgRemoveEhfSuccessor(leavePredBlock, leaveBlk);
+        }
+        assert(leaveBlk->bbRefs == 0);
+        assert(leaveBlk->bbPreds == nullptr);
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        fgClearFinallyTargetBit(leaveBlk->GetJumpDest());
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    }
+}
+
 /*****************************************************************************
  * fgChangeSwitchBlock:
  *
@@ -436,7 +485,7 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
 }
 
 //------------------------------------------------------------------------
-// fgReplaceSwitchJumpTarget: update BBJ_SWITCH block  so that all control
+// fgReplaceSwitchJumpTarget: update BBJ_SWITCH block so that all control
 //   that previously flowed to oldTarget now flows to newTarget.
 //
 // Arguments:
@@ -446,8 +495,6 @@ void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSw
 //
 // Notes:
 //   Updates the jump table and the cached unique target set (if any).
-//   Can be called before or after pred lists are built.
-//   If pred lists are built, updates pred lists.
 //
 void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* newTarget, BasicBlock* oldTarget)
 {
@@ -459,7 +506,6 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 
     // For the jump targets values that match oldTarget of our BBJ_SWITCH
     // replace predecessor 'blockSwitch' with 'newTarget'
-    //
 
     unsigned     jumpCnt = blockSwitch->GetJumpSwt()->bbsCount;
     BasicBlock** jumpTab = blockSwitch->GetJumpSwt()->bbsDstTab;
@@ -514,6 +560,151 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 }
 
 //------------------------------------------------------------------------
+// fgChangeEhfBlock: We have a BBJ_EHFINALLYRET block at 'oldBlock' and we want to move this
+// to 'newBlock'. All of the 'oldBlock' successors need to have their predecessor lists updated
+// by removing edges to 'oldBlock' and adding edges to 'newBlock'.
+//
+// Arguments:
+//   oldBlock - previous BBJ_EHFINALLYRET block
+//   newBlock - block that is replacing 'oldBlock'
+//
+void Compiler::fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock)
+{
+    assert(oldBlock != nullptr);
+    assert(newBlock != nullptr);
+    assert(oldBlock->KindIs(BBJ_EHFINALLYRET));
+    assert(fgPredsComputed);
+
+    for (BasicBlock* const succ : oldBlock->EHFinallyRetSuccs())
+    {
+        assert(succ != nullptr);
+
+        // Remove the old edge [oldBlock => succ]
+        //
+        assert(succ->countOfInEdges() > 0);
+        fgRemoveRefPred(succ, oldBlock);
+
+        // Create the new edge [newBlock => succ]
+        //
+        fgAddRefPred(succ, newBlock);
+    }
+}
+
+//------------------------------------------------------------------------
+// fgReplaceEhfSuccessor: update BBJ_EHFINALLYRET block so that all control
+//   that previously flowed to oldSucc now flows to newSucc. It is assumed
+//   that oldSucc is currently a successor of `block`.
+//
+// Arguments:
+//   block   - BBJ_EHFINALLYRET block
+//   oldSucc - old successor
+//   newSucc - new successor
+//
+void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc)
+{
+    assert(block != nullptr);
+    assert(oldSucc != nullptr);
+    assert(newSucc != nullptr);
+    assert(block->KindIs(BBJ_EHFINALLYRET));
+    assert(fgPredsComputed);
+
+    BBehfDesc* const   ehfDesc   = block->GetJumpEhf();
+    const unsigned     succCount = ehfDesc->bbeCount;
+    BasicBlock** const succTab   = ehfDesc->bbeSuccs;
+
+    // Walk the successor table looking for blocks to update the preds for
+    bool      found   = false;
+    FlowEdge* newEdge = nullptr;
+    for (unsigned i = 0; i < succCount; i++)
+    {
+        if (succTab[i] != oldSucc)
+        {
+            continue;
+        }
+
+        found = true;
+
+        // Change the succTab entry to branch to the new location
+        //
+        succTab[i] = newSucc;
+
+        if (newEdge == nullptr)
+        {
+            // Remove the old edge [block => oldSucc]
+            //
+            fgRemoveAllRefPreds(oldSucc, block);
+
+            // Create the new edge [block => newSucc]
+            //
+            newEdge = fgAddRefPred(newSucc, block);
+        }
+        else
+        {
+            newSucc->bbRefs++;
+            newEdge->incrementDupCount();
+        }
+    }
+    noway_assert(found && "Did not find oldSucc in succTab[]");
+}
+
+//------------------------------------------------------------------------
+// fgRemoveEhfSuccessor: update BBJ_EHFINALLYRET block to remove `succ` as a successor.
+// Updates the predecessor list of `succ`.
+//
+// Arguments:
+//   block   - BBJ_EHFINALLYRET block
+//   succ    - successor
+//
+void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ)
+{
+    assert(block != nullptr);
+    assert(succ != nullptr);
+    assert(fgPredsComputed);
+    assert(block->KindIs(BBJ_EHFINALLYRET));
+
+    // Don't `assert(succ->isBBCallAlwaysPairTail())`; we've already unlinked the CALLFINALLY
+    assert(succ->KindIs(BBJ_ALWAYS));
+
+    fgRemoveRefPred(succ, block);
+
+    BBehfDesc* const ehfDesc   = block->GetJumpEhf();
+    unsigned         succCount = ehfDesc->bbeCount;
+    BasicBlock**     succTab   = ehfDesc->bbeSuccs;
+    bool             found     = false;
+
+    // Walk the successor table looking for the specified successor block.
+    for (unsigned i = 0; i < succCount; i++)
+    {
+        if (succTab[i] == succ)
+        {
+            // If it's not the last one, move everything after in the table down one slot.
+            if (i + 1 < succCount)
+            {
+                memmove_s(&succTab[i], (succCount - i) * sizeof(BasicBlock*), &succTab[i + 1],
+                          (succCount - i - 1) * sizeof(BasicBlock*));
+            }
+
+            --succCount;
+
+            found = true;
+
+#ifdef DEBUG
+            // We only expect to see a successor once in the table.
+            for (; i < succCount; i++)
+            {
+                assert(succTab[i] != succ);
+            }
+#endif // DEBUG
+
+            break;
+        }
+    }
+    assert(found);
+
+    ehfDesc->bbeCount = succCount;
+}
+
+//------------------------------------------------------------------------
 // Compiler::fgReplaceJumpTarget: For a given block, replace the target 'oldTarget' with 'newTarget'.
 //
 // Arguments:
@@ -526,7 +717,7 @@ void Compiler::fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* ne
 //    We assert for other jump kinds.
 // 2. All branch targets found are updated. If there are multiple ways for a block
 //    to reach 'oldTarget' (e.g., multiple arms of a switch), all of them are changed.
-// 3. The predecessor lists are updated, if they've been built.
+// 3. The predecessor lists are updated.
 // 4. If any switch table entry was updated, the switch table "unique successor" cache is invalidated.
 //
 void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, BasicBlock* oldTarget)
@@ -3723,10 +3914,6 @@ void Compiler::fgFindBasicBlocks()
             }
         }
 
-        /* Mark the initial block and last blocks in the 'try' region */
-
-        tryBegBB->bbFlags |= BBF_TRY_BEG;
-
         /*  Prevent future optimizations of removing the first block   */
         /*  of a TRY block and the first block of an exception handler */
 
@@ -3976,7 +4163,7 @@ void Compiler::fgCheckForLoopsInHandlers()
         {
             if (blk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
             {
-                JITDUMP("\nHandler block " FMT_BB "is backward jump target; can't have patchpoints in this method\n",
+                JITDUMP("\nHandler block " FMT_BB " is backward jump target; can't have patchpoints in this method\n",
                         blk->bbNum);
                 compHasBackwardJumpInHandler = true;
                 break;
@@ -4596,9 +4783,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->bbFlags = curr->bbFlags;
 
     // Remove flags that the new block can't have.
-    newBlock->bbFlags &=
-        ~(BBF_TRY_BEG | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER |
-          BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
+    newBlock->bbFlags &= ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER |
+                           BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then
@@ -5087,8 +5273,18 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
 
             leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
-            leaveBlk->bbRefs  = 0;
-            leaveBlk->bbPreds = nullptr;
+
+            // The BBJ_ALWAYS normally has a reference count of 1 and a single predecessor. However,
+            // it might not have a predecessor on ARM, where we don't create BBF_RETLESS_CALL BBJ_CALLFINALLY.
+            // And on other platforms, we might not have marked it as BBF_RETLESS_CALL even though it is.
+            // (Some early flow optimization should probably aggressively mark these as BBF_RETLESS_CALL
+            // and not depend on fgRemoveBlock() to do that.)
+            for (BasicBlock* const leavePredBlock : leaveBlk->PredBlocks())
+            {
+                fgRemoveEhfSuccessor(leavePredBlock, leaveBlk);
+            }
+            assert(leaveBlk->bbRefs == 0);
+            assert(leaveBlk->bbPreds == nullptr);
 
             fgRemoveBlock(leaveBlk, /* unreachable */ true);
 
@@ -5283,13 +5479,11 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     predBlock->SetJumpDest(succBlock);
                     break;
 
+                case BBJ_EHFINALLYRET:
+                    fgReplaceEhfSuccessor(predBlock, block, succBlock);
+                    break;
+
                 case BBJ_SWITCH:
-                    // Change any jumps from 'predBlock' (a BBJ_SWITCH) to 'block' to jump to 'succBlock'
-                    //
-                    // For the jump targets of 'predBlock' (a BBJ_SWITCH) that jump to 'block'
-                    // remove the old predecessor at 'block' from 'predBlock'  and
-                    // add the new predecessor at 'succBlock' from 'predBlock'
-                    //
                     fgReplaceSwitchJumpTarget(predBlock, succBlock, block);
                     break;
             }
@@ -5371,7 +5565,6 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
         {
             switch (bSrc->GetJumpKind())
             {
-
                 case BBJ_NONE:
                     bSrc->SetJumpKindAndTarget(BBJ_ALWAYS, bDst);
                     JITDUMP("Block " FMT_BB " ended with a BBJ_NONE, Changed to an unconditional jump to " FMT_BB "\n",

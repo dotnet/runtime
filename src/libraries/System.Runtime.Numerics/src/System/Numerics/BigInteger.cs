@@ -22,10 +22,10 @@ namespace System.Numerics
           IBinaryInteger<BigInteger>,
           ISignedNumber<BigInteger>
     {
-        private const uint kuMaskHighBit = unchecked((uint)int.MinValue);
-        private const int kcbitUint = 32;
-        private const int kcbitUlong = 64;
-        private const int DecimalScaleFactorMask = 0x00FF0000;
+        internal const uint kuMaskHighBit = unchecked((uint)int.MinValue);
+        internal const int kcbitUint = 32;
+        internal const int kcbitUlong = 64;
+        internal const int DecimalScaleFactorMask = 0x00FF0000;
 
         // For values int.MinValue < n <= int.MaxValue, the value is stored in sign
         // and _bits is null. For all other values, sign is +1 or -1 and the bits are in _bits
