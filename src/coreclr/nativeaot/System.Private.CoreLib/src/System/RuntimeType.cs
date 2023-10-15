@@ -412,7 +412,7 @@ namespace System
         }
 
         public override bool IsInstanceOfType([NotNullWhen(true)] object? o)
-            => RuntimeImports.IsInstanceOfAny(_pUnderlyingEEType, o) != null;
+            => RuntimeImports.IsInstanceOf(_pUnderlyingEEType, o) != null;
 
         //
         // Implementation shared with MetadataType

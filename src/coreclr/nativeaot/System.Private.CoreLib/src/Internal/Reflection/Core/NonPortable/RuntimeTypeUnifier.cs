@@ -9,7 +9,6 @@ using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
 using Internal.Runtime.Augments;
-using Internal.Runtime;
 
 namespace Internal.Reflection.Core.NonPortable
 {
