@@ -2294,7 +2294,6 @@ public:
 protected:
     LOADERALLOCATORSCOUTREF m_pLoaderAllocatorScout;
     OBJECTREF   m_pSlots;
-    ASSEMBLYBINDERREF m_binderToRelease;
     INT32       m_slotsUsed;
     OBJECTREF   m_methodInstantiationsTable;
 };

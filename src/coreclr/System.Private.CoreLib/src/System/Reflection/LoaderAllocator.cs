@@ -57,7 +57,6 @@ namespace System.Reflection
 #pragma warning disable CA1823, 414, 169
         private LoaderAllocatorScout m_scout;
         private object[] m_slots;
-        internal Internal.Runtime.Binder.AssemblyBinder? m_binderToRelease;
         internal CerHashtable<RuntimeMethodInfo, RuntimeMethodInfo> m_methodInstantiations;
         private int m_slotsUsed;
 #pragma warning restore CA1823, 414, 169
@@ -72,5 +71,10 @@ namespace System.Reflection
         internal static partial bool IsCollectible(IntPtr nativeLoaderAllocator);
 
         internal bool IsCollectible() => IsCollectible(m_scout.m_nativeLoaderAllocator);
+
+        internal void RegisterBinder(GCHandle handle) => RegisterBinder(m_scout.m_nativeLoaderAllocator, handle);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_RegisterBinder")]
+        private static partial void RegisterBinder(IntPtr pNativeLA, GCHandle handle);
     }
 }

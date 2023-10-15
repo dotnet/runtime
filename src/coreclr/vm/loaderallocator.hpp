@@ -900,12 +900,8 @@ public:
     virtual void RegisterHandleForCleanup(OBJECTHANDLE objHandle);
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE objHandle);
     virtual void CleanupHandles();
-    CustomAssemblyBinder* GetBinder()
-    {
-        return m_binderToRelease;
-    }
     virtual ~AssemblyLoaderAllocator();
-    void RegisterBinder(CustomAssemblyBinder* binderToRelease);
+    void RegisterBinder(OBJECTHANDLE binderToRelease);
     virtual void ReleaseManagedAssemblyLoadContext();
 #endif // !defined(DACCESS_COMPILE)
 
@@ -923,7 +919,7 @@ private:
 
     SList<HandleCleanupListItem> m_handleCleanupList;
 #if !defined(DACCESS_COMPILE)
-    CustomAssemblyBinder* m_binderToRelease;
+    OBJECTHANDLE m_binderToRelease;
 #endif
 
 private:

@@ -42,7 +42,8 @@ namespace Internal.Runtime.Binder
                 // VERIFY(pLoaderAllocator->AddReferenceIfAlive());
 
                 // ((AssemblyLoaderAllocator*)pLoaderAllocator)->RegisterBinder(pBinder);
-                loaderAllocator.m_binderToRelease = this;
+                var thisHandle = GCHandle.Alloc(this);
+                loaderAllocator.RegisterBinder(thisHandle);
             }
 
             _loaderAllocator = loaderAllocator;
@@ -76,8 +77,10 @@ namespace Internal.Runtime.Binder
             _loaderAllocatorHandle = default;
         }
 
-        public void ReleaseLoadContext()
+        ~CustomAssemblyBinder()
         {
+            // CustomAssemblyBinder::ReleaseLoadContext
+
             Debug.Assert(ManagedAssemblyLoadContext.IsAllocated);
             Debug.Assert(_ptrManagedStrongAssemblyLoadContext.IsAllocated);
 
