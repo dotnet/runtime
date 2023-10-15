@@ -405,48 +405,6 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
     return false;
 }
 
-// Does block represent a conditional branch with a constant range test? E.g. "if (X > 10)"
-static bool IsConstantRangeTest(const BasicBlock* block, GenTree** lcl, GenTreeIntCon** cns, genTreeOps* cmpOp)
-{
-    // NOTE: caller is expected to check that a block has multiple statements or not
-    const GenTree* rootNode = block->lastStmt()->GetRootNode();
-    assert(block->KindIs(BBJ_COND) && rootNode->OperIs(GT_JTRUE));
-    const GenTree* tree = rootNode->gtGetOp1();
-
-    // We're only interested in continuous range tests
-    if (!tree->OperIs(GT_LE, GT_LT, GT_GT, GT_GE) || tree->IsUnsigned())
-    {
-        return false;
-    }
-
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
-
-    // Floating point comparisons are not supported
-    if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->TypeIs(op2->TypeGet()))
-    {
-        if (op2->IsCnsIntOrI())
-        {
-            // X relop CNS
-            *lcl   = op1;
-            *cns   = op2->AsIntCon();
-            *cmpOp = tree->OperGet();
-            return true;
-        }
-        if (op1->IsCnsIntOrI())
-        {
-            // CNS relop X
-            *lcl = op2;
-            *cns = op1->AsIntCon();
-
-            // Normalize to "X relop CNS"
-            *cmpOp = GenTree::SwapRelop(tree->OperGet());
-            return true;
-        }
-    }
-    return false;
-}
-
 // Given two ranges, return true if they intersect and form a closed range.
 // Returns its bounds in pRangeStart and pRangeEnd (both are inclusive).
 static bool GetClosedRange(
@@ -465,6 +423,7 @@ static bool GetClosedRange(
         return false;
     }
 
+    // Report the intersection of the two ranges, add +/- 1 to make the bounds inclusive.
     if (range1IsStart)
     {
         assert(range2IsEnd);
@@ -480,8 +439,121 @@ static bool GetClosedRange(
 
     if ((*pRangeStart >= *pRangeEnd) || (*pRangeStart < 0) || (*pRangeEnd < 0))
     {
+        // TODO: If ranges don't intersect we might be able to fold the condition to true/false.
         return false;
     }
+    return true;
+}
+
+// Given a compare node, return true if it is a constant range test.
+bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cnsNode, genTreeOps* cmp)
+{
+    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT) && !tree->IsUnsigned())
+    {
+        GenTree* op1 = tree->gtGetOp1();
+        GenTree* op2 = tree->gtGetOp2();
+        if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->TypeIs(op2->TypeGet()))
+        {
+            if (op2->IsCnsIntOrI())
+            {
+                // X relop CNS
+                *varNode = op1;
+                *cnsNode = op2->AsIntCon();
+                *cmp     = tree->OperGet();
+                return true;
+            }
+            if (op1->IsCnsIntOrI())
+            {
+                // CNS relop X
+                *varNode = op2;
+                *cnsNode = op1->AsIntCon();
+
+                // Normalize to "X relop CNS"
+                *cmp = GenTree::SwapRelop(tree->OperGet());
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Given two compare nodes, return true if they can be folded into a single range check (and fold them into cmp1)
+bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTreeOp* cmp2, bool cmp2IsReversed)
+{
+    GenTree*       var1Node;
+    GenTree*       var2Node;
+    GenTreeIntCon* cns1Node;
+    GenTreeIntCon* cns2Node;
+    genTreeOps     cmp1Op;
+    genTreeOps     cmp2Op;
+
+    // Make sure both conditions are constant range checks, e.g. "X > CNS"
+    // TODO: support more cases, e.g. "X >= 0 && X < array.Length" -> "(uint)X < array.Length"
+    if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
+        !IsConstantRangeTest(cmp2, &var2Node, &cns2Node, &cmp2Op))
+    {
+        return false;
+    }
+
+    // Reverse the comparisons if necessary so we'll get a canonical form "cond1 == true && cond2 == true" -> InRange.
+    cmp1Op = cmp1IsReversed ? GenTree::ReverseRelop(cmp1Op) : cmp1Op;
+    cmp2Op = cmp2IsReversed ? GenTree::ReverseRelop(cmp2Op) : cmp2Op;
+
+    // Make sure variables are the same:
+    if (!var2Node->OperIs(GT_LCL_VAR) || !GenTree::Compare(var1Node->gtEffectiveVal(), var2Node))
+    {
+        // Variables don't match in two conditions
+        // We use gtEffectiveVal() for the first block's variable to ignore COMMAs, e.g.
+        //
+        // m_b1:
+        //   *  JTRUE     void
+        //   \--*  LT        int
+        //      +--*  COMMA     int
+        //      |  +--*  STORE_LCL_VAR int    V03 cse0
+        //      |  |  \--*  CAST      int <- ushort <- int
+        //      |  |     \--*  LCL_VAR   int    V01 arg1
+        //      |  \--*  LCL_VAR   int    V03 cse0
+        //      \--*  CNS_INT   int    97
+        //
+        // m_b2:
+        //   *  JTRUE     void
+        //   \--*  GT        int
+        //      +--*  LCL_VAR   int    V03 cse0
+        //      \--*  CNS_INT   int    122
+        //
+        return false;
+    }
+
+    ssize_t rangeStart;
+    ssize_t rangeEnd;
+    if (!GetClosedRange(cmp1Op, cmp2Op, cns1Node->IconValue(), cns2Node->IconValue(), &rangeStart, &rangeEnd))
+    {
+        // The range we test via two conditions is not a closed range
+        // TODO: We should support overlapped ranges here, e.g. "X > 10 && x > 100" -> "X > 100"
+        return false;
+    }
+    assert(rangeStart < rangeEnd);
+
+    if (!FitsIn(var1Node->TypeGet(), rangeStart) || !FitsIn(var1Node->TypeGet(), rangeEnd))
+    {
+        // Make sure constants fit into the types we work with
+        return false;
+    }
+
+    if (rangeStart == 0)
+    {
+        // We don't need to subtract anything, it's already 0-based
+        cmp1->gtOp1 = var1Node;
+    }
+    else
+    {
+        // We need to subtract the rangeStartIncl from the variable to make the range start from 0
+        cmp1->gtOp1 = comp->gtNewOperNode(GT_SUB, var1Node->TypeGet(), var1Node,
+                                          comp->gtNewIconNode(rangeStart, var1Node->TypeGet()));
+    }
+    cmp1->gtOp2->BashToConst(rangeEnd - rangeStart, var1Node->TypeGet());
+    cmp1->SetOper(cmp2IsReversed ? GT_GT : GT_LE);
+    cmp1->SetUnsigned();
     return true;
 }
 
@@ -497,25 +569,16 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
     assert(m_b1->KindIs(BBJ_COND) && m_b2->KindIs(BBJ_COND) && m_b1->NextIs(m_b2));
 
-    // Locals representing parts of the range test in both conditions
-    // if ((testVar1 testCmp1 testCns1) && (testVar2 testCmp2 testCns2))
-    //
-    GenTree*       testVar1;
-    GenTree*       testVar2;
-    GenTreeIntCon* testCns1;
-    GenTreeIntCon* testCns2;
-    genTreeOps     testCmp1;
-    genTreeOps     testCmp2;
-
-    if (m_b2->isRunRarely() || !IsConstantRangeTest(m_b1, &testVar1, &testCns1, &testCmp1))
+    if (m_b2->isRunRarely())
     {
-        // m_b2 is either cold or not a constant range test
+        // We don't want to make the first comparison to be slightly slower
+        // if the 2nd one is rarely executed.
         return false;
     }
 
     if (!BasicBlock::sameEHRegion(m_b1, m_b2) || ((m_b2->bbFlags & BBF_DONT_REMOVE) != 0))
     {
-        // Conditions aren't in the same EH region
+        // Conditions aren't in the same EH region or m_b2 can't be removed
         return false;
     }
 
@@ -563,66 +626,31 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
-    if (!m_b2->hasSingleStmt() || !IsConstantRangeTest(m_b2, &testVar2, &testCns2, &testCmp2) ||
-        m_b2->GetUniquePred(m_comp) != m_b1)
+    if (!m_b2->hasSingleStmt() || m_b2->GetUniquePred(m_comp) != m_b1)
     {
         // The 2nd block has to be single-statement to avoid side-effects between the two conditions.
         // Also, make sure m_b2 has no other predecessors.
         return false;
     }
 
-    if (!testVar2->OperIs(GT_LCL_VAR) || !GenTree::Compare(testVar1->gtEffectiveVal(), testVar2))
+    GenTreeOp* cmp1 = m_b1->lastStmt()->GetRootNode()->gtGetOp1()->AsOp();
+    GenTreeOp* cmp2 = m_b2->lastStmt()->GetRootNode()->gtGetOp1()->AsOp();
+
+    // cmp1 is always reversed (see shape1 and shape2 above)
+    const bool cmp1IsReversed = true;
+
+    // cmp2 can be either reversed or not
+    const bool cmp2IsReversed = m_b2->HasJumpTo(notInRangeBb);
+
+    if (!FoldRangeTests(m_comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed))
     {
-        // Variables don't match in two conditions
-        // We use gtEffectiveVal() for the first block's variable to ignore COMMAs, e.g.
-        //
-        // m_b1:
-        //   *  JTRUE     void
-        //   \--*  LT        int
-        //      +--*  COMMA     int
-        //      |  +--*  STORE_LCL_VAR int    V03 cse0
-        //      |  |  \--*  CAST      int <- ushort <- int
-        //      |  |     \--*  LCL_VAR   int    V01 arg1
-        //      |  \--*  LCL_VAR   int    V03 cse0
-        //      \--*  CNS_INT   int    97
-        //
-        // m_b2:
-        //   *  JTRUE     void
-        //   \--*  GT        int
-        //      +--*  LCL_VAR   int    V03 cse0
-        //      \--*  CNS_INT   int    122
-        //
         return false;
     }
 
-    // First condition always jumps-if-true to NotInRange, so let's reverse it to be "InRange" as
-    // a canonical form.
-    testCmp1 = GenTree::ReverseRelop(testCmp1);
-
-    // For the 2nd condition it depends on the BB shape (see above).
-    testCmp2 = m_b2->HasJumpTo(notInRangeBb) ? GenTree::ReverseRelop(testCmp2) : testCmp2;
-
-    ssize_t rangeStart;
-    ssize_t rangeEnd;
-    if (!GetClosedRange(testCmp1, testCmp2, testCns1->IconValue(), testCns2->IconValue(), &rangeStart, &rangeEnd))
-    {
-        // The range we test via two conditions is not a closed range
-        // TODO: We should support overlapped ranges here, e.g. "X > 10 && x > 100" -> "X > 100"
-        return false;
-    }
-
-    if (!FitsIn(testVar1->TypeGet(), rangeStart) || !FitsIn(testVar1->TypeGet(), rangeEnd))
-    {
-        // Make sure constants fit into the types we work with
-        return false;
-    }
-
-    genTreeOps newCmp = GT_GT;
     m_comp->fgAddRefPred(inRangeBb, m_b1);
     if (m_b1->HasJumpTo(m_b2->Next()))
     {
         // Re-direct firstBlock to jump to inRangeBb
-        newCmp = GenTree::ReverseRelop(newCmp);
         m_b1->SetJumpDest(inRangeBb);
     }
 
@@ -631,25 +659,6 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     m_comp->fgRemoveBlock(m_b2, true);
 
     Statement* stmt = m_b1->lastStmt();
-    GenTreeOp* cmp  = stmt->GetRootNode()->gtGetOp1()->AsOp();
-    if (rangeStart == 0)
-    {
-        // We don't need to subtract anything, it's already 0-based
-        cmp->gtOp1 = testVar1;
-    }
-    else
-    {
-        // We need to subtract the rangeStartIncl from the variable to make the range start from 0
-        cmp->gtOp1 = m_comp->gtNewOperNode(GT_SUB, testVar1->TypeGet(), testVar1,
-                                           m_comp->gtNewIconNode(rangeStart, testVar1->TypeGet()));
-    }
-    cmp->gtOp2->BashToConst(rangeEnd - rangeStart, testVar1->TypeGet());
-    cmp->SetOper(newCmp);
-    cmp->SetUnsigned();
-
-    JITDUMP("Optimizing two conditional blocks representing a constant range test:\n")
-    DISPTREE(cmp)
-
     m_comp->gtSetStmtInfo(stmt);
     m_comp->fgSetStmtSeq(stmt);
     m_comp->gtUpdateStmtSideEffects(stmt);
