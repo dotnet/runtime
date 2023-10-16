@@ -5,12 +5,10 @@ namespace System
 {
     public static partial class Buffer
     {
-#if TARGET_ARM64 || TARGET_LOONGARCH64
+#if TARGET_LOONGARCH64
         // Managed code is currently faster than glibc unoptimized memmove
-        // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
-        // https://github.com/dotnet/runtime/issues/8897
         private static nuint MemmoveNativeThreshold => nuint.MaxValue;
-#elif TARGET_ARM
+#elif TARGET_ARM || TARGET_ARM64
         private const nuint MemmoveNativeThreshold = 512;
 #else
         private const nuint MemmoveNativeThreshold = 2048;
