@@ -1752,7 +1752,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GetEmitter()->emitIns_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), node->GetRegNum(),
                                 node->gtElemOffset);
 
-    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask());
+    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask(compiler));
 
     genProduceReg(node);
 }

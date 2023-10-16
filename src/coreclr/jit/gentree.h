@@ -954,8 +954,8 @@ public:
 
     int GetRegisterDstCount(Compiler* compiler) const;
 
-    regMaskTP gtGetRegMask() const;
-    regMaskTP gtGetContainedRegMask();
+    regMaskTP gtGetRegMask(Compiler* comp) const;
+    regMaskTP gtGetContainedRegMask(Compiler* comp);
 
     GenTreeFlags gtFlags;
 
@@ -1857,6 +1857,9 @@ public:
 
     // Returns true if it is a GT_COPY or GT_RELOAD of a multi-reg call node
     inline bool IsCopyOrReloadOfMultiRegCall() const;
+
+    // Returns true if it is a GT_COPY or GT_RELOAD of a multi-reg hwintrinsic
+    inline bool IsCopyOrReloadOfMultiRegNode() const;
 
     bool OperRequiresAsgFlag() const;
 
@@ -9697,6 +9700,26 @@ inline bool GenTree::IsCopyOrReloadOfMultiRegCall() const
         return gtGetOp1()->IsMultiRegCall();
     }
 
+    return false;
+}
+
+//-----------------------------------------------------------------------------------
+// IsCopyOrReloadOfMultiRegNode: whether this is a GT_COPY or GT_RELOAD a node
+// returning its value in more than one register.
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if this GenTree is a copy or reload of a node that returns in
+// multiple registers.
+//
+inline bool GenTree::IsCopyOrReloadOfMultiRegNode() const
+{
+    if (IsCopyOrReload())
+    {
+        return gtGetOp1()->IsMultiRegNode();
+    }
     return false;
 }
 
