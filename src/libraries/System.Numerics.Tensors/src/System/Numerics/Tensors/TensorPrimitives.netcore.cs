@@ -3603,7 +3603,7 @@ namespace System.Numerics.Tensors
 
                 max = Vector128.ConditionalSelect(Vector128.Equals(max, current),
                         Vector128.ConditionalSelect(IsNegative(max), current, max),
-                        Vector128.Max(max, current));
+                        Vector128.Max(maxMag, currentMag));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3621,7 +3621,7 @@ namespace System.Numerics.Tensors
                 max = Vector128.ConditionalSelect(
                     Vector128.Equals(remainderMask, Vector128<float>.Zero),
                     max,
-                    MaxOperator.Invoke(max, current));
+                    MaxOperator.Invoke(maxMag, currentMag));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3656,7 +3656,7 @@ namespace System.Numerics.Tensors
 
                 max = Vector256.ConditionalSelect(Vector256.Equals(max, current),
                         Vector256.ConditionalSelect(IsNegative(max), current, max),
-                        Vector256.Max(max, current));
+                        Vector256.Max(maxMag, currentMag));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3674,7 +3674,7 @@ namespace System.Numerics.Tensors
                 max = Vector256.ConditionalSelect(
                     Vector256.Equals(remainderMask, Vector256<float>.Zero),
                     max,
-                    MaxOperator.Invoke(max, current));
+                    MaxOperator.Invoke(maxMag, currentMag));
             }
 
 #if NET8_0_OR_GREATER
