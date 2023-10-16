@@ -2500,6 +2500,19 @@ namespace System.Runtime.InteropServices.Marshalling
         public static void Free(ushort* unmanaged) { throw null; }
         public static ref readonly char GetPinnableReference(string? str) { throw null; }
     }
+    public struct OleVariant : System.IDisposable
+    {
+        private int _dummyPrimitive;
+
+        public void Dispose() { }
+        public static System.Runtime.InteropServices.Marshalling.OleVariant Create<T>([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T value) { throw null; }
+        public static System.Runtime.InteropServices.Marshalling.OleVariant CreateRaw<T>(System.Runtime.InteropServices.VarEnum vt, T rawValue) where T : unmanaged { throw null; }
+        public static System.Runtime.InteropServices.Marshalling.OleVariant Null { get { throw null; } }
+        public readonly T As<T>() { throw null; }
+        public readonly System.Runtime.InteropServices.VarEnum VarType { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.UnscopedRefAttribute]
+        public ref T GetRawDataRef<T>() where T : unmanaged { throw null; }
+    }
 }
 namespace System.Security
 {
