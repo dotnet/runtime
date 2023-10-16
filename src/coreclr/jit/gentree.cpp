@@ -3011,9 +3011,9 @@ AGAIN:
             return GenTreeFieldList::Equals(op1->AsFieldList(), op2->AsFieldList());
 
         case GT_CMPXCHG:
-            return Compare(op1->AsCmpXchg()->gtOpLocation, op2->AsCmpXchg()->gtOpLocation) &&
-                   Compare(op1->AsCmpXchg()->gtOpValue, op2->AsCmpXchg()->gtOpValue) &&
-                   Compare(op1->AsCmpXchg()->gtOpComparand, op2->AsCmpXchg()->gtOpComparand);
+            return Compare(op1->AsCmpXchg()->Addr(), op2->AsCmpXchg()->Addr()) &&
+                   Compare(op1->AsCmpXchg()->Data(), op2->AsCmpXchg()->Data()) &&
+                   Compare(op1->AsCmpXchg()->Comparand(), op2->AsCmpXchg()->Comparand());
 
         case GT_STORE_DYN_BLK:
             return Compare(op1->AsStoreDynBlk()->Addr(), op2->AsStoreDynBlk()->Addr()) &&
@@ -3563,9 +3563,9 @@ AGAIN:
             break;
 
         case GT_CMPXCHG:
-            hash = genTreeHashAdd(hash, gtHashValue(tree->AsCmpXchg()->gtOpLocation));
-            hash = genTreeHashAdd(hash, gtHashValue(tree->AsCmpXchg()->gtOpValue));
-            hash = genTreeHashAdd(hash, gtHashValue(tree->AsCmpXchg()->gtOpComparand));
+            hash = genTreeHashAdd(hash, gtHashValue(tree->AsCmpXchg()->Addr()));
+            hash = genTreeHashAdd(hash, gtHashValue(tree->AsCmpXchg()->Data()));
+            hash = genTreeHashAdd(hash, gtHashValue(tree->AsCmpXchg()->Comparand()));
             break;
 
         case GT_STORE_DYN_BLK:
@@ -6220,27 +6220,31 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             break;
 
         case GT_CMPXCHG:
+        {
+            GenTree* addr = tree->AsCmpXchg()->Addr();
+            level         = gtSetEvalOrder(addr);
+            costSz        = addr->GetCostSz();
 
-            level  = gtSetEvalOrder(tree->AsCmpXchg()->gtOpLocation);
-            costSz = tree->AsCmpXchg()->gtOpLocation->GetCostSz();
-
-            lvl2 = gtSetEvalOrder(tree->AsCmpXchg()->gtOpValue);
+            GenTree* value = tree->AsCmpXchg()->Data();
+            lvl2           = gtSetEvalOrder(value);
             if (level < lvl2)
             {
                 level = lvl2;
             }
-            costSz += tree->AsCmpXchg()->gtOpValue->GetCostSz();
+            costSz += value->GetCostSz();
 
-            lvl2 = gtSetEvalOrder(tree->AsCmpXchg()->gtOpComparand);
+            GenTree* comparand = tree->AsCmpXchg()->Comparand();
+            lvl2               = gtSetEvalOrder(comparand);
             if (level < lvl2)
             {
                 level = lvl2;
             }
-            costSz += tree->AsCmpXchg()->gtOpComparand->GetCostSz();
+            costSz += comparand->GetCostSz();
 
             costEx = MAX_COST; // Seriously, what could be more expensive than lock cmpxchg?
             costSz += 5;       // size of lock cmpxchg [reg+C], reg
-            break;
+        }
+        break;
 
         case GT_STORE_DYN_BLK:
             level  = gtSetEvalOrder(tree->AsStoreDynBlk()->Addr());
@@ -6539,19 +6543,19 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
-            if (operand == cmpXchg->gtOpLocation)
+            if (operand == cmpXchg->Addr())
             {
-                *pUse = &cmpXchg->gtOpLocation;
+                *pUse = &cmpXchg->Addr();
                 return true;
             }
-            if (operand == cmpXchg->gtOpValue)
+            if (operand == cmpXchg->Data())
             {
-                *pUse = &cmpXchg->gtOpValue;
+                *pUse = &cmpXchg->Data();
                 return true;
             }
-            if (operand == cmpXchg->gtOpComparand)
+            if (operand == cmpXchg->Comparand())
             {
-                *pUse = &cmpXchg->gtOpComparand;
+                *pUse = &cmpXchg->Comparand();
                 return true;
             }
             return false;
@@ -7015,7 +7019,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 #endif // FEATURE_HW_INTRINSICS
 
         default:
-            assert(!OperMayOverflow() && !OperIsIndirOrArrMetaData());
+            assert(!OperMayOverflow() && (!OperIsIndirOrArrMetaData() || OperIsAtomicZeroDiffQuirk()));
             return ExceptionSetFlags::None;
     }
 }
@@ -8523,6 +8527,38 @@ GenTree* Compiler::gtNewStoreValueNode(
 }
 
 //------------------------------------------------------------------------
+// gtNewAtomicNode: Create a new atomic operation node.
+//
+// Arguments:
+//    oper      - The atomic oper
+//    type      - Type to store/load
+//    addr      - Destination ("location") address
+//    value     - Value
+//    comparand - Comparand value for a CMPXCHG
+//
+// Return Value:
+//    The created node.
+//
+GenTree* Compiler::gtNewAtomicNode(genTreeOps oper, var_types type, GenTree* addr, GenTree* value, GenTree* comparand)
+{
+    assert(GenTree::OperIsAtomicOp(oper) && ((oper == GT_CMPXCHG) == (comparand != nullptr)));
+    GenTree* node;
+    if (comparand != nullptr)
+    {
+        node = new (this, GT_CMPXCHG) GenTreeCmpXchg(type, addr, value, comparand);
+        addr->gtFlags |= GTF_DONT_CSE;
+    }
+    else
+    {
+        node = new (this, oper) GenTreeIndir(oper, type, addr, value);
+    }
+
+    // All atomics are opaque global stores.
+    node->AddAllEffectsFlags(GTF_ASG | GTF_GLOB_REF);
+    return node;
+}
+
+//------------------------------------------------------------------------
 // FixupInitBlkValue: Fixup the init value for an initBlk operation
 //
 // Arguments:
@@ -9511,9 +9547,9 @@ GenTree* Compiler::gtCloneExpr(
         case GT_CMPXCHG:
             copy = new (this, GT_CMPXCHG)
                 GenTreeCmpXchg(tree->TypeGet(),
-                               gtCloneExpr(tree->AsCmpXchg()->gtOpLocation, addFlags, deepVarNum, deepVarVal),
-                               gtCloneExpr(tree->AsCmpXchg()->gtOpValue, addFlags, deepVarNum, deepVarVal),
-                               gtCloneExpr(tree->AsCmpXchg()->gtOpComparand, addFlags, deepVarNum, deepVarVal));
+                               gtCloneExpr(tree->AsCmpXchg()->Addr(), addFlags, deepVarNum, deepVarVal),
+                               gtCloneExpr(tree->AsCmpXchg()->Data(), addFlags, deepVarNum, deepVarVal),
+                               gtCloneExpr(tree->AsCmpXchg()->Comparand(), addFlags, deepVarNum, deepVarVal));
             break;
 
         case GT_STORE_DYN_BLK:
@@ -10155,7 +10191,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             return;
 
         case GT_CMPXCHG:
-            m_edge = &m_node->AsCmpXchg()->gtOpLocation;
+            m_edge = &m_node->AsCmpXchg()->Addr();
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::AdvanceCmpXchg;
             return;
@@ -10204,11 +10240,11 @@ void GenTreeUseEdgeIterator::AdvanceCmpXchg()
     switch (m_state)
     {
         case 0:
-            m_edge  = &m_node->AsCmpXchg()->gtOpValue;
+            m_edge  = &m_node->AsCmpXchg()->Data();
             m_state = 1;
             break;
         case 1:
-            m_edge    = &m_node->AsCmpXchg()->gtOpComparand;
+            m_edge    = &m_node->AsCmpXchg()->Comparand();
             m_advance = &GenTreeUseEdgeIterator::Terminate;
             break;
         default:
@@ -12807,9 +12843,9 @@ void Compiler::gtDispTree(GenTree*     tree,
 
             if (!topOnly)
             {
-                gtDispChild(tree->AsCmpXchg()->gtOpLocation, indentStack, IIArc, nullptr, topOnly);
-                gtDispChild(tree->AsCmpXchg()->gtOpValue, indentStack, IIArc, nullptr, topOnly);
-                gtDispChild(tree->AsCmpXchg()->gtOpComparand, indentStack, IIArcBottom, nullptr, topOnly);
+                gtDispChild(tree->AsCmpXchg()->Addr(), indentStack, IIArc, nullptr, topOnly);
+                gtDispChild(tree->AsCmpXchg()->Data(), indentStack, IIArc, nullptr, topOnly);
+                gtDispChild(tree->AsCmpXchg()->Comparand(), indentStack, IIArcBottom, nullptr, topOnly);
             }
             break;
 
@@ -17667,7 +17703,7 @@ GenTreeLclVar* GenTree::IsImplicitByrefParameterValuePostMorph(Compiler* compile
 {
 #if FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) // TODO-LOONGARCH64-CQ: enable this.
 
-    if (!OperIsIndir())
+    if (!OperIsLoad())
     {
         return nullptr;
     }
