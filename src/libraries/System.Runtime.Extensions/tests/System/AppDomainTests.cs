@@ -513,7 +513,7 @@ namespace System.Tests
                 bool AssemblyLoadFlag = false;
                 AssemblyLoadEventHandler handler = (sender, args) =>
                 {
-                    Assert.Same(AppDomain.CurrentDomain, sender);
+                    Assert.Equal(AppDomain.CurrentDomain, sender);
                     Assert.NotNull(args);
                     Assert.NotNull(args.LoadedAssembly);
 
