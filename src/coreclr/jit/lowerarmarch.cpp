@@ -3026,7 +3026,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_ExtractVector128:
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_StoreSelectedScalar64x2:
+            case NI_AdvSimd_StoreSelectedScalar64x3:
+            case NI_AdvSimd_StoreSelectedScalar64x4:
             case NI_AdvSimd_Arm64_StoreSelectedScalar128x2:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar128x3:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar128x4:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())

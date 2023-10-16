@@ -1417,7 +1417,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_ExtractVector128:
                     case NI_AdvSimd_StoreSelectedScalar:
                     case NI_AdvSimd_StoreSelectedScalar64x2:
+                    case NI_AdvSimd_StoreSelectedScalar64x3:
+                    case NI_AdvSimd_StoreSelectedScalar64x4:
                     case NI_AdvSimd_Arm64_StoreSelectedScalar128x2:
+                    case NI_AdvSimd_Arm64_StoreSelectedScalar128x3:
+                    case NI_AdvSimd_Arm64_StoreSelectedScalar128x4:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 
@@ -1586,7 +1590,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
 
             case NI_AdvSimd_StoreSelectedScalar64x2:
+            case NI_AdvSimd_StoreSelectedScalar64x3:
+            case NI_AdvSimd_StoreSelectedScalar64x4:
             case NI_AdvSimd_Arm64_StoreSelectedScalar128x2:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar128x3:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar128x4:
             {
                 assert(intrin.op1 != nullptr);
                 assert(intrin.op3 != nullptr);

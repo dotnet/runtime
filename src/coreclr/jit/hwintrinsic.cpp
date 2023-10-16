@@ -1092,11 +1092,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if ((intrinsic == NI_AdvSimd_StoreSelectedScalar) || (intrinsic == NI_AdvSimd_Arm64_StoreSelectedScalar))
     {
 
-        CORINFO_ARG_LIST_HANDLE arg1                = sig->args;
-        CORINFO_ARG_LIST_HANDLE arg2                = info.compCompHnd->getArgNext(arg1);
-        CORINFO_CLASS_HANDLE    argClass            = NO_CLASS_HANDLE;
-        var_types argType     = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-        unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+        CORINFO_ARG_LIST_HANDLE arg1       = sig->args;
+        CORINFO_ARG_LIST_HANDLE arg2       = info.compCompHnd->getArgNext(arg1);
+        CORINFO_CLASS_HANDLE    argClass   = NO_CLASS_HANDLE;
+        var_types               argType    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+        unsigned                fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
 
         if (argType == TYP_STRUCT && fieldCount > 1)
         {
@@ -1112,6 +1112,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 case 2:
                     intrinsic =
                         sizeBytes == 8 ? NI_AdvSimd_StoreSelectedScalar64x2 : NI_AdvSimd_Arm64_StoreSelectedScalar128x2;
+                    break;
+                case 3:
+                    intrinsic =
+                        sizeBytes == 8 ? NI_AdvSimd_StoreSelectedScalar64x3 : NI_AdvSimd_Arm64_StoreSelectedScalar128x3;
+                    break;
+                case 4:
+                    intrinsic =
+                        sizeBytes == 8 ? NI_AdvSimd_StoreSelectedScalar64x4 : NI_AdvSimd_Arm64_StoreSelectedScalar128x4;
                     break;
                 default:
                     assert("unsupported");
