@@ -1750,14 +1750,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AdvSimd_StoreVector64x2:
+        case NI_AdvSimd_Arm64_StoreVector128x2:
         case NI_AdvSimd_StoreSelectedScalar64x2:
         case NI_AdvSimd_StoreSelectedScalar64x3:
         case NI_AdvSimd_StoreSelectedScalar64x4:
-        case NI_AdvSimd_StoreVector64x2:
         case NI_AdvSimd_Arm64_StoreSelectedScalar128x2:
         case NI_AdvSimd_Arm64_StoreSelectedScalar128x3:
         case NI_AdvSimd_Arm64_StoreSelectedScalar128x4:
-        case NI_AdvSimd_Arm64_StoreVector128x2:
         {
             assert(retType == TYP_VOID);
 
