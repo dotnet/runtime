@@ -74,11 +74,10 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             }
 
             trimmedAssemblyFolder = ComputeTrimmedAssemblyFolderName(IntermediateOutputPath);
-            if (Directory.Exists(trimmedAssemblyFolder))
+            if (!Directory.Exists(trimmedAssemblyFolder))
             {
-                Directory.Delete(trimmedAssemblyFolder, true);
+                Directory.CreateDirectory(trimmedAssemblyFolder);
             }
-            Directory.CreateDirectory(trimmedAssemblyFolder);
         }
 
         int allowedParallelism = DisableParallelStripping ? 1 : Math.Min(Assemblies.Length, Environment.ProcessorCount);
@@ -173,6 +172,18 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         }
 
         string trimmedAssemblyFilePath = ComputeTrimmedAssemblyPath(trimmedAssemblyFolder, assemblyFilePath);
+        if (File.Exists(trimmedAssemblyFilePath))
+        {
+            if (IsInputNewerThanOutput(assemblyFilePath, trimmedAssemblyFilePath))
+            {
+                File.Delete(trimmedAssemblyFilePath);
+            }
+            else
+            {
+                return true;
+            }
+        }
+
         bool isTrimmed = false;
         using FileStream fs = File.Open(assemblyFilePath, FileMode.Open);
         using PEReader peReader = new(fs, PEStreamOptions.LeaveOpen);
@@ -220,6 +231,21 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     {
         string? assemblyName = Path.GetFileName(assemblyFilePath);
         return Path.Combine(trimmedAssemblyFolder, assemblyName);
+    }
+
+    private static bool IsInputNewerThanOutput(string inFile, string outFile)
+    {
+        DateTime lastWriteTimeSrc = File.GetLastWriteTimeUtc(inFile);
+        DateTime lastWriteTimeDst = File.GetLastWriteTimeUtc(outFile);
+
+        if (lastWriteTimeSrc > lastWriteTimeDst)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     private static string ComputeGuid(MetadataReader mr)
