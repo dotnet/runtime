@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Serialization;
 using Xunit;
@@ -58,13 +59,20 @@ namespace Wasm.Build.Tests
             // have the unixFilePermissions for that
             // Expect just the emscripten ones here for now
 
-            // linux doesn't have Emscripten.Python package, so only 2 there
             int expectedPermFileCount = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? 4 : 5;
 
-            int permFileCount = unixPermFiles.Count();
-            if (permFileCount != expectedPermFileCount)
-                throw new XunitException($"Expected to find {expectedPermFileCount} UnixFilePermissions.xml files, but got {permFileCount}."
-                                            + $"{Environment.NewLine}Files: {string.Join(", ", unixPermFiles)}");
+            // extract pack names from ./artifacts/bin/dotnet-latest/packs/Microsoft.NET.Runtime.Emscripten.3.1.34.Sdk.linux-x64/8.0.0-rtm.23470.1/data/UnixFilePermissions.xml
+            var packNames = unixPermFiles.Select(f => Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(f))))).ToArray();
+
+            Assert.Contains(packNames, name => Regex.IsMatch(name!, "Microsoft\\.NET\\.Runtime\\.Emscripten\\.[0-9\\.]+\\.Cache\\."));
+            Assert.Contains(packNames, name => Regex.IsMatch(name!, "Microsoft\\.NET\\.Runtime\\.Emscripten\\.[0-9\\.]+\\.Node\\."));
+            Assert.Contains(packNames, name => Regex.IsMatch(name!, "Microsoft\\.NET\\.Runtime\\.Emscripten\\.[0-9\\.]+\\.Sdk\\."));
+
+            // linux doesn't have Emscripten.Python package, so only 2 there
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                Assert.Contains(packNames, name => Regex.IsMatch(name!, "Microsoft\\.NET\\.Runtime\\.Emscripten\\.[0-9\\.]+\\.Python\\."));
+
+            Assert.Contains(packNames, name => Regex.IsMatch(name!, "Microsoft.NETCore.App.Runtime.AOT\\..*\\.Cross.browser-wasm"));
         }
     }
 

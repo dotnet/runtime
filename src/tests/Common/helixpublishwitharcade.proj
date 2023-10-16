@@ -875,6 +875,11 @@
     </ItemGroup>
   </Target>
 
+  <!-- Adhoc-sign createdump so we can use it in our tests -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'osx'">
+    <HelixPreCommands>$(HelixPreCommands);codesign -s - -f --preserve-metadata=entitlements $HELIX_CORRELATION_PAYLOAD/createdump</HelixPreCommands>
+  </PropertyGroup>
+
   <PropertyGroup>
     <SigningCommand Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
     <![CDATA[

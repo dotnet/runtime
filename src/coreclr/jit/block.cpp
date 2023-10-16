@@ -133,7 +133,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
         // these cannot cause transfer to the handler...)
         // TODO-Throughput: It would be nice if we could iterate just over the blocks in the try, via
         // something like:
-        //   for (BasicBlock* bb = ehblk->ebdTryBeg; bb != ehblk->ebdTryLast->bbNext; bb = bb->bbNext)
+        //   for (BasicBlock* bb = ehblk->ebdTryBeg; bb != ehblk->ebdTryLast->Next(); bb = bb->Next())
         //     (plus adding in any filter blocks outside the try whose exceptions are handled here).
         // That doesn't work, however: funclets have caused us to sometimes split the body of a try into
         // more than one sequence of contiguous blocks.  We need to find a better way to do this.
@@ -160,7 +160,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
                 if (enclosingDsc->HasFilter())
                 {
                     for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
-                         filterBlk             = filterBlk->bbNext)
+                         filterBlk             = filterBlk->Next())
                     {
                         res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
 
@@ -184,6 +184,36 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
         ehPreds->Set(blk, res);
     }
     return res;
+}
+
+//------------------------------------------------------------------------
+// IsLastHotBlock: see if this is the last block before the cold section
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+// Returns:
+//    true if the next block is fgFirstColdBlock
+//    (if fgFirstColdBlock is null, this call is equivalent to IsLast())
+//
+bool BasicBlock::IsLastHotBlock(Compiler* compiler) const
+{
+    return (bbNext == compiler->fgFirstColdBlock);
+}
+
+//------------------------------------------------------------------------
+// IsFirstColdBlock: see if this is the first block in the cold section
+//
+// Arguments:
+//    compiler - current compiler instance
+//
+// Returns:
+//    true if this is fgFirstColdBlock
+//    (fgFirstColdBlock is null if there is no cold code)
+//
+bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
+{
+    return (this == compiler->fgFirstColdBlock);
 }
 
 //------------------------------------------------------------------------
@@ -368,10 +398,6 @@ void BasicBlock::dspFlags()
     if (bbFlags & BBF_FAILED_VERIFICATION)
     {
         printf("failV ");
-    }
-    if (bbFlags & BBF_TRY_BEG)
-    {
-        printf("try ");
     }
     if (bbFlags & BBF_RUN_RARELY)
     {
@@ -583,15 +609,35 @@ void BasicBlock::dspJumpKind()
     switch (bbJumpKind)
     {
         case BBJ_EHFINALLYRET:
+        {
+            printf(" ->");
+
+            // Early in compilation, we display the jump kind before the BBJ_EHFINALLYRET successors have been set.
+            if (bbJumpEhf == nullptr)
+            {
+                printf(" ????");
+            }
+            else
+            {
+                const unsigned     jumpCnt = bbJumpEhf->bbeCount;
+                BasicBlock** const jumpTab = bbJumpEhf->bbeSuccs;
+
+                for (unsigned i = 0; i < jumpCnt; i++)
+                {
+                    printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                }
+            }
+
             printf(" (finret)");
             break;
+        }
 
         case BBJ_EHFAULTRET:
             printf(" (falret)");
             break;
 
         case BBJ_EHFILTERRET:
-            printf(" (fltret)");
+            printf(" -> " FMT_BB " (fltret)", bbJumpDest->bbNum);
             break;
 
         case BBJ_EHCATCHRET:
@@ -1035,14 +1081,13 @@ unsigned BasicBlock::NumSucc() const
     {
         case BBJ_THROW:
         case BBJ_RETURN:
-        case BBJ_EHFINALLYRET:
         case BBJ_EHFAULTRET:
-        case BBJ_EHFILTERRET:
             return 0;
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_NONE:
             return 1;
@@ -1056,6 +1101,23 @@ unsigned BasicBlock::NumSucc() const
             {
                 return 2;
             }
+
+        case BBJ_EHFINALLYRET:
+            // We may call this method before we realize we have invalid IL. Tolerate.
+            //
+            if (!hasHndIndex())
+            {
+                return 0;
+            }
+
+            // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
+            //
+            if (bbJumpEhf == nullptr)
+            {
+                return 0;
+            }
+
+            return bbJumpEhf->bbeCount;
 
         case BBJ_SWITCH:
             return bbJumpSwt->bbsCount;
@@ -1082,6 +1144,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
             return bbJumpDest;
 
@@ -1096,8 +1159,12 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
             else
             {
                 assert(i == 1);
+                assert(bbNext != bbJumpDest);
                 return bbJumpDest;
             }
+
+        case BBJ_EHFINALLYRET:
+            return bbJumpEhf->bbeSuccs[i];
 
         case BBJ_SWITCH:
             return bbJumpSwt->bbsDstTab[i];
@@ -1134,7 +1201,15 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             {
                 return 0;
             }
-            return comp->fgNSuccsOfFinallyRet(this);
+
+            // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
+            //
+            if (bbJumpEhf == nullptr)
+            {
+                return 0;
+            }
+
+            return bbJumpEhf->bbeCount;
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1183,15 +1258,14 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
     switch (bbJumpKind)
     {
         case BBJ_EHFILTERRET:
-        {
             // Handler is the (sole) normal successor of the filter.
             assert(comp->fgFirstBlockOfHandler(this) == bbJumpDest);
             return bbJumpDest;
-        }
 
         case BBJ_EHFINALLYRET:
-            // Note: the following call is expensive.
-            return comp->fgSuccOfFinallyRet(this, i);
+            assert(bbJumpEhf != nullptr);
+            assert(i < bbJumpEhf->bbeCount);
+            return bbJumpEhf->bbeSuccs[i];
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1210,6 +1284,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
             else
             {
                 assert(i == 1);
+                assert(bbNext != bbJumpDest);
                 return bbJumpDest;
             }
 
@@ -1419,7 +1494,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
     /* Record the jump kind in the block */
 
-    block->bbJumpKind = jumpKind;
+    block->SetJumpKind(jumpKind DEBUG_ARG(this));
 
     if (jumpKind == BBJ_THROW)
     {
@@ -1499,9 +1574,9 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 bool BasicBlock::isBBCallAlwaysPair() const
 {
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    if (this->bbJumpKind == BBJ_CALLFINALLY)
+    if (this->KindIs(BBJ_CALLFINALLY))
 #else
-    if ((this->bbJumpKind == BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
+    if (this->KindIs(BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
 #endif
     {
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -1509,10 +1584,10 @@ bool BasicBlock::isBBCallAlwaysPair() const
         assert(!(this->bbFlags & BBF_RETLESS_CALL));
 #endif
         // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
-        assert(this->bbNext != nullptr);
-        assert(this->bbNext->bbJumpKind == BBJ_ALWAYS);
-        assert(this->bbNext->bbFlags & BBF_KEEP_BBJ_ALWAYS);
-        assert(this->bbNext->isEmpty());
+        assert(!this->IsLast());
+        assert(this->Next()->KindIs(BBJ_ALWAYS));
+        assert(this->Next()->bbFlags & BBF_KEEP_BBJ_ALWAYS);
+        assert(this->Next()->isEmpty());
 
         return true;
     }
@@ -1612,6 +1687,24 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
     for (unsigned i = 0; i < bbsCount; i++)
     {
         bbsDstTab[i] = other->bbsDstTab[i];
+    }
+}
+
+//------------------------------------------------------------------------
+// BBehfDesc copy ctor: copy a EHFINALLYRET descriptor
+//
+// Arguments:
+//    comp - compiler instance
+//    other - existing descriptor to copy
+//
+BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other) : bbeCount(other->bbeCount)
+{
+    // Allocate and fill in a new dst tab
+    //
+    bbeSuccs = new (comp, CMK_BasicBlock) BasicBlock*[bbeCount];
+    for (unsigned i = 0; i < bbeCount; i++)
+    {
+        bbeSuccs[i] = other->bbeSuccs[i];
     }
 }
 

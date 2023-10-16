@@ -18,6 +18,11 @@ trigger:
     - LICENSE.TXT
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
+    - eng/pipelines/coreclr/perf*yml
+    - eng/pipelines/coreclr/templates/build-perf*
+    - eng/pipelines/coreclr/templates/perf-job.yml
+    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/testing/performance/*
 
 schedules:
   - cron: "0 7,19 * * *" # run at 7:00 and 19:00 (UTC) which is 23:00 and 11:00 (PST).
@@ -103,7 +108,8 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             buildArgs: -s clr+libs+tools.illink -c $(_BuildConfig)
-            extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
 
       #
       # Build Release config vertical for Browser-wasm
@@ -126,6 +132,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true))
-            extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
-            extraStepsParameters:
-                extraTestArgs: '/p:WasmBuildNative=false'
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
+                parameters:
+                    extraTestArgs: '/p:WasmBuildNative=false'

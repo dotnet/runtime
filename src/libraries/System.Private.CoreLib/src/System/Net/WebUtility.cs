@@ -786,8 +786,8 @@ namespace System.Net
             // is defined in http://www.w3.org/TR/2008/REC-xml-20081126/#sec-predefined-ent.
             private static Dictionary<ulong, char> InitializeLookupTable()
             {
-                ReadOnlySpan<byte> tableData = new byte[]
-                    {
+                ReadOnlySpan<byte> tableData =
+                    [
                         0x74, 0x6F, 0x75, 0x71, 0x00, 0x00, 0x00, 0x00, /*ToUInt64Key("quot")*/    0x22, 0x00, /*'\x0022'*/
                         0x70, 0x6D, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, /*ToUInt64Key("amp")*/     0x26, 0x00, /*'\x0026'*/
                         0x73, 0x6F, 0x70, 0x61, 0x00, 0x00, 0x00, 0x00, /*ToUInt64Key("apos")*/    0x27, 0x00, /*'\x0027'*/
@@ -1041,7 +1041,7 @@ namespace System.Net
                         0x73, 0x62, 0x75, 0x6C, 0x63, 0x00, 0x00, 0x00, /*ToUInt64Key("clubs")*/   0x63, 0x26, /*'\x2663'*/
                         0x73, 0x74, 0x72, 0x61, 0x65, 0x68, 0x00, 0x00, /*ToUInt64Key("hearts")*/  0x65, 0x26, /*'\x2665'*/
                         0x73, 0x6D, 0x61, 0x69, 0x64, 0x00, 0x00, 0x00, /*ToUInt64Key("diams")*/   0x66, 0x26, /*'\x2666'*/
-                    };
+                    ];
 
                 var dictionary = new Dictionary<ulong, char>(tableData.Length / (sizeof(ulong) + sizeof(char)));
                 while (!tableData.IsEmpty)

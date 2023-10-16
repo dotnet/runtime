@@ -18,7 +18,7 @@
       "description": ".NET WebAssembly experimental tooling",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Templates",
-        "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm"
       ],
       "extends": [ "wasm-tools" ],
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
@@ -51,7 +51,7 @@
         "Microsoft.NETCore.App.Runtime.Mono.android-x86"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
-      "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64" ]
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
     },
     "microsoft-net-runtime-android-aot": {
       "abstract": true,
@@ -63,7 +63,7 @@
         "Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm64"
       ],
       "extends": [ "microsoft-net-runtime-android" ],
-      "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64" ]
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
     },
     "microsoft-net-runtime-ios": {
       "abstract": true,

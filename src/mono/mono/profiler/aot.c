@@ -334,7 +334,7 @@ start_helper_thread (void)
 
 	MonoNativeThreadId thread_id;
 
-	if (!mono_native_thread_create (&thread_id, helper_thread, NULL)) {
+	if (!mono_native_thread_create (&thread_id, (gpointer)helper_thread, NULL)) {
 		mono_profiler_printf_err ("Could not start aot profiler helper thread");
 		exit (1);
 	}

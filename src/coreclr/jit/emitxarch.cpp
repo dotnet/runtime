@@ -7614,7 +7614,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
 #ifdef DEBUG
     // Mark the catch return
-    if (emitComp->compCurBB->bbJumpKind == BBJ_EHCATCHRET)
+    if (emitComp->compCurBB->KindIs(BBJ_EHCATCHRET))
     {
         id->idDebugOnlyInfo()->idCatchRet = true;
     }
@@ -9221,7 +9221,7 @@ void emitter::emitIns_J(instruction ins,
 
 #ifdef DEBUG
     // Mark the finally call
-    if (ins == INS_call && emitComp->compCurBB->bbJumpKind == BBJ_CALLFINALLY)
+    if (ins == INS_call && emitComp->compCurBB->KindIs(BBJ_CALLFINALLY))
     {
         id->idDebugOnlyInfo()->idFinallyCall = true;
     }
@@ -10550,7 +10550,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
         nsep = true;
     }
 
-    if ((id->idIsDspReloc()) && (id->idIns() != INS_i_jmp))
+    if (id->idIsDspReloc() && (id->idIns() != INS_i_jmp))
     {
         if (nsep)
         {
@@ -15844,17 +15844,22 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         // For forward jumps, record the address of the distance value
         id->idjTemp.idjAddr = (dstOffs > srcOffs) ? dst : nullptr;
 
-        dst += emitOutputLong(dst, distVal);
+        // Cross jumps may not be encodable in a 32-bit displacement as the
+        // hot/cold code buffers may be allocated arbitrarily far away from
+        // each other. We simply encode a 0 under the assumption that the
+        // relocations will take care of it.
+        bool crossJump = emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
+        assert(!crossJump || emitComp->opts.compReloc);
 
-#ifndef TARGET_AMD64 // all REL32 on AMD have to go through recordRelocation
+        dst += emitOutputLong(dst, crossJump ? 0 : distVal);
+
         if (emitComp->opts.compReloc)
-#endif
         {
             if (!relAddr)
             {
                 emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)distVal, IMAGE_REL_BASED_HIGHLOW);
             }
-            else if (emitJumpCrossHotColdBoundary(srcOffs, dstOffs))
+            else if (crossJump)
             {
                 assert(id->idjKeepLong);
                 emitRecordRelocation((void*)(dst - sizeof(INT32)), dst + distVal, IMAGE_REL_BASED_REL32);

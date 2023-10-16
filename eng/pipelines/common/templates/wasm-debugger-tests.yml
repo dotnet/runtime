@@ -52,10 +52,11 @@ jobs:
           and(
             eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']),
             eq(${{ parameters.isWasmOnlyBuild }}, ${{ parameters.runOnlyOnWasmOnlyPipelines }})))
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_${{ parameters.browser }}_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs) /p:_DebuggerHosts=${{ parameters.browser }}
-        scenarios:
-        - wasmdebuggertests
+      postBuildSteps:
+        - template: /eng/pipelines/libraries/helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_${{ parameters.browser }}_$(_BuildConfig)
+            extraHelixArguments: /p:BrowserHost=$(_hostedOs) /p:_DebuggerHosts=${{ parameters.browser }}
+            scenarios:
+            - wasmdebuggertests

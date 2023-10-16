@@ -86,12 +86,12 @@ namespace System.Reflection.Emit
                hashAlgorithm: (AssemblyHashAlgorithm)_assemblyName.HashAlgorithm
 #pragma warning restore SYSLIB0037
                );
-
             _module.WriteCustomAttributes(_customAttributes, assemblyHandle);
-            // Add module's metadata
-            _module.AppendMetadata();
 
             var ilBuilder = new BlobBuilder();
+            MethodBodyStreamEncoder methodBodyEncoder = new MethodBodyStreamEncoder(ilBuilder);
+            _module.AppendMetadata(methodBodyEncoder);
+
             WritePEImage(stream, ilBuilder);
             _previouslySaved = true;
         }
