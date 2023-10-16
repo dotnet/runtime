@@ -1052,7 +1052,7 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 /* NEON :: paired loads/stores */
 #define arm_neon_ldp_stp(p, opc, l, rt1, rt2, rn, imm7) arm_emit ((p), 0b00101101000000000000000000000000 | (opc) << 30 | (l) << 22 | (imm7) << 15 | (rt2) << 10 | (rn) << 5 | (rt1))
 #define arm_neon_stp_16b(p, rt1, rt2, rn, imm) arm_neon_ldp_stp ((p), 0b10, 0b0, (rt1), (rt2), (rn), arm_encode_imm7 (imm, 16))
-#define arm_neon_ltp_16b(p, rt1, rt2, rn, imm) arm_neon_ldp_stp ((p), 0b10, 0b1, (rt1), (rt2), (rn), arm_encode_imm7 (imm, 16))
+#define arm_neon_ldp_16b(p, rt1, rt2, rn, imm) arm_neon_ldp_stp ((p), 0b10, 0b1, (rt1), (rt2), (rn), arm_encode_imm7 (imm, 16))
 
 /* NEON :: move SIMD register */
 #define arm_neon_mov(p, rd, rn) arm_neon_orr ((p), VREG_FULL, (rd), (rn), (rn))
