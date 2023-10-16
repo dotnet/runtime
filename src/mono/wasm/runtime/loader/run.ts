@@ -10,7 +10,7 @@ import { ENVIRONMENT_IS_WEB, emscriptenModule, exportedRuntimeAPI, globalObjects
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { mono_exit } from "./exit";
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
-import { mono_download_assets, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, start_asset_download } from "./assets";
+import { mono_download_assets, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
@@ -476,12 +476,7 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
 
     await initCacheToUseIfEnabled();
 
-    const wasmModuleAsset = resolve_single_asset_path("dotnetwasm");
-    start_asset_download(wasmModuleAsset).then(asset => {
-        loaderHelpers.wasmDownloadPromise.promise_control.resolve(asset);
-    }).catch(err => {
-        mono_exit(1, err);
-    });
+    streamingCompileWasm(); // intentionally not awaited
 
     setTimeout(async () => {
         try {

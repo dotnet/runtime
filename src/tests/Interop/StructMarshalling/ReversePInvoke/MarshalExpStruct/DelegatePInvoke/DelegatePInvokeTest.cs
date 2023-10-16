@@ -688,7 +688,8 @@ public class Test_DelegatePInvokeTest
 
     #endregion
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

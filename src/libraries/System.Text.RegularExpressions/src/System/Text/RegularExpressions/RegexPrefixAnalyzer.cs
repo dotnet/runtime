@@ -964,8 +964,8 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>
-        private static ReadOnlySpan<float> Frequency => new float[]
-        {
+        private static ReadOnlySpan<float> Frequency =>
+        [
             0.000f /* '\x00' */, 0.000f /* '\x01' */, 0.000f /* '\x02' */, 0.000f /* '\x03' */, 0.000f /* '\x04' */, 0.000f /* '\x05' */, 0.000f /* '\x06' */, 0.000f /* '\x07' */,
             0.000f /* '\x08' */, 0.001f /* '\x09' */, 0.000f /* '\x0A' */, 0.000f /* '\x0B' */, 0.000f /* '\x0C' */, 0.000f /* '\x0D' */, 0.000f /* '\x0E' */, 0.000f /* '\x0F' */,
             0.000f /* '\x10' */, 0.000f /* '\x11' */, 0.000f /* '\x12' */, 0.000f /* '\x13' */, 0.003f /* '\x14' */, 0.000f /* '\x15' */, 0.000f /* '\x16' */, 0.000f /* '\x17' */,
@@ -982,7 +982,7 @@ namespace System.Text.RegularExpressions
             1.024f /* '   h' */, 3.750f /* '   i' */, 0.286f /* '   j' */, 0.439f /* '   k' */, 2.913f /* '   l' */, 1.459f /* '   m' */, 3.908f /* '   n' */, 3.230f /* '   o' */,
             1.444f /* '   p' */, 0.231f /* '   q' */, 4.220f /* '   r' */, 3.924f /* '   s' */, 5.312f /* '   t' */, 2.112f /* '   u' */, 0.737f /* '   v' */, 0.573f /* '   w' */,
             0.992f /* '   x' */, 1.067f /* '   y' */, 0.181f /* '   z' */, 0.391f /* '   {' */, 0.056f /* '   |' */, 0.391f /* '   }' */, 0.002f /* '   ~' */, 0.000f /* '\x7F' */,
-        };
+        ];
 
         // The above table was generated programmatically with the following.  This can be augmented to incorporate additional data sources,
         // though it is only intended to be a rough approximation use when tie-breaking and we'd otherwise be picking randomly, so, it's something.
@@ -1008,8 +1008,8 @@ namespace System.Text.RegularExpressions
         // long total = counts.Sum(i => i.Value);
         //
         // Console.WriteLine("/// <summary>Percent occurrences in source text (100 * char count / total count).</summary>");
-        // Console.WriteLine("private static ReadOnlySpan<float> Frequency => new float[]");
-        // Console.WriteLine("{");
+        // Console.WriteLine("private static ReadOnlySpan<float> Frequency =>");
+        // Console.WriteLine("[");
         // int i = 0;
         // for (int row = 0; row < 16; row++)
         // {
@@ -1023,6 +1023,6 @@ namespace System.Text.RegularExpressions
         //     }
         //     Console.WriteLine();
         // }
-        // Console.WriteLine("};");
+        // Console.WriteLine("];");
     }
 }

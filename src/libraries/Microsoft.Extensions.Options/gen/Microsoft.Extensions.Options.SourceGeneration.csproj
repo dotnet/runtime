@@ -30,6 +30,7 @@
     <Compile Include="Model\ValidatedModel.cs" />
     <Compile Include="Model\ValidationAttributeInfo.cs" />
     <Compile Include="Model\ValidatorType.cs" />
+    <Compile Include="OptionsSourceGenContext.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="ParserUtilities.cs" />
     <Compile Include="SymbolHolder.cs" />

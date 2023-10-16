@@ -22,7 +22,7 @@ internal static partial class Interop
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern unsafe void BindCSFunction(in string fully_qualified_name, int signature_hash, void* signature, out int is_exception, out object result);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void MarshalPromise(void* data);
+        public static extern void ResolveOrRejectPromise(void* data);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr RegisterGCRoot(IntPtr start, int bytesSize, IntPtr name);
         [MethodImpl(MethodImplOptions.InternalCall)]

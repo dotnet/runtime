@@ -8,7 +8,7 @@ using Xunit;
 
 using static DelegateTestNative;
 
-class DelegateTest
+public class DelegateTest
 {
     private static void TestFunctionPointer()
     {
@@ -70,7 +70,7 @@ class DelegateTest
         {
             TestDelegate localDelegate = TestFunction;
             Assert.True(ValidateDelegateValueMatchesExpectedAndClear(expectedValue, ref localDelegate));
-            Assert.Equal(null, localDelegate);
+            Assert.Null(localDelegate);
         }
 
         {
@@ -102,7 +102,7 @@ class DelegateTest
             };
 
             Assert.True(ValidateDelegateValueMatchesExpectedAndClearStruct(ref cb));
-            Assert.Equal(null, cb.del);
+            Assert.Null(cb.del);
         }
 
         {
@@ -119,7 +119,8 @@ class DelegateTest
         Assert.Throws<MarshalDirectiveException>(() => MarshalDelegateAsInterface(TestFunction));
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

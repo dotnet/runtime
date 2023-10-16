@@ -508,7 +508,7 @@ public class C_BOOLArray_Exp
 
 #endregion
 
-class Test
+public class Test
 {
     //for RunTest1
     [DllImport("MarshalArrayByValArrayNative", CallingConvention = CallingConvention.Cdecl)]
@@ -1176,7 +1176,8 @@ class Test
         Assert.True(TestStructEquals(InitStructArray(ARRAY_SIZE), retval13.arr));
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {
