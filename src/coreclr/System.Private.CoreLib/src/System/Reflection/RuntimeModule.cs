@@ -418,7 +418,7 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(
             string className, // throw on null strings regardless of the value of "throwOnError"
             bool throwOnError, bool ignoreCase)

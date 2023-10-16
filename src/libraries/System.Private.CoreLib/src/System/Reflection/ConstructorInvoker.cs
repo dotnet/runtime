@@ -155,7 +155,7 @@ namespace System.Reflection
 
         private object InvokeImpl(object? arg1, object? arg2, object? arg3, object? arg4)
         {
-            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
+            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0)
             {
                 _method.ThrowNoInvokeException();
             }

@@ -59,6 +59,7 @@
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJS' or '$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
     <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
+    <NeedsToRunOnV8 Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnV8>
     <NeedsBuiltNugets Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsBuiltNugets>
 
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
@@ -101,6 +102,8 @@
 
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDriverDirName):$PATH" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDirName):$PATH" />
+
+    <HelixPreCommand Condition="'$(NeedsToRunOnV8)' == 'true'" Include="export V8_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/$(V8DirName)/$(V8BinaryName)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
@@ -114,6 +117,8 @@
 
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDriverDirName)%3B%PATH%" />
     <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDirName)%3B%PATH%" />
+
+    <HelixPreCommand Condition="'$(NeedsToRunOnV8)' == 'true'" Include="set V8_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\$(V8DirName)\$(V8BinaryName)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' != 'true'">
@@ -187,6 +192,8 @@
            Text="Could not find chrome at $(ChromeDir)" />
     <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDriverDir))"
            Text="Could not find chromedriver at $(ChromeDriverDir)" />
+    <Error Condition="'$(NeedsToRunOnV8)' == 'true' and !Exists($(V8BinaryPath))"
+           Text="Could not find v8 at $(V8BinaryPath)" />
     <Error Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'firefox' and !Exists($(FirefoxDir))"
            Text="Could not find firefox at $(FirefoxDir)" />
 
@@ -195,6 +202,10 @@
       <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="$(ChromeDriverDir)" />
 
       <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="$(FirefoxDir)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <HelixCorrelationPayload Condition="'$(NeedsToRunOnV8)' == 'true'" Include="$(V8Dir)" Destination="$(V8DirName)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">

@@ -39,7 +39,7 @@ namespace Wasm.Build.Tests
 
         private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
         {
-            string mainJsPath = Path.Combine(_projectDir!, "main.js");
+            string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
             string mainJsContent = File.ReadAllText(mainJsPath);
 
             // .withExitOnUnhandledError() is available only only >net7.0
@@ -185,19 +185,19 @@ namespace Wasm.Build.Tests
         [InlineData("Release", false)]
         [InlineData("Release", true)]
         public void ConsoleBuildAndRunDefault(string config, bool relinking)
-            => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework);
+            => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework, addFrameworkArg: true);
 
         [Theory]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
         // [InlineData("Debug", "-f net7.0", "net7.0")]
         [InlineData("Debug", "-f net8.0", "net8.0")]
         public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs, string expectedTFM)
-            => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM);
+            => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM, addFrameworkArg: extraNewArgs?.Length == 0);
 
-        private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs, string expectedTFM)
+        private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs, string expectedTFM, bool addFrameworkArg)
         {
             string id = $"{config}_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs);
+            string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs, addFrameworkArg: addFrameworkArg);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             UpdateProgramCS();
@@ -408,16 +408,17 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [InlineData("", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath)]
-        [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/90979")]
+        // [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
+        // [InlineData("-f net8.0", "net8.0", "./")]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
         // [InlineData("-f net7.0", "net7.0")]
         [InlineData("-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath)]
-        [InlineData("-f net8.0", "net8.0", "./")]
         public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             string config = "Debug";
             string id = $"browser_{config}_{GetRandomId()}";
-            CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs);
+            CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs, addFrameworkArg: extraNewArgs.Length == 0);
 
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 

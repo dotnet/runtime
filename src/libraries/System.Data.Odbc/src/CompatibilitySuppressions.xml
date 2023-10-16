@@ -1,16 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- Exposed publicly only in implementation for serialization compat. -->
+  <!-- net6.0 and net7.0 aren't supported by the current package and any errors should be suppressed. -->
   <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Data.Odbc.ODBC32</Target>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <Left>lib/net7.0/System.Data.Odbc.dll</Left>
+    <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Data.Odbc.ODBC32</Target>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
-  <!-- Cannot be exposed in the ref yet as it is new API that doesn't exist in net472. -->
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Data.Odbc.ODBC32</Target>
+  </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>

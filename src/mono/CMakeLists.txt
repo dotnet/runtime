@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
 
-cmake_policy(SET CMP0091 NEW)
-
 project(mono)
 
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 if (MSVC)
   # Also set by configurecompiler.cmake, which isn't used by mono yet
@@ -15,6 +16,14 @@ if (MSVC)
   if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
     add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif()
+
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4100>) # W4: unreferenced formal parameter
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4702>) # W4: unreachable code
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4706>) # W4: assignment within conditional expression
+
+  # FIXME we should investigate these mismatches at some point
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # W4: signed/unsigned mismatch
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4389>) # W4: signed/unsigned mismatch
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
@@ -75,7 +84,6 @@ if(ENABLE_MINIMAL)
 endif()
 
 set(DISABLE_COM 1)
-set(DISABLE_DLLMAP 1)
 
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
@@ -101,7 +109,6 @@ if(GCC)
   set(USE_GCC_ATOMIC_OPS 1)
 endif()
 
-set(HAVE_CLASSIC_WINAPI_SUPPORT 1)
 set(HAVE_MOVING_COLLECTOR 1)
 set(HAVE_CONC_GC_AS_DEFAULT 1)
 set(MONO_INSIDE_RUNTIME 1)
@@ -256,6 +263,8 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "wasi")
   add_definitions(-DDISABLE_SOCKET_TRANSPORT)
   add_definitions(-DDISABLE_EGD_SOCKET)
   add_definitions(-DDISABLE_EVENTPIPE)
+  add_compile_options(-Wno-strict-prototypes)
+  add_compile_options(-Wno-unused-but-set-variable)
   set(ENABLE_PERFTRACING 0)
   set(DISABLE_SHARED_LIBS 1)
   set(INTERNAL_ZLIB 1)
@@ -520,13 +529,8 @@ include(configure)
 ######################################
 
 if(GCC)
-  if(HOST_WASI)
-    # WASI SDK only includes some required definitions if the C version is at least this new
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-  else()
-    # We require C99 with some GNU extensions, e.g. `linux` macro
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-  endif()
+  # We require C11 with some GNU extensions, e.g. `linux` macro
+  set(CMAKE_C_EXTENSIONS ON)
 
   # Turn off floating point expression contraction because it is considered a value changing
   # optimization in the IEEE 754 specification and is therefore considered unsafe.
@@ -601,9 +605,7 @@ if(LLVM_PREFIX)
 
   # llvm-config --libs analysis core bitwriter mcjit orcjit
   set(MONO_llvm_core_libs "LLVMOrcJIT" "LLVMPasses" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMScalarOpts" "LLVMLinker" "LLVMIRReader" "LLVMAsmParser" "LLVMInstCombine" "LLVMFrontendOpenMP" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
-  if(${llvm_api_version} LESS 1200)
-    set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMOrcError" "LLVMDebugInfoMSF")
-  elseif(${llvm_api_version} LESS 1600)
+  if(${llvm_api_version} LESS 1600)
     set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMObjCARCOpts" "LLVMMCDisassembler" "LLVMOrcTargetProcess" "LLVMOrcShared" "LLVMDebugInfoDWARF")
   else()
     set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMIRPrinter" "LLVMCodeGen" "LLVMObjCARCOpts" "LLVMMCDisassembler" "LLVMWindowsDriver" "LLVMOption" "LLVMOrcTargetProcess" "LLVMOrcShared"  "LLVMSymbolize" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMTargetParser")
@@ -649,7 +651,12 @@ if(LLVM_PREFIX)
 
   # llvm-config --cflags
   set(llvm_cflags "-I${LLVM_PREFIX}/include -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-  set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_include} ${MONO_cxx_std_version} ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+
+  if (HOST_BROWSER)
+    set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_include} ${MONO_cxx_std_version} ${MONO_stdlib} -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  else()
+    set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_include} ${MONO_cxx_std_version} ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  endif()
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
   if(HOST_LINUX)
@@ -688,6 +695,10 @@ if(LLVM_PREFIX)
     string(REPLACE "/EHs-c-" "" llvm_cxxflags "${llvm_cxxflags}")
     # /GR- already enabled and inherited from LLVM flags. Corresponds to -fno-rtti.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags}")
+  elseif(HOST_BROWSER)
+    # emscripten's handling of the different exception modes is complex, so having multiple flags
+    # passed during a single compile is undesirable. we need to set them elsewhere.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fno-rtti")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
   endif()
@@ -800,7 +811,6 @@ if(HOST_WIN32)
   set(EGLIB_PATHSEP "\\\\")
   set(EGLIB_SEARCHSEP ";")
   set(EGLIB_OS "WIN32")
-  set(EGLIB_PIDTYPE "void *")
   if(HOST_AMD64 OR HOST_ARM64)
     set(EGLIB_GSIZE_FORMAT "\"Iu\"")
   else()
@@ -810,7 +820,6 @@ else()
   set(EGLIB_BREAKPOINT "G_STMT_START { raise(SIGTRAP); } G_STMT_END")
   if(GCC)
     set(EGLIB_GNUC_UNUSED "__attribute__((__unused__))")
-    set(EGLIB_GNUC_NORETURN "__attribute__((__noreturn__))")
     if(HOST_AMD64 OR HOST_X86)
       set(EGLIB_BREAKPOINT "G_STMT_START { __asm__(\"int \$03\"); } G_STMT_END")
     endif()
@@ -818,7 +827,6 @@ else()
   set(EGLIB_PATHSEP "/")
   set(EGLIB_SEARCHSEP ":")
   set(EGLIB_OS "UNIX")
-  set(EGLIB_PIDTYPE "int")
   set(EGLIB_GSIZE_FORMAT "\"zu\"")
 endif()
 
@@ -830,7 +838,7 @@ set(EGLIB_GSSIZE "ptrdiff_t")
 #
 
 ######################################
-# DEBUG BUILD CHECKS
+# CHECKED BUILD CHECKS
 ######################################
 function(process_checked_build)
   string(REPLACE "," ";" tmp1 "${CHECKED_BUILD}")
@@ -840,17 +848,15 @@ function(process_checked_build)
   endforeach(arg)
 endfunction()
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  # if no explicit -DCHECKED_BUILD=args option, just do ENABLE_CHECKED_BUILD_PRIVATE_TYPES
-  if (CHECKED_BUILD)
-    set(ENABLE_CHECKED_BUILD 1)
-    process_checked_build()
-  else()
-    set(ENABLE_CHECKED_BUILD 1)
-    set(ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1)
-  endif()
+if(CHECKED_BUILD)
+  set(ENABLE_CHECKED_BUILD 1)
+  process_checked_build()
+elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # if no explicit -DCHECKED_BUILD=args option and we're building debug, just do ENABLE_CHECKED_BUILD_PRIVATE_TYPES
+  set(ENABLE_CHECKED_BUILD 1)
+  set(ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1)
 endif()
-### End of debug build checks
+### End of checked build checks
 
 ######################################
 # COMPONENT BUILD CHECKS

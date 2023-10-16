@@ -618,9 +618,9 @@ namespace Microsoft.Interop.Analyzers
 
         private void PrepareForAnalysis(CompilationStartAnalysisContext context)
         {
-            if (context.Compilation.GetBestTypeByMetadataName(TypeNames.CustomMarshallerAttribute) is not null)
+            if (context.Compilation.GetBestTypeByMetadataName(TypeNames.CustomMarshallerAttribute) is { } customMarshallerAttribute)
             {
-                var perCompilationAnalyzer = new PerCompilationAnalyzer(context.Compilation);
+                var perCompilationAnalyzer = new PerCompilationAnalyzer(context.Compilation, customMarshallerAttribute);
                 context.RegisterOperationAction(perCompilationAnalyzer.AnalyzeAttribute, OperationKind.Attribute);
             }
         }
@@ -630,10 +630,12 @@ namespace Microsoft.Interop.Analyzers
             private readonly Compilation _compilation;
             private readonly INamedTypeSymbol _spanOfT;
             private readonly INamedTypeSymbol _readOnlySpanOfT;
+            private readonly INamedTypeSymbol _customMarshallerAttribute;
 
-            public PerCompilationAnalyzer(Compilation compilation)
+            public PerCompilationAnalyzer(Compilation compilation, INamedTypeSymbol customMarshallerAttribute)
             {
                 _compilation = compilation;
+                _customMarshallerAttribute = customMarshallerAttribute;
                 _spanOfT = compilation.GetBestTypeByMetadataName(TypeNames.System_Span_Metadata);
                 _readOnlySpanOfT = compilation.GetBestTypeByMetadataName(TypeNames.System_ReadOnlySpan_Metadata);
             }
@@ -641,7 +643,7 @@ namespace Microsoft.Interop.Analyzers
             {
                 IAttributeOperation attr = (IAttributeOperation)context.Operation;
                 if (attr.Operation is IObjectCreationOperation attrCreation
-                    && attrCreation.Type.ToDisplayString() == TypeNames.CustomMarshallerAttribute)
+                    && attrCreation.Type.Equals(_customMarshallerAttribute, SymbolEqualityComparer.Default))
                 {
                     INamedTypeSymbol entryType = (INamedTypeSymbol)context.ContainingSymbol!;
                     IArgumentOperation? managedTypeArgument = attrCreation.GetArgumentByOrdinal(0);

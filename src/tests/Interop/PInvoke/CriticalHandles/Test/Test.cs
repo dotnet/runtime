@@ -358,7 +358,8 @@ public class NoDefaultCtorCriticalHandleTest
 
 public class Test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

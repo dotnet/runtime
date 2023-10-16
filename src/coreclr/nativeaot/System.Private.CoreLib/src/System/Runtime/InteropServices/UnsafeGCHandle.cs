@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices
             _handle = RuntimeImports.RhHandleAlloc(value, type);
         }
 
-        public static UnsafeGCHandle Alloc(object value, GCHandleType type)
+        public static UnsafeGCHandle Alloc(object value, GCHandleType type = GCHandleType.Normal)
         {
             return new UnsafeGCHandle(value, type);
         }

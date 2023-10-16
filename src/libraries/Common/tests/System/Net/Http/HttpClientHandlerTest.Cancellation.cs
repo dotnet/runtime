@@ -28,7 +28,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false, CancellationMode.Token)]
         [InlineData(true, CancellationMode.Token)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36634", TestPlatforms.Browser)] // out of memory
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunkedTransfer)
@@ -39,6 +38,12 @@ namespace System.Net.Http.Functional.Tests
 
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
+                return;
+            }
+
+            if (PlatformDetection.IsBrowser && LoopbackServerFactory.Version < HttpVersion20.Value)
+            {
+                // Browser request streaming is only supported on HTTP/2 or higher
                 return;
             }
 
@@ -57,6 +62,13 @@ namespace System.Net.Http.Functional.Tests
                         var req = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                         req.Content = new ByteAtATimeContent(int.MaxValue, waitToSend.Task, contentSending, millisecondDelayBetweenBytes: 1);
                         req.Headers.TransferEncodingChunked = chunkedTransfer;
+
+                        if (PlatformDetection.IsBrowser)
+                        {
+#if !NETFRAMEWORK
+                            req.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest"), true);
+#endif
+                        }
 
                         Task<HttpResponseMessage> resp = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                         waitToSend.SetResult(true);

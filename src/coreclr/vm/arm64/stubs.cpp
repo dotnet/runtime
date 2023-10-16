@@ -699,7 +699,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->pCurrentContextPointers->X28 = NULL;
 
     pRD->ControlPC = m_pCallerReturnAddress;
-    pRD->SP = (DWORD) dac_cast<TADDR>(m_pCallSiteSP);
+    pRD->SP = (DWORD64) dac_cast<TADDR>(m_pCallSiteSP);
 
     // reset pContext; it's only valid for active (top-most) frame
     pRD->pContext = NULL;

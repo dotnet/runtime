@@ -26,6 +26,8 @@ if defined VisualStudioVersion goto :VSDetected
 set "__VSWhere=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 set "__VSCOMNTOOLS="
 
+if not exist "%__VSWhere%" goto :VSWhereMissing
+
 if exist "%__VSWhere%" (
     for /f "tokens=*" %%p in (
         '"%__VSWhere%" -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath'
@@ -54,6 +56,10 @@ if "%VisualStudioVersion%"=="17.0" (
 :VSMissing
 echo %__MsgPrefix%Error: Visual Studio 2022 with C++ tools required. ^
 Please see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md for build requirements.
+exit /b 1
+
+:VSWhereMissing
+echo %__MsgPrefix%Error: vswhere couldn not be found in Visual Studio Installer directory at "%__VSWhere%"
 exit /b 1
 
 :SetVCEnvironment

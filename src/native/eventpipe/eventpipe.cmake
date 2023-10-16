@@ -40,6 +40,7 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
         ep-session-provider.c
         ep-stack-contents.c
         ep-stream.c
+        ep-string.c
         ep-thread.c
     )
 
@@ -71,6 +72,7 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
         ep-session-provider.h
         ep-stack-contents.h
         ep-stream.h
+        ep-string.h
         ep-thread.h
         ep-types.h
         ep-types-forward.h

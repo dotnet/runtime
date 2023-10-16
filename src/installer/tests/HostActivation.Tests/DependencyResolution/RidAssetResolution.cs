@@ -29,7 +29,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             // Expected behaviour of the test based on above settings
             public bool ShouldUseRidGraph => UseRidGraph == true;
-            public bool ShouldUseFallbackRid => ShouldUseRidGraph && (Rid == UnknownRid || !HasRidGraph);
+
+            public bool? ShouldUseFallbackRid
+            {
+                get
+                {
+                    if (!ShouldUseRidGraph)
+                        return false;
+
+                    if (Rid == UnknownRid || !HasRidGraph)
+                        return true;
+
+                    // We use the product RID graph for testing (for cases with a RID graph). If the test is running
+                    // on a platform that isn't in that RID graph, we may end up with the fallback even when the RID
+                    // graph is used and RID is not unknown. Value of null indicates this state.
+                    return null;
+                }
+            }
 
             public override string ToString() => $"""
                 {nameof(Rid)}: {(Rid ?? "<null>")}
@@ -72,6 +88,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             return app;
         }
+
+        // The fallback RID is a compile-time define for the host. On Windows, it is always win10 and on
+        // other platforms, it matches the build RID (non-portable for source-builds, portable otherwise)
+        private static string FallbackRid = OperatingSystem.IsWindows()
+            ? $"win10-{RepoDirectoriesProvider.Default.BuildArchitecture}"
+            : RepoDirectoriesProvider.Default.BuildRID;
 
         protected const string UnknownRid = "unknown-rid";
 
@@ -150,6 +172,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 new TestSetup() { Rid = rid, HasRidGraph = hasRuntimeFallbacks, UseRidGraph = useRidGraph },
                 includedPath,
                 excludedPath);
+        }
+
+        [Fact]
+        public void RidSpecificAssembly_FallbackRid()
+        {
+            // When there is no RID graph and the host is configured to use the RID graph, it should still be able to
+            // resolve an exact match to the fallback RID
+            string assetPath = $"{FallbackRid}/{FallbackRid}Asset";
+            RunTest(
+                p => p.WithAssemblyGroup(FallbackRid, g => g.WithAsset(assetPath)),
+                new TestSetup() { Rid = null, HasRidGraph = false, UseRidGraph = true },
+                new ResolvedPaths() { IncludedAssemblyPaths = assetPath });
         }
 
         [Theory]
@@ -237,6 +271,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 new TestSetup() { Rid = rid, HasRidGraph = hasRuntimeFallbacks, UseRidGraph = useRidGraph },
                 includedPath,
                 excludedPath);
+        }
+
+        [Fact]
+        public void RidSpecificNativeLibrary_FallbackRid()
+        {
+            // When there is no RID graph and the host is configured to use the RID graph, it should still be able to
+            // resolve an exact match to the fallback RID
+            string assetPath = $"{FallbackRid}/{FallbackRid}Asset";
+            RunTest(
+                p => p.WithNativeLibraryGroup(FallbackRid, g => g.WithAsset(assetPath)),
+                new TestSetup() { Rid = null, HasRidGraph = false, UseRidGraph = true },
+                new ResolvedPaths() { IncludedNativeLibraryPaths = $"{FallbackRid}/" });
         }
 
         [Theory]
@@ -623,18 +669,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
                 UpdateAppConfigForTest(app, setup, copyOnUpdate: false);
 
-                dotnet.Exec(app.AppDll)
+                var result = dotnet.Exec(app.AppDll)
                     .EnableTracingAndCaptureOutputs()
                     .RuntimeId(setup.Rid)
-                    .Execute()
-                    .Should().Pass()
+                    .Execute();
+                result.Should().Pass()
                     .And.HaveResolvedAssembly(expected.IncludedAssemblyPaths, app)
                     .And.NotHaveResolvedAssembly(expected.ExcludedAssemblyPaths, app)
                     .And.HaveResolvedNativeLibraryPath(expected.IncludedNativeLibraryPaths, app)
                     .And.NotHaveResolvedNativeLibraryPath(expected.ExcludedNativeLibraryPaths, app)
                     .And.HaveReadRidGraph(setup.ShouldUseRidGraph)
-                    .And.HaveUsedFallbackRid(setup.ShouldUseFallbackRid)
                     .And.HaveUsedFrameworkProbe(dotnet.GreatestVersionSharedFxPath, level: 1);
+
+                if (setup.ShouldUseFallbackRid.HasValue)
+                    result.Should().HaveUsedFallbackRid(setup.ShouldUseFallbackRid.Value);
             }
         }
     }
@@ -674,17 +722,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             TestApp app = UpdateAppConfigForTest(SharedState.FrameworkReferenceApp, setup, copyOnUpdate: true);
 
-            SharedState.RunComponentResolutionTest(component.AppDll, app, dotnet.GreatestVersionHostFxrPath, command => command
-                .RuntimeId(setup.Rid))
-                .Should().Pass()
+            var result = SharedState.RunComponentResolutionTest(component.AppDll, app, dotnet.GreatestVersionHostFxrPath, command => command
+                .RuntimeId(setup.Rid));
+            result.Should().Pass()
                 .And.HaveSuccessfullyResolvedComponentDependencies()
                 .And.HaveResolvedComponentDependencyAssembly(expected.IncludedAssemblyPaths, component)
                 .And.NotHaveResolvedComponentDependencyAssembly(expected.ExcludedAssemblyPaths, component)
                 .And.HaveResolvedComponentDependencyNativeLibraryPath(expected.IncludedNativeLibraryPaths, component)
                 .And.NotHaveResolvedComponentDependencyNativeLibraryPath(expected.ExcludedNativeLibraryPaths, component)
                 .And.HaveReadRidGraph(setup.ShouldUseRidGraph)
-                .And.HaveUsedFallbackRid(setup.ShouldUseFallbackRid)
                 .And.NotHaveUsedFrameworkProbe(dotnet.GreatestVersionSharedFxPath);
+
+            if (setup.ShouldUseFallbackRid.HasValue)
+                    result.Should().HaveUsedFallbackRid(setup.ShouldUseFallbackRid.Value);
         }
     }
 
@@ -723,16 +773,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             app = UpdateAppConfigForTest(app, setup, copyOnUpdate: true);
 
-            SharedState.RunComponentResolutionTest(component.AppDll, app, app.Location, command => command
-                .RuntimeId(setup.Rid))
-                .Should().Pass()
+            var result = SharedState.RunComponentResolutionTest(component.AppDll, app, app.Location, command => command
+                .RuntimeId(setup.Rid));
+            result.Should().Pass()
                 .And.HaveSuccessfullyResolvedComponentDependencies()
                 .And.HaveResolvedComponentDependencyAssembly(expected.IncludedAssemblyPaths, component)
                 .And.NotHaveResolvedComponentDependencyAssembly(expected.ExcludedAssemblyPaths, component)
                 .And.HaveResolvedComponentDependencyNativeLibraryPath(expected.IncludedNativeLibraryPaths, component)
                 .And.NotHaveResolvedComponentDependencyNativeLibraryPath(expected.ExcludedNativeLibraryPaths, component)
-                .And.HaveReadRidGraph(setup.ShouldUseRidGraph)
-                .And.HaveUsedFallbackRid(setup.ShouldUseFallbackRid);
+                .And.HaveReadRidGraph(setup.ShouldUseRidGraph);
+
+            if (setup.ShouldUseFallbackRid.HasValue)
+                result.Should().HaveUsedFallbackRid(setup.ShouldUseFallbackRid.Value);
         }
 
         public class ComponentSharedTestState : ComponentSharedTestStateBase

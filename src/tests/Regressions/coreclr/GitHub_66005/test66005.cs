@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Program
+public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Test<TException>() where TException : Exception
@@ -19,17 +20,9 @@ class Program
         }
     }
 
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
-        try
-        {
-            Test<InvalidOperationException>();
-        }
-        catch
-        {
-            return -1;
-        }
-
-        return 100;
+        Test<InvalidOperationException>();
     }
 }

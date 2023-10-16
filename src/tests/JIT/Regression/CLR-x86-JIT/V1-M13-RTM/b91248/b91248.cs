@@ -18,5 +18,8 @@ public struct AA
         } while ((new bool[2, 2])[param, param]);
     }
     [Fact]
-    public static int TestEntryPoint() { Test(0, __arglist()); return 100; }
+    public static void TestEntryPoint()
+    {
+        Test(0, __arglist());
+    }
 }
