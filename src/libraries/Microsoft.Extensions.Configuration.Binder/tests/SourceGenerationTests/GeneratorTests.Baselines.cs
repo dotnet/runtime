@@ -779,7 +779,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                                 public StringComparison? NSC { get; }
                                 public char? NC { get; }
 
-                                public ClassWhereParametersHaveDefaultValue(string? name, string address, 
+                                public ClassWhereParametersHaveDefaultValue(string? name = "John Doe", string address = "1 Microsoft Way",
                                     int age = 42, float f = 42.0f, double d = 3.14159, decimal m = 3.1415926535897932384626433M, StringComparison sc = StringComparison.Ordinal, char c = 'q',
                                     int? nage = 42, float? nf = 42.0f, double? nd = 3.14159, decimal? nm = 3.1415926535897932384626433M, StringComparison? nsc = StringComparison.Ordinal, char? nc = 'q')
                                 {

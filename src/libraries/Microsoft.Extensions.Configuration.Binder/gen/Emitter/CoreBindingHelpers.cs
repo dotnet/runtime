@@ -380,7 +380,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     TypeSpec memberType = _typeIndex.GetTypeSpec(member.TypeRef);
                     string parsedMemberDeclarationLhs = $"{memberType.DisplayString} {member.Name}";
                     string configKeyName = member.ConfigurationKeyName;
-                    string parsedMemberAssignmentLhsExpr;
 
                     switch (memberType)
                     {
@@ -393,8 +392,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     _writer.WriteLine();
                                     return;
                                 }
-
-                                parsedMemberAssignmentLhsExpr = parsedMemberDeclarationLhs;
                             }
                             break;
                         case ConfigurationSectionSpec:
@@ -402,22 +399,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 _writer.WriteLine($"{parsedMemberDeclarationLhs} = {GetSectionFromConfigurationExpression(configKeyName)};");
                                 return;
                             }
-                        default:
-                            {
-                                string bangExpr = memberType.IsValueType ? string.Empty : "!";
-                                string parsedMemberIdentifierDeclaration = $"{parsedMemberDeclarationLhs} = {member.DefaultValueExpr}{bangExpr};";
-
-                                _writer.WriteLine(parsedMemberIdentifierDeclaration);
-                                _emitBlankLineBeforeNextStatement = false;
-
-                                parsedMemberAssignmentLhsExpr = member.Name;
-                            }
-                            break;
                     }
+
+                    string bangExpr = memberType.IsValueType ? string.Empty : "!";
+                    _writer.WriteLine($"{parsedMemberDeclarationLhs} = {member.DefaultValueExpr}{bangExpr};");
+                    _emitBlankLineBeforeNextStatement = false;
 
                     bool canBindToMember = this.EmitBindImplForMember(
                         member,
-                        parsedMemberAssignmentLhsExpr,
+                        member.Name,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
                         canSet: true,
                         InitializationKind.None);
