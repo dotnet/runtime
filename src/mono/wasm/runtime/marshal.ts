@@ -8,7 +8,7 @@ import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types/internal";
-import { CharPtr, TypedArray, VoidPtr } from "./types/emscripten";
+import { TypedArray, VoidPtr } from "./types/emscripten";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
 export const js_to_cs_marshalers = new Map<MarshalerType, MarshalerToCs>();
@@ -16,28 +16,6 @@ export const bound_cs_function_symbol = Symbol.for("wasm bound_cs_function");
 export const bound_js_function_symbol = Symbol.for("wasm bound_js_function");
 export const imported_js_function_symbol = Symbol.for("wasm imported_js_function");
 export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
-
-/**
- * JSFunctionSignature is pointer to [
- *      Version: number,
- *      ArgumentCount: number,
- *      exc:  { jsType: JsTypeFlags, type:MarshalerType, restype:MarshalerType, arg1type:MarshalerType, arg2type:MarshalerType, arg3type:MarshalerType}
- *      res:  { jsType: JsTypeFlags, type:MarshalerType, restype:MarshalerType, arg1type:MarshalerType, arg2type:MarshalerType, arg3type:MarshalerType}
- *      arg1: { jsType: JsTypeFlags, type:MarshalerType, restype:MarshalerType, arg1type:MarshalerType, arg2type:MarshalerType, arg3type:MarshalerType}
- *      arg2: { jsType: JsTypeFlags, type:MarshalerType, restype:MarshalerType, arg1type:MarshalerType, arg2type:MarshalerType, arg3type:MarshalerType}
- *      ...
- *      ] 
- * 
- * Layout of the call stack frame buffers is array of JSMarshalerArgument
- * JSMarshalerArguments is pointer to [
- *      exc:  {type:MarshalerType, handle: IntPtr, data: Int64|Ref*|Void* },
- *      res:  {type:MarshalerType, handle: IntPtr, data: Int64|Ref*|Void* },
- *      arg1: {type:MarshalerType, handle: IntPtr, data: Int64|Ref*|Void* },
- *      arg2: {type:MarshalerType, handle: IntPtr, data: Int64|Ref*|Void* },
- *      ...
- *      ]
- */
-
 
 export const JavaScriptMarshalerArgSize = 16;
 export const JSMarshalerTypeSize = 32;
@@ -71,37 +49,27 @@ export function get_sig(signature: JSFunctionSignature, index: number): JSMarsha
 
 export function get_signature_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU32(sig);
+    return <any>getU8(sig);
 }
 
 export function get_signature_res_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 16);
-}
-
-export function get_signature_custom_code(sig: JSMarshalerType): CharPtr {
-    mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 8);
-}
-
-export function get_signature_custom_code_len(sig: JSMarshalerType): number {
-    mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 12);
+    return <any>getU8(<any>sig + 16);
 }
 
 export function get_signature_arg1_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 20);
+    return <any>getU8(<any>sig + 20);
 }
 
 export function get_signature_arg2_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 24);
+    return <any>getU8(<any>sig + 24);
 }
 
 export function get_signature_arg3_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU32(<any>sig + 28);
+    return <any>getU8(<any>sig + 28);
 }
 
 export function get_signature_argument_count(signature: JSFunctionSignature): number {
@@ -116,29 +84,29 @@ export function get_signature_version(signature: JSFunctionSignature): number {
 
 export function get_sig_type(sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null signatures");
-    return <any>getU32(sig);
+    return <any>getU8(sig);
 }
 
 export function get_arg_type(arg: JSMarshalerArgument): MarshalerType {
     mono_assert(arg, "Null arg");
-    const type = getU32(<any>arg + 12);
+    const type = getU8(<any>arg + 12);
     return <any>type;
 }
 
 export function get_arg_element_type(arg: JSMarshalerArgument): MarshalerType {
     mono_assert(arg, "Null arg");
-    const type = getU32(<any>arg + 4);
+    const type = getU8(<any>arg + 13);
     return <any>type;
 }
 
 export function set_arg_type(arg: JSMarshalerArgument, type: MarshalerType): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg + 12, type);
+    setU8(<any>arg + 12, type);
 }
 
 export function set_arg_element_type(arg: JSMarshalerArgument, type: MarshalerType): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg + 4, type);
+    setU8(<any>arg + 13, type);
 }
 
 export function get_arg_b8(arg: JSMarshalerArgument): boolean {
@@ -168,7 +136,7 @@ export function get_arg_i32(arg: JSMarshalerArgument): number {
 
 export function get_arg_intptr(arg: JSMarshalerArgument): number {
     mono_assert(arg, "Null arg");
-    return getU32(<any>arg);
+    return getI32(<any>arg);
 }
 
 export function get_arg_i52(arg: JSMarshalerArgument): number {
@@ -227,7 +195,7 @@ export function set_arg_i32(arg: JSMarshalerArgument, value: number): void {
 
 export function set_arg_intptr(arg: JSMarshalerArgument, value: VoidPtr): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg, <any>value);
+    setI32(<any>arg, <any>value);
 }
 
 export function set_arg_i52(arg: JSMarshalerArgument, value: number): void {
@@ -261,22 +229,22 @@ export function set_arg_f32(arg: JSMarshalerArgument, value: number): void {
 
 export function get_arg_js_handle(arg: JSMarshalerArgument): JSHandle {
     mono_assert(arg, "Null arg");
-    return <any>getU32(<any>arg + 4);
+    return <any>getI32(<any>arg + 4);
 }
 
 export function set_js_handle(arg: JSMarshalerArgument, jsHandle: JSHandle): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg + 4, <any>jsHandle);
+    setI32(<any>arg + 4, <any>jsHandle);
 }
 
 export function get_arg_gc_handle(arg: JSMarshalerArgument): GCHandle {
     mono_assert(arg, "Null arg");
-    return <any>getU32(<any>arg + 4);
+    return <any>getI32(<any>arg + 4);
 }
 
 export function set_gc_handle(arg: JSMarshalerArgument, gcHandle: GCHandle): void {
     mono_assert(arg, "Null arg");
-    setU32(<any>arg + 4, <any>gcHandle);
+    setI32(<any>arg + 4, <any>gcHandle);
 }
 
 export function get_string_root(arg: JSMarshalerArgument): WasmRoot<MonoString> {

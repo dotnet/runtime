@@ -156,20 +156,11 @@ namespace System
             }
         }
 
-        // WARNING: Never call unless the MethodTable came from an instanced object. Nested enums can be open generics (typeof(Outer<>).NestedEnum)
-        // and this helper has undefined behavior when passed such as a enum.
         internal bool IsEnum
         {
             get
             {
-                // Q: When is an enum type a constructed generic type?
-                // A: When it's nested inside a generic type.
-                if (!IsDefType)
-                    return false;
-
-                // Generic type definitions that return true for IsPrimitive are type definitions of generic enums.
-                // Otherwise check the base type.
-                return (IsGenericTypeDefinition && IsPrimitive) || this.BaseType == EETypePtr.EETypePtrOf<Enum>();
+                return _value->IsEnum;
             }
         }
 

@@ -120,7 +120,7 @@ PhaseStatus Compiler::fgInsertGCPolls()
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is the single return block\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
-        else if (BBJ_SWITCH == block->GetBBJumpKind())
+        else if (BBJ_SWITCH == block->GetJumpKind())
         {
             // We don't want to deal with all the outgoing edges of a switch block.
             //
@@ -261,8 +261,8 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 
         BasicBlock* poll          = fgNewBBafter(BBJ_NONE, top, true);
-        bottom                    = fgNewBBafter(top->GetBBJumpKind(), poll, true);
-        BBjumpKinds   oldJumpKind = top->GetBBJumpKind();
+        bottom                    = fgNewBBafter(top->GetJumpKind(), poll, true);
+        BBjumpKinds   oldJumpKind = top->GetJumpKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
 
         // Update block flags
@@ -284,7 +284,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
 
         // Bottom gets all the outgoing edges and inherited flags of Original.
-        bottom->bbJumpDest   = top->bbJumpDest;
+        bottom->SetJumpDest(top->GetJumpDest());
         bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
         if (lpIndex != BasicBlock::NOT_IN_LOOP)
         {
@@ -371,8 +371,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->bbJumpDest = bottom;
-        top->SetBBJumpKind(BBJ_COND DEBUG_ARG(this));
+        top->SetJumpKindAndTarget(BBJ_COND, bottom);
 
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
@@ -400,7 +399,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
-                fgReplacePred(bottom->bbJumpDest, top, bottom);
+                fgReplacePred(bottom->GetJumpDest(), top, bottom);
                 break;
             case BBJ_SWITCH:
                 NO_WAY("SWITCH should be a call rather than an inlined poll.");
@@ -1287,13 +1286,13 @@ void Compiler::fgLoopCallMark()
 
     for (BasicBlock* const block : Blocks())
     {
-        switch (block->GetBBJumpKind())
+        switch (block->GetJumpKind())
         {
             case BBJ_COND:
             case BBJ_CALLFINALLY:
             case BBJ_ALWAYS:
             case BBJ_EHCATCHRET:
-                fgLoopCallTest(block, block->bbJumpDest);
+                fgLoopCallTest(block, block->GetJumpDest());
                 break;
 
             case BBJ_SWITCH:
@@ -1618,7 +1617,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         // EH regions in fgFindBasicBlocks(). Note that the try has no enclosing
         // handler, and the fault has no enclosing try.
 
-        tryBegBB->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_IMPORTED;
+        tryBegBB->bbFlags |= BBF_DONT_REMOVE | BBF_IMPORTED;
 
         faultBB->bbFlags |= BBF_DONT_REMOVE | BBF_IMPORTED;
         faultBB->bbCatchTyp = BBCT_FAULT;
@@ -1837,15 +1836,14 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
-    block->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
-    block->bbJumpDest = genReturnBB;
+    block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB);
     fgAddRefPred(genReturnBB, block);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Synchronized method - convert block " FMT_BB " to BBJ_ALWAYS [targets " FMT_BB "]\n", block->bbNum,
-               block->bbJumpDest->bbNum);
+               block->GetJumpDest()->bbNum);
     }
 #endif
 }
@@ -2309,8 +2307,7 @@ private:
 
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
-                    returnBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(comp));
-                    returnBlock->bbJumpDest = constReturnBlock;
+                    returnBlock->SetJumpKindAndTarget(BBJ_ALWAYS, constReturnBlock);
                     comp->fgAddRefPred(constReturnBlock, returnBlock);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
@@ -2995,29 +2992,6 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
     return false;
 }
 
-/*****************************************************************************************************
- *
- *  Function to return the last basic block in the main part of the function. With funclets, it is
- *  the block immediately before the first funclet.
- *  An inclusive end of the main method.
- */
-
-BasicBlock* Compiler::fgLastBBInMainFunction()
-{
-#if defined(FEATURE_EH_FUNCLETS)
-
-    if (fgFirstFuncletBB != nullptr)
-    {
-        return fgFirstFuncletBB->Prev();
-    }
-
-#endif // FEATURE_EH_FUNCLETS
-
-    assert(fgLastBB->IsLast());
-
-    return fgLastBB;
-}
-
 //------------------------------------------------------------------------------
 // fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
 //
@@ -3063,14 +3037,30 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
     return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
 }
 
-/*****************************************************************************************************
- *
- *  Function to return the first basic block after the main part of the function. With funclets, it is
- *  the block of the first funclet.  Otherwise it is NULL if there are no funclets (fgLastBB->Next()).
- *  This is equivalent to fgLastBBInMainFunction()->bbNext
- *  An exclusive end of the main method.
- */
+//------------------------------------------------------------------------------
+// fgLastBBInMainFunction: Return the last basic block in the main part of the function.
+// With funclets, it is the block immediately before the first funclet.
+//
+BasicBlock* Compiler::fgLastBBInMainFunction()
+{
+#if defined(FEATURE_EH_FUNCLETS)
 
+    if (fgFirstFuncletBB != nullptr)
+    {
+        return fgFirstFuncletBB->Prev();
+    }
+
+#endif // FEATURE_EH_FUNCLETS
+
+    assert(fgLastBB->IsLast());
+    return fgLastBB;
+}
+
+//------------------------------------------------------------------------------
+// fgEndBBAfterMainFunction: Return the first basic block after the main part of the function.
+// With funclets, it is the block of the first funclet. Otherwise it is nullptr if there are no
+// funclets. This is equivalent to fgLastBBInMainFunction()->Next().
+//
 BasicBlock* Compiler::fgEndBBAfterMainFunction()
 {
 #if defined(FEATURE_EH_FUNCLETS)
@@ -3083,7 +3073,6 @@ BasicBlock* Compiler::fgEndBBAfterMainFunction()
 #endif // FEATURE_EH_FUNCLETS
 
     assert(fgLastBB->IsLast());
-
     return nullptr;
 }
 
@@ -3129,11 +3118,11 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
             // It's a jump from outside the handler; add it to the newHead preds list and remove
             // it from the block preds list.
 
-            switch (predBlock->GetBBJumpKind())
+            switch (predBlock->GetJumpKind())
             {
                 case BBJ_CALLFINALLY:
-                    noway_assert(predBlock->bbJumpDest == block);
-                    predBlock->bbJumpDest = newHead;
+                    noway_assert(predBlock->HasJumpTo(block));
+                    predBlock->SetJumpDest(newHead);
                     fgRemoveRefPred(block, predBlock);
                     fgAddRefPred(newHead, predBlock);
                     break;
@@ -3507,7 +3496,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
         //
         if (prevToFirstColdBlock->bbFallsThrough())
         {
-            switch (prevToFirstColdBlock->GetBBJumpKind())
+            switch (prevToFirstColdBlock->GetJumpKind())
             {
                 default:
                     noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
@@ -3536,7 +3525,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     else
                     {
                         BasicBlock* transitionBlock = fgNewBBafter(BBJ_ALWAYS, prevToFirstColdBlock, true);
-                        transitionBlock->bbJumpDest = firstColdBlock;
+                        transitionBlock->SetJumpDest(firstColdBlock);
                         transitionBlock->inheritWeight(firstColdBlock);
 
                         // Update the predecessor list for firstColdBlock
@@ -3551,8 +3540,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // If the block preceding the first cold block is BBJ_NONE,
                     // convert it to BBJ_ALWAYS to force an explicit jump.
 
-                    prevToFirstColdBlock->bbJumpDest = firstColdBlock;
-                    prevToFirstColdBlock->SetBBJumpKind(BBJ_ALWAYS DEBUG_ARG(this));
+                    prevToFirstColdBlock->SetJumpKindAndTarget(BBJ_ALWAYS, firstColdBlock);
                     break;
             }
         }
@@ -3600,6 +3588,8 @@ unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
             return CORINFO_HELP_THROWDIVZERO;
         case SCK_ARITH_EXCPN:
             return CORINFO_HELP_OVERFLOW;
+        case SCK_FAIL_FAST:
+            return CORINFO_HELP_FAIL_FAST;
         default:
             assert(!"Bad codeKind");
             return 0;
@@ -3671,8 +3661,11 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 //
 bool Compiler::fgCreateThrowHelperBlocks()
 {
-    if (!fgUseThrowHelperBlocks())
+    if (!fgUseThrowHelperBlocks() && (kind != SCK_FAIL_FAST))
     {
+        // We'll create a throw block in-place then (for better debugging)
+        // It's not needed for fail fast, since it's not recoverable anyway.
+        //
         return false;
     }
 
@@ -3685,6 +3678,7 @@ bool Compiler::fgCreateThrowHelperBlocks()
         BBJ_THROW, // SCK_ARITH_EXCP, SCK_OVERFLOW
         BBJ_THROW, // SCK_ARG_EXCPN
         BBJ_THROW, // SCK_ARG_RNG_EXCPN
+        BBJ_THROW, // SCK_FAIL_FAST
     };
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
@@ -3754,6 +3748,9 @@ bool Compiler::fgCreateThrowHelperBlocks()
                 case SCK_ARG_RNG_EXCPN:
                     msg = " for ARG_RNG_EXCPN";
                     break;
+                case SCK_FAIL_FAST:
+                    msg = " for FAIL_FAST";
+                    break;
                 default:
                     msg = " for ??";
                     break;
@@ -3795,6 +3792,10 @@ bool Compiler::fgCreateThrowHelperBlocks()
 
             case SCK_ARG_RNG_EXCPN:
                 helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
+                break;
+
+            case SCK_FAIL_FAST:
+                helper = CORINFO_HELP_FAIL_FAST;
                 break;
 
             default:
@@ -3847,8 +3848,7 @@ bool Compiler::fgCreateThrowHelperBlocks()
 //
 Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
 {
-    assert(fgUseThrowHelperBlocks());
-    // assert(fgRngChkThrowAdded);
+    assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
 
     if (!(fgExcptnTargetCache[kind] && // Try the cached value first
           fgExcptnTargetCache[kind]->acdData == refData))
@@ -4003,11 +4003,11 @@ PhaseStatus Compiler::fgSetBlockOrder()
     (((src)->bbNum < (dst)->bbNum) || (((src)->bbFlags | (dst)->bbFlags) & BBF_GC_SAFE_POINT))
 
             bool partiallyInterruptible = true;
-            switch (block->GetBBJumpKind())
+            switch (block->GetJumpKind())
             {
                 case BBJ_COND:
                 case BBJ_ALWAYS:
-                    partiallyInterruptible = EDGE_IS_GC_SAFE(block, block->bbJumpDest);
+                    partiallyInterruptible = EDGE_IS_GC_SAFE(block, block->GetJumpDest());
                     break;
 
                 case BBJ_SWITCH:

@@ -1409,6 +1409,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_Insert:
                     case NI_AdvSimd_InsertScalar:
                     case NI_AdvSimd_LoadAndInsertScalar:
+                    case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+                    case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+                    case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+                    case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
                     case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
                         needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
                         break;
@@ -1440,8 +1446,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // is not allocated the same register as the target.
     const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
-    bool tgtPrefOp1 = false;
-
+    bool tgtPrefOp1        = false;
+    bool delayFreeMultiple = false;
     if (intrin.op1 != nullptr)
     {
         bool simdRegToSimdRegMove = false;
@@ -1475,6 +1481,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 simdRegToSimdRegMove = true;
                 break;
             }
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            {
+                delayFreeMultiple = true;
+                break;
+            }
 
             default:
             {
@@ -1489,7 +1505,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             tgtPrefOp1 = !intrin.op1->isContained();
         }
 
-        if (intrinsicTree->OperIsMemoryLoadOrStore())
+        if (delayFreeMultiple)
+        {
+            assert(isRMW);
+            assert(intrin.op1->OperIs(GT_FIELD_LIST));
+            GenTreeFieldList* op1 = intrin.op1->AsFieldList();
+            assert(compiler->info.compNeedsConsecutiveRegisters);
+
+            for (GenTreeFieldList::Use& use : op1->Uses())
+            {
+                BuildDelayFreeUses(use.GetNode(), intrinsicTree);
+                srcCount++;
+            }
+        }
+        else if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
             srcCount += BuildAddrUses(intrin.op1);
         }
@@ -1586,6 +1615,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 buildInternalRegisterUses();
                 *pDstCount = 0;
                 break;
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+                assert(intrin.op2 != nullptr);
+                assert(intrin.op3 != nullptr);
+                assert(isRMW);
+                srcCount += BuildOperandUses(intrin.op2);
+
+                assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                srcCount += BuildAddrUses(intrin.op3);
+                FALLTHROUGH;
             case NI_AdvSimd_LoadVector64x2:
             case NI_AdvSimd_LoadVector64x3:
             case NI_AdvSimd_LoadVector64x4:

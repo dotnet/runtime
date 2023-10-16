@@ -151,20 +151,6 @@ namespace Internal.Reflection.Execution
         }
 
         //
-        // Given a RuntimeTypeHandle for any array type E[], return a RuntimeTypeHandle for type E, if the pay for play policy denoted E[] as browsable.
-        //
-        // Preconditions:
-        //      arrayTypeHandle is a valid RuntimeTypeHandle of type array.
-        //
-        // This is not equivalent to calling TryGetMultiDimTypeElementType() with a rank of 1!
-        //
-        public sealed override RuntimeTypeHandle GetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle)
-        {
-            return RuntimeAugments.GetRelatedParameterTypeHandle(arrayTypeHandle);
-        }
-
-
-        //
         // Given a RuntimeTypeHandle for any type E, return a RuntimeTypeHandle for type E[,,], if the pay for policy denotes E[,,] as browsable. This is used to
         // implement Type.MakeArrayType(Type, int).
         //
@@ -201,34 +187,9 @@ namespace Internal.Reflection.Execution
             return TypeLoaderEnvironment.Instance.TryGetPointerTypeForTargetType(targetTypeHandle, out pointerTypeHandle);
         }
 
-        //
-        // Given a RuntimeTypeHandle for any pointer type E*, return a RuntimeTypeHandle for type E, if the pay-for-play policy denotes E* as browsable.
-        // This is used to implement Type.GetElementType() for pointers.
-        //
-        // Preconditions:
-        //      pointerTypeHandle is a valid RuntimeTypeHandle of type pointer.
-        //
-        public sealed override RuntimeTypeHandle GetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle)
-        {
-            return RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
-        }
-
         public override bool TryGetFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle functionPointerTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetFunctionPointerTypeForComponents(returnTypeHandle, parameterHandles, isUnmanaged, out functionPointerTypeHandle);
-        }
-
-        //
-        // Given a RuntimeTypeHandle for any function pointer pointer type, return the composition of it.
-        //
-        // Preconditions:
-        //      pointerTypeHandle is a valid RuntimeTypeHandle of type function pointer.
-        //
-        public override void GetFunctionPointerTypeComponents(RuntimeTypeHandle functionPointerHandle, out RuntimeTypeHandle returnTypeHandle, out RuntimeTypeHandle[] parameterHandles, out bool isUnmanaged)
-        {
-            returnTypeHandle = RuntimeAugments.GetFunctionPointerReturnType(functionPointerHandle);
-            parameterHandles = RuntimeAugments.GetFunctionPointerParameterTypes(functionPointerHandle);
-            isUnmanaged = RuntimeAugments.IsUnmanagedFunctionPointerType(functionPointerHandle);
         }
 
         //
@@ -241,18 +202,6 @@ namespace Internal.Reflection.Execution
         public sealed override unsafe bool TryGetByRefTypeForTargetType(RuntimeTypeHandle targetTypeHandle, out RuntimeTypeHandle byRefTypeHandle)
         {
             return TypeLoaderEnvironment.Instance.TryGetByRefTypeForTargetType(targetTypeHandle, out byRefTypeHandle);
-        }
-
-        //
-        // Given a RuntimeTypeHandle for any byref type E&, return a RuntimeTypeHandle for type E, if the pay-for-play policy denotes E& as browsable.
-        // This is used to implement Type.GetElementType() for byrefs.
-        //
-        // Preconditions:
-        //      byRefTypeHandle is a valid RuntimeTypeHandle of a byref.
-        //
-        public sealed override unsafe RuntimeTypeHandle GetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle)
-        {
-            return RuntimeAugments.GetRelatedParameterTypeHandle(byRefTypeHandle);
         }
 
         //
