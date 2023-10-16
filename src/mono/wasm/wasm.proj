@@ -424,8 +424,7 @@
 
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
-                       runtime/corebindings.c;
-                       $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;"
+                       runtime/corebindings.c;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 

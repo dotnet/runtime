@@ -1617,7 +1617,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         // EH regions in fgFindBasicBlocks(). Note that the try has no enclosing
         // handler, and the fault has no enclosing try.
 
-        tryBegBB->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_IMPORTED;
+        tryBegBB->bbFlags |= BBF_DONT_REMOVE | BBF_IMPORTED;
 
         faultBB->bbFlags |= BBF_DONT_REMOVE | BBF_IMPORTED;
         faultBB->bbCatchTyp = BBCT_FAULT;
@@ -2988,29 +2988,6 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
     return false;
 }
 
-/*****************************************************************************************************
- *
- *  Function to return the last basic block in the main part of the function. With funclets, it is
- *  the block immediately before the first funclet.
- *  An inclusive end of the main method.
- */
-
-BasicBlock* Compiler::fgLastBBInMainFunction()
-{
-#if defined(FEATURE_EH_FUNCLETS)
-
-    if (fgFirstFuncletBB != nullptr)
-    {
-        return fgFirstFuncletBB->Prev();
-    }
-
-#endif // FEATURE_EH_FUNCLETS
-
-    assert(fgLastBB->IsLast());
-
-    return fgLastBB;
-}
-
 //------------------------------------------------------------------------------
 // fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
 //
@@ -3056,14 +3033,30 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
     return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
 }
 
-/*****************************************************************************************************
- *
- *  Function to return the first basic block after the main part of the function. With funclets, it is
- *  the block of the first funclet.  Otherwise it is NULL if there are no funclets (fgLastBB->Next()).
- *  This is equivalent to fgLastBBInMainFunction()->bbNext
- *  An exclusive end of the main method.
- */
+//------------------------------------------------------------------------------
+// fgLastBBInMainFunction: Return the last basic block in the main part of the function.
+// With funclets, it is the block immediately before the first funclet.
+//
+BasicBlock* Compiler::fgLastBBInMainFunction()
+{
+#if defined(FEATURE_EH_FUNCLETS)
 
+    if (fgFirstFuncletBB != nullptr)
+    {
+        return fgFirstFuncletBB->Prev();
+    }
+
+#endif // FEATURE_EH_FUNCLETS
+
+    assert(fgLastBB->IsLast());
+    return fgLastBB;
+}
+
+//------------------------------------------------------------------------------
+// fgEndBBAfterMainFunction: Return the first basic block after the main part of the function.
+// With funclets, it is the block of the first funclet. Otherwise it is nullptr if there are no
+// funclets. This is equivalent to fgLastBBInMainFunction()->Next().
+//
 BasicBlock* Compiler::fgEndBBAfterMainFunction()
 {
 #if defined(FEATURE_EH_FUNCLETS)
@@ -3076,7 +3069,6 @@ BasicBlock* Compiler::fgEndBBAfterMainFunction()
 #endif // FEATURE_EH_FUNCLETS
 
     assert(fgLastBB->IsLast());
-
     return nullptr;
 }
 
@@ -3592,6 +3584,8 @@ unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
             return CORINFO_HELP_THROWDIVZERO;
         case SCK_ARITH_EXCPN:
             return CORINFO_HELP_OVERFLOW;
+        case SCK_FAIL_FAST:
+            return CORINFO_HELP_FAIL_FAST;
         default:
             assert(!"Bad codeKind");
             return 0;
@@ -3616,8 +3610,10 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     // arg slots on the stack frame if there are no other calls.
     compUsesThrowHelper = true;
 
-    if (!fgUseThrowHelperBlocks())
+    if (!fgUseThrowHelperBlocks() && (kind != SCK_FAIL_FAST))
     {
+        // We'll create a throw block in-place then (for better debugging)
+        // It's not needed for fail fast, since it's not recoverable anyway.
         return nullptr;
     }
 
@@ -3628,6 +3624,7 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
         BBJ_THROW, // SCK_ARITH_EXCP, SCK_OVERFLOW
         BBJ_THROW, // SCK_ARG_EXCPN
         BBJ_THROW, // SCK_ARG_RNG_EXCPN
+        BBJ_THROW, // SCK_FAIL_FAST
     };
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
@@ -3703,6 +3700,9 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
             case SCK_ARG_RNG_EXCPN:
                 msg = " for ARG_RNG_EXCPN";
                 break;
+            case SCK_FAIL_FAST:
+                msg = " for FAIL_FAST";
+                break;
             default:
                 msg = " for ??";
                 break;
@@ -3720,8 +3720,7 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
 
     /* Remember that we're adding a new basic block */
 
-    fgAddCodeModf      = true;
-    fgRngChkThrowAdded = true;
+    fgAddCodeModf = true;
 
     /* Now figure out what code to insert */
 
@@ -3751,6 +3750,10 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
             helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
             break;
 
+        case SCK_FAIL_FAST:
+            helper = CORINFO_HELP_FAIL_FAST;
+            break;
+
         default:
             noway_assert(!"unexpected code addition kind");
             return nullptr;
@@ -3767,7 +3770,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     tree = fgMorphArgs(tree);
 
     // Store the tree in the new basic block.
-    assert(!srcBlk->isEmpty());
     if (!srcBlk->IsLIR())
     {
         fgInsertStmtAtEnd(newBlk, fgNewStmtFromTree(tree));
@@ -3789,7 +3791,7 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
 
 Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
 {
-    assert(fgUseThrowHelperBlocks());
+    assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
     if (!(fgExcptnTargetCache[kind] && // Try the cached value first
           fgExcptnTargetCache[kind]->acdData == refData))
     {

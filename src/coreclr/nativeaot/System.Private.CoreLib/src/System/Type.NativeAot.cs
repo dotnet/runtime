@@ -23,17 +23,17 @@ namespace System
         public static unsafe Type? GetTypeFromHandle(RuntimeTypeHandle handle) => handle.IsNull ? null : GetTypeFromMethodTable(handle.ToMethodTable());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe Type GetTypeFromMethodTable(MethodTable* pMT)
+        internal static unsafe RuntimeType GetTypeFromMethodTable(MethodTable* pMT)
         {
             // If we support the writable data section on MethodTables, the runtime type associated with the MethodTable
             // is cached there. If writable data is not supported, we need to do a lookup in the runtime type
             // unifier's hash table.
             if (MethodTable.SupportsWritableData)
             {
-                ref GCHandle handle = ref Unsafe.AsRef<GCHandle>(pMT->WritableData);
+                ref UnsafeGCHandle handle = ref Unsafe.AsRef<UnsafeGCHandle>(pMT->WritableData);
                 if (handle.IsAllocated)
                 {
-                    return Unsafe.As<Type>(handle.Target);
+                    return Unsafe.As<RuntimeType>(handle.Target);
                 }
                 else
                 {
@@ -42,26 +42,26 @@ namespace System
             }
             else
             {
-                return RuntimeTypeUnifier.GetRuntimeTypeForEEType(new EETypePtr(pMT));
+                return RuntimeTypeUnifier.GetRuntimeTypeForMethodTable(pMT);
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe Type GetTypeFromMethodTableSlow(MethodTable* pMT, ref GCHandle handle)
+        private static unsafe RuntimeType GetTypeFromMethodTableSlow(MethodTable* pMT, ref UnsafeGCHandle handle)
         {
             // Note: this is bypassing the "fast" unifier cache (based on a simple IntPtr
             // identity of MethodTable pointers). There is another unifier behind that cache
             // that ensures this code is race-free.
             Type result = RuntimeTypeUnifier.GetRuntimeTypeBypassCache(new EETypePtr(pMT));
-            GCHandle tempHandle = GCHandle.Alloc(result);
+            UnsafeGCHandle tempHandle = UnsafeGCHandle.Alloc(result);
 
             // We don't want to leak a handle if there's a race
-            if (Interlocked.CompareExchange(ref Unsafe.As<GCHandle, IntPtr>(ref handle), (IntPtr)tempHandle, default) != default)
+            if (Interlocked.CompareExchange(ref Unsafe.As<UnsafeGCHandle, IntPtr>(ref handle), Unsafe.As<UnsafeGCHandle, IntPtr>(ref tempHandle), default) != default)
             {
                 tempHandle.Free();
             }
 
-            return result;
+            return Unsafe.As<RuntimeType>(handle.Target);
         }
 
         internal EETypePtr GetEEType()

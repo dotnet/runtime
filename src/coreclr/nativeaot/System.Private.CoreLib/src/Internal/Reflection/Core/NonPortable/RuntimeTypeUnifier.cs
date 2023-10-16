@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Core.NonPortable
@@ -42,12 +43,12 @@ namespace Internal.Reflection.Core.NonPortable
         //
         // Retrieves the unified Type object for given RuntimeTypeHandle (this is basically the Type.GetTypeFromHandle() api without the input validation.)
         //
-        internal static Type GetRuntimeTypeForEEType(EETypePtr eeType)
+        internal static unsafe RuntimeType GetRuntimeTypeForMethodTable(MethodTable* eeType)
         {
             // If writable data is supported, we shouldn't be using the hashtable - the runtime type
-            // is accessible through a couple indirections from the EETypePtr which is much faster.
+            // is accessible through a couple indirections from the MethodTable which is much faster.
             Debug.Assert(!Internal.Runtime.MethodTable.SupportsWritableData);
-            return RuntimeTypeHandleToTypeCache.Table.GetOrAdd(eeType.RawValue);
+            return RuntimeTypeHandleToTypeCache.Table.GetOrAdd((IntPtr)eeType);
         }
 
         //
@@ -59,14 +60,14 @@ namespace Internal.Reflection.Core.NonPortable
         // does a second lookup in the true unifying tables rather than creating the Type itself.
         // Thus, the one-to-one relationship between Type reference identity and Type semantic identity is preserved.
         //
-        private sealed class RuntimeTypeHandleToTypeCache : ConcurrentUnifierW<IntPtr, Type>
+        private sealed class RuntimeTypeHandleToTypeCache : ConcurrentUnifierW<IntPtr, RuntimeType>
         {
             private RuntimeTypeHandleToTypeCache() { }
 
-            protected sealed override Type Factory(IntPtr rawRuntimeTypeHandleKey)
+            protected sealed override RuntimeType Factory(IntPtr rawRuntimeTypeHandleKey)
             {
                 EETypePtr eeType = new EETypePtr(rawRuntimeTypeHandleKey);
-                return GetRuntimeTypeBypassCache(eeType);
+                return (RuntimeType)GetRuntimeTypeBypassCache(eeType);
             }
 
             public static readonly RuntimeTypeHandleToTypeCache Table = new RuntimeTypeHandleToTypeCache();
