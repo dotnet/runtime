@@ -1776,6 +1776,87 @@ namespace System.Text.Tests
         }
 
         [Theory]
+        [InlineData("", "a", "!", 0, 0, "")]
+        [InlineData("aaaabbbbccccdddd", "a", "!", 0, 16, "!!!!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "a", "!", 2, 3, "aa!!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "a", "!", 4, 1, "aaaabbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "aab", "!", 2, 2, "aaaabbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "aab", "!", 2, 3, "aa!bbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "aa", "!", 0, 16, "!!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "aa", "$!", 0, 16, "$!$!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "aa", "$!$", 0, 16, "$!$$!$bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "aaaa", "!", 0, 16, "!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "aaaa", "$!", 0, 16, "$!bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "a", "", 0, 16, "bbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "b", null, 0, 16, "aaaaccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddd", "", 0, 16, "")]
+        [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddd", "", 16, 0, "aaaabbbbccccdddd")]
+        [InlineData("aaaabbbbccccdddd", "aaaabbbbccccdddde", "", 0, 16, "aaaabbbbccccdddd")]
+        [InlineData("aaaaaaaaaaaaaaaa", "a", "b", 0, 16, "bbbbbbbbbbbbbbbb")]
+        public static void Replace_CharSpan(string value, string oldValue, string newValue, int startIndex, int count, string expected)
+        {
+            StringBuilder builder;
+            if (startIndex == 0 && count == value.Length)
+            {
+                // Use Replace(ReadOnlySpan<char>, ReadOnlySpan<char>)
+                builder = new StringBuilder(value);
+                builder.Replace(oldValue.AsSpan(), newValue.AsSpan());
+                Assert.Equal(expected, builder.ToString());
+            }
+            // Use Replace(ReadOnlySpan<char>, ReadOnlySpan<char>, int, int)
+            builder = new StringBuilder(value);
+            builder.Replace(oldValue.AsSpan(), newValue.AsSpan(), startIndex, count);
+            Assert.Equal(expected, builder.ToString());
+        }
+
+        [Fact]
+        public static void Replace_CharSpan_StringBuilderWithMultipleChunks()
+        {
+            StringBuilder builder = StringBuilderWithMultipleChunks();
+            builder.Replace("a".AsSpan(), "b".AsSpan(), builder.Length - 10, 10);
+            Assert.Equal(new string('a', builder.Length - 10) + new string('b', 10), builder.ToString());
+        }
+
+        [Fact]
+        public static void Replace_CharSpan_StringBuilderWithMultipleChunks_WholeString()
+        {
+            StringBuilder builder = StringBuilderWithMultipleChunks();
+            builder.Replace(builder.ToString().AsSpan(), "".AsSpan());
+            Assert.Same(string.Empty, builder.ToString());
+        }
+
+        [Fact]
+        public static void Replace_CharSpan_StringBuilderWithMultipleChunks_LongString()
+        {
+            StringBuilder builder = StringBuilderWithMultipleChunks();
+            builder.Replace((builder.ToString() + "b").AsSpan(), "".AsSpan());
+            Assert.Equal(s_chunkSplitSource, builder.ToString());
+        }
+
+        [Fact]
+        public static void Replace_CharSpan_Invalid()
+        {
+            var builder = new StringBuilder(0, 5);
+            builder.Append("Hello");
+
+            AssertExtensions.Throws<ArgumentNullException>("oldValue", () => builder.Replace(null, ReadOnlySpan<char>.Empty)); // Old value is null
+            AssertExtensions.Throws<ArgumentNullException>("oldValue", () => builder.Replace(null, new char[] { 'a' }.AsSpan(), 0, 0)); // Old value is null
+
+            AssertExtensions.Throws<ArgumentException>("oldValue", () => builder.Replace(new char[0].AsSpan(), new char[] { 'a' }.AsSpan())); // Old value is empty
+            AssertExtensions.Throws<ArgumentException>("oldValue", () => builder.Replace(new char[0].AsSpan(), new char[] { 'a' }.AsSpan(), 0, 0)); // Old value is empty
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Replace(new char[] { 'o' }.AsSpan(), new char[] { 'o', 'o' }.AsSpan())); // New length > builder.MaxCapacity
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Replace(new char[] { 'o' }.AsSpan(), new char[] { 'o', 'o' }.AsSpan(), 0, 5)); // New length > builder.MaxCapacity
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace(new char[] { 'a' }.AsSpan(), new char[] { 'b' }.AsSpan(), -1, 0)); // Start index < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace(new char[] { 'a' }.AsSpan(), new char[] { 'b' }.AsSpan(), 0, -1)); // Count < 0
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Replace(new char[] { 'a' }.AsSpan(), new char[] { 'b' }.AsSpan(), 6, 0)); // Count + start index > builder.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace(new char[] { 'a' }.AsSpan(), new char[] { 'b' }.AsSpan(), 5, 1)); // Count + start index > builder.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Replace(new char[] { 'a' }.AsSpan(), new char[] { 'b' }.AsSpan(), 4, 2)); // Count + start index > builder.Length
+        }
+
+        [Theory]
         [InlineData("Hello", 0, 5, "Hello")]
         [InlineData("Hello", 2, 3, "llo")]
         [InlineData("Hello", 2, 2, "ll")]
