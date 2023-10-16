@@ -76,9 +76,9 @@ namespace System.Runtime.InteropServices
         }
 
         // Target property - allows getting / updating of the handle's referent.
-        public readonly object? Target
+        public object? Target
         {
-            get
+            readonly get
             {
                 IntPtr handle = _handle;
                 ThrowIfInvalid(handle);

@@ -12428,9 +12428,9 @@ namespace System.Runtime
         private object _dummy;
         private int _dummyPrimitive;
         public DependentHandle(object? target, object? dependent) { throw null; }
-        public readonly object? Dependent { get { throw null; } set { } }
+        public object? Dependent { readonly get { throw null; } set { } }
         public readonly bool IsAllocated { get { throw null; } }
-        public readonly object? Target { get { throw null; } set { } }
+        public object? Target { readonly get { throw null; } set { } }
         public readonly (object? Target, object? Dependent) TargetAndDependent { get { throw null; } }
         public void Dispose() { }
     }
@@ -13456,7 +13456,7 @@ namespace System.Runtime.InteropServices
     {
         private int _dummyPrimitive;
         public readonly bool IsAllocated { get { throw null; } }
-        public readonly object? Target { get { throw null; } set { } }
+        public object? Target { readonly get { throw null; } set { } }
         public readonly System.IntPtr AddrOfPinnedObject() { throw null; }
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value) { throw null; }
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value, System.Runtime.InteropServices.GCHandleType type) { throw null; }

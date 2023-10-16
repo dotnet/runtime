@@ -81,9 +81,9 @@ namespace System.Runtime
         /// <exception cref="InvalidOperationException">
         /// Thrown if <see cref="IsAllocated"/> is <see langword="false"/> or if the input value is not <see langword="null"/>.</exception>
         /// <remarks>This property is thread-safe.</remarks>
-        public readonly object? Target
+        public object? Target
         {
-            get
+            readonly get
             {
                 IntPtr handle = _handle;
 
@@ -118,9 +118,9 @@ namespace System.Runtime
         /// </remarks>
         /// <exception cref="InvalidOperationException">Thrown if <see cref="IsAllocated"/> is <see langword="false"/>.</exception>
         /// <remarks>This property is thread-safe.</remarks>
-        public readonly object? Dependent
+        public object? Dependent
         {
-            get
+            readonly get
             {
                 IntPtr handle = _handle;
 
