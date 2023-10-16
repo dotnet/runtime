@@ -3253,12 +3253,12 @@ namespace System.Tests
                 // Use Reverse(Array)
                 Array arrayClone1 = (Array)array.Clone();
                 Array.Reverse(arrayClone1);
-                Assert.Equal(expected, arrayClone1);
+                Assert.Equivalent(expected, arrayClone1);
             }
             // Use Reverse(Array, int, int)
             Array arrayClone2 = (Array)array.Clone();
             Array.Reverse(arrayClone2, index, length);
-            Assert.Equal(expected, arrayClone2);
+            Assert.Equivalent(expected, arrayClone2);
         }
 
         [Fact]
