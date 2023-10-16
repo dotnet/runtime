@@ -455,7 +455,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         //
         // (1) Convert the callfinally to a normal jump to the handler
         assert(callFinally->HasJump());
-        callFinally->ChangeJumpKind(BBJ_ALWAYS);
+        callFinally->SetJumpKind(BBJ_ALWAYS);
 
         // Identify the leave block and the continuation
         BasicBlock* const leave        = callFinally->Next();
@@ -1209,7 +1209,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 if (block->KindIs(BBJ_EHFINALLYRET))
                 {
                     assert(block->GetJumpEhf()->bbeCount == 0);
-                    block->ChangeJumpKind(BBJ_EHFAULTRET);
+                    block->SetJumpKind(BBJ_EHFAULTRET);
                 }
             }
         }

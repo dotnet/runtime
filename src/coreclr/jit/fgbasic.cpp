@@ -3973,7 +3973,7 @@ void Compiler::fgFindBasicBlocks()
                 // BBJ_EHFINALLYRET that were imported to BBJ_EHFAULTRET.
                 if ((hndBegBB->bbCatchTyp == BBCT_FAULT) && block->KindIs(BBJ_EHFINALLYRET))
                 {
-                    block->ChangeJumpKind(BBJ_EHFAULTRET);
+                    block->SetJumpKind(BBJ_EHFAULTRET);
                 }
             }
 

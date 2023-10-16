@@ -675,7 +675,7 @@ private:
 
                 if (!condTree->IsIntegralConst(0))
                 {
-                    block->ChangeJumpKind(BBJ_ALWAYS);
+                    block->SetJumpKind(BBJ_ALWAYS);
                     m_compiler->fgRemoveRefPred(block->Next(), block);
                 }
                 else

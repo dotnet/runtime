@@ -543,7 +543,7 @@ public:
         return bbJumpKind;
     }
 
-    void ChangeJumpKind(BBjumpKinds jumpKind)
+    void SetJumpKind(BBjumpKinds jumpKind)
     {
         // If this block's jump kind requires a target, ensure it is already set
         assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));

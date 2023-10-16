@@ -744,7 +744,7 @@ bool OptIfConversionDsc::optIfConvert()
     // Update the flow from the original block.
     m_comp->fgRemoveAllRefPreds(m_startBlock->Next(), m_startBlock);
     assert(m_startBlock->HasJump());
-    m_startBlock->ChangeJumpKind(BBJ_ALWAYS);
+    m_startBlock->SetJumpKind(BBJ_ALWAYS);
 
 #ifdef DEBUG
     if (m_comp->verbose)

@@ -2375,7 +2375,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         case BBJ_THROW:
         case BBJ_RETURN:
             /* no jumps or fall through blocks to set here */
-            block->ChangeJumpKind(bNext->GetJumpKind());
+            block->SetJumpKind(bNext->GetJumpKind());
             break;
 
         case BBJ_SWITCH:

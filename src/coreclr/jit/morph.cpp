@@ -6215,8 +6215,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         // Many tailcalls will have call and ret in the same block, and thus be
         // BBJ_RETURN, but if the call falls through to a ret, and we are doing a
         // tailcall, change it here.
-        // (compCurBB may have a jump target, so use ChangeJumpKind() to avoid nulling it)
-        compCurBB->ChangeJumpKind(BBJ_RETURN);
+        // (compCurBB may have a jump target, so use SetJumpKind() to avoid nulling it)
+        compCurBB->SetJumpKind(BBJ_RETURN);
     }
 
     GenTree* stmtExpr = fgMorphStmt->GetRootNode();
@@ -13201,7 +13201,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             if (cond->AsIntCon()->gtIconVal != 0)
             {
                 /* JTRUE 1 - transform the basic block into a BBJ_ALWAYS */
-                block->ChangeJumpKind(BBJ_ALWAYS);
+                block->SetJumpKind(BBJ_ALWAYS);
                 bTaken    = block->GetJumpDest();
                 bNotTaken = block->Next();
             }
