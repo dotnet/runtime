@@ -35,6 +35,7 @@ import { mono_wasm_typed_array_to_array_ref } from "./net6-legacy/js-to-cs";
 import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
 import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
 import { mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
+import { mono_wasm_browser_entropy } from "./crypto";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -97,6 +98,9 @@ export const mono_wasm_imports = [
     mono_wasm_trace_logger,
     mono_wasm_set_entrypoint_breakpoint,
     mono_wasm_event_pipe_early_startup_callback,
+
+    // src/native/minipal/random.c
+    mono_wasm_browser_entropy,
 
     // corebindings.c
     mono_wasm_release_cs_owned_object,
