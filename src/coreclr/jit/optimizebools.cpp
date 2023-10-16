@@ -405,8 +405,25 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
     return false;
 }
 
-// Given two ranges, return true if they intersect and form a closed range.
-// Returns its bounds in pRangeStart and pRangeEnd (both are inclusive).
+//------------------------------------------------------------------------------
+// GetIntersection: Given two ranges, return true if they intersect and form a closed range.
+//    Examples:
+//      >10 and <=20 -> [11,20]
+//      >10 and >100 -> false
+//      <10 and >10  -> false
+//
+// Arguments:
+//    type        - The type of the compare nodes.
+//    cmp1        - The first compare node.
+//    cmp2        - The second compare node.
+//    cns1        - The constant value of the first compare node (always RHS).
+//    cns2        - The constant value of the second compare node (always RHS).
+//    pRangeStart - [OUT] The start of the intersection range (inclusive).
+//    pRangeEnd   - [OUT] The end of the intersection range (inclusive).
+//
+// Returns:
+//    true if the ranges intersect and form a closed range.
+//
 static bool GetIntersection(var_types  type,
                             genTreeOps cmp1,
                             genTreeOps cmp2,
@@ -469,6 +486,7 @@ static bool GetIntersection(var_types  type,
 
     return true;
 }
+
 //------------------------------------------------------------------------------
 // IsConstantRangeTest: Does the given compare node represent a constant range test? E.g.
 //    "X relop CNS" or "CNS relop X" where relop is [<, <=, >, >=]
