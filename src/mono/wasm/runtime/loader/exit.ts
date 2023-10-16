@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix, mono_log_warn } from "./logging";
+import { mono_log_debug, mono_log_error, mono_log_info_no_prefix, mono_log_warn, teardown_proxy_console } from "./logging";
 
 export function is_exited() {
     return loaderHelpers.exitCode !== undefined;
@@ -14,7 +14,7 @@ export function is_runtime_running() {
 
 export function assert_runtime_running() {
     mono_assert(runtimeHelpers.runtimeReady, "mono runtime didn't start yet");
-    mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `mono runtime already exited with ${loaderHelpers.exitCode}`);
+    mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `mono runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}`);
 }
 
 // this will also call mono_wasm_exit if available, which will call exitJS -> _proc_exit -> terminateAllThreads
@@ -62,6 +62,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
         }
 
         loaderHelpers.exitCode = exit_code;
+        loaderHelpers.exitReason = reason.message;
     }
 
     if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
@@ -118,6 +119,7 @@ async function flush_node_streams() {
 }
 
 function abort_promises(reason: any) {
+    loaderHelpers.exitReason = reason;
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmCompilePromise.promise_control.reject(reason);
@@ -168,20 +170,8 @@ function logOnExit(exit_code: number, reason: any) {
         }
     }
     if (loaderHelpers.config && loaderHelpers.config.logExitCode) {
-        if (consoleWebSocket) {
-            const stop_when_ws_buffer_empty = () => {
-                if (consoleWebSocket.bufferedAmount == 0) {
-                    // tell xharness WasmTestMessagesProcessor we are done.
-                    // note this sends last few bytes into the same WS
-                    mono_log_info_no_prefix("WASM EXIT " + exit_code);
-                    consoleWebSocket.onclose = null;
-                    consoleWebSocket.close(1000, "exit_code:" + exit_code + ": " + reason);
-                }
-                else {
-                    globalThis.setTimeout(stop_when_ws_buffer_empty, 100);
-                }
-            };
-            stop_when_ws_buffer_empty();
+        if (loaderHelpers.config.forwardConsoleLogsToWS) {
+            teardown_proxy_console("WASM EXIT " + exit_code);
         } else {
             mono_log_info_no_prefix("WASM EXIT " + exit_code);
         }
