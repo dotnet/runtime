@@ -4793,6 +4793,8 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_STOREIND:
         case GT_NULLCHECK:
         case GT_STORE_DYN_BLK:
+        case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_BOUNDS_CHECK:
