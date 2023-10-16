@@ -10385,13 +10385,21 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_OBJECT_REF_GET_VALUES_BY_FIELD_TOKEN: {
 		len = 1;
 		i = 0;
-		MonoClass* klass =  decode_typeid (p, &p, end, NULL, &err);
+		int class_token =  decode_int (p, &p, end);
 		int field_token =  decode_int (p, &p, end);
 		gpointer iter = NULL;
 
-		while ((f = mono_class_get_fields_internal (klass, &iter))) {
-			if (mono_class_get_field_token (f) == field_token)
+		for (k = obj_type; k; k = m_class_get_parent (k)) {
+			if (m_class_get_type_token (k) == class_token) {
+				break;
+			}
+		}
+		if (!k)
+			goto invalid_fieldid;
+		while ((f = mono_class_get_fields_internal (k, &iter))) {
+			if (mono_class_get_field_token (f) == field_token) {
 				goto get_field_value;
+			}
 		}
 		goto invalid_fieldid;
 	}
