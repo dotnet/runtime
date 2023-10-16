@@ -35,7 +35,7 @@ Here are cases when `self` context is passed via register:
  - Non-mutating methods on value types: self may fit in one or more registers, else passed indirectly
  - Thick closures, i.e. closures requiring a context: the closure context
 
-Error handling is also handled through registers, so the caller needs to check for errors and throw if necessary. Similarly, the calling convention allows a function to return value types that are not opaque through a combination of registers if those values fit within the size and alignment constraints of the register. More details available at https://github.com/apple/swift/blob/main/docs/ABI/CallConvSummary.rst.
+Error handling is also handled through registers, so the caller needs to check for errors and throw if necessary. Similarly, the async context is handled through a register which contains a pointer to an object with information about the current state of the asynchronous operation. More details available at https://github.com/apple/swift/blob/main/docs/ABI/CallConvSummary.rst.
 
 ### Name mangling
 
@@ -117,6 +117,10 @@ public func factorial() -> Int {
 ### Error handling
 
 In order to support Swift calling convention, it is necessary to implement error handling by emitting thunks in the above-mentioned cases.
+
+### Async context
+
+When an async function is invoked, its context is stored into a register which points to an object that contains information about the current state of the asynchronous operation.
 
 ### Update Binding Tools for Swift to work with latest version of Mono runtime
 
