@@ -55,15 +55,6 @@ if(HAVE_SYS_ICU)
   endif()
 
   set(icu_shim_sources_base
-      pal_calendarData.c
-      pal_casing.c
-      pal_collation.c
-      pal_idna.c
-      pal_locale.c
-      pal_localeNumberData.c
-      pal_localeStringData.c
-      pal_normalization.c
-      pal_timeZoneInfo.c
       entrypoints.c
       ${pal_icushim_sources_base})
 

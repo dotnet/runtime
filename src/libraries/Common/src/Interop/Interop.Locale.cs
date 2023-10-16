@@ -16,7 +16,7 @@ internal static partial class Interop
         internal static unsafe partial bool GetLocaleInfoString(string localeName, uint localeStringData, char* value, int valueLength, string? uiLocaleName = null);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetDefaultLocaleName", StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
+        [return: MarshalAs(UnmanagedType.Bool)]//implement for hybrid
         internal static unsafe partial bool GetDefaultLocaleName(char* value, int valueLength);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_IsPredefinedLocale", StringMarshalling = StringMarshalling.Utf16)]

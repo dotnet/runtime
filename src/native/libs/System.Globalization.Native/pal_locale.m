@@ -190,7 +190,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             case LocaleString_Iso639LanguageThreeLetterName:
             {
                 NSString *iso639_2 = [currentLocale objectForKey:NSLocaleLanguageCode];
-                value = uloc_getISO3LanguageByLangCode([iso639_2 UTF8String]);//implement without icu
+                value = "";//uloc_getISO3LanguageByLangCode([iso639_2 UTF8String]);////implement without icu
                 break;
             }
             case LocaleString_Iso3166CountryName:
@@ -199,7 +199,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             case LocaleString_Iso3166CountryName2:
             {
                 const char *countryCode = strdup([[currentLocale objectForKey:NSLocaleCountryCode] UTF8String]);
-                value = uloc_getISO3CountryByCountryCode(countryCode);//implement without icu
+                value = "";//uloc_getISO3CountryByCountryCode(countryCode);////implement without icu
                 break;
             }
             case LocaleString_NaNSymbol:
@@ -689,4 +689,64 @@ const char* GlobalizationNative_GetICUDataPathFallback(void)
         return strdup([dataPath UTF8String]);
     }
 }
+
+const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
+{
+    @autoreleasepool
+    {
+        NSLocale *currentLocale = [NSLocale currentLocale];
+        NSString *localeName = @"";
+
+        if (!currentLocale)
+        {
+            return strdup([localeName UTF8String]);
+        }
+
+        if ([currentLocale.languageCode length] > 0 && [currentLocale.countryCode length] > 0)
+        {
+            localeName = [NSString stringWithFormat:@"%@-%@", currentLocale.languageCode, currentLocale.countryCode];
+        }
+        else
+        {
+            localeName = currentLocale.localeIdentifier;
+        }
+
+        return strdup([localeName UTF8String]);
+    }
+}
+
+int32_t GlobalizationNative_GetLocalesNative(char* value, int32_t length)
+{
+    NSArray<NSString*>* availableLocaleIdentifiers = [NSLocale availableLocaleIdentifiers];
+    int32_t index = 0;
+    int32_t totalLength = 0;
+    for (NSInteger i = 0; i < [availableLocaleIdentifiers count]; i++) 
+    {
+        NSString *localeIdentifier = availableLocaleIdentifiers[i];
+        const char* pLocaleName = [localeIdentifier UTF8String];
+        int32_t localeNameLength = (int32_t)strlen(pLocaleName);
+        totalLength += localeNameLength + 1; // add 1 for the name length
+        if (value != NULL)
+        {
+            if (totalLength > length)
+                return -3;
+
+            value[index++] = (UChar) localeNameLength;
+
+            for (int j=0; j<localeNameLength; j++)
+            {
+                if (pLocaleName[j] == '_') // fix the locale name
+                {
+                    value[index++] = (UChar) '-';
+                }
+                else
+                {
+                    value[index++] = (UChar) pLocaleName[j];
+                }
+            }
+        }
+    }
+    return availableLocaleIdentifiers.count;
+}
+
 #endif

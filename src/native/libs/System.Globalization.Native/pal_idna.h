@@ -6,6 +6,7 @@
 
 #include "pal_locale.h"
 #include "pal_compiler.h"
+#include "pal_icushim_internal.h"
 
 PALEXPORT int32_t GlobalizationNative_ToAscii(uint32_t flags,
                                               const UChar* lpSrc,

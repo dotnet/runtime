@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pal_compiler.h"
+#include "pal_icushim_internal.h"
 
 PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength);
 
@@ -18,7 +19,11 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeNam
                                                           int32_t valueLength);
 
 #ifdef __APPLE__
+PALEXPORT const char* GlobalizationNative_GetDefaultLocaleNameNative(void);
+
 PALEXPORT const char* GlobalizationNative_GetLocaleNameNative(const char* localeName);
 
 PALEXPORT const char* GlobalizationNative_GetLocaleTimeFormatNative(const char* localeName, int shortFormat);
+
+PALEXPORT int32_t GlobalizationNative_GetLocalesNative(char* locales, int32_t length);
 #endif

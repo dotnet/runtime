@@ -21,10 +21,9 @@ if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT DEFINED CMAKE_ICU_DIR)
         if (CLR_CMAKE_TARGET_OSX)
             execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
-            set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
         endif()
 
-        find_path(UCURR_H "unicode/ucurr.h" PATHS ${ICU_HOMEBREW_INC_PATH})
+        find_path(UCURR_H "unicode/ucurr.h")
         if(UCURR_H STREQUAL UCURR_H-NOTFOUND)
             message(FATAL_ERROR "Cannot find ucurr.h, try installing libicu-dev (or the appropriate package for your platform)")
             return()
@@ -53,22 +52,6 @@ endif()
 
 include(configure.cmake)
 
-set(NATIVEGLOBALIZATION_SOURCES
-    pal_calendarData.c
-    pal_casing.c
-    pal_collation.c
-    pal_idna.c
-    pal_locale.c
-    pal_localeNumberData.c
-    pal_localeStringData.c
-    pal_normalization.c
-)
-
-if (DEFINED CMAKE_ICU_DIR)
-    include_directories(${CMAKE_ICU_DIR}/include)
-    link_libraries(${CMAKE_ICU_DIR}/lib/libicuuc.a ${CMAKE_ICU_DIR}/lib/libicui18n.a ${CMAKE_ICU_DIR}/lib/libicudata.a)
-    link_libraries(stdc++)
-endif()
 
 if (CMAKE_USE_PTHREADS)
     add_compile_options(-pthread)
@@ -104,10 +87,7 @@ if (CLR_CMAKE_TARGET_APPLE)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} ${NATIVEGLOBALIZATION_SOURCES_OBJC})
 endif()
 
-# time zone names are filtered out of icu data for the browser and associated functionality is disabled
-if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
-    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_timeZoneInfo.c)
-endif()
+
 
 if (MSVC)
     set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)

@@ -10,7 +10,7 @@
 #include <unicode/putil.h>
 #include <unicode/uversion.h>
 #include <unicode/localpointer.h>
-#include <unicode/utrace.h>
+// #include <unicode/utrace.h>
 
 #if defined(TARGET_UNIX)
 #include <strings.h>
@@ -26,16 +26,16 @@ static void log_shim_error(const char* format, ...)
 {
     va_list args;
 
-    va_start(args, format);
-    vfprintf(stderr, format, args);
+    //va_start(args, format);
+    //vfprintf(stderr, format, args);
     fputc('\n', stderr);
-    va_end(args);
+    //va_end(args);
 }
 
 static void log_icu_error(const char* name, UErrorCode status)
 {
-    const char * statusText = u_errorName(status);
-    log_shim_error("ICU call %s failed with error #%d '%s'.", name, status, statusText);
+    // const char * statusText = u_errorName(status);
+    // log_shim_error("ICU call %s failed with error #%d '%s'.", name, status, statusText);
 }
 
 #if defined(ICU_TRACING)
@@ -83,7 +83,7 @@ static int32_t load_icu_data(const void* pData)
 {
 
     UErrorCode status = 0;
-    udata_setCommonData(pData, &status);
+    //udata_setCommonData(pData, &status);
 
     if (U_FAILURE(status))
     {
@@ -169,7 +169,7 @@ error:
 
 int32_t
 GlobalizationNative_LoadICUData(const char* path)
-{//
+{
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
     if (path && path[0] != '/')
     {
@@ -217,7 +217,7 @@ int32_t GlobalizationNative_LoadICU(void)
     UVersionInfo version;
     // Request the CLDR version to perform basic ICU initialization and find out
     // whether it worked.
-    ulocdata_getCLDRVersion(version, &status);
+    //ulocdata_getCLDRVersion(version, &status);
 
     if (U_FAILURE(status))
     {
@@ -243,7 +243,7 @@ int32_t GlobalizationNative_GetICUVersion(void)
         return 0;
 
     UVersionInfo versionInfo;
-    u_getVersion(versionInfo);
+   // u_getVersion(versionInfo);
 
     return (versionInfo[0] << 24) + (versionInfo[1] << 16) + (versionInfo[2] << 8) + versionInfo[3];
 }
