@@ -469,8 +469,20 @@ static bool GetIntersection(var_types  type,
 
     return true;
 }
-
-// Given a compare node, return true if it is a constant range test, e.g. "X > 10"
+//------------------------------------------------------------------------------
+// IsConstantRangeTest: Does the given compare node represent a constant range test? E.g.
+//    "X relop CNS" or "CNS relop X" where relop is [<, <=, >, >=]
+//
+// Arguments:
+//    tree - compare node
+//    varNode - [OUT] this will be set to the variable part of the constant range test
+//    cnsNode - [OUT] this will be set to the constant part of the constant range test
+//    cmp     - [OUT] this will be set to a normalized compare operator so that the constant
+//                    is always on the right hand side of the compare.
+//
+// Returns:
+//    true if the compare node represents a constant range test.
+//
 bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cnsNode, genTreeOps* cmp)
 {
     if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT) && !tree->IsUnsigned())
@@ -502,7 +514,24 @@ bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cns
     return false;
 }
 
-// Given two compare nodes, return true if they can be folded into a single range check (and fold them into cmp1)
+//------------------------------------------------------------------------------
+// FoldRangeTests: Given two compare nodes (cmp1 && cmp2) that represent a range check,
+//    fold them into a single compare node if possible, e.g.:
+//      1) "X >= 10 && X <= 100" -> "(X - 10) u<= 90"
+//      2) "X >= 0 && X <= 100"  -> "X u<= 100"
+//    where 'u' stands for unsigned comparison. cmp1 is used as the target node for folding.
+//    It's also guaranteed to be first in the execution order (so can allow some side effects).
+//
+// Arguments:
+//    compiler       - compiler instance
+//    cmp1           - first compare node
+//    cmp1IsReversed - true if cmp1 is in fact reversed
+//    cmp2           - second compare node
+//    cmp2IsReversed - true if cmp2 is in fact reversed
+//
+// Returns:
+//    true if cmp1 now represents the folded range check and cmp2 can be removed.
+//
 bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTreeOp* cmp2, bool cmp2IsReversed)
 {
     GenTree*       var1Node;
