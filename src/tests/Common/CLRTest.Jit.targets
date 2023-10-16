@@ -63,6 +63,10 @@ export RunningIlasmRoundTrip=
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
   mkdir IL-RT
+  if [ "$(IsMergedTestRunnerAssembly)" = "true" ]
+  then
+    python $(AssemblyName)_ilasmroundtrip.py
+  fi
   cp $(InputAssemblyName) $(TargetAssemblyName)
   echo "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(TargetAssemblyName)
   "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(TargetAssemblyName)
@@ -109,10 +113,6 @@ fi
 ]]>
       </IlasmRoundTripBashScript>
       <BashIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
-if [ "$(IsMergedTestRunnerAssembly)" = "true" ]; then
-  python $(AssemblyName)_ilasmroundtrip.py
-fi
-
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
   echo $LAUNCHER $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
@@ -145,16 +145,15 @@ set RunningIlasmRoundTrip=
       </IlasmRoundTripBatchScript>
 
       <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
-IF "$(IsMergedTestRunnerAssembly)"=="true" (
-  python $(AssemblyName)_ilasmroundtrip.py
-)
-
 REM IlasmRoundTrip Script
 REM Disable Ilasm round-tripping for Linker tests.
 REM Todo: Ilasm round-trip on linked binaries.
 IF NOT DEFINED DoLink (
   IF DEFINED RunningIlasmRoundTrip (
     mkdir IL-RT
+    IF "$(IsMergedTestRunnerAssembly)"=="true" (
+      python $(AssemblyName)_ilasmroundtrip.py
+    )
     copy $(InputAssemblyName) $(TargetAssemblyName)
     ECHO %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(TargetAssemblyName)
     %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(TargetAssemblyName)
