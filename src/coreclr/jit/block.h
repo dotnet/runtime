@@ -654,7 +654,8 @@ public:
 
     void SetJumpKindAndTarget(BBjumpKinds jumpKind DEBUG_ARG(Compiler* compiler))
     {
-        SetJumpKindAndTarget(jumpKind, nullptr DEBUG_ARG(compiler));
+        BasicBlock* jumpDest = nullptr;
+        SetJumpKindAndTarget(jumpKind, jumpDest DEBUG_ARG(compiler));
     }
 
     bool HasJump() const
