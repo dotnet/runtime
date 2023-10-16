@@ -1088,6 +1088,38 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
+#ifdef TARGET_ARM64
+    if ((intrinsic == NI_AdvSimd_StoreSelectedScalar) || (intrinsic == NI_AdvSimd_Arm64_StoreSelectedScalar))
+    {
+
+        CORINFO_ARG_LIST_HANDLE arg1                = sig->args;
+        CORINFO_ARG_LIST_HANDLE arg2                = info.compCompHnd->getArgNext(arg1);
+        CORINFO_CLASS_HANDLE    argClass            = NO_CLASS_HANDLE;
+        var_types argType     = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+        unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+
+        if (argType == TYP_STRUCT && fieldCount > 1)
+        {
+            CORINFO_CLASS_HANDLE structType;
+            unsigned int         sizeBytes = 0;
+            // StoreSelectedScalar that stores 2 vectors
+            CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(argClass, 0);
+            CorInfoType          fieldType   = info.compCompHnd->getFieldType(fieldHandle, &structType);
+            simdBaseJitType                  = getBaseJitTypeAndSizeOfSIMDType(structType, &sizeBytes);
+
+            switch (fieldCount)
+            {
+                case 2:
+                    intrinsic =
+                        sizeBytes == 8 ? NI_AdvSimd_StoreSelectedScalar64x2 : NI_AdvSimd_Arm64_StoreSelectedScalar128x2;
+                    break;
+                default:
+                    assert("unsupported");
+            }
+        }
+    }
+#endif
+
     simdBaseJitType = getBaseJitTypeFromArgIfNeeded(intrinsic, clsHnd, sig, simdBaseJitType);
 
     if (simdBaseJitType == CORINFO_TYPE_UNDEF)

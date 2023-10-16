@@ -1612,6 +1612,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            {
+                assert(intrin.op2 != nullptr);
+                assert(intrin.op3 != nullptr);
+                assert(isRMW);
+                srcCount += BuildOperandUses(intrin.op2);
+
+                assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                srcCount += BuildAddrUses(intrin.op3);
+                FALLTHROUGH;
+            }
+
             case NI_AdvSimd_LoadVector64x2:
             case NI_AdvSimd_LoadVector64x3:
             case NI_AdvSimd_LoadVector64x4:
