@@ -1330,7 +1330,7 @@ namespace System.Numerics.Tensors
 
                 max = Vector.ConditionalSelect(Vector.Equals(max, current),
                         Vector.ConditionalSelect(IsNegative(max), current, max),
-                        Vector.Max(max, current));
+                        Vector.Max(maxMag, currentMag));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1350,7 +1350,7 @@ namespace System.Numerics.Tensors
                     max,
                     Vector.ConditionalSelect(Vector.Equals(max, current),
                     Vector.ConditionalSelect(IsNegative(max), current, max),
-                    Vector.Max(max, current)));
+                    Vector.Max(maxMag, currentMag)));
             }
         }
 
