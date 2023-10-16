@@ -596,7 +596,7 @@ namespace DebuggerTests
                                            await CheckProps (c, new {
                                                            Field1 = TNumber(123),
                                                            Field2 = TString("spqr"),
-                                                           Field3 = TString(""),
+                                                           Field3 = TString(null),
                                                    }, "c", num_fields: 3);
                                        });
         }
