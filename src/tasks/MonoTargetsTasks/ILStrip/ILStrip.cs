@@ -180,6 +180,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             }
             else
             {
+                UpdateAssemblyItemWithTrimmedOne(ref newAssmeblyItem, trimmedAssemblyFilePath, assemblyFilePathArg);
+                _updatedAssemblies.Add(newAssmeblyItem);
                 return true;
             }
         }
@@ -206,9 +208,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         if (isTrimmed)
         {
-            newAssmeblyItem.ItemSpec = trimmedAssemblyFilePath;
-            newAssmeblyItem.SetMetadata("UntrimmedAssemblyFilePath", assemblyFilePathArg);
-            newAssmeblyItem.SetMetadata("ILStripped", "true");
+            UpdateAssemblyItemWithTrimmedOne(ref newAssmeblyItem, trimmedAssemblyFilePath, assemblyFilePathArg);
         }
 
         _updatedAssemblies.Add(newAssmeblyItem);
@@ -363,5 +363,12 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         Array.Clear(zeroBuffer, 0, zeroBuffer.Length);
         memStream.Write(zeroBuffer, 0, methodSize - headerSize);
         ArrayPool<byte>.Shared.Return(zeroBuffer);
+    }
+
+    private static void UpdateAssemblyItemWithTrimmedOne(ref ITaskItem newAssmeblyItem, string trimmedAssemblyFilePath, string originAssemblyFilePath)
+    {
+        newAssmeblyItem.ItemSpec = trimmedAssemblyFilePath;
+        newAssmeblyItem.SetMetadata("UntrimmedAssemblyFilePath", originAssemblyFilePath);
+        newAssmeblyItem.SetMetadata("ILStripped", "true");
     }
 }
