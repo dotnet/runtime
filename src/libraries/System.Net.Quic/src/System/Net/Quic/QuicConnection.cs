@@ -38,13 +38,6 @@ namespace System.Net.Quic;
 /// </remarks>
 public sealed partial class QuicConnection : IAsyncDisposable
 {
-#if DEBUG
-    /// <summary>
-    /// The actual secret structure wrapper passed to MsQuic.
-    /// </summary>
-    private readonly MsQuicTlsSecret? _tlsSecret;
-#endif
-
     /// <summary>
     /// Returns <c>true</c> if QUIC is supported on the current machine and can be used; otherwise, <c>false</c>.
     /// </summary>
@@ -152,6 +145,15 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Set when CONNECTED is received.
     /// </summary>
     private SslApplicationProtocol _negotiatedApplicationProtocol;
+
+#if DEBUG
+    /// <summary>
+    /// Will contain TLS secret after CONNECTED event is received and store it into SSLKEYLOGFILE.
+    /// MsQuic holds the underlying pointer so this object can be disposed only after connection native handle gets closed.
+    /// </summary>
+    private readonly MsQuicTlsSecret? _tlsSecret;
+#endif
+
     /// <summary>
     /// The remote endpoint used for this connection.
     /// </summary>
@@ -467,6 +469,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
         QuicAddr localAddress = MsQuicHelpers.GetMsQuicParameter<QuicAddr>(_handle, QUIC_PARAM_CONN_LOCAL_ADDRESS);
         _localEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(&localAddress);
 
+#if DEBUG
+        _tlsSecret?.WriteSecret();
+#endif
+
         if (NetEventSource.Log.IsEnabled())
         {
             NetEventSource.Info(this, $"{this} Connection connected {LocalEndPoint} -> {RemoteEndPoint} for {_negotiatedApplicationProtocol} protocol");
@@ -596,9 +602,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
             return;
         }
 
-#if DEBUG
-        _tlsSecret?.Dispose();
-#endif
         // Check if the connection has been shut down and if not, shut it down.
         if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
         {

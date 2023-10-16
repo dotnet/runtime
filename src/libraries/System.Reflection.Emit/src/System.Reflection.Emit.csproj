@@ -11,6 +11,7 @@
     <Compile Include="System\Reflection\Emit\EnumBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\FieldBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\GenericTypeParameterBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\ILGeneratorImpl.cs" />
     <Compile Include="System\Reflection\Emit\MethodBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\ModuleBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\ParameterBuilderImpl.cs" />

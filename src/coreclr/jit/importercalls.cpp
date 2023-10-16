@@ -1095,7 +1095,7 @@ DONE:
 
         // assert(compCurBB is not a catch, finally or filter block);
         // assert(compCurBB is not a try block protected by a finally block);
-        assert(!isExplicitTailCall || compCurBB->bbJumpKind == BBJ_RETURN);
+        assert(!isExplicitTailCall || compCurBB->KindIs(BBJ_RETURN));
 
         // Ask VM for permission to tailcall
         if (canTailCall)
@@ -1271,10 +1271,10 @@ DONE:
             // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
             // instrumentation.
             //
-            if (compCurBB->bbJumpKind != BBJ_RETURN)
+            if (!compCurBB->KindIs(BBJ_RETURN))
             {
                 BasicBlock* const successor = compCurBB->GetUniqueSucc();
-                assert(successor->bbJumpKind == BBJ_RETURN);
+                assert(successor->KindIs(BBJ_RETURN));
                 successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
                 optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
             }
@@ -1912,7 +1912,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         // be at most 64 arguments - 32 lengths and 32 lower bounds.
         //
 
-        if ((!numArgsArg->IsCnsIntOrI()) || (numArgsArg->AsIntCon()->IconValue() < 1) ||
+        if (!numArgsArg->IsCnsIntOrI() || (numArgsArg->AsIntCon()->IconValue() < 1) ||
             (numArgsArg->AsIntCon()->IconValue() > 64))
         {
             return nullptr;
@@ -2551,6 +2551,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             // This one is just `return true/false`
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
 
+            // Not expanding this can lead to noticeable allocations in T0
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+
             // We need these to be able to fold "typeof(...) == typeof(...)"
             case NI_System_Type_GetTypeFromHandle:
             case NI_System_Type_op_Equality:
@@ -2937,8 +2940,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // Add an ordering dependency between the bounds check and
                 // forming the byref to prevent these from being reordered. The
                 // JIT is not allowed to create arbitrary illegal byrefs.
-                boundsCheck->gtFlags |= GTF_ORDER_SIDEEFF;
-                result->gtFlags |= GTF_ORDER_SIDEEFF;
+                boundsCheck->SetHasOrderingSideEffect();
+                result->SetHasOrderingSideEffect();
                 retNode = gtNewOperNode(GT_COMMA, resultType, boundsCheck, result);
 
                 break;
@@ -3818,7 +3821,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (op1->IsIntegralConst())
                 {
                     float f32Cns = BitOperations::UInt32BitsToSingle((uint32_t)op1->AsIntConCommon()->IconValue());
-                    retNode      = gtNewDconNode(FloatingPointUtils::convertToDouble(f32Cns), TYP_FLOAT);
+                    retNode      = gtNewDconNodeF(f32Cns);
                 }
                 else
                 {
@@ -3837,7 +3840,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     impPopStack();
 
                     int64_t i64Cns = op1->AsIntConCommon()->LngValue();
-                    retNode        = gtNewDconNode(*reinterpret_cast<double*>(&i64Cns));
+                    retNode        = gtNewDconNodeD(*reinterpret_cast<double*>(&i64Cns));
                 }
 #if TARGET_64BIT
                 else
@@ -4166,15 +4169,14 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                     if (toType == TYP_DOUBLE)
                     {
                         uint64_t u64Cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
-                        return gtNewDconNode(BitOperations::UInt64BitsToDouble(u64Cns), TYP_DOUBLE);
+                        return gtNewDconNodeD(BitOperations::UInt64BitsToDouble(u64Cns));
                     }
                     else
                     {
                         assert(toType == TYP_FLOAT);
 
                         uint32_t u32Cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                        float    f32Cns = BitOperations::UInt32BitsToSingle(u32Cns);
-                        return gtNewDconNode(FloatingPointUtils::convertToDouble(f32Cns), TYP_FLOAT);
+                        return gtNewDconNodeF(BitOperations::UInt32BitsToSingle(u32Cns));
                     }
                 }
                 // TODO-CQ: We should support this on 32-bit via decomposition

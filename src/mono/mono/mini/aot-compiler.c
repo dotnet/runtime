@@ -10762,7 +10762,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (acfg->aot_opts.no_opt)
 		return TRUE;
 
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && LLVM_API_VERSION >= 1400
+#if (defined(TARGET_X86) || defined(TARGET_AMD64))
 	if (acfg->aot_opts.llvm_cpu_attr && strstr (acfg->aot_opts.llvm_cpu_attr, "sse4.2"))
 		/*
 		 * LLVM 14 added a 'crc32' mattr which needs to be explicitly enabled to
@@ -10808,11 +10808,9 @@ emit_llvm_file (MonoAotCompile *acfg)
 			opts = g_strdup_printf ("%sdefault<O2>,", opts);
 		}
 		opts = g_strdup_printf ("%splace-safepoints\" -spp-all-backedges", opts);
-#elif LLVM_API_VERSION >= 1300
+#else
 		/* The safepoints pass requires the old pass manager */
 		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges -enable-new-pm=0");
-#else
-		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges");
 #endif
 	}
 
@@ -14614,8 +14612,8 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 static MonoMethodSignature * const * const interp_in_static_sigs [] = {
-    &mono_icall_sig_bool_ptr_int32_ptrref,
-    &mono_icall_sig_bool_ptr_ptrref,
+    &mono_icall_sig_boolean_ptr_int32_ptrref,
+    &mono_icall_sig_boolean_ptr_ptrref,
     &mono_icall_sig_int32_int32_ptrref,
     &mono_icall_sig_int32_int32_ptr_ptrref,
     &mono_icall_sig_int32_ptr_int32_ptr,

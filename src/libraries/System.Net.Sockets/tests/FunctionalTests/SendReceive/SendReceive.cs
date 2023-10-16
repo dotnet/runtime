@@ -1031,11 +1031,12 @@ namespace System.Net.Sockets.Tests
                 return;
             }
 
-            // RHEL7 kernel has a bug preventing close(AF_UNKNOWN) to succeed with IPv6 sockets.
-            // In this case Dispose will trigger a graceful shutdown, which means that receive will succeed on socket2.
-            // This bug is fixed in kernel 3.10.0-1160.25+.
-            // TODO: Remove this, once CI machines are updated to a newer kernel.
-            bool mayShutdownGraceful = UsesSync && PlatformDetection.IsRedHatFamily7 && receiveOrSend && (ipv6Server || dualModeClient);
+            // .NET uses connect(AF_UNSPEC) to abort on-going operations on Linux.
+            // Linux 6.4+ introduced a change (4faeee0cf8a5d88d63cdbc3bab124fb0e6aed08c) which disallows
+            // this operation while operations are on-going.
+            // When the connect fails, .NET falls back to use shutdown(SHUT_RDWR).
+            // This causes the receive on socket2 to succeed instead of failing with ConnectionReset.
+            bool mayShutdownGraceful = UsesSync && PlatformDetection.IsLinux && receiveOrSend;
 
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't

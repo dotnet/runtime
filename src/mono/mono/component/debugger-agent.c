@@ -85,17 +85,17 @@
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
-#include <mono/utils/mono-poll.h>
 
 #include <mono/component/debugger-state-machine.h>
-#include "debugger-agent.h"
-#include "debugger-networking.h"
+#include <mono/component/debugger-agent.h>
+#include <mono/component/debugger-networking.h>
+#include <mono/component/debugger-poll.h>
 #include <mono/mini/mini.h>
 #include <mono/mini/seq-points.h>
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/interp/interp.h>
-#include "debugger-engine.h"
+#include <mono/component/debugger-engine.h>
 #include <mono/metadata/debug-mono-ppdb.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/components.h>
@@ -173,7 +173,6 @@ typedef struct {
 	gboolean onuncaught;
 	GSList *onthrow;
 	int timeout;
-	char *launch;
 	gboolean embedding;
 	gboolean defer;
 	int keepalive;
@@ -661,7 +660,7 @@ debugger_agent_parse_options (char *options)
 		} else if (strncmp (arg, "timeout=", 8) == 0) {
 			agent_config.timeout = atoi (arg + 8);
 		} else if (strncmp (arg, "launch=", 7) == 0) {
-			agent_config.launch = g_strdup (arg + 7);
+			// no longer supported
 		} else if (strncmp (arg, "embedding=", 10) == 0) {
 			agent_config.embedding = atoi (arg + 10) == 1;
 		} else if (strncmp (arg, "keepalive=", 10) == 0) {
@@ -856,30 +855,6 @@ finish_agent_init (gboolean on_startup)
 	if (mono_atomic_cas_i32 (&agent_inited, 1, 0) == 1)
 		return;
 
-	if (agent_config.launch) {
-
-		// FIXME: Generated address
-		// FIXME: Races with transport_connect ()
-
-#ifdef G_OS_WIN32
-		// Nothing. FIXME? g_spawn_async_with_pipes is easy enough to provide for Windows if needed.
-#elif !HAVE_G_SPAWN
-		PRINT_ERROR_MSG ("g_spawn_async_with_pipes not supported on this platform\n");
-		exit (1);
-#else
-		char *argv [ ] = {
-			agent_config.launch,
-			agent_config.transport,
-			agent_config.address,
-			NULL
-		};
-		int res = g_spawn_async_with_pipes (NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-		if (!res) {
-			PRINT_ERROR_MSG ("Failed to execute '%s'.\n", agent_config.launch);
-			exit (1);
-		}
-#endif
-	}
 #ifndef HOST_WASI
 	transport_connect (agent_config.address);
 #else
@@ -5353,6 +5328,7 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	gpointer iter = NULL;
 	MonoDomain *d;
 	ErrorCode err;
+	int inlineArraySize = -1;
 
 	/* is_enum, ignored */
 	decode_byte (buf, &buf, limit);
@@ -5360,7 +5336,7 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
 	if (CHECK_PROTOCOL_VERSION(2, 65))
-		decode_int (buf, &buf, limit); //ignore inline array
+		inlineArraySize = decode_int (buf, &buf, limit);
 	if (err != ERR_NONE)
 		return err;
 
@@ -5385,6 +5361,12 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 		if (err != ERR_NONE)
 			return err;
 		nfields --;
+		if (CHECK_PROTOCOL_VERSION(2, 66) && inlineArraySize > 0)
+		{
+			int element_size = mono_class_instance_size (mono_class_from_mono_type_internal (f->type)) - MONO_ABI_SIZEOF (MonoObject);
+			for (int i = 1; i < inlineArraySize; i++)
+				decode_value (f->type, domain, ((char*)mono_vtype_get_field_addr (addr, f)) + (i*element_size), buf, &buf, limit, check_field_datatype, extra_space, members_in_extra_space);
+		}
 	}
 	g_assert (nfields == 0);
 
@@ -5459,6 +5441,7 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 	gpointer iter = NULL;
 	MonoDomain *d;
 	ErrorCode err;
+	int inlineArraySize = -1;
 
 	/* is_enum, ignored */
 	decode_byte (buf, &buf, limit);
@@ -5466,7 +5449,7 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
 	if (CHECK_PROTOCOL_VERSION(2, 65))
-		decode_int (buf, &buf, limit); //ignore inline array
+		inlineArraySize = decode_int (buf, &buf, limit);
 	if (err != ERR_NONE)
 		goto end;
 
@@ -5489,6 +5472,14 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 		if (err != ERR_NONE)
 			return err;
 		nfields --;
+		if (CHECK_PROTOCOL_VERSION(2, 66) && inlineArraySize > 0)
+		{
+			for (int i = 1; i < inlineArraySize; i++) {
+				field_size = decode_value_compute_size (f->type, 0, domain, buf, &buf, limit, members_in_extra_space);
+				if (members_in_extra_space)
+					ret += field_size;
+			}
+		}
 	}
 	g_assert (nfields == 0);
 

@@ -146,7 +146,12 @@
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
                             Variant="latest"
                             Version="$(PackageVersionForWorkloadManifests)" />
-      <WorkloadCombinationsToInstall Include="latest" Variants="latest" />
+
+      <WorkloadIdForTesting Include="wasi-experimental-net8;wasi-experimental"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net8"
+                            Variant="net8"
+                            Version="$(PackageVersionForWorkloadManifests)" />
+      <WorkloadCombinationsToInstall Include="latest" Variants="latest;net8" />
     </ItemGroup>
   </Target>
 </Project>

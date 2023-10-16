@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Security;
+using Xunit;
 
 public class MulticastDelegateGetHashCode
 {
@@ -85,7 +86,8 @@ public class MulticastDelegateGetHashCode
     #endregion
     #endregion
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MulticastDelegateGetHashCode mdghc = new MulticastDelegateGetHashCode();
 

@@ -728,16 +728,63 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            {
+                assert(isRMW);
+                unsigned fieldIdx = 0;
+                op2Reg            = intrin.op2->GetRegNum();
+                op3Reg            = intrin.op3->GetRegNum();
+                assert(intrin.op1->OperIsFieldList());
+
+                GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
+                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                op1Reg                       = firstField->GetRegNum();
+
+                regNumber targetFieldReg = REG_NA;
+                regNumber op1FieldReg    = REG_NA;
+
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                {
+                    GenTree* fieldNode = use.GetNode();
+
+                    targetFieldReg = node->GetRegByIndex(fieldIdx);
+                    op1FieldReg    = fieldNode->GetRegNum();
+
+                    if (targetFieldReg != op1FieldReg)
+                    {
+                        GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(fieldNode), targetFieldReg, op1FieldReg,
+                                                  /* canSkip */ true);
+                    }
+                    fieldIdx++;
+                }
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int elementIndex = helper.ImmValue();
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op3Reg, elementIndex);
+                }
+
+                break;
+            }
             case NI_AdvSimd_Arm64_LoadPairVector128:
             case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector64:
             case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, node->GetOtherReg(), op1Reg);
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, node->GetRegByIndex(1), op1Reg);
                 break;
 
             case NI_AdvSimd_Arm64_LoadPairScalarVector64:
             case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
-                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, node->GetOtherReg(), op1Reg);
+                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), targetReg, node->GetRegByIndex(1),
+                                            op1Reg);
                 break;
 
             case NI_AdvSimd_StoreSelectedScalar:
@@ -762,6 +809,34 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_Arm64_StorePairScalarNonTemporal:
                 GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), op2Reg, op3Reg, op1Reg);
                 break;
+
+            case NI_AdvSimd_StoreVector64x2:
+            case NI_AdvSimd_Arm64_StoreVector128x2:
+            {
+                unsigned regCount = 0;
+
+                assert(intrin.op2->OperIsFieldList());
+
+                GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
+                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                op2Reg                       = firstField->GetRegNum();
+
+#ifdef DEBUG
+                regNumber argReg = op2Reg;
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                {
+                    regCount++;
+
+                    GenTree* argNode = use.GetNode();
+                    assert(argReg == argNode->GetRegNum());
+                    argReg = REG_NEXT(argReg);
+                }
+                assert(regCount == 2);
+#endif
+
+                GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
+                break;
+            }
 
             case NI_Vector64_CreateScalarUnsafe:
             case NI_Vector128_CreateScalarUnsafe:

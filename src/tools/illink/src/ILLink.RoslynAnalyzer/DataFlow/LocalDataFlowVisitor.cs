@@ -77,6 +77,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// If not, the BranchValue represents a return or throw value associated with the FallThroughSuccessor of this block.
 			// (ConditionalSuccessor == null iff ConditionKind == None).
 			// If we get here, we should be analyzing a method body, not an attribute instance since attributes can't have throws or return statements
+			// Field/property initializers also can't have throws or return statements.
 			Debug.Assert (OwningSymbol is IMethodSymbol);
 
 			// The BranchValue for a thrown value is not involved in dataflow tracking.
@@ -273,6 +274,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 						arrayRef = Visit (capture.Reference, state);
 						HandleArrayElementWrite (arrayRef, index, value, operation, merge: true);
 					}
+					return value;
+				}
+			case IInlineArrayAccessOperation inlineArrayAccess: {
+					TValue arrayRef = Visit (inlineArrayAccess.Instance, state);
+					TValue index = Visit (inlineArrayAccess.Argument, state);
+					TValue value = Visit (operation.Value, state);
+					HandleArrayElementWrite (arrayRef, index, value, operation, merge: merge);
 					return value;
 				}
 			case IDiscardOperation:
@@ -508,6 +516,15 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return HandleArrayElementRead (Visit (operation.ArrayReference, state), Visit (operation.Indices[0], state), operation);
 		}
 
+		public override TValue VisitInlineArrayAccess (IInlineArrayAccessOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read));
+			if (!operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read))
+				return TopValue;
+
+			return HandleArrayElementRead (Visit (operation.Instance, state), Visit (operation.Argument, state), operation);
+		}
+
 		public override TValue VisitArgument (IArgumentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
 			return Visit (operation.Value, state);
@@ -540,7 +557,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitFlowAnonymousFunction (IFlowAnonymousFunctionOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			Debug.Assert (operation.Symbol.ContainingSymbol is IMethodSymbol);
+			// The containing symbol of a lambda is either another method, or a field (for field initializers).
+			// For property initializers, the containing symbol is the compiler-generated backing field.
+			// For property accessors, the containing symbol is the accessor method.
+			Debug.Assert (operation.Symbol.ContainingSymbol is IMethodSymbol or IFieldSymbol);
 			var lambda = operation.Symbol;
 			Debug.Assert (lambda.MethodKind == MethodKind.LambdaMethod);
 			var lambdaCFG = ControlFlowGraph.GetAnonymousFunctionControlFlowGraphInScope (operation);

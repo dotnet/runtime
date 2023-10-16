@@ -36,7 +36,6 @@
 #include "mono/metadata/threads-types.h"
 #include "mono/metadata/string-icalls.h"
 #include "mono/metadata/attrdefs.h"
-#include "mono/utils/strenc.h"
 #include "mono/utils/atomic.h"
 #include "mono/utils/mono-error.h"
 #include "mono/utils/mono-error-internals.h"
@@ -96,11 +95,11 @@ Code shared between the DISABLE_COM and !DISABLE_COM
 // must be extern "C".
 #ifndef DISABLE_JIT
 #define register_icall(func, sig, no_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), #func))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, #func, (sig), (no_wrapper), #func))
 #else
 /* No need for the name/C symbol */
 #define register_icall(func, sig, no_wrapper) \
-	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, NULL, (sig), (no_wrapper), NULL))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, (gconstpointer)func, NULL, (sig), (no_wrapper), NULL))
 #endif
 
 mono_bstr
@@ -2846,6 +2845,30 @@ cominterop_ccw_get_ids_of_names (MonoCCWInterface* ccwe, gpointer riid,
 	return result;
 }
 
+
+/**
+ * unicode_to_external:
+ * \param uni a UTF-16 string to convert to an external representation.
+ * Turns NULL-terminated UTF-16 into UTF-8. If the conversion doesn't
+ * work, then NULL is returned.
+ * Callers must free the returned string.
+ */
+static gchar *
+unicode_to_external (const gunichar2 *uni)
+{
+	gchar *utf8;
+	GError *gerr = NULL;
+
+	utf8 = g_utf16_to_utf8 (uni, -1, NULL, NULL, &gerr);
+	if (utf8 == NULL) {
+		mono_error_set_argument (err, "uni", gerr->message);
+		g_error_free (gerr);
+		return NULL;
+	}
+
+	return(utf8);
+}
+
 static int STDCALL
 cominterop_ccw_get_ids_of_names_impl (MonoCCWInterface* ccwe, gpointer riid,
 				      gunichar2** rgszNames, guint32 cNames,
@@ -2876,7 +2899,7 @@ cominterop_ccw_get_ids_of_names_impl (MonoCCWInterface* ccwe, gpointer riid,
 		mono_thread_attach_external_native_thread (mono_get_root_domain (), FALSE);
 
 	for (i=0; i < cNames; i++) {
-		methodname = mono_unicode_to_external (rgszNames[i]);
+		methodname = unicode_to_external (rgszNames[i]);
 
 		method = mono_class_get_method_from_name_checked(klass, methodname, -1, 0, error);
 		if (method && is_ok (error)) {

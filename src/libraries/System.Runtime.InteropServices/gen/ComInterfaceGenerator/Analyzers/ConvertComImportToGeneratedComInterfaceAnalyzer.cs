@@ -81,8 +81,8 @@ namespace Microsoft.Interop.Analyzers
                             new CodeEmitOptions(SkipInit: true),
                             typeof(ConvertComImportToGeneratedComInterfaceAnalyzer).Assembly);
 
-                        var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.ManagedToUnmanaged);
-                        var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.CreateGeneratorFactory(env, MarshalDirection.UnmanagedToManaged);
+                        var managedToUnmanagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorFactory(env.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged);
+                        var unmanagedToManagedFactory = ComInterfaceGeneratorHelpers.GetGeneratorFactory(env.EnvironmentFlags, MarshalDirection.UnmanagedToManaged);
 
                         mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
                         bool anyExplicitlyUnsupportedInfo = false;
@@ -118,8 +118,8 @@ namespace Microsoft.Interop.Analyzers
                                 info = info with { MarshallingAttributeInfo = inner };
                             }
                             // Run both factories and collect any binding failures.
-                            ResolvedGenerator unmanagedToManagedGenerator = unmanagedToManagedFactory.GeneratorFactory.Create(info, nativeToManagedStubCodeContext);
-                            ResolvedGenerator managedToUnmanagedGenerator = managedToUnmanagedFactory.GeneratorFactory.Create(info, managedToNativeStubCodeContext);
+                            ResolvedGenerator unmanagedToManagedGenerator = unmanagedToManagedFactory.Create(info, nativeToManagedStubCodeContext);
+                            ResolvedGenerator managedToUnmanagedGenerator = managedToUnmanagedFactory.Create(info, managedToNativeStubCodeContext);
                             return managedToUnmanagedGenerator with
                             {
                                 Diagnostics = managedToUnmanagedGenerator.Diagnostics.AddRange(unmanagedToManagedGenerator.Diagnostics)
@@ -151,7 +151,7 @@ namespace Microsoft.Interop.Analyzers
             var defaultInfo = new DefaultMarshallingInfo(CharEncoding.Utf16, null);
 
             var useSiteAttributeParsers = ImmutableArray.Create<IUseSiteAttributeParser>(
-                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
+                    new MarshalAsAttributeParser(diagnostics, defaultInfo),
                     new MarshalUsingAttributeParser(env.Compilation, diagnostics));
 
             return new MarshallingInfoParser(
@@ -159,7 +159,7 @@ namespace Microsoft.Interop.Analyzers
                 new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers),
                 useSiteAttributeParsers,
                 ImmutableArray.Create<IMarshallingInfoAttributeParser>(
-                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
+                    new MarshalAsWithCustomMarshallersParser(env.Compilation, diagnostics, new MarshalAsAttributeParser(diagnostics, defaultInfo)),
                     new MarshalUsingAttributeParser(env.Compilation, diagnostics),
                     new NativeMarshallingAttributeParser(env.Compilation, diagnostics),
                     new ComInterfaceMarshallingInfoProvider(env.Compilation)),
