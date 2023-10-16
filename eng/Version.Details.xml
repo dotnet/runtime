@@ -100,9 +100,9 @@
       <Sha>3af65e74c8be435668f328c2bf134270b33d4e3a</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.23502.3">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.23509.2">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>588fbcbc2a221bc6cea33f12eb73c9117994154e</Sha>
+      <Sha>7465c94de67ea6410d285608979e73df72d5f670</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
@@ -334,21 +334,21 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>1d451c32dda2314c721adbf8829e1c0cd4e681ff</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.23478.3">
+    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.23507.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>492f7464d31d9599531fab2a67bc2422046f5133</Sha>
+      <Sha>9d70382f52bc311fa51e523bb066ebb012bf8035</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.23478.3">
+    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.23507.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>492f7464d31d9599531fab2a67bc2422046f5133</Sha>
+      <Sha>9d70382f52bc311fa51e523bb066ebb012bf8035</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.23478.3">
+    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.23507.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>492f7464d31d9599531fab2a67bc2422046f5133</Sha>
+      <Sha>9d70382f52bc311fa51e523bb066ebb012bf8035</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.23478.3">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.23507.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>492f7464d31d9599531fab2a67bc2422046f5133</Sha>
+      <Sha>9d70382f52bc311fa51e523bb066ebb012bf8035</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="8.0.0-alpha.0.23475.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
@@ -358,39 +358,39 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>b7d8e946c831e79435054f65e49c2eebb74b55c6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.8.0-3.23504.4">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.9.0-1.23506.7">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>81d9274600db701a8b08ed8af3fd6b00a775cc33</Sha>
+      <Sha>0caa880a161057559d1dcaad890e4053f520136e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.8.0-3.23504.4">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.9.0-1.23506.7">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>81d9274600db701a8b08ed8af3fd6b00a775cc33</Sha>
+      <Sha>0caa880a161057559d1dcaad890e4053f520136e</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.8.0-3.23504.4">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.9.0-1.23506.7">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>81d9274600db701a8b08ed8af3fd6b00a775cc33</Sha>
+      <Sha>0caa880a161057559d1dcaad890e4053f520136e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.23478.1">
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.23505.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>84fb81c27e0554eadf6b12f97eb52c7cd2803c7e</Sha>
+      <Sha>8b1675a20d889de99684bfced2e0cbc1296c7853</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.23478.1">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.23505.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>84fb81c27e0554eadf6b12f97eb52c7cd2803c7e</Sha>
+      <Sha>8b1675a20d889de99684bfced2e0cbc1296c7853</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23480.1">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23506.9">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>bd9fe1f506ec4b133c9cf85df6b3e6cf55b9450f</Sha>
+      <Sha>08c4fdc8b41386155c93cb2dbdd3a139aa2c348c</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23478.3">
+    <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23507.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>492f7464d31d9599531fab2a67bc2422046f5133</Sha>
+      <Sha>9d70382f52bc311fa51e523bb066ebb012bf8035</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23478.3">
+    <Dependency Name="optimization.linux-arm64.MIBC.Runtime" Version="1.0.0-prerelease.23507.6">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>492f7464d31d9599531fab2a67bc2422046f5133</Sha>
+      <Sha>9d70382f52bc311fa51e523bb066ebb012bf8035</Sha>
     </Dependency>
     <!-- Necessary for source-build. This allows the package to be retrieved from previously-source-built artifacts
          and flow in as dependencies of the packages produced by runtime. -->

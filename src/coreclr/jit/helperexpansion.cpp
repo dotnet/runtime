@@ -336,8 +336,8 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     fgRemoveRefPred(block, prevBb);
     fgAddRefPred(block, fastPathBb);
     fgAddRefPred(block, fallbackBb);
-    nullcheckBb->bbJumpDest = fallbackBb;
-    fastPathBb->bbJumpDest  = block;
+    nullcheckBb->SetJumpDest(fallbackBb);
+    fastPathBb->SetJumpDest(block);
 
     if (needsSizeCheck)
     {
@@ -351,7 +351,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         // fastPathBb is only reachable from successful nullcheckBb
         fgAddRefPred(fastPathBb, nullcheckBb);
         // sizeCheckBb fails - jump to fallbackBb
-        sizeCheckBb->bbJumpDest = fallbackBb;
+        sizeCheckBb->SetJumpDest(fallbackBb);
     }
     else
     {
@@ -783,10 +783,10 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     fgAddRefPred(block, fastPathBb);
     fgAddRefPred(block, fallbackBb);
 
-    maxThreadStaticBlocksCondBB->bbJumpDest = fallbackBb;
-    threadStaticBlockNullCondBB->bbJumpDest = fastPathBb;
-    fastPathBb->bbJumpDest                  = block;
-    fallbackBb->bbJumpDest                  = block;
+    maxThreadStaticBlocksCondBB->SetJumpDest(fallbackBb);
+    threadStaticBlockNullCondBB->SetJumpDest(fastPathBb);
+    fastPathBb->SetJumpDest(block);
+    fallbackBb->SetJumpDest(block);
 
     // Inherit the weights
     block->inheritWeight(prevBb);
@@ -1153,7 +1153,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     fgAddRefPred(helperCallBb, isInitedBb);
 
     // helperCallBb unconditionally jumps to the last block (jumps over fastPathBb)
-    isInitedBb->bbJumpDest = block;
+    isInitedBb->SetJumpDest(block);
 
     //
     // Re-distribute weights
@@ -1495,7 +1495,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // fastpathBb flows into block
     fgAddRefPred(block, fastpathBb);
     // lengthCheckBb jumps to block if condition is met
-    lengthCheckBb->bbJumpDest = block;
+    lengthCheckBb->SetJumpDest(block);
 
     //
     // Re-distribute weights

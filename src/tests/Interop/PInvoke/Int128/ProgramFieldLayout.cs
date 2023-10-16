@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
-unsafe partial class Int128NativeFieldLayout
+public unsafe partial class Int128NativeFieldLayout
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

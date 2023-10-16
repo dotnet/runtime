@@ -63,7 +63,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0006`__ | Thread.Abort is not supported and throws PlatformNotSupportedException. |
 |  __`SYSLIB0007`__ | The default implementation of this cryptography algorithm is not supported. |
 |  __`SYSLIB0008`__ | The CreatePdbGenerator API is not supported and throws PlatformNotSupportedException. |
-|  __`SYSLIB0009`__ | The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException. |
+|  __`SYSLIB0009`__ | AuthenticationManager is not supported. Methods will no-op or throw PlatformNotSupportedException. |
 |  __`SYSLIB0010`__ | This Remoting API is not supported and throws PlatformNotSupportedException. |
 |  __`SYSLIB0011`__ | `BinaryFormatter` serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for recommended alternatives. |
 |  __`SYSLIB0012`__ | Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead. |
