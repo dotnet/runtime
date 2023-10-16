@@ -392,6 +392,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     if (!_allStats[i].TryGetTarget(out Stats? stats))
                     {
                         _allStats.RemoveAt(i);
+                        i--;
                     }
                 }
 
