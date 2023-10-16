@@ -3610,14 +3610,16 @@ unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
 //
 void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 {
-    if (!fgUseThrowHelperBlocks())
+    if (!fgUseThrowHelperBlocks() && (kind != SCK_FAIL_FAST))
     {
+        // FailFast will still use a thrwo helper, even in debuggable modes.
+        //
         return;
     }
 
     JITDUMP(FMT_BB " requires throw helper block for SCK-%u\n", srcBlk->bbNum, kind);
 
-    unsigned const refData = bbThrowIndex(srcBlk);
+    unsigned const refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk);
 
     // Record that the code will call a THROW_HELPER
     // so on Windows Amd64 we can allocate the 4 outgoing
@@ -3661,14 +3663,13 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 //
 bool Compiler::fgCreateThrowHelperBlocks()
 {
-    if (!fgUseThrowHelperBlocks() && (kind != SCK_FAIL_FAST))
+    if (fgAddCodeList == nullptr)
     {
-        // We'll create a throw block in-place then (for better debugging)
-        // It's not needed for fail fast, since it's not recoverable anyway.
-        //
         return false;
     }
 
+    // We should not have added throw helper blocks yet.
+    //
     assert(!fgRngChkThrowAdded);
 
     const static BBjumpKinds jumpKinds[] = {
@@ -3691,10 +3692,10 @@ bool Compiler::fgCreateThrowHelperBlocks()
         //
         BasicBlock* const srcBlk = add->acdDstBlk;
 
-        // Double-check that srcBlk hasn't changed EH regions since the time
-        // the add was created.
+        // Double-check that this is a fail fast, or that srcBlk hasn't changed EH
+        // regions since the time the descriptor was created.
         //
-        assert(bbThrowIndex(srcBlk) == add->acdData);
+        assert((add->acdKind == SCK_FAIL_FAST) || (bbThrowIndex(srcBlk) == add->acdData));
 
         BasicBlock* const newBlk =
             fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk, /* runRarely */ true, /* insertAtEnd */ true);
@@ -3761,14 +3762,14 @@ bool Compiler::fgCreateThrowHelperBlocks()
         }
 #endif // DEBUG
 
-        /* Mark the block as added by the compiler and not removable by future flow
-           graph optimizations. Note that no bbJumpDest points to these blocks. */
-
+        //  Mark the block as added by the compiler and not removable by future flow
+        // graph optimizations. Note that no bbJumpDest points to these blocks.
+        //
         newBlk->bbFlags |= BBF_IMPORTED;
         newBlk->bbFlags |= BBF_DONT_REMOVE;
 
-        /* Now figure out what code to insert */
-
+        // Figure out what code to insert
+        //
         int helper = CORINFO_HELP_UNDEF;
 
         switch (add->acdKind)
@@ -3805,15 +3806,17 @@ bool Compiler::fgCreateThrowHelperBlocks()
         noway_assert(helper != CORINFO_HELP_UNDEF);
 
         // Add the appropriate helper call.
+        //
         GenTreeCall* tree = gtNewHelperCallNode(helper, TYP_VOID);
 
         // There are no args here but fgMorphArgs has side effects
         // such as setting the outgoing arg area (which is necessary
         // on AMD if there are any calls).
+        //
         tree = fgMorphArgs(tree);
 
         // Store the tree in the new basic block.
-        // assert(!srcBlk->isEmpty());
+        //
         if (fgNodeThreading != NodeThreading::LIR)
         {
             fgInsertStmtAtEnd(newBlk, fgNewStmtFromTree(tree));
