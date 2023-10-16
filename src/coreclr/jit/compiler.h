@@ -3218,7 +3218,10 @@ public:
     bool fgSafeBasicBlockCreation;
 #endif
 
-    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
+    BasicBlock* bbNewBasicBlock();
+    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
+    BasicBlock* bbNewBasicBlock(BBswtDesc* jumpSwt);
+    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind, unsigned jumpOffs);
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -4579,7 +4582,6 @@ public:
         }
     }
 
-    BasicBlock* fgNewBasicBlock(BBjumpKinds jumpKind);
     bool fgEnsureFirstBBisScratch();
     bool fgFirstBBisScratch();
     bool fgBBisScratch(BasicBlock* block);
@@ -4587,31 +4589,34 @@ public:
     void fgExtendEHRegionBefore(BasicBlock* block);
     void fgExtendEHRegionAfter(BasicBlock* block);
 
-    BasicBlock* fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion);
+    BasicBlock* fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion);
+    BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects = false);
+    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, BasicBlock* jumpDest = nullptr, bool updateSideEffects = false);
 
     BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
                                 unsigned    tryIndex,
                                 unsigned    hndIndex,
                                 BasicBlock* nearBlk,
+                                BasicBlock* jumpDest    = nullptr,
                                 bool        putInFilter = false,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
     BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
                                 BasicBlock* srcBlk,
+                                BasicBlock* jumpDest    = nullptr,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
-    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind);
+    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
 
     BasicBlock* fgNewBBinRegionWorker(BBjumpKinds jumpKind,
                                       BasicBlock* afterBlk,
                                       unsigned    xcptnIndex,
-                                      bool        putInTryRegion);
+                                      bool        putInTryRegion,
+                                      BasicBlock* jumpDest = nullptr);
 
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);

@@ -405,7 +405,7 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
 }
 
 //-----------------------------------------------------------------------------
-//  optOptimizeCompareChainCondBlock:  Create a chain when when both m_b1 and m_b2 are BBJ_COND.
+//  optOptimizeCompareChainCondBlock:  Create a chain when both m_b1 and m_b2 are BBJ_COND.
 //
 //  Returns:
 //      true if chain optimization is done and m_b1 and m_b2 are folded into m_b1, else false.
@@ -587,7 +587,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 
     // Update the flow.
     m_comp->fgRemoveRefPred(m_b1->GetJumpDest(), m_b1);
-    m_b1->SetJumpKind(BBJ_NONE DEBUG_ARG(m_comp));
+    m_b1->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(m_comp));
 
     // Fixup flags.
     m_b2->bbFlags |= (m_b1->bbFlags & BBF_COPY_PROPAGATE);
@@ -876,11 +876,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     if (optReturnBlock)
     {
-        m_b1->SetJumpDest(nullptr);
-        m_b1->SetJumpKind(BBJ_RETURN DEBUG_ARG(m_comp));
-#ifdef DEBUG
-        m_b1->SetJumpSwt(m_b2->GetJumpSwt());
-#endif
+        m_b1->SetJumpKindAndTarget(BBJ_RETURN DEBUG_ARG(m_comp));
         assert(m_b2->KindIs(BBJ_RETURN));
         assert(m_b1->NextIs(m_b2));
         assert(m_b3 != nullptr);

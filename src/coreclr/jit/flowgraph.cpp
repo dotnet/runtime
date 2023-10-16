@@ -261,7 +261,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 
         BasicBlock* poll          = fgNewBBafter(BBJ_NONE, top, true);
-        bottom                    = fgNewBBafter(top->GetJumpKind(), poll, true);
+        bottom                    = fgNewBBafter(top->GetJumpKind(), poll, true, top->GetJumpDest());
         BBjumpKinds   oldJumpKind = top->GetJumpKind();
         unsigned char lpIndex     = top->bbNatLoopNum;
 
@@ -283,8 +283,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         poll->bbSetRunRarely();
         poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
 
-        // Bottom gets all the outgoing edges and inherited flags of Original.
-        bottom->SetJumpDest(top->GetJumpDest());
         bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
         if (lpIndex != BasicBlock::NOT_IN_LOOP)
         {
@@ -371,8 +369,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         }
 #endif
 
-        top->SetJumpKindAndTarget(BBJ_COND, bottom);
-
+        top->SetJumpKindAndTarget(BBJ_COND, bottom DEBUG_ARG(this));
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
         fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
@@ -1836,7 +1833,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     assert(ehDsc->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX);
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
-    block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB);
+    block->SetJumpKindAndTarget(BBJ_ALWAYS, genReturnBB DEBUG_ARG(this));
     fgAddRefPred(genReturnBB, block);
 
 #ifdef DEBUG
@@ -2307,7 +2304,7 @@ private:
 
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
-                    returnBlock->SetJumpKindAndTarget(BBJ_ALWAYS, constReturnBlock);
+                    returnBlock->SetJumpKindAndTarget(BBJ_ALWAYS, constReturnBlock DEBUG_ARG(comp));
                     comp->fgAddRefPred(constReturnBlock, returnBlock);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
@@ -3520,8 +3517,8 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     }
                     else
                     {
-                        BasicBlock* transitionBlock = fgNewBBafter(BBJ_ALWAYS, prevToFirstColdBlock, true);
-                        transitionBlock->SetJumpDest(firstColdBlock);
+                        BasicBlock* transitionBlock =
+                            fgNewBBafter(BBJ_ALWAYS, prevToFirstColdBlock, true, firstColdBlock);
                         transitionBlock->inheritWeight(firstColdBlock);
 
                         // Update the predecessor list for firstColdBlock
@@ -3536,7 +3533,7 @@ PhaseStatus Compiler::fgDetermineFirstColdBlock()
                     // If the block preceding the first cold block is BBJ_NONE,
                     // convert it to BBJ_ALWAYS to force an explicit jump.
 
-                    prevToFirstColdBlock->SetJumpKindAndTarget(BBJ_ALWAYS, firstColdBlock);
+                    prevToFirstColdBlock->SetJumpKindAndTarget(BBJ_ALWAYS, firstColdBlock DEBUG_ARG(this));
                     break;
             }
         }
@@ -3650,7 +3647,8 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
 
     BasicBlock* newBlk;
 
-    newBlk = add->acdDstBlk = fgNewBBinRegion(jumpKinds[kind], srcBlk, /* runRarely */ true, /* insertAtEnd */ true);
+    newBlk = add->acdDstBlk =
+        fgNewBBinRegion(jumpKinds[kind], srcBlk, /* jumpDest */ nullptr, /* runRarely */ true, /* insertAtEnd */ true);
 
 #ifdef DEBUG
     if (verbose)
