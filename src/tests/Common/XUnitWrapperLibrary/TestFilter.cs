@@ -283,9 +283,12 @@ public class TestFilter
             // This translates to the two-element arrays we are adding to the test
             // exclusions table here.
 
-            if (!table.ContainsKey(testInfo[0]))
+            string testPath = testInfo[0];
+            string skipReason = testInfo.Length > 1 ? testInfo[1] : string.Empty;
+
+            if (!table.ContainsKey(testPath)
             {
-                table.Add(testInfo[0], testInfo[1]);
+                table.Add(testPath, skipReason);
             }
         }
     }
