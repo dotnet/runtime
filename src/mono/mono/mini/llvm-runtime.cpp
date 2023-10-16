@@ -47,4 +47,22 @@ mono_llvm_cpp_catch_exception (MonoLLVMInvokeCallback cb, gpointer arg, gboolean
 	}
 }
 
+#ifdef HOST_WASM
+
+// https://itanium-cxx-abi.github.io/cxx-abi/abi-eh.html
+void *__cxa_begin_catch (void *exceptionObject);
+void __cxa_end_catch (void);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_begin_catch (void *exception_object) {
+	__cxa_begin_catch (exception_object);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_end_catch (void) {
+	return __cxa_end_catch ();
+}
+
+#endif
+
 }

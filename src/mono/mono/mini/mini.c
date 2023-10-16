@@ -3551,7 +3551,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 
 		cfg->opt &= ~MONO_OPT_LINEARS;
 
-		/* FIXME: */
 		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 

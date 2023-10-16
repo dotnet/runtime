@@ -105,12 +105,12 @@ export function configureEmscriptenStartup(module: DotnetModuleInternal): void {
     // execution order == [*] ==
     if (!module.onAbort) {
         module.onAbort = (error) => {
-            loaderHelpers.mono_exit(1, error);
+            loaderHelpers.mono_exit(1, loaderHelpers.exitReason || error);
         };
     }
     if (!module.onExit) {
         module.onExit = (code) => {
-            loaderHelpers.mono_exit(code, null);
+            loaderHelpers.mono_exit(code, loaderHelpers.exitReason);
         };
     }
 }
@@ -236,6 +236,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
         runtimeHelpers.abort = (reason: any) => {
+            loaderHelpers.exitReason = reason;
             if (!loaderHelpers.is_exited()) {
                 cwraps.mono_wasm_abort();
             }
@@ -498,11 +499,13 @@ async function instantiate_wasm_module(
 }
 
 async function ensureUsedWasmFeatures() {
+    runtimeHelpers.featureWasmSimd = await loaderHelpers.simd();
+    runtimeHelpers.featureWasmEh = await loaderHelpers.exceptions();
     if (linkerWasmEnableSIMD) {
-        mono_assert(await loaderHelpers.simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+        mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
     if (linkerWasmEnableEH) {
-        mono_assert(await loaderHelpers.exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+        mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
 }
 
@@ -526,10 +529,6 @@ async function mono_wasm_before_memory_snapshot() {
             mono_wasm_setenv(k, v);
         else
             throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
-    }
-    if (runtimeHelpers.config.startupMemoryCache) {
-        // disable the trampoline for now, we will re-enable it after we stored the snapshot
-        cwraps.mono_jiterp_update_jit_call_dispatcher(0);
     }
     if (runtimeHelpers.config.runtimeOptions)
         mono_wasm_set_runtime_options(runtimeHelpers.config.runtimeOptions);
@@ -555,8 +554,6 @@ async function mono_wasm_before_memory_snapshot() {
 
     // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
     if (runtimeHelpers.config.startupMemoryCache) {
-        // this would install the mono_jiterp_do_jit_call_indirect
-        cwraps.mono_jiterp_update_jit_call_dispatcher(-1);
         await storeMemorySnapshot(localHeapViewU8().buffer);
         runtimeHelpers.storeMemorySnapshotPending = false;
     }

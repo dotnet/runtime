@@ -631,11 +631,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     // Compare with the GC cookie constant
     GetEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, regGSConst, regGSValue);
 
-    BasicBlock* gsCheckBlk = genCreateTempLabel();
-    inst_JMP(EJ_eq, gsCheckBlk);
-    // regGSConst and regGSValue aren't needed anymore, we can use them for helper call
-    genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);
-    genDefineTempLabel(gsCheckBlk);
+    Compiler::AddCodeDsc* codeDsc = compiler->fgFindExcptnTarget(SpecialCodeKind::SCK_FAIL_FAST, 0);
+    inst_JMP(EJ_ne, codeDsc->acdDstBlk);
 }
 
 //---------------------------------------------------------------------
@@ -3338,8 +3335,8 @@ void CodeGen::genCall(GenTreeCall* call)
 #ifdef FEATURE_READYTORUN
         else if (call->IsR2ROrVirtualStubRelativeIndir())
         {
-            assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
-                   ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
+            assert((call->IsR2RRelativeIndir() && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
+                   (call->IsVirtualStubRelativeIndir() && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
 
             regNumber tmpReg = call->GetSingleTempReg();

@@ -179,13 +179,9 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         isWrite = true;
     }
 #ifdef FEATURE_HW_INTRINSICS
-    else if (node->OperIsHWIntrinsic())
+    else if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStoreOrBarrier())
     {
-        if (node->AsHWIntrinsic()->OperIsMemoryStoreOrBarrier())
-        {
-            // For barriers, we model the behavior after GT_MEMORYBARRIER
-            isWrite = true;
-        }
+        isWrite = true;
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -418,6 +414,21 @@ bool AliasSet::InterferesWith(const NodeInfo& other) const
 
     // If the set reads a local var written by the node, they interfere.
     return other.IsLclVarWrite() && m_lclVarReads.Contains(other.LclNum());
+}
+
+//------------------------------------------------------------------------
+// AliasSet::WritesLocal:
+//    Returns true if this alias set contains a write to the specified local.
+//
+// Arguments:
+//    lclNum - The local number.
+//
+// Returns:
+//    True if so.
+//
+bool AliasSet::WritesLocal(unsigned lclNum) const
+{
+    return m_lclVarWrites.Contains(lclNum);
 }
 
 //------------------------------------------------------------------------

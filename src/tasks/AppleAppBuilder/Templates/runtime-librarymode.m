@@ -76,6 +76,8 @@ mono_ios_runtime_init (void)
     chdir (bundle);
 
     int res = invoke_netlibrary_entrypoints ();
+    // Print the return code so XHarness can detect it in the logs
+    os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", res);
 
     exit (res);
 }

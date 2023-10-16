@@ -1413,7 +1413,8 @@ public class MarshalStructTest
 
     #endregion
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try{
             Console.WriteLine("\nRun the methods for marshaling structure Delegate P/Invoke ByRef");
