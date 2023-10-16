@@ -394,54 +394,24 @@ import struct
 import platform
 
 def is_managed_assembly(file):
-    file_size = os.path.getsize(file)
+    proc = subprocess.Popen(dotnet f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll {file}')
 
-    if file_size < 64:
+    try:
+        proc.communicate()
+        return proc.returncode == 0
+    except:
+        proc.kill()
         return False
 
-    with open(file, "rb") as f:
-        f.seek(0x3c)
+def is_managed_debug_assembly(file):
+    proc = subprocess.Popen(dotnet f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll --is-debug {file}')
 
-        # PE Header starts @ 0x3C (60). Its a 4 byte header.
-        peHeaderPointer = struct.unpack('I', f.read(4))[0]
-        if peHeaderPointer == 0:
-            peHeaderPointer = 0x80
-
-        # Ensure there is at least enough room for the following structures:
-        #     24 byte PE Signature & Header
-        #     28 byte Standard Fields         (24 bytes for PE32+)
-        #     68 byte NT Fields               (88 bytes for PE32+)
-        # >= 128 byte Data Dictionary Table
-        if peHeaderPointer > (file_size - 256):
-            return False
-
-        # Check the PE signature.  Should equal 'PE\0\0'.
-        f.seek(peHeaderPointer)
-        peHeaderSignature = struct.unpack('I', f.read(4))[0]
-        if peHeaderSignature != 0x00004550:
-            return False
-
-        # skip over the PEHeader fields
-        f.seek(f.tell() + 20)
-
-        PE32 = 0x10b
-        PE32Plus = 0x20b
-
-        # Read PE magic number from Standard Fields to determine format.
-        peFormat = struct.unpack('H', f.read(2))[0]
-        if peFormat != PE32 and peFormat != PE32Plus:
-            return False
-
-        # Read the 15th Data Dictionary RVA field which contains the CLI header RVA.
-        # When this is non-zero then the file contains CLI data otherwise not.
-        dataDictionaryStart = (peHeaderPointer + (232 if peFormat == PE32 else 248)) & 0xffff
-        f.seek(dataDictionaryStart)
-
-        cliHeaderRva = struct.unpack('I', f.read(4))[0]
-        if cliHeaderRva == 0:
-            return False
-
-        return True
+    try:
+        proc.communicate()
+        return proc.returncode == 0
+    except:
+        proc.kill()
+        return False
 
 print("")
 print("ILASM RoundTrips")
@@ -449,28 +419,14 @@ print("ILASM RoundTrips")
 if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
-if "arm" in platform.machine():
-  # TODO: Fix these roundtrip assemblies from failing on ARM64 when executing.
-  assembliesToIgnore = [
-    "value_numbering_checked_arithmetic_with_constants_ro.dll",
-    "ldc_mul_ovf_i4.dll",
-    "overflow02_mul.dll",
-    "b25815.dll",
-    "b71869.dll"
-  ]
-else:
-  assembliesToIgnore = []
-
 for inputAssemblyName in glob.glob("*.dll"):
+  # Roundtrips library assemblies. Executable assemblies are done in the bash/batch scripts.
+  # We filter out the executable assembly that this script gets generated from.
   if (not inputAssemblyName.endswith("$(AssemblyName).dll")) and is_managed_assembly(inputAssemblyName):
-    if inputAssemblyName not in assembliesToIgnore:
       print("ILASM RoundTrip for " + inputAssemblyName)
 
       ilasmSwitches = ""
-
-      # HACK: The 'poison.csproj' is the only project that needs to be built with the debug flag.
-      #       We do this here because we cannot easily determine whether or not it was actually built with the flag or not.
-      if inputAssemblyName.endswith("poison.dll"):
+      if is_managed_debug_assembly(file):
         ilasmSwitches = "-DEBUG"
 
       disassemblyName = os.path.join("IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
@@ -478,7 +434,7 @@ for inputAssemblyName in glob.glob("*.dll"):
 
       shutil.copyfile(inputAssemblyName, targetAssemblyName)
 
-      proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ildasm /raweh /unicode /out=" + disassemblyName + " " + targetAssemblyName)
+      proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/ildasm /raweh /unicode /out={disassemblyName} {targetAssemblyName}')
 
       try:
           proc.communicate()
@@ -486,7 +442,7 @@ for inputAssemblyName in glob.glob("*.dll"):
           proc.kill()
           sys.exit(1)
 
-      proc = subprocess.Popen(os.environ["CORE_ROOT"] + "/ilasm /DLL /output=" + inputAssemblyName + " " + ilasmSwitches + " " + disassemblyName)
+      proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/ilasm /DLL /output={inputAssemblyName} {ilasmSwitches} {disassemblyName}')
 
       try:
           proc.communicate()
