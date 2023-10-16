@@ -2325,6 +2325,25 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public static void TestBindingInitializedAbstractMember()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{ ""AbstractProp"": {""Value"":1} }");
+            ClassWithAbstractProp c = new();
+            c.AbstractProp = new Derived();
+            configuration.Bind(c);
+            Assert.Equal(1, c.AbstractProp.Value);            
+        }
+
+        [Fact]
+        public static void TestBindingUninitializedAbstractMember()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(@"{ ""AbstractProp"": {""Value"":1} }");
+            ClassWithAbstractProp c = new();
+            c.AbstractProp = null;
+            Assert.Throws<InvalidOperationException>(() => configuration.Bind(c));        
+        }
+        
+        [Fact]
         public void GetIConfigurationSection()
         {
             var configuration = TestHelpers.GetConfigurationFromJsonString("""
