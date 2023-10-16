@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Hosting
         protected BackgroundService() { }
         public virtual System.Threading.Tasks.Task? ExecuteTask { get { throw null; } }
         public virtual void Dispose() { }
-        protected abstract System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken stoppingToken);
+        protected abstract System.Threading.Tasks.Task ExecuteAsync(System.Threading.CancellationToken cancellationToken);
         public virtual System.Threading.Tasks.Task StartAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.Task StopAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }

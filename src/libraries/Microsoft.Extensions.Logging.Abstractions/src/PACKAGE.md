@@ -83,12 +83,12 @@ public sealed class Worker : BackgroundService
     public Worker(ILogger<Worker> logger) =>
         _logger = logger;
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        while (!stoppingToken.IsCancellationRequested)
+        while (!cancellationToken.IsCancellationRequested)
         {
             _logger.LogInformation("Worker running at: {time}", DateTimeOffset.UtcNow);
-            await Task.Delay(1_000, stoppingToken);
+            await Task.Delay(1_000, cancellationToken);
         }
     }
 }
