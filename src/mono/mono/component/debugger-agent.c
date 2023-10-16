@@ -8505,9 +8505,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 
 		while ((f = mono_class_get_fields_internal (klass, &iter))) {
 			if (G_UNLIKELY (!f->type)) {
-				ERROR_DECL(error);
-				mono_field_resolve_type (f, error);
-				mono_error_cleanup (error);
+				ERROR_DECL(field_error);
+				mono_field_resolve_type (f, field_error);
+				mono_error_cleanup (field_error);
 				if (!f->type)
 					continue;
 			}
@@ -8892,9 +8892,9 @@ set_value:
 				gpointer iter = NULL;
 				while ((f = mono_class_get_fields_internal (klass, &iter))) {
 					if (G_UNLIKELY (!f->type)) {
-						ERROR_DECL(error);
-						mono_field_resolve_type (f, error);
-						mono_error_cleanup (error);
+						ERROR_DECL(field_error);
+						mono_field_resolve_type (f, field_error);
+						mono_error_cleanup (field_error);
 						if (!f->type)
 							continue;
 					}
@@ -8909,9 +8909,9 @@ set_value:
 				iter = NULL;
 				while ((f = mono_class_get_fields_internal (klass, &iter))) {
 					if (G_UNLIKELY (!f->type)) {
-						ERROR_DECL(error);
-						mono_field_resolve_type (f, error);
-						mono_error_cleanup (error);
+						ERROR_DECL(field_error);
+						mono_field_resolve_type (f, field_error);
+						mono_error_cleanup (field_error);
 						if (!f->type)
 							continue;
 					}
