@@ -834,6 +834,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
         m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
     }
+    m_comp->gtUpdateStmtSideEffects(m_testInfo1.testStmt);
 
     if (!optReturnBlock)
     {
