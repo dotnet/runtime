@@ -244,5 +244,113 @@ namespace System.Reflection.Emit.Tests
             Type ilgType = Type.GetType("System.Reflection.Emit.ILGeneratorImpl, System.Reflection.Emit", throwOnError: true)!;
             return ilgType.GetMethod("GetMaxStackSize", BindingFlags.NonPublic | BindingFlags.Instance, Type.EmptyTypes);
         }
+
+        [Fact]
+        public void ReferencesFieldInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder methodBuilder = tb.DefineMethod("Method1", MethodAttributes.Public, typeof(int), new[] { typeof(int) });
+                FieldBuilder fbNumber = tb.DefineField("_number", typeof(int), FieldAttributes.Private);
+                Assert.Equal(0, fbNumber.MetadataToken);
+
+                ILGenerator il = methodBuilder.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, fbNumber);
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Mul);
+                il.Emit(OpCodes.Ret);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                byte[]? bodyBytes = typeFromDisk.GetMethod("Method1").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(9, bodyBytes.Length);
+                Assert.NotEqual(0, fbNumber.MetadataToken);
+                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
+                Assert.Equal(OpCodes.Ldfld.Value, bodyBytes[1]);
+                Assert.Equal(fbNumber.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(2, 4)));
+                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[6]);
+                Assert.Equal(OpCodes.Mul.Value, bodyBytes[7]);
+                Assert.Equal(OpCodes.Ret.Value, bodyBytes[8]);
+            }
+        }
+
+        [Fact]
+        public void ReferencesFieldAndMethodsInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                MethodBuilder methodMain = tb.DefineMethod("Main", MethodAttributes.Public, typeof(void), new[] { typeof(int) });
+                FieldBuilder field = tb.DefineField("_field", typeof(int), FieldAttributes.Private);
+                MethodInfo writeLineString = typeof(Console).GetMethod("WriteLine", new[] { typeof(string) });
+                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", new[] { typeof(string), typeof(object), typeof(object), typeof(object) });
+                MethodBuilder methodMultiply = tb.DefineMethod("Multiply", MethodAttributes.Public, typeof(int), new[] { typeof(int) });
+                /*
+                class MyType
+                { 
+                    private int _field;
+                    int Multiply(int value) => _field * value;
+                    void Main(int a)
+                    {
+                        Console.WriteLine("Displaying the expression:");
+                        Console.WriteLine("{0} * {1} = {2}", _field, a, Multiply(a));
+                    }
+                }
+                */
+                ILGenerator il = methodMultiply.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, field);
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Mul);
+                il.Emit(OpCodes.Ret);
+
+                ILGenerator ilMain = methodMain.GetILGenerator();
+                ilMain.Emit(OpCodes.Ldstr, "Displaying the expression:");
+                ilMain.Emit(OpCodes.Call, writeLineString);
+                ilMain.Emit(OpCodes.Ldstr, "{0} * {1} = {2}");
+                ilMain.Emit(OpCodes.Ldarg_0);
+                ilMain.Emit(OpCodes.Ldfld, field);
+                ilMain.Emit(OpCodes.Box, typeof(int));
+                ilMain.Emit(OpCodes.Ldarg_1);
+                ilMain.Emit(OpCodes.Box, typeof(int));
+                ilMain.Emit(OpCodes.Ldarg_0);
+                ilMain.Emit(OpCodes.Ldarg_1);
+                ilMain.Emit(OpCodes.Call, methodMultiply);
+                ilMain.Emit(OpCodes.Box, typeof(int));
+                ilMain.Emit(OpCodes.Call, writeLineObj);               
+                ilMain.Emit(OpCodes.Ret);
+
+                saveMethod.Invoke(ab, new object[] { file.Path });
+                Console.WriteLine(file.Path);
+
+                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                byte[]? bodyBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[0]);
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[5]);
+                // Bytes 6, 7, 8, 9 are token for writeLineString, but it is not same as the value before save
+                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[10]);
+                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[15]);
+                Assert.Equal(OpCodes.Ldfld.Value, bodyBytes[16]);
+                Assert.Equal(field.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(17, 4)));
+                Assert.Equal(OpCodes.Box.Value, bodyBytes[21]);
+                int intTypeToken = BitConverter.ToInt32(bodyBytes.AsSpan().Slice(22, 4));
+                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[26]);
+                Assert.Equal(OpCodes.Box.Value, bodyBytes[27]);
+                Assert.Equal(intTypeToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(28, 4)));
+                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[32]);
+                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[33]);
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[34]);
+                Assert.Equal(methodMultiply.MetadataToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(35, 4)));
+                Assert.Equal(OpCodes.Box.Value, bodyBytes[39]);
+                Assert.Equal(intTypeToken, BitConverter.ToInt32(bodyBytes.AsSpan().Slice(40, 4)));
+                Assert.Equal(OpCodes.Call.Value, bodyBytes[44]);
+                // Bytes 24, 46, 47, 48 are token for writeLineObj, but it is not same as the value before save
+                Assert.Equal(OpCodes.Ret.Value, bodyBytes[49]);
+            }
+        }
     }
 }

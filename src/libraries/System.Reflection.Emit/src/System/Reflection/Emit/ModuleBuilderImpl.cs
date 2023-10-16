@@ -17,6 +17,7 @@ namespace System.Reflection.Emit
         private readonly MetadataBuilder _metadataBuilder;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyReferences = new();
         private readonly Dictionary<Type, TypeReferenceHandle> _typeReferences = new();
+        private readonly Dictionary<MemberInfo, MemberReferenceHandle> _memberReferences = new();
         private readonly List<TypeBuilderImpl> _typeDefinitions = new();
         private readonly Dictionary<ConstructorInfo, MemberReferenceHandle> _ctorReferences = new();
         private Dictionary<string, ModuleReferenceHandle>? _moduleReferences;
@@ -161,8 +162,8 @@ namespace System.Reflection.Emit
                 }
 
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
-                WriteMethods(typeBuilder, genericParams, methodBodyEncoder);
                 WriteFields(typeBuilder);
+                WriteMethods(typeBuilder._methodDefinitions, genericParams, methodBodyEncoder);
             }
 
             // Now write all generic parameters in order
@@ -180,20 +181,32 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void WriteMethods(TypeBuilderImpl typeBuilder, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
+        // All method handles need to pre populated so that they can be referenced from other method's IL
+        private void PrePopulateMethodDefinitionHandles(List<MethodBuilderImpl> methods)
         {
-            foreach (MethodBuilderImpl method in typeBuilder._methodDefinitions)
+            foreach (MethodBuilderImpl method in methods)
+            {
+                method._handle = MetadataTokens.MethodDefinitionHandle(_nextMethodDefRowId++);
+            }
+        }
+
+        private void WriteMethods(List<MethodBuilderImpl> methods, List<GenericTypeParameterBuilderImpl> genericParams, MethodBodyStreamEncoder methodBodyEncoder)
+        {
+            PrePopulateMethodDefinitionHandles(methods);
+
+            foreach (MethodBuilderImpl method in methods)
             {
                 int offset = -1;
                 ILGeneratorImpl? il = method.ILGeneratorImpl;
                 if (il != null)
                 {
+                    FillMemberReferences(il);
                     offset = AddMethodBody(method, il, methodBodyEncoder);
                 }
 
-                MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), offset, _nextParameterRowId);
-                WriteCustomAttributes(method._customAttributes, methodHandle);
-                _nextMethodDefRowId++;
+                MethodDefinitionHandle handle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), offset, _nextParameterRowId);
+                Debug.Assert(method._handle == handle);
+                WriteCustomAttributes(method._customAttributes, handle);
 
                 if (method.IsGenericMethodDefinition)
                 {
@@ -201,7 +214,7 @@ namespace System.Reflection.Emit
                     for (int i = 0; i < gParams.Length; i++)
                     {
                         GenericTypeParameterBuilderImpl param = (GenericTypeParameterBuilderImpl)gParams[i];
-                        param._parentHandle = methodHandle;
+                        param._parentHandle = handle;
                         genericParams.Add(param);
                     }
                 }
@@ -231,9 +244,17 @@ namespace System.Reflection.Emit
 
                 if (method._dllImportData != null)
                 {
-                    AddMethodImport(methodHandle, method._dllImportData.EntryPoint ?? method.Name,
+                    AddMethodImport(handle, method._dllImportData.EntryPoint ?? method.Name,
                         method._dllImportData.Flags, GetModuleReference(method._dllImportData.ModuleName));
                 }
+            }
+        }
+
+        private void FillMemberReferences(ILGeneratorImpl il)
+        {
+            foreach (KeyValuePair<MemberInfo, BlobWriter> pair in il.GetMemberReferences())
+            {
+                pair.Value.WriteInt32(MetadataTokens.GetToken(GetMemberHandle(pair.Key)));
             }
         }
 
@@ -249,23 +270,23 @@ namespace System.Reflection.Emit
         {
             foreach (FieldBuilderImpl field in typeBuilder._fieldDefinitions)
             {
-                FieldDefinitionHandle fieldHandle = AddFieldDefinition(field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
-                WriteCustomAttributes(field._customAttributes, fieldHandle);
+                field._handle = AddFieldDefinition(field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
+                WriteCustomAttributes(field._customAttributes, field._handle);
                 _nextFieldDefRowId++;
 
                 if (field._offset > 0 && (typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
                 {
-                    AddFieldLayout(fieldHandle, field._offset);
+                    AddFieldLayout(field._handle, field._offset);
                 }
 
                 if (field._marshallingData != null)
                 {
-                    AddMarshalling(fieldHandle, field._marshallingData.SerializeMarshallingData());
+                    AddMarshalling(field._handle, field._marshallingData.SerializeMarshallingData());
                 }
 
                 if (field._defaultValue != DBNull.Value)
                 {
-                    AddDefaultValue(fieldHandle, field._defaultValue);
+                    AddDefaultValue(field._handle, field._defaultValue);
                 }
             }
         }
@@ -316,6 +337,50 @@ namespace System.Reflection.Emit
             }
 
             return typeHandle;
+        }
+
+        private MemberReferenceHandle GetMemberReference(MemberInfo member)
+        {
+            if (!_memberReferences.TryGetValue(member, out var memberHandle))
+            {
+                memberHandle = AddMemberReference(member.Name, GetTypeReference(member.DeclaringType!), GetMemberSignature(member));
+                _memberReferences.Add(member, memberHandle);
+            }
+
+            return memberHandle;
+        }
+
+        private BlobBuilder GetMemberSignature(MemberInfo member)
+        {
+            if (member is MethodInfo method)
+            {
+                return MetadataSignatureHelper.MethodSignatureEncoder(this, ParameterTypes(method.GetParameters()), method.ReturnType,
+                    MethodBuilderImpl.GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic);
+            }
+
+            if (member is FieldInfo field)
+            {
+                return MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this);
+            }
+
+            throw new NotSupportedException();
+        }
+
+        private static Type[] ParameterTypes(ParameterInfo[] parameterInfos)
+        {
+            if (parameterInfos.Length == 0)
+            {
+                return Type.EmptyTypes;
+            }
+
+            Type[] parameterTypes = new Type[parameterInfos.Length];
+
+            for (int i=0; i<parameterInfos.Length; i++)
+            {
+                parameterTypes[i] = parameterInfos[i].ParameterType;
+            }
+
+            return parameterTypes;
         }
 
         private AssemblyReferenceHandle GetAssemblyReference(Assembly assembly)
@@ -378,6 +443,12 @@ namespace System.Reflection.Emit
                 @namespace: (type.Namespace == null) ? default : _metadataBuilder.GetOrAddString(type.Namespace),
                 name: _metadataBuilder.GetOrAddString(type.Name));
 
+        private MemberReferenceHandle AddMemberReference(string memberName, EntityHandle parent, BlobBuilder signature) =>
+            _metadataBuilder.AddMemberReference(
+                parent: parent,
+                name: _metadataBuilder.GetOrAddString(memberName),
+                signature: _metadataBuilder.GetOrAddBlob(signature));
+
         private MemberReferenceHandle AddConstructorReference(TypeReferenceHandle parent, ConstructorInfo method)
         {
             var blob = MetadataSignatureHelper.ConstructorSignatureEncoder(method.GetParameters(), this);
@@ -435,6 +506,21 @@ namespace System.Reflection.Emit
             return GetTypeReference(type);
         }
 
+        internal EntityHandle GetMemberHandle(MemberInfo member)
+        {
+            if (member is MethodBuilderImpl mb && Equals(mb.Module))
+            {
+                return mb._handle;
+            }
+
+            if (member is FieldBuilderImpl fb && Equals(fb.Module))
+            {
+                return fb._handle;
+            }
+
+            return GetMemberReference(member);
+        }
+
         internal TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent,
             Type[]? interfaces, PackingSize packingSize, int typesize, TypeBuilderImpl? enclosingType)
         {
@@ -448,13 +534,33 @@ namespace System.Reflection.Emit
         public override string Name => "<In Memory Module>";
         public override string ScopeName => _name;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
-        public override int GetFieldMetadataToken(FieldInfo field) => throw new NotImplementedException();
+
+        public override int GetFieldMetadataToken(FieldInfo field)
+        {
+            if (field is FieldBuilderImpl fb && fb._handle != default)
+            {
+                return MetadataTokens.GetToken(fb._handle);
+            }
+
+            return 0;
+        }
+
         public override int GetMethodMetadataToken(ConstructorInfo constructor) => throw new NotImplementedException();
-        public override int GetMethodMetadataToken(MethodInfo method) => throw new NotImplementedException();
+
+        public override int GetMethodMetadataToken(MethodInfo method)
+        {
+            if (method is MethodBuilderImpl mb && mb._handle != default)
+            {
+                return MetadataTokens.GetToken(mb._handle);
+            }
+
+            return 0;
+        }
 
         public override int GetStringMetadataToken(string stringConstant) => MetadataTokens.GetToken(_metadataBuilder.GetOrAddUserString(stringConstant));
 
-        public override int GetTypeMetadataToken(Type type) => throw new NotImplementedException();
+        public override int GetTypeMetadataToken(Type type) => MetadataTokens.GetToken(GetTypeHandle(type));
+
         protected override void CreateGlobalFunctionsCore() => throw new NotImplementedException();
 
         protected override EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType)
