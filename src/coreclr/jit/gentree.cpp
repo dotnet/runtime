@@ -7148,6 +7148,9 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_CATCH_ARG:
+        case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
             return true;
         default:
             return false;

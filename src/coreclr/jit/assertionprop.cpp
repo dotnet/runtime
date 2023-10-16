@@ -4454,19 +4454,18 @@ GenTree* Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, Gen
 //
 bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir)
 {
-    assert(indir->OperIsIndir() || indir->OperIsArrLength());
+    assert(indir->OperIsIndirOrArrMetaData());
 
     if (!(indir->gtFlags & GTF_EXCEPT))
     {
         return false;
     }
 
-    GenTree* addr = indir->OperIsArrLength() ? indir->AsArrCommon()->ArrRef() : indir->AsIndir()->Addr();
 #ifdef DEBUG
     bool           vnBased = false;
     AssertionIndex index   = NO_ASSERTION_INDEX;
 #endif
-    if (optAssertionIsNonNull(addr, assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
+    if (optAssertionIsNonNull(indir->GetIndirOrArrMetaDataAddr(), assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
     {
 #ifdef DEBUG
         if (verbose)
@@ -4478,11 +4477,8 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 #endif
         indir->gtFlags &= ~GTF_EXCEPT;
         indir->gtFlags |= GTF_IND_NONFAULTING;
-        if (!indir->OperIsArrLength())
-        {
-            // Set this flag to prevent reordering
-            indir->SetHasOrderingSideEffect();
-        }
+        // Set this flag to prevent reordering
+        indir->SetHasOrderingSideEffect();
         return true;
     }
     return false;
@@ -4795,6 +4791,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_STORE_DYN_BLK:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
             return optAssertionProp_Ind(assertions, tree, stmt);
 
         case GT_BOUNDS_CHECK:
@@ -5861,7 +5858,7 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
     {
         newTree = optNonNullAssertionProp_Call(empty, tree->AsCall());
     }
-    else if (tree->OperIsIndir() || tree->OperIsArrLength())
+    else if (tree->OperIsIndirOrArrMetaData())
     {
         newTree = optAssertionProp_Ind(empty, tree, stmt);
     }
