@@ -1242,7 +1242,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 {
                     CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Uri.UriSchemeFile + Uri.SchemeDelimiter + Path.GetFullPath(FullFilePath("XmlResolver_Include.xsl"))).ToString(), "null" });
                 }
-                catch (Xunit.Sdk.TrueException)
+                catch (Xunit.Sdk.FailException)
                 {
                     CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Uri.UriSchemeFile + Uri.SchemeDelimiter + Path.GetFullPath(FullFilePath("XmlResolver_Main.xsl"))).ToString(), "null" });
                 }
@@ -1271,7 +1271,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 {
                     CheckExpectedError(e2, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Uri.UriSchemeFile + Uri.SchemeDelimiter + Path.GetFullPath(FullFilePath("XmlResolver_Include.xsl"))).ToString(), "null" });
                 }
-                catch (Xunit.Sdk.TrueException)
+                catch (Xunit.Sdk.FailException)
                 {
                     CheckExpectedError(e2, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Uri.UriSchemeFile + Uri.SchemeDelimiter + Path.GetFullPath(FullFilePath("XmlResolver_Main.xsl"))).ToString(), "null" });
                 }
@@ -1333,7 +1333,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                         CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Uri.UriSchemeFile + Uri.SchemeDelimiter + Path.GetFullPath(FullFilePath("XmlResolver_Include.xsl"))).ToString(), "null" });
                         return;
                     }
-                    catch (Xunit.Sdk.TrueException)
+                    catch (Xunit.Sdk.FailException)
                     {
                         CheckExpectedError(e1, "System.Xml", "Xslt_CannotLoadStylesheet", new string[] { new Uri(Uri.UriSchemeFile + Uri.SchemeDelimiter + Path.GetFullPath(FullFilePath("XmlResolver_Main.xsl"))).ToString(), "null" });
                         return;
