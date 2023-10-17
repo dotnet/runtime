@@ -6,22 +6,23 @@ import BuildConfiguration from "consts:configuration";
 
 import { isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
-import { alloc_gcv_handle, assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
+import { assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import {
     ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
     set_arg_length, get_arg, get_signature_arg1_type, get_signature_arg2_type, js_to_cs_marshalers,
     get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
-    get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr,
+    get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr, IDisposable,
     set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { stringToMonoStringRoot } from "./strings";
-import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
+import { GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
+import { mono_log_warn } from "./logging";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
@@ -48,8 +49,6 @@ export function initialize_marshalers_to_cs(): void {
         js_to_cs_marshalers.set(MarshalerType.JSObject, marshal_js_object_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Object, _marshal_cs_object_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Task, _marshal_task_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.TaskResolved, _marshal_task_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.TaskRejected, _marshal_task_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Action, _marshal_function_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Function, _marshal_function_to_cs);
         js_to_cs_marshalers.set(MarshalerType.None, _marshal_null_to_cs);// also void
@@ -292,9 +291,19 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
     set_arg_type(arg, MarshalerType.Function);//TODO or action ?
 }
 
-export class PromiseHolder extends ManagedObject {
-    public constructor(public promise: Promise<any>) {
-        super();
+export class TaskCallbackHolder implements IDisposable {
+    public promise: Promise<any>;
+
+    public constructor(promise: Promise<any>) {
+        this.promise = promise;
+    }
+
+    dispose(): void {
+        teardown_managed_proxy(this, GCHandleNull);
+    }
+
+    get isDisposed(): boolean {
+        return (<any>this)[js_owned_gc_handle_symbol] === GCHandleNull;
     }
 }
 
@@ -305,13 +314,13 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
     }
     mono_check(isThenable(value), "Value is not a Promise");
 
-    const gc_handle = alloc_gcv_handle();
+    const gc_handle: GCHandle = runtimeHelpers.javaScriptExports.create_task_callback();
     set_gc_handle(arg, gc_handle);
     set_arg_type(arg, MarshalerType.Task);
-    const holder = new PromiseHolder(value);
+    const holder = new TaskCallbackHolder(value);
     setup_managed_proxy(holder, gc_handle);
     if (BuildConfiguration === "Debug") {
-        (holder as any)[proxy_debug_symbol] = `PromiseHolder with GCVHandle ${gc_handle}`;
+        (holder as any)[proxy_debug_symbol] = `C# Task with GCHandle ${gc_handle}`;
     }
 
     if (MonoWasmThreads)
@@ -324,10 +333,10 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             if (MonoWasmThreads)
                 settleUnsettledPromise();
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
-            teardown_managed_proxy(holder, gc_handle, true); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
+            teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
         }
         catch (ex) {
-            runtimeHelpers.abort(ex);
+            mono_log_warn("Exception marshalling result of JS promise to CS: ", ex);
         }
     }).catch(reason => {
         try {
@@ -336,10 +345,12 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             if (MonoWasmThreads)
                 settleUnsettledPromise();
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
-            teardown_managed_proxy(holder, gc_handle, true); // this holds holder alive for finalizer, until the promise is freed
+            teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
         }
         catch (ex) {
-            runtimeHelpers.abort(ex);
+            if (!loaderHelpers.is_exited()) {
+                mono_log_warn("Exception marshalling error of JS promise to CS: ", ex);
+            }
         }
     });
 }
