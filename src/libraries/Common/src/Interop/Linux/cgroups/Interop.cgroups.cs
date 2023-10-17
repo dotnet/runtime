@@ -201,22 +201,24 @@ internal static partial class Interop
 
         /// <summary>Find the cgroup version in use on the system.</summary>
         /// <returns>The cgroup version.</returns>
-        private static CGroupVersion FindCGroupVersion()
+        private static unsafe CGroupVersion FindCGroupVersion()
         {
-            try
+            CGroupVersion cgroupVersion = CGroupVersion.None;
+            const int MountPointFormatBufferSizeInBytes = 32;
+            byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
+            long numericFormat;
+            int result = Interop.Sys.GetFormatInfoForMountPoint(SysFsCgroupFileSystemPath, formatBuffer, MountPointFormatBufferSizeInBytes, &numericFormat);
+            if (result == 0)
             {
-                return new DriveInfo(SysFsCgroupFileSystemPath).DriveFormat switch
+                cgroupVersion = numericFormat switch
                 {
-                    "cgroup2fs" => CGroupVersion.CGroup2,
-                    "tmpfs" => CGroupVersion.CGroup1,
-                    "udev" => CGroupVersion.CGroup1,
+                    (int)Interop.Sys.UnixFileSystemTypes.cgroup2fs => CGroupVersion.CGroup2,
+                    (int)Interop.Sys.UnixFileSystemTypes.tmpfs => CGroupVersion.CGroup1,
                     _ => CGroupVersion.None,
                 };
             }
-            catch (Exception ex) when (ex is DriveNotFoundException || ex is ArgumentException)
-            {
-                return CGroupVersion.None;
-            }
+
+            return cgroupVersion;
         }
 
         private static string? FindCGroupMemoryHierarchyMountPath(CGroupVersion cgroupVersion)

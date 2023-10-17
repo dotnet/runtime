@@ -35,15 +35,6 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #define PROC_MOUNTINFO_FILENAME "/proc/self/mountinfo"
 #define PROC_CGROUP_FILENAME "/proc/self/cgroup"
 #define PROC_STATM_FILENAME "/proc/self/statm"
-#define CGROUP1_MEMORY_LIMIT_FILENAME "/memory.limit_in_bytes"
-#define CGROUP2_MEMORY_LIMIT_FILENAME "/memory.max"
-#define CGROUP_MEMORY_STAT_FILENAME "/memory.stat"
-#define CGROUP1_MEMORY_USAGE_FILENAME "/memory.usage_in_bytes"
-#define CGROUP2_MEMORY_USAGE_FILENAME "/memory.current"
-#define CGROUP1_MEMORY_USE_HIERARCHY_FILENAME "/memory.use_hierarchy"
-#define CGROUP1_MEMORY_STAT_HIERARCHICAL_MEMORY_LIMIT_FIELD "hierarchical_memory_limit "
-#define CGROUP1_MEMORY_STAT_INACTIVE_FIELD "total_inactive_file "
-#define CGROUP2_MEMORY_STAT_INACTIVE_FIELD "inactive_file "
 #define CGROUP1_CFS_QUOTA_FILENAME "/cpu.cfs_quota_us"
 #define CGROUP1_CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
 #define CGROUP2_CPU_MAX_FILENAME "/cpu.max"
@@ -53,53 +44,18 @@ class CGroup
     // the cgroup version number or 0 to indicate cgroups are not found or not enabled
     static int s_cgroup_version;
 
-    static char *s_memory_cgroup_path;
     static char *s_cpu_cgroup_path;
-    static char *s_memory_cgroup_hierarchy_mount;
 
 public:
     static void Initialize()
     {
         s_cgroup_version = FindCGroupVersion();
-        FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1MemorySubsystem : nullptr, &s_memory_cgroup_path, &s_memory_cgroup_hierarchy_mount);
         FindCGroupPath(s_cgroup_version == 1 ? &IsCGroup1CpuSubsystem : nullptr, &s_cpu_cgroup_path);
     }
 
     static void Cleanup()
     {
-        PAL_free(s_memory_cgroup_path);
         PAL_free(s_cpu_cgroup_path);
-        PAL_free(s_memory_cgroup_hierarchy_mount);
-    }
-
-    static bool GetPhysicalMemoryLimit(uint64_t *val)
-    {
-        if (s_cgroup_version == 0)
-            return false;
-        else if (s_cgroup_version == 1)
-            return GetCGroupMemoryLimitV1(val);
-        else if (s_cgroup_version == 2)
-            return GetCGroupMemoryLimitV2(val);
-        else
-        {
-            _ASSERTE(!"Unknown cgroup version.");
-            return false;
-        }
-    }
-
-    static bool GetPhysicalMemoryUsage(size_t *val)
-    {
-        if (s_cgroup_version == 0)
-            return false;
-        else if (s_cgroup_version == 1)
-            return GetCGroupMemoryUsage(val, CGROUP1_MEMORY_USAGE_FILENAME, CGROUP1_MEMORY_STAT_INACTIVE_FIELD);
-        else if (s_cgroup_version == 2)
-            return GetCGroupMemoryUsage(val, CGROUP2_MEMORY_USAGE_FILENAME, CGROUP2_MEMORY_STAT_INACTIVE_FIELD);
-        else
-        {
-            _ASSERTE(!"Unknown cgroup version.");
-            return false;
-        }
     }
 
     static bool GetCpuLimit(UINT *val)
@@ -146,10 +102,6 @@ private:
                 return 0;
         }
 #endif
-    }
-
-    static bool IsCGroup1MemorySubsystem(const char *strTok){
-        return strcmp("memory", strTok) == 0;
     }
 
     static bool IsCGroup1CpuSubsystem(const char *strTok){
@@ -392,179 +344,6 @@ private:
         return cgroup_path;
     }
 
-    static bool GetCGroupMemoryStatField(const char *fieldName, uint64_t *val)
-    {
-        if (s_memory_cgroup_path == nullptr)
-            return false;
-
-        char* stat_filename = nullptr;
-        if (asprintf(&stat_filename, "%s%s", s_memory_cgroup_path, CGROUP_MEMORY_STAT_FILENAME) < 0)
-            return false;
-
-        FILE *stat_file = fopen(stat_filename, "r");
-        free(stat_filename);
-        if (stat_file == nullptr)
-            return false;
-
-        char *line = nullptr;
-        size_t lineLen = 0;
-        bool foundFieldValue = false;
-        char* endptr;
-
-        size_t fieldNameLength = strlen(fieldName);
-
-        while (getline(&line, &lineLen, stat_file) != -1)
-        {
-            if (strncmp(line, fieldName, fieldNameLength) == 0)
-            {
-                errno = 0;
-                const char* startptr = line + fieldNameLength;
-                size_t fieldValue = strtoll(startptr, &endptr, 10);
-                if (endptr != startptr && errno == 0)
-                {
-                    foundFieldValue = true;
-                    *val = fieldValue;
-                }
-
-                break;
-            }
-        }
-
-        fclose(stat_file);
-        free(line);
-
-        return foundFieldValue;
-    }
-
-    static bool GetCGroupMemoryLimitV1(uint64_t *val)
-    {
-        if (s_memory_cgroup_path == nullptr)
-            return false;
-
-        char* mem_use_hierarchy_filename = nullptr;
-        if (asprintf(&mem_use_hierarchy_filename, "%s%s", s_memory_cgroup_path, CGROUP1_MEMORY_USE_HIERARCHY_FILENAME) < 0)
-            return false;
-
-        uint64_t useHierarchy = 0;
-        ReadMemoryValueFromFile(mem_use_hierarchy_filename, &useHierarchy);
-        free(mem_use_hierarchy_filename);
-
-        if (useHierarchy)
-        {
-            return GetCGroupMemoryStatField(CGROUP1_MEMORY_STAT_HIERARCHICAL_MEMORY_LIMIT_FIELD, val);
-        }
-
-        char* mem_limit_filename = nullptr;
-        if (asprintf(&mem_limit_filename, "%s%s", s_memory_cgroup_path, CGROUP1_MEMORY_LIMIT_FILENAME) < 0)
-            return false;
-
-        bool result = ReadMemoryValueFromFile(mem_limit_filename, val);
-        free(mem_limit_filename);
-        return result;
-    }
-
-    static bool GetCGroupMemoryLimitV2(uint64_t *val)
-    {
-        if (s_memory_cgroup_path == nullptr)
-            return false;
-
-        // Process the whole CGroup hierarchy to find a level with the most limiting limit
-        size_t memory_cgroup_hierarchy_mount_length = strlen(s_memory_cgroup_hierarchy_mount);
-        uint64_t min_limit = std::numeric_limits<uint64_t>::max();
-        uint64_t limit;
-        bool found_any_limit = false;
-
-        char *mem_limit_filename = nullptr;
-        if (asprintf(&mem_limit_filename, "%s%s", s_memory_cgroup_path, CGROUP2_MEMORY_LIMIT_FILENAME) < 0)
-            return false;
-
-        int cgroupPathLength = strlen(s_memory_cgroup_path);
-
-        // Iterate over the directory hierarchy representing the cgroup hierarchy until reaching the 
-        // mount directory. The mount directory doesn't contain the memory.max.
-        do
-        {
-            if (ReadMemoryValueFromFile(mem_limit_filename, &limit))
-            {
-                found_any_limit = true;
-                if (limit < min_limit)
-                {
-                    min_limit = limit;
-                }
-            }
-
-            // Get the parent cgroup memory limit file path
-            char *parent_directory_end = mem_limit_filename + cgroupPathLength - 1;
-            while (*parent_directory_end != '/')
-            {
-                parent_directory_end--;
-            }
-
-            cgroupPathLength = parent_directory_end - mem_limit_filename;
-
-            strcpy(parent_directory_end, CGROUP2_MEMORY_LIMIT_FILENAME);
-        }
-        while (cgroupPathLength != memory_cgroup_hierarchy_mount_length);
-
-        free(mem_limit_filename);
-
-        if (found_any_limit)
-        {
-            *val = min_limit;
-        }
-        return found_any_limit;
-    }
-
-    static bool GetCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFileFieldName)
-    {
-        // Use the same way to calculate memory load as popular container tools (Docker, Kubernetes, Containerd etc.)
-        // For cgroup v1: value of 'memory.usage_in_bytes' minus 'total_inactive_file' value of 'memory.stat'
-        // For cgroup v2: value of 'memory.current' minus 'inactive_file' value of 'memory.stat'
-
-        char* mem_usage_filename = nullptr;
-        if (asprintf(&mem_usage_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
-            return false;
-
-        uint64_t temp = 0;
-
-        size_t usage = 0;
-
-        bool result = ReadMemoryValueFromFile(mem_usage_filename, &temp);
-        if (result)
-        {
-            if (temp > std::numeric_limits<size_t>::max())
-            {
-                usage = std::numeric_limits<size_t>::max();
-            }
-            else
-            {
-                usage = (size_t)temp;
-            }
-        }
-
-        free(mem_usage_filename);
-
-        if (!result)
-            return result;
-
-        if (s_memory_cgroup_path == nullptr)
-            return false;
-
-        size_t inactiveFileValue = 0;
-        if (GetCGroupMemoryStatField(inactiveFileFieldName, &inactiveFileValue))
-        {
-            *val = usage - inactiveFileValue;
-            return true;
-        }
-
-        return false;
-    }
-
-    static bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
-    {
-        return ::PAL_ReadMemoryValueFromFile(filename, val);
-    }
-
     static bool GetCGroup1CpuLimit(UINT *val)
     {
         long long quota;
@@ -719,9 +498,7 @@ private:
 };
 
 int CGroup::s_cgroup_version = 0;
-char *CGroup::s_memory_cgroup_path = nullptr;
 char *CGroup::s_cpu_cgroup_path = nullptr;
-char *CGroup::s_memory_cgroup_hierarchy_mount = nullptr;
 
 void InitializeCGroup()
 {
@@ -731,99 +508,6 @@ void InitializeCGroup()
 void CleanupCGroup()
 {
     CGroup::Cleanup();
-}
-
-size_t
-PALAPI
-PAL_GetRestrictedPhysicalMemoryLimit()
-{
-    uint64_t physical_memory_limit_64 = 0;
-    size_t physical_memory_limit = 0;
-
-    if (!CGroup::GetPhysicalMemoryLimit(&physical_memory_limit_64))
-         return 0;
-
-    // If there's no memory limit specified on the container this
-    // actually returns 0x7FFFFFFFFFFFF000 (2^63-1 rounded down to
-    // 4k which is a common page size). So we know we are not
-    // running in a memory restricted environment.
-    if (physical_memory_limit_64 > 0x7FFFFFFF00000000)
-    {
-        return 0;
-    }
-
-    if (physical_memory_limit_64 > std::numeric_limits<size_t>::max())
-    {
-        // It is observed in practice when the memory is unrestricted, Linux control
-        // group returns a physical limit that is bigger than the address space
-        physical_memory_limit = std::numeric_limits<size_t>::max();
-    }
-    else
-    {
-        physical_memory_limit = (size_t)physical_memory_limit_64;
-    }
-
-    struct rlimit curr_rlimit;
-    size_t rlimit_soft_limit = (size_t)RLIM_INFINITY;
-    if (getrlimit(RLIMIT_AS, &curr_rlimit) == 0)
-    {
-        rlimit_soft_limit = curr_rlimit.rlim_cur;
-    }
-    physical_memory_limit = std::min(physical_memory_limit, rlimit_soft_limit);
-
-    // Ensure that limit is not greater than real memory size
-    long pages = sysconf(_SC_PHYS_PAGES);
-    if (pages != -1)
-    {
-        long pageSize = sysconf(_SC_PAGE_SIZE);
-        if (pageSize != -1)
-        {
-            physical_memory_limit = std::min(physical_memory_limit,
-                                            (size_t)(pages * pageSize));
-        }
-    }
-
-    if(physical_memory_limit == SIZE_T_MAX)
-        physical_memory_limit = 0;
-    return physical_memory_limit;
-}
-
-BOOL
-PALAPI
-PAL_GetPhysicalMemoryUsed(size_t* val)
-{
-    BOOL result = false;
-    size_t linelen;
-    char* line = nullptr;
-
-    if (val == nullptr)
-        return FALSE;
-
-    // Linux uses cgroup usage to trigger oom kills.
-    if (CGroup::GetPhysicalMemoryUsage(val))
-        return TRUE;
-
-    // process resident set size.
-    FILE* file = fopen(PROC_STATM_FILENAME, "r");
-    if (file != nullptr && getline(&line, &linelen, file) != -1)
-    {
-        char* context = nullptr;
-        char* strTok = strtok_s(line, " ", &context);
-        strTok = strtok_s(nullptr, " ", &context);
-
-        errno = 0;
-        *val = strtoull(strTok, nullptr, 0);
-        if(errno == 0)
-        {
-            *val = *val * GetVirtualPageSize();
-            result = true;
-        }
-    }
-
-    if (file)
-        fclose(file);
-    free(line);
-    return result;
 }
 
 BOOL
