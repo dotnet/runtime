@@ -538,6 +538,14 @@ private:
     };
 
 public:
+#ifdef DEBUG
+    // When creating a block with a jump, we require its jump kind and target be initialized simultaneously.
+    // In a few edge cases (for example, in Compiler::impImportLeave), we don't know the jump target at block creation.
+    // In these cases, temporarily set the jump target to bbTempJumpDest, and update the jump target later.
+    // We won't check jump targets against bbTempJumpDest in Release builds.
+    static BasicBlock bbTempJumpDest;
+#endif // DEBUG
+
     BBjumpKinds GetJumpKind() const
     {
         return bbJumpKind;

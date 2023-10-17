@@ -28,6 +28,10 @@ size_t BasicBlock::s_Count;
 // The max # of tree nodes in any BB
 /* static */
 unsigned BasicBlock::s_nMaxTrees;
+
+// Temporary target to initialize blocks with jumps
+/* static */
+BasicBlock BasicBlock::bbTempJumpDest;
 #endif // DEBUG
 
 #ifdef DEBUG
