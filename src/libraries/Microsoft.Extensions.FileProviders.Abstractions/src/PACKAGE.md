@@ -15,28 +15,7 @@ Serves as the foundation for creating file providers in .NET, offering core abst
 
 <!-- A compelling example on how to use this package with code, as well as any specific guidelines for when to use the package -->
 
-The abstractions provided by this package can be used to create custom file providers.
-
-Here's a simplified example of implementing a custom file provider using the `IFileProvider` interface:
-
-```csharp
-using Microsoft.Extensions.FileProviders;
-using System;
-
-public class CustomFileProvider : IFileProvider
-{
-    // Implement methods defined in IFileProvider
-}
-
-class Program
-{
-    static void Main(string[] args)
-    {
-        IFileProvider fileProvider = new CustomFileProvider();
-        // Use the custom file provider
-    }
-}
-```
+This package is typically used with an implementation of the file provider abstractions, such as `Microsoft.Extensions.FileProviders.Composite` or `Microsoft.Extensions.FileProviders.Physical`.
 
 ## Main Types
 
