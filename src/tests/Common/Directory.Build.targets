@@ -113,7 +113,7 @@
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 
-      <!-- Used to determine if a file is a mananaged assembly or a managed assembly built with DEBUG -->
+      <!-- Used to determine if a file is a managed assembly or a managed assembly built with DEBUG -->
       <RunTimeArtifactsIncludeFolders Include="AssemblyChecker/" TargetDir="AssemblyChecker/">
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
