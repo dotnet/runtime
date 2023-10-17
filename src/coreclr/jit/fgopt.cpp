@@ -2451,20 +2451,6 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
                 bNext->bbNum);
 
         block->bbNum = bNext->bbNum;
-
-        // Because we may have reordered pred lists when we swapped in
-        // block for bNext above, we now need to re-reorder pred lists
-        // to reflect the bbNum update.
-        //
-        // This process of reordering and re-reordering could likely be avoided
-        // via a different update strategy. But because it's probably rare,
-        // and we avoid most of the work if pred lists are already in order,
-        // we'll just ensure everything is properly ordered.
-        //
-        for (BasicBlock* const checkBlock : Blocks())
-        {
-            checkBlock->ensurePredListOrder(this);
-        }
     }
 
     fgUpdateLoopsAfterCompacting(block, bNext);

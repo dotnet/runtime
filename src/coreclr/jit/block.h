@@ -1259,9 +1259,10 @@ public:
     // still in the BB list by whether they have the same stamp (with high probability).
     unsigned bbTraversalStamp;
 
+#endif // DEBUG
+
     // bbID is a unique block identifier number that does not change: it does not get renumbered, like bbNum.
     unsigned bbID;
-#endif // DEBUG
 
     unsigned bbStackDepthOnEntry() const;
     void bbSetStack(StackEntry* stack);

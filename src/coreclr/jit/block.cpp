@@ -220,27 +220,27 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 // checkPredListOrder: see if pred list is properly ordered
 //
 // Returns:
-//    false if pred list is not in increasing bbNum order.
+//    false if pred list is not in increasing bbID order.
 //
 bool BasicBlock::checkPredListOrder()
 {
-    unsigned lastBBNum = 0;
+    unsigned lastBBID = 0;
     for (BasicBlock* const predBlock : PredBlocks())
     {
-        const unsigned bbNum = predBlock->bbNum;
-        if (bbNum <= lastBBNum)
+        const unsigned bbID = predBlock->bbID;
+        if (bbID <= lastBBID)
         {
-            assert(bbNum != lastBBNum);
+            assert(bbID != lastBBID);
             return false;
         }
-        lastBBNum = bbNum;
+        lastBBID = bbID;
     }
     return true;
 }
 
 //------------------------------------------------------------------------
 // ensurePredListOrder: ensure all pred list entries appear in increasing
-//    bbNum order.
+//    bbID order.
 //
 // Arguments:
 //    compiler - current compiler instance
@@ -305,7 +305,7 @@ void BasicBlock::reorderPredList(Compiler* compiler)
     {
         bool operator()(const FlowEdge* f1, const FlowEdge* f2)
         {
-            return f1->getSourceBlock()->bbNum < f2->getSourceBlock()->bbNum;
+            return f1->getSourceBlock()->bbID < f2->getSourceBlock()->bbID;
         }
     };
 
@@ -1469,10 +1469,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     // boundaries), or have been inserted by the JIT
     block->bbCodeOffs    = BAD_IL_OFFSET;
     block->bbCodeOffsEnd = BAD_IL_OFFSET;
-
-#ifdef DEBUG
-    block->bbID = compBasicBlockID++;
-#endif
+    block->bbID          = ++compBasicBlockID;
 
     /* Give the block a number, set the ancestor count and weight */
 

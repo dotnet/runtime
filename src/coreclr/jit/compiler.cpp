@@ -6795,10 +6795,11 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     lvaTable  = nullptr;
 
     // Reset node and block ID counter
-    compGenTreeID    = 0;
-    compStatementID  = 0;
-    compBasicBlockID = 0;
+    compGenTreeID   = 0;
+    compStatementID = 0;
 #endif
+
+    compBasicBlockID = 0;
 
 #ifdef TARGET_ARM64
     info.compNeedsConsecutiveRegisters = false;

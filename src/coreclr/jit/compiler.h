@@ -10283,9 +10283,9 @@ public:
 #ifdef DEBUG
     unsigned compGenTreeID;
     unsigned compStatementID;
-    unsigned compBasicBlockID;
 #endif
-    LONG compMethodID;
+    unsigned compBasicBlockID;
+    LONG     compMethodID;
 
     BasicBlock* compCurBB;   // the current basic block in process
     Statement*  compCurStmt; // the current statement in process
