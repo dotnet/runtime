@@ -65,7 +65,12 @@ then
   mkdir IL-RT
   if [ "$(IsMergedTestRunnerAssembly)" = "true" ]
   then
-    python $(AssemblyName)_ilasmroundtrip.py
+    python3 $(AssemblyName)_ilasmroundtrip.py
+    if [ $ERRORLEVEL -ne 0 ]
+    then
+      echo EXECUTION OF ILDASM - FAILED $ERRORLEVEL
+      exit 1
+    fi
   fi
   cp $(InputAssemblyName) $(TargetAssemblyName)
   echo "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(TargetAssemblyName)
@@ -153,6 +158,10 @@ IF NOT DEFINED DoLink (
     mkdir IL-RT
     IF "$(IsMergedTestRunnerAssembly)"=="true" (
       python $(AssemblyName)_ilasmroundtrip.py
+      IF NOT "!ERRORLEVEL!"=="0" (
+        ECHO EXECUTION OF ILDASM - FAILED !ERRORLEVEL!
+        Exit /b 1
+      )
     )
     copy $(InputAssemblyName) $(TargetAssemblyName)
     ECHO %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(TargetAssemblyName)
