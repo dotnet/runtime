@@ -40,8 +40,8 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         if (BuildEnvironment.UseWBTOverridePackTargets)
             File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
-        //if (addFrameworkArg)
-            //extraArgs += $" -f {DefaultTargetFramework}";
+        if (addFrameworkArg)
+            extraArgs += $" -f {DefaultTargetFramework}";
         new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                 .WithWorkingDirectory(_projectDir!)
                 .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
