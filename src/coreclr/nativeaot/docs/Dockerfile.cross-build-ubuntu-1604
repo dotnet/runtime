@@ -1,0 +1,27 @@
+# syntax=docker/dockerfile:1
+# Learn about building .NET container images:
+# https://github.com/dotnet/dotnet-docker/blob/main/samples/README.md
+FROM mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64 AS build
+ARG TARGETARCH
+COPY --from=mcr.microsoft.com/dotnet/sdk:8.0-cbl-mariner2.0-amd64 /usr/share/dotnet /usr/share/dotnet
+RUN ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
+WORKDIR /source
+
+RUN --mount=type=cache,target=/root/.nuget \
+    --mount=type=cache,target=/source/bin \
+    --mount=type=cache,target=/source/obj \
+    dotnet publish -a $TARGETARCH --sc -o /app --no-restore -p:SysRoot=/crossrootfs/x64 -p:LinkerFlavor=lld releasesapi.csproj
+
+
+# final stage/image
+FROM ubuntu:16.04
+RUN <<EOF
+apt-get update
+apt-get install -y openssl ca-certificates
+EOF
+ENV \
+    # Configure web servers to bind to port 8080 when present
+    ASPNETCORE_HTTP_PORTS=8080
+WORKDIR /app
+COPY --from=build /app .
+ENTRYPOINT ["./releasesapi"]
