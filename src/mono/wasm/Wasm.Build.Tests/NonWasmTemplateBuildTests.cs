@@ -83,6 +83,7 @@ public class NonWasmTemplateBuildTests : TestMainJsTestBase
                                shouldRun: targetFramework == s_latestTargetFramework);
 
     [Theory]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/93585")]
     [MemberData(nameof(GetTestData))]
     public void NonWasmConsoleBuild_WithWorkload(string config, string extraBuildArgs, string targetFramework)
         => NonWasmConsoleBuild(config,
