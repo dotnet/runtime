@@ -55,15 +55,13 @@
       <_CommonLinkerArgs Include="--build-id=sha1" />
 
       <!-- include all libraries except components -->
-      <!-- include all component stub libraries -->
-      <!-- if RuntimeComponents is empty, we're ok because we included all the stubs already -->
-      <!-- if RuntimeComponents is not empty, remove stubs for the required components and include the actual component library -->
-
       <_RuntimeLibraries Include="$(AndroidBuildDir)\*.a" Exclude="$(AndroidBuildDir)\libmono-component-*.a" />
+      <!-- include all component stub libraries -->
       <_RuntimeLibraries Include="$(AndroidBuildDir)\libmono-component-*-stub-static.a" />
+      <!-- if RuntimeComponents is not empty, remove stubs for the required components and include the actual component library -->
       <_RuntimeLibraries Condition="'@(RuntimeComponents)' != ''" Remove="$(AndroidBuildDir)\libmono-component-%(RuntimeComponents.Identity)-stub-static.a" />
       <_RuntimeLibraries Condition="'@(RuntimeComponents)' != ''" Include="$(AndroidBuildDir)\libmono-component-%(RuntimeComponents.Identity)-static.a" />
-
+      <!-- if RuntimeComponents is empty, do nothing as we already included all the component stubs above -->
     </ItemGroup>
   </Target>
 

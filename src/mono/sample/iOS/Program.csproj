@@ -27,7 +27,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-      <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
+    <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
   </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />

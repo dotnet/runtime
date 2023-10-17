@@ -9,7 +9,7 @@ DEPLOY_AND_RUN?=true
 
 #If DIAGNOSTIC_PORTS is enabled, @(RuntimeComponents) must also include 'diagnostics_tracing'.
 #If @(RuntimeComponents) includes 'diagnostics_tracing', DIAGNOSTIC_PORTS is optional.
-#If @(RuntimeComponents) includes 'diagnostics_tracing', DIAGNOSTIC_PORTS is disabled, use DOTNET_DiagnosticPorts when launching application to enable diagnostics.
+#If @(RuntimeComponents) includes 'diagnostics_tracing', and DIAGNOSTIC_PORTS is disabled, then use DOTNET_DiagnosticPorts when launching application to enable diagnostics.
 #DIAGNOSTIC_PORTS=10.0.2.2:9000,nosuspend
 #DIAGNOSTIC_PORTS=10.0.2.2:9000,suspend
 #DIAGNOSTIC_PORTS=$(DOTNET_DiagnosticPorts)

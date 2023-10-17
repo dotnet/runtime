@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-      <!-- <RuntimeComponents Include="diagnostics_tracing" /> -->
+    <!-- <RuntimeComponents Include="diagnostics_tracing" /> -->
   </ItemGroup>
 
   <!-- Profiled AOT with .nettrace -->

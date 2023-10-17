@@ -100,7 +100,7 @@ public partial class ApkBuilder
 
         if (!string.IsNullOrEmpty(DiagnosticPorts) && !Array.Exists(RuntimeComponents, runtimeComponent => string.Equals(runtimeComponent, "diagnostics_tracing", StringComparison.OrdinalIgnoreCase)))
         {
-            throw new ArgumentException("Using DiagnosticPorts requires diagnostics_tracing runtime component.");
+            throw new ArgumentException($"Using DiagnosticPorts requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
         }
 
         // Try to get the latest build-tools version if not specified

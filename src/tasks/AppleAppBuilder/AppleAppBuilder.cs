@@ -296,7 +296,7 @@ public class AppleAppBuilderTask : Task
 
         if (!string.IsNullOrEmpty(DiagnosticPorts) && !Array.Exists(RuntimeComponents, runtimeComponent => string.Equals(runtimeComponent, "diagnostics_tracing", StringComparison.OrdinalIgnoreCase)))
         {
-            throw new ArgumentException("Using DiagnosticPorts requires diagnostics_tracing runtime component.");
+            throw new ArgumentException($"Using DiagnosticPorts requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
         }
 
         if (EnableAppSandbox && (string.IsNullOrEmpty(DevTeamProvisioning) || DevTeamProvisioning == "-"))
