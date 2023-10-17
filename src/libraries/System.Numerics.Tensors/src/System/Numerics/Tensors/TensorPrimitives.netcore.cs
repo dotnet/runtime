@@ -1232,10 +1232,13 @@ namespace System.Numerics.Tensors
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector512<float> result = Vector512.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector512.EqualsAll(result, result))
+                Vector512<float> result = Vector512.LoadUnsafe(ref xRef);
+                Vector512<float> current;
+                Vector512<float> nanMask = ~Vector512.Equals(result, result);
+
+                if (nanMask != Vector512<float>.Zero)
                 {
-                    return GetFirstNaNIndex(result, resultIndex);
+                    return IndexOfFirstMatch(nanMask);
                 }
 
                 int oneVectorFromEnd = x.Length - Vector512<float>.Count;
@@ -1246,11 +1249,13 @@ namespace System.Numerics.Tensors
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector512.LoadUnsafe(ref xRef, (uint)i);
-                    curIndex = Vector512.Add(curIndex, increment);
+                    curIndex += increment;
 
-                    if (!Vector512.EqualsAll(current, current))
+                    nanMask = ~Vector512.Equals(current, current);
+
+                    if (nanMask != Vector512<float>.Zero)
                     {
-                        return GetFirstNaNIndex(current, curIndex);
+                        return i + IndexOfFirstMatch(nanMask);
                     }
 
                     TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
@@ -1261,11 +1266,13 @@ namespace System.Numerics.Tensors
                 if (i != x.Length)
                 {
                     current = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count));
-                    curIndex = Vector512.Add(curIndex, Vector512.Create(x.Length - i));
+                    curIndex += Vector512.Create(x.Length - i);
 
-                    if (!Vector512.EqualsAll(current, current))
+                    nanMask = ~Vector512.Equals(current, current);
+
+                    if (nanMask != Vector512<float>.Zero)
                     {
-                        return GetFirstNaNIndex(current, curIndex);
+                        return curIndex[IndexOfFirstMatch(nanMask)];
                     }
 
                     Vector512<float> remainderMask = CreateRemainderMaskSingleVector512(x.Length - i);
@@ -1288,10 +1295,13 @@ namespace System.Numerics.Tensors
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector256<float> max = Vector256.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector256.EqualsAll(max, max))
+                Vector256<float> result = Vector256.LoadUnsafe(ref xRef);
+                Vector256<float> current;
+                Vector256<float> nanMask = ~Vector256.Equals(result, result);
+
+                if (nanMask != Vector256<float>.Zero)
                 {
-                    return GetFirstNaNIndex(max, resultIndex);
+                    return IndexOfFirstMatch(nanMask);
                 }
 
                 int oneVectorFromEnd = x.Length - Vector256<float>.Count;
@@ -1302,14 +1312,16 @@ namespace System.Numerics.Tensors
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector256.LoadUnsafe(ref xRef, (uint)i);
-                    curIndex = Vector256.Add(curIndex, increment);
+                    curIndex += increment;
 
-                    if (!Vector256.EqualsAll(current, current))
+                    nanMask = ~Vector256.Equals(current, current);
+
+                    if (nanMask != Vector256<float>.Zero)
                     {
-                        return GetFirstNaNIndex(current, curIndex);
+                        return i + IndexOfFirstMatch(nanMask);
                     }
 
-                    TIndexOfMinMax.Invoke(ref max, current, ref resultIndex, curIndex);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
 
                     i += Vector256<float>.Count;
                 }
@@ -1318,21 +1330,23 @@ namespace System.Numerics.Tensors
                 if (i != x.Length)
                 {
                     current = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count));
-                    curIndex = Vector256.Add(curIndex, Vector256.Create(x.Length - i));
+                    curIndex += Vector256.Create(x.Length - i);
 
-                    if (!Vector256.EqualsAll(current, current))
+                    nanMask = ~Vector256.Equals(current, current);
+
+                    if (nanMask != Vector256<float>.Zero)
                     {
-                        return GetFirstNaNIndex(current, curIndex);
+                        return curIndex[IndexOfFirstMatch(nanMask)];
                     }
 
                     Vector256<float> remainderMask = CreateRemainderMaskSingleVector256(x.Length - i);
 
-                    TIndexOfMinMax.Invoke(ref max, current, ref resultIndex, curIndex, remainderMask);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex, remainderMask);
 
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
-                return TIndexOfMinMax.Invoke(max, resultIndex);
+                return TIndexOfMinMax.Invoke(result, resultIndex);
             }
 
             if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count)
@@ -1344,10 +1358,13 @@ namespace System.Numerics.Tensors
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector128<float> result = Vector128.LoadUnsafe(ref xRef, 0), current;
-                if (!Vector128.EqualsAll(result, result))
+                Vector128<float> result = Vector128.LoadUnsafe(ref xRef);
+                Vector128<float> current;
+                Vector128<float> nanMask = ~Vector128.Equals(result, result);
+
+                if (nanMask != Vector128<float>.Zero)
                 {
-                    return GetFirstNaNIndex(result, resultIndex);
+                    return IndexOfFirstMatch(nanMask);
                 }
 
                 int oneVectorFromEnd = x.Length - Vector128<float>.Count;
@@ -1358,11 +1375,13 @@ namespace System.Numerics.Tensors
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector128.LoadUnsafe(ref xRef, (uint)i);
-                    curIndex = Vector128.Add(curIndex, increment);
+                    curIndex += increment;
 
-                    if (!Vector128.EqualsAll(current, current))
+                    nanMask = ~Vector128.Equals(current, current);
+
+                    if (nanMask != Vector128<float>.Zero)
                     {
-                        return GetFirstNaNIndex(current, curIndex);
+                        return i + IndexOfFirstMatch(nanMask);
                     }
 
                     TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
@@ -1373,12 +1392,14 @@ namespace System.Numerics.Tensors
                 // If any elements remain, handle them in one final vector.
                 if (i != x.Length)
                 {
-                    curIndex = Vector128.Add(curIndex, Vector128.Create(x.Length - i));
+                    curIndex += Vector128.Create(x.Length - i);
 
                     current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count));
-                    if (!Vector128.EqualsAll(current, current))
+                    nanMask = ~Vector128.Equals(current, current);
+
+                    if (nanMask != Vector128<float>.Zero)
                     {
-                        return GetFirstNaNIndex(current, curIndex);
+                        return curIndex[IndexOfFirstMatch(nanMask)];
                     }
 
                     Vector128<float> remainderMask = CreateRemainderMaskSingleVector128(x.Length - i);
@@ -1392,11 +1413,23 @@ namespace System.Numerics.Tensors
             }
 
             // Scalar path used when either vectorization is not supported or the input is too small to vectorize.
-            {
-                return TIndexOfMinMax.Invoke(x);
-            }
+            return TIndexOfMinMax.Invoke(x);
         }
 
+#if NET8_0_OR_GREATER
+        private static int IndexOfFirstMatch(Vector512<float> mask)
+        {
+            return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
+        }
+#endif
+        private static int IndexOfFirstMatch(Vector256<float> mask)
+        {
+            return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
+        }
+        private static int IndexOfFirstMatch(Vector128<float> mask)
+        {
+            return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
+        }
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
         /// <typeparam name="TUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
         private static void InvokeSpanIntoSpan<TUnaryOperator>(
