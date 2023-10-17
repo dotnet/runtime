@@ -6120,7 +6120,7 @@ private:
     AddCodeDsc* fgExcptnTargetCache[SCK_COUNT];
 
     void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
-    bool fgCreateThrowHelperBlocks();
+    PhaseStatus fgCreateThrowHelperBlocks();
 
 public:
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData);

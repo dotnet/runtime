@@ -2789,7 +2789,7 @@ PhaseStatus Compiler::fgFindOperOrder()
 //    Suitable phase status
 //
 // Notes:
-//    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND, GT_BOUNDS_CHECK.
+//    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND
 //
 PhaseStatus Compiler::fgSimpleLowering()
 {
@@ -2874,14 +2874,6 @@ PhaseStatus Compiler::fgSimpleLowering()
                     break;
                 }
 
-                case GT_BOUNDS_CHECK:
-                {
-                    // We need to have created the appropriate throw helper.
-                    //
-                    fgAddCodeRef(block, tree->AsBoundsChk()->gtThrowKind);
-                    break;
-                }
-
                 case GT_CAST:
                 {
                     if (tree->AsCast()->CastOp()->OperIsSimple() && fgSimpleLowerCastOfSmpOp(range, tree->AsCast()))
@@ -2899,10 +2891,6 @@ PhaseStatus Compiler::fgSimpleLowering()
             } // switch on oper
         }     // foreach tree
     }         // foreach BB
-
-    // Create any throw helper blocks that might be needed
-    //
-    madeChanges |= fgCreateThrowHelperBlocks();
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -3573,7 +3561,15 @@ EXIT:;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-/* static */
+//------------------------------------------------------------------------
+// acdHelper: map from special code kind to runtime helper
+//
+// Arguments:
+//   codeKind - kind of special code desired
+//
+// Returns:
+//   Helper to throw the correct exception
+//
 unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
 {
     switch (codeKind)
@@ -3596,6 +3592,38 @@ unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
     }
 }
 
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// acdHelper: map from special code kind to descriptive name
+//
+// Arguments:
+//   codeKind - kind of special code
+//
+// Returns:
+//   String describing the special code kind
+//
+const char* sckName(SpecialCodeKind codeKind)
+{
+    switch (codeKind)
+    {
+        case SCK_RNGCHK_FAIL:
+            return "SCK_RNGCHK_FAIL";
+        case SCK_ARG_EXCPN:
+            return "SCK_ARG_EXCPN";
+        case SCK_ARG_RNG_EXCPN:
+            return "SCK_ARG_RNG_EXCPN";
+        case SCK_DIV_BY_ZERO:
+            return "SCK_DIV_BY_ZERO";
+        case SCK_ARITH_EXCPN:
+            return "SCK_ARITH_EXCPN";
+        case SCK_FAIL_FAST:
+            return "SCK_FAIL_FAST";
+        default:
+            return "SCK_UNKNOWN";
+    }
+}
+#endif
+
 //------------------------------------------------------------------------
 // fgAddCodeRef: Indicate that a particular throw helper block will
 //   be needed by the method.
@@ -3617,7 +3645,7 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
         return;
     }
 
-    JITDUMP(FMT_BB " requires throw helper block for SCK-%u\n", srcBlk->bbNum, kind);
+    JITDUMP(FMT_BB " requires throw helper block for %s\n", srcBlk->bbNum, sckName(kind));
 
     unsigned const refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk);
 
@@ -3659,13 +3687,13 @@ void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 // fgCreateThrowHelperBlocks: create the needed throw helpers
 //
 // Returns:
-//   true if any helper blocks were created.
+//   Suitable phase status
 //
-bool Compiler::fgCreateThrowHelperBlocks()
+PhaseStatus Compiler::fgCreateThrowHelperBlocks()
 {
     if (fgAddCodeList == nullptr)
     {
-        return false;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // We should not have added throw helper blocks yet.
@@ -3684,8 +3712,6 @@ bool Compiler::fgCreateThrowHelperBlocks()
 
     noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
 
-    bool created = false;
-
     for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
     {
         // Create the target basic block in the region indicated by srcBlk.
@@ -3699,8 +3725,6 @@ bool Compiler::fgCreateThrowHelperBlocks()
 
         BasicBlock* const newBlk =
             fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk, /* runRarely */ true, /* insertAtEnd */ true);
-
-        created = true;
 
         // Update the descriptor
         //
@@ -3757,8 +3781,8 @@ bool Compiler::fgCreateThrowHelperBlocks()
                     break;
             }
 
-            printf("\nfgAddCodeRef - Add BB in %s%s (based on " FMT_BB "), new block %s\n", msgWhere, msg,
-                   srcBlk->bbNum, add->acdDstBlk->dspToString());
+            printf("\nAdding throw helper " FMT_BB " for %s in %s%s (inspired by " FMT_BB ")\n", newBlk->bbNum,
+                   sckName(add->acdKind), msgWhere, msg, srcBlk->bbNum);
         }
 #endif // DEBUG
 
@@ -3829,7 +3853,7 @@ bool Compiler::fgCreateThrowHelperBlocks()
 
     fgRngChkThrowAdded = true;
 
-    return created;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
