@@ -11043,13 +11043,7 @@ inline void Compiler::impReimportMarkBlock(BasicBlock* block)
     block->bbFlags &= ~BBF_IMPORTED;
 }
 
-/*****************************************************************************
- *
- *  Filter wrapper to handle only passed in exception code
- *  from it).
- */
-
-void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
+void Compiler::impVerifyEHBlock(BasicBlock* block)
 {
     assert(block->hasTryIndex());
     assert(!compIsForInlining());
@@ -11057,16 +11051,9 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
     unsigned  tryIndex = block->getTryIndex();
     EHblkDsc* HBtab    = ehGetDsc(tryIndex);
 
-    if (isTryStart)
+    if (bbIsTryBeg(block) && (block->bbStkDepth != 0))
     {
-        assert(block->bbFlags & BBF_TRY_BEG);
-
-        // The Stack must be empty
-        //
-        if (block->bbStkDepth != 0)
-        {
-            BADCODE("Evaluation stack must be empty on entry into a try block");
-        }
+        BADCODE("Evaluation stack must be empty on entry into a try block");
     }
 
     // Save the stack contents, we'll need to restore it later
@@ -11121,12 +11108,6 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
         // Process the filter block, if we haven't already done so.
         if (HBtab->HasFilter())
         {
-            /* @VERIFICATION : Ideally the end of filter state should get
-               propagated to the catch handler, this is an incompleteness,
-               but is not a security/compliance issue, since the only
-               interesting state is the 'thisInit' state.
-            */
-
             BasicBlock* filterBB = HBtab->ebdFilter;
 
             if (((filterBB->bbFlags & BBF_IMPORTED) == 0) && (impGetPendingBlockMember(filterBB) == 0))
@@ -11203,50 +11184,13 @@ void Compiler::impImportBlock(BasicBlock* block)
     /* Set the current stack state to the merged result */
     verResetCurrentState(block, &verCurrentState);
 
-    /* Now walk the code and import the IL into GenTrees */
-
+    if (block->hasTryIndex())
     {
-        /* @VERIFICATION : For now, the only state propagation from try
-           to it's handler is "thisInit" state (stack is empty at start of try).
-           In general, for state that we track in verification, we need to
-           model the possibility that an exception might happen at any IL
-           instruction, so we really need to merge all states that obtain
-           between IL instructions in a try block into the start states of
-           all handlers.
-
-           However we do not allow the 'this' pointer to be uninitialized when
-           entering most kinds try regions (only try/fault are allowed to have
-           an uninitialized this pointer on entry to the try)
-
-           Fortunately, the stack is thrown away when an exception
-           leads to a handler, so we don't have to worry about that.
-           We DO, however, have to worry about the "thisInit" state.
-           But only for the try/fault case.
-
-           The only allowed transition is from TIS_Uninit to TIS_Init.
-
-           So for a try/fault region for the fault handler block
-           we will merge the start state of the try begin
-           and the post-state of each block that is part of this try region
-        */
-
-        // merge the start state of the try begin
-        //
-        if (block->bbFlags & BBF_TRY_BEG)
-        {
-            impVerifyEHBlock(block, true);
-        }
-
-        impImportBlockCode(block);
-
-        // As discussed above:
-        // merge the post-state of each block that is part of this try region
-        //
-        if (block->hasTryIndex())
-        {
-            impVerifyEHBlock(block, false);
-        }
+        impVerifyEHBlock(block);
     }
+
+    // Now walk the code and import the IL into GenTrees.
+    impImportBlockCode(block);
 
     if (compDonotInline())
     {
@@ -11527,7 +11471,9 @@ SPILLSTACK:
         // This will re-import all the successors of block (as well as each of their predecessors)
         impReimportSpillClique(block);
 
-        // For blocks that haven't been imported yet, we still need to mark them as pending import.
+        // We don't expect to see BBJ_EHFILTERRET here.
+        assert(!block->KindIs(BBJ_EHFILTERRET));
+
         for (BasicBlock* const succ : block->Succs())
         {
             if ((succ->bbFlags & BBF_IMPORTED) == 0)
@@ -11540,10 +11486,15 @@ SPILLSTACK:
     {
         // otherwise just import the successors of block
 
-        /* Does this block jump to any other blocks? */
-        for (BasicBlock* const succ : block->Succs())
+        // Does this block jump to any other blocks?
+        // Filter successor from BBJ_EHFILTERRET have already been handled above in the call
+        // to impVerifyEHBlock().
+        if (!block->KindIs(BBJ_EHFILTERRET))
         {
-            impImportBlockPending(succ);
+            for (BasicBlock* const succ : block->Succs())
+            {
+                impImportBlockPending(succ);
+            }
         }
     }
 }
@@ -12229,6 +12180,7 @@ void Compiler::impFixPredLists()
         {
             BasicBlock* const finallyBegBlock  = HBtab->ebdHndBeg;
             BasicBlock* const finallyLastBlock = HBtab->ebdHndLast;
+            unsigned          predCount        = (unsigned)-1;
 
             for (BasicBlock* const finallyBlock : BasicBlockRangeList(finallyBegBlock, finallyLastBlock))
             {
@@ -12244,24 +12196,60 @@ void Compiler::impFixPredLists()
                     continue;
                 }
 
-                for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
+                // Count the number of predecessors. Then we can allocate the bbJumpEhf table and fill it in.
+                // We only need to count once, since it's invariant with the finally block.
+                if (predCount == (unsigned)-1)
                 {
-                    // We only care about preds that are callfinallies.
-                    //
-                    if (!predBlock->isBBCallAlwaysPair())
+                    predCount = 0;
+                    for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
                     {
-                        continue;
-                    }
-
-                    BasicBlock* const continuation = predBlock->Next();
-                    fgAddRefPred(continuation, finallyBlock);
-
-                    if (!added)
-                    {
-                        JITDUMP("\nAdding pred edges from BBJ_EHFINALLYRET blocks\n");
-                        added = true;
+                        // We only care about preds that are callfinallies.
+                        //
+                        if (!predBlock->isBBCallAlwaysPair())
+                        {
+                            continue;
+                        }
+                        ++predCount;
                     }
                 }
+
+                BBehfDesc* jumpEhf = new (this, CMK_BasicBlock) BBehfDesc;
+
+                // It's possible for the `finally` to have no CALLFINALLY predecessors if the `try` block
+                // has an unconditional `throw` (the finally will still be invoked in the exceptional
+                // case via the runtime). In that case, jumpEhf->bbeCount remains the default, zero,
+                // and jumpEhf->bbeSuccs remains the default, nullptr.
+                if (predCount > 0)
+                {
+                    jumpEhf->bbeCount = predCount;
+                    jumpEhf->bbeSuccs = new (this, CMK_BasicBlock) BasicBlock*[predCount];
+
+                    unsigned predNum = 0;
+                    for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
+                    {
+                        // We only care about preds that are callfinallies.
+                        //
+                        if (!predBlock->isBBCallAlwaysPair())
+                        {
+                            continue;
+                        }
+
+                        BasicBlock* const continuation = predBlock->Next();
+                        fgAddRefPred(continuation, finallyBlock);
+
+                        jumpEhf->bbeSuccs[predNum] = continuation;
+                        ++predNum;
+
+                        if (!added)
+                        {
+                            JITDUMP("\nAdding pred edges from BBJ_EHFINALLYRET blocks\n");
+                            added = true;
+                        }
+                    }
+                    assert(predNum == predCount);
+                }
+
+                finallyBlock->SetJumpEhf(jumpEhf);
             }
         }
     }
