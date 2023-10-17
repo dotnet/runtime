@@ -460,6 +460,23 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         System.Runtime.InteropServices.Marshalling.VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(System.Type type);
     }
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(object), System.Runtime.InteropServices.Marshalling.MarshalMode.Default, typeof(System.Runtime.InteropServices.Marshalling.OleVariantMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(object), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedRef, typeof(System.Runtime.InteropServices.Marshalling.OleVariantMarshaller.RefPropogate))]
+    public static partial class OleVariantMarshaller
+    {
+        public static System.Runtime.InteropServices.Marshalling.OleVariant ConvertToUnmanaged(object? managed) { throw null; }
+        public static object? ConvertToManaged(System.Runtime.InteropServices.Marshalling.OleVariant unmanaged) { throw null; }
+        public static void Free(System.Runtime.InteropServices.Marshalling.OleVariant unmanaged) { }
+
+        public struct RefPropogate
+        {
+            public void FromUnmanaged(System.Runtime.InteropServices.Marshalling.OleVariant unmanaged) { }
+            public void FromManaged(object? managed) { }
+            public System.Runtime.InteropServices.Marshalling.OleVariant ToUnmanaged() { throw null; }
+            public object? ToManaged() { throw null; }
+            public void Free() { }
+        }
+    }
     [System.CLSCompliantAttribute(false)]
     public partial class StrategyBasedComWrappers : System.Runtime.InteropServices.ComWrappers
     {
