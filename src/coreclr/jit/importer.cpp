@@ -4353,7 +4353,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 callBlock = fgNewBBinRegion(BBJ_CALLFINALLY, XTnum + 1, 0, step, HBtab->ebdHndBeg);
 
                 // Jump target should be set to block as a dummy value
-                assert(step->HasJumpTo(block));
+                assert(step->HasJumpTo(&BasicBlock::bbTempJumpDest));
 
                 // the previous call to a finally returns to this call (to the next finally in the chain)
                 step->SetJumpDest(callBlock);
@@ -4453,7 +4453,7 @@ void Compiler::impImportLeave(BasicBlock* block)
         finalStep->bbFlags |= BBF_KEEP_BBJ_ALWAYS;
 
         // Jump target should be set to block as a dummy value
-        assert(step->HasJumpTo(block));
+        assert(step->HasJumpTo(&BasicBlock::bbTempJumpDest));
 
         step->SetJumpDest(finalStep);
         fgAddRefPred(finalStep, step);
