@@ -93,18 +93,25 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 return;
             }
-            else if (value is JSObject jsObject)
+            if (value is JSObject jsObject)
             {
                 if (jsObject.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
                 {
                     throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
                 }
             }
-            else if (value is JSException jsException)
+            if (value is JSException jsException)
             {
                 if (jsException.jsException != null && jsException.jsException.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
                 {
                     throw new InvalidOperationException("The JavaScript object can be used only on the thread where it was created.");
+                }
+            }
+            if (value is JSHostImplementation.TaskCallback holder)
+            {
+                if (holder.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                {
+                    throw new InvalidOperationException("The JavaScript promise can be used only on the thread where it was created.");
                 }
             }
         }
@@ -118,13 +125,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         /// <inheritdoc />
         public override string ToString() => $"(js-obj js '{JSHandle}')";
-
-        internal void DisposeLocal()
-        {
-            JSHostImplementation.ThreadCsOwnedObjects.Remove(JSHandle);
-            _isDisposed = true;
-            JSHandle = IntPtr.Zero;
-        }
 
         private void DisposeThis()
         {
