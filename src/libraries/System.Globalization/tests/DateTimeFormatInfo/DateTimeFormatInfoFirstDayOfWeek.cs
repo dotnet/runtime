@@ -12,9 +12,7 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, DayOfWeek.Sunday, "invariant" };
             yield return new object[] { new CultureInfo("en-US", false).DateTimeFormat, DayOfWeek.Sunday, "en-US" };
-            // ActiveIssue: https://github.com/dotnet/runtime/issues/93354
-            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
-                yield return new object[] { new CultureInfo("fr-FR", false).DateTimeFormat, DayOfWeek.Monday, "fr-FR" };
+            yield return new object[] { new CultureInfo("fr-FR", false).DateTimeFormat, DayOfWeek.Monday, "fr-FR" };
         }
 
         public static IEnumerable<object[]> FirstDayOfWeek_Get_TestData_HybridGlobalization()

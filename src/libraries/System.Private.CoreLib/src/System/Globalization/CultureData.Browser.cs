@@ -35,9 +35,7 @@ namespace System.Globalization
             int result = Interop.JsGlobalization.GetFirstDayOfWeek(localeName, out int exception, out object ex_result);
             if (exception != 0)
             {
-                // Failed, just use 0
                 Debug.Fail($"[CultureData.GetFirstDayOfWeek()] failed with {ex_result}");
-                return 0;
             }
             return result;
         }
