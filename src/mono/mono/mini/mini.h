@@ -818,6 +818,7 @@ struct MonoCallInst {
 	guint32 rgctx_reg : 1;
 	/* Whenever the call will need an unbox trampoline */
 	guint need_unbox_trampoline : 1;
+	guint dont_decompose: 1;
 };
 
 struct MonoCallArgParm {

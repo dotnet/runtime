@@ -1344,7 +1344,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 					MonoCallInst *call = (MonoCallInst*)ins;
 					int size;
 
-					if (COMPILE_LLVM (cfg))
+					if (COMPILE_LLVM (cfg) || call->dont_decompose)
 						break;
 
 					if (call->vret_in_reg) {

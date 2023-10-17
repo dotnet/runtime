@@ -674,8 +674,13 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		return;
 	}
 
-	/* Can't use mini_class_is_simd () here as we don't have access to a MonoCompile */
-	if (m_class_is_simd_type (klass) && struct_size == 16 && !sig->pinvoke && !is_return) {
+#ifndef TARGET_WIN32
+	/*
+	 * Can't use mini_class_is_simd () here as we don't have access to a MonoCompile.
+	 * So have to restict the types to the ones which are supported both in llvm and
+	 * non-llvm mode.
+	 */
+	if (m_class_is_simd_type (klass) && struct_size == 16 && !sig->pinvoke) {
 		if (*fr >= FLOAT_PARAM_REGS) {
 			pass_on_stack = TRUE;
 		} else {
@@ -685,6 +690,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			return;
 		}
 	}
+#endif
 
 	if (pass_on_stack) {
 		/* Always pass in memory */
@@ -1802,6 +1808,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		case ArgInIReg:
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
+		case ArgSIMDInSSEReg:
 			cfg->ret->opcode = OP_REGVAR;
 			cfg->ret->inst_c0 = cinfo->ret.reg;
 			cfg->ret->dreg = cinfo->ret.reg;
@@ -2159,6 +2166,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	case ArgInIReg:
 	case ArgInFloatSSEReg:
 	case ArgInDoubleSSEReg:
+	case ArgSIMDInSSEReg:
 		linfo->ret.storage = LLVMArgNormal;
 		break;
 	case ArgValuetypeInReg: {
@@ -2435,6 +2443,11 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->ret.reg, FALSE);
 		break;
 	}
+	case ArgSIMDInSSEReg:
+		call->dont_decompose = TRUE;
+		g_assert (call->vret_var);
+		NULLIFY_INS (call->vret_var);
+		break;
 	default:
 		break;
 	}
@@ -4244,6 +4257,12 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 		if (ins->dreg != AMD64_XMM0)
 			amd64_sse_movss_reg_reg (code, ins->dreg, AMD64_XMM0);
 		break;
+	case OP_XCALL:
+	case OP_XCALL_REG:
+	case OP_XCALL_MEMBASE:
+		if (ins->dreg != AMD64_XMM0)
+			amd64_sse_movaps_reg_reg (code, ins->dreg, AMD64_XMM0);
+		break;
 	case OP_VCALL:
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
@@ -4276,6 +4295,13 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 				}
 			}
 		}
+		break;
+	case OP_VOIDCALL:
+	case OP_VOIDCALL_REG:
+	case OP_VOIDCALL_MEMBASE:
+		break;
+	default:
+		g_assert_not_reached ();
 		break;
 	}
 
@@ -5538,6 +5564,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL:
 		case OP_VCALL2:
 		case OP_VOIDCALL:
+		case OP_XCALL:
 			call = (MonoCallInst*)ins;
 
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
@@ -5553,6 +5580,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL2_REG:
 		case OP_VOIDCALL_REG:
 		case OP_CALL_REG:
+		case OP_XCALL_REG:
 			call = (MonoCallInst*)ins;
 
 			if (AMD64_IS_ARGUMENT_REG (ins->sreg1)) {
@@ -5573,6 +5601,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL2_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
 		case OP_CALL_MEMBASE:
+		case OP_XCALL_MEMBASE:
 			call = (MonoCallInst*)ins;
 
 			amd64_call_membase (code, ins->sreg1, ins->inst_offset);
@@ -7518,7 +7547,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_sse_movaps_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_XMOVE_ARG:
-			amd64_sse_movaps_reg_reg (code, ins->dreg, ins->sreg1);
+			if (ins->dreg != ins->sreg1)
+				amd64_sse_movaps_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_XZERO:
 			amd64_sse_pxor_reg_reg (code, ins->dreg, ins->dreg);

@@ -171,6 +171,9 @@ vcall_reg: src1:i len:64 clob:c
 vcall_membase: src1:b len:64 clob:c
 call_reg: dest:a src1:i len:32 clob:c
 call_membase: dest:a src1:b len:32 clob:c
+xcall: dest:x len:64 clob:c
+xcall_reg: dest:x src1:i len:64 clob:c
+xcall_membase: dest:x src1:b len:64 clob:c
 iconst: dest:i len:10
 i8const: dest:i len:10
 r4const: dest:f len:17
