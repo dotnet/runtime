@@ -667,6 +667,49 @@ const char* GlobalizationNative_GetLocaleTimeFormatNative(const char* localeName
     }
 }
 
+// GlobalizationNative_GetLocalesNative gets all locale names and store it in the value buffer
+// in case of success, it returns the count of the characters stored in value buffer
+// in case of failure, it returns negative number.
+// if the input value buffer is null, it returns the length needed to store the
+// locale names list.
+// if the value is not null, it fills the value with locale names separated by the length
+// of each name.
+int32_t GlobalizationNative_GetLocalesNative(UChar* value, int32_t length)
+{
+    @autoreleasepool
+    {
+        NSArray<NSString*>* availableLocaleIdentifiers = [NSLocale availableLocaleIdentifiers];
+        int32_t index = 0;
+        int32_t totalLength = 0;
+        for (NSInteger i = 0; i < [availableLocaleIdentifiers count]; i++) 
+        {
+            NSString *localeIdentifier = availableLocaleIdentifiers[i];
+            int32_t localeNameLength = localeIdentifier.length;
+            totalLength += localeNameLength + 1; // add 1 for the name length
+            if (value != NULL)
+            {
+                if (totalLength > length)
+                    return -3;
+
+                value[index++] = (UChar) localeNameLength;
+
+                for (int j = 0; j < localeNameLength; j++)
+                {
+                    if ((UChar)[localeIdentifier characterAtIndex:j] == '_')
+                    {
+                        value[index++] = (UChar) '-';
+                    }
+                    else
+                    {
+                        value[index++] = (UChar) [localeIdentifier characterAtIndex:j];
+                    }
+                }
+            }
+        }
+        return totalLength;
+    }
+}
+
 #endif
 
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
