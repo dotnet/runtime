@@ -384,7 +384,7 @@ for inputAssemblyName in glob.glob("*.dll"):
           proc.kill()
           sys.exit(1)
 
-      proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/ilasm /DLL /output={inputAssemblyName} {ilasmSwitches} {disassemblyName}')
+      proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/ilasm /output={inputAssemblyName} {ilasmSwitches} {disassemblyName}')
 
       try:
           proc.communicate()
