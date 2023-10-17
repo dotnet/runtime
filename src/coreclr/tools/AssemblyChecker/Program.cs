@@ -1,6 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// This is a simple console application that is designed to answer True or False
+// questions about whether a give file is a managed assembly or not.
+// You can also ask whether or not the assembly is debuggable.
+
 using System.Text;
 using System.Diagnostics;
 using System.Reflection.Metadata;
@@ -79,12 +83,8 @@ namespace AssemblyChecker
         {
             if (args.Length == 0)
             {
-                throw new ArgumentException("Expected assembly file-path.");
-            }
-
-            if (args.Length > 2)
-            {
-                throw new ArgumentException("Too many arguments.");
+                Console.Error.WriteLine("Expected assembly file-path.");
+                return 2;
             }
 
             if (args.Length == 1)
@@ -106,11 +106,13 @@ namespace AssemblyChecker
                 }
                 else
                 {
-                    throw new ArgumentException("Invalid option.");
+                    Console.Error.WriteLine("Invalid option.");
+                    return 2;
                 }
             }
 
-            return -1;
+            Console.Error.WriteLine("Too many arguments.");
+            return 2;
         }
     }
 }
