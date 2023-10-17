@@ -21166,7 +21166,7 @@ size_t gc_heap::get_total_promoted()
     return total_promoted_size;
 }
 
-#ifdef BGC_SERVO_TUNING
+#if defined(BGC_SERVO_TUNING) || defined(DYNAMIC_HEAP_COUNT)
 size_t gc_heap::get_total_generation_size (int gen_number)
 {
     size_t total_generation_size = 0;
@@ -21183,7 +21183,9 @@ size_t gc_heap::get_total_generation_size (int gen_number)
     }
     return total_generation_size;
 }
+#endif // BGC_SERVO_TUNING || DYNAMIC_HEAP_COUNT
 
+#ifdef BGC_SERVO_TUNING
 // gets all that's allocated into the gen. This is only used for gen2/3
 // for servo tuning.
 size_t gc_heap::get_total_servo_alloc (int gen_number)
@@ -21242,6 +21244,10 @@ size_t gc_heap::get_total_surv_size (int gen_number)
     return total_surv_size;
 }
 
+#endif // BGC_SERVO_TUNING
+
+#if defined(BGC_SERVO_TUNING) || defined(DYNAMIC_HEAP_COUNT)
+
 size_t gc_heap::get_total_begin_data_size (int gen_number)
 {
     size_t total_begin_data_size = 0;
@@ -21258,6 +21264,27 @@ size_t gc_heap::get_total_begin_data_size (int gen_number)
     }
     return total_begin_data_size;
 }
+
+size_t gc_heap::get_total_survived_size (int gen_number)
+{
+    size_t total_survived_size = 0;
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps[i];
+#else //MULTIPLE_HEAPS
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+
+        total_survived_size += dd_survived_size (hp->dynamic_data_of (gen_number));
+    }
+    return total_survived_size;
+}
+
+#endif // BGC_SERVO_TUNING || DYNAMIC_HEAP_COUNT
+
+#ifdef BGC_SERVO_TUNING
 
 size_t gc_heap::get_total_generation_fl_size (int gen_number)
 {
@@ -25327,6 +25354,15 @@ int gc_heap::calculate_new_heap_count ()
         return n_heaps;
     }
 
+    for (int gen_number = 0; gen_number < total_generation_count; gen_number++)
+    {
+        size_t total_begin_data_size = get_total_begin_data_size(gen_number);
+        size_t total_survived_size = get_total_survived_size(gen_number);
+        float rate = total_begin_data_size != 0 ? (total_survived_size / (float)total_begin_data_size) : 0;
+        dprintf (6666, ("gen %d begin_data_size %zd survived %zd rate %.3f",
+            gen_number, total_begin_data_size, total_survived_size, rate));
+    }
+
     float median_gen2_tcp_percent = 0.0f;
     if (gc_index_full_gc_end >= (settings.gc_index - dynamic_heap_count_data_t::sample_size))
     {
@@ -25338,7 +25374,8 @@ int gc_heap::calculate_new_heap_count ()
     float throughput_cost_percents[dynamic_heap_count_data_t::sample_size];
     for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
     {
-        dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
+        int sample_index = (dynamic_heap_count_data.sample_index + i) % dynamic_heap_count_data_t::sample_size;
+        dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[sample_index];
         throughput_cost_percents[i] = (sample.elapsed_between_gcs ? (((float)sample.msl_wait_time / n_heaps + sample.gc_pause_time) * 100.0f / (float)sample.elapsed_between_gcs) : 0.0f);
         assert (throughput_cost_percents[i] >= 0.0);
         if (throughput_cost_percents[i] > 100.0)
@@ -49684,7 +49721,7 @@ void gc_heap::do_pre_gc()
         VolatileLoad(&settings.gc_index),
         dd_collection_count(hp->dynamic_data_of(0)),
         settings.condemned_generation,
-        total_allocated_since_last_gc));
+        total_allocated _since_last_gc));
 #endif //BACKGROUND_GC
 
     if (heap_hard_limit)
