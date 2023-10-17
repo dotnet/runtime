@@ -407,7 +407,7 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
     }
     if (IsAsyncThunkMethod())
     {
-        Signature sig = GetAsyncMethodData().sig;
+        Signature sig = GetAddrOfAsyncMethodData()->sig;
         *ppSig = sig.GetRawSig();
         *pcSig = sig.GetRawSigLen();
         return;
@@ -986,7 +986,7 @@ PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
 }
 
 //*******************************************************************************
-AsyncMethodData* MethodDesc::GetAddrOfAsyncMethodData()
+PTR_AsyncMethodData MethodDesc::GetAddrOfAsyncMethodData()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -994,7 +994,7 @@ AsyncMethodData* MethodDesc::GetAddrOfAsyncMethodData()
 
     SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot |  mdcMethodImpl | mdcHasNativeCodeSlot)];
 
-    return (AsyncMethodData*)(dac_cast<TADDR>(this) + size);
+    return dac_cast<PTR_AsyncMethodData>(dac_cast<TADDR>(this) + size);
 }
 
 //*******************************************************************************

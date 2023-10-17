@@ -70,6 +70,7 @@ struct AsyncMethodData
     Signature sig;
 };
 
+typedef DPTR(struct AsyncMethodData) PTR_AsyncMethodData;
 
 //=============================================================
 // Splits methoddef token into two pieces for
@@ -1406,8 +1407,10 @@ public:
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
 
     PTR_PCODE GetAddrOfNativeCodeSlot();
-    AsyncMethodData *GetAddrOfAsyncMethodData();
+    PTR_AsyncMethodData GetAddrOfAsyncMethodData();
+#ifndef DACCESS_COMPILE
     const AsyncMethodData& GetAsyncMethodData() { _ASSERTE(IsAsyncThunkMethod()); return *GetAddrOfAsyncMethodData(); }
+#endif
 
     BOOL MayHaveNativeCode();
 

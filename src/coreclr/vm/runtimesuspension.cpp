@@ -34,6 +34,7 @@ enum RegisterToRestore
     Xmm14,
     Xmm15,
     ReturnRegisters, // End sequence marker. Associated offset is for the return register, but the actual return value is stashed after the register data
+    ReturnRegistersNoFrame, // End sequence marker. Associated offset is for the return register, but the actual return value is stashed after the register data
 };
 
 struct RegRestore
@@ -236,8 +237,10 @@ struct TaskletCaptureData
     {
         if (ActiveByRefsToStack.Size() > 0)
         {
-            for (SIZE_T iByRef = ActiveByRefsToStack.Size() - 1; iByRef >= 0; iByRef--)
+            for (SIZE_T iByRef = ActiveByRefsToStack.Size(); iByRef > 0;)
             {
+                iByRef--;
+
                 if (RelocAtAddress(&adjustment, ActiveByRefsToStack[iByRef]))
                 {
                     // ByRef was reloc'd, and therefore doesn't need to be handled anymore
@@ -313,7 +316,7 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
     else if (!pCf->GetFunction()->IsAsync2Method())
     {
         // We must be in the wrapper thunk
-        _ASSERTE(pCf->GetFunction()->IsAsyncThunkMethod());
+        _ASSERTE(pCf->GetFunction()->IsAsyncThunkMethod() || (strcmp(pCf->GetFunction()->GetName(), "ResumptionFunc") == 0));
 
         if (taskletCaptureData->ActiveByRefsToStack.Size() != 0)
         {
@@ -355,13 +358,33 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
     stackDataInfo.ReturnAddressOffset = (uint32_t)(returnAddressLocation - (uintptr_t)pCf->GetRegisterSet()->SP);
 
     CQuickArrayList<RegRestore> savedRegRestoreData;
+    bool hasRBPFrame = false;
 
-#define DISCOVER_RESTORED_REG(REGNAME) if (pCf->GetRegisterSet()->pCallerContextPointers->REGNAME != pCf->GetRegisterSet()->pCurrentContextPointers->REGNAME) { RegRestore restoreData; restoreData.reg = RegisterToRestore::REGNAME; restoreData.offset = (uint32_t)((uint8_t*)pCf->GetRegisterSet()->pCallerContextPointers->REGNAME - (uint8_t*)pCf->GetRegisterSet()->SP); savedRegRestoreData.Push(restoreData); }
+
+// Find restored reg, and record its location in the frame, so that it can be properly restored. Then update the copied value to be the "current" value of the register, not what we saved off on entry to the function
+#define DISCOVER_RESTORED_REG(REGNAME) \
+    if (pCf->GetRegisterSet()->pCallerContextPointers->REGNAME != pCf->GetRegisterSet()->pCurrentContextPointers->REGNAME)                                                                                         \
+    {                                                                                                                                                                                                              \
+        if ((void*)&pCf->GetRegisterSet()->pCallerContextPointers->REGNAME == (void*)&pCf->GetRegisterSet()->pCallerContextPointers->Rbp)                                                                          \
+            hasRBPFrame = true;                                                                                                                                                                                    \
+        RegRestore restoreData; restoreData.reg = RegisterToRestore::REGNAME;                                                                                                                                      \
+        restoreData.offset = (uint32_t)((uint8_t*)pCf->GetRegisterSet()->pCallerContextPointers->REGNAME - (uint8_t*)pCf->GetRegisterSet()->SP); savedRegRestoreData.Push(restoreData);                            \
+        memcpy((pStackData - taskletCaptureData->stackToIgnoreFromPreviousFrame) + restoreData.offset, &pCf->GetRegisterSet()->pCurrentContext->REGNAME, sizeof(pCf->GetRegisterSet()->pCurrentContext->REGNAME)); \
+    }
+
+
 #include "restoreregs_for_runtimesuspension.h"
 #undef DISCOVER_RESTORED_REG
 
     RegRestore returnData;
-    returnData.reg = RegisterToRestore::ReturnRegisters;
+    if (hasRBPFrame)
+    {
+        returnData.reg = RegisterToRestore::ReturnRegisters;
+    }
+    else
+    {
+        returnData.reg = RegisterToRestore::ReturnRegistersNoFrame;
+    }
     returnData.offset = 0;
     savedRegRestoreData.Push(returnData);
 
@@ -423,6 +446,16 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
                     enumGCRefs,
                     &enumData,
                     NO_OVERRIDE_OFFSET);
+
+// HACK for frame pointer handling
+    for (int iRegister = 0; iRegister < savedRegRestoreData.Size(); iRegister++)
+    {
+        if (savedRegRestoreData[iRegister].reg == RegisterToRestore::Rbp)
+        {
+            // If we have Rbp as a saved register, report it as a byref, as its probably the frame pointer and thus in need of adjusting
+            enumGCRefs((void*)&enumData, (OBJECTREF*)(pCf->GetRegisterSet()->SP + savedRegRestoreData[iRegister].offset), GC_CALL_INTERIOR);
+        }
+    }
 
     stackDataInfo.ByRefOffsets = (int32_t*)malloc(enumData.ByRefOffsets.Size() * sizeof(int32_t));
     memcpy(stackDataInfo.ByRefOffsets, enumData.ByRefOffsets.Ptr(), enumData.ByRefOffsets.Size() * sizeof(int32_t));

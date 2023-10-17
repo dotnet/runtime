@@ -684,10 +684,15 @@ endif ; FEATURE_TIERED_COMPILATION
 
 extern PlatformIndependentRestore:proc
 
+; regRestore swaps whats in the register for the value in the restoration location. The idea is that the
+; value in the restoration location is the value that has been stored away for use in this function
+; and the current value of the saved register needs to be available once the function returns.
 regRestoreCase macro RegisterName
 Check&RegisterName&:
     mov edx, [rax+4]
+    mov r10, RegisterName
     mov RegisterName, [rcx+rdx]
+    mov [rcx+rdx], r10
     add rax, 8
     jmp RegRestoreLoop
         endm
@@ -695,16 +700,25 @@ Check&RegisterName&:
 regRestoreCaseXmm macro RegisterName
 Check&RegisterName&:
     mov edx, [rax+4]
+    movsd xmm0, RegisterName
     movdqu RegisterName, [rcx+rdx]
+    movdqu [rcx+rdx], xmm0
     add rax, 8
     jmp RegRestoreLoop
         endm
 
 NESTED_ENTRY RuntimeSuspension_ResumeTaskletReferenceReturn, _TEXT
-        alloc_stack             48h
+        push_nonvol_reg rbp  ; We capture RBP to create a stack frame so that we can safely adjust the RSP register, This means that since we always capture this, async2 functions must ALWAYS be compiled with a frame pointer.
+        alloc_stack             50h
+        set_frame rbp, 50h
     END_PROLOGUE
+        mov r10, [rcx + 8h*5] ; Load pStackDataInfo from Tasklet*
+        mov rax, [r10] ; Load StackRequirement from StackDataInfo
+        mov r10d, [r10 + 4h*6] ; Load CbArgs from StackDataInfo
+        sub rax, r10          ; Compute size of Caller SP to Callee SP
+        sub rsp, rax          ; Allocate enough space for Callee stack
 
-        lea r8, [rsp+28h]
+        lea r8, [rsp+20h]
 
         ; Zero out integerRegister and AddressInMethodToRestoreTo
         ; Probably not needed in production code, but convenient for now
@@ -713,20 +727,24 @@ NESTED_ENTRY RuntimeSuspension_ResumeTaskletReferenceReturn, _TEXT
         mov [r8+8h], rax
 
         ; Fill in pFutureRSPLocation
-        lea rax, [rsp+50]
+        lea rax, [rsp+60h]
         mov [r8+10h], rax
 
         ; Capture return address
-        mov rax, [rax]
+        mov rax, [rbp + 8h]
         mov [r8+18h], rax
+
+        ; Capture old rbp so that the stack overwrite doesn't stomp it
+        mov rax, [rbp] 
+        mov [rsp+40h], rax
 
         call PlatformIndependentRestore
         ; RAX now points at the RegRestore array
-        mov rcx, [rsp+28h + 10h]
+        mov rcx, [rsp+20h + 10h]
         ; RCX now has the value of the future RSP
 
         .data
-switchTable     qword    Checkrbx, Checkrbp, Checkrdi, Checkrsi, Checkr12, Checkr13, Checkr14, Checkr15, Checkxmm6, Checkxmm7, Checkxmm8, Checkxmm9, Checkxmm10, Checkxmm11, Checkxmm12, Checkxmm13, Checkxmm14, Checkxmm15, ReturnRegisters
+switchTable     qword    Checkrbx, Checkrbp, Checkrdi, Checkrsi, Checkr12, Checkr13, Checkr14, Checkr15, Checkxmm6, Checkxmm7, Checkxmm8, Checkxmm9, Checkxmm10, Checkxmm11, Checkxmm12, Checkxmm13, Checkxmm14, Checkxmm15, ReturnRegisters, ReturnRegistersNoFrame
         .code
 RegRestoreLoop:
     mov edx, [rax]
@@ -734,14 +752,22 @@ RegRestoreLoop:
     lea r8, [switchTable]
     mov r8, [r8 + rdx*8]
     jmp r8
+ReturnRegistersNoFrame:
+    mov rbp, [rsp + 40h] ; Capture RBP old value from the stored location instead of from the current register (this is because we actually use RBP as part of this helper thunk function)
 ReturnRegisters:
-    mov rax, [rsp+28h + 0h]
-    MOVDQU xmm0, [rsp+28h + 0h]
-    mov rdx, [rsp+28h + 0h] ; Load address of where to jmp into ecx
+    mov rax, [rsp+20h + 0h]
+    MOVDQU xmm0, [rsp+20h + 0h]
+    mov rdx, [rsp+20h + 8h] ; Load address of where to jmp into ecx
     mov rsp, rcx
     jmp rdx
+Checkrbp:
+    mov edx, [rax+4]
+    mov r10, [rsp + 40h] ; Capture RBP old value from the stored location instead of from the current register (this is because we actually use RBP as part of this helper thunk function)
+    mov rbp, [rcx+rdx]
+    mov [rcx+rdx], r10
+    add rax, 8
+    jmp RegRestoreLoop
 regRestoreCase rbx
-regRestoreCase rbp
 regRestoreCase rdi
 regRestoreCase rsi
 regRestoreCase r12
@@ -766,16 +792,16 @@ LEAF_END RuntimeSuspension_ResumeTaskletIntegerRegisterReturn, _TEXT
 
 unwindRegCase macro RegisterName
 Unwind&RegisterName&:
-    mov edx, [r8+4]
-    mov RegisterName, [rsp+rdx]
+    mov eax, [r8+4]
+    mov RegisterName, [rsp+rax]
     add r8, 8
     jmp RegUnwindLoop
         endm
 
 unwindRegCaseXmm macro RegisterName
 Unwind&RegisterName&:
-    mov edx, [r8+4]
-    movdqu RegisterName, [rsp+rdx]
+    mov eax, [r8+4]
+    movdqu RegisterName, [rsp+rax]
     add r8, 8
     jmp RegUnwindLoop
         endm
@@ -813,7 +839,7 @@ NewTaskletUnwind:
         mov r8, [r9+30h] ; Load r8 with the pRegRestore value
 
         .data
-unwindSwitchTable     qword    Unwindrbx, Unwindrbp, Unwindrdi, Unwindrsi, Unwindr12, Unwindr13, Unwindr14, Unwindr15, Unwindxmm6, Unwindxmm7, Unwindxmm8, Unwindxmm9, Unwindxmm10, Unwindxmm11, Unwindxmm12, Unwindxmm13, Unwindxmm14, Unwindxmm15, UnwindReturnRegisters
+unwindSwitchTable     qword    Unwindrbx, Unwindrbp, Unwindrdi, Unwindrsi, Unwindr12, Unwindr13, Unwindr14, Unwindr15, Unwindxmm6, Unwindxmm7, Unwindxmm8, Unwindxmm9, Unwindxmm10, Unwindxmm11, Unwindxmm12, Unwindxmm13, Unwindxmm14, Unwindxmm15, UnwindReturnRegisters, UnwindReturnRegisters
         .code
 RegUnwindLoop:
         mov eax, [r8]
@@ -845,8 +871,8 @@ UnwindReturnRegisters:
         mov rax, [rsp+rax]
         
         ; Adjust rsp to callers rsp
-        mov r10, [r9] ; Load StackDataInfo.StackRequirement
-        sub r10, [r9 + 18h] ; Subtract off the CbArgs (stack args amount)
+        mov r10d, [r9] ; Load StackDataInfo.StackRequirement
+        sub r10d, [r9 + 18h] ; Subtract off the CbArgs (stack args amount)
         add rsp, r10 ; Adjust rsp as requested
 
         mov rcx, [rcx] ; Adjust to callers tasklet

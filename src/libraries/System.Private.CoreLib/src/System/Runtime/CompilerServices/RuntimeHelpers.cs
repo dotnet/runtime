@@ -421,7 +421,9 @@ namespace System.Runtime.CompilerServices
 
                         while (_nextTasklet != null)
                         {
-                            int maxStackNeeded = _nextTasklet->GetMaxStackNeeded();
+                            Tasklet* pCurTasklet = _nextTasklet;
+                            int maxStackNeeded = pCurTasklet->GetMaxStackNeeded();
+                            _nextTasklet = pCurTasklet->pTaskletNextInStack;
                             if (maxStackNeeded > collectiveStackAllocsPerformed)
                             {
 #pragma warning disable CA2014
@@ -436,13 +438,13 @@ namespace System.Runtime.CompilerServices
 
                             try
                             {
-                                switch (_nextTasklet->taskletReturnType)
+                                switch (pCurTasklet->taskletReturnType)
                                 {
                                     case TaskletReturnType.ObjectReference:
-                                        _retValue = new RuntimeAsyncReturnValue(ResumeTaskletReferenceReturn(_nextTasklet, ref _retValue));
+                                        _retValue = new RuntimeAsyncReturnValue(ResumeTaskletReferenceReturn(pCurTasklet, ref _retValue));
                                         break;
                                     case TaskletReturnType.Integer:
-                                        _retValue = new RuntimeAsyncReturnValue(ResumeTaskletIntegerRegisterReturn(_nextTasklet, ref _retValue));
+                                        _retValue = new RuntimeAsyncReturnValue(ResumeTaskletIntegerRegisterReturn(pCurTasklet, ref _retValue));
                                         break;
                                     case TaskletReturnType.ByReference:
                                         throw new NotImplementedException(); // This will be awkward (but not impossible) to implement. Hold off for now
@@ -450,9 +452,8 @@ namespace System.Runtime.CompilerServices
                             }
                             finally
                             {
-                                DeleteTasklet(_nextTasklet);
+                                DeleteTasklet(pCurTasklet);
                             }
-                            _nextTasklet = _nextTasklet->pTaskletNextInStack;
                         }
                     }
                     finally
