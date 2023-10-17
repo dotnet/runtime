@@ -134,36 +134,13 @@ namespace System.Runtime.CompilerServices
                 Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
                 if (resumption != null)
                 {
-                    // We are trying to suspend
-                    bool threwException = true;
-                    try
-                    {
-                        // Call the UnsafeOnCompleted api under a try block, as registering the suspension may cause
-                        // an exception to occur.
-                        awaiter.UnsafeOnCompleted(resumption);
-                        threwException = false;
-                    }
-                    finally
-                    {
-                        // If UnsafeOnCompleted itself threw, we should bubble the error up, but we need
-                        // to destroy any allocated tasklets that were created as part of the GetOrCreateResumptionDelegate api
-                        // as that state will never be useable.
-                        if (threwException)
-                            RuntimeHelpers.AbortSuspend();
-                    }
                     // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
                     // and return from GetOrCreateResumptionDelegate with a null return value.
                     ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
                     RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-                    if (maintainedData._abortSuspend)
-                    {
-                        AbortSuspend();
-                    }
-                    else
-                    {
-                        // This function must be called from the same function that has the stackmark in it.
-                        unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
-                    }
+                    maintainedData._awaiter = awaiter;
+                    // This function must be called from the same function that has the stackmark in it.
+                    unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
                 }
             }
 
@@ -185,42 +162,18 @@ namespace System.Runtime.CompilerServices
                 Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
                 if (resumption != null)
                 {
-                    // We are trying to suspend
-                    bool threwException = true;
-                    try
-                    {
-                        // Call the OnCompleted api under a try block, as registering the suspension may cause
-                        // an exception to occur.
-                        awaiter.OnCompleted(resumption);
-                        threwException = false;
-                    }
-                    finally
-                    {
-                        // If OnCompleted itself threw, we should bubble the error up, but we need
-                        // to destroy any allocated tasklets that were created as part of the GetOrCreateResumptionDelegate api
-                        // as that state will never be useable.
-                        if (threwException)
-                            RuntimeHelpers.AbortSuspend();
-                    }
                     // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
                     // and return from GetOrCreateResumptionDelegate with a null return value.
                     ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
                     RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-                    if (maintainedData._abortSuspend)
-                    {
-                        AbortSuspend();
-                    }
-                    else
-                    {
-                        // This function must be called from the same function that has the stackmark in it.
-                        unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
-                    }
+                    maintainedData._awaiter = awaiter;
+                    // This function must be called from the same function that has the stackmark in it.
+                    unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
                 }
             }
 
             // Get the result from the awaiter, or throw the exception stored in the Task
             return awaiter.GetResult();
-
         }
 
         // TODO, this method should be marked so that it is only callable from a runtime async method
@@ -237,36 +190,13 @@ namespace System.Runtime.CompilerServices
                 Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
                 if (resumption != null)
                 {
-                    // We are trying to suspend
-                    bool threwException = true;
-                    try
-                    {
-                        // Call the UnsafeOnCompleted api under a try block, as registering the suspension may cause
-                        // an exception to occur.
-                        awaiter.UnsafeOnCompleted(resumption);
-                        threwException = false;
-                    }
-                    finally
-                    {
-                        // If UnsafeOnCompleted itself threw, we should bubble the error up, but we need
-                        // to destroy any allocated tasklets that were created as part of the GetOrCreateResumptionDelegate api
-                        // as that state will never be useable.
-                        if (threwException)
-                            RuntimeHelpers.AbortSuspend();
-                    }
                     // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
                     // and return from GetOrCreateResumptionDelegate with a null return value.
                     ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
                     RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-                    if (maintainedData._abortSuspend)
-                    {
-                        AbortSuspend();
-                    }
-                    else
-                    {
-                        // This function must be called from the same function that has the stackmark in it.
-                        unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
-                    }
+                    maintainedData._awaiter = awaiter;
+                    // This function must be called from the same function that has the stackmark in it.
+                    unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
                 }
             }
 
@@ -288,36 +218,13 @@ namespace System.Runtime.CompilerServices
                 Action? resumption = RuntimeHelpers.GetOrCreateResumptionDelegate(ref stackMark);
                 if (resumption != null)
                 {
-                    // We are trying to suspend
-                    bool threwException = true;
-                    try
-                    {
-                        // Call the OnCompleted api under a try block, as registering the suspension may cause
-                        // an exception to occur.
-                        awaiter.OnCompleted(resumption);
-                        threwException = false;
-                    }
-                    finally
-                    {
-                        // If OnCompleted itself threw, we should bubble the error up, but we need
-                        // to destroy any allocated tasklets that were created as part of the GetOrCreateResumptionDelegate api
-                        // as that state will never be useable.
-                        if (threwException)
-                            RuntimeHelpers.AbortSuspend();
-                    }
                     // If we reach here, the only way that we actually run follow on code is for the continuation to actually run,
                     // and return from GetOrCreateResumptionDelegate with a null return value.
                     ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
                     RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-                    if (maintainedData._abortSuspend)
-                    {
-                        AbortSuspend();
-                    }
-                    else
-                    {
-                        // This function must be called from the same function that has the stackmark in it.
-                        unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
-                    }
+                    maintainedData._awaiter = awaiter;
+                    // This function must be called from the same function that has the stackmark in it.
+                    unsafe { UnwindToFunctionWithAsyncFrame(maintainedData._nextTasklet, maintainedData._suspendActive); }
                 }
             }
 
@@ -351,11 +258,11 @@ namespace System.Runtime.CompilerServices
         {
             public Action? _resumption;
             public Exception? _exception;
+            public INotifyCompletion? _awaiter;
             public int _suspendActive;
             public bool _initialTaskEntry = true;
             public bool _completed;
             public byte _dummy;
-            public bool _abortSuspend;
 
             public ExecutionContext? _executionCtx;
             public SynchronizationContext? _syncCtx;
@@ -389,12 +296,6 @@ namespace System.Runtime.CompilerServices
 
             public unsafe void ResumptionFunc()
             {
-                if (HasCurrentAsyncDataFrame() && GetCurrentAsyncDataFrame()._maintainedData == this)
-                {
-                    _abortSuspend = true;
-                    return;
-                }
-
                 // Suspension has finished and we are resuming
                 _suspendActive = 0;
 
@@ -412,6 +313,7 @@ namespace System.Runtime.CompilerServices
                         // PushAsyncData will fill in the value of _previousExecutionCtx and _previousSyncCtx
                         if (_syncCtx != dataFrame._previousSyncCtx)
                         {
+                            // TODO: Possibly we should marshal to the right sync context? I dunno. We'll figure this out
                             dataFrame._currentThread._synchronizationContext = _syncCtx;
                         }
                         if (_executionCtx != dataFrame._previousExecutionCtx)
@@ -454,6 +356,12 @@ namespace System.Runtime.CompilerServices
                             {
                                 DeleteTasklet(pCurTasklet);
                             }
+
+                            if (_suspendActive != 0)
+                            {
+                                // TODO: we should capture the sync and execution contexts at this point
+                                break;
+                            }
                         }
                     }
                     finally
@@ -465,6 +373,15 @@ namespace System.Runtime.CompilerServices
                 {
                     SetException(e);
                 }
+
+                if (_suspendActive != 0)
+                {
+                    // We suspended again. Just register to return to this function, and return
+                    _awaiter!.OnCompleted(_resumption!);
+                    return;
+                }
+                // We are actually done. Set the final result
+                SetResultDone();
             }
 
             private Action? _taskResumer;
@@ -483,6 +400,7 @@ namespace System.Runtime.CompilerServices
 
             public override Task GetTask()
             {
+                _awaiter!.OnCompleted(_resumption!);
                 return _task!;
             }
 
@@ -593,11 +511,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe bool HasCurrentAsyncDataFrame()
         {
             return t_asyncData != null;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe ref AsyncDataFrame GetCurrentAsyncDataFrame()
         {
             return ref Unsafe.AsRef<AsyncDataFrame>(t_asyncData);
@@ -637,7 +557,6 @@ namespace System.Runtime.CompilerServices
             lastTasklet->pTaskletNextInStack = maintainedData._nextTasklet;
             maintainedData._nextTasklet = nextTaskletInStack;
 
-            maintainedData._abortSuspend = false;
             maintainedData._suspendActive = framesCaptured;
 
             maintainedData._executionCtx = asyncFrame._currentThread._executionContext;
@@ -645,23 +564,6 @@ namespace System.Runtime.CompilerServices
 
 
             return maintainedData._resumption;
-        }
-
-        private static unsafe void AbortSuspend()
-        {
-            ref AsyncDataFrame asyncFrame = ref GetCurrentAsyncDataFrame();
-            RuntimeAsyncMaintainedData maintainedData = asyncFrame._maintainedData!;
-
-            Tasklet* pTaskletCur = maintainedData._nextTasklet;
-            while (pTaskletCur != maintainedData._oldTaskletNext)
-            {
-                Tasklet* pTaskletPrev = pTaskletCur;
-                pTaskletCur = pTaskletPrev;
-                DeleteTasklet(pTaskletPrev);
-            }
-            maintainedData._nextTasklet = maintainedData._oldTaskletNext;
-            maintainedData._oldTaskletNext = null;
-            maintainedData._suspendActive = 0;
         }
 #endif
     }
