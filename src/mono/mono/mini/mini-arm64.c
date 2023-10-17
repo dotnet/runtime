@@ -33,6 +33,11 @@
 
 #include "interp/interp.h"
 
+#ifdef _MSC_VER
+// for _BitScanFroward
+#include <intrin.h>
+#endif
+
 // The following defines are here to support the inclusion of simd-arm64.h
 #define EXPAND(x) x
 #define PARENTHESIZE(...) (__VA_ARGS__)
@@ -624,8 +629,15 @@ emit_subx_sp_imm (guint8 *code, int imm)
 static int 
 num_trailing_zeros (guint64 imm)
 {
-	// TODO: other platforms/compilers
+#ifdef _MSC_VER
+	long index = 0;
+	if ( _BitScanForward( &index, value ) )
+		return index;
+	else
+		return 32;
+#else
 	return __builtin_ctz(imm);
+#endif
 }
 
 static gboolean
