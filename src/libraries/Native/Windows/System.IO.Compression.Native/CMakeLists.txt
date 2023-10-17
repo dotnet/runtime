@@ -42,9 +42,13 @@ else()
     )
 endif()
 
+# enable custom zlib allocator
+add_definitions(-DMY_ZCALLOC)
+
 set (NATIVECOMPRESSION_SOURCES
     ${NATIVECOMPRESSION_SOURCES}
     ../../AnyOS/zlib/pal_zlib.c
+    ../../AnyOS/zlib/zlib_allocator_win.c
     ../../AnyOS/brotli/common/constants.c
     ../../AnyOS/brotli/common/context.c
     ../../AnyOS/brotli/common/dictionary.c
