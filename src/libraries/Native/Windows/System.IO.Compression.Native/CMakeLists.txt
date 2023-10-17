@@ -27,7 +27,8 @@ if(${CLR_CMAKE_HOST_ARCH} STREQUAL x86 OR ${CLR_CMAKE_HOST_ARCH} STREQUAL x64)
         zlib-intel/trees.c
         zlib-intel/x86.c
         zlib-intel/zutil.c
-)
+    )
+    add_definitions(-DINTERNAL_ZLIB_INTEL)
 else()
     set(NATIVECOMPRESSION_SOURCES
         zlib/adler32.c

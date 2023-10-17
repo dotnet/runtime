@@ -9,7 +9,7 @@
     #define c_static_assert(e) static_assert((e),"")
 #endif
 
-#ifdef INTERNAL_ZLIB
+#ifdef INTERNAL_ZLIB_INTEL
     #include "../../Windows/System.IO.Compression.Native/zlib-intel/zlib.h"
 #elif defined(_WIN32) || defined(__EMSCRIPTEN__)
     #include "../../Windows/System.IO.Compression.Native/zlib/zlib.h"
