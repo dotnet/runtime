@@ -422,6 +422,7 @@ namespace Wasm.Build.Tests
 
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
+            // FIXME: use the same infra as building
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
                     .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {(runtimeAssetsRelativePath != DefaultRuntimeAssetsRelativePath ? "-p:WasmRuntimeAssetsLocation=" + runtimeAssetsRelativePath : "")}")

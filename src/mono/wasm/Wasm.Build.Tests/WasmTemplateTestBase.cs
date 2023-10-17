@@ -26,12 +26,18 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         InitPaths(id);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
 
-        File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
+        File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project><PropertyGroup><PublishTrimmed>true</PublishTrimmed></PropertyGroup></Project>");
+        // FIXME: can we use the workload targets now?
         File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"),
             """
             <Project>
               <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
                   <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
+              </Target>
+              <Target Name="_OverrideILLinkPack" BeforeTargets="ProcessFrameworkReferences">
+                <ItemGroup>
+                  <KnownILLinkPack Update="Microsoft.NET.ILLink.Tasks" Condition="%(KnownILLinkPack.TargetFramework) == 'net8.0'" ILLinkPackVersion="$(_RuntimePackInWorkloadVersionCurrent)" />
+                </ItemGroup>
               </Target>
 
               <Import Project="WasmOverridePacks.targets" Condition="'$(WBTOverrideRuntimePack)' == 'true'" />

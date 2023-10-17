@@ -3,5 +3,12 @@
     <Message Text="** MicrosoftNetCoreAppRuntimePackDir : '@(ResolvedRuntimePack -> '%(PackageDirectory)')'" Importance="High" Condition="@(ResolvedRuntimePack->Count()) > 0" />
   </Target>
 
+  <Target Name="_OverrideILLinkPack" BeforeTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <KnownILLinkPack Update="Microsoft.NET.ILLink.Tasks" Condition="%(KnownILLinkPack.TargetFramework) == 'net8.0'" ILLinkPackVersion="$(_RuntimePackInWorkloadVersionCurrent)" />
+    </ItemGroup>
+  </Target>
+
+
   <Import Project="WasmOverridePacks.targets" Condition="'$(WBTOverrideRuntimePack)' == 'true'" />
 </Project>
