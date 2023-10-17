@@ -24,5 +24,8 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleTimeFormatNative", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial string GetLocaleTimeFormatNative(string localeName, [MarshalAs(UnmanagedType.Bool)] bool shortFormat);
+
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocalesNative", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int GetLocalesNative([Out] char[]? value, int valueLength);
     }
 }
