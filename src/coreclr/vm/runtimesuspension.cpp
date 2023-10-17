@@ -50,9 +50,9 @@ struct StackDataInfo
         if (ByRefOffsets != NULL)
             free(ByRefOffsets);
         if (ObjectRefOffsets != NULL)
-            free(ByRefOffsets);
+            free(ObjectRefOffsets);
         if (RegistersToRestore != NULL)
-            free(ByRefOffsets);
+            free(RegistersToRestore);
     }
     uint32_t StackRequirement;
     uint32_t UnrecordedDataSize; // From the restored RSP to the data chunk, how many bytes are skipped
@@ -557,5 +557,8 @@ extern "C" Tasklet* QCALLTYPE RuntimeSuspension_CaptureTasklets(QCall::StackCraw
 
 extern "C" void QCALLTYPE RuntimeSuspension_DeleteTasklet(Tasklet* tasklet)
 {
-    // Well, leaking isn't a good plan in the long term, but for now it'll be fine
+    tasklet->pStackDataInfo->CleanupStackDataInfo();
+    free(tasklet->pStackData);
+    free(tasklet->pStackDataInfo);
+    free(tasklet);
 }
