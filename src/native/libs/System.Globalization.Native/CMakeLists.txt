@@ -18,7 +18,8 @@ if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     add_compile_options(-Wno-extra-semi-stmt)
     add_compile_options(-Wno-unknown-warning-option)
 
-    if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT DEFINED CMAKE_ICU_DIR)
+    # The mobile configurations in particular bring their own ICU, so skip
+    if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT DEFINED CMAKE_ICU_DIR)
         if (CLR_CMAKE_TARGET_OSX)
             execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
         endif()
@@ -51,6 +52,10 @@ if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
 endif()
 
 include(configure.cmake)
+
+#if (DEFINED CMAKE_ICU_DIR)
+#    include_directories(${CMAKE_ICU_DIR}/include)
+#endif()
 
 
 if (CMAKE_USE_PTHREADS)
@@ -86,8 +91,6 @@ if (CLR_CMAKE_TARGET_APPLE)
     set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES_OBJC} PROPERTIES COMPILE_FLAGS "-fobjc-arc ${CLR_CMAKE_COMMON_OBJC_FLAGS}")
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} ${NATIVEGLOBALIZATION_SOURCES_OBJC})
 endif()
-
-
 
 if (MSVC)
     set_source_files_properties(${NATIVEGLOBALIZATION_SOURCES} PROPERTIES LANGUAGE CXX)

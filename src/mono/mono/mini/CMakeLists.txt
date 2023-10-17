@@ -413,7 +413,7 @@ if(NOT DISABLE_SHARED_LIBS)
     # to avoid a conflict we rename the import library with the .import.lib suffix
     set_target_properties(monosgen-shared PROPERTIES IMPORT_SUFFIX ".import.lib")
   endif()
-  target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${Z_LIBS})
   if(ICU_LDFLAGS)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()
