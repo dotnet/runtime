@@ -358,9 +358,7 @@ if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
 for inputAssemblyName in glob.glob("*.dll"):
-  # Roundtrips library assemblies. Executable assemblies are done in the bash/batch scripts.
-  # We filter out the executable assembly that this script gets generated from.
-  if (not inputAssemblyName.endswith("$(AssemblyName).dll")) and is_managed_assembly(inputAssemblyName):
+  if is_managed_assembly(inputAssemblyName):
       print("ILASM RoundTrip for " + inputAssemblyName)
 
       ilasmSwitches = ""
