@@ -4,6 +4,8 @@
 // This is a simple console application that is designed to answer True or False
 // questions about whether a give file is a managed assembly or not.
 // You can also ask whether or not the assembly is debuggable.
+// Return code of 0 indicates the file is a managed assembly.
+// Return code of 1 indicates the file is not a managed assembly. No errors will be printed for this one.
 
 using System.Text;
 using System.Diagnostics;
