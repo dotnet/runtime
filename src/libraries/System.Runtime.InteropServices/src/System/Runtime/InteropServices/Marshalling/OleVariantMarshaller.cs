@@ -9,6 +9,12 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
+    /// <summary>
+    /// Marshals an <see cref="object"/> to an <see cref="OleVariant"/>.
+    /// </summary>
+    /// <remarks>
+    /// Supports the same types as <see cref="OleVariant.Create{T}(T)"/> as well as any types with <see cref="GeneratedComClassAttribute"/> applied.
+    /// </remarks>
     [CustomMarshaller(typeof(object), MarshalMode.Default, typeof(OleVariantMarshaller))]
     [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedRef, typeof(RefPropogate))]
     public static partial class OleVariantMarshaller
@@ -190,14 +196,32 @@ namespace System.Runtime.InteropServices.Marshalling
 
         public static void Free(OleVariant unmanaged) => unmanaged.Dispose();
 
+        /// <summary>
+        /// Marshals a <see cref="object"/> to an <see cref="OleVariant"/>, propagating the value of the <see cref="object"/> back to the variant's
+        /// existing data storage if the variant has <see cref="VarEnum.VT_BYREF"/> type.
+        /// </summary>
         public struct RefPropogate
         {
             private OleVariant _unmanaged;
             private object? _managed;
 
+            /// <summary>
+            /// Initializes the marshaller with an unmanaged variant.
+            /// </summary>
+            /// <param name="unmanaged">The unmanaged value</param>
             public void FromUnmanaged(OleVariant unmanaged) => _unmanaged = unmanaged;
+
+            /// <summary>
+            /// Initializes the marshaller with a managed object.
+            /// </summary>
+            /// <param name="managed">The managed object.</param>
             public void FromManaged(object? managed) => _managed = managed;
 
+            /// <summary>
+            /// Create an unmanaged <see cref="OleVariant"/> based on the provided managed and unmanaged values.
+            /// </summary>
+            /// <returns>An <see cref="OleVariant"/> instance representing the marshaller's current state.</returns>
+            /// <exception cref="ArgumentException">When the managed value must be propagated back to the unmanaged variant, but the managed value type cannot be converted to the variant's type.</exception>
             public unsafe OleVariant ToUnmanaged()
             {
                 if (!_unmanaged.VarType.HasFlag(VarEnum.VT_BYREF))
@@ -293,7 +317,15 @@ namespace System.Runtime.InteropServices.Marshalling
                 return _unmanaged;
             }
 
+            /// <summary>
+            /// Create the managed value based on the provided unmanaged value.
+            /// </summary>
+            /// <returns>The managed value corresponding to the VARIANT.</returns>
             public object? ToManaged() => ConvertToManaged(_unmanaged);
+
+            /// <summary>
+            /// Free all resources owned by the marshaller.
+            /// </summary>
             public void Free() => _unmanaged.Dispose();
         }
     }

@@ -6,6 +6,9 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
+    /// <summary>
+    /// A type that represents an OLE VARIANT in managed code.
+    /// </summary>
     [StructLayout(LayoutKind.Explicit)]
     public struct OleVariant : IDisposable
     {
@@ -115,6 +118,9 @@ namespace System.Runtime.InteropServices.Marshalling
             [FieldOffset(0)] public ClipboardData* clipboardData;
         }
 
+        /// <summary>
+        /// Release resources owned by this <see cref="OleVariant"/> instance.
+        /// </summary>
         public unsafe void Dispose()
         {
 #if TARGET_WINDOWS
@@ -225,6 +231,13 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
 #pragma warning disable CS0618 // We support the obsolete CurrencyWrapper type
+        /// <summary>
+        /// Create an <see cref="OleVariant"/> instance from the specified value.
+        /// </summary>
+        /// <typeparam name="T">The type of the specified value.</typeparam>
+        /// <param name="value">The value to wrap in an <see cref="OleVariant"/>.</param>
+        /// <returns>An <see cref="OleVariant"/> that contains the provided value.</returns>
+        /// <exception cref="ArgumentException">When <typeparamref name="T"/> does not directly correspond to a <see cref="VarEnum"/> variant type.</exception>
         public static OleVariant Create<T>([DisallowNull] T value)
         {
             Unsafe.SkipInit(out OleVariant variant);
@@ -336,6 +349,15 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 #pragma warning restore CS0618
 
+        /// <summary>
+        /// Create a <see cref="OleVariant"/> with the given type and provided value.
+        /// </summary>
+        /// <typeparam name="T">The type of the value to store in the variant.</typeparam>
+        /// <param name="vt">The type of the variant</param>
+        /// <param name="rawValue">The raw value to store in the variant without any processing</param>
+        /// <returns>A variant that contains the provided value.</returns>
+        /// <exception cref="ArgumentException">When the provided <paramref name="vt"/> corresponds to a variant type that is not supported in VARIANTs or is <see cref="VarEnum.VT_DECIMAL"/></exception>
+        /// <exception cref="PlatformNotSupportedException">When the provided <paramref name="vt"/> specifies the <see cref="VarEnum.VT_ARRAY"/> flag for SAFEARRAYs.</exception>
         public static unsafe OleVariant CreateRaw<T>(VarEnum vt, T rawValue)
             where T : unmanaged
         {
@@ -375,6 +397,9 @@ namespace System.Runtime.InteropServices.Marshalling
             return value;
         }
 
+        /// <summary>
+        /// A <see cref="OleVariant"/> instance that represents a null value with <see cref="VarEnum.VT_NULL"/> type.
+        /// </summary>
         public static OleVariant Null { get; } = new() { VarType = VarEnum.VT_NULL };
 
         private readonly void ThrowIfNotVarType(params VarEnum[] requiredType)
@@ -386,7 +411,12 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete
-        // This method will match the exact same semantics as Create<T> with the same set of supported types.
+        /// <summary>
+        /// Create a managed value based on the value in the <see cref="OleVariant"/> instance.
+        /// </summary>
+        /// <typeparam name="T">The managed type to create an instance of.</typeparam>
+        /// <returns>The managed value contained in this variant.</returns>
+        /// <exception cref="ArgumentException">When <typeparamref name="T"/> does not match the <see cref="VarType"/> of the <see cref="OleVariant"/>.</exception>
         public readonly T As<T>()
         {
             if (VarType == VarEnum.VT_EMPTY)
@@ -500,12 +530,21 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 #pragma warning restore CS0618 // Type or member is obsolete
 
+        /// <summary>
+        /// The type of the data stored in this <see cref="OleVariant"/>.
+        /// </summary>
         public VarEnum VarType
         {
             readonly get => (VarEnum)_typeUnion._vt;
             private set => _typeUnion._vt = (ushort)value;
         }
 
+        /// <summary>
+        /// Get a reference to the storage location within this <see cref="OleVariant"/> instance.
+        /// </summary>
+        /// <typeparam name="T">The type of reference to return.</typeparam>
+        /// <returns>A reference to the storage location within this <see cref="OleVariant"/>.</returns>
+        /// <exception cref="ArgumentException"><typeparamref name="T"/> is <see cref="decimal"/> or larger than the storage space in an <see cref="OleVariant"/>.</exception>
         [UnscopedRef]
         public unsafe ref T GetRawDataRef<T>()
             where T : unmanaged
