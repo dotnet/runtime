@@ -42,7 +42,7 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(UseNativeAOTRuntime)' != 'true'">
-      <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)"/>
+      <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)" />
       <!-- Make sure marshal-ilgen is included in the components list. -->
       <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' != 'true'" Include="marshal-ilgen" KeepDuplicates="false"/>
     </ItemGroup>
