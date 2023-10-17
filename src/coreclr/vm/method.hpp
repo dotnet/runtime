@@ -836,14 +836,6 @@ public:
         PREFIX_ASSUME(pModule != NULL);
         return pModule->GetEmitter();
     }
-
-    IMetaDataImport* GetRWImporter()
-    {
-        WRAPPER_NO_CONTRACT;
-        Module *pModule = GetModule();
-        PREFIX_ASSUME(pModule != NULL);
-        return pModule->GetRWImporter();
-    }
 #endif // !DACCESS_COMPILE
 
 #ifdef FEATURE_COMINTEROP

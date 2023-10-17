@@ -161,12 +161,12 @@ public:
 
 #ifndef DACCESS_COMPILE
     IMetaDataEmit *GetEmitter();
-    IMetaDataImport2 *GetRWImporter();
+    IMetaDataImport2 *GetRWImporter(bool swapForRWMDImport = true);
 #else
     TADDR GetMDInternalRWAddress();
 #endif // DACCESS_COMPILE
 
-    void ConvertMDInternalToReadWrite();
+    void ConvertMDInternalToReadWrite(bool swapForRWMDImport = true);
 
     void GetMVID(GUID* pMvid);
     ULONG GetHashAlgId();
@@ -382,7 +382,7 @@ private:
 #endif
 
     void OpenMDImport();
-    void OpenImporter();
+    void OpenImporter(bool swapForRWMDImport = true);
     void OpenEmitter();
 
 private:
@@ -419,6 +419,8 @@ private:
         IMDInternalImport* m_pMDImport_UseAccessor;
 #endif
     };
+
+    IMDInternalImport* m_pConvertedMDImport;
 
     IMetaDataImport2* m_pImporter;
     IMetaDataEmit* m_pEmitter;
