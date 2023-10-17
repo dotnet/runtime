@@ -152,6 +152,16 @@
         <target state="translated">Il membro potrebbe non avere una convalida transitiva.</target>
         <note />
       </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeMessage">
+        <source>The validation attribute {0} should only be applied to properties of type string, array, or ICollection. Using it with the type {1} could lead to runtime failures.</source>
+        <target state="translated">L'attributo {0} di convalida deve essere applicato solo alle proprietà di tipo stringa, matrice o ICollection. L'uso con il tipo {1} potrebbe causare errori di runtime.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCannotBeUsedWithTheValidationAttributeTitle">
+        <source>The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types.</source>
+        <target state="translated">L'attributo di convalida è applicabile solo alle proprietà di tipo stringa, matrice o ICollection; non può essere usato con altri tipi.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ValidatorsNeedSimpleConstructorMessage">
         <source>Validator type {0} doesn't have a parameterless constructor.</source>
         <target state="translated">Il tipo di convalida {0} non dispone di un costruttore senza parametri.</target>
