@@ -292,7 +292,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 180
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs.native+libs.sfx -rc $(_BuildConfig) -lc Release -hc Release
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:

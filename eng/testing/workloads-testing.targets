@@ -23,6 +23,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Required for running apps built with 9.0 sdk, but the sdk does
+         not yet support *running* with 9.0 sdk -->
+    <AdditionalSharedFrameworkToInstall Include="8.0.0-rc.2.23457.7" />
+
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
     <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
     <_DefaultPropsForNuGetBuild Include="TargetArchitecture=$(TargetArchitecture)" />
@@ -76,6 +80,19 @@
           Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallCommand)" />
 
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
+          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
+
+    <!-- Install additional shared frameworks -->
+    <PropertyGroup>
+      <_DotNetInstallCommand>$(_DotNetInstallScriptPath) -Version %(AdditionalSharedFrameworkToInstall.Identity) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime dotnet -SkipNonVersionedFiles</_DotNetInstallCommand>
+    </PropertyGroup>
+    <Message Text="Installing shared frameworks for @(AdditionalSharedFrameworkToInstall)" Importance="High" />
+    <Exec Condition="'%(AdditionalSharedFrameworkToInstall.Identity)' != '' and !$([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
+          Command="$(_DotNetInstallCommand)" />
+
+    <Exec Condition="'%(AdditionalSharedFrameworkToInstall.Identity)' != '' and $([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
   </Target>
