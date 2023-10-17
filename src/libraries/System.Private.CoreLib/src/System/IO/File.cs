@@ -689,6 +689,20 @@ namespace System.IO
             RandomAccess.WriteAtOffset(sfh, bytes, 0);
         }
 
+        /// <summary>
+        /// Appends the specified byte array to the end of the file at the given path. 
+        /// If the file doesn't exist, this method creates a new file.
+        /// </summary>
+        /// <param name="path">The path of the file to which the bytes should be appended.</param>
+        /// <param name="bytes">The byte array to append to the file.</param>
+        /// <exception cref="T:System.ArgumentException">
+        /// Thrown when <paramref name="path" /> is a zero-length string, contains invalid characters 
+        /// (which can be queried using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method), 
+        /// or when <paramref name="bytes" /> is null or empty.
+        /// </exception>
+        /// <exception cref="T:System.ArgumentNullException">
+        /// Thrown when <paramref name="path" /> is <see langword="null" />.
+        /// </exception>
         public static void AppendAllBytes(string path, byte[] bytes)
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
@@ -699,6 +713,22 @@ namespace System.IO
             RandomAccess.WriteAtOffset(fileHandle, bytes, fileOffset);
         }
 
+        /// <summary>
+        /// Asynchronously appends the specified byte array to the end of the file at the given path. 
+        /// If the file doesn't exist, this method creates a new file. If the operation is canceled, the task will be returned in a canceled state.
+        /// </summary>
+        /// <param name="path">The path of the file to which the bytes should be appended.</param>
+        /// <param name="bytes">The byte array to append to the file.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests. The default value is <see cref="T:System.Threading.CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous append operation.</returns>
+        /// <exception cref="T:System.ArgumentException">
+        /// Thrown when <paramref name="path" /> is a zero-length string, contains invalid characters 
+        /// (which can be queried using the <see cref="M:System.IO.Path.GetInvalidPathChars" /> method), 
+        /// or when <paramref name="bytes" /> is null or empty.
+        /// </exception>
+        /// <exception cref="T:System.ArgumentNullException">
+        /// Thrown when <paramref name="path" /> is <see langword="null" />.
+        /// </exception>
         public static Task AppendAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
