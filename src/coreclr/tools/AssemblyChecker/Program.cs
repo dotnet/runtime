@@ -81,6 +81,21 @@ namespace AssemblyChecker
             return attrs.Any(x => HasDebuggableAttribute(reader, reader.GetCustomAttribute(x).Constructor));
         }
 
+        static bool IsExe(string path)
+        {
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+            // Try to read CLI metadata from the PE file.
+            using var peReader = new PEReader(fs);
+
+            if (!peReader.HasMetadata)
+            {
+                return false; // File does not have CLI metadata.
+            }
+
+            return peReader.PEHeaders.IsExe;
+        }
+
         static int Main(string[] args)
         {
             if (args.Length == 0)
@@ -99,12 +114,23 @@ namespace AssemblyChecker
 
             if (args.Length == 2)
             {
-                if (args[0] == "--is-debug")
+                switch (args[0])
                 {
-                    if (IsDebug(args[1]))
-                        return 0;
-                    else
-                        return 1;
+                    case "--is-debug":
+                        {
+                            if (IsDebug(args[1]))
+                                return 0;
+                            else
+                                return 1;
+                        }
+
+                    case "--is-exe":
+                        {
+                            if (IsExe(args[1]))
+                                return 0;
+                            else
+                                return 1;
+                        }
                 }
                 else
                 {

@@ -57,61 +57,14 @@ export RunningIlasmRoundTrip=
 
       <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
 # IlasmRoundTrip Script
-# Disable Ilasm round-tripping for Linker tests.
-# Todo: Ilasm round-trip on linked binaries.
 
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
-  mkdir IL-RT
-  if [ "$(IsMergedTestRunnerAssembly)" = "true" ]
-  then
-    python3 $(AssemblyName)_ilasmroundtrip.py
-    if [ $ERRORLEVEL -ne 0 ]
-    then
-      echo EXECUTION OF ILDASM - FAILED $ERRORLEVEL
-      exit 1
-    fi
-  fi
-  cp $(InputAssemblyName) $(TargetAssemblyName)
-  echo "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(TargetAssemblyName)
-  "$CORE_ROOT/ildasm" -raweh -unicode -out=$(DisassemblyName) $(TargetAssemblyName)
+  python3 $(AssemblyName)_ilasmroundtrip.py
   ERRORLEVEL=$?
   if [ $ERRORLEVEL -ne 0 ]
   then
-    echo EXECUTION OF ILDASM - FAILED $ERRORLEVEL
-    exit 1
-  fi
-  if [ ! -f "$(DisassemblyName)" ]
-  then
-    echo "EXECUTION OF ILDASM - FAILED $(DisassemblyName) is missing"
-    exit 1
-  fi
-
-  ilasm_count=1
-  while true
-  do
-    echo "$CORE_ROOT/ilasm" -output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    "$CORE_ROOT/ilasm" -output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    ERRORLEVEL=$?
-    if [ $ERRORLEVEL -eq 0 ]
-    then
-      break
-    fi
-
-    echo EXECUTION $ilasm_count OF ILASM - FAILED with $ERRORLEVEL
-
-    if [ $ilasm_count -eq 3 ]
-    then
-      break
-    fi
-
-    ((ilasm_count++))
-    echo Trying again
-    sleep 10
-  done
-
-  if [ $ERRORLEVEL -ne 0 ]
-  then
+    echo ILASM ROUND-TRIP - FAILED $ERRORLEVEL
     exit 1
   fi
 fi
@@ -151,47 +104,14 @@ set RunningIlasmRoundTrip=
 
       <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
 REM IlasmRoundTrip Script
-REM Disable Ilasm round-tripping for Linker tests.
-REM Todo: Ilasm round-trip on linked binaries.
+
 IF NOT DEFINED DoLink (
   IF DEFINED RunningIlasmRoundTrip (
-    mkdir IL-RT
-    IF "$(IsMergedTestRunnerAssembly)"=="true" (
-      python $(AssemblyName)_ilasmroundtrip.py
-      IF NOT "!ERRORLEVEL!"=="0" (
-        ECHO EXECUTION OF ILDASM - FAILED !ERRORLEVEL!
-        Exit /b 1
-      )
-    )
-    copy $(InputAssemblyName) $(TargetAssemblyName)
-    ECHO %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(TargetAssemblyName)
-    %CORE_ROOT%\ildasm.exe /raweh /unicode /out=$(DisassemblyName) $(TargetAssemblyName)
-
+    python $(AssemblyName)_ilasmroundtrip.py
     IF NOT "!ERRORLEVEL!"=="0" (
-      ECHO EXECUTION OF ILDASM - FAILED !ERRORLEVEL!
+      ECHO ILASM ROUND-TRIP - FAILED !ERRORLEVEL!
       Exit /b 1
     )
-    IF NOT EXIST $(DisassemblyName) (
-      ECHO EXECUTION OF ILDASM - FAILED $(DisassemblyName) is missing
-      Exit /b 1
-    )
-
-   set ilasm_count=1
-:Try_ilasm
-    ECHO %CORE_ROOT%\ilasm.exe /output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    %CORE_ROOT%\ilasm.exe /output=$(InputAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-    IF NOT "!ERRORLEVEL!"=="0" (
-      ECHO EXECUTION OF ILASM - Try !ilasm_count! FAILED with status !ERRORLEVEL! 
-      IF !ilasm_count! LEQ 3 (
-        ECHO Trying again
-        set /A ilasm_count=ilasm_count+1
-        timeout /t 10 /nobreak
-        goto :Try_ilasm
-      )
-      ECHO EXECUTION OF ILASM - FAILED
-      Exit /b 1
-    )
-  )
 )
 ]]>
       </IlasmRoundTripBatchScript>
@@ -387,7 +307,7 @@ set DOTNET_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
   ***********************************************************************************************
   -->
 
-  <Target Name="IlasmRoundTripCommand" AfterTargets="AfterBuild" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
+  <Target Name="IlasmRoundTripCommand" AfterTargets="AfterBuild">
     <PropertyGroup>
       <InputAssemblyName>$(AssemblyName).dll</InputAssemblyName>
       <DisassemblyName>IL-RT/$(AssemblyName).il</DisassemblyName>
@@ -421,6 +341,16 @@ def is_managed_debug_assembly(file):
         proc.kill()
         return False
 
+def is_managed_exe_assembly(file):
+    proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/corerun {os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll --is-exe {file}')
+
+    try:
+        proc.communicate()
+        return proc.returncode == 0
+    except:
+        proc.kill()
+        return False
+
 print("")
 print("ILASM RoundTrips")
 
@@ -434,8 +364,12 @@ for inputAssemblyName in glob.glob("*.dll"):
       print("ILASM RoundTrip for " + inputAssemblyName)
 
       ilasmSwitches = ""
+
+      if not is_managed_exe_assembly(inputAssemblyName):
+        ilasmSwitches = ilasmSwitches + " /DLL"
+
       if is_managed_debug_assembly(inputAssemblyName):
-        ilasmSwitches = "-DEBUG"
+        ilasmSwitches = ilasmSwitches + " -DEBUG"
 
       disassemblyName = os.path.join("IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
       targetAssemblyName = os.path.join("IL-RT", os.path.basename(inputAssemblyName))
