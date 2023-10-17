@@ -57,6 +57,7 @@ namespace Microsoft.Interop
                 }
 
                 generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
+                generatorFactory = new BreakingChangeDetector(generatorFactory);
             }
 
             return generatorFactory;

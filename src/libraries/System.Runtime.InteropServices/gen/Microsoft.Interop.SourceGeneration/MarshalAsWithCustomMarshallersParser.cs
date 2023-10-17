@@ -92,6 +92,11 @@ namespace Microsoft.Interop
                 return CreateStringMarshallingInfo(type, marshalAsInfo);
             }
 
+            if (type.SpecialType == SpecialType.System_Object && marshalAsInfo is MarshalAsScalarInfo(UnmanagedType.Struct, _))
+            {
+                return CustomMarshallingInfoHelper.CreateMarshallingInfoByMarshallerTypeName(_compilation, type, TypeNames.OleVariantMarshaller);
+            }
+
             return marshalAsInfo;
         }
 
@@ -113,7 +118,7 @@ namespace Microsoft.Interop
                 return marshalAsInfo;
             }
 
-            return StringMarshallingInfoProvider.CreateStringMarshallingInfo(_compilation, type, marshallerName);
+            return CustomMarshallingInfoHelper.CreateMarshallingInfoByMarshallerTypeName(_compilation, type, marshallerName);
         }
     }
 }
