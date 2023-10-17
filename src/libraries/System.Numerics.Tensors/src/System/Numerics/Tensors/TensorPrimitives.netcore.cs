@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
-using System.Security.Cryptography;
 
 namespace System.Numerics.Tensors
 {
@@ -7587,28 +7586,6 @@ namespace System.Numerics.Tensors
         }
 #endif
 
-        /// <summary>Aggregates all of the elements in the <paramref name="x"/> into a single value.</summary>
-        /// <typeparam name="TAggregate">Specifies the operation to be performed on each pair of values.</typeparam>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float HorizontalAggregate<TAggregate>(Vector128<float> x) where TAggregate : struct, IBinaryOperator =>
-            TAggregate.Invoke(
-                TAggregate.Invoke(x[0], x[1]),
-                TAggregate.Invoke(x[2], x[3]));
-
-        /// <summary>Aggregates all of the elements in the <paramref name="x"/> into a single value.</summary>
-        /// <typeparam name="TAggregate">Specifies the operation to be performed on each pair of values.</typeparam>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float HorizontalAggregate<TAggregate>(Vector256<float> x) where TAggregate : struct, IBinaryOperator =>
-            HorizontalAggregate<TAggregate>(TAggregate.Invoke(x.GetLower(), x.GetUpper()));
-
-#if NET8_0_OR_GREATER
-        /// <summary>Aggregates all of the elements in the <paramref name="x"/> into a single value.</summary>
-        /// <typeparam name="TAggregate">Specifies the operation to be performed on each pair of values.</typeparam>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float HorizontalAggregate<TAggregate>(Vector512<float> x) where TAggregate : struct, IBinaryOperator =>
-            HorizontalAggregate<TAggregate>(TAggregate.Invoke(x.GetLower(), x.GetUpper()));
-#endif
-
         /// <summary>Gets whether the specified <see cref="float"/> is negative.</summary>
         private static bool IsNegative(float f) => float.IsNegative(f);
 
@@ -7760,10 +7737,18 @@ namespace System.Numerics.Tensors
             public static Vector512<float> Invoke(Vector512<float> x, Vector512<float> y) => x * y;
 #endif
 
-            public static float Invoke(Vector128<float> x) => HorizontalAggregate<MultiplyOperator>(x);
-            public static float Invoke(Vector256<float> x) => HorizontalAggregate<MultiplyOperator>(x);
+            public static float Invoke(Vector128<float> x)
+            {
+                // We need to do log2(count) operations to compute the total sum
+
+                x *= Vector128.Shuffle(x, Vector128.Create(2, 3, 0, 1));
+                x *= Vector128.Shuffle(x, Vector128.Create(1, 0, 3, 2));
+
+                return x.ToScalar();
+            }
+            public static float Invoke(Vector256<float> x) => Invoke(x.GetLower() * x.GetUpper());
 #if NET8_0_OR_GREATER
-            public static float Invoke(Vector512<float> x) => HorizontalAggregate<MultiplyOperator>(x);
+            public static float Invoke(Vector512<float> x) => Invoke(x.GetLower() * x.GetUpper());
 #endif
 
             public static float IdentityValue => 1;
@@ -7817,10 +7802,18 @@ namespace System.Numerics.Tensors
                     Vector512.Max(x, y));
 #endif
 
-            public static float Invoke(Vector128<float> x) => HorizontalAggregate<MaxOperator>(x);
-            public static float Invoke(Vector256<float> x) => HorizontalAggregate<MaxOperator>(x);
+            public static float Invoke(Vector128<float> x)
+            {
+                // We need to do log2(count) operations to compute the total sum
+
+                x = Invoke(x, Vector128.Shuffle(x, Vector128.Create(2, 3, 0, 1)));
+                x = Invoke(x, Vector128.Shuffle(x, Vector128.Create(1, 0, 3, 2)));
+
+                return x.ToScalar();
+            }
+            public static float Invoke(Vector256<float> x) => Invoke(Invoke(x.GetLower(), x.GetUpper()));
 #if NET8_0_OR_GREATER
-            public static float Invoke(Vector512<float> x) => HorizontalAggregate<MaxOperator>(x);
+            public static float Invoke(Vector512<float> x) => Invoke(Invoke(x.GetLower(), x.GetUpper()));
 #endif
         }
 
@@ -7916,10 +7909,18 @@ namespace System.Numerics.Tensors
             }
 #endif
 
-            public static float Invoke(Vector128<float> x) => HorizontalAggregate<MaxMagnitudeOperator>(x);
-            public static float Invoke(Vector256<float> x) => HorizontalAggregate<MaxMagnitudeOperator>(x);
+            public static float Invoke(Vector128<float> x)
+            {
+                // We need to do log2(count) operations to compute the total sum
+
+                x = Invoke(x, Vector128.Shuffle(x, Vector128.Create(2, 3, 0, 1)));
+                x = Invoke(x, Vector128.Shuffle(x, Vector128.Create(1, 0, 3, 2)));
+
+                return x.ToScalar();
+            }
+            public static float Invoke(Vector256<float> x) => Invoke(Invoke(x.GetLower(), x.GetUpper()));
 #if NET8_0_OR_GREATER
-            public static float Invoke(Vector512<float> x) => HorizontalAggregate<MaxMagnitudeOperator>(x);
+            public static float Invoke(Vector512<float> x) => Invoke(Invoke(x.GetLower(), x.GetUpper()));
 #endif
         }
 
@@ -8011,10 +8012,18 @@ namespace System.Numerics.Tensors
                     Vector512.Min(x, y));
 #endif
 
-            public static float Invoke(Vector128<float> x) => HorizontalAggregate<MinOperator>(x);
-            public static float Invoke(Vector256<float> x) => HorizontalAggregate<MinOperator>(x);
+            public static float Invoke(Vector128<float> x)
+            {
+                // We need to do log2(count) operations to compute the total sum
+
+                x = Invoke(x, Vector128.Shuffle(x, Vector128.Create(2, 3, 0, 1)));
+                x = Invoke(x, Vector128.Shuffle(x, Vector128.Create(1, 0, 3, 2)));
+
+                return x.ToScalar();
+            }
+            public static float Invoke(Vector256<float> x) => Invoke(Invoke(x.GetLower(), x.GetUpper()));
 #if NET8_0_OR_GREATER
-            public static float Invoke(Vector512<float> x) => HorizontalAggregate<MinOperator>(x);
+            public static float Invoke(Vector512<float> x) => Invoke(Invoke(x.GetLower(), x.GetUpper()));
 #endif
         }
 
@@ -8109,10 +8118,18 @@ namespace System.Numerics.Tensors
             }
 #endif
 
-            public static float Invoke(Vector128<float> x) => HorizontalAggregate<MinMagnitudeOperator>(x);
-            public static float Invoke(Vector256<float> x) => HorizontalAggregate<MinMagnitudeOperator>(x);
+            public static float Invoke(Vector128<float> x)
+            {
+                // We need to do log2(count) operations to compute the total sum
+
+                x = Invoke(x, Vector128.Shuffle(x, Vector128.Create(2, 3, 0, 1)));
+                x = Invoke(x, Vector128.Shuffle(x, Vector128.Create(1, 0, 3, 2)));
+
+                return x.ToScalar();
+            }
+            public static float Invoke(Vector256<float> x) => Invoke(Invoke(x.GetLower(), x.GetUpper()));
 #if NET8_0_OR_GREATER
-            public static float Invoke(Vector512<float> x) => HorizontalAggregate<MinMagnitudeOperator>(x);
+            public static float Invoke(Vector512<float> x) => Invoke(Invoke(x.GetLower(), x.GetUpper()));
 #endif
         }
 
