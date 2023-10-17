@@ -46,8 +46,8 @@ Console.ReadLine();
 The main types provided by this library are:
 
 * `Microsoft.Extensions.FileProviders.PhysicalFileProvider`
-* `Microsoft.Extensions.FileProviders.PhysicalDirectoryInfo `
-* `Microsoft.Extensions.FileProviders.PhysicalFileInfo `
+* `Microsoft.Extensions.FileProviders.PhysicalDirectoryInfo`
+* `Microsoft.Extensions.FileProviders.PhysicalFileInfo`
 
 ## Additional Documentation
 
