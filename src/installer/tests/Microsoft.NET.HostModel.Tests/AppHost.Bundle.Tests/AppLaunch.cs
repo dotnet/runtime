@@ -10,13 +10,13 @@ using BundleTests.Helpers;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Microsoft.NET.HostModel.Tests
+namespace AppHost.Bundle.Tests
 {
-    public class BundleAndRun : IClassFixture<BundleAndRun.SharedTestState>
+    public class AppLaunch : IClassFixture<AppLaunch.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
-        public BundleAndRun(BundleAndRun.SharedTestState fixture)
+        public AppLaunch(AppLaunch.SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
@@ -69,6 +69,15 @@ namespace Microsoft.NET.HostModel.Tests
 
                 // Run the fat app
                 RunTheApp(fatApp, selfContained);
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                // StandaloneApp sets FileVersion to NETCoreApp version. On Windows, this should be copied to singlefilehost resources.
+                string expectedVersion = RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion.Contains('-')
+                    ? RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion[..RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion.IndexOf('-')]
+                    : RepoDirectoriesProvider.Default.MicrosoftNETCoreAppVersion;
+                Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
             }
         }
 

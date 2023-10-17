@@ -391,10 +391,10 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfAny")]
-        private static extern unsafe object IsInstanceOfAny(MethodTable* pTargetType, object obj);
+        internal static extern unsafe object IsInstanceOf(MethodTable* pTargetType, object obj);
 
         internal static unsafe object IsInstanceOf(EETypePtr pTargetType, object obj)
-            => IsInstanceOfAny(pTargetType.ToPointer(), obj);
+            => IsInstanceOf(pTargetType.ToPointer(), obj);
 
         //
         // calls to runtime for allocation

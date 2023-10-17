@@ -19,7 +19,7 @@ namespace System.Numerics.Tensors.Tests
             TensorLengths.Concat(new object[][] { [0] });
 
         public static IEnumerable<object[]> TensorLengths =>
-            from length in Enumerable.Range(1, 128)
+            from length in Enumerable.Range(1, 256)
             select new object[] { length };
 
         public static IEnumerable<object[]> VectorLengthAndIteratedRange(float min, float max, float increment)
@@ -583,7 +583,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Cosh_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -920,7 +919,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Exp_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -2460,7 +2458,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Sigmoid_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -2565,7 +2562,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Sinh_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);
@@ -2942,7 +2938,6 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(TensorLengths))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", TestRuntimes.Mono)]
         public static void Tanh_SpecialValues(int tensorLength)
         {
             using BoundedMemory<float> x = CreateAndFillTensor(tensorLength);

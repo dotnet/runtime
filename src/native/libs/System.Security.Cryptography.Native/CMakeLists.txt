@@ -1,3 +1,6 @@
+# Required for StaticOpenSslLinking
+cmake_minimum_required(VERSION 3.10..3.20)
+
 project(System.Security.Cryptography.Native C)
 
 # These are happening inside of OpenSSL-defined macros out of our control

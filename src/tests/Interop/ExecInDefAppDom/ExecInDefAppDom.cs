@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class FakeInjectedCode
 {
@@ -55,7 +56,8 @@ public class Program
         return passed ? 0 : 1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = 100;
         String myPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
