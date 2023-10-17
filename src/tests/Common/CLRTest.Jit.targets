@@ -318,8 +318,6 @@ import shutil
 import subprocess
 import sys
 import glob
-import struct
-import platform
 
 def is_managed_assembly(file):
     proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/corerun {os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll {file}')
