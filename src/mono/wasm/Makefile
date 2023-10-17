@@ -89,7 +89,7 @@ build-tasks:
 
 build-packages:
 	rm -f $(TOP)/artifacts/packages/$(CONFIG)/Shipping/*.nupkg
-	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.packages+mono.manifests+packs.product -os browser -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
+	EMSDK_PATH=$(EMSDK_PATH) $(TOP)/build.sh mono.packages+mono.manifests+packs.product+tools.illink -os browser -c $(CONFIG) --binaryLog /p:ContinueOnError=false /p:StopOnFirstFailure=true $(MSBUILD_ARGS)
 
 clean:
 	$(RM) -rf $(BUILDS_OBJ_DIR)

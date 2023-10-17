@@ -230,6 +230,7 @@ jobs:
       - ${{ parameters._const_paths._wasm_chrome }}
       - ${{ parameters._const_paths._wasm_src_native }}
       - src/tasks/*
+      - src/tools/illink/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       exclude:
       - ${{ parameters._const_paths._always_exclude }}
