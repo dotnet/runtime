@@ -75,7 +75,7 @@ endif()
 
 if (CMAKE_USE_PTHREADS)
     add_compile_options(-pthread)
-    add_linker_flag(-pthread)
+    add_link_options(-pthread)
 endif()
 
 if (LOCAL_BUILD)
