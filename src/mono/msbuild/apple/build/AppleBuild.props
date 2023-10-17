@@ -44,6 +44,6 @@
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
   </PropertyGroup>
 
-  <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)MonoSharedBuild.props" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
 </Project>
