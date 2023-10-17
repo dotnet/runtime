@@ -393,7 +393,7 @@ import struct
 import platform
 
 def is_managed_assembly(file):
-    proc = subprocess.Popen(dotnet f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll {file}')
+    proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/corerun {os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll {file}')
 
     try:
         proc.communicate()
@@ -403,7 +403,7 @@ def is_managed_assembly(file):
         return False
 
 def is_managed_debug_assembly(file):
-    proc = subprocess.Popen(dotnet f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll --is-debug {file}')
+    proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/corerun {os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll --is-debug {file}')
 
     try:
         proc.communicate()
@@ -425,7 +425,7 @@ for inputAssemblyName in glob.glob("*.dll"):
       print("ILASM RoundTrip for " + inputAssemblyName)
 
       ilasmSwitches = ""
-      if is_managed_debug_assembly(file):
+      if is_managed_debug_assembly(inputAssemblyName):
         ilasmSwitches = "-DEBUG"
 
       disassemblyName = os.path.join("IL-RT", os.path.splitext(os.path.basename(inputAssemblyName))[0] + ".il")
