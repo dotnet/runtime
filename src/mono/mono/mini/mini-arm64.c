@@ -507,11 +507,9 @@ emit_imm (guint8 *code, int dreg, int imm)
 static guint8*
 emit_imm64 (guint8 *code, int dreg, guint64 imm)
 {
-	if (imm == 0) {
-		arm_movzx (code, dreg, 0, 0);
-
+	// Determine if there is more advantage to using movn or movz for initialization.
 	int num0 = 0, num1 = 0;
-	for (int idx = 0; idx < 64; idx++) {
+	for (int idx = 0; idx < 64; idx+=16) {
 		int w = (imm >> idx) & 0xffff;
 		if (w == 0)
 			num0++;
@@ -521,8 +519,8 @@ emit_imm64 (guint8 *code, int dreg, guint64 imm)
 
 	gboolean is_negated = num1 > num0;
 	gboolean is_inited = FALSE;
-	
-	for (int idx = 0; idx < 64; idx++) {
+
+	for (int idx = 0; idx < 64; idx+=16) {
 		int w = (imm >> idx) & 0xffff;
 		if (!is_inited && is_negated && w != 0xffff) {
 			arm_movnx (code, dreg, (~w) & 0xffff, idx);
@@ -538,7 +536,7 @@ emit_imm64 (guint8 *code, int dreg, guint64 imm)
 	if (!is_inited) {
 		if (is_negated)
 			arm_movnx (code, dreg, 0, 0);
-		else
+		else	
 			arm_movzx (code, dreg, 0, 0);
 	}
 
