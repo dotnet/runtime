@@ -283,7 +283,7 @@ TADDR PEAssembly::GetIL(RVA il)
 
 #ifndef DACCESS_COMPILE
 
-void PEAssembly::OpenImporter()
+void PEAssembly::OpenImporter(bool swapForRWMDImport)
 {
     CONTRACTL
     {
@@ -296,10 +296,10 @@ void PEAssembly::OpenImporter()
     CONTRACTL_END;
 
     // Make sure internal MD is in RW format.
-    ConvertMDInternalToReadWrite();
+    ConvertMDInternalToReadWrite(swapForRWMDImport);
 
     IMetaDataImport2 *pIMDImport = NULL;
-    IfFailThrow(GetMetaDataPublicInterfaceFromInternal((void*)GetMDImport(),
+    IfFailThrow(GetMetaDataPublicInterfaceFromInternal((void*)m_pConvertedMDImport,
                                                        IID_IMetaDataImport2,
                                                        (void **)&pIMDImport));
 
@@ -308,7 +308,7 @@ void PEAssembly::OpenImporter()
         pIMDImport->Release();
 }
 
-void PEAssembly::ConvertMDInternalToReadWrite()
+void PEAssembly::ConvertMDInternalToReadWrite(bool swapForRWMDImport)
 {
     CONTRACTL
     {
@@ -320,12 +320,37 @@ void PEAssembly::ConvertMDInternalToReadWrite()
     }
     CONTRACTL_END;
 
-    IMDInternalImport *pOld;            // Old (current RO) value of internal import.
-    IMDInternalImport *pNew = NULL;     // New (RW) value of internal import.
-
-    // Take a local copy of *ppImport.  This may be a pointer to an RO
+    // Take a local copy of the assembly's MD import.  This may be a pointer to an RO
     //  or to an RW MDInternalXX.
-    pOld = m_pMDImport;
+    IMDInternalImport *pNew = NULL;                                 // New (RW) value of internal import.
+    IMDInternalImport *pOld = m_pMDImport;                          // Old (current RO) value of internal import.
+    IMDInternalImport *pConvertedImport = m_pConvertedMDImport;     // Pointer to a RW interna metadata that might not be actively in use.
+
+
+    if (pConvertedImport != NULL)
+    {
+        // TODO: Is this a good check if metadata is read write.
+        if (swapForRWMDImport && pOld != pConvertedImport)
+        {
+            // We had converted the metadata before, now we are just requested
+            // to replace the RO view we had with the converted one.
+            if (InterlockedCompareExchangeT(&m_pMDImport, pConvertedImport, pOld) == pOld)
+            {
+                m_pMDImport->AddRef();
+                HRESULT hr=m_pConvertedMDImport->SetUserContextData(pOld);
+                _ASSERTE(SUCCEEDED(hr)||!"Leaking old MDImport");
+                IfFailThrow(hr);
+            }
+            else
+            {
+                // Even if we lost the race, the fields should now be the same.
+                _ASSERTE(pConvertedImport == m_pMDImport);
+            }
+        }
+
+        return;
+    }
+
     IMetaDataImport *pIMDImport = m_pImporter;
     if (pIMDImport != NULL)
     {
@@ -334,8 +359,10 @@ void PEAssembly::ConvertMDInternalToReadWrite()
         {
             EX_THROW(EEMessageException, (hr));
         }
-        if (pNew == pOld)
+
+        if ((m_pMDImport == m_pConvertedMDImport && pNew == pOld) || !swapForRWMDImport)
         {
+            _ASSERTE(m_pConvertedMDImport != NULL);
             pNew->Release();
             return;
         }
@@ -359,19 +386,31 @@ void PEAssembly::ConvertMDInternalToReadWrite()
     // Swap the pointers in a thread safe manner.  If the contents of *ppImport
     //  equals pOld then no other thread got here first, and the old contents are
     //  replaced with pNew.  The old contents are returned.
-    if (InterlockedCompareExchangeT(&m_pMDImport, pNew, pOld) == pOld)
-    {
-        //if the debugger queries, it will now see that we have RW metadata
-        m_MDImportIsRW_Debugger_Use_Only = TRUE;
 
-        // Swapped -- get the metadata to hang onto the old Internal import.
-        HRESULT hr=m_pMDImport->SetUserContextData(pOld);
-        _ASSERTE(SUCCEEDED(hr)||!"Leaking old MDImport");
-        IfFailThrow(hr);
-    }
-    else
-    {   // Some other thread finished first.  Just free the results of this conversion.
+    if (InterlockedCompareExchangeT(&m_pConvertedMDImport, pNew, NULL) != NULL)
+    {
+        // If we lost the race, free our copy of the RW MD. However, we might still
+        // be the only requesting swapping and our caller would expect m_pMDImport to
+        // be RW. Try to set it to the converted import.
         pNew->Release();
+        pNew = m_pConvertedMDImport;
+    }
+
+    // TODO: this can still be torn? Struct with pointers and swapping might be the only good option.
+    //       need to see what pointers the struct should have.
+    if (swapForRWMDImport)
+    {
+        if (InterlockedCompareExchangeT(&m_pMDImport, pNew, pOld) == pOld)
+        {
+            //if the debugger queries, it will now see that we have RW metadata
+            m_MDImportIsRW_Debugger_Use_Only = TRUE;
+
+            // Swapped -- get the metadata to hang onto the old Internal import.
+            m_pMDImport->AddRef();
+            HRESULT hr=m_pMDImport->SetUserContextData(pOld);
+            _ASSERTE(SUCCEEDED(hr)||!"Leaking old MDImport");
+            IfFailThrow(hr);
+        }
     }
 }
 
@@ -417,7 +456,7 @@ void PEAssembly::OpenEmitter()
     CONTRACTL_END;
 
     // Make sure internal MD is in RW format.
-    ConvertMDInternalToReadWrite();
+    ConvertMDInternalToReadWrite(/* swapForRWMDImport */ true);
 
     IMetaDataEmit *pIMDEmit = NULL;
     IfFailThrow(GetMetaDataPublicInterfaceFromInternal((void*)GetMDImport(),
@@ -673,6 +712,7 @@ PEAssembly::PEAssembly(
 #endif // LOGGING
     m_PEImage = NULL;
     m_MDImportIsRW_Debugger_Use_Only = FALSE;
+    m_pConvertedMDImport = NULL;
     m_pMDImport = NULL;
     m_pImporter = NULL;
     m_pEmitter = NULL;
@@ -785,6 +825,12 @@ PEAssembly::~PEAssembly()
     {
         m_pMDImport->Release();
         m_pMDImport = NULL;
+    }
+
+    if (m_pConvertedMDImport != NULL)
+    {
+        m_pConvertedMDImport->Release();
+        m_pConvertedMDImport = NULL;
     }
 
     if (m_PEImage != NULL)
