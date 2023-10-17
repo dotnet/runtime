@@ -52,12 +52,11 @@ namespace Mono.Linker
 		readonly HashSet<string> _unresolvedAssemblies = new ();
 		HashSet<string>? _reportedUnresolvedAssemblies;
 
-		public AssemblyResolver (LinkContext context)
+		public AssemblyResolver (LinkContext context, ReaderParameters readerParameters)
 		{
+			readerParameters.AssemblyResolver = this;
 			_context = context;
-			_defaultReaderParameters = new ReaderParameters () {
-				AssemblyResolver = this
-			};
+			_defaultReaderParameters = readerParameters;
 		}
 
 		public IDictionary<string, AssemblyDefinition> AssemblyCache { get; } = new Dictionary<string, AssemblyDefinition> (StringComparer.OrdinalIgnoreCase);
@@ -140,7 +139,7 @@ namespace Mono.Linker
 				_context.LogError (null, DiagnosticId.CouldNotFindAssemblyReference, reference.Name);
 		}
 
-		public void AddSearchDirectory (string directory)
+		public virtual void AddSearchDirectory (string directory)
 		{
 			_directories.Add (directory);
 		}
@@ -188,7 +187,7 @@ namespace Mono.Linker
 			throw new NotSupportedException ();
 		}
 
-		static readonly string[] Extensions = new[] { ".dll", ".exe" };
+		static readonly string[] Extensions = new[] { ".dll", ".exe", ".winmd" };
 
 		AssemblyDefinition? SearchDirectory (AssemblyNameReference name)
 		{
@@ -208,7 +207,7 @@ namespace Mono.Linker
 			return null;
 		}
 
-		public void CacheAssembly (AssemblyDefinition assembly)
+		public virtual void CacheAssembly (AssemblyDefinition assembly)
 		{
 			if (AssemblyCache.TryGetValue (assembly.Name.Name, out var existing)) {
 				if (existing != assembly)

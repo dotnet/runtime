@@ -64,6 +64,12 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         protected void Publish()
         {
+            // All instruments call Publish when they are created. We don't want to publish the instrument if the Meter is not supported.
+            if (!Meter.IsSupported)
+            {
+                return;
+            }
+
             List<MeterListener>? allListeners = null;
             lock (Instrument.SyncObject)
             {

@@ -12,7 +12,7 @@ using Xunit;
 public class Runtime_66089
 {
     [Fact]
-    public static unsafe int TestEntryPoint()
+    public static unsafe void TestEntryPoint()
     {
         int* foo = stackalloc int[30];
         try
@@ -27,8 +27,6 @@ public class Runtime_66089
             ManyArgs(new Guid(foo[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
         }
         Console.WriteLine("after");
-
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

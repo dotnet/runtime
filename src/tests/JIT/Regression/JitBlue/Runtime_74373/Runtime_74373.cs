@@ -9,10 +9,9 @@ using Xunit;
 public class _74373
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Problem(10);
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

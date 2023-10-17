@@ -67,14 +67,13 @@ namespace JitTest_han2_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int NUM = 17;
             Column[] cols = new Column[3];
             cols[0].Init(NUM, NUM);
             cols[1].Init(NUM, 0);
             cols[2].Init(NUM, 0);
-            return 100;
         }
     }
 }

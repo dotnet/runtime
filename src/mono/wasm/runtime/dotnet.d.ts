@@ -181,6 +181,15 @@ type MonoConfig = {
     extensions?: {
         [name: string]: any;
     };
+    /**
+     * This is initial working directory for the runtime on the virtual file system. Default is "/".
+     */
+    virtualWorkingDirectory?: string;
+    /**
+     * This is the arguments to the Main() method of the program when called with dotnet.run() Default is [].
+     * Note: RuntimeAPI.runMain() and RuntimeAPI.runMainAndExit() will replace this value, if they provide it.
+     */
+    applicationArguments?: string[];
 };
 type ResourceExtensions = {
     [extensionName: string]: ResourceList;
@@ -369,8 +378,8 @@ type DotnetModuleConfig = {
     exports?: string[];
 } & Partial<EmscriptenModule>;
 type APIType = {
-    runMain: (mainAssemblyName: string, args: string[]) => Promise<number>;
-    runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<number>;
+    runMain: (mainAssemblyName: string, args?: string[]) => Promise<number>;
+    runMainAndExit: (mainAssemblyName: string, args?: string[]) => Promise<number>;
     setEnvironmentVariable: (name: string, value: string) => void;
     getAssemblyExports(assemblyName: string): Promise<any>;
     setModuleImports(moduleName: string, moduleImports: any): void;

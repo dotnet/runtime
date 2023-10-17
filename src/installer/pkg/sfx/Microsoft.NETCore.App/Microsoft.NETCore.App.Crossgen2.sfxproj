@@ -28,36 +28,15 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference
+      Include="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_publish.csproj"
+      OutputItemType="_RawCrossgenPublishFiles"
+      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
   <Target Name="PublishCrossgen"
           BeforeTargets="GetFilesToPackage">
-
-    <!-- Copy System.Private.CoreLib from the coreclr bin directory to the runtime pack directory,
-         as we always need the copy of System.Private.CoreLib that matches exactly with the runtime. -->
-    <Copy SourceFiles="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
-          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
-          SkipUnchangedFiles="true" />
-
-    <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
-             Targets="Restore"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())
-              ;_IsPublishing=true
-              ;RuntimeIdentifier=$(PackageRID)
-              ;NativeAotSupported=$(NativeAotSupported)
-              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets" />
-
-    <MSBuild Projects="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2.csproj"
-             Targets="Publish;PublishItemsOutputGroup"
-             Properties="_IsPublishing=true
-              ;RuntimeIdentifier=$(PackageRID)
-              ;NativeAotSupported=$(NativeAotSupported)
-              ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;ObjCopyName=$(ObjCopyName)
-              ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets">
-      <Output TaskParameter="TargetOutputs"
-              ItemName="_RawCrossgenPublishFiles" />
-    </MSBuild>
-
     <ItemGroup>
       <_CrossgenPublishFiles Include="@(_RawCrossgenPublishFiles->'%(OutputPath)')"
                              KeepMetadata="REMOVE_ALL" />

@@ -487,7 +487,6 @@ add_executable_clr(paltests
   miscellaneous/GetLastError/test1/test.cpp
   miscellaneous/GetSystemInfo/test1/test.cpp
   miscellaneous/GetTickCount/test1/test.cpp
-  miscellaneous/GlobalMemoryStatusEx/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test2/test.cpp
   miscellaneous/InterlockedCompareExchange64/test1/test.cpp

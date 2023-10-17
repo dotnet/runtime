@@ -32,7 +32,7 @@ namespace System.Text.Json
         // UTF-8 representation for them is E2, 80, A8/A9
         public const byte StartingByteOfNonStandardSeparator = 0xE2;
 
-        public static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
+        public static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
         public static ReadOnlySpan<byte> TrueValue => "true"u8;
         public static ReadOnlySpan<byte> FalseValue => "false"u8;
         public static ReadOnlySpan<byte> NullValue => "null"u8;
@@ -74,6 +74,7 @@ namespace System.Text.Json
 
         public const int MaximumFormatBooleanLength = 5;
         public const int MaximumFormatInt64Length = 20;   // 19 + sign (i.e. -9223372036854775808)
+        public const int MaximumFormatUInt32Length = 10;  // i.e. 4294967295
         public const int MaximumFormatUInt64Length = 20;  // i.e. 18446744073709551615
         public const int MaximumFormatDoubleLength = 128;  // default (i.e. 'G'), using 128 (rather than say 32) to be future-proof.
         public const int MaximumFormatSingleLength = 128;  // default (i.e. 'G'), using 128 (rather than say 32) to be future-proof.

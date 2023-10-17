@@ -177,6 +177,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [InlineData(LockRecursionPolicy.NoRecursion)]
         [InlineData(LockRecursionPolicy.SupportsRecursion)]
         public static void InvalidExits(LockRecursionPolicy policy)
@@ -321,6 +322,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void WriterToWriterChain()
         {
             using (AutoResetEvent are = new AutoResetEvent(false))
@@ -341,6 +343,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void WriterToReaderChain()
         {
             using (AutoResetEvent are = new AutoResetEvent(false))
@@ -361,6 +364,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void WriterToUpgradeableReaderChain()
         {
             using (AutoResetEvent are = new AutoResetEvent(false))

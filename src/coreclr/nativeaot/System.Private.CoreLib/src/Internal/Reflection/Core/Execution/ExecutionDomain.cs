@@ -117,27 +117,27 @@ namespace Internal.Reflection.Core.Execution
 
         public Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            RuntimeTypeHandle elementTypeHandle = ExecutionEnvironment.GetArrayTypeElementType(typeHandle);
+            RuntimeTypeHandle elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
             return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle);
         }
 
         public Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
         {
-            RuntimeTypeHandle elementTypeHandle = ExecutionEnvironment.GetArrayTypeElementType(typeHandle);
+            RuntimeTypeHandle elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
             return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle);
         }
 
         public Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            RuntimeTypeHandle targetTypeHandle = ExecutionEnvironment.GetPointerTypeTargetType(typeHandle);
+            RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
             return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
         }
 
         public Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            ExecutionEnvironment.GetFunctionPointerTypeComponents(typeHandle, out RuntimeTypeHandle returnTypeHandle,
-                                                                              out RuntimeTypeHandle[] parameterHandles,
-                                                                              out bool isUnmanaged);
+            RuntimeTypeHandle returnTypeHandle = RuntimeAugments.GetFunctionPointerReturnType(typeHandle);
+            RuntimeTypeHandle[] parameterHandles = RuntimeAugments.GetFunctionPointerParameterTypes(typeHandle);
+            bool isUnmanaged = RuntimeAugments.IsUnmanagedFunctionPointerType(typeHandle);
 
             RuntimeTypeInfo returnType = returnTypeHandle.GetTypeForRuntimeTypeHandle();
             int count = parameterHandles.Length;
@@ -152,7 +152,7 @@ namespace Internal.Reflection.Core.Execution
 
         public Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            RuntimeTypeHandle targetTypeHandle = ExecutionEnvironment.GetByRefTypeTargetType(typeHandle);
+            RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(typeHandle);
             return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetByRefType(typeHandle);
         }
 

@@ -56,7 +56,7 @@ struct user_vfpregs_struct
 #endif
 
 #if defined(__loongarch64)
-#define user_fpregs_struct user_fp_struct
+#define user_fpregs_struct lasx_context
 #endif
 
 #define STACK_OVERFLOW_EXCEPTION    0x800703e9

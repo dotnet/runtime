@@ -27,6 +27,13 @@ namespace Wasm.Build.Tests
         public bool IsWorkloadWithMultiThreadingForDefaultFramework { get; init; }
         public bool IsRunningOnCI => EnvironmentVariables.IsRunningOnCI;
 
+        /* This will trigger importing WasmOverridePacks.targets for the tests,
+         * which will override the runtime pack with with the locally built one.
+         * But note that this only partially helps with "switching workloads" because
+         * the tasks/targets, aot compiler, etc would still be from the old version
+         */
+        public static readonly bool             UseWBTOverridePackTargets = false;
+
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
         public static readonly string           TestDataPath = Path.Combine(AppContext.BaseDirectory, "data");
@@ -121,6 +128,8 @@ namespace Wasm.Build.Tests
             EnvVars["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
             EnvVars["EM_WORKAROUND_PYTHON_BUG_34780"] = "1";
+            if (UseWBTOverridePackTargets && IsWorkload)
+                EnvVars["WBTOverrideRuntimePack"] = "true";
 
             if (!UseWebcil)
             {
@@ -162,6 +171,8 @@ namespace Wasm.Build.Tests
             => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");
         public bool IsMultiThreadingRuntimePackAvailableFor(string tfm)
             => IsWorkload && File.Exists(Path.Combine(GetRuntimeNativeDir(tfm, RuntimeVariant.MultiThreaded), "dotnet.native.worker.js"));
+
+        public static string WasmOverridePacksTargetsPath = Path.Combine(TestDataPath, "WasmOverridePacks.targets");
 
         protected static string s_directoryBuildPropsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.targets"));

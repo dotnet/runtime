@@ -59,11 +59,10 @@ public static class DeadEH
 
     // Get everything jitted before we call
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Foo("prep");
         Bar(0);
         DoIt();
-        return 100;
     }
 }

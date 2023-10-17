@@ -26,6 +26,7 @@
   <ItemGroup>
     <Compile Include="Handlers\DeflateHandler.cs" />
     <Compile Include="Handlers\EchoHandler.cs" />
+    <Compile Include="Handlers\EchoBodyHandler.cs" />
     <Compile Include="Handlers\EchoWebSocketHandler.cs" />
     <Compile Include="Handlers\EchoWebSocketHeadersHandler.cs" />
     <Compile Include="Handlers\EmptyContentHandler.cs" />

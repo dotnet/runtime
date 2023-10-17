@@ -19,7 +19,6 @@ namespace JIT.HardwareIntrinsics.General
     public static partial class Program
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/89938", TestRuntimes.Mono)]
         public static void {Method}{RetBaseType}{Imm}()
         {
             var test = new VectorImmBinaryOpTest__{Method}{RetBaseType}{Imm}();

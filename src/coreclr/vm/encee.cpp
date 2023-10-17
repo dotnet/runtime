@@ -21,7 +21,7 @@
 #include "../debug/daccess/gcinterface.dac.h"
 #endif // DACCESS_COMPILE
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 
 // can't get this on the helper thread at runtime in ResolveField, so make it static and get when add a field.
 #ifdef _DEBUG
@@ -737,7 +737,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 
 }
 
-#ifdef FEATURE_ENC_SUPPORTED
+#ifdef FEATURE_REMAP_FUNCTION
 //---------------------------------------------------------------------------------------
 //
 // FixContextAndResume - Modify the thread context for EnC remap and resume execution
@@ -873,7 +873,7 @@ NOINLINE void EditAndContinueModule::FixContextAndResume(
     LOG((LF_ENC, LL_ERROR, "**Error** EnCModule::ResumeInUpdatedFunction returned from ResumeAtJit"));
     _ASSERTE(!"Should not return from ResumeAtJit()");
 }
-#endif // #ifdef FEATURE_ENC_SUPPORTED
+#endif // #ifdef FEATURE_REMAP_FUNCTION
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1825,4 +1825,4 @@ PTR_EnCFieldDesc EncApproxFieldDescIterator::NextEnC()
     return fd;
 }
 
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER

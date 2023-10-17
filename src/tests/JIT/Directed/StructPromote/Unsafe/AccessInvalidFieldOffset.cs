@@ -38,7 +38,8 @@ public class TestStructAccessThroughRef
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void TestStructCasts()
+    [Fact]
+    public static void TestStructCasts()
     {
         PromotedStruct a = new PromotedStruct(); // Addr-exposed, cannot be independent promoted.
         a.anotherField = 5;
@@ -53,12 +54,4 @@ public class TestStructAccessThroughRef
         PromotedStruct.AsNotPromotedStruct(ref a).overlappingField = 0x700000000;
         Debug.Assert(a.smallField == 0x7);
     }
-
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        TestStructCasts();
-        return 100;
-    }
-
 }

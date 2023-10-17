@@ -36,10 +36,15 @@ UITextView* logLabel;
 - (void)viewDidLoad {
     [super viewDidLoad];
 
+#if TARGET_OS_MACCATALYST
+    CGFloat summaryLabelHeight = 150.0;
+#else
+    CGFloat summaryLabelHeight = 50.0;
+#endif
     CGRect applicationFrame = [[UIScreen mainScreen] bounds];
     logLabel = [[UITextView alloc] initWithFrame:
-        CGRectMake(2.0, 50.0, applicationFrame.size.width - 2.0, applicationFrame.size.height - 50.0)];
-    logLabel.font = [UIFont systemFontOfSize:9.0];
+        CGRectMake(10.0, summaryLabelHeight, applicationFrame.size.width - 10.0, applicationFrame.size.height - summaryLabelHeight)];
+    logLabel.font = [UIFont systemFontOfSize: 9.0];
     logLabel.backgroundColor = [UIColor blackColor];
     logLabel.textColor = [UIColor greenColor];
     logLabel.scrollEnabled = YES;
@@ -49,9 +54,10 @@ UITextView* logLabel;
 #endif
     logLabel.clipsToBounds = YES;
 
-    summaryLabel = [[UILabel alloc] initWithFrame: CGRectMake(10.0, 0.0, applicationFrame.size.width - 10.0, 50)];
+    summaryLabel = [[UILabel alloc] initWithFrame: CGRectMake(10.0, 0, applicationFrame.size.width - 10.0, summaryLabelHeight)];
+    summaryLabel.font = [UIFont boldSystemFontOfSize: 12.0];
+    summaryLabel.backgroundColor = [UIColor blackColor];
     summaryLabel.textColor = [UIColor whiteColor];
-    summaryLabel.font = [UIFont boldSystemFontOfSize: 12];
     summaryLabel.numberOfLines = 2;
     summaryLabel.textAlignment = NSTextAlignmentLeft;
 #if !TARGET_OS_SIMULATOR || FORCE_AOT

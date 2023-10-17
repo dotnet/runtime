@@ -132,8 +132,6 @@ public:
     PTR_PEImageLayout GetLoadedLayout();
     PTR_PEImageLayout GetFlatLayout();
 
-    BOOL  HasPath();
-    ULONG GetPathHash();
     const SString& GetPath();
     const SString& GetPathToLoad();
     LPCWSTR GetPathForErrorMessages() { return GetPath(); }
@@ -288,6 +286,7 @@ private:
     // ------------------------------------------------------------
 
     SString   m_path;
+    ULONG     m_pathHash;
     LONG      m_refCount;
 
     // means this is a unique (deduped) instance.

@@ -56,10 +56,9 @@ export const enum JiterpNumberMode {
 
 // keep in sync with jiterpreter.h
 export const enum JiterpreterTable {
-    Trace,
-    DoJitCall,
-    JitCall,
-    InterpEntryStatic0,
+    Trace = 0,
+    JitCall = 1,
+    InterpEntryStatic0 = 2,
     InterpEntryStatic1,
     InterpEntryStatic2,
     InterpEntryStatic3,
@@ -157,3 +156,8 @@ export const BailoutReasonNames = [
     "UnexpectedRetIp",
     "LeaveCheck",
 ];
+
+export const enum JitQueue {
+    JitCall = 0,
+    InterpEntry = 1
+}

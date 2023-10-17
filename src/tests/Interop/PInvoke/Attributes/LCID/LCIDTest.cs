@@ -19,7 +19,7 @@ class LCIDNative
     public static extern bool VerifyValidLCIDPassed(int lcid);
 }
 
-class LCIDTest
+public class LCIDTest
 {
     private static string Reverse(string s)
     {
@@ -28,7 +28,8 @@ class LCIDTest
         return new string(chars);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {
