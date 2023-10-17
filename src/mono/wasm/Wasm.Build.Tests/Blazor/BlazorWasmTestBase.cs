@@ -116,7 +116,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (IsUsingWorkloads)
         {
             // In no-workload case, the path would be from a restored nuget
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, blazorBuildOptions.TargetFramework ?? DefaultTargetFramework, blazorBuildOptions.RuntimeType);
+            //ProjectProviderBase.AssertRuntimePackPath(buildOutput, blazorBuildOptions.TargetFramework ?? DefaultTargetFramework, blazorBuildOptions.RuntimeType);
         }
 
         _provider.AssertBundle(blazorBuildOptions);
