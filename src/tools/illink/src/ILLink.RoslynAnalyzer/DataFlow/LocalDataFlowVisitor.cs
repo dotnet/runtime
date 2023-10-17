@@ -337,10 +337,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		TValue GetFlowCaptureValue (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			Debug.Assert (!IsLValueFlowCapture (operation.Id));
-			Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read));
-			if (!operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read))
-				return TopValue;
+			Debug.Assert (!IsLValueFlowCapture (operation.Id),
+				$"{operation.Syntax.GetLocation ().GetLineSpan ()}");
+			Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read),
+				$"{operation.Syntax.GetLocation ().GetLineSpan ()}");
 
 			return state.Get (new LocalKey (operation.Id));
 		}
@@ -348,6 +348,18 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		// Similar to VisitLocalReference
 		public override TValue VisitFlowCaptureReference (IFlowCaptureReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
+			if (operation.IsInitialization) {
+				// This capture reference is a temporary byref. This can happen for string
+				// interpolation handlers: https://github.com/dotnet/roslyn/issues/57484.
+				// Should really be treated as creating a new l-value flow capture,
+				// but this is likely irrelevant for dataflow analysis.
+
+				// LValueFlowCaptureProvider doesn't take into account IsInitialization = true,
+				// so it doesn't properly detect this as an l-value capture.
+				// Context: https://github.com/dotnet/roslyn/issues/60757
+				Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write));
+				return TopValue;
+			}
 			return GetFlowCaptureValue (operation, state);
 		}
 
