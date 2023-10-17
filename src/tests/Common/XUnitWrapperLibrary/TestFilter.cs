@@ -286,7 +286,7 @@ public class TestFilter
             string testPath = testInfo[0];
             string skipReason = testInfo.Length > 1 ? testInfo[1] : string.Empty;
 
-            if (!table.ContainsKey(testPath)
+            if (!table.ContainsKey(testPath))
             {
                 table.Add(testPath, skipReason);
             }
