@@ -45,9 +45,7 @@ namespace System.Globalization
             int result = Interop.JsGlobalization.GetFirstWeekOfYear(localeName, out int exception, out object ex_result);
             if (exception != 0)
             {
-                // Failed, just use 0
                 Debug.Fail($"[CultureData.GetFirstWeekOfYear()] failed with {ex_result}");
-                return 0;
             }
             return result;
         }
