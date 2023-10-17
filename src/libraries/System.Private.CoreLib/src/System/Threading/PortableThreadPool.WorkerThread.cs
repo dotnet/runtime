@@ -7,6 +7,8 @@ namespace System.Threading
 {
     internal sealed partial class PortableThreadPool
     {
+        private int _numThreadsBeingKeptAlive;
+
         /// <summary>
         /// The worker thread infastructure for the CLR thread pool.
         /// </summary>
@@ -27,6 +29,22 @@ namespace System.Threading
             // Used in calculations to estimate when to throttle the rate of thread injection to reduce the possibility of
             // preexisting threads from running out of memory when using new stack space in low-memory situations.
             public const int EstimatedAdditionalStackUsagePerThreadBytes = 64 << 10; // 64 KB
+
+            private static readonly short ThreadsToKeepAlive = DetermineThreadsToKeepAlive();
+
+            private static short DetermineThreadsToKeepAlive()
+            {
+                const short DefaultThreadsToKeepAlive = 0;
+
+                // The number of worker threads to keep alive after they are created. Set to -1 to keep all created worker
+                // threads alive. When the ThreadTimeoutMs config value is also set, for worker threads the timeout applies to
+                // worker threads that are in excess of the number configured for ThreadsToKeepAlive.
+                short threadsToKeepAlive =
+                    AppContextConfigHelper.GetInt16Config(
+                        "System.Threading.ThreadPool.ThreadsToKeepAlive",
+                        DefaultThreadsToKeepAlive);
+                return threadsToKeepAlive >= -1 ? threadsToKeepAlive : DefaultThreadsToKeepAlive;
+            }
 
             /// <summary>
             /// Semaphore for controlling how many threads are currently working.
@@ -65,10 +83,36 @@ namespace System.Threading
                 LowLevelLock threadAdjustmentLock = threadPoolInstance._threadAdjustmentLock;
                 LowLevelLifoSemaphore semaphore = s_semaphore;
 
+                // Determine the idle timeout to use for this thread. Some threads may always be kept alive based on config.
+                int timeoutMs = ThreadPoolThreadTimeoutMs;
+                if (ThreadsToKeepAlive != 0)
+                {
+                    if (ThreadsToKeepAlive < 0)
+                    {
+                        timeoutMs = Timeout.Infinite;
+                    }
+                    else
+                    {
+                        int count = threadPoolInstance._numThreadsBeingKeptAlive;
+                        while (count < ThreadsToKeepAlive)
+                        {
+                            int countBeforeUpdate =
+                                Interlocked.CompareExchange(ref threadPoolInstance._numThreadsBeingKeptAlive, count + 1, count);
+                            if (countBeforeUpdate == count)
+                            {
+                                timeoutMs = Timeout.Infinite;
+                                break;
+                            }
+
+                            count = countBeforeUpdate;
+                        }
+                    }
+                }
+
                 while (true)
                 {
                     bool spinWait = true;
-                    while (semaphore.Wait(ThreadPoolThreadTimeoutMs, spinWait))
+                    while (semaphore.Wait(timeoutMs, spinWait))
                     {
                         bool alreadyRemovedWorkingWorker = false;
                         while (TakeActiveRequest(threadPoolInstance))
