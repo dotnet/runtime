@@ -469,6 +469,9 @@ public:
 
 #endif
 
+    int ThreadPoolThreadTimeoutMs() const { LIMITED_METHOD_CONTRACT; return threadPoolThreadTimeoutMs; }
+    int ThreadPoolThreadsToKeepAlive() const { LIMITED_METHOD_CONTRACT; return threadPoolThreadsToKeepAlive; }
+
 private: //----------------------------------------------------------------
 
     bool fInited;                   // have we synced to the registry at least once?
@@ -643,6 +646,9 @@ private: //----------------------------------------------------------------
     DWORD fShouldInjectFault;
     DWORD testThreadAbort;
 #endif
+
+    int threadPoolThreadTimeoutMs;
+    int threadPoolThreadsToKeepAlive;
 
 #if defined(FEATURE_TIERED_COMPILATION)
     bool fTieredCompilation;

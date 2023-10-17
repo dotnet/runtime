@@ -646,6 +646,11 @@ class BaseEnumeration(object):
 
     @classmethod
     def from_id(cls, id):
+        if cls == CursorKind and id == 300:
+            # --- DOTNET change ---
+            # The id of CursorKind.TRANSLATION_UNIT changed in https://github.com/llvm/llvm-project/commit/bb83f8e70bd1d56152f02307adacd718cd67e312,
+            # add mapping from the old to the new value so using the binding with an older clang still works.
+            return cls._kinds[350]
         if id >= len(cls._kinds) or cls._kinds[id] is None:
             raise ValueError('Unknown template argument kind %d' % id)
         return cls._kinds[id]
@@ -1312,7 +1317,7 @@ CursorKind.OMP_TEAMS_DISTRIBUTE_DIRECTIVE = CursorKind(271)
 #
 # The translation unit cursor exists primarily to act as the root cursor for
 # traversing the contents of a translation unit.
-CursorKind.TRANSLATION_UNIT = CursorKind(300)
+CursorKind.TRANSLATION_UNIT = CursorKind(350)
 
 ###
 # Attributes
@@ -1342,6 +1347,8 @@ CursorKind.VISIBILITY_ATTR = CursorKind(417)
 
 CursorKind.DLLEXPORT_ATTR = CursorKind(418)
 CursorKind.DLLIMPORT_ATTR = CursorKind(419)
+# Temporary fake value to work around xcode 15 beta / clang 15
+CursorKind.XCODEBETA_ATTR = CursorKind(437)
 CursorKind.CONVERGENT_ATTR = CursorKind(438)
 CursorKind.WARN_UNUSED_ATTR = CursorKind(439)
 CursorKind.WARN_UNUSED_RESULT_ATTR = CursorKind(440)
@@ -2059,6 +2066,7 @@ TypeKind.OBJCCLASS = TypeKind(28)
 TypeKind.OBJCSEL = TypeKind(29)
 TypeKind.FLOAT128 = TypeKind(30)
 TypeKind.HALF = TypeKind(31)
+TypeKind.IBM128 = TypeKind(40)
 TypeKind.COMPLEX = TypeKind(100)
 TypeKind.POINTER = TypeKind(101)
 TypeKind.BLOCKPOINTER = TypeKind(102)
@@ -2122,6 +2130,7 @@ TypeKind.OCLQUEUE = TypeKind(159)
 TypeKind.OCLRESERVEID = TypeKind(160)
 
 TypeKind.EXTVECTOR = TypeKind(176)
+TypeKind.ATOMIC = TypeKind(177)
 
 class RefQualifierKind(BaseEnumeration):
     """Describes a specific ref-qualifier of a type."""
