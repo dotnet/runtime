@@ -1153,6 +1153,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\huge_gcref_d\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical\VT\port\huge_gcref_r\*" />
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/Benchstones/MDBenchI/MDGeneralArray/MDGeneralArray/*" />
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/regressions/GitHub_93597/*" />
 
         <!-- Covariant returns -->
         <!-- https://github.com/dotnet/runtimelab/issues/205 -->
