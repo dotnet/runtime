@@ -373,7 +373,9 @@ for inputAssemblyName in glob.glob("*.dll"):
 
       shutil.copyfile(inputAssemblyName, targetAssemblyName)
 
-      proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/ildasm -raweh -unicode -out={disassemblyName} {targetAssemblyName}', shell=True)
+      ildasm_args = f'{os.environ["CORE_ROOT"]}/ildasm -raweh -unicode -out={disassemblyName} {targetAssemblyName}'
+      print(ildasm_args)
+      proc = subprocess.Popen(ildasm_args, shell=True)
 
       try:
           proc.communicate()
@@ -381,7 +383,9 @@ for inputAssemblyName in glob.glob("*.dll"):
           proc.kill()
           sys.exit(1)
 
-      proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}', shell=True)
+      ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
+      print(ilasm_args)
+      proc = subprocess.Popen(ilasm_args, shell=True)
 
       try:
           proc.communicate()
