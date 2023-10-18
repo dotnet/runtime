@@ -583,14 +583,5 @@ namespace System.DirectoryServices.ActiveDirectory
 
         [LibraryImport(global::Interop.Libraries.NtDll, EntryPoint = "RtlInitUnicodeString")]
         public static partial int RtlInitUnicodeString(out global::Interop.UNICODE_STRING result, IntPtr s);
-
-        /*
-        void DsRoleFreeMemory(
-          PVOID Buffer
-        );
-        */
-        [LibraryImport(global::Interop.Libraries.Netapi32)]
-        public static partial int DsRoleFreeMemory(
-            IntPtr buffer);
     }
 }

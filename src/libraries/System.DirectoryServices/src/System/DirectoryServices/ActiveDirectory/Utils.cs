@@ -2255,7 +2255,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (dsRoleInfoPtr != IntPtr.Zero)
-                    UnsafeNativeMethods.DsRoleFreeMemory(dsRoleInfoPtr);
+                    Interop.Netapi32.DsRoleFreeMemory(dsRoleInfoPtr);
             }
         }
 
