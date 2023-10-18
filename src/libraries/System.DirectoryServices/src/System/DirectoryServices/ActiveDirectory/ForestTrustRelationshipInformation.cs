@@ -254,7 +254,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // call the unmanaged function
-                    uint error = UnsafeNativeMethods.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 1, out collisionInfo);
+                    uint error = Interop.Advapi32.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 1, out collisionInfo);
                     if (error != 0)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(error), serverName);
@@ -267,7 +267,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // commit the changes
-                    error = UnsafeNativeMethods.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 0, out collisionInfo);
+                    error = Interop.Advapi32.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 0, out collisionInfo);
                     if (error != 0)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode((int)error, serverName);
