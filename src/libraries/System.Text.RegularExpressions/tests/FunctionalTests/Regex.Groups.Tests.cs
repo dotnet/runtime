@@ -962,6 +962,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return (enUS, @"(\d*)(hello)(\d*)", "123hello456", RegexOptions.None, new string[] { "123hello456", "123", "hello", "456" });
             yield return (enUS, @"((\d*))[AaBbCc](\d*)", "1b", RegexOptions.None, new string[] { "1b", "1", "1", "" });
             yield return (enUS, @"((\d*))[AaBbCc](\d*)", "b1", RegexOptions.None, new string[] { "b1", "", "", "1" });
+            yield return (enUS, @"(\w*)(hello)(\w*)", "hello", RegexOptions.None, new string[] { "hello", "", "hello", "" });
             if (!RegexHelpers.IsNonBacktracking(engine)) // atomic not supported
             {
                 yield return (enUS, @"(?>(\d*))(hello)(\d*)", "123hello456", RegexOptions.None, new string[] { "123hello456", "123", "hello", "456" });
