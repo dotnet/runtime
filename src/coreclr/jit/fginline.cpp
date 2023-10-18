@@ -590,9 +590,9 @@ private:
 
                 if (lcl->lvSingleDef)
                 {
-                    bool                 isExact   = false;
-                    bool                 isNonNull = false;
-                    CORINFO_CLASS_HANDLE newClass  = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
+                    bool                 isExact;
+                    bool                 isNonNull;
+                    CORINFO_CLASS_HANDLE newClass = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
 
                     if (newClass != NO_CLASS_HANDLE)
                     {

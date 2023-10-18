@@ -3145,6 +3145,14 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
     }
 
+    ////////////////// TESTING
+    if (JitConfig.JitEnableOptRepeat() != 0)
+    {
+        opts.optRepeat      = true;
+        opts.optRepeatCount = 4;
+        JITDUMP("\n*************** JitOptRepeat FORCED; repetition count: %d\n\n", opts.optRepeatCount);
+    }
+////////////////// END TESTING
 #endif // OPT_CONFIG
 
 #ifdef DEBUG
