@@ -1230,7 +1230,8 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
 
     if (EA_IS_RELOC(size))
     {
-        NYI_RISCV64("EA_IS_RELOC in instGen_Set_Reg_To_Imm-----unimplemented on RISCV64 yet----");
+        assert(genIsValidIntReg(reg));
+        GetEmitter()->emitIns_R_AI(INS_jal, size, reg, imm);
     }
     else
     {
