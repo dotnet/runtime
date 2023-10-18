@@ -12,6 +12,7 @@ set(NATIVECOMPRESSION_SOURCES
 if (CLR_CMAKE_TARGET_BROWSER)
     set (NATIVECOMPRESSION_SOURCES
         ${NATIVECOMPRESSION_SOURCES}
+        ../../AnyOS/zlib/zlib_allocator_unix.c
         ../../Windows/System.IO.Compression.Native/zlib/adler32.c
         ../../Windows/System.IO.Compression.Native/zlib/compress.c
         ../../Windows/System.IO.Compression.Native/zlib/crc32.c
@@ -22,7 +23,9 @@ if (CLR_CMAKE_TARGET_BROWSER)
         ../../Windows/System.IO.Compression.Native/zlib/trees.c
         ../../Windows/System.IO.Compression.Native/zlib/zutil.c
     )
-    set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS -Wno-implicit-fallthrough)
+    set_source_files_properties(${NATIVECOMPRESSION_SOURCES} PROPERTIES COMPILE_FLAGS -Wno-implicit-fallthrough)    
+    # enable custom zlib allocator
+    add_definitions(-DMY_ZCALLOC)
 else()
     #Include Brotli include files
     include_directories("../../AnyOS/brotli/include")

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/component-detection-manifest.json",
+  "Registrations": [
+    {
+      "Component": {
+        "Type": "git",
+        "Git": {
+          "RepositoryUrl": "https://github.com/madler/zlib",
+          "CommitHash": "04f42ceca40f73e2978b50e93806c2a18c1281fc"
+        }
+      },
+      "DevelopmentDependency": false
+    }
+  ]
+}
