@@ -198,6 +198,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Advapi32\Interop.LogonUser.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaClose.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.LsaClose.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaDeleteTrustedDomain.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.LsaDeleteTrustedDomain.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaFreeMemory.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.LsaFreeMemory.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaNtStatusToWinError.cs"

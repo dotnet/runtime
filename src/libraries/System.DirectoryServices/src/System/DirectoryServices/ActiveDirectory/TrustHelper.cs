@@ -318,7 +318,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         ValidateTrustAttribute(domainInfo, isForest, sourceName, targetName);
 
                         // delete the trust
-                        result = UnsafeNativeMethods.LsaDeleteTrustedDomain(policyHandle, domainInfo.Sid);
+                        result = Interop.Advapi32.LsaDeleteTrustedDomain(policyHandle, domainInfo.Sid);
                         if (result != 0)
                         {
                             uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
