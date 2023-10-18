@@ -183,4 +183,7 @@
   <data name="InvalidOperation_NoUnderlyingTypeOnEnum" xml:space="preserve">
     <value>Underlying type information on enumeration is not specified.</value>
   </data>
+  <data name="InvalidOperation_ShouldNotHaveMethodBody" xml:space="preserve">
+    <value>Method body should not exist.</value>
+  </data>
 </root>

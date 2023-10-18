@@ -287,7 +287,7 @@ namespace System.Collections.Tests
 
         private static int GetUnderlyingBufferCapacity<TPriority, TElement>(PriorityQueue<TPriority, TElement> queue)
         {
-            FieldInfo nodesField = queue.GetType().GetField("_nodes", BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo nodesField = typeof(PriorityQueue<TPriority, TElement>).GetField("_nodes", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(nodesField);
             var nodes = ((TElement Element, TPriority Priority)[])nodesField.GetValue(queue);
             return nodes.Length;

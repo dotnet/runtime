@@ -32,6 +32,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93104")]
         public void RemoteIdentity_ThrowsOnUnauthenticated()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
@@ -65,6 +66,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93104")]
         public void Package_Unsupported()
         {
             NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "INVALID", Credential = s_testCredentialRight, TargetName = "HTTP/foo" };
@@ -92,6 +94,19 @@ namespace System.Net.Security.Tests
             NegotiateAuthenticationStatusCode statusCode;
             negotiateAuthentication.GetOutgoingBlob((byte[]?)null, out statusCode);
             Assert.Equal(NegotiateAuthenticationStatusCode.Unsupported, statusCode);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "The test is specific to GSSAPI / Managed implementations of NegotiateAuthentication")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93104")]
+        public void DefaultNetworkCredentials_NTLM_DoesNotThrow()
+        {
+            NegotiateAuthenticationClientOptions clientOptions = new NegotiateAuthenticationClientOptions { Package = "NTLM", Credential = CredentialCache.DefaultNetworkCredentials, TargetName = "HTTP/foo" };
+            // Assert.DoesNotThrow
+            NegotiateAuthentication negotiateAuthentication = new NegotiateAuthentication(clientOptions);
+            NegotiateAuthenticationStatusCode statusCode;
+            negotiateAuthentication.GetOutgoingBlob((byte[]?)null, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.UnknownCredentials, statusCode);
         }
 
         [Fact]

@@ -1212,27 +1212,6 @@ ves_array_calculate_index (MonoArray *ao, stackval *sp, gboolean safe)
 }
 
 static MonoException*
-ves_array_get (InterpFrame *frame, stackval *sp, stackval *retval, MonoMethodSignature *sig, gboolean safe)
-{
-	MonoObject *o = sp->data.o;
-	MonoArray *ao = (MonoArray *) o;
-	MonoClass *ac = o->vtable->klass;
-
-	g_assert (m_class_get_rank (ac) >= 1);
-
-	gint32 pos = ves_array_calculate_index (ao, sp + 1, safe);
-	if (pos == -1)
-		return mono_get_exception_index_out_of_range ();
-
-	gint32 esize = mono_array_element_size (ac);
-	gconstpointer ea = mono_array_addr_with_size_fast (ao, esize, pos);
-
-	MonoType *mt = sig->ret;
-	stackval_from_data (mt, retval, ea, FALSE);
-	return NULL;
-}
-
-static MonoException*
 ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArray *ao, gpointer *ret, stackval *sp, gboolean needs_typecheck)
 {
 	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
@@ -2728,21 +2707,8 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	interp_push_lmf (&ext, frame);
 
 	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
-#if JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL
-		/*
-		 * invoke jit_call_cb via a single indirect function call that dispatches to
-		 *  either a specialized JS implementation or a specialized WASM EH version
-		 * see jiterpreter-jit-call.ts and do-jit-call.wat
-		 * NOTE: the first argument must ALWAYS be jit_call_cb for the specialization.
-		 *  the actual implementation cannot verify this at runtime, so get it right
-		 * this is faster than mono_llvm_cpp_catch_exception by avoiding the use of
-		 *  emscripten invoke_vi to find and invoke jit_call_cb indirectly
-		 */
-		jiterpreter_do_jit_call (jit_call_cb, &cb_data, &thrown);
-#else
 		/* Catch the exception thrown by the native code using a try-catch */
 		mono_llvm_cpp_catch_exception (jit_call_cb, &cb_data, &thrown);
-#endif
 	} else {
 		jit_call_cb (&cb_data);
 	}
@@ -3459,6 +3425,11 @@ interp_free_method (MonoMethod *method)
 
 	jit_mm_lock (jit_mm);
 	imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
+
+#if HOST_BROWSER
+	mono_jiterp_free_method_data (method, imethod);
+#endif
+
 	mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
 	if (imethod && jit_mm->interp_method_pointer_hash) {
 		if (imethod->jit_entry)
@@ -4012,9 +3983,6 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALL_DELEGATE) {
-			// FIXME We don't need to encode the whole signature, just param_count
-			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
-			int param_count = csignature->param_count;
 			return_offset = ip [1];
 			call_args_offset = ip [2];
 			MonoDelegate *del = LOCAL_VAR (call_args_offset, MonoDelegate*);
@@ -4060,6 +4028,7 @@ main_loop:
 			}
 			cmethod = del_imethod;
 			if (!is_multicast) {
+				int param_count = ip [4];
 				if (cmethod->param_count == param_count + 1) {
 					// Target method is static but the delegate has a target object. We handle
 					// this separately from the case below, because, for these calls, the instance
@@ -4078,10 +4047,10 @@ main_loop:
 				} else {
 					// skip the delegate pointer for static calls
 					// FIXME we could avoid memmove
-					memmove (locals + call_args_offset, locals + call_args_offset + MINT_STACK_SLOT_SIZE, ip [3]);
+					memmove (locals + call_args_offset, locals + call_args_offset + ip [5], ip [3]);
 				}
 			}
-			ip += 5;
+			ip += 6;
 
 			InterpMethodCodeType code_type = cmethod->code_type;
 

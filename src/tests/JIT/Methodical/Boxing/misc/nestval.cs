@@ -50,7 +50,7 @@ namespace BoxTest_nestval_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             ArgInfo args = new ArgInfo();
             args.m_flag.val = true;
@@ -58,7 +58,6 @@ namespace BoxTest_nestval_cs
             new Test().Fibonacci(args);
             Console.WriteLine();
             Console.WriteLine("*** PASSED ***");
-            return 100;
         }
     }
 }

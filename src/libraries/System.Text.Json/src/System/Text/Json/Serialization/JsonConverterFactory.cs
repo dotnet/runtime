@@ -142,6 +142,7 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
+        /// <inheritdoc/>
         public sealed override Type? Type => null;
 
         internal sealed override void WriteAsPropertyNameCoreAsObject(

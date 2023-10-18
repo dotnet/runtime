@@ -45,9 +45,9 @@
   <!-- Use locally built runtime and ilcompiler packages -->
   <Target Name="UpdateRuntimePackVersion" Condition="'$(PublishAotUsingRuntimePack)' == 'true'" BeforeTargets="ProcessFrameworkReferences">
     <ItemGroup>
-      <KnownRuntimePack Condition="%(RuntimePackLabels) == 'NativeAOT'" LatestRuntimeFrameworkVersion="8.0.0-dev" />
+      <KnownRuntimePack Condition="%(RuntimePackLabels) == 'NativeAOT'" LatestRuntimeFrameworkVersion="$(MajorVersion).$(MinorVersion).0-dev" />
       <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler">
-        <ILCompilerPackVersion>8.0.0-dev</ILCompilerPackVersion>
+        <ILCompilerPackVersion>$(MajorVersion).$(MinorVersion).0-dev</ILCompilerPackVersion>
       </KnownILCompilerPack>
     </ItemGroup>
   </Target>

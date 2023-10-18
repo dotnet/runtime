@@ -152,7 +152,7 @@ namespace System.IO.Tests
             }
         }
 
-        [OuterLoop("Might allocate 1 TB file if there is enough space on the disk")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/92624", TestPlatforms.Windows)]
         // macOS fcntl doc does not mention ENOSPC error: https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fcntl.2.html
         // But depending on the OS version, it might actually return it.
         // Since we don't want to have unstable tests, it's better to not run it on macOS at all.
@@ -162,21 +162,23 @@ namespace System.IO.Tests
         [InlineData(FileMode.CreateNew)]
         public void WhenDiskIsFullTheErrorMessageContainsAllDetails(FileMode mode)
         {
-            const long tooMuch = 1024L * 1024L * 1024L * 1024L; // 1 TB
-
+            const long tooMuch = 1024L * 1024L * 1024L * 1024L * 1024L * 1024L; // 1 Exbibyte .. we are assuming this is not available
             string filePath = GetTestFilePath();
 
-            IOException ex = Assert.Throws<IOException>(() => CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, tooMuch));
-            Assert.Contains(filePath, ex.Message);
-            Assert.Contains(tooMuch.ToString(), ex.Message);
-
-            // ensure it was NOT created
-            bool exists = File.Exists(filePath);
-            if (exists)
+            try
             {
-                File.Delete(filePath);
+                // not using Assert.Throws because in the event of failure, we want to dispose, so the next test isn't affected
+                using FileStream fs = CreateFileStream(filePath, mode, FileAccess.Write, FileShare.None, bufferSize: 1, FileOptions.None, tooMuch);
+                Assert.Fail($"Expected to throw IOException, {fs.Length}");
             }
-            Assert.False(exists);
+            catch (IOException ex)
+            {
+                Assert.Contains(filePath, ex.Message);
+                Assert.Contains(tooMuch.ToString(), ex.Message);
+
+                // ensure it was NOT created
+                Assert.False(File.Exists(filePath));
+            }
         }
     }
 }

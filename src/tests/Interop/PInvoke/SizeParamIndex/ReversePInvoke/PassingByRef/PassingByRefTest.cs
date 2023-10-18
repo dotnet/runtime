@@ -207,7 +207,8 @@ public class ReversePInvoke_MashalArrayByRef_AsManagedTest
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try{
             RunTestByRef();

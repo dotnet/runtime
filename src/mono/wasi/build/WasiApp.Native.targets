@@ -214,7 +214,7 @@
       <!--<_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\*.%(JSFileType.Identity)"     Kind="%(JSFileType.Kind)" />-->
       <!--<_WasmExtraJSFile Include="$(_WasmRuntimePackSrcDir)\es6\*.%(JSFileType.Identity)" Kind="%(JSFileType.Kind)" />-->
 
-      <!--<_WasmNativeFileForLinking Include="@(NativeFileReference)" />-->
+      <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
 
       <!--<EmscriptenEnvVars Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe" Condition="'$(OS)' == 'Windows_NT'" />-->
       <!--<EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />-->

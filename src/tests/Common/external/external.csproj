@@ -13,7 +13,7 @@
     -->
     <OutputPath>$(TargetingPackPath)</OutputPath>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x86;win-x64</RuntimeIdentifiers>
     <CLRTestKind>SharedLibrary</CLRTestKind>
     <IsTestProject>false</IsTestProject>
     <GenerateDependencyFile>false</GenerateDependencyFile>
@@ -63,6 +63,7 @@
     <PackageToInclude Include="Microsoft.CodeAnalysis.VisualBasic"/>
     <PackageToInclude Include="CommandLineParser"/>
     <PackageToInclude Include="Microsoft.DotNet.XUnitExtensions" />
+    <PackageToInclude Include="Microsoft.DotNet.XUnitAssert" />
 
     <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" />
     <PackageReference Include="CommandLineParser" Version="2.1.1-beta" />
@@ -73,6 +74,7 @@
     <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner" Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.runner.utility" Version="$(XUnitVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" />
   </ItemGroup>
 
   <Target Name="AddXunitConsoleRunner" BeforeTargets="ResolveReferences">

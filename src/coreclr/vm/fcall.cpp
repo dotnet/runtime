@@ -41,6 +41,13 @@ NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, 
     _ASSERTE((reKind != kExecutionEngineException) ||
              !"Don't throw kExecutionEngineException from here. Go to EEPolicy directly, or throw something better.");
 
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        DispatchManagedException(reKind);
+    }
+#endif // FEATURE_EH_FUNCLETS
+
     if (resID == 0)
     {
         // If we have an string to add use NonLocalized otherwise just throw the exception.

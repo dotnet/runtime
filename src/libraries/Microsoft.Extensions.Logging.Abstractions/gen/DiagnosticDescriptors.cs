@@ -201,7 +201,7 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor LoggingUnsupportedLanguageVersion { get; } = new DiagnosticDescriptor(
+        public static DiagnosticDescriptor LoggingUnsupportedLanguageVersion { get; } = DiagnosticDescriptorHelper.Create(
             id: "SYSLIB1026",
             title: new LocalizableResourceString(nameof(SR.LoggingUnsupportedLanguageVersionTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.LoggingUnsupportedLanguageVersionMessageFormat), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),

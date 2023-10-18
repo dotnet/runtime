@@ -3,7 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
+import { Module, mono_assert, runtimeHelpers, linkerRunAOTCompilation } from "./globals";
 import { WasmOpcode, WasmSimdOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -95,6 +95,7 @@ export class WasmBuilder {
     argumentCount!: number;
     activeBlocks!: number;
     base!: MintOpcodePtr;
+    traceIndex!: number;
     frame: NativePointer = <any>0;
     traceBuf: Array<string> = [];
     branchTargets = new Set<MintOpcodePtr>();
@@ -111,6 +112,7 @@ export class WasmBuilder {
         this.stack = [new BlobBuilder()];
         this.clear(constantSlotCount);
         this.cfg = new Cfg(this);
+        this.defineType("__cpp_exception", { "ptr": WasmValtype.i32 }, WasmValtype.void, true);
     }
 
     clear(constantSlotCount: number) {
@@ -175,14 +177,31 @@ export class WasmBuilder {
             return current.getArrayView(false).slice(0, current.size);
     }
 
+    setImportFunction(name: string, value: Function) {
+        const imp = this.importedFunctions[name];
+        if (!imp)
+            throw new Error("No import named " + name);
+        imp.func = value;
+    }
+
+    getExceptionTag(): any {
+        const exceptionTag = (<any>Module)["asm"]["__cpp_exception"];
+        if (typeof (exceptionTag) !== "undefined")
+            mono_assert(exceptionTag instanceof (<any>WebAssembly).Tag, () => `expected __cpp_exception export from dotnet.wasm to be WebAssembly.Tag but was ${exceptionTag}`);
+        return exceptionTag;
+    }
+
     getWasmImports(): WebAssembly.Imports {
         const memory = (<any>Module).getMemory();
         mono_assert(memory instanceof WebAssembly.Memory, () => `expected heap import to be WebAssembly.Memory but was ${memory}`);
 
+        const exceptionTag = this.getExceptionTag();
         const result: any = {
             c: <any>this.getConstants(),
             m: { h: memory },
         };
+        if (exceptionTag)
+            result.x = { e: exceptionTag };
 
         const importsToEmit = this.getImportsToEmit();
 
@@ -462,10 +481,14 @@ export class WasmBuilder {
         if (includeFunctionTable !== false)
             throw new Error("function table imports are disabled");
 
+        const enableWasmEh = this.getExceptionTag() !== undefined;
+
         // Import section
         this.beginSection(2);
         this.appendULeb(
-            1 + importsToEmit.length + this.constantSlots.length +
+            1 + // memory
+            (enableWasmEh ? 1 : 0) + // c++ exception tag
+            importsToEmit.length + this.constantSlots.length +
             ((includeFunctionTable !== false) ? 1 : 0)
         );
 
@@ -487,6 +510,7 @@ export class WasmBuilder {
             this.appendU8(0x00); // constant
         }
 
+        // import the native heap
         this.appendName("m");
         this.appendName("h");
         if (MonoWasmThreads) {
@@ -502,6 +526,18 @@ export class WasmBuilder {
             this.appendU8(0x00);
             // Minimum size is in 64k pages, not bytes
             this.appendULeb(0x01);
+        }
+
+        if (enableWasmEh) {
+            // import the c++ exception tag
+            this.appendName("x");
+            this.appendName("e");
+            // tagtype
+            this.appendU8(0x04);
+            // attribute (exception)
+            this.appendU8(0x0);
+            // signature
+            this.appendULeb(this.getTypeIndex("__cpp_exception"));
         }
 
         if (includeFunctionTable !== false) {
@@ -554,6 +590,13 @@ export class WasmBuilder {
             func.index = this.importedFunctionCount++;
     }
 
+    getTypeIndex(name: string) {
+        const type = this.functionTypes[name];
+        if (!type)
+            throw new Error("No type named " + name);
+        return type[0];
+    }
+
     defineFunction(
         options: {
             type: string,
@@ -566,7 +609,7 @@ export class WasmBuilder {
             index: this.functions.length,
             name: options.name,
             typeName: options.type,
-            typeIndex: this.functionTypes[options.type][0],
+            typeIndex: this.getTypeIndex(options.type),
             export: options.export,
             locals: options.locals,
             generator,
@@ -1462,7 +1505,7 @@ export function append_safepoint(builder: WasmBuilder, ip: MintOpcodePtr) {
 export function append_bailout(builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
-        builder.i32_const(builder.base);
+        builder.i32_const(builder.traceIndex);
         builder.i32_const(reason);
         builder.callImport("bailout");
     }
@@ -1487,7 +1530,7 @@ export function append_exit(builder: WasmBuilder, ip: MintOpcodePtr, opcodeCount
 
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
-        builder.i32_const(builder.base);
+        builder.i32_const(builder.traceIndex);
         builder.i32_const(reason);
         builder.callImport("bailout");
     }
@@ -1946,8 +1989,18 @@ function jiterpreter_allocate_table(type: JiterpreterTable, base: number, size: 
     const wasmTable = getWasmFunctionTable();
     const firstIndex = base, lastIndex = firstIndex + size - 1;
     mono_assert(lastIndex < wasmTable.length, () => `Last index out of range: ${lastIndex} >= ${wasmTable.length}`);
-    for (let i = firstIndex; i <= lastIndex; i++)
-        wasmTable.set(i, fillValue);
+    // HACK: Always populate the first slot
+    wasmTable.set(firstIndex, fillValue);
+    // In threaded builds we need to populate all the reserved slots with safe placeholder functions
+    // This operation is expensive in v8, so avoid doing it in single-threaded builds (which SHOULD
+    //  be safe, since it was previously not necessary)
+    if (MonoWasmThreads) {
+        // HACK: If possible, we want to copy any backing state associated with the first placeholder item,
+        //  so that additional work doesn't have to be done by the runtime for the following table sets
+        const preparedValue = wasmTable.get(firstIndex);
+        for (let i = firstIndex + 1; i <= lastIndex; i++)
+            wasmTable.set(i, preparedValue);
+    }
     cwraps.mono_jiterp_initialize_table(type, firstIndex, lastIndex);
     return base + size;
 }
@@ -1966,18 +2019,23 @@ export function jiterpreter_allocate_tables(module: any) {
     // A partial solution would be to merge the tables based on argument count instead of exact type,
     //  then create special placeholder functions that examine the rmethod to determine which kind
     //  of method is being called.
-    const tableSize = options.tableSize, interpEntryTableSize = options.aotTableSize,
+    const traceTableSize = options.tableSize,
+        jitCallTableSize = linkerRunAOTCompilation ? options.tableSize : 1,
+        interpEntryTableSize = linkerRunAOTCompilation ? options.aotTableSize : 1,
         numInterpEntryTables = JiterpreterTable.LAST - JiterpreterTable.InterpEntryStatic0 + 1,
-        totalSize = (tableSize * 2) + (numInterpEntryTables * interpEntryTableSize) + 1,
+        totalSize = traceTableSize + jitCallTableSize + (numInterpEntryTables * interpEntryTableSize) + 1,
         wasmTable = getWasmFunctionTable(module);
     let base = wasmTable.length;
+    const beforeGrow = performance.now();
     wasmTable.grow(totalSize);
+    const afterGrow = performance.now();
     if (options.enableStats)
         mono_log_info(`Allocated ${totalSize} function table entries for jiterpreter, bringing total table size to ${wasmTable.length}`);
-    base = jiterpreter_allocate_table(JiterpreterTable.Trace, base, tableSize, getRawCwrap("mono_jiterp_placeholder_trace"));
-    // FIXME: Install mono_jiterp_do_jit_call_indirect somehow.
-    base = jiterpreter_allocate_table(JiterpreterTable.DoJitCall, base, 1, getRawCwrap("mono_llvm_cpp_catch_exception"));
-    base = jiterpreter_allocate_table(JiterpreterTable.JitCall, base, tableSize, getRawCwrap("mono_jiterp_placeholder_jit_call"));
+    base = jiterpreter_allocate_table(JiterpreterTable.Trace, base, traceTableSize, getRawCwrap("mono_jiterp_placeholder_trace"));
+    base = jiterpreter_allocate_table(JiterpreterTable.JitCall, base, jitCallTableSize, getRawCwrap("mono_jiterp_placeholder_jit_call"));
     for (let table = JiterpreterTable.InterpEntryStatic0; table <= JiterpreterTable.LAST; table++)
         base = jiterpreter_allocate_table(table, base, interpEntryTableSize, wasmTable.get(cwraps.mono_jiterp_get_interp_entry_func(table)));
+    const afterTables = performance.now();
+    if (options.enableStats)
+        mono_log_info(`Growing wasm function table took ${afterGrow - beforeGrow}. Filling table took ${afterTables - afterGrow}.`);
 }

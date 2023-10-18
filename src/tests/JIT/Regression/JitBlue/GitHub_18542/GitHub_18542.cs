@@ -98,7 +98,7 @@ public static class GitHub_18542
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         ViaClass();
         ViaStruct1();
@@ -106,6 +106,5 @@ public static class GitHub_18542
         ViaStruct3();
         ViaStruct4();
         ViaStruct5();
-        return 100;
     }
 }

@@ -137,7 +137,6 @@ set( JIT_SOURCES
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp
-  jittelemetry.cpp
   lclmorph.cpp
   lclvars.cpp
   likelyclass.cpp
@@ -152,6 +151,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
+  switchrecognition.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
@@ -335,7 +335,6 @@ set( JIT_HEADERS
   jithashtable.h
   jitpch.h
   jitstd.h
-  jittelemetry.h
   lir.h
   loopcloning.h
   loopcloningopts.h
@@ -509,7 +508,7 @@ else()
 
   if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
     # This is required to force using our own PAL, not one that we are loaded with.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+    add_link_options($<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>:LINKER:-Bsymbolic>)
   endif()
 
   set_exports_linker_option(${JIT_EXPORTS_FILE})

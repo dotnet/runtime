@@ -144,6 +144,33 @@ namespace System.Net.Security.Tests
                Assert.Equal(string.Empty, server.TargetHostName);
             }
         }
+
+        [Fact]
+        public void ClientOptions_ShallowCopy_OK()
+        {
+            using X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate();
+
+            // needs to non-default values so we can verify it was copied correctly.
+            var clientOptions = new SslClientAuthenticationOptions
+            {
+                AllowRenegotiation = false,
+                AllowTlsResume = false,
+                ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http11, SslApplicationProtocol.Http2 },
+                CertificateRevocationCheckMode = X509RevocationMode.Online,
+                ClientCertificates = new X509CertificateCollection() { clientCert },
+                EnabledSslProtocols = SslProtocols.Tls12,
+                EncryptionPolicy = EncryptionPolicy.RequireEncryption,
+                TargetHost = "foo",
+                CertificateChainPolicy = new X509ChainPolicy(),
+                RemoteCertificateValidationCallback = new RemoteCertificateValidationCallback(delegate { return true; }),
+                LocalCertificateSelectionCallback = new LocalCertificateSelectionCallback(delegate { return null; }),
+                ClientCertificateContext = SslStreamCertificateContext.Create(clientCert, null, false),
+            };
+
+            // There is consistency check inside of the ShallowClone
+            _ = clientOptions.ShallowClone();
+        }
+
     }
 
     public sealed class SslClientAuthenticationOptionsTestBase_Sync : SslClientAuthenticationOptionsTestBase

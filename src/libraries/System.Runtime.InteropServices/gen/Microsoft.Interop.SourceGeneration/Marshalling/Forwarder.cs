@@ -9,8 +9,6 @@ namespace Microsoft.Interop
 {
     public sealed class Forwarder : IMarshallingGenerator
     {
-        public bool IsSupported(TargetFramework target, Version version) => true;
-
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             return info.ManagedType;

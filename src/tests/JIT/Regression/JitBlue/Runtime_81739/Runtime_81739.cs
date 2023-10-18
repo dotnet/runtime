@@ -8,12 +8,11 @@ using Xunit;
 public class Runtime_81739
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Plane p;
         p.Normal = default;
         Consume(p.Normal);
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

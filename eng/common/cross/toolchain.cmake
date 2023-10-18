@@ -171,9 +171,8 @@ elseif(FREEBSD)
     set(CMAKE_CXX_COMPILER_TARGET ${triple})
     set(CMAKE_ASM_COMPILER_TARGET ${triple})
     set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+    add_link_options(-fuse-ld=lld)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=lld")
 elseif(ILLUMOS)
     set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
 
@@ -207,6 +206,7 @@ elseif(ILLUMOS)
     set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
 elseif(HAIKU)
     set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
+    set(CMAKE_PROGRAM_PATH "${CMAKE_PROGRAM_PATH};${CROSS_ROOTFS}/cross-tools-x86_64/bin")
 
     set(TOOLSET_PREFIX ${TOOLCHAIN}-)
     function(locate_toolchain_exec exec var)
@@ -217,7 +217,6 @@ elseif(HAIKU)
         endif()
 
         find_program(EXEC_LOCATION_${exec}
-            PATHS "${CROSS_ROOTFS}/cross-tools-x86_64/bin"
             NAMES
             "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
             "${TOOLSET_PREFIX}${exec}")

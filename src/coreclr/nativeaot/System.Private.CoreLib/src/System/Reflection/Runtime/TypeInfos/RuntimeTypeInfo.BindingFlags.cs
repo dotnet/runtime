@@ -33,13 +33,12 @@ namespace System.Reflection.Runtime.TypeInfos
             if (types.Length == 0 && candidates.Count == 1)
             {
                 ConstructorInfo firstCandidate = candidates[0];
-                ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
-                if (parameters.Length == 0)
+                if (firstCandidate.GetParametersAsSpan().Length == 0)
                     return firstCandidate;
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.AsSpan(), types);
 
             binder ??= DefaultBinder;
 

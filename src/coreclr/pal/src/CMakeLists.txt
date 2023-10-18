@@ -33,8 +33,6 @@ if(CORECLR_SET_RPATH)
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
 
-cmake_policy(SET CMP0042 NEW)
-
 # Include directories
 
 include_directories(include)
@@ -100,7 +98,7 @@ if(CLR_CMAKE_TARGET_LINUX_MUSL)
 endif(CLR_CMAKE_TARGET_LINUX_MUSL)
 
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
-set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
+add_link_options($<$<AND:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,$<CONFIG:DEBUG>>:LINKER:--no-gc-sections>)
 
 set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/context2.S
@@ -257,12 +255,7 @@ endif(NOT FEATURE_CROSSBITNESS)
 # > warning for library: libtracepointprovider.a the table of contents is empty (no object file members in the library define global symbols)
 #
 if(CLR_CMAKE_TARGET_LINUX)
-  add_library(tracepointprovider_obj
-    OBJECT
-    misc/tracepointprovider.cpp
-  )
-  add_library(tracepointprovider INTERFACE)
-  target_sources(tracepointprovider INTERFACE $<TARGET_OBJECTS:tracepointprovider_obj>)
+  add_library(tracepointprovider OBJECT misc/tracepointprovider.cpp)
 endif(CLR_CMAKE_TARGET_LINUX)
 
 if(CLR_CMAKE_TARGET_OSX)

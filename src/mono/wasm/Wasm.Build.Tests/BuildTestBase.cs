@@ -228,7 +228,17 @@ namespace Wasm.Build.Tests
                                 );
 
             TestUtils.AssertSubstring("AOT: image 'System.Private.CoreLib' found.", output, contains: buildArgs.AOT);
-            TestUtils.AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
+
+            if (s_isWindows && buildArgs.ProjectName.Contains(s_unicodeChar))
+            {
+                // unicode chars in output on Windows are decoded in unknown way, so finding utf8 string is more complicated
+                string projectNameCore = buildArgs.ProjectName.Trim(new char[] {s_unicodeChar});
+                TestUtils.AssertMatches(@$"AOT: image '{projectNameCore}\S+' found.", output, contains: buildArgs.AOT);
+            }
+            else
+            {
+                TestUtils.AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
+            }
 
             if (test != null)
                 test(output);
@@ -252,15 +262,9 @@ namespace Wasm.Build.Tests
             args.Append($" --expected-exit-code={expectedAppExitCode}");
             args.Append($" {extraXHarnessArgs ?? string.Empty}");
 
+            // `/.dockerenv` - is to check if this is running in a codespace
             if (File.Exists("/.dockerenv"))
                 args.Append(" --browser-arg=--no-sandbox");
-
-            if (!string.IsNullOrEmpty(EnvironmentVariables.BrowserPathForTests))
-            {
-                if (!File.Exists(EnvironmentVariables.BrowserPathForTests))
-                    throw new Exception($"Cannot find BROWSER_PATH_FOR_TESTS={EnvironmentVariables.BrowserPathForTests}");
-                args.Append($" --browser-path=\"{EnvironmentVariables.BrowserPathForTests}\"");
-            }
 
             args.Append(" -- ");
             if (extraXHarnessMonoArgs != null)
@@ -330,11 +334,13 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(_logPath);
         }
 
-        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = false, string targetFramework = DefaultTargetFramework)
+        protected void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = true, string targetFramework = DefaultTargetFramework)
         {
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
+            if (BuildEnvironment.UseWBTOverridePackTargets)
+                File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(dir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
 
             string targetNuGetConfigPath = Path.Combine(dir, "nuget.config");
             if (addNuGetSourceForLocalPackages)
@@ -588,8 +594,8 @@ namespace Wasm.Build.Tests
         }
 
         protected static string GetSkiaSharpReferenceItems()
-            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.4-preview.76"" />
-                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.4-preview.76"" />
+            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.6"" />
+                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.6"" />
                 <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.34\st\*.a"" />";
 
         protected static string s_mainReturns42 = @"

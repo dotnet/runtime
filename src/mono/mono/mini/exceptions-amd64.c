@@ -836,11 +836,13 @@ gpointer
 mono_arch_ip_from_context (void *sigctx)
 {
 #if defined(MONO_ARCH_USE_SIGACTION)
-	ucontext_t *ctx = (ucontext_t*)sigctx;
-
-	return (gpointer)UCONTEXT_REG_RIP (ctx);
+	return (gpointer)UCONTEXT_REG_RIP ((ucontext_t*)sigctx);
 #elif defined(HOST_WIN32)
+#if defined(MONO_CROSS_COMPILE)
+	return (gpointer)NULL;
+#else
 	return (gpointer)(((CONTEXT*)sigctx)->Rip);
+#endif
 #else
 	MonoContext *ctx = (MonoContext*)sigctx;
 	return (gpointer)ctx->gregs [AMD64_RIP];

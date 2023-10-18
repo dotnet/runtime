@@ -27,6 +27,7 @@ namespace System.CodeDom.Compiler
 
             _writer = writer;
             _tabString = tabString;
+            _tabsPending = true;
         }
 
         public override Encoding Encoding => _writer.Encoding;

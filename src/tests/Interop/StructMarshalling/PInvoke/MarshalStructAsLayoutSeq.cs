@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
+using Xunit;
 
 public class Managed
 {
@@ -55,7 +56,8 @@ public class Managed
     }
 
     [SecuritySafeCritical]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         RunMarshalSeqStructAsParamByVal();
         RunMarshalSeqStructAsParamByRef();

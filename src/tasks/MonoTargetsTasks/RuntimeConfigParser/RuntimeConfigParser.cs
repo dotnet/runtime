@@ -30,6 +30,16 @@ public class RuntimeConfigParserTask : Task
     /// </summary>
     public ITaskItem[] RuntimeConfigReservedProperties { get; set; } = Array.Empty<ITaskItem>();
 
+    private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
+    {
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        Converters =
+        {
+            new StringConverter()
+        }
+    };
+
     public override bool Execute()
     {
         if (string.IsNullOrEmpty(RuntimeConfigFile))
@@ -72,17 +82,8 @@ public class RuntimeConfigParserTask : Task
     {
         result = null;
 
-        var options = new JsonSerializerOptions {
-            AllowTrailingCommas = true,
-            ReadCommentHandling = JsonCommentHandling.Skip,
-            Converters =
-            {
-                new StringConverter()
-            }
-        };
-
         var jsonString = File.ReadAllText(inputFilePath);
-        var parsedJson = JsonSerializer.Deserialize<Root>(jsonString, options);
+        var parsedJson = JsonSerializer.Deserialize<Root>(jsonString, s_jsonOptions);
 
         if (parsedJson == null)
         {

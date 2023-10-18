@@ -138,7 +138,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class OnEventMethod
 		{
 			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--", ProducedBy = Tool.Trimmer)]
 			static event EventHandler EventToTestRemove {
 				add { }
 				[RequiresUnreferencedCode ("Message for --EventToTestRemove.remove--")]
@@ -148,7 +147,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", ProducedBy = Tool.Trimmer)]
 			static event EventHandler EventToTestAdd {
 				[RequiresUnreferencedCode ("Message for --EventToTestAdd.add--")]
 				[RequiresAssemblyFiles ("Message for --EventToTestAdd.add--")]
@@ -156,6 +154,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				add { }
 				remove { }
 			}
+
+			[RequiresAssemblyFiles ("Message for --AnnotatedEvent--")]
+			static event EventHandler AnnotatedEvent;
 
 			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--")]
 			[ExpectedWarning ("IL3002", "--EventToTestRemove.remove--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
@@ -167,6 +168,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				EventToTestRemove -= (sender, e) => { };
 				EventToTestAdd += (sender, e) => { };
+				var evt = AnnotatedEvent;
 			}
 		}
 

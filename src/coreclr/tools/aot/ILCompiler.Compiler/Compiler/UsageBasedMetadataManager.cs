@@ -351,7 +351,7 @@ namespace ILCompiler
                     var rootProvider = new RootingServiceProvider(factory, dependencies.Add);
                     foreach (TypeDesc t in mdType.Module.GetAllTypes())
                     {
-                        RootingHelpers.TryRootType(rootProvider, t, reason);
+                        RootingHelpers.TryRootType(rootProvider, t, rootBaseTypes: false, reason);
                     }
                 }
             }
@@ -1093,7 +1093,7 @@ namespace ILCompiler
                 string internalValue = GetAttribute(nav, "internal");
                 if (!string.IsNullOrEmpty(internalValue))
                 {
-                    if (!IsRemoveAttributeInstances(internalValue) || !nav.IsEmptyElement)
+                    if (!IsRemoveAttributeInstances(internalValue))
                     {
                         LogWarning(nav, DiagnosticId.UnrecognizedInternalAttribute, internalValue);
                     }
