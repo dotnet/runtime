@@ -237,6 +237,9 @@ HRESULT EEConfig::Init()
     bDiagnosticSuspend = false;
 #endif
 
+    threadPoolThreadTimeoutMs = -2; // not configured
+    threadPoolThreadsToKeepAlive = 0;
+
     fDisableDefaultCodeVersioning = false;
 
 #if defined(FEATURE_TIERED_COMPILATION)
@@ -737,6 +740,19 @@ HRESULT EEConfig::sync()
     testThreadAbort = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HostTestThreadAbort);
 
 #endif //_DEBUG
+
+    threadPoolThreadTimeoutMs =
+        (int)Configuration::GetKnobDWORDValue(
+            W("System.Threading.ThreadPool.ThreadTimeoutMs"),
+            CLRConfig::EXTERNAL_ThreadPool_ThreadTimeoutMs);
+    threadPoolThreadsToKeepAlive =
+        (int)Configuration::GetKnobDWORDValue(
+            W("System.Threading.ThreadPool.ThreadsToKeepAlive"),
+            CLRConfig::EXTERNAL_ThreadPool_ThreadsToKeepAlive);
+    if (threadPoolThreadsToKeepAlive < -1)
+    {
+        threadPoolThreadsToKeepAlive = 0;
+    }
 
     m_fInteropValidatePinnedObjects = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_InteropValidatePinnedObjects) != 0);
     m_fInteropLogArguments = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InteropLogArguments) != 0);

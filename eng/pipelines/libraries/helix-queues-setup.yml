@@ -57,7 +57,7 @@ jobs:
           - RedHat.7.Amd64.Open
           - SLES.15.Amd64.Open
           - (Fedora.34.Amd64.Open)ubuntu.2204.amd64.open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix
-          - (Ubuntu.1910.Amd64.Open)ubuntu.2204.amd64.open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.10-helix-amd64
+          - ubuntu.2204.amd64.open.svc
           - (Debian.10.Amd64.Open)ubuntu.2204.amd64.open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
@@ -67,7 +67,7 @@ jobs:
             - SLES.12.Amd64.Open
             - SLES.15.Amd64.Open
             - (Fedora.34.Amd64.Open)ubuntu.2204.amd64.open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix
-            - (Ubuntu.1910.Amd64.Open)ubuntu.2204.amd64.open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.10-helix-amd64
+            - ubuntu.2204.amd64.open.svc
             - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64
             - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
             - (Mariner.1.0.Amd64.Open)ubuntu.2204.amd64.open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-1.0-helix
