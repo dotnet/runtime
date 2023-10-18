@@ -206,6 +206,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Advapi32\Interop.LsaOpenPolicy.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaQueryInformationPolicy.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.LsaQueryInformationPolicy.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaQueryForestTrustInformation.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.LsaQueryForestTrustInformation.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LsaSetForestTrustInformation.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.LsaSetForestTrustInformation.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenThreadToken_SafeTokenHandle.cs"

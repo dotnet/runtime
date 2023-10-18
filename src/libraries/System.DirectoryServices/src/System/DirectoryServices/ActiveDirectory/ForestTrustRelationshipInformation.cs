@@ -350,7 +350,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the policy handle
                     handle = Utils.GetPolicyHandle(serverName);
 
-                    uint result = UnsafeNativeMethods.LsaQueryForestTrustInformation(handle, tmpName, ref forestTrustInfo);
+                    uint result = Interop.Advapi32.LsaQueryForestTrustInformation(handle, tmpName, ref forestTrustInfo);
                     // check the result
                     if (result != 0)
                     {
