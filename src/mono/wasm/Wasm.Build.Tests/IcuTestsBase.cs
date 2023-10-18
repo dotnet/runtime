@@ -108,9 +108,9 @@ public abstract class IcuTestsBase : TestMainJsTestBase
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName };
-        string extraProperties = onlyPredefinedCultures ?
-            $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName><PredefinedCulturesOnly>true</PredefinedCulturesOnly>" :
-            $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName>";
+        string extraProperties = $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName><UseSystemResourceKeys>false</UseSystemResourceKeys>";
+        if (onlyPredefinedCultures)
+            extraProperties = $"{extraProperties}<PredefinedCulturesOnly>true</PredefinedCulturesOnly>";
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: extraProperties);
 
         string programText = GetProgramText(testedLocales, onlyPredefinedCultures);
