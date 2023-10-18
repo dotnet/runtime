@@ -12,7 +12,15 @@ namespace System.Security.Cryptography.X509Certificates
     {
         internal ApplePkcs12Reader(ReadOnlySpan<byte> data)
         {
-            ParsePkcs12(data);
+            try
+            { 
+                ParsePkcs12(data);
+            }
+            catch (Exception)
+            {
+                Dispose();
+                throw;
+            }
         }
 
         protected override ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data)

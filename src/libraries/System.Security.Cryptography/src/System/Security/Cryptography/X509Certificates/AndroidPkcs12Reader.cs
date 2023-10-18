@@ -13,7 +13,15 @@ namespace System.Security.Cryptography.X509Certificates
     {
         internal AndroidPkcs12Reader(ReadOnlySpan<byte> data)
         {
-            ParsePkcs12(data);
+            try
+            { 
+                ParsePkcs12(data);
+            }
+            catch (Exception)
+            {
+                Dispose();
+                throw;
+            }
         }
 
         public static bool IsPkcs12(ReadOnlySpan<byte> data)
