@@ -42,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 siteName = null;
             }
 
-            result = NativeMethods.DsGetDcName(computerName, domainName, IntPtr.Zero, siteName, (int)(flags | (long)PrivateLocatorFlags.ReturnDNSName), out pDomainControllerInfo);
+            result = Interop.Netapi32.DsGetDcName(computerName, domainName, IntPtr.Zero, siteName, (int)(flags | (long)PrivateLocatorFlags.ReturnDNSName), out pDomainControllerInfo);
             if (result == 0)
             {
                 try
