@@ -367,7 +367,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// LValueFlowCaptureProvider doesn't take into account IsInitialization = true,
 				// so it doesn't properly detect this as an l-value capture.
 				// Context: https://github.com/dotnet/roslyn/issues/60757
-				Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write));
+				// Debug.Assert (IsLValueFlowCapture (operation.Id));
+				Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write),
+					$"{operation.Syntax.GetLocation ().GetLineSpan ()}");
 				return TopValue;
 			}
 			return GetFlowCaptureValue (operation, state);

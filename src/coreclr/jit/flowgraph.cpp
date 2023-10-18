@@ -1617,7 +1617,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         // EH regions in fgFindBasicBlocks(). Note that the try has no enclosing
         // handler, and the fault has no enclosing try.
 
-        tryBegBB->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_IMPORTED;
+        tryBegBB->bbFlags |= BBF_DONT_REMOVE | BBF_IMPORTED;
 
         faultBB->bbFlags |= BBF_DONT_REMOVE | BBF_IMPORTED;
         faultBB->bbCatchTyp = BBCT_FAULT;
@@ -2789,7 +2789,7 @@ PhaseStatus Compiler::fgFindOperOrder()
 //    Suitable phase status
 //
 // Notes:
-//    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND, GT_BOUNDS_CHECK.
+//    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND
 //
 PhaseStatus Compiler::fgSimpleLowering()
 {
@@ -2870,14 +2870,6 @@ PhaseStatus Compiler::fgSimpleLowering()
 
                     JITDUMP("After Lower %s:\n", GenTree::OpName(tree->OperGet()));
                     DISPRANGE(LIR::ReadOnlyRange(arr, tree));
-                    madeChanges = true;
-                    break;
-                }
-
-                case GT_BOUNDS_CHECK:
-                {
-                    // Add in a call to an error routine.
-                    fgSetRngChkTarget(tree, false);
                     madeChanges = true;
                     break;
                 }
@@ -2988,29 +2980,6 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
     return false;
 }
 
-/*****************************************************************************************************
- *
- *  Function to return the last basic block in the main part of the function. With funclets, it is
- *  the block immediately before the first funclet.
- *  An inclusive end of the main method.
- */
-
-BasicBlock* Compiler::fgLastBBInMainFunction()
-{
-#if defined(FEATURE_EH_FUNCLETS)
-
-    if (fgFirstFuncletBB != nullptr)
-    {
-        return fgFirstFuncletBB->Prev();
-    }
-
-#endif // FEATURE_EH_FUNCLETS
-
-    assert(fgLastBB->IsLast());
-
-    return fgLastBB;
-}
-
 //------------------------------------------------------------------------------
 // fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
 //
@@ -3056,14 +3025,30 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
     return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
 }
 
-/*****************************************************************************************************
- *
- *  Function to return the first basic block after the main part of the function. With funclets, it is
- *  the block of the first funclet.  Otherwise it is NULL if there are no funclets (fgLastBB->Next()).
- *  This is equivalent to fgLastBBInMainFunction()->bbNext
- *  An exclusive end of the main method.
- */
+//------------------------------------------------------------------------------
+// fgLastBBInMainFunction: Return the last basic block in the main part of the function.
+// With funclets, it is the block immediately before the first funclet.
+//
+BasicBlock* Compiler::fgLastBBInMainFunction()
+{
+#if defined(FEATURE_EH_FUNCLETS)
 
+    if (fgFirstFuncletBB != nullptr)
+    {
+        return fgFirstFuncletBB->Prev();
+    }
+
+#endif // FEATURE_EH_FUNCLETS
+
+    assert(fgLastBB->IsLast());
+    return fgLastBB;
+}
+
+//------------------------------------------------------------------------------
+// fgEndBBAfterMainFunction: Return the first basic block after the main part of the function.
+// With funclets, it is the block of the first funclet. Otherwise it is nullptr if there are no
+// funclets. This is equivalent to fgLastBBInMainFunction()->Next().
+//
 BasicBlock* Compiler::fgEndBBAfterMainFunction()
 {
 #if defined(FEATURE_EH_FUNCLETS)
@@ -3076,7 +3061,6 @@ BasicBlock* Compiler::fgEndBBAfterMainFunction()
 #endif // FEATURE_EH_FUNCLETS
 
     assert(fgLastBB->IsLast());
-
     return nullptr;
 }
 
@@ -3577,7 +3561,15 @@ EXIT:;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-/* static */
+//------------------------------------------------------------------------
+// acdHelper: map from special code kind to runtime helper
+//
+// Arguments:
+//   codeKind - kind of special code desired
+//
+// Returns:
+//   Helper to throw the correct exception
+//
 unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
 {
     switch (codeKind)
@@ -3592,57 +3584,89 @@ unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
             return CORINFO_HELP_THROWDIVZERO;
         case SCK_ARITH_EXCPN:
             return CORINFO_HELP_OVERFLOW;
+        case SCK_FAIL_FAST:
+            return CORINFO_HELP_FAIL_FAST;
         default:
             assert(!"Bad codeKind");
             return 0;
     }
 }
 
+#ifdef DEBUG
 //------------------------------------------------------------------------
-// fgAddCodeRef: Find/create an added code entry associated with the given block and with the given kind.
+// acdHelper: map from special code kind to descriptive name
+//
+// Arguments:
+//   codeKind - kind of special code
+//
+// Returns:
+//   String describing the special code kind
+//
+const char* sckName(SpecialCodeKind codeKind)
+{
+    switch (codeKind)
+    {
+        case SCK_RNGCHK_FAIL:
+            return "SCK_RNGCHK_FAIL";
+        case SCK_ARG_EXCPN:
+            return "SCK_ARG_EXCPN";
+        case SCK_ARG_RNG_EXCPN:
+            return "SCK_ARG_RNG_EXCPN";
+        case SCK_DIV_BY_ZERO:
+            return "SCK_DIV_BY_ZERO";
+        case SCK_ARITH_EXCPN:
+            return "SCK_ARITH_EXCPN";
+        case SCK_FAIL_FAST:
+            return "SCK_FAIL_FAST";
+        default:
+            return "SCK_UNKNOWN";
+    }
+}
+#endif
+
+//------------------------------------------------------------------------
+// fgAddCodeRef: Indicate that a particular throw helper block will
+//   be needed by the method.
 //
 // Arguments:
 //   srcBlk  - the block that needs an entry;
-//   refData - the index to use as the cache key for sharing throw blocks;
 //   kind    - the kind of exception;
 //
-// Return Value:
-//   The target throw helper block or nullptr if throw helper blocks are disabled.
+// Notes:
+//   You can call this method after throw helpers have been created,
+//   but it will assert if this entails creation of a new helper.
 //
-BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, SpecialCodeKind kind)
+void Compiler::fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind)
 {
+    if (!fgUseThrowHelperBlocks() && (kind != SCK_FAIL_FAST))
+    {
+        // FailFast will still use a thrwo helper, even in debuggable modes.
+        //
+        return;
+    }
+
+    JITDUMP(FMT_BB " requires throw helper block for %s\n", srcBlk->bbNum, sckName(kind));
+
+    unsigned const refData = (kind == SCK_FAIL_FAST) ? 0 : bbThrowIndex(srcBlk);
+
     // Record that the code will call a THROW_HELPER
     // so on Windows Amd64 we can allocate the 4 outgoing
     // arg slots on the stack frame if there are no other calls.
     compUsesThrowHelper = true;
 
-    if (!fgUseThrowHelperBlocks())
-    {
-        return nullptr;
-    }
-
-    const static BBjumpKinds jumpKinds[] = {
-        BBJ_NONE,  // SCK_NONE
-        BBJ_THROW, // SCK_RNGCHK_FAIL
-        BBJ_THROW, // SCK_DIV_BY_ZERO
-        BBJ_THROW, // SCK_ARITH_EXCP, SCK_OVERFLOW
-        BBJ_THROW, // SCK_ARG_EXCPN
-        BBJ_THROW, // SCK_ARG_RNG_EXCPN
-    };
-
-    noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
-
-    /* First look for an existing entry that matches what we're looking for */
-
+    // Look for an existing entry that matches what we're looking for
+    //
     AddCodeDsc* add = fgFindExcptnTarget(kind, refData);
 
-    if (add) // found it
+    if (add != nullptr)
     {
-        return add->acdDstBlk;
+        return;
     }
 
-    /* We have to allocate a new entry and prepend it to the list */
+    assert(!fgRngChkThrowAdded);
 
+    // Allocate a new entry and prepend it to the list
+    //
     add          = new (this, CMK_Unknown) AddCodeDsc;
     add->acdData = refData;
     add->acdKind = kind;
@@ -3654,142 +3678,205 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
 
     fgAddCodeList = add;
 
-    /* Create the target basic block */
+    // Defer creating of the blocks until later.
+    //
+    add->acdDstBlk = srcBlk;
+}
 
-    BasicBlock* newBlk;
+//------------------------------------------------------------------------
+// fgCreateThrowHelperBlocks: create the needed throw helpers
+//
+// Returns:
+//   Suitable phase status
+//
+PhaseStatus Compiler::fgCreateThrowHelperBlocks()
+{
+    if (fgAddCodeList == nullptr)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
-    newBlk = add->acdDstBlk = fgNewBBinRegion(jumpKinds[kind], srcBlk, /* runRarely */ true, /* insertAtEnd */ true);
+    // We should not have added throw helper blocks yet.
+    //
+    assert(!fgRngChkThrowAdded);
+
+    const static BBjumpKinds jumpKinds[] = {
+        BBJ_NONE,  // SCK_NONE
+        BBJ_THROW, // SCK_RNGCHK_FAIL
+        BBJ_THROW, // SCK_DIV_BY_ZERO
+        BBJ_THROW, // SCK_ARITH_EXCP, SCK_OVERFLOW
+        BBJ_THROW, // SCK_ARG_EXCPN
+        BBJ_THROW, // SCK_ARG_RNG_EXCPN
+        BBJ_THROW, // SCK_FAIL_FAST
+    };
+
+    noway_assert(sizeof(jumpKinds) == SCK_COUNT); // sanity check
+
+    for (AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    {
+        // Create the target basic block in the region indicated by srcBlk.
+        //
+        BasicBlock* const srcBlk = add->acdDstBlk;
+
+        // Double-check that this is a fail fast, or that srcBlk hasn't changed EH
+        // regions since the time the descriptor was created.
+        //
+        assert((add->acdKind == SCK_FAIL_FAST) || (bbThrowIndex(srcBlk) == add->acdData));
+
+        BasicBlock* const newBlk =
+            fgNewBBinRegion(jumpKinds[add->acdKind], srcBlk, /* runRarely */ true, /* insertAtEnd */ true);
+
+        // Update the descriptor
+        //
+        add->acdDstBlk = newBlk;
 
 #ifdef DEBUG
-    if (verbose)
-    {
-        const char* msgWhere = "";
-        if (!srcBlk->hasTryIndex() && !srcBlk->hasHndIndex())
+        if (verbose)
         {
-            msgWhere = "non-EH region";
+            const char* msgWhere = "";
+            if (!srcBlk->hasTryIndex() && !srcBlk->hasHndIndex())
+            {
+                msgWhere = "non-EH region";
+            }
+            else if (!srcBlk->hasTryIndex())
+            {
+                msgWhere = "handler";
+            }
+            else if (!srcBlk->hasHndIndex())
+            {
+                msgWhere = "try";
+            }
+            else if (srcBlk->getTryIndex() < srcBlk->getHndIndex())
+            {
+                msgWhere = "try";
+            }
+            else
+            {
+                msgWhere = "handler";
+            }
+
+            const char* msg;
+            switch (add->acdKind)
+            {
+                case SCK_RNGCHK_FAIL:
+                    msg = " for RNGCHK_FAIL";
+                    break;
+                case SCK_DIV_BY_ZERO:
+                    msg = " for DIV_BY_ZERO";
+                    break;
+                case SCK_OVERFLOW:
+                    msg = " for OVERFLOW";
+                    break;
+                case SCK_ARG_EXCPN:
+                    msg = " for ARG_EXCPN";
+                    break;
+                case SCK_ARG_RNG_EXCPN:
+                    msg = " for ARG_RNG_EXCPN";
+                    break;
+                case SCK_FAIL_FAST:
+                    msg = " for FAIL_FAST";
+                    break;
+                default:
+                    msg = " for ??";
+                    break;
+            }
+
+            printf("\nAdding throw helper " FMT_BB " for %s in %s%s (inspired by " FMT_BB ")\n", newBlk->bbNum,
+                   sckName(add->acdKind), msgWhere, msg, srcBlk->bbNum);
         }
-        else if (!srcBlk->hasTryIndex())
+#endif // DEBUG
+
+        //  Mark the block as added by the compiler and not removable by future flow
+        // graph optimizations. Note that no bbJumpDest points to these blocks.
+        //
+        newBlk->bbFlags |= BBF_IMPORTED;
+        newBlk->bbFlags |= BBF_DONT_REMOVE;
+
+        // Figure out what code to insert
+        //
+        int helper = CORINFO_HELP_UNDEF;
+
+        switch (add->acdKind)
         {
-            msgWhere = "handler";
+            case SCK_RNGCHK_FAIL:
+                helper = CORINFO_HELP_RNGCHKFAIL;
+                break;
+
+            case SCK_DIV_BY_ZERO:
+                helper = CORINFO_HELP_THROWDIVZERO;
+                break;
+
+            case SCK_ARITH_EXCPN:
+                helper = CORINFO_HELP_OVERFLOW;
+                noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
+                break;
+
+            case SCK_ARG_EXCPN:
+                helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
+                break;
+
+            case SCK_ARG_RNG_EXCPN:
+                helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
+                break;
+
+            case SCK_FAIL_FAST:
+                helper = CORINFO_HELP_FAIL_FAST;
+                break;
+
+            default:
+                noway_assert(!"unexpected code addition kind");
         }
-        else if (!srcBlk->hasHndIndex())
+
+        noway_assert(helper != CORINFO_HELP_UNDEF);
+
+        // Add the appropriate helper call.
+        //
+        GenTreeCall* tree = gtNewHelperCallNode(helper, TYP_VOID);
+
+        // There are no args here but fgMorphArgs has side effects
+        // such as setting the outgoing arg area (which is necessary
+        // on AMD if there are any calls).
+        //
+        tree = fgMorphArgs(tree);
+
+        // Store the tree in the new basic block.
+        //
+        if (fgNodeThreading != NodeThreading::LIR)
         {
-            msgWhere = "try";
-        }
-        else if (srcBlk->getTryIndex() < srcBlk->getHndIndex())
-        {
-            msgWhere = "try";
+            fgInsertStmtAtEnd(newBlk, fgNewStmtFromTree(tree));
         }
         else
         {
-            msgWhere = "handler";
+            LIR::AsRange(newBlk).InsertAtEnd(LIR::SeqTree(this, tree));
         }
-
-        const char* msg;
-        switch (kind)
-        {
-            case SCK_RNGCHK_FAIL:
-                msg = " for RNGCHK_FAIL";
-                break;
-            case SCK_DIV_BY_ZERO:
-                msg = " for DIV_BY_ZERO";
-                break;
-            case SCK_OVERFLOW:
-                msg = " for OVERFLOW";
-                break;
-            case SCK_ARG_EXCPN:
-                msg = " for ARG_EXCPN";
-                break;
-            case SCK_ARG_RNG_EXCPN:
-                msg = " for ARG_RNG_EXCPN";
-                break;
-            default:
-                msg = " for ??";
-                break;
-        }
-
-        printf("\nfgAddCodeRef - Add BB in %s%s, new block %s\n", msgWhere, msg, add->acdDstBlk->dspToString());
     }
-#endif // DEBUG
 
-    /* Mark the block as added by the compiler and not removable by future flow
-       graph optimizations. Note that no bbJumpDest points to these blocks. */
-
-    newBlk->bbFlags |= BBF_IMPORTED;
-    newBlk->bbFlags |= BBF_DONT_REMOVE;
-
-    /* Remember that we're adding a new basic block */
-
-    fgAddCodeModf      = true;
     fgRngChkThrowAdded = true;
 
-    /* Now figure out what code to insert */
-
-    GenTreeCall* tree;
-    int          helper = CORINFO_HELP_UNDEF;
-
-    switch (kind)
-    {
-        case SCK_RNGCHK_FAIL:
-            helper = CORINFO_HELP_RNGCHKFAIL;
-            break;
-
-        case SCK_DIV_BY_ZERO:
-            helper = CORINFO_HELP_THROWDIVZERO;
-            break;
-
-        case SCK_ARITH_EXCPN:
-            helper = CORINFO_HELP_OVERFLOW;
-            noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
-            break;
-
-        case SCK_ARG_EXCPN:
-            helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
-            break;
-
-        case SCK_ARG_RNG_EXCPN:
-            helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
-            break;
-
-        default:
-            noway_assert(!"unexpected code addition kind");
-            return nullptr;
-    }
-
-    noway_assert(helper != CORINFO_HELP_UNDEF);
-
-    // Add the appropriate helper call.
-    tree = gtNewHelperCallNode(helper, TYP_VOID);
-
-    // There are no args here but fgMorphArgs has side effects
-    // such as setting the outgoing arg area (which is necessary
-    // on AMD if there are any calls).
-    tree = fgMorphArgs(tree);
-
-    // Store the tree in the new basic block.
-    assert(!srcBlk->isEmpty());
-    if (!srcBlk->IsLIR())
-    {
-        fgInsertStmtAtEnd(newBlk, fgNewStmtFromTree(tree));
-    }
-    else
-    {
-        LIR::AsRange(newBlk).InsertAtEnd(LIR::SeqTree(this, tree));
-    }
-
-    return add->acdDstBlk;
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-/*****************************************************************************
- * Finds the block to jump to, to throw a given kind of exception
- * We maintain a cache of one AddCodeDsc for each kind, to make searching fast.
- * Note : Each block uses the same (maybe shared) block as the jump target for
- * a given type of exception
- */
-
+//------------------------------------------------------------------------
+// fgFindExcptnTarget: finds the block to jump that will throw a given kind of exception
+//
+// Arguments:
+//    kind - kind of exception to throw
+//    block - block where we need to throw an exception
+//
+// Return Value:
+//    Code descriptor for the appropriate throw helper block, or nullptr if no such
+//    descriptor exists
+//
+// Notes:
+//   We maintain a cache of one AddCodeDsc for each kind, to make searching fast.
+//
+//   Each block in an EH region uses the same (maybe shared) block as the jump target for
+//   this exception kind.
+//
 Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData)
 {
-    assert(fgUseThrowHelperBlocks());
+    assert(fgUseThrowHelperBlocks() || (kind == SCK_FAIL_FAST));
+
     if (!(fgExcptnTargetCache[kind] && // Try the cached value first
           fgExcptnTargetCache[kind]->acdData == refData))
     {
@@ -3805,44 +3892,10 @@ Compiler::AddCodeDsc* Compiler::fgFindExcptnTarget(SpecialCodeKind kind, unsigne
             }
         }
 
-        fgExcptnTargetCache[kind] = add; // Cache it
+        fgExcptnTargetCache[kind] = add;
     }
 
     return fgExcptnTargetCache[kind];
-}
-
-/*****************************************************************************
- *
- *  The given basic block contains an array range check; return the label this
- *  range check is to jump to upon failure.
- */
-
-//------------------------------------------------------------------------
-// fgRngChkTarget: Create/find the appropriate "range-fail" label for the block.
-//
-// Arguments:
-//   srcBlk  - the block that needs an entry;
-//   kind    - the kind of exception;
-//
-// Return Value:
-//   The target throw helper block this check jumps to upon failure.
-//
-BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind)
-{
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*** Computing fgRngChkTarget for block " FMT_BB "\n", block->bbNum);
-        if (!block->IsLIR())
-        {
-            gtDispStmt(compCurStmt);
-        }
-    }
-#endif // DEBUG
-
-    /* We attach the target label to the containing try block (if any) */
-    noway_assert(!compIsForInlining());
-    return fgAddCodeRef(block, bbThrowIndex(block), kind);
 }
 
 //------------------------------------------------------------------------
