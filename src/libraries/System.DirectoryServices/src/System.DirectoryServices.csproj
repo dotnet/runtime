@@ -226,6 +226,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Advapi32\Interop.RevertToSelf.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.TOKEN_INFORMATION_CLASS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TRUSTED_DOMAIN_FULL_INFORMATION.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.TRUSTED_DOMAIN_FULL_INFORMATION.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TRUSTED_INFORMATION_CLASS.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.TRUSTED_INFORMATION_CLASS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.TRUSTED_POSIX_OFFSET_INFO.cs"
