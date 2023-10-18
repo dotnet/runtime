@@ -9,22 +9,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    internal enum TRUSTED_INFORMATION_CLASS
-    {
-        TrustedDomainNameInformation = 1,
-        TrustedControllersInformation,
-        TrustedPosixOffsetInformation,
-        TrustedPasswordInformation,
-        TrustedDomainInformationBasic,
-        TrustedDomainInformationEx,
-        TrustedDomainAuthInformation,
-        TrustedDomainFullInformation,
-        TrustedDomainAuthInformationInternal,
-        TrustedDomainFullInformationInternal,
-        TrustedDomainInformationEx2Internal,
-        TrustedDomainFullInformation2Internal
-    }
-
     [Flags]
     internal enum TRUST_ATTRIBUTE
     {
@@ -82,7 +66,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     target = Marshal.StringToHGlobalUni(targetName);
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
-                    uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
+                    uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
                     if (result != 0)
                     {
                         uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
@@ -179,7 +163,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get the trusted domain information
-                    uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
+                    uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
                     if (result != 0)
                     {
                         uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
@@ -256,7 +240,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     newInfo = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_INFORMATION_EX)));
                     Marshal.StructureToPtr(domainInfo, newInfo, false);
 
-                    result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, newInfo);
+                    result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, newInfo);
                     if (result != 0)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(result), serverName);
@@ -307,7 +291,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get trust information
-                    uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(policyHandle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
+                    uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(policyHandle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
                     if (result != 0)
                     {
                         uint  win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
@@ -623,7 +607,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get the trusted domain information
-                    uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
+                    uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
                     if (result != 0)
                     {
                         uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
@@ -689,7 +673,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     newBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_FULL_INFORMATION)));
                     Marshal.StructureToPtr(domainInfo, newBuffer, false);
 
-                    result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, newBuffer);
+                    result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, newBuffer);
                     if (result != 0)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(result), serverName);
@@ -754,7 +738,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get the trusted domain information
-                    uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
+                    uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
                     if (result != 0)
                     {
                         uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
@@ -832,7 +816,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     newBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_FULL_INFORMATION)));
                     Marshal.StructureToPtr(domainInfo, newBuffer, false);
 
-                    result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, newBuffer);
+                    result = UnsafeNativeMethods.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, newBuffer);
                     if (result != 0)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode((int)global::Interop.Advapi32.LsaNtStatusToWinError(result), serverName);
@@ -872,7 +856,7 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr buffer = (IntPtr)0;
 
             // get trust information
-            uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
+            uint result = UnsafeNativeMethods.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
             if (result != 0)
             {
                 uint win32Error = global::Interop.Advapi32.LsaNtStatusToWinError(result);
