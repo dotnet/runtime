@@ -321,7 +321,7 @@ import sys
 import glob
 
 def is_managed_assembly(file):
-    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', f'{file}'])
+    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', file])
 
     try:
         proc.communicate()
@@ -331,7 +331,7 @@ def is_managed_assembly(file):
         return False
 
 def is_managed_debug_assembly(file):
-    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', "--is-debug", f'{file}'])
+    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', "--is-debug", file])
 
     try:
         proc.communicate()
@@ -341,7 +341,7 @@ def is_managed_debug_assembly(file):
         return False
 
 def is_managed_exe_assembly(file):
-    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', "--is-exe", f'{file}'])
+    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', "--is-exe", file])
 
     try:
         proc.communicate()
@@ -363,7 +363,7 @@ for inputAssemblyName in glob.glob("*.dll"):
       ilasmSwitches = ""
 
       if not is_managed_exe_assembly(inputAssemblyName):
-        ilasmSwitches = ilasmSwitches + " /DLL"
+        ilasmSwitches = ilasmSwitches + " -DLL"
 
       if is_managed_debug_assembly(inputAssemblyName):
         ilasmSwitches = ilasmSwitches + " -DEBUG"
@@ -373,7 +373,7 @@ for inputAssemblyName in glob.glob("*.dll"):
 
       shutil.copyfile(inputAssemblyName, targetAssemblyName)
 
-      proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/ildasm /raweh /unicode /out={disassemblyName} {targetAssemblyName}')
+      proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/ildasm -raweh -unicode -out={disassemblyName} {targetAssemblyName}', shell=True)
 
       try:
           proc.communicate()
@@ -381,7 +381,7 @@ for inputAssemblyName in glob.glob("*.dll"):
           proc.kill()
           sys.exit(1)
 
-      proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/ilasm /output={inputAssemblyName} {ilasmSwitches} {disassemblyName}')
+      proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}', shell=True)
 
       try:
           proc.communicate()
