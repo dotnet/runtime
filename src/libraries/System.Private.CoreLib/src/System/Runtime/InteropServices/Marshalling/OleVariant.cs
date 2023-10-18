@@ -152,7 +152,7 @@ namespace System.Runtime.InteropServices.Marshalling
                     // Invoke RecordClear on the record info with the data.
                     if (_typeUnion._unionTypes._record._record != IntPtr.Zero)
                     {
-                        Marshal.ThrowExceptionForHR(((delegate* unmanaged<IntPtr, int>)(*(*(void***)_typeUnion._unionTypes._record._recordInfo + 4 /* IRecordInfo.RecordClear slot */)))(_typeUnion._unionTypes._record._recordInfo, _typeUnion._unionTypes._record._record));
+                        Marshal.ThrowExceptionForHR(((delegate* unmanaged<IntPtr, IntPtr, int>)(*(*(void***)_typeUnion._unionTypes._record._recordInfo + 4 /* IRecordInfo.RecordClear slot */)))(_typeUnion._unionTypes._record._recordInfo, _typeUnion._unionTypes._record._record));
                     }
                     Marshal.Release(_typeUnion._unionTypes._record._recordInfo);
                 }
@@ -165,7 +165,7 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 Marshal.FreeCoTaskMem(_typeUnion._unionTypes._blob._data);
             }
-            else if (VarType == VT_STREAM || VarType == VT_STREAMED_OBJECT || VarType == VT_STORAGE || VarType == VT_STORED_OBJECT)
+            else if (VarType == VarEnum.VT_STREAM || VarType == VarEnum.VT_STREAMED_OBJECT || VarType == VarEnum.VT_STORAGE || VarType == VarEnum.VT_STORED_OBJECT)
             {
                 if (_typeUnion._unionTypes._unknown != IntPtr.Zero)
                 {
