@@ -112,6 +112,7 @@ IF NOT DEFINED DoLink (
       ECHO ILASM ROUND-TRIP - FAILED !ERRORLEVEL!
       Exit /b 1
     )
+  )
 )
 ]]>
       </IlasmRoundTripBatchScript>
@@ -320,7 +321,7 @@ import sys
 import glob
 
 def is_managed_assembly(file):
-    proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/corerun {os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll {file}')
+    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', f'{file}'])
 
     try:
         proc.communicate()
@@ -330,7 +331,7 @@ def is_managed_assembly(file):
         return False
 
 def is_managed_debug_assembly(file):
-    proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/corerun {os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll --is-debug {file}')
+    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', "--is-debug", f'{file}'])
 
     try:
         proc.communicate()
@@ -340,7 +341,7 @@ def is_managed_debug_assembly(file):
         return False
 
 def is_managed_exe_assembly(file):
-    proc = subprocess.Popen(f'{os.environ["CORE_ROOT"]}/corerun {os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll --is-exe {file}')
+    proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', "--is-exe", f'{file}'])
 
     try:
         proc.communicate()
