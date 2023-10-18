@@ -1551,6 +1551,156 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<ulong> InsertSelectedScalar(Vector128<ulong> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            ///   A64: LD2 { Vn.16B, Vn+1.16B }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>) values, [ConstantExpected(Max = (byte)(15))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.16B, Vn+1.16B }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>) values, [ConstantExpected(Max = (byte)(15))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.8H, Vn+1.8H }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<short>, System.Runtime.Intrinsics.Vector128<short>) values, [ConstantExpected(Max = (byte)(7))] byte index, short* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.8H, Vn+1.8H }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<ushort>, System.Runtime.Intrinsics.Vector128<ushort>) values, [ConstantExpected(Max = (byte)(7))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.4S, Vn+1.4S }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<int>, System.Runtime.Intrinsics.Vector128<int>) values, [ConstantExpected(Max = (byte)(3))] byte index, int* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.4S, Vn+1.4S }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<uint>, System.Runtime.Intrinsics.Vector128<uint>) values, [ConstantExpected(Max = (byte)(3))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.2D, Vn+1.2D }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<long>, System.Runtime.Intrinsics.Vector128<long>) values, [ConstantExpected(Max = (byte)(1))] byte index, long* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.2D, Vn+1.2D }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<ulong>, System.Runtime.Intrinsics.Vector128<ulong>) values, [ConstantExpected(Max = (byte)(1))] byte index, ulong* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.4S, Vn+1.4S }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<float>, System.Runtime.Intrinsics.Vector128<float>) values, [ConstantExpected(Max = (byte)(3))] byte index, float* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD2 { Vn.2D, Vn+1.2D }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<double>, System.Runtime.Intrinsics.Vector128<double>) values, [ConstantExpected(Max = (byte)(1))] byte index, double* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2, System.Runtime.Intrinsics.Vector128<byte> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>) values, [ConstantExpected(Max = (byte)(15))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2, System.Runtime.Intrinsics.Vector128<sbyte> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>) values, [ConstantExpected(Max = (byte)(15))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2, System.Runtime.Intrinsics.Vector128<short> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<short>, System.Runtime.Intrinsics.Vector128<short>, System.Runtime.Intrinsics.Vector128<short>) values, [ConstantExpected(Max = (byte)(7))] byte index, short* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2, System.Runtime.Intrinsics.Vector128<ushort> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<ushort>, System.Runtime.Intrinsics.Vector128<ushort>, System.Runtime.Intrinsics.Vector128<ushort>) values, [ConstantExpected(Max = (byte)(7))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2, System.Runtime.Intrinsics.Vector128<int> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<int>, System.Runtime.Intrinsics.Vector128<int>, System.Runtime.Intrinsics.Vector128<int>) values, [ConstantExpected(Max = (byte)(3))] byte index, int* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2, System.Runtime.Intrinsics.Vector128<uint> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<uint>, System.Runtime.Intrinsics.Vector128<uint>, System.Runtime.Intrinsics.Vector128<uint>) values, [ConstantExpected(Max = (byte)(3))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2, System.Runtime.Intrinsics.Vector128<long> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<long>, System.Runtime.Intrinsics.Vector128<long>, System.Runtime.Intrinsics.Vector128<long>) values, [ConstantExpected(Max = (byte)(1))] byte index, long* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2, System.Runtime.Intrinsics.Vector128<ulong> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<ulong>, System.Runtime.Intrinsics.Vector128<ulong>, System.Runtime.Intrinsics.Vector128<ulong>) values, [ConstantExpected(Max = (byte)(1))] byte index, ulong* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2, System.Runtime.Intrinsics.Vector128<float> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<float>, System.Runtime.Intrinsics.Vector128<float>, System.Runtime.Intrinsics.Vector128<float>) values, [ConstantExpected(Max = (byte)(3))] byte index, float* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2, System.Runtime.Intrinsics.Vector128<double> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<double>, System.Runtime.Intrinsics.Vector128<double>, System.Runtime.Intrinsics.Vector128<double>) values, [ConstantExpected(Max = (byte)(1))] byte index, double* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2, System.Runtime.Intrinsics.Vector128<byte> Value3, System.Runtime.Intrinsics.Vector128<byte> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>, System.Runtime.Intrinsics.Vector128<byte>) values, [ConstantExpected(Max = (byte)(15))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2, System.Runtime.Intrinsics.Vector128<sbyte> Value3, System.Runtime.Intrinsics.Vector128<sbyte> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>, System.Runtime.Intrinsics.Vector128<sbyte>) values, [ConstantExpected(Max = (byte)(15))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2, System.Runtime.Intrinsics.Vector128<short> Value3, System.Runtime.Intrinsics.Vector128<short> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<short>, System.Runtime.Intrinsics.Vector128<short>, System.Runtime.Intrinsics.Vector128<short>, System.Runtime.Intrinsics.Vector128<short>) values, [ConstantExpected(Max = (byte)(7))] byte index, short* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2, System.Runtime.Intrinsics.Vector128<ushort> Value3, System.Runtime.Intrinsics.Vector128<ushort> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<ushort>, System.Runtime.Intrinsics.Vector128<ushort>, System.Runtime.Intrinsics.Vector128<ushort>, System.Runtime.Intrinsics.Vector128<ushort>) values, [ConstantExpected(Max = (byte)(7))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2, System.Runtime.Intrinsics.Vector128<int> Value3, System.Runtime.Intrinsics.Vector128<int> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<int>, System.Runtime.Intrinsics.Vector128<int>, System.Runtime.Intrinsics.Vector128<int>, System.Runtime.Intrinsics.Vector128<int>) values, [ConstantExpected(Max = (byte)(3))] byte index, int* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2, System.Runtime.Intrinsics.Vector128<uint> Value3, System.Runtime.Intrinsics.Vector128<uint> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<uint>, System.Runtime.Intrinsics.Vector128<uint>, System.Runtime.Intrinsics.Vector128<uint>, System.Runtime.Intrinsics.Vector128<uint>) values, [ConstantExpected(Max = (byte)(3))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2, System.Runtime.Intrinsics.Vector128<long> Value3, System.Runtime.Intrinsics.Vector128<long> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<long>, System.Runtime.Intrinsics.Vector128<long>, System.Runtime.Intrinsics.Vector128<long>, System.Runtime.Intrinsics.Vector128<long>) values, [ConstantExpected(Max = (byte)(1))] byte index, long* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2, System.Runtime.Intrinsics.Vector128<ulong> Value3, System.Runtime.Intrinsics.Vector128<ulong> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<ulong>, System.Runtime.Intrinsics.Vector128<ulong>, System.Runtime.Intrinsics.Vector128<ulong>, System.Runtime.Intrinsics.Vector128<ulong>) values, [ConstantExpected(Max = (byte)(1))] byte index, ulong* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2, System.Runtime.Intrinsics.Vector128<float> Value3, System.Runtime.Intrinsics.Vector128<float> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<float>, System.Runtime.Intrinsics.Vector128<float>, System.Runtime.Intrinsics.Vector128<float>, System.Runtime.Intrinsics.Vector128<float>) values, [ConstantExpected(Max = (byte)(3))] byte index, float* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }[Vm], [Xn]
+            /// </summary>
+            public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2, System.Runtime.Intrinsics.Vector128<double> Value3, System.Runtime.Intrinsics.Vector128<double> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector128<double>, System.Runtime.Intrinsics.Vector128<double>, System.Runtime.Intrinsics.Vector128<double>, System.Runtime.Intrinsics.Vector128<double>) values, [ConstantExpected(Max = (byte)(1))] byte index, double* address) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vld1q_dup_f64 (float64_t const * ptr)
             ///   A64: LD1R { Vt.2D }, [Xn]
             /// </summary>
@@ -8438,6 +8588,111 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 { Vt.D }[index], [Xn]
         /// </summary>
         public static unsafe Vector128<ulong> LoadAndInsertScalar(Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index, ulong* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.8B, Vn+1.8B }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<byte>, System.Runtime.Intrinsics.Vector64<byte>) values, [ConstantExpected(Max = (byte)(7))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.8B, Vn+1.8B }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<sbyte>, System.Runtime.Intrinsics.Vector64<sbyte>) values, [ConstantExpected(Max = (byte)(7))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.4H, Vn+1.4H }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<short>, System.Runtime.Intrinsics.Vector64<short>) values, [ConstantExpected(Max = (byte)(3))] byte index, short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.4H, Vn+1.4H }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<ushort>, System.Runtime.Intrinsics.Vector64<ushort>) values, [ConstantExpected(Max = (byte)(3))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.2S, Vn+1.2S }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<int>, System.Runtime.Intrinsics.Vector64<int>) values, [ConstantExpected(Max = (byte)(1))] byte index, int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.2S, Vn+1.2S }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<uint>, System.Runtime.Intrinsics.Vector64<uint>) values, [ConstantExpected(Max = (byte)(1))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD2 { Vn.2S, Vn+1.2S }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<float>, System.Runtime.Intrinsics.Vector64<float>) values, [ConstantExpected(Max = (byte)(1))] byte index, float* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.8B, Vn+1.8B, Vn+2.8B }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2, System.Runtime.Intrinsics.Vector64<byte> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<byte>, System.Runtime.Intrinsics.Vector64<byte>, System.Runtime.Intrinsics.Vector64<byte>) values, [ConstantExpected(Max = (byte)(7))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.8B, Vn+1.8B, Vn+2.8B }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2, System.Runtime.Intrinsics.Vector64<sbyte> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<sbyte>, System.Runtime.Intrinsics.Vector64<sbyte>, System.Runtime.Intrinsics.Vector64<sbyte>) values, [ConstantExpected(Max = (byte)(7))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.4H, Vn+1.4H, Vn+2.4H }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2, System.Runtime.Intrinsics.Vector64<short> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<short>, System.Runtime.Intrinsics.Vector64<short>, System.Runtime.Intrinsics.Vector64<short>) values, [ConstantExpected(Max = (byte)(3))] byte index, short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.4H, Vn+1.4H, Vn+2.4H }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2, System.Runtime.Intrinsics.Vector64<ushort> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<ushort>, System.Runtime.Intrinsics.Vector64<ushort>, System.Runtime.Intrinsics.Vector64<ushort>) values, [ConstantExpected(Max = (byte)(3))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.2S, Vn+1.2S, Vn+2.2S }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2, System.Runtime.Intrinsics.Vector64<int> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<int>, System.Runtime.Intrinsics.Vector64<int>, System.Runtime.Intrinsics.Vector64<int>) values, [ConstantExpected(Max = (byte)(1))] byte index, int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.2S, Vn+1.2S, Vn+2.2S }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2, System.Runtime.Intrinsics.Vector64<uint> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<uint>, System.Runtime.Intrinsics.Vector64<uint>, System.Runtime.Intrinsics.Vector64<uint>) values, [ConstantExpected(Max = (byte)(1))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD3 { Vn.2S, Vn+1.2S, Vn+2.2S }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2, System.Runtime.Intrinsics.Vector64<float> Value3) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<float>, System.Runtime.Intrinsics.Vector64<float>, System.Runtime.Intrinsics.Vector64<float>) values, [ConstantExpected(Max = (byte)(1))] byte index, float* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2, System.Runtime.Intrinsics.Vector64<byte> Value3, System.Runtime.Intrinsics.Vector64<byte> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<byte>, System.Runtime.Intrinsics.Vector64<byte>, System.Runtime.Intrinsics.Vector64<byte>, System.Runtime.Intrinsics.Vector64<byte>) values, [ConstantExpected(Max = (byte)(7))] byte index, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.8B, Vn+1.8B, Vn+2.8B, Vn+3.8B }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2, System.Runtime.Intrinsics.Vector64<sbyte> Value3, System.Runtime.Intrinsics.Vector64<sbyte> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<sbyte>, System.Runtime.Intrinsics.Vector64<sbyte>, System.Runtime.Intrinsics.Vector64<sbyte>, System.Runtime.Intrinsics.Vector64<sbyte>) values, [ConstantExpected(Max = (byte)(7))] byte index, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2, System.Runtime.Intrinsics.Vector64<short> Value3, System.Runtime.Intrinsics.Vector64<short> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<short>, System.Runtime.Intrinsics.Vector64<short>, System.Runtime.Intrinsics.Vector64<short>, System.Runtime.Intrinsics.Vector64<short>) values, [ConstantExpected(Max = (byte)(3))] byte index, short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.4H, Vn+1.4H, Vn+2.4H, Vn+3.4H }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2, System.Runtime.Intrinsics.Vector64<ushort> Value3, System.Runtime.Intrinsics.Vector64<ushort> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<ushort>, System.Runtime.Intrinsics.Vector64<ushort>, System.Runtime.Intrinsics.Vector64<ushort>, System.Runtime.Intrinsics.Vector64<ushort>) values, [ConstantExpected(Max = (byte)(3))] byte index, ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2, System.Runtime.Intrinsics.Vector64<int> Value3, System.Runtime.Intrinsics.Vector64<int> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<int>, System.Runtime.Intrinsics.Vector64<int>, System.Runtime.Intrinsics.Vector64<int>, System.Runtime.Intrinsics.Vector64<int>) values, [ConstantExpected(Max = (byte)(1))] byte index, int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2, System.Runtime.Intrinsics.Vector64<uint> Value3, System.Runtime.Intrinsics.Vector64<uint> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<uint>, System.Runtime.Intrinsics.Vector64<uint>, System.Runtime.Intrinsics.Vector64<uint>, System.Runtime.Intrinsics.Vector64<uint>) values, [ConstantExpected(Max = (byte)(1))] byte index, uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A64: LD4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }[Vm], [Xn]
+        /// </summary>
+        public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2, System.Runtime.Intrinsics.Vector64<float> Value3, System.Runtime.Intrinsics.Vector64<float> Value4) LoadAndInsertScalar((System.Runtime.Intrinsics.Vector64<float>, System.Runtime.Intrinsics.Vector64<float>, System.Runtime.Intrinsics.Vector64<float>, System.Runtime.Intrinsics.Vector64<float>) values, [ConstantExpected(Max = (byte)(1))] byte index, float* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vld1_dup_u8 (uint8_t const * ptr)

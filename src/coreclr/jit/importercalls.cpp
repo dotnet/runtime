@@ -3242,8 +3242,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
                     genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XORR : GT_XAND;
-                    retNode        = gtNewOperNode(op, genActualType(callType), op1, op2);
-                    retNode->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+                    retNode        = gtNewAtomicNode(op, genActualType(callType), op1, op2);
                 }
                 break;
             }
@@ -3274,11 +3273,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* op3 = impPopStack().val; // comparand
                 GenTree* op2 = impPopStack().val; // value
                 GenTree* op1 = impPopStack().val; // location
-
-                GenTree* node = new (this, GT_CMPXCHG) GenTreeCmpXchg(genActualType(callType), op1, op2, op3);
-
-                node->AsCmpXchg()->gtOpLocation->gtFlags |= GTF_DONT_CSE;
-                retNode = node;
+                retNode      = gtNewAtomicNode(GT_CMPXCHG, genActualType(callType), op1, op2, op3);
                 break;
             }
 
@@ -3308,19 +3303,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* op1 = impPopStack().val;
 
                 // This creates:
-                //   val
                 // XAdd
-                //   addr
-                //     field (for example)
+                //   val
+                //   field_addr (for example)
                 //
-                // In the case where the first argument is the address of a local, we might
-                // want to make this *not* make the var address-taken -- but atomic instructions
-                // on a local are probably pretty useless anyway, so we probably don't care.
-
-                op1 = gtNewOperNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
-                                    genActualType(callType), op1, op2);
-                op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
-                retNode = op1;
+                retNode = gtNewAtomicNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
+                                          genActualType(callType), op1, op2);
                 break;
             }
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)

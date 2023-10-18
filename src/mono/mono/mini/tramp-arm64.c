@@ -139,7 +139,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Setup stack frame */
 	imm = frame_size;
 	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, ARMREG_SP, 0);
-	while (imm > 256) {
+	while (imm > 256) { // TODO: can this be changed to ARM_MAX_ARITH_IMM?
 		arm_subx_imm (code, ARMREG_SP, ARMREG_SP, 256);
 		imm -= 256;
 		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, frame_size - imm);
@@ -159,8 +159,15 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	gregs_regset = ~((1 << ARMREG_FP) | (1 << ARMREG_SP));
 	code = mono_arm_emit_store_regarray (code, gregs_regset, ARMREG_FP, gregs_offset);
 	/* Save fregs */
-	for (i = 0; i < num_fregs; ++i)
-		arm_strfpq (code, i, ARMREG_FP, fregs_offset + (i * 16));
+	for (i = 0; i < num_fregs; ++i) {
+		int offs = fregs_offset + (i * 16);
+		if (i+1 < num_fregs && arm_is_imm7_scaled (offs, 16)) {
+			arm_neon_stp_16b (code, i, i+1, ARMREG_FP, offs);
+			i++;
+		} else {
+			arm_strfpq (code, i, ARMREG_FP, offs);
+		}
+	}
 	/* Save trampoline arg */
 	arm_strx (code, ARMREG_IP1, ARMREG_FP, arg_offset);
 
@@ -173,9 +180,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Save caller sp */
 	arm_movx (code, ARMREG_IP1, ARMREG_FP);
 	imm = frame_size;
-	while (imm > 256) {
-		arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, 256);
-		imm -= 256;
+	while (imm > ARM_MAX_ARITH_IMM) {
+		arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, ARM_MAX_ARITH_IMM);
+		imm -= ARM_MAX_ARITH_IMM;
 	}
 	arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, imm);
 	arm_strx (code, ARMREG_IP1, ARMREG_IP0, MONO_STRUCT_OFFSET (MonoLMF, gregs) + (MONO_ARCH_LMF_REG_SP * 8));
@@ -264,8 +271,15 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Only have to load the argument regs (r0..r8) and the rgctx reg */
 	code = mono_arm_emit_load_regarray (code, 0x1ff | (1 << ARMREG_LR) | (1 << MONO_ARCH_RGCTX_REG), ARMREG_FP, gregs_offset);
 	/* Restore fregs */
-	for (i = 0; i < num_fregs; ++i)
-		arm_ldrfpq (code, i, ARMREG_FP, fregs_offset + (i * 16));
+	for (i = 0; i < num_fregs; ++i) {
+		int offs = fregs_offset + (i * 16);
+		if (i+1 < num_fregs && arm_is_imm7_scaled (offs, 16)) {
+			arm_neon_ldp_16b (code, i, i+1, ARMREG_FP, offs);
+			i++;
+		} else {
+			arm_ldrfpq (code, i, ARMREG_FP, offs);
+		}
+	}
 
 	/* Load the result */
 	arm_ldrx (code, ARMREG_IP1, ARMREG_FP, res_offset);
@@ -567,9 +581,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 
 	/* Setup stack frame */
 	imm = frame_size;
-	while (imm > 256) {
-		arm_subx_imm (code, ARMREG_SP, ARMREG_SP, 256);
-		imm -= 256;
+	while (imm > ARM_MAX_ARITH_IMM) {
+		arm_subx_imm (code, ARMREG_SP, ARMREG_SP, ARM_MAX_ARITH_IMM);
+		imm -= ARM_MAX_ARITH_IMM;
 	}
 	arm_subx_imm (code, ARMREG_SP, ARMREG_SP, imm);
 	arm_stpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);
@@ -585,9 +599,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	/* Save caller sp */
 	arm_movx (code, ARMREG_IP1, ARMREG_FP);
 	imm = frame_size;
-	while (imm > 256) {
-		arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, 256);
-		imm -= 256;
+	while (imm > ARM_MAX_ARITH_IMM) {
+		arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, ARM_MAX_ARITH_IMM);
+		imm -= ARM_MAX_ARITH_IMM;
 	}
 	arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, imm);
 	arm_strx (code, ARMREG_IP1, ARMREG_FP, ctx_offset + G_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_SP * 8));

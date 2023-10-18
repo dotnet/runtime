@@ -1448,7 +1448,10 @@ def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics)
             logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
         else:
             missing_diff = diff_metrics["Overall"]["Missing compiles"]
-            logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
+            if missing_base == missing_diff:
+                logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
+            else:
+                logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
 
     elif return_code == 139 and coreclr_args.host_os != "windows":
         logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
