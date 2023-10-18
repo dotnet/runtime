@@ -507,6 +507,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				Property = GetUnknownType () ?? GetTypeWithPublicConstructors ();
 			}
 
+			static int? IntProperty { get; set; }
+
+			static int? GetMaybeNullInt () => null;
+
+			static int GetInt () => 1;
+
+			static void TestCompoundAssignmentNullCoalesce ()
+			{
+				IntProperty += (GetMaybeNullInt () ?? GetInt ());
+			}
+
 			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (Property))]
 			static void TestNullCoalescingAssignment ()
 			{
@@ -538,6 +549,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				TestNullCoalesce ();
+				TestCompoundAssignmentNullCoalesce ();
 				TestNullCoalescingAssignment ();
 				TestNullCoalescingAssignmentComplex ();
 				new WriteCapturedProperty ().TestNestedNullCoalescingAssignment ();

@@ -164,7 +164,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			state.Set (local, newValue);
 		}
 
-		TValue ProcessSingleTargetAssignment (IOperation targetOperation, ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state, bool merge)
+		TValue ProcessSingleTargetAssignment (IOperation targetOperation, IAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state, bool merge)
 		{
 			switch (targetOperation) {
 			case IFieldReferenceOperation:
@@ -304,6 +304,20 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitSimpleAssignment (ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
+			return ProcessAssignment (operation, state);
+		}
+
+		public override TValue VisitCompoundAssignment (ICompoundAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
+			return ProcessAssignment (operation, state);
+		}
+
+		// Note: this is called both for normal assignments and ICompoundAssignmentOperation.
+		// The resulting value of a compound assignment isn't important for our dataflow analysis
+		// (we don't model addition of integers, for example), so we just treat these the same
+		// as normal assignments.
+		TValue ProcessAssignment (IAssignmentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
+		{
 			var targetOperation = operation.Target;
 			if (targetOperation is not IFlowCaptureReferenceOperation flowCaptureReference)
 				return ProcessSingleTargetAssignment (targetOperation, operation, state, merge: false);
@@ -315,7 +329,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// for simplicity. This could be generalized if we encounter a dataflow behavior where this makes a difference.
 
 			Debug.Assert (IsLValueFlowCapture (flowCaptureReference.Id));
-			Debug.Assert (!flowCaptureReference.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Read));
+			Debug.Assert (flowCaptureReference.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write));
 			var capturedReferences = state.Current.CapturedReferences.Get (flowCaptureReference.Id);
 			if (!capturedReferences.HasMultipleValues) {
 				// Single captured reference. Treat this as an overwriting assignment.
