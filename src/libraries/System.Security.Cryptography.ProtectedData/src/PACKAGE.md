@@ -4,9 +4,7 @@
 
 System.Security.Cryptography.ProtectedData offers a simplified interface for utilizing Microsoft Windows DPAPI's [CryptProtectData](https://learn.microsoft.com/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata) and [CryptUnprotectData](https://learn.microsoft.com/windows/win32/api/dpapi/nf-dpapi-cryptunprotectdata) functions.
 
-This library is primarily aimed at ensuring the security of critical data, like user credentials or sensitive information, either while storing or transmitting.
-
-**Note**: Since it relies on Windows DPAPI, this package is only suited for applications running on Windows platforms.
+**Note**: Since it relies on Windows DPAPI, this package is only supported on Windows platforms.
 For more complex cryptographic operations or cross-platform support, consider the [System.Security.Cryptography](https://learn.microsoft.com/dotnet/api/system.security.cryptography) namespace.
 
 ## Key Features
