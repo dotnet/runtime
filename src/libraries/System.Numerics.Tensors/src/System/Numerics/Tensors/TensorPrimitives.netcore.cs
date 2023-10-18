@@ -1275,9 +1275,7 @@ namespace System.Numerics.Tensors
                         return curIndex[IndexOfFirstMatch(nanMask)];
                     }
 
-                    Vector512<float> remainderMask = CreateRemainderMaskSingleVector512(x.Length - i);
-
-                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex, remainderMask);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -1339,9 +1337,7 @@ namespace System.Numerics.Tensors
                         return curIndex[IndexOfFirstMatch(nanMask)];
                     }
 
-                    Vector256<float> remainderMask = CreateRemainderMaskSingleVector256(x.Length - i);
-
-                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex, remainderMask);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
 
                 }
 
@@ -1402,9 +1398,7 @@ namespace System.Numerics.Tensors
                         return curIndex[IndexOfFirstMatch(nanMask)];
                     }
 
-                    Vector128<float> remainderMask = CreateRemainderMaskSingleVector128(x.Length - i);
-
-                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex, remainderMask);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
 
                 }
 
@@ -3364,14 +3358,11 @@ namespace System.Numerics.Tensors
             static abstract int Invoke(ReadOnlySpan<float> result);
             static abstract int Invoke(Vector128<float> result, Vector128<int> resultIndex);
             static abstract void Invoke(ref Vector128<float> result, Vector128<float> current, ref Vector128<int> resultIndex, Vector128<int> curIndex);
-            static abstract void Invoke(ref Vector128<float> result, Vector128<float> current, ref Vector128<int> resultIndex, Vector128<int> curIndex, Vector128<float> remainderMask);
             static abstract int Invoke(Vector256<float> result, Vector256<int> resultIndex);
             static abstract void Invoke(ref Vector256<float> result, Vector256<float> current, ref Vector256<int> resultIndex, Vector256<int> curIndex);
-            static abstract void Invoke(ref Vector256<float> result, Vector256<float> current, ref Vector256<int> resultIndex, Vector256<int> curIndex, Vector256<float> remainderMask);
 #if NET8_0_OR_GREATER
             static abstract int Invoke(Vector512<float> result, Vector512<int> resultIndex);
             static abstract void Invoke(ref Vector512<float> result, Vector512<float> current, ref Vector512<int> resultIndex, Vector512<int> curIndex);
-            static abstract void Invoke(ref Vector512<float> result, Vector512<float> current, ref Vector512<int> resultIndex, Vector512<int> curIndex, Vector512<float> remainderMask);
 #endif
 
             static virtual float IdentityValue => throw new NotSupportedException();
@@ -3419,149 +3410,112 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector128<float> result, Vector128<int> maxIndex)
             {
-                float curMax = float.MinValue;
-                int curIn = 0;
-                for (int i = 0; i < Vector128<float>.Count; i++)
-                {
-                    if (result[i] == curMax && IsNegative(curMax) && !IsNegative(result[i]))
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                    else if (result[i] > curMax)
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                }
-                return curIn;
+                Vector128<float> tmp128 = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
+                Vector128<int> tmpIndex128 = Vector128.Shuffle(maxIndex, Vector128.Create(2, 3, 0, 1));
+
+                Invoke(ref result, tmp128, ref maxIndex, tmpIndex128);
+
+                tmp128 = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
+                tmpIndex128 = Vector128.Shuffle(maxIndex, Vector128.Create(1, 0, 3, 2));
+
+                Invoke(ref result, tmp128, ref maxIndex, tmpIndex128);
+                return maxIndex.ToScalar();
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void Invoke(ref Vector128<float> max, Vector128<float> current, ref Vector128<int> maxIndex, Vector128<int> curIndex)
             {
-                maxIndex = Vector128.ConditionalSelect(Vector128.Equals(max, current).AsInt32(),
-                    Vector128.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                    Vector128.ConditionalSelect(Vector128.GreaterThan(max, current).AsInt32(), maxIndex, curIndex));
+                Vector128<float> greaterThanMask = Vector128.GreaterThan(max, current);
 
-                max = Vector128.ConditionalSelect(Vector128.Equals(max, current),
-                        Vector128.ConditionalSelect(IsNegative(max), current, max),
-                        Vector128.Max(max, current));
-            }
+                Vector128<float> equalMask = Vector128.Equals(max, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector128<float> max, Vector128<float> current, ref Vector128<int> maxIndex, Vector128<int> curIndex, Vector128<float> remainderMask)
-            {
-                maxIndex = Vector128.ConditionalSelect(
-                    Vector128.Equals(remainderMask.AsInt32(), Vector128<int>.Zero),
-                    maxIndex,
-                    Vector128.ConditionalSelect(Vector128.Equals(max, current).AsInt32(),
-                    Vector128.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                    Vector128.ConditionalSelect(Vector128.GreaterThan(max, current).AsInt32(), maxIndex, curIndex)));
+                if (equalMask.AsInt32() != Vector128<int>.Zero)
+                {
+                    Vector128<float> negativeMask = IsNegative(current);
+                    Vector128<int> lessThanMask = Vector128.LessThan(maxIndex, curIndex);
 
-                max = Vector128.ConditionalSelect(
-                    Vector128.Equals(remainderMask, Vector128<float>.Zero),
-                    max,
-                    MaxOperator.Invoke(max, current));
+                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
+                }
+
+                greaterThanMask = ~greaterThanMask;
+
+                max = ElementWiseSelect(greaterThanMask, max, current);
+
+                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector256<float> result, Vector256<int> maxIndex)
             {
-                float curMax = float.MinValue;
-                int curIn = 0;
-                for (int i = 0; i < Vector256<float>.Count; i++)
-                {
-                    if (result[i] == curMax && IsNegative(curMax) && !IsNegative(result[i]))
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                    else if (result[i] > curMax)
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                }
-                return curIn;
+                // Max the upper/lower halves of the Vector256
+                Vector128<float> resultLower = result.GetLower();
+                Vector128<int> indexLower = maxIndex.GetLower();
+
+                Invoke(ref resultLower, result.GetUpper(), ref indexLower, maxIndex.GetUpper());
+                return Invoke(resultLower, indexLower);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void Invoke(ref Vector256<float> max, Vector256<float> current, ref Vector256<int> maxIndex, Vector256<int> curIndex)
             {
-                maxIndex = Vector256.ConditionalSelect(Vector256.Equals(max, current).AsInt32(),
-                    Vector256.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                    Vector256.ConditionalSelect(Vector256.GreaterThan(max, current).AsInt32(), maxIndex, curIndex));
+                Vector256<float> greaterThanMask = Vector256.GreaterThan(max, current);
 
-                max = Vector256.ConditionalSelect(Vector256.Equals(max, current),
-                        Vector256.ConditionalSelect(IsNegative(max), current, max),
-                        Vector256.Max(max, current));
-            }
+                Vector256<float> equalMask = Vector256.Equals(max, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector256<float> max, Vector256<float> current, ref Vector256<int> maxIndex, Vector256<int> curIndex, Vector256<float> remainderMask)
-            {
-                maxIndex = Vector256.ConditionalSelect(
-                    Vector256.Equals(remainderMask.AsInt32(), Vector256<int>.Zero),
-                    maxIndex,
-                    Vector256.ConditionalSelect(Vector256.Equals(max, current).AsInt32(),
-                    Vector256.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                    Vector256.ConditionalSelect(Vector256.GreaterThan(max, current).AsInt32(), maxIndex, curIndex)));
+                if (equalMask.AsInt32() != Vector256<int>.Zero)
+                {
+                    Vector256<float> negativeMask = IsNegative(current);
+                    Vector256<int> lessThanMask = Vector256.LessThan(maxIndex, curIndex);
 
-                max = Vector256.ConditionalSelect(
-                    Vector256.Equals(remainderMask, Vector256<float>.Zero),
-                    max,
-                    MaxOperator.Invoke(max, current));
+                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
+                }
+
+                greaterThanMask = ~greaterThanMask;
+
+                max = ElementWiseSelect(greaterThanMask, max, current);
+
+                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
 
 #if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector512<float> result, Vector512<int> maxIndex)
             {
-                float curMax = float.MinValue;
-                int curIn = 0;
-                for (int i = 0; i < Vector512<float>.Count; i++)
-                {
-                    if (result[i] == curMax && IsNegative(curMax) && !IsNegative(result[i]))
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                    else if (result[i] > curMax)
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                }
-                return curIn;
+                // Max the upper/lower halves of the Vector512
+                Vector256<float> resultLower256 = result.GetLower();
+                Vector256<int> indexLower256 = maxIndex.GetLower();
+
+                Invoke(ref resultLower256, result.GetUpper(), ref indexLower256, maxIndex.GetUpper());
+
+                // Max the upper/lower halves of the Vector256
+                Vector128<float> resultLower128 = resultLower256.GetLower();
+                Vector128<int> indexLower128 = indexLower256.GetLower();
+
+                Invoke(ref resultLower128, resultLower256.GetUpper(), ref indexLower128, indexLower256.GetUpper());
+
+                return Invoke(resultLower128, indexLower128);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void Invoke(ref Vector512<float> max, Vector512<float> current, ref Vector512<int> maxIndex, Vector512<int> curIndex)
             {
-                maxIndex = Vector512.ConditionalSelect(Vector512.Equals(max, current).AsInt32(),
-                                    Vector512.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                                    Vector512.ConditionalSelect(Vector512.GreaterThan(max, current).AsInt32(), maxIndex, curIndex));
+                Vector512<float> greaterThanMask = Vector512.GreaterThan(max, current);
 
-                max = Vector512.ConditionalSelect(Vector512.Equals(max, current),
-                        Vector512.ConditionalSelect(IsNegative(max), current, max),
-                        Vector512.Max(max, current));
-            }
+                Vector512<float> equalMask = Vector512.Equals(max, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector512<float> max, Vector512<float> current, ref Vector512<int> maxIndex, Vector512<int> curIndex, Vector512<float> remainderMask)
-            {
-                maxIndex = Vector512.ConditionalSelect(
-                    Vector512.Equals(remainderMask.AsInt32(), Vector512<int>.Zero),
-                    maxIndex,
-                    Vector512.ConditionalSelect(Vector512.Equals(max, current).AsInt32(),
-                    Vector512.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                    Vector512.ConditionalSelect(Vector512.GreaterThan(max, current).AsInt32(), maxIndex, curIndex)));
+                if (equalMask.AsInt32() != Vector512<int>.Zero)
+                {
+                    Vector512<float> negativeMask = IsNegative(current);
+                    Vector512<int> lessThanMask = Vector512.LessThan(maxIndex, curIndex);
 
-                max = Vector512.ConditionalSelect(
-                    Vector512.Equals(remainderMask, Vector512<float>.Zero),
-                    max,
-                    MaxOperator.Invoke(max, current));
+                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
+                }
+
+                greaterThanMask = ~greaterThanMask;
+
+                max = ElementWiseSelect(greaterThanMask, max, current);
+
+                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
 #endif
         }
@@ -3607,22 +3561,16 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector128<float> result, Vector128<int> maxIndex)
             {
-                float curMax = result[0];
-                int curIn = maxIndex[0];
-                for (int i = 1; i < Vector128<float>.Count; i++)
-                {
-                    if (MathF.Abs(result[i]) == MathF.Abs(curMax) && IsNegative(curMax) && !IsNegative(result[i]))
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                    else if (MathF.Abs(result[i]) > MathF.Abs(curMax))
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                }
-                return curIn;
+                Vector128<float> tmp128 = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
+                Vector128<int> tmpIndex128 = Vector128.Shuffle(maxIndex, Vector128.Create(2, 3, 0, 1));
+
+                Invoke(ref result, tmp128, ref maxIndex, tmpIndex128);
+
+                tmp128 = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
+                tmpIndex128 = Vector128.Shuffle(maxIndex, Vector128.Create(1, 0, 3, 2));
+
+                Invoke(ref result, tmp128, ref maxIndex, tmpIndex128);
+                return maxIndex.ToScalar();
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3630,52 +3578,34 @@ namespace System.Numerics.Tensors
             {
                 Vector128<float> maxMag = Vector128.Abs(max), currentMag = Vector128.Abs(current);
 
-                maxIndex = Vector128.ConditionalSelect(Vector128.Equals(max, current).AsInt32(),
-                    Vector128.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                    Vector128.ConditionalSelect(Vector128.GreaterThan(maxMag, currentMag).AsInt32(), maxIndex, curIndex));
+                Vector128<float> greaterThanMask = Vector128.GreaterThan(maxMag, currentMag);
 
-                max = Vector128.ConditionalSelect(Vector128.Equals(max, current),
-                        Vector128.ConditionalSelect(IsNegative(max), current, max),
-                        Vector128.Max(maxMag, currentMag));
-            }
+                Vector128<float> equalMask = Vector128.Equals(max, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector128<float> max, Vector128<float> current, ref Vector128<int> maxIndex, Vector128<int> curIndex, Vector128<float> remainderMask)
-            {
-                Vector128<float> maxMag = Vector128.Abs(max), currentMag = Vector128.Abs(current);
+                if (equalMask.AsInt32() != Vector128<int>.Zero)
+                {
+                    Vector128<float> negativeMask = IsNegative(current);
+                    Vector128<int> lessThanMask = Vector128.LessThan(maxIndex, curIndex);
 
-                maxIndex = Vector128.ConditionalSelect(
-                    Vector128.Equals(remainderMask.AsInt32(), Vector128<int>.Zero),
-                    maxIndex,
-                    Vector128.ConditionalSelect(Vector128.Equals(max, current).AsInt32(),
-                    Vector128.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                    Vector128.ConditionalSelect(Vector128.GreaterThan(maxMag, currentMag).AsInt32(), maxIndex, curIndex)));
+                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
+                }
 
-                max = Vector128.ConditionalSelect(
-                    Vector128.Equals(remainderMask, Vector128<float>.Zero),
-                    max,
-                    MaxOperator.Invoke(maxMag, currentMag));
+                greaterThanMask = ~greaterThanMask;
+
+                max = ElementWiseSelect(greaterThanMask, max, current);
+
+                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector256<float> result, Vector256<int> maxIndex)
             {
-                float curMax = result[0];
-                int curIn = maxIndex[0];
-                for (int i = 1; i < Vector256<float>.Count; i++)
-                {
-                    if (MathF.Abs(result[i]) == MathF.Abs(curMax) && IsNegative(curMax) && !IsNegative(result[i]))
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                    else if (MathF.Abs(result[i]) > MathF.Abs(curMax))
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                }
-                return curIn;
+                // Max the upper/lower halves of the Vector256
+                Vector128<float> resultLower = result.GetLower();
+                Vector128<int> indexLower = maxIndex.GetLower();
+
+                Invoke(ref resultLower, result.GetUpper(), ref indexLower, maxIndex.GetUpper());
+                return Invoke(resultLower, indexLower);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3683,85 +3613,65 @@ namespace System.Numerics.Tensors
             {
                 Vector256<float> maxMag = Vector256.Abs(max), currentMag = Vector256.Abs(current);
 
-                maxIndex = Vector256.ConditionalSelect(Vector256.Equals(max, current).AsInt32(),
-                    Vector256.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                    Vector256.ConditionalSelect(Vector256.GreaterThan(maxMag, currentMag).AsInt32(), maxIndex, curIndex));
+                Vector256<float> greaterThanMask = Vector256.GreaterThan(maxMag, currentMag);
 
-                max = Vector256.ConditionalSelect(Vector256.Equals(max, current),
-                        Vector256.ConditionalSelect(IsNegative(max), current, max),
-                        Vector256.Max(maxMag, currentMag));
-            }
+                Vector256<float> equalMask = Vector256.Equals(max, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector256<float> max, Vector256<float> current, ref Vector256<int> maxIndex, Vector256<int> curIndex, Vector256<float> remainderMask)
-            {
-                Vector256<float> maxMag = Vector256.Abs(max), currentMag = Vector256.Abs(current);
+                if (equalMask.AsInt32() != Vector256<int>.Zero)
+                {
+                    Vector256<float> negativeMask = IsNegative(current);
+                    Vector256<int> lessThanMask = Vector256.LessThan(maxIndex, curIndex);
 
-                maxIndex = Vector256.ConditionalSelect(
-                    Vector256.Equals(remainderMask.AsInt32(), Vector256<int>.Zero),
-                    maxIndex,
-                    Vector256.ConditionalSelect(Vector256.Equals(max, current).AsInt32(),
-                    Vector256.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                    Vector256.ConditionalSelect(Vector256.GreaterThan(maxMag, currentMag).AsInt32(), maxIndex, curIndex)));
+                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
+                }
 
-                max = Vector256.ConditionalSelect(
-                    Vector256.Equals(remainderMask, Vector256<float>.Zero),
-                    max,
-                    MaxOperator.Invoke(maxMag, currentMag));
+                greaterThanMask = ~greaterThanMask;
+
+                max = ElementWiseSelect(greaterThanMask, max, current);
+
+                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
 
 #if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector512<float> result, Vector512<int> maxIndex)
             {
-                float curMax = result[0];
-                int curIn = maxIndex[0];
-                for (int i = 1; i < Vector512<float>.Count; i++)
-                {
-                    if (MathF.Abs(result[i]) == MathF.Abs(curMax) && IsNegative(curMax) && !IsNegative(result[i]))
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                    else if (MathF.Abs(result[i]) > MathF.Abs(curMax))
-                    {
-                        curMax = result[i];
-                        curIn = maxIndex[i];
-                    }
-                }
-                return curIn;
+                // Max the upper/lower halves of the Vector512
+                Vector256<float> resultLower256 = result.GetLower();
+                Vector256<int> indexLower256 = maxIndex.GetLower();
+
+                Invoke(ref resultLower256, result.GetUpper(), ref indexLower256, maxIndex.GetUpper());
+
+                // Max the upper/lower halves of the Vector256
+                Vector128<float> resultLower128 = resultLower256.GetLower();
+                Vector128<int> indexLower128 = indexLower256.GetLower();
+
+                Invoke(ref resultLower128, resultLower256.GetUpper(), ref indexLower128, indexLower256.GetUpper());
+
+                return Invoke(resultLower128, indexLower128);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void Invoke(ref Vector512<float> max, Vector512<float> current, ref Vector512<int> maxIndex, Vector512<int> curIndex)
             {
                 Vector512<float> maxMag = Vector512.Abs(max), currentMag = Vector512.Abs(current);
+                Vector512<float> greaterThanMask = Vector512.GreaterThan(maxMag, currentMag);
 
-                maxIndex = Vector512.ConditionalSelect(Vector512.Equals(max, current).AsInt32(),
-                                    Vector512.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                                    Vector512.ConditionalSelect(Vector512.GreaterThan(maxMag, currentMag).AsInt32(), maxIndex, curIndex));
+                Vector512<float> equalMask = Vector512.Equals(max, current);
 
-                max = Vector512.ConditionalSelect(Vector512.Equals(max, current),
-                        Vector512.ConditionalSelect(IsNegative(max), current, max),
-                        Vector512.Max(maxMag, currentMag));
-            }
+                if (equalMask.AsInt32() != Vector512<int>.Zero)
+                {
+                    Vector512<float> negativeMask = IsNegative(current);
+                    Vector512<int> lessThanMask = Vector512.LessThan(maxIndex, curIndex);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector512<float> max, Vector512<float> current, ref Vector512<int> maxIndex, Vector512<int> curIndex, Vector512<float> remainderMask)
-            {
-                Vector512<float> maxMag = Vector512.Abs(max), currentMag = Vector512.Abs(current);
+                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
+                }
 
-                maxIndex = Vector512.ConditionalSelect(
-                    Vector512.Equals(remainderMask.AsInt32(), Vector512<int>.Zero),
-                    maxIndex,
-                    Vector512.ConditionalSelect(Vector512.Equals(max, current).AsInt32(),
-                    Vector512.ConditionalSelect(IsNegative(max).AsInt32(), curIndex, maxIndex),
-                    Vector512.ConditionalSelect(Vector512.GreaterThan(maxMag, currentMag).AsInt32(), maxIndex, curIndex)));
+                greaterThanMask = ~greaterThanMask;
 
-                max = Vector512.ConditionalSelect(
-                    Vector512.Equals(remainderMask, Vector512<float>.Zero),
-                    max,
-                    MaxOperator.Invoke(maxMag, currentMag));
+                max = ElementWiseSelect(greaterThanMask, max, current);
+
+                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
 #endif
         }
@@ -3808,149 +3718,113 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector128<float> result, Vector128<int> resultIndex)
             {
-                float curMin = float.MaxValue;
-                int curIn = 0;
-                for (int i = 0; i < Vector128<float>.Count; i++)
-                {
-                    if (result[i] == curMin && IsPositive(curMin) && !IsPositive(result[i]))
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                    else if (result[i] < curMin)
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                }
-                return curIn;
+                Vector128<float> tmp128 = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
+                Vector128<int> tmpIndex128 = Vector128.Shuffle(resultIndex, Vector128.Create(2, 3, 0, 1));
+
+                Invoke(ref result, tmp128, ref resultIndex, tmpIndex128);
+
+                tmp128 = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
+                tmpIndex128 = Vector128.Shuffle(resultIndex, Vector128.Create(1, 0, 3, 2));
+
+                Invoke(ref result, tmp128, ref resultIndex, tmpIndex128);
+                return resultIndex.ToScalar();
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void Invoke(ref Vector128<float> result, Vector128<float> current, ref Vector128<int> resultIndex, Vector128<int> curIndex)
             {
-                resultIndex = Vector128.ConditionalSelect(Vector128.Equals(result, current).AsInt32(),
-                    Vector128.ConditionalSelect(IsPositive(result).AsInt32(), curIndex, resultIndex),
-                    Vector128.ConditionalSelect(Vector128.LessThan(result, current).AsInt32(), resultIndex, curIndex));
+                Vector128<float> lessThanMask = Vector128.LessThan(result, current);
 
-                result = Vector128.ConditionalSelect(Vector128.Equals(result, current),
-                        Vector128.ConditionalSelect(IsPositive(result), current, result),
-                        Vector128.Min(result, current));
+                Vector128<float> equalMask = Vector128.Equals(result, current);
+
+                if (equalMask.AsInt32() != Vector128<int>.Zero)
+                {
+                    Vector128<float> negativeMask = IsNegative(current);
+                    Vector128<int> lessThanIndexMask = Vector128.LessThan(resultIndex, curIndex);
+
+                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
+                }
+
+                lessThanMask = ~lessThanMask;
+
+                result = ElementWiseSelect(lessThanMask, result, current);
+
+                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector128<float> result, Vector128<float> current, ref Vector128<int> resultIndex, Vector128<int> curIndex, Vector128<float> remainderMask)
-            {
-                resultIndex = Vector128.ConditionalSelect(
-                    Vector128.Equals(remainderMask.AsInt32(), Vector128<int>.Zero),
-                    resultIndex,
-                    Vector128.ConditionalSelect(Vector128.Equals(result, current).AsInt32(),
-                    Vector128.ConditionalSelect(IsPositive(result).AsInt32(), curIndex, resultIndex),
-                    Vector128.ConditionalSelect(Vector128.LessThan(result, current).AsInt32(), resultIndex, curIndex)));
-
-                result = Vector128.ConditionalSelect(
-                    Vector128.Equals(remainderMask, Vector128<float>.Zero),
-                    result,
-                    MinOperator.Invoke(result, current));
-            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector256<float> result, Vector256<int> resultIndex)
             {
-                float curMin = float.MaxValue;
-                int curIn = 0;
-                for (int i = 0; i < Vector256<float>.Count; i++)
-                {
-                    if (result[i] == curMin && IsPositive(curMin) && !IsPositive(result[i]))
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                    else if (result[i] < curMin)
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                }
-                return curIn;
+                // Min the upper/lower halves of the Vector256
+                Vector128<float> resultLower = result.GetLower();
+                Vector128<int> indexLower = resultIndex.GetLower();
+
+                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
+                return Invoke(resultLower, indexLower);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void Invoke(ref Vector256<float> result, Vector256<float> current, ref Vector256<int> resultIndex, Vector256<int> curIndex)
             {
-                resultIndex = Vector256.ConditionalSelect(Vector256.Equals(result, current).AsInt32(),
-                    Vector256.ConditionalSelect(IsPositive(result).AsInt32(), curIndex, resultIndex),
-                    Vector256.ConditionalSelect(Vector256.LessThan(result, current).AsInt32(), resultIndex, curIndex));
+                Vector256<float> lessThanMask = Vector256.LessThan(result, current);
 
-                result = Vector256.ConditionalSelect(Vector256.Equals(result, current),
-                        Vector256.ConditionalSelect(IsPositive(result), current, result),
-                        Vector256.Min(result, current));
-            }
+                Vector256<float> equalMask = Vector256.Equals(result, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector256<float> result, Vector256<float> current, ref Vector256<int> resultIndex, Vector256<int> curIndex, Vector256<float> remainderMask)
-            {
-                resultIndex = Vector256.ConditionalSelect(
-                    Vector256.Equals(remainderMask.AsInt32(), Vector256<int>.Zero),
-                    resultIndex,
-                    Vector256.ConditionalSelect(Vector256.Equals(result, current).AsInt32(),
-                    Vector256.ConditionalSelect(IsPositive(result).AsInt32(), curIndex, resultIndex),
-                    Vector256.ConditionalSelect(Vector256.LessThan(result, current).AsInt32(), resultIndex, curIndex)));
+                if (equalMask.AsInt32() != Vector256<int>.Zero)
+                {
+                    Vector256<float> negativeMask = IsNegative(current);
+                    Vector256<int> lessThanIndexMask = Vector256.LessThan(resultIndex, curIndex);
 
-                result = Vector256.ConditionalSelect(
-                    Vector256.Equals(remainderMask, Vector256<float>.Zero),
-                    result,
-                    MinOperator.Invoke(result, current));
+                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
+                }
+
+                lessThanMask = ~lessThanMask;
+
+                result = ElementWiseSelect(lessThanMask, result, current);
+
+                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
 
 #if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
             {
-                float curMin = float.MaxValue;
-                int curIn = 0;
-                for (int i = 0; i < Vector512<float>.Count; i++)
-                {
-                    if (result[i] == curMin && IsPositive(curMin) && !IsPositive(result[i]))
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                    else if (result[i] < curMin)
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                }
-                return curIn;
+                // Min the upper/lower halves of the Vector512
+                Vector256<float> resultLower256 = result.GetLower();
+                Vector256<int> indexLower256 = resultIndex.GetLower();
+
+                Invoke(ref resultLower256, result.GetUpper(), ref indexLower256, resultIndex.GetUpper());
+
+                // Min the upper/lower halves of the Vector256
+                Vector128<float> resultLower128 = resultLower256.GetLower();
+                Vector128<int> indexLower128 = indexLower256.GetLower();
+
+                Invoke(ref resultLower128, resultLower256.GetUpper(), ref indexLower128, indexLower256.GetUpper());
+
+                return Invoke(resultLower128, indexLower128);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void Invoke(ref Vector512<float> result, Vector512<float> current, ref Vector512<int> resultIndex, Vector512<int> curIndex)
             {
-                resultIndex = Vector512.ConditionalSelect(Vector512.Equals(result, current).AsInt32(),
-                                    Vector512.ConditionalSelect(IsNegative(result).AsInt32(), curIndex, resultIndex),
-                                    Vector512.ConditionalSelect(Vector512.LessThan(result, current).AsInt32(), resultIndex, curIndex));
+                Vector512<float> lessThanMask = Vector512.LessThan(result, current);
 
-                result = Vector512.ConditionalSelect(Vector512.Equals(result, current),
-                        Vector512.ConditionalSelect(IsNegative(result), current, result),
-                        Vector512.Min(result, current));
-            }
+                Vector512<float> equalMask = Vector512.Equals(result, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector512<float> result, Vector512<float> current, ref Vector512<int> resultIndex, Vector512<int> curIndex, Vector512<float> remainderMask)
-            {
-                resultIndex = Vector512.ConditionalSelect(
-                    Vector512.Equals(remainderMask.AsInt32(), Vector512<int>.Zero),
-                    resultIndex,
-                    Vector512.ConditionalSelect(Vector512.Equals(result, current).AsInt32(),
-                    Vector512.ConditionalSelect(IsPositive(result).AsInt32(), curIndex, resultIndex),
-                    Vector512.ConditionalSelect(Vector512.LessThan(result, current).AsInt32(), resultIndex, curIndex)));
+                if (equalMask.AsInt32() != Vector512<int>.Zero)
+                {
+                    Vector512<float> negativeMask = IsNegative(current);
+                    Vector512<int> lessThanIndexMask = Vector512.LessThan(resultIndex, curIndex);
 
-                result = Vector512.ConditionalSelect(
-                    Vector512.Equals(remainderMask, Vector512<float>.Zero),
-                    result,
-                    MinOperator.Invoke(result, current));
+                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
+                }
+
+                lessThanMask = ~lessThanMask;
+
+                result = ElementWiseSelect(lessThanMask, result, current);
+
+                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
 #endif
         }
@@ -3996,22 +3870,16 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector128<float> result, Vector128<int> resultIndex)
             {
-                float curMin = result[0];
-                int curIn = resultIndex[0];
-                for (int i = 1; i < Vector128<float>.Count; i++)
-                {
-                    if (MathF.Abs(result[i]) == MathF.Abs(curMin) && IsPositive(curMin) && !IsPositive(result[i]))
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                    else if (MathF.Abs(result[i]) < MathF.Abs(curMin))
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                }
-                return curIn;
+                Vector128<float> tmp128 = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
+                Vector128<int> tmpIndex128 = Vector128.Shuffle(resultIndex, Vector128.Create(2, 3, 0, 1));
+
+                Invoke(ref result, tmp128, ref resultIndex, tmpIndex128);
+
+                tmp128 = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
+                tmpIndex128 = Vector128.Shuffle(resultIndex, Vector128.Create(1, 0, 3, 2));
+
+                Invoke(ref result, tmp128, ref resultIndex, tmpIndex128);
+                return resultIndex.ToScalar();
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -4019,52 +3887,34 @@ namespace System.Numerics.Tensors
             {
                 Vector128<float> minMag = Vector128.Abs(result), currentMag = Vector128.Abs(current);
 
-                resultIndex = Vector128.ConditionalSelect(Vector128.Equals(result, current).AsInt32(),
-                    Vector128.ConditionalSelect(IsPositive(result).AsInt32(), curIndex, resultIndex),
-                    Vector128.ConditionalSelect(Vector128.LessThan(minMag, currentMag).AsInt32(), resultIndex, curIndex));
+                Vector128<float> lessThanMask = Vector128.LessThan(minMag, currentMag);
 
-                result = Vector128.ConditionalSelect(Vector128.Equals(result, current),
-                        Vector128.ConditionalSelect(IsPositive(result), current, result),
-                        Vector128.Min(minMag, currentMag));
-            }
+                Vector128<float> equalMask = Vector128.Equals(result, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector128<float> result, Vector128<float> current, ref Vector128<int> resultIndex, Vector128<int> curIndex, Vector128<float> remainderMask)
-            {
-                Vector128<float> minMag = Vector128.Abs(result), currentMag = Vector128.Abs(current);
+                if (equalMask.AsInt32() != Vector128<int>.Zero)
+                {
+                    Vector128<float> negativeMask = IsNegative(current);
+                    Vector128<int> lessThanIndexMask = Vector128.LessThan(resultIndex, curIndex);
 
-                resultIndex = Vector128.ConditionalSelect(
-                    Vector128.Equals(remainderMask.AsInt32(), Vector128<int>.Zero),
-                    resultIndex,
-                    Vector128.ConditionalSelect(Vector128.Equals(result, current).AsInt32(),
-                    Vector128.ConditionalSelect(IsPositive(result).AsInt32(), curIndex, resultIndex),
-                    Vector128.ConditionalSelect(Vector128.LessThan(minMag, currentMag).AsInt32(), resultIndex, curIndex)));
+                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
+                }
 
-                result = Vector128.ConditionalSelect(
-                    Vector128.Equals(remainderMask, Vector128<float>.Zero),
-                    result,
-                    MinOperator.Invoke(minMag, currentMag));
+                lessThanMask = ~lessThanMask;
+
+                result = ElementWiseSelect(lessThanMask, result, current);
+
+                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector256<float> result, Vector256<int> resultIndex)
             {
-                float curMin = result[0];
-                int curIn = resultIndex[0];
-                for (int i = 1; i < Vector256<float>.Count; i++)
-                {
-                    if (MathF.Abs(result[i]) == MathF.Abs(curMin) && IsPositive(curMin) && !IsPositive(result[i]))
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                    else if (MathF.Abs(result[i]) < MathF.Abs(curMin))
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                }
-                return curIn;
+                // Min the upper/lower halves of the Vector256
+                Vector128<float> resultLower = result.GetLower();
+                Vector128<int> indexLower = resultIndex.GetLower();
+
+                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
+                return Invoke(resultLower, indexLower);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -4072,53 +3922,42 @@ namespace System.Numerics.Tensors
             {
                 Vector256<float> minMag = Vector256.Abs(result), currentMag = Vector256.Abs(current);
 
-                resultIndex = Vector256.ConditionalSelect(Vector256.Equals(result, current).AsInt32(),
-                    Vector256.ConditionalSelect(IsPositive(result).AsInt32(), curIndex, resultIndex),
-                    Vector256.ConditionalSelect(Vector256.LessThan(minMag, currentMag).AsInt32(), resultIndex, curIndex));
+                Vector256<float> lessThanMask = Vector256.LessThan(minMag, currentMag);
 
-                result = Vector256.ConditionalSelect(Vector256.Equals(result, current),
-                        Vector256.ConditionalSelect(IsPositive(result), current, result),
-                        Vector256.Min(minMag, currentMag));
-            }
+                Vector256<float> equalMask = Vector256.Equals(result, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector256<float> result, Vector256<float> current, ref Vector256<int> resultIndex, Vector256<int> curIndex, Vector256<float> remainderMask)
-            {
-                Vector256<float> minMag = Vector256.Abs(result), currentMag = Vector256.Abs(current);
+                if (equalMask.AsInt32() != Vector256<int>.Zero)
+                {
+                    Vector256<float> negativeMask = IsNegative(current);
+                    Vector256<int> lessThanIndexMask = Vector256.LessThan(resultIndex, curIndex);
 
-                resultIndex = Vector256.ConditionalSelect(
-                    Vector256.Equals(remainderMask.AsInt32(), Vector256<int>.Zero),
-                    resultIndex,
-                    Vector256.ConditionalSelect(Vector256.Equals(result, current).AsInt32(),
-                    Vector256.ConditionalSelect(IsPositive(result).AsInt32(), curIndex, resultIndex),
-                    Vector256.ConditionalSelect(Vector256.LessThan(minMag, currentMag).AsInt32(), resultIndex, curIndex)));
+                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
+                }
 
-                result = Vector256.ConditionalSelect(
-                    Vector256.Equals(remainderMask, Vector256<float>.Zero),
-                    result,
-                    MinOperator.Invoke(minMag, currentMag));
+                lessThanMask = ~lessThanMask;
+
+                result = ElementWiseSelect(lessThanMask, result, current);
+
+                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
 
 #if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
             {
-                float curMin = result[0];
-                int curIn = resultIndex[0];
-                for (int i = 1; i < Vector512<float>.Count; i++)
-                {
-                    if (MathF.Abs(result[i]) == MathF.Abs(curMin) && IsPositive(curMin) && !IsPositive(result[i]))
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                    else if (MathF.Abs(result[i]) < MathF.Abs(curMin))
-                    {
-                        curMin = result[i];
-                        curIn = resultIndex[i];
-                    }
-                }
-                return curIn;
+                // Min the upper/lower halves of the Vector512
+                Vector256<float> resultLower256 = result.GetLower();
+                Vector256<int> indexLower256 = resultIndex.GetLower();
+
+                Invoke(ref resultLower256, result.GetUpper(), ref indexLower256, resultIndex.GetUpper());
+
+                // Min the upper/lower halves of the Vector256
+                Vector128<float> resultLower128 = resultLower256.GetLower();
+                Vector128<int> indexLower128 = indexLower256.GetLower();
+
+                Invoke(ref resultLower128, resultLower256.GetUpper(), ref indexLower128, indexLower256.GetUpper());
+
+                return Invoke(resultLower128, indexLower128);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -4126,31 +3965,23 @@ namespace System.Numerics.Tensors
             {
                 Vector512<float> minMag = Vector512.Abs(result), currentMag = Vector512.Abs(current);
 
-                resultIndex = Vector512.ConditionalSelect(Vector512.Equals(result, current).AsInt32(),
-                                    Vector512.ConditionalSelect(IsNegative(result).AsInt32(), curIndex, resultIndex),
-                                    Vector512.ConditionalSelect(Vector512.LessThan(minMag, currentMag).AsInt32(), resultIndex, curIndex));
+                Vector512<float> lessThanMask = Vector512.LessThan(minMag, currentMag);
 
-                result = Vector512.ConditionalSelect(Vector512.Equals(result, current),
-                        Vector512.ConditionalSelect(IsNegative(result), current, result),
-                        Vector512.Min(minMag, currentMag));
-            }
+                Vector512<float> equalMask = Vector512.Equals(result, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector512<float> result, Vector512<float> current, ref Vector512<int> resultIndex, Vector512<int> curIndex, Vector512<float> remainderMask)
-            {
-                Vector512<float> minMag = Vector512.Abs(result), currentMag = Vector512.Abs(current);
+                if (equalMask.AsInt32() != Vector512<int>.Zero)
+                {
+                    Vector512<float> negativeMask = IsNegative(current);
+                    Vector512<int> lessThanIndexMask = Vector512.LessThan(resultIndex, curIndex);
 
-                resultIndex = Vector512.ConditionalSelect(
-                    Vector512.Equals(remainderMask.AsInt32(), Vector512<int>.Zero),
-                    resultIndex,
-                    Vector512.ConditionalSelect(Vector512.Equals(result, current).AsInt32(),
-                    Vector512.ConditionalSelect(IsPositive(result).AsInt32(), curIndex, resultIndex),
-                    Vector512.ConditionalSelect(Vector512.LessThan(minMag, currentMag).AsInt32(), resultIndex, curIndex)));
+                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
+                }
 
-                result = Vector512.ConditionalSelect(
-                    Vector512.Equals(remainderMask, Vector512<float>.Zero),
-                    result,
-                    MinOperator.Invoke(minMag, currentMag));
+                lessThanMask = ~lessThanMask;
+
+                result = ElementWiseSelect(lessThanMask, result, current);
+
+                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
 #endif
         }
@@ -5561,6 +5392,62 @@ namespace System.Numerics.Tensors
             }
 #endif
         }
+
+        private static Vector128<float> ElementWiseSelect(Vector128<float> mask, Vector128<float> left, Vector128<float> right)
+        {
+            if (Sse41.IsSupported)
+            {
+                return Sse41.BlendVariable(left, right, mask);
+            }
+            else return Vector128.ConditionalSelect(mask, left, right);
+        }
+
+        private static Vector128<int> ElementWiseSelect(Vector128<int> mask, Vector128<int> left, Vector128<int> right)
+        {
+            if (Sse41.IsSupported)
+            {
+                return Sse41.BlendVariable(left, right, mask);
+            }
+            else return Vector128.ConditionalSelect(mask, left, right);
+        }
+
+        private static Vector256<float> ElementWiseSelect(Vector256<float> mask, Vector256<float> left, Vector256<float> right)
+        {
+            if (Avx2.IsSupported)
+            {
+                return Avx2.BlendVariable(left, right, mask);
+            }
+            else return Vector256.ConditionalSelect(mask, left, right);
+        }
+
+        private static Vector256<int> ElementWiseSelect(Vector256<int> mask, Vector256<int> left, Vector256<int> right)
+        {
+            if (Avx2.IsSupported)
+            {
+                return Avx2.BlendVariable(left, right, mask);
+            }
+            else return Vector256.ConditionalSelect(mask, left, right);
+        }
+
+#if NET8_0_OR_GREATER
+        private static Vector512<float> ElementWiseSelect(Vector512<float> mask, Vector512<float> left, Vector512<float> right)
+        {
+            if (Avx512F.IsSupported)
+            {
+                return Avx512F.BlendVariable(left, right, mask);
+            }
+            else return Vector512.ConditionalSelect(mask, left, right);
+        }
+
+        private static Vector512<int> ElementWiseSelect(Vector512<int> mask, Vector512<int> left, Vector512<int> right)
+        {
+            if (Avx512F.IsSupported)
+            {
+                return Avx512F.BlendVariable(left, right, mask);
+            }
+            else return Vector512.ConditionalSelect(mask, left, right);
+        }
+#endif
 
         /// <summary>1f / (1f + MathF.Exp(-x))</summary>
         private readonly struct SigmoidOperator : IUnaryOperator
