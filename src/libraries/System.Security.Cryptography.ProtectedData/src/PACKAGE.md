@@ -7,6 +7,7 @@ System.Security.Cryptography.ProtectedData offers a simplified interface for uti
 This library is primarily aimed at ensuring the security of critical data, like user credentials or sensitive information, either while storing or transmitting.
 
 **Note**: Since it relies on Windows DPAPI, this package is only suited for applications running on Windows platforms.
+For more complex cryptographic operations or cross-platform support, consider the [System.Security.Cryptography](https://learn.microsoft.com/dotnet/api/system.security.cryptography) namespace.
 
 ## Key Features
 
@@ -68,16 +69,12 @@ The main type provided by this library is:
 
 * [Conceptual documentation](https://learn.microsoft.com/dotnet/standard/security/how-to-use-data-protection)
 * [API documentation](https://learn.microsoft.com/dotnet/api/system.security.cryptography.protecteddata)
-* [CNG DPAPI](https://learn.microsoft.com/windows/win32/seccng/cng-dpapi)
 
 ## Related Packages
 
 <!-- The related packages associated with this package -->
 
-For more complex cryptographic operations or cross-platform support, consider using:
-
-* [System.Security.Cryptography.Algorithms](https://www.nuget.org/packages/System.Security.Cryptography.Algorithms/)
-* [System.Security.Cryptography.Pkcs](https://www.nuget.org/packages/System.Security.Cryptography.Pkcs/)
+* PKCS and CMS algorithms: [System.Security.Cryptography.Pkcs](https://www.nuget.org/packages/System.Security.Cryptography.Pkcs/)
 
 ## Feedback & Contributing
 
