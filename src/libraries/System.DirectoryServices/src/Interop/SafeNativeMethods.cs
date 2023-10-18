@@ -15,9 +15,6 @@ namespace System.DirectoryServices
             ERROR_SUCCESS = 0;
 
         [LibraryImport(global::Interop.Libraries.Activeds, StringMarshalling = StringMarshalling.Utf16)]
-        public static unsafe partial int ADsGetLastError(out int error, char* errorBuffer, int errorBufferLength, char* nameBuffer, int nameBufferLength);
-
-        [LibraryImport(global::Interop.Libraries.Activeds, StringMarshalling = StringMarshalling.Utf16)]
         public static partial int ADsSetLastError(int error, string? errorString, string? provider);
 
         public sealed class EnumVariant

@@ -405,7 +405,7 @@ namespace System.DirectoryServices
             {
                 char c1 = '\0', c2 = '\0';
                 errorCode = SafeNativeMethods.ERROR_SUCCESS;
-                return SafeNativeMethods.ADsGetLastError(out errorCode, &c1, 0, &c2, 0);
+                return Interop.Activeds.ADsGetLastError(out errorCode, &c1, 0, &c2, 0);
             }
         }
     }
