@@ -66,19 +66,19 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t1.Start(bts);
-                Assert.True(false, string.Format("    > FAILED.  No exception thrown."));
+                Assert.Fail(string.Format("    > FAILED.  No exception thrown."));
             }
             catch (TaskSchedulerException)
             {
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("    > FAILED. Wrong exception thrown (expected TaskSchedulerException): {0}", e));
+                Assert.Fail(string.Format("    > FAILED. Wrong exception thrown (expected TaskSchedulerException): {0}", e));
             }
 
             if (t1.Status != TaskStatus.Faulted)
             {
-                Assert.True(false, string.Format("    > FAILED. Task ended up in wrong status (expected Faulted): {0}", t1.Status));
+                Assert.Fail(string.Format("    > FAILED. Task ended up in wrong status (expected Faulted): {0}", t1.Status));
             }
 
 
@@ -86,13 +86,13 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t1.Wait();
-                Assert.True(false, string.Format("    > FAILED.  No exception thrown from Wait()."));
+                Assert.Fail(string.Format("    > FAILED.  No exception thrown from Wait()."));
             }
             catch (AggregateException ae)
             {
                 if (!(ae.InnerExceptions[0] is TaskSchedulerException))
                 {
-                    Assert.True(false, string.Format("    > FAILED.  Wrong inner exception thrown from Wait(): {0}", ae.InnerExceptions[0].GetType().Name));
+                    Assert.Fail(string.Format("    > FAILED.  Wrong inner exception thrown from Wait(): {0}", ae.InnerExceptions[0].GetType().Name));
                 }
             }
 
@@ -103,30 +103,30 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t2.RunSynchronously(bts);
-                Assert.True(false, string.Format("    > FAILED.  No exception thrown."));
+                Assert.Fail(string.Format("    > FAILED.  No exception thrown."));
             }
             catch (TaskSchedulerException) { }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("    > FAILED. Wrong exception thrown (expected TaskSchedulerException): {0}", e));
+                Assert.Fail(string.Format("    > FAILED. Wrong exception thrown (expected TaskSchedulerException): {0}", e));
             }
 
             if (t2.Status != TaskStatus.Faulted)
             {
-                Assert.True(false, string.Format("    > FAILED. Task ended up in wrong status (expected Faulted): {0}", t1.Status));
+                Assert.Fail(string.Format("    > FAILED. Task ended up in wrong status (expected Faulted): {0}", t1.Status));
             }
 
             Debug.WriteLine("    -- Waiting on Faulted task (there's a problem if we deadlock)...");
             try
             {
                 t2.Wait();
-                Assert.True(false, string.Format("    > FAILED.  No exception thrown from Wait()."));
+                Assert.Fail(string.Format("    > FAILED.  No exception thrown from Wait()."));
             }
             catch (AggregateException ae)
             {
                 if (!(ae.InnerExceptions[0] is TaskSchedulerException))
                 {
-                    Assert.True(false, string.Format("    > FAILED.  Wrong inner exception thrown from Wait(): {0}", ae.InnerExceptions[0].GetType().Name));
+                    Assert.Fail(string.Format("    > FAILED.  Wrong inner exception thrown from Wait(): {0}", ae.InnerExceptions[0].GetType().Name));
                 }
             }
 
@@ -137,12 +137,12 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 Task t3 = Task.Factory.StartNew(delegate { }, CancellationToken.None, TaskCreationOptions.None, bts);
-                Assert.True(false, string.Format("    > FAILED.  No exception thrown."));
+                Assert.Fail(string.Format("    > FAILED.  No exception thrown."));
             }
             catch (TaskSchedulerException) { }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("    > FAILED. Wrong exception thrown (expected TaskSchedulerException): {0}", e));
+                Assert.Fail(string.Format("    > FAILED. Wrong exception thrown (expected TaskSchedulerException): {0}", e));
             }
 
             //
@@ -158,18 +158,18 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 tc1.Wait();
-                Assert.True(false, string.Format("    > FAILED.  No exception thrown (sync)."));
+                Assert.Fail(string.Format("    > FAILED.  No exception thrown (sync)."));
             }
             catch (AggregateException ae)
             {
                 if (!(ae.InnerExceptions[0] is TaskSchedulerException))
                 {
-                    Assert.True(false, string.Format("    > FAILED.  Wrong inner exception thrown from Wait() (sync): {0}", ae.InnerExceptions[0].GetType().Name));
+                    Assert.Fail(string.Format("    > FAILED.  Wrong inner exception thrown from Wait() (sync): {0}", ae.InnerExceptions[0].GetType().Name));
                 }
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("    > FAILED.  Wrong exception thrown (sync): {0}", e));
+                Assert.Fail(string.Format("    > FAILED.  Wrong exception thrown (sync): {0}", e));
             }
 
             Task tc2 = completedTask.ContinueWith(delegate { }, CancellationToken.None, TaskContinuationOptions.None, bts);
@@ -178,18 +178,18 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 tc2.Wait();
-                Assert.True(false, string.Format("    > FAILED.  No exception thrown (async)."));
+                Assert.Fail(string.Format("    > FAILED.  No exception thrown (async)."));
             }
             catch (AggregateException ae)
             {
                 if (!(ae.InnerExceptions[0] is TaskSchedulerException))
                 {
-                    Assert.True(false, string.Format("    > FAILED.  Wrong inner exception thrown from Wait() (async): {0}", ae.InnerExceptions[0].GetType().Name));
+                    Assert.Fail(string.Format("    > FAILED.  Wrong inner exception thrown from Wait() (async): {0}", ae.InnerExceptions[0].GetType().Name));
                 }
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("    > FAILED.  Wrong exception thrown (async): {0}", e));
+                Assert.Fail(string.Format("    > FAILED.  Wrong exception thrown (async): {0}", e));
             }
 
             // Test Wait()/inlining
@@ -200,12 +200,12 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t4.Wait();
-                Assert.True(false, string.Format("    > FAILED.  Expected inlining exception"));
+                Assert.Fail(string.Format("    > FAILED.  Expected inlining exception"));
             }
             catch (TaskSchedulerException) { }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("    > FAILED.  Wrong exception thrown: {0}", e));
+                Assert.Fail(string.Format("    > FAILED.  Wrong exception thrown: {0}", e));
             }
         }
 

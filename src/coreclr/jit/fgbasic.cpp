@@ -96,7 +96,6 @@ void Compiler::fgInit()
     // as the code that raises an exception when an array range check fails.
 
     fgAddCodeList = nullptr;
-    fgAddCodeModf = false;
 
     for (int i = 0; i < SCK_COUNT; i++)
     {
@@ -109,8 +108,8 @@ void Compiler::fgInit()
     /* This global flag is set whenever we remove a statement */
     fgStmtRemoved = false;
 
-    /* This global flag is set whenever we add a throw block for a RngChk */
-    fgRngChkThrowAdded = false; /* reset flag for fgIsCodeAdded() */
+    // This global flag is set when we create throw helper blocks
+    fgRngChkThrowAdded = false;
 
     /* Keep track of whether or not EH statements have been optimized */
     fgOptimizedFinally = false;
@@ -268,7 +267,7 @@ bool Compiler::fgEnsureFirstBBisScratch()
         }
 
         // The first block has an implicit ref count which we must
-        // remove. Note the ref count could be greater that one, if
+        // remove. Note the ref count could be greater than one, if
         // the first block is not scratch and is targeted by a
         // branch.
         assert(fgFirstBB->bbRefs >= 1);
@@ -3917,10 +3916,6 @@ void Compiler::fgFindBasicBlocks()
             }
         }
 
-        /* Mark the initial block and last blocks in the 'try' region */
-
-        tryBegBB->bbFlags |= BBF_TRY_BEG;
-
         /*  Prevent future optimizations of removing the first block   */
         /*  of a TRY block and the first block of an exception handler */
 
@@ -4790,9 +4785,8 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
     newBlock->bbFlags = curr->bbFlags;
 
     // Remove flags that the new block can't have.
-    newBlock->bbFlags &=
-        ~(BBF_TRY_BEG | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER |
-          BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
+    newBlock->bbFlags &= ~(BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER |
+                           BBF_KEEP_BBJ_ALWAYS | BBF_PATCHPOINT | BBF_BACKWARD_JUMP_TARGET | BBF_LOOP_ALIGN);
 
     // Remove the GC safe bit on the new block. It seems clear that if we split 'curr' at the end,
     // such that all the code is left in 'curr', and 'newBlock' just gets the control flow, then

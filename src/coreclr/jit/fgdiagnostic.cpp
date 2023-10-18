@@ -907,13 +907,15 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (displayBlockFlags)
             {
                 // Don't display the `[` `]` unless we're going to display something.
-                const BasicBlockFlags allDisplayedBlockFlags = BBF_TRY_BEG | BBF_FUNCLET_BEG | BBF_RUN_RARELY |
-                                                               BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_LOOP_ALIGN;
-                if (block->bbFlags & allDisplayedBlockFlags)
+                const bool            isTryEntryBlock = bbIsTryBeg(block);
+                const BasicBlockFlags allDisplayedBlockFlags =
+                    BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_LOOP_ALIGN;
+
+                if (isTryEntryBlock || ((block->bbFlags & allDisplayedBlockFlags) != 0))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
-                    if (block->bbFlags & BBF_TRY_BEG)
+                    if (isTryEntryBlock)
                     {
                         fprintf(fgxFile, "T");
                     }
@@ -2075,7 +2077,8 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 break;
 
             case BBJ_EHFILTERRET:
-                printf("%*s        (fltret)", maxBlockNumWidth - 2, "");
+                printf("-> " FMT_BB "%*s (fltret)", block->GetJumpDest()->bbNum,
+                       maxBlockNumWidth - max(CountDigits(block->GetJumpDest()->bbNum), 2), "");
                 break;
 
             case BBJ_EHCATCHRET:
@@ -2203,7 +2206,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         /* brace matching editor workaround to compensate for the preceding line: } */
     }
 
-    if (flags & BBF_TRY_BEG)
+    if (bbIsTryBeg(block))
     {
         // Output a brace for every try region that this block opens
 

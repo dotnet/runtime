@@ -209,9 +209,6 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() == XTnum);
 
-        assert((firstTryBlock->bbFlags & BBF_TRY_BEG) != 0);
-        firstTryBlock->bbFlags &= ~BBF_TRY_BEG;
-
         for (BasicBlock* const block : Blocks(firstTryBlock, lastTryBlock))
         {
             // Look for blocks directly contained in this try, and
@@ -493,12 +490,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                 {
                     block->clearTryIndex();
                 }
-            }
-
-            if (block == firstTryBlock)
-            {
-                assert((block->bbFlags & BBF_TRY_BEG) != 0);
-                block->bbFlags &= ~BBF_TRY_BEG;
             }
 
             if (block == lastTryBlock)
@@ -2080,7 +2071,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
         // Workaround: don't consider try entry blocks as candidates
         // for merging; if the canonical throw is later in the same try,
         // we'll create invalid flow.
-        if ((block->bbFlags & BBF_TRY_BEG) != 0)
+        if (bbIsTryBeg(block))
         {
             continue;
         }

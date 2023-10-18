@@ -134,7 +134,7 @@ namespace System.Threading.Tasks.Tests.Status
                                 if (ex is OperationCanceledException)
                                     Debug.WriteLine("OperationCanceledException Exception was thrown as expected");
                                 else
-                                    Assert.True(false, string.Format("Unexpected exception was thrown: \n{0}", ex.ToString()));
+                                    Assert.Fail(string.Format("Unexpected exception was thrown: \n{0}", ex.ToString()));
                             }
                         }
                         else if (_testAction == TestAction.CancelCreatedTask)
@@ -181,7 +181,7 @@ namespace System.Threading.Tasks.Tests.Status
                             //
                             if (_task.Status != TaskStatus.WaitingForChildrenToComplete && !_childTask.IsCompleted)
                             {
-                                Assert.True(false, string.Format("Expecting current Task status to be WaitingForChildren but getting {0}", _task.Status.ToString()));
+                                Assert.Fail(string.Format("Expecting current Task status to be WaitingForChildren but getting {0}", _task.Status.ToString()));
                             }
                         }
                         _task.Wait();
@@ -201,7 +201,7 @@ namespace System.Threading.Tasks.Tests.Status
                     }
                     else
                     {
-                        Assert.True(false, string.Format("Unexpected exception was thrown: \n{0}", exp.ToString()));
+                        Assert.Fail(string.Format("Unexpected exception was thrown: \n{0}", exp.ToString()));
                     }
                 }
 
@@ -235,7 +235,7 @@ namespace System.Threading.Tasks.Tests.Status
                     }
                     else
                     {
-                        Assert.True(false, string.Format("Unexpected exception was thrown: \n{0}", exp.ToString()));
+                        Assert.Fail(string.Format("Unexpected exception was thrown: \n{0}", exp.ToString()));
                     }
                 }
             }
@@ -245,15 +245,15 @@ namespace System.Threading.Tasks.Tests.Status
             //
             if (_finalTaskStatus != null && _finalTaskStatus.Value != _task.Status)
             {
-                Assert.True(false, string.Format("Expecting Task final Status to be {0}, while getting {1}", _finalTaskStatus.Value, _task.Status));
+                Assert.Fail(string.Format("Expecting Task final Status to be {0}, while getting {1}", _finalTaskStatus.Value, _task.Status));
             }
             if (_finalChildTaskStatus != null && _finalChildTaskStatus.Value != _childTask.Status)
             {
-                Assert.True(false, string.Format("Expecting Child Task final Status to be {0}, while getting {1}", _finalChildTaskStatus.Value, _childTask.Status));
+                Assert.Fail(string.Format("Expecting Child Task final Status to be {0}, while getting {1}", _finalChildTaskStatus.Value, _childTask.Status));
             }
             if (_finalPromiseStatus != null && _finalPromiseStatus.Value != _promise.Task.Status)
             {
-                Assert.True(false, string.Format("Expecting Promise Status to be {0}, while getting {1}", _finalPromiseStatus.Value, _promise.Task.Status));
+                Assert.Fail(string.Format("Expecting Promise Status to be {0}, while getting {1}", _finalPromiseStatus.Value, _promise.Task.Status));
             }
 
             //
@@ -261,11 +261,11 @@ namespace System.Threading.Tasks.Tests.Status
             //
             if (_task != null && _task.Status == TaskStatus.Canceled && _task.IsCanceled != true)
             {
-                Assert.True(false, string.Format("Task final Status is Canceled, expecting IsCanceled property to be True as well"));
+                Assert.Fail(string.Format("Task final Status is Canceled, expecting IsCanceled property to be True as well"));
             }
             if (_childTask != null && _childTask.Status == TaskStatus.Canceled && _childTask.IsCanceled != true)
             {
-                Assert.True(false, string.Format("Child Task final Status is Canceled, expecting IsCanceled property to be True as well"));
+                Assert.Fail(string.Format("Child Task final Status is Canceled, expecting IsCanceled property to be True as well"));
             }
 
             //
@@ -280,7 +280,7 @@ namespace System.Threading.Tasks.Tests.Status
                 AggregateException exp = _promise.Task.Exception;
                 if (!_promise.Task.IsFaulted || exp == null)
                 {
-                    Assert.True(false, string.Format("No Exception found on promise"));
+                    Assert.Fail(string.Format("No Exception found on promise"));
                 }
                 else if (exp.Flatten().InnerException.GetType() == typeof(StatusTestException))
                 {
@@ -288,7 +288,7 @@ namespace System.Threading.Tasks.Tests.Status
                 }
                 else
                 {
-                    Assert.True(false, string.Format("Exception on promise has mismatched type, expecting StatusTestException, actual: {0}", exp.Flatten().InnerException.GetType()));
+                    Assert.Fail(string.Format("Exception on promise has mismatched type, expecting StatusTestException, actual: {0}", exp.Flatten().InnerException.GetType()));
                 }
             }
         }
@@ -316,7 +316,7 @@ namespace System.Threading.Tasks.Tests.Status
 
                     if (_childTask.Status != TaskStatus.Created)
                     {
-                        Assert.True(false, string.Format("Expecting Child Task status to be Created while getting {0}", _childTask.Status.ToString()));
+                        Assert.Fail(string.Format("Expecting Child Task status to be Created while getting {0}", _childTask.Status.ToString()));
                     }
 
                     _childTask.Start();
@@ -332,7 +332,7 @@ namespace System.Threading.Tasks.Tests.Status
 
                 if (_task.Status != TaskStatus.Running)
                 {
-                    Assert.True(false, string.Format("Expecting Current Task status to be Running while getting {0}", _task.Status.ToString()));
+                    Assert.Fail(string.Format("Expecting Current Task status to be Running while getting {0}", _task.Status.ToString()));
                 }
 
                 switch (_testAction)
@@ -368,7 +368,7 @@ namespace System.Threading.Tasks.Tests.Status
 
             if (_childTask.Status != TaskStatus.Running)
             {
-                Assert.True(false, string.Format("Expecting Child Task status to be Running while getting {0}", _childTask.Status.ToString()));
+                Assert.Fail(string.Format("Expecting Child Task status to be Running while getting {0}", _childTask.Status.ToString()));
             }
             switch (_testAction)
             {

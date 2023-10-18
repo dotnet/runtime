@@ -386,7 +386,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_IMPORTED             = MAKE_BBFLAG( 4), // BB byte-code has been imported
     BBF_INTERNAL             = MAKE_BBFLAG( 5), // BB has been added by the compiler
     BBF_FAILED_VERIFICATION  = MAKE_BBFLAG( 6), // BB has verification exception
-    BBF_TRY_BEG              = MAKE_BBFLAG( 7), // BB starts a 'try' block
+//  BBF_UNUSED               = MAKE_BBFLAG( 7),
     BBF_FUNCLET_BEG          = MAKE_BBFLAG( 8), // BB is the beginning of a funclet
     BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 9), // First block of a cloned finally region
     BBF_CLONED_FINALLY_END   = MAKE_BBFLAG(10), // Last block of a cloned finally region
@@ -887,15 +887,7 @@ public:
     // GetSucc() without a Compiler*.
     //
     // The behavior of NumSucc()/GetSucc() is different when passed a Compiler* for blocks that end in:
-    // (1) BBJ_EHFINALLYRET (a return from a finally block)
-    // (2) BBJ_EHFILTERRET (a return from EH filter block)
-    // (3) BBJ_SWITCH
-    //
-    // For BBJ_EHFINALLYRET, if no Compiler* is passed, then the block is considered to have no
-    // successor. If Compiler* is passed, we use the actual successors.
-    //
-    // Similarly, BBJ_EHFILTERRET blocks are assumed to have no successors if Compiler* is not passed; if
-    // Compiler* is passed, NumSucc/GetSucc yields the first block of the try block's handler.
+    // (1) BBJ_SWITCH
     //
     // For BBJ_SWITCH, if Compiler* is not passed, then all switch successors are returned. If Compiler*
     // is passed, then only unique switch successors are returned; the duplicate successors are omitted.
@@ -1751,9 +1743,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
     {
         case BBJ_THROW:
         case BBJ_RETURN:
-        case BBJ_EHFINALLYRET:
         case BBJ_EHFAULTRET:
-        case BBJ_EHFILTERRET:
             // We don't need m_succs.
             m_begin = nullptr;
             m_end   = nullptr;
@@ -1762,6 +1752,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
             m_succs[0] = block->GetJumpDest();
             m_begin    = &m_succs[0];
@@ -1788,6 +1779,22 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             {
                 m_succs[1] = block->GetJumpDest();
                 m_end      = &m_succs[2];
+            }
+            break;
+
+        case BBJ_EHFINALLYRET:
+            // We don't use the m_succs in-line data; use the existing successor table in the block.
+            // We must tolerate iterating successors early in the system, before EH_FINALLYRET successors have
+            // been computed.
+            if (block->GetJumpEhf() == nullptr)
+            {
+                m_begin = nullptr;
+                m_end   = nullptr;
+            }
+            else
+            {
+                m_begin = block->GetJumpEhf()->bbeSuccs;
+                m_end   = block->GetJumpEhf()->bbeSuccs + block->GetJumpEhf()->bbeCount;
             }
             break;
 
