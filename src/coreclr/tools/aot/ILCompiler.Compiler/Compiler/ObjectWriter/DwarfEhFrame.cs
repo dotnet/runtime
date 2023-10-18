@@ -3,15 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Buffers.Binary;
 
 using ILCompiler.DependencyAnalysis;
 using Internal.Text;
 
-using LibObjectFile.Dwarf;
-using Melanzana.MachO;
 using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter
@@ -85,7 +81,7 @@ namespace ILCompiler.ObjectWriter
                 1u + // Version
                 (uint)augmentationString.Length + 1u +
                 DwarfHelper.SizeOfULEB128(cie.CodeAlignFactor) +
-                DwarfHelper.SizeOfILEB128(cie.DataAlignFactor) +
+                DwarfHelper.SizeOfSLEB128(cie.DataAlignFactor) +
                 DwarfHelper.SizeOfULEB128(cie.ReturnAddressRegister) +
                 (uint)(augmentationLength > 0 ? DwarfHelper.SizeOfULEB128(augmentationLength) + augmentationLength : 0) +
                 (uint)cie.Instructions.Length;
@@ -98,7 +94,7 @@ namespace ILCompiler.ObjectWriter
             stream.Write(augmentationString.UnderlyingArray);
 
             stream.WriteULEB128(cie.CodeAlignFactor);
-            stream.WriteILEB128(cie.DataAlignFactor);
+            stream.WriteSLEB128(cie.DataAlignFactor);
             stream.WriteULEB128(cie.ReturnAddressRegister);
 
             stream.WriteULEB128(augmentationLength);

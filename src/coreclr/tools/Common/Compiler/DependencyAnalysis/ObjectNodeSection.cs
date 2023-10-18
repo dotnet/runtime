@@ -9,6 +9,7 @@ namespace ILCompiler.DependencyAnalysis
         Writeable,
         Executable,
         Uninitialized,
+        Debug,
     }
 
     /// <summary>

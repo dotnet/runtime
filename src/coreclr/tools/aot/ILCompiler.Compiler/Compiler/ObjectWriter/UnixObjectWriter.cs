@@ -2,27 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Linq;
-using System.Numerics;
-using System.Buffers;
 using System.Buffers.Binary;
-
 using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysisFramework;
-
-using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
-using Internal.JitInterface;
-using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
-
-using LibObjectFile;
-using LibObjectFile.Dwarf;
-using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -152,7 +136,6 @@ namespace ILCompiler.ObjectWriter
             INodeWithDebugInfo debugNode,
             bool hasSequencePoints)
         {
-            var lowPC = GetSectionVirtualAddress(methodSymbol.SectionIndex) + (ulong)methodSymbol.Value;
             DebugEHClauseInfo[] clauses = null;
 
             if (debugNode is INodeWithCodeInfo nodeWithCodeInfo)
@@ -162,23 +145,54 @@ namespace ILCompiler.ObjectWriter
 
             _dwarfBuilder.EmitSubprogramInfo(
                 methodName,
-                lowPC,
                 methodSymbol.Size,
                 methodTypeIndex,
                 debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
-                clauses ?? Array.Empty<DebugEHClauseInfo>());
+                clauses ?? []);
 
             if (hasSequencePoints)
             {
-                _dwarfBuilder.EmitLineInfo(methodSymbol.SectionIndex, lowPC, debugNode.GetNativeSequencePoints());
+                _dwarfBuilder.EmitLineInfo(
+                    methodSymbol.SectionIndex,
+                    GetSectionSymbolName(methodSymbol.SectionIndex),
+                    (ulong)methodSymbol.Value,
+                    debugNode.GetNativeSequencePoints());
             }
         }
 
-        protected abstract void EmitDebugSections(DwarfFile dwarfFile);
+        //protected abstract void EmitDebugSections(DwarfFile dwarfFile);
+
+        private readonly ObjectNodeSection DebugInfoSection = new ObjectNodeSection(".debug_info", SectionType.Debug);
+        private readonly ObjectNodeSection DebugStringSection = new ObjectNodeSection(".debug_str", SectionType.Debug);
+        private readonly ObjectNodeSection DebugAbbrevSection = new ObjectNodeSection(".debug_abbrev", SectionType.Debug);
+        private readonly ObjectNodeSection DebugLocSection = new ObjectNodeSection(".debug_loc", SectionType.Debug);
+        private readonly ObjectNodeSection DebugRangesSection = new ObjectNodeSection(".debug_ranges", SectionType.Debug);
+        private readonly ObjectNodeSection DebugLineSection = new ObjectNodeSection(".debug_line", SectionType.Debug);
+        private readonly ObjectNodeSection DebugARangesSection = new ObjectNodeSection(".debug_aranges", SectionType.Debug);
 
         protected override void EmitDebugSections()
         {
-            EmitDebugSections(_dwarfBuilder.DwarfFile);
+            for (int i = 0; i < _sectionIndexToStream.Count; i++)
+            {
+                _dwarfBuilder.EmitSectionInfo(GetSectionSymbolName(i), (ulong)_sectionIndexToStream[i].Length);
+            }
+
+            SectionWriter infoSectionWriter = GetOrCreateSection(DebugInfoSection);
+            SectionWriter stringSectionWriter = GetOrCreateSection(DebugStringSection);
+            SectionWriter abbrevSectionWriter = GetOrCreateSection(DebugAbbrevSection);
+            SectionWriter locSectionWriter = GetOrCreateSection(DebugLocSection);
+            SectionWriter rangeSectionWriter = GetOrCreateSection(DebugRangesSection);
+            SectionWriter lineSectionWriter = GetOrCreateSection(DebugLineSection);
+            SectionWriter arangeSectionWriter = GetOrCreateSection(DebugARangesSection);
+
+            _dwarfBuilder.Write(
+                infoSectionWriter,
+                stringSectionWriter,
+                abbrevSectionWriter,
+                locSectionWriter,
+                rangeSectionWriter,
+                lineSectionWriter,
+                arangeSectionWriter);
         }
 
         protected override void CreateEhSections()
@@ -210,19 +224,6 @@ namespace ILCompiler.ObjectWriter
                 _nodeFactory.NameMangler,
                 _nodeFactory.Target.Architecture,
                 _options.HasFlag(ObjectWritingOptions.UseDwarf5));
-        }
-
-        protected override void EmitDebugStaticVars()
-        {
-            var definedSymbols = GetDefinedSymbols();
-            _dwarfBuilder.EmitStaticVars(
-                symbolName =>
-                {
-                    if (definedSymbols.TryGetValue(ExternCName(symbolName), out var symbolDef))
-                        return GetSectionVirtualAddress(symbolDef.SectionIndex) + (ulong)symbolDef.Value;
-                    return 0;
-                }
-            );
         }
     }
 }

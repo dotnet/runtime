@@ -2,29 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Linq;
-using System.Numerics;
-using System.Buffers;
-using System.Buffers.Binary;
-
 using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysisFramework;
-
-using Internal.Text;
-using Internal.TypeSystem;
-using Internal.TypeSystem.TypesDebugInfo;
-using Internal.JitInterface;
-using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
     public struct SectionWriter
     {
-        private ObjectWriter _objectWriter;
+        private readonly ObjectWriter _objectWriter;
 
         public int SectionIndex { get; init; }
         public ObjectWriterStream Stream { get; init; }
@@ -39,12 +23,12 @@ namespace ILCompiler.ObjectWriter
             Stream = stream;
         }
 
-        public void EmitData(ReadOnlyMemory<byte> data)
+        public readonly void EmitData(ReadOnlyMemory<byte> data)
         {
             Stream.AppendData(data);
         }
 
-        public void EmitAlignment(int alignment)
+        public readonly void EmitAlignment(int alignment)
         {
             _objectWriter.UpdateSectionAlignment(SectionIndex, alignment);
 
@@ -52,7 +36,7 @@ namespace ILCompiler.ObjectWriter
             Stream.AppendPadding(padding);
         }
 
-        public void EmitRelocation(
+        public readonly void EmitRelocation(
             int relativeOffset,
             Span<byte> data,
             RelocType relocType,
@@ -68,7 +52,7 @@ namespace ILCompiler.ObjectWriter
                 addend);
         }
 
-        public void EmitSymbolDefinition(
+        public readonly void EmitSymbolDefinition(
             string symbolName,
             int relativeOffset = 0,
             int size = 0,
@@ -82,7 +66,7 @@ namespace ILCompiler.ObjectWriter
                 global);
         }
 
-        public void EmitSymbolReference(
+        public readonly void EmitSymbolReference(
             RelocType relocType,
             string symbolName,
             int addend = 0)

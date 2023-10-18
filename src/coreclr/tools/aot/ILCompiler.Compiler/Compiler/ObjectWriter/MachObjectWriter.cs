@@ -5,24 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Linq;
 using System.Numerics;
-using System.Buffers;
 using System.Buffers.Binary;
-
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-
-using Internal.Text;
 using Internal.TypeSystem;
-using Internal.TypeSystem.TypesDebugInfo;
-using Internal.JitInterface;
-using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
-
 using Melanzana.MachO;
-using LibObjectFile.Dwarf;
-using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -30,28 +19,30 @@ namespace ILCompiler.ObjectWriter
     {
         private sealed record CompactUnwindCode(string PcStartSymbolName, uint PcLength, uint Code, string LsdaSymbolName = null, string PersonalitySymbolName = null);
 
-        private TargetOS _targetOS;
-        private MachObjectFile _objectFile;
-        private MachSegment _segment;
+        private readonly TargetOS _targetOS;
+        private readonly MachObjectFile _objectFile;
+        private readonly MachSegment _segment;
 
         // Exception handling sections
         private MachSection _compactUnwindSection;
-        private List<CompactUnwindCode> _compactUnwindCodes = new();
-        private uint _compactUnwindDwarfCode;
+        private readonly List<CompactUnwindCode> _compactUnwindCodes = new();
+        private readonly uint _compactUnwindDwarfCode;
 
         // Symbol table
-        private Dictionary<int, uint> _sectionIndexToSymbolIndex = new();
-        private Dictionary<string, uint> _symbolNameToIndex = new();
+        private readonly Dictionary<int, uint> _sectionIndexToSymbolIndex = new();
+        private readonly Dictionary<string, uint> _symbolNameToIndex = new();
         private MachSymbolTable _symbolTable;
         private MachDynamicLinkEditSymbolTable _dySymbolTable;
 
         private MachObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
         {
-            _objectFile = new MachObjectFile();
-            _objectFile.FileType = MachFileType.Object;
-            _objectFile.IsLittleEndian = true;
-            _objectFile.Flags = MachHeaderFlags.SubsectionsViaSymbols;
+            _objectFile = new MachObjectFile
+            {
+                FileType = MachFileType.Object,
+                IsLittleEndian = true,
+                Flags = MachHeaderFlags.SubsectionsViaSymbols
+            };
 
             switch (factory.Target.Architecture)
             {
@@ -133,7 +124,7 @@ namespace ILCompiler.ObjectWriter
                             TargetOS.iOSSimulator => MachPlatform.IOSSimulator,
                             TargetOS.tvOS => MachPlatform.TvOS,
                             TargetOS.tvOSSimulator => MachPlatform.TvOSSimulator,
-                            _ => (MachPlatform)0,
+                            _ => 0,
                         },
                         MinimumPlatformVersion = new Version(11, 0, 0),
                         SdkVersion = sdkVersion,
@@ -164,7 +155,12 @@ namespace ILCompiler.ObjectWriter
             {
                 "rdata" => "__TEXT",
                 ".eh_frame" => "__TEXT",
-                _ => section.Type == SectionType.Executable ? "__TEXT" : "__DATA"
+                _ => section.Type switch
+                {
+                    SectionType.Executable => "__TEXT",
+                    SectionType.Debug => "__DWARF",
+                    _ => "__DATA"
+                }
             };
 
             string sectionName = section.Name switch
@@ -174,6 +170,12 @@ namespace ILCompiler.ObjectWriter
                 "rdata" => "__const",
                 "bss" => "__bss",
                 ".eh_frame" => "__eh_frame",
+                ".debug_info" => "__debug_info",
+                ".debug_abbrev" => "__debug_abbrev",
+                ".debug_aranges" => "__debug_aranges",
+                ".debug_str" => "__debug_str",
+                ".debug_line" => "__debug_line",
+                ".debug_loc" => "__debug_loc",
                 _ => section.Name
             };
 
@@ -181,8 +183,12 @@ namespace ILCompiler.ObjectWriter
             {
                 ".dotnet_eh_table" => MachSectionAttributes.Debug,
                 ".eh_frame" => MachSectionAttributes.LiveSupport | MachSectionAttributes.StripStaticSymbols | MachSectionAttributes.NoTableOfContents,
-                _ => section.Type == SectionType.Executable ?
-                    MachSectionAttributes.SomeInstructions | MachSectionAttributes.PureInstructions : 0
+                _ => section.Type switch
+                {
+                    SectionType.Executable => MachSectionAttributes.SomeInstructions | MachSectionAttributes.PureInstructions,
+                    SectionType.Debug => MachSectionAttributes.Debug,
+                    _ => 0
+                }
             };
 
             MachSectionType type = section.Name switch
@@ -204,7 +210,7 @@ namespace ILCompiler.ObjectWriter
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
         {
-            var machSection = _segment.Sections[sectionIndex];
+            MachSection machSection = _segment.Sections[sectionIndex];
             Debug.Assert(BitOperations.IsPow2(alignment));
             machSection.Log2Alignment = Math.Max(machSection.Log2Alignment, (uint)BitOperations.Log2((uint)alignment));
         }
@@ -217,6 +223,29 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             int addend)
         {
+            if (symbolName.StartsWith('.')) // Code symbols are prefixed with `_`, so `.` implies section relocation
+            {
+                // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
+                MachSection machSection = _segment.Sections[sectionIndex];
+                if (machSection.Attributes.HasFlag(MachSectionAttributes.Debug))
+                {
+                    switch (relocType)
+                    {
+                        case RelocType.IMAGE_REL_BASED_DIR64:
+                            BinaryPrimitives.WriteInt64LittleEndian(data, addend);
+                            break;
+
+                        case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                            BinaryPrimitives.WriteInt32LittleEndian(data, addend);
+                            break;
+
+                        default:
+                            throw new NotSupportedException("Unsupported relocation in debug section");
+                    }
+                    return;
+                }
+            }
+
             // For most relocations we write the addend directly into the
             // data. The exceptions are IMAGE_REL_BASED_ARM64_PAGEBASE_REL21
             // and IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A.
@@ -293,7 +322,7 @@ namespace ILCompiler.ObjectWriter
             // Create section base symbols. They're used for PC relative relocations
             // to subtract the base of the section.
             int sectionIndex = 0;
-            foreach (var machSection in _segment.Sections)
+            foreach (MachSection machSection in _segment.Sections)
             {
                 var machSymbol = new MachSymbol
                 {
@@ -313,11 +342,11 @@ namespace ILCompiler.ObjectWriter
             _dySymbolTable.LocalSymbolsCount = symbolIndex;
 
             // Sort and insert all defined symbols
-            var definedSymbols = GetDefinedSymbols();
+            IDictionary<string, SymbolDefinition> definedSymbols = GetDefinedSymbols();
             var sortedDefinedSymbols = new List<MachSymbol>(definedSymbols.Count);
-            foreach (var (name, definition) in definedSymbols)
+            foreach ((string name, SymbolDefinition definition) in definedSymbols)
             {
-                var section = _segment.Sections[definition.SectionIndex];
+                MachSection section = _segment.Sections[definition.SectionIndex];
                 sortedDefinedSymbols.Add(new MachSymbol
                 {
                     Name = name,
@@ -328,7 +357,7 @@ namespace ILCompiler.ObjectWriter
                 });
             }
             sortedDefinedSymbols.Sort((symA, symB) => string.CompareOrdinal(symA.Name, symB.Name));
-            foreach (var definedSymbol in sortedDefinedSymbols)
+            foreach (MachSymbol definedSymbol in sortedDefinedSymbols)
             {
                 _symbolTable.Symbols.Add(definedSymbol);
                 _symbolNameToIndex[definedSymbol.Name] = symbolIndex;
@@ -339,7 +368,7 @@ namespace ILCompiler.ObjectWriter
             _dySymbolTable.ExternalSymbolsCount = (uint)definedSymbols.Count;
 
             uint savedSymbolIndex = symbolIndex;
-            foreach (var externSymbol in GetUndefinedSymbols())
+            foreach (string externSymbol in GetUndefinedSymbols())
             {
                 var machSymbol = new MachSymbol
                 {
@@ -375,7 +404,7 @@ namespace ILCompiler.ObjectWriter
             ICollection<MachRelocation> sectionRelocations = _segment.Sections[sectionIndex].Relocations;
 
             relocationList.Reverse();
-            foreach (var symbolicRelocation in relocationList)
+            foreach (SymbolicRelocation symbolicRelocation in relocationList)
             {
                 uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
 
@@ -415,8 +444,7 @@ namespace ILCompiler.ObjectWriter
                             IsPCRelative = false,
                         });
                 }
-                else if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_RELPTR32 ||
-                    symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_REL32)
+                else if (symbolicRelocation.Type is RelocType.IMAGE_REL_BASED_RELPTR32 or RelocType.IMAGE_REL_BASED_REL32)
                 {
                     sectionRelocations.Add(
                         new MachRelocation
@@ -441,7 +469,7 @@ namespace ILCompiler.ObjectWriter
             ICollection<MachRelocation> sectionRelocations = _segment.Sections[sectionIndex].Relocations;
 
             relocationList.Reverse();
-            foreach (var symbolicRelocation in relocationList)
+            foreach (SymbolicRelocation symbolicRelocation in relocationList)
             {
                 uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
 
@@ -458,8 +486,7 @@ namespace ILCompiler.ObjectWriter
                             IsPCRelative = true,
                         });
                 }
-                else if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 ||
-                    symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A)
+                else if (symbolicRelocation.Type is RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 or RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A)
                 {
                     if (symbolicRelocation.Addend != 0)
                     {
@@ -539,8 +566,8 @@ namespace ILCompiler.ObjectWriter
 
         private void EmitCompactUnwindTable()
         {
-            using var compactUnwindStream = _compactUnwindSection.GetWriteStream();
-            var definedSymbols = GetDefinedSymbols();
+            using Stream compactUnwindStream = _compactUnwindSection.GetWriteStream();
+            IDictionary<string, SymbolDefinition> definedSymbols = GetDefinedSymbols();
 
             IList<MachSymbol> symbols = _symbolTable.Symbols;
             Span<byte> tempBuffer = stackalloc byte[8];
@@ -624,13 +651,14 @@ namespace ILCompiler.ObjectWriter
             return encoding != _compactUnwindDwarfCode;
         }
 
-        protected override ulong GetSectionVirtualAddress(int sectionIndex)
+        protected override string GetSectionSymbolName(int sectionIndex)
         {
-            var machSection = _segment.Sections[sectionIndex];
-            return machSection.VirtualAddress;
+            MachSection machSection = _segment.Sections[sectionIndex];
+            return machSection.SectionName;
         }
 
-        protected override void EmitDebugSections(DwarfFile dwarfFile)
+
+        /*protected override void EmitDebugSections(DwarfFile dwarfFile)
         {
             ulong highPC = 0;
             foreach (var machSection in _segment.Sections)
@@ -681,7 +709,7 @@ namespace ILCompiler.ObjectWriter
             _segment.Sections.Add(debugLocationSection);
 
             _objectFile.UpdateLayout();
-        }
+        }*/
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
