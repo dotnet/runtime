@@ -512,20 +512,14 @@ private:
         if (asprintf(&mem_usage_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
             return false;
 
-        uint64_t temp = 0;
+        uint64_t usage = 0;
 
-        size_t usage = 0;
-
-        bool result = ReadMemoryValueFromFile(mem_usage_filename, &temp);
+        bool result = ReadMemoryValueFromFile(mem_usage_filename, &usage);
         if (result)
         {
-            if (temp > std::numeric_limits<size_t>::max())
+            if (usage > std::numeric_limits<size_t>::max())
             {
                 usage = std::numeric_limits<size_t>::max();
-            }
-            else
-            {
-                usage = (size_t)temp;
             }
         }
 
@@ -537,10 +531,15 @@ private:
         if (s_memory_cgroup_path == nullptr)
             return false;
 
-        size_t inactiveFileValue = 0;
+        uint64_t inactiveFileValue = 0;
         if (GetCGroupMemoryStatField(inactiveFileFieldName, &inactiveFileValue))
         {
-            *val = usage - inactiveFileValue;
+            if (inactiveFileValue > std::numeric_limits<size_t>::max())
+            {
+                inactiveFileValue = std::numeric_limits<size_t>::max();
+            }
+
+            *val = (size_t)usage - (size_t)inactiveFileValue;
             return true;
         }
 
