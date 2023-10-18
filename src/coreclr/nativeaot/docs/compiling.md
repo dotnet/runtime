@@ -70,6 +70,8 @@ You also need to specify the sysroot directory for Clang using the `SysRoot` pro
 
 You may also follow [cross-building instructions](../../../../docs/workflow/building/coreclr/cross-building.md) to create your own sysroot directory.
 
+See [Building native AOT apps in containers](containers.md) for a potentially quicker path to estalbishing a cross-compilation environment.
+
 ## Using statically linked ICU
 This feature can statically link libicu libraries (such as libicui18n.a) into your applications at build time.
 NativeAOT binaries built with this feature can run even when libicu libraries are not installed.

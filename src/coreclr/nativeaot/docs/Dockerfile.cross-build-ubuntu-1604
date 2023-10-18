@@ -2,15 +2,18 @@
 # Learn about building .NET container images:
 # https://github.com/dotnet/dotnet-docker/blob/main/samples/README.md
 FROM mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64 AS build
-ARG TARGETARCH
 COPY --from=mcr.microsoft.com/dotnet/sdk:8.0-cbl-mariner2.0-amd64 /usr/share/dotnet /usr/share/dotnet
 RUN ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
 WORKDIR /source
 
+// Copy all source assets
+COPY . .
+// Cache mounts caches runtime packs, targeting packs, and NuGet packages
+// across builds
 RUN --mount=type=cache,target=/root/.nuget \
     --mount=type=cache,target=/source/bin \
     --mount=type=cache,target=/source/obj \
-    dotnet publish -a $TARGETARCH --sc -o /app --no-restore -p:SysRoot=/crossrootfs/x64 -p:LinkerFlavor=lld releasesapi.csproj
+    dotnet publish -o /app -p:SysRoot=/crossrootfs/x64 -p:LinkerFlavor=lld releasesapi.csproj
 
 
 # final stage/image

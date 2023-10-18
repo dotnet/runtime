@@ -8,3 +8,4 @@
 - [Troubleshooting](troubleshooting.md)
 - [RD.xml Documentation](rd-xml-format.md)
 - [Using Native AOT on Android-Bionic](android-bionic.md)
+- [Building native AOT apps in containers](containers.md)
