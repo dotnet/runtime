@@ -168,6 +168,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.ADsOpenObject.cs"
              Link="Common\Interop\Windows\Activeds\Interop.ADsOpenObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.FreeADsMem.cs"
+             Link="Common\Interop\Windows\Activeds\Interop.FreeADsMem.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ConvertSidToStringSid.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.ConvertSidToStringSid.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ConvertStringSidToSid.cs"

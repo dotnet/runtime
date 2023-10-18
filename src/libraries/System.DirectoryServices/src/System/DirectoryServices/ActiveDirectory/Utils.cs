@@ -885,7 +885,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     finally
                     {
                         if (ptr != (IntPtr)0)
-                            UnsafeNativeMethods.FreeADsMem(ptr);
+                            Interop.Activeds.FreeADsMem(ptr);
                     }
                 }
                 else

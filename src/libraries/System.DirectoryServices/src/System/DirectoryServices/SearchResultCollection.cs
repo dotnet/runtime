@@ -289,7 +289,7 @@ namespace System.DirectoryServices
                     }
                     finally
                     {
-                        SafeNativeMethods.FreeADsMem(pszColumnName);
+                        Interop.Activeds.FreeADsMem(pszColumnName);
                     }
                     hr = _results.SearchObject.GetNextColumnName(_results.Handle, (INTPTR_INTPTRCAST)(&pszColumnName));
                 }

@@ -7,10 +7,6 @@ namespace System.DirectoryServices
 {
     internal static partial class SafeNativeMethods
     {
-        [LibraryImport(global::Interop.Libraries.Activeds)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool FreeADsMem(IntPtr pVoid);
-
         public const int
             FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200,
             FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000,
