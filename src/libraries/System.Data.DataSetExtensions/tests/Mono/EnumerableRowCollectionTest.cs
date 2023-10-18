@@ -62,7 +62,7 @@ namespace MonoTests.System.Data
             foreach (var line in q)
             {
                 if (iterated)
-                    Assert.True(false, "should match only one raw");
+                    Assert.Fail("should match only one raw");
                 Assert.Equal(100, line["Score"]);
                 iterated = true;
             }
@@ -83,7 +83,7 @@ namespace MonoTests.System.Data
             bool iterated = false;
             foreach (var ql in q) {
                 if (iterated)
-                    Assert.True(false, "should match only one raw");
+                    Assert.Fail("should match only one raw");
                 Assert.Equal(100, ql.StudentScore);
                 iterated = true;
             }
@@ -112,7 +112,7 @@ namespace MonoTests.System.Data
                         Assert.Equal(4, ql.StudentID);
                         break;
                     default:
-                        Assert.True(false, "should match only one raw");
+                        Assert.Fail("should match only one raw");
                         break;
                 }
                 prevID = ql.StudentID;
@@ -142,7 +142,7 @@ namespace MonoTests.System.Data
                         Assert.Equal(1, ql.StudentID);
                         break;
                     default:
-                        Assert.True(false, "should match only one raw");
+                        Assert.Fail("should match only one raw");
                         break;
                 }
                 prevID = ql.StudentID;
@@ -172,7 +172,7 @@ namespace MonoTests.System.Data
                     Assert.Equal(4, ql.StudentID);
                     break;
                 default:
-                    Assert.True(false, "should match only one raw");
+                    Assert.Fail("should match only one raw");
                     break;
             }
             prevID = ql.StudentID;
@@ -202,7 +202,7 @@ namespace MonoTests.System.Data
                     Assert.Equal(1, ql.StudentID);
                     break;
                 default:
-                    Assert.True(false, "should match only one raw");
+                    Assert.Fail("should match only one raw");
                     break;
                 }
                 prevID = ql.StudentID;

@@ -15844,17 +15844,22 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         // For forward jumps, record the address of the distance value
         id->idjTemp.idjAddr = (dstOffs > srcOffs) ? dst : nullptr;
 
-        dst += emitOutputLong(dst, distVal);
+        // Cross jumps may not be encodable in a 32-bit displacement as the
+        // hot/cold code buffers may be allocated arbitrarily far away from
+        // each other. We simply encode a 0 under the assumption that the
+        // relocations will take care of it.
+        bool crossJump = emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
+        assert(!crossJump || emitComp->opts.compReloc);
 
-#ifndef TARGET_AMD64 // all REL32 on AMD have to go through recordRelocation
+        dst += emitOutputLong(dst, crossJump ? 0 : distVal);
+
         if (emitComp->opts.compReloc)
-#endif
         {
             if (!relAddr)
             {
                 emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)distVal, IMAGE_REL_BASED_HIGHLOW);
             }
-            else if (emitJumpCrossHotColdBoundary(srcOffs, dstOffs))
+            else if (crossJump)
             {
                 assert(id->idjKeepLong);
                 emitRecordRelocation((void*)(dst - sizeof(INT32)), dst + distVal, IMAGE_REL_BASED_REL32);

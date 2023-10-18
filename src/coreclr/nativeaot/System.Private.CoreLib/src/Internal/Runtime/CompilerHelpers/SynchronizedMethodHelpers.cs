@@ -67,7 +67,7 @@ namespace Internal.Runtime.CompilerHelpers
             lockTaken = false;
         }
 
-        private static unsafe Type GetStaticLockObject(MethodTable* pMT)
+        private static unsafe RuntimeType GetStaticLockObject(MethodTable* pMT)
         {
             return Type.GetTypeFromMethodTable(pMT);
         }

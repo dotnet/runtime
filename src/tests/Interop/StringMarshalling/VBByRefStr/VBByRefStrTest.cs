@@ -9,10 +9,11 @@ using Xunit;
 
 #pragma warning disable CS0612, CS0618
 
-class Test
+public class Test
 {
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

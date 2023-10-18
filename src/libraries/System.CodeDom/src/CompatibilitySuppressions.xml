@@ -1,6 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- net6.0 and net7.0 aren't supported by the current package and any errors should be suppressed. -->
+  <Suppression>
+    <Left>lib/net6.0/System.CodeDom.dll</Left>
+    <Right>lib/netstandard2.0/System.CodeDom.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <Left>lib/net7.0/System.CodeDom.dll</Left>
+    <Right>lib/netstandard2.0/System.CodeDom.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:Microsoft.CSharp.CSharpCodeProvider.CreateCompiler:[T:System.ObsoleteAttribute]</Target>
@@ -48,19 +59,5 @@
     <Target>M:System.CodeDom.Compiler.CodeGenerator.GenerateStatements(System.CodeDom.CodeStatementCollection)$0</Target>
     <Left>lib/netstandard2.0/System.CodeDom.dll</Left>
     <Right>lib/net462/System.CodeDom.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ComponentModel.Primitives, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net6.0/System.CodeDom.dll</Left>
-    <Right>lib/netstandard2.0/System.CodeDom.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP1002</DiagnosticId>
-    <Target>System.ComponentModel.Primitives, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>lib/net7.0/System.CodeDom.dll</Left>
-    <Right>lib/netstandard2.0/System.CodeDom.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
 </Suppressions>
