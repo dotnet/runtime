@@ -53,6 +53,17 @@ endif()
 
 include(configure.cmake)
 
+set(NATIVEGLOBALIZATION_SOURCES
+    #pal_calendarData.c
+    #pal_casing.c
+    #pal_collation.c
+    pal_idna.c
+    #pal_locale.c
+    #pal_localeNumberData.c
+    #pal_localeStringData.c
+    #pal_normalization.c
+)
+
 #if (DEFINED CMAKE_ICU_DIR)
 #    include_directories(${CMAKE_ICU_DIR}/include)
 #endif()

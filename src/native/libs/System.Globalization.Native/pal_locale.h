@@ -5,6 +5,7 @@
 
 #include "pal_compiler.h"
 #include "pal_icushim_internal.h"
+#include <unicode/utypes.h>
 
 PALEXPORT int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength);
 

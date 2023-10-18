@@ -20,7 +20,8 @@
 #endif
 #ifdef __OBJC__
 // This code will only be included when compiling Objective-C code
-// #import <Foundation/Foundation.h>
+#import <Foundation/Foundation.h>
+#include <unicode/uidna.h>
 
 
 // All ICU headers need to be included here so that all function prototypes are
@@ -35,7 +36,8 @@
 // #include <unicode/uenum.h>
 // #include <unicode/uidna.h>
 // #include <unicode/uldnames.h>
-// #include <unicode/ulocdata.h>
+ #include <unicode/ulocdata.h>
+ #include <unicode/uloc.h>
 // #include <unicode/unorm2.h>
 // #include <unicode/unum.h>
 // #include <unicode/ures.h>
