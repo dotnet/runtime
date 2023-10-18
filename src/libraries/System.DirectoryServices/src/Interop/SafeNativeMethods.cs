@@ -7,9 +7,6 @@ namespace System.DirectoryServices
 {
     internal static partial class SafeNativeMethods
     {
-        [LibraryImport(global::Interop.Libraries.OleAut32)]
-        public static partial void VariantInit(IntPtr pObject);
-
         [LibraryImport(global::Interop.Libraries.Activeds)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool FreeADsMem(IntPtr pVoid);
@@ -83,7 +80,7 @@ namespace System.DirectoryServices
                 try
                 {
                     int[] numRead = new int[] { 0 };
-                    VariantInit(addr);
+                    global::Interop.OleAut32.VariantInit(addr);
                     _enumerator.Next(1, addr, numRead);
 
                     try
