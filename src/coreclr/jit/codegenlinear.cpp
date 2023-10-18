@@ -2207,7 +2207,7 @@ void CodeGen::genProduceReg(GenTree* tree)
                     gcInfo.gcMarkRegPtrVal(reg, type);
                 }
             }
-            else if (tree->IsCopyOrReloadOfMultiRegCall())
+            else if (tree->IsCopyOrReload())
             {
                 // we should never see reload of multi-reg call here
                 // because GT_RELOAD gets generated in reg consuming path.
@@ -2215,20 +2215,42 @@ void CodeGen::genProduceReg(GenTree* tree)
 
                 // A multi-reg GT_COPY node produces those regs to which
                 // copy has taken place.
-                const GenTreeCopyOrReload* copy        = tree->AsCopyOrReload();
-                const GenTreeCall*         call        = copy->gtGetOp1()->AsCall();
-                const ReturnTypeDesc*      retTypeDesc = call->GetReturnTypeDesc();
-                const unsigned             regCount    = retTypeDesc->GetReturnRegCount();
+                const GenTreeCopyOrReload* copy = tree->AsCopyOrReload();
+                const GenTree*             op1  = copy->gtGetOp1();
 
-                for (unsigned i = 0; i < regCount; ++i)
+                if (op1->IsMultiRegCall())
                 {
-                    var_types type  = retTypeDesc->GetReturnRegType(i);
-                    regNumber toReg = copy->GetRegNumByIdx(i);
+                    const GenTreeCall*    call        = op1->AsCall();
+                    const ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
+                    const unsigned        regCount    = retTypeDesc->GetReturnRegCount();
 
-                    if (toReg != REG_NA)
+                    for (unsigned i = 0; i < regCount; ++i)
                     {
-                        gcInfo.gcMarkRegPtrVal(toReg, type);
+                        regNumber toReg = copy->GetRegNumByIdx(i);
+
+                        if (toReg != REG_NA)
+                        {
+                            var_types type = retTypeDesc->GetReturnRegType(i);
+                            gcInfo.gcMarkRegPtrVal(toReg, type);
+                        }
                     }
+                }
+                else if (op1->IsMultiRegHWIntrinsic())
+                {
+                    unsigned regCount = op1->GetMultiRegCount(compiler);
+                    for (unsigned i = 0; i < regCount; i++)
+                    {
+                        regNumber reg = copy->GetRegNumByIdx(i);
+                        if (reg != REG_NA)
+                        {
+                            var_types type = tree->GetRegTypeByIndex(i);
+                            gcInfo.gcMarkRegPtrVal(reg, type);
+                        }
+                    }
+                }
+                else
+                {
+                    gcInfo.gcMarkRegPtrVal(tree->GetRegNum(), tree->TypeGet());
                 }
             }
             else if (tree->IsMultiRegLclVar())
@@ -2241,12 +2263,25 @@ void CodeGen::genProduceReg(GenTree* tree)
                 {
                     if (!lclNode->IsLastUse(i))
                     {
-                        regNumber reg = lclNode->GetRegByIndex(i);
+                        regNumber reg  = lclNode->GetRegByIndex(i);
                         if (reg != REG_NA)
                         {
                             var_types type = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i)->TypeGet();
                             gcInfo.gcMarkRegPtrVal(reg, type);
                         }
+                    }
+                }
+            }
+            else if (tree->IsMultiRegHWIntrinsic())
+            {
+                unsigned regCount = tree->GetMultiRegCount(compiler);
+                for (unsigned i = 0; i < regCount; i++)
+                {
+                    regNumber reg = tree->GetRegByIndex(i);
+                    if (reg != REG_NA)
+                    {
+                        var_types type = tree->GetRegTypeByIndex(i);
+                        gcInfo.gcMarkRegPtrVal(reg, type);
                     }
                 }
             }

@@ -799,7 +799,7 @@ bool GenTree::gtHasReg(Compiler* comp) const
 {
     bool hasReg = false;
 
-    if (IsMultiRegCall() || OperIsHWIntrinsic())
+    if (IsMultiRegCall() || IsMultiRegHWIntrinsic())
     {
         const unsigned regCount = GetMultiRegCount(comp);
 
@@ -818,31 +818,23 @@ bool GenTree::gtHasReg(Compiler* comp) const
     {
         const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
         const GenTree*             op1          = copyOrReload->gtGetOp1();
-        unsigned                   regCount     = 0;
-        if (op1->IsMultiRegCall())
+        if (IsMultiRegCall() || IsMultiRegHWIntrinsic())
         {
-            regCount = op1->AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
+            const unsigned regCount = op1->GetMultiRegCount(comp);
+            // A Multi-reg copy or reload node is said to have regs,
+            // if it has valid regs in any of the positions.
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
+                if (hasReg)
+                {
+                    break;
+                }
+            }
         }
-#ifdef FEATURE_HW_INTRINSICS
-        else if (op1->IsMultiRegHWIntrinsic())
-        {
-            regCount = HWIntrinsicInfo::GetMultiRegCount(op1->AsHWIntrinsic()->GetHWIntrinsicId());
-        }
-#endif
         else
         {
             hasReg = (GetRegNum() != REG_NA);
-        }
-
-        // A Multi-reg copy or reload node is said to have regs,
-        // if it has valid regs in any of the positions.
-        for (unsigned i = 0; i < regCount; ++i)
-        {
-            hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
-            if (hasReg)
-            {
-                break;
-            }
         }
     }
     else if (IsMultiRegLclVar())
