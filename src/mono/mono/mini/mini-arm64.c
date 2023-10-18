@@ -26,6 +26,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-hwcap.h>
+#include <mono/utils/mono-bitutils.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal-shared.h>
@@ -33,10 +34,6 @@
 
 #include "interp/interp.h"
 
-#ifdef _MSC_VER
-// for _BitScanFroward
-#include <intrin.h>
-#endif
 
 // The following defines are here to support the inclusion of simd-arm64.h
 #define EXPAND(x) x
@@ -625,47 +622,46 @@ emit_subx_sp_imm (guint8 *code, int imm)
 	return code;
 }
 
-
-static int 
-num_trailing_zeros (guint64 imm)
-{
-#ifdef _MSC_VER
-	long index = 0;
-	if ( _BitScanForward( &index, value ) )
-		return index;
-	else
-		return 32;
-#else
-	return __builtin_ctz(imm);
-#endif
-}
-
 static gboolean
 encode_arm64_logical_imm (guint64 imm, gboolean islong, int* pn, int* pimms, int* pimmr)
 {
-	// TODO: this is not the complete functionality of logical immediates
-	int band = num_trailing_zeros (~imm);
-	int n, imms, immr;
+	if (imm == 0)
+		return FALSE;
 
+	// We recongnize the pattern 0*1+0* for 32- and 64-bit immediates.
+	// TODO: expand to full specification
+	int lsb_zero, band_one, msb_zero;
 	if (islong) {
-		if (band == 0 || band == 64 || (imm != (1 << band) - 1))
-			return FALSE;
+		lsb_zero = mono_tzcnt64 (imm);
+		msb_zero = mono_lzcnt64 (imm);
+		band_one = 64 - lsb_zero - msb_zero;
 
-		n = 1;
-		imms = band - 1;
-		immr = 0;
+		if (band_one == 0 || band_one == 64) 
+			return FALSE;
 	} else {
-		if (band == 0 || band == 32 || (imm != (1 << band) - 1))
-			return FALSE;
+		lsb_zero = mono_tzcnt32 ((guint32)imm);
+		msb_zero = mono_lzcnt32 ((guint32)imm);
+		band_one = 32 - lsb_zero - msb_zero;
 
-		n = 0;
-		imms = band - 1;
-		immr = 0;
+		if (band_one == 0 || band_one == 32) 
+			return FALSE;
 	}
-	
+
+	guint64 expected_imm = ((1 << band_one) - 1) << lsb_zero;
+	if(imm != expected_imm)
+		return FALSE;
+
+	int imms = band_one - 1;
+	int immr = lsb_zero == 0 ? 0 : (msb_zero + band_one);
+	int n = islong ? 1 : 0;
+
+	g_assert (imms >= 0 && imms < 128);
+	g_assert (immr >= 0 && immr < 128);
+
 	if (pn) *pn = n;
 	if (pimms) *pimms = imms;
 	if (pimmr) *pimmr = immr;
+
 	return TRUE;
 }
 
