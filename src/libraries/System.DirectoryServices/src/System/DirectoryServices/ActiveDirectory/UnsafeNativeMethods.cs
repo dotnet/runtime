@@ -525,9 +525,6 @@ namespace System.DirectoryServices.ActiveDirectory
         [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "OpenThread", SetLastError = true)]
         public static partial IntPtr OpenThread(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheirted, int threadID);
 
-        [LibraryImport(global::Interop.Libraries.Advapi32, EntryPoint = "ImpersonateAnonymousToken", SetLastError = true)]
-        public static partial int ImpersonateAnonymousToken(IntPtr token);
-
         [LibraryImport(global::Interop.Libraries.NtDll, EntryPoint = "RtlInitUnicodeString")]
         public static partial int RtlInitUnicodeString(out global::Interop.UNICODE_STRING result, IntPtr s);
     }

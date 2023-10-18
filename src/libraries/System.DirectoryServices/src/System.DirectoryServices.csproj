@@ -190,6 +190,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Advapi32\Interop.GetSidIdentifierAuthority.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.GetTokenInformation.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ImpersonateAnonymousToken.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.ImpersonateAnonymousToken.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ImpersonateLoggedOnUser_IntPtr.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.ImpersonateLoggedOnUser_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.IsValidSid.cs"
