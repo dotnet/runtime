@@ -196,7 +196,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             IntPtr ptr = (IntPtr)0;
 
-            int result = UnsafeNativeMethods.DsGetSiteName(null, ref ptr);
+            int result = Interop.Netapi32.DsGetSiteName(null, ref ptr);
             if (result != 0)
             {
                 // computer is not in a site

@@ -234,6 +234,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantInit.cs"
              Link="Common\Interop\Windows\OleAut32\Interop.VariantInit.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.DsGetSiteName.cs"
+             Link="Common\Interop\Windows\Netapi32\Interop.DsGetSiteName.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtStatus.cs"
              Link="Common\Interop\Windows\NtDll\Interop.NtStatus.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.TOKENS.cs"
