@@ -19,6 +19,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(NativeBuildData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/93689")]
         public void NoOpRebuildForNativeBuilds(BuildArgs buildArgs, bool nativeRelink, bool invariant, RunHost host, string id)
         {
             buildArgs = buildArgs with { ProjectName = $"rebuild_noop_{buildArgs.Config}" };

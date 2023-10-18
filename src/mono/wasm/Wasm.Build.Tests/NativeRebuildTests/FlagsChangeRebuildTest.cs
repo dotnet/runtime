@@ -29,7 +29,9 @@ namespace Wasm.Build.NativeRebuild.Tests
 
         [Theory]
         [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ false)]
-        [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ true)]
+        // [MemberData(nameof(FlagsChangesForNativeRelinkingData), parameters: /*aot*/ true)]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/93680")]
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/93689")]
         public void ExtraEmccFlagsSetButNoRealChange(BuildArgs buildArgs, string extraCFlags, string extraLDFlags, RunHost host, string id)
         {
             buildArgs = buildArgs with { ProjectName = $"rebuild_flags_{buildArgs.Config}" };

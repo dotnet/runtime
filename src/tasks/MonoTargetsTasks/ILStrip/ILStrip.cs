@@ -187,6 +187,10 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                 return true;
             }
         }
+        else
+        {
+            Log.LogMessage(MessageImportance.Low, $"Trimming for {assemblyFilePath}.");
+        }
 
         bool isTrimmed = false;
         using FileStream fs = File.Open(assemblyFilePath, FileMode.Open);
@@ -221,11 +225,11 @@ public class ILStrip : Microsoft.Build.Utilities.Task
     {
         if (string.IsNullOrEmpty(IntermediateOutputPath))
         {
-            return "trimmedAssemblies";
+            return "trimmed";
         }
         else
         {
-            return Path.Combine(IntermediateOutputPath,  "trimmedAssemblies");
+            return Path.Combine(IntermediateOutputPath,  "trimmed");
         }
     }
 
