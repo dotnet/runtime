@@ -144,7 +144,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    result = NativeMethods.DsGetDcNext(retGetDcContext, ref sockAddressCountPtr, out sockAddressList, out dcDnsHostNamePtr);
+                    result = Interop.Netapi32.DsGetDcNext(retGetDcContext, ref sockAddressCountPtr, out sockAddressList, out dcDnsHostNamePtr);
 
                     if (result != 0 && result != NativeMethods.ERROR_FILE_MARK_DETECTED && result != NativeMethods.DNS_ERROR_RCODE_NAME_ERROR && result != NativeMethods.ERROR_NO_MORE_ITEMS)
                     {
@@ -175,7 +175,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             }
                         }
 
-                        result = NativeMethods.DsGetDcNext(retGetDcContext, ref sockAddressCountPtr, out sockAddressList, out dcDnsHostNamePtr);
+                        result = Interop.Netapi32.DsGetDcNext(retGetDcContext, ref sockAddressCountPtr, out sockAddressList, out dcDnsHostNamePtr);
                         if (result != 0 && result != NativeMethods.ERROR_FILE_MARK_DETECTED && result != NativeMethods.DNS_ERROR_RCODE_NAME_ERROR && result != NativeMethods.ERROR_NO_MORE_ITEMS)
                         {
                             throw ExceptionHelper.GetExceptionFromErrorCode(result);

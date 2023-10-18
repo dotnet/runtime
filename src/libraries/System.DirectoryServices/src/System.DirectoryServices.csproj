@@ -238,6 +238,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Netapi32\Interop.DsEnumerateDomainTrustsW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.DsGetDcName.cs"
              Link="Common\Interop\Windows\Netapi32\Interop.DsGetDcName.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.DsGetDcNext.cs"
+             Link="Common\Interop\Windows\Netapi32\Interop.DsGetDcNext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.DsGetDcOpen.cs"
              Link="Common\Interop\Windows\Netapi32\Interop.DsGetDcOpen.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.DsGetSiteName.cs"
