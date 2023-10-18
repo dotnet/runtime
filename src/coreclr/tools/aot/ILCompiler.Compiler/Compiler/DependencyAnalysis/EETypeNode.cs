@@ -444,7 +444,7 @@ namespace ILCompiler.DependencyAnalysis
                 for (int interfaceIndex = 0; interfaceIndex < defTypeRuntimeInterfaces.Length; interfaceIndex++)
                 {
                     DefType interfaceType = defTypeRuntimeInterfaces[interfaceIndex];
-                    DefType interfaceDefinitionType = defTypeDefinitionRuntimeInterfaces[interfaceIndex];
+                    DefType definitionInterfaceType = defTypeDefinitionRuntimeInterfaces[interfaceIndex];
 
                     Debug.Assert(interfaceType.IsInterface);
 
@@ -462,8 +462,8 @@ namespace ILCompiler.DependencyAnalysis
                             continue;
 
                         MethodDesc interfaceMethodDefinition = interfaceMethod;
-                        if (interfaceType != interfaceDefinitionType)
-                            interfaceMethodDefinition = factory.TypeSystemContext.GetMethodForInstantiatedType(interfaceMethodDefinition.GetTypicalMethodDefinition(), (InstantiatedType)interfaceDefinitionType);
+                        if (interfaceType != definitionInterfaceType)
+                            interfaceMethodDefinition = factory.TypeSystemContext.GetMethodForInstantiatedType(interfaceMethodDefinition.GetTypicalMethodDefinition(), (InstantiatedType)definitionInterfaceType);
 
                         MethodDesc implMethod = isStaticInterfaceMethod ?
                             defTypeDefinition.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethodDefinition) :

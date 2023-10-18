@@ -182,6 +182,9 @@
       <!-- Overrides for wasm threading support -->
       <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
+    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+      <TargetingPackVersion Condition="'$(TargetsCurrent)' == 'true'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
+    </KnownFrameworkReference>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetCoreAppCurrent}'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net8.0'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>

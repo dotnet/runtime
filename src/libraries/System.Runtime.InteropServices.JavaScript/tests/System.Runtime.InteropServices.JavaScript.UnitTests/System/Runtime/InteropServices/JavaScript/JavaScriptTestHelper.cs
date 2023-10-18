@@ -1010,6 +1010,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             _module.Dispose();
             _module = null;
+            // you can set verbose: true to see which proxies are left to the GC to collect
+            ForceDisposeProxies(false, verbose: false);
             return Task.CompletedTask;
         }
     }

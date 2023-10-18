@@ -797,7 +797,7 @@ namespace System.Text.Json.Serialization.Tests
             }
             else
             {
-                Assert.True(false, "Must be JsonElement");
+                Assert.Fail("Must be JsonElement");
             }
 
             using (var stream = new MemoryStream())

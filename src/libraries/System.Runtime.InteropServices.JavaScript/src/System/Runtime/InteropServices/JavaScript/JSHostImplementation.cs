@@ -20,9 +20,9 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
         [ThreadStatic]
 #endif
-        private static Dictionary<nint, WeakReference<JSObject>>? s_csOwnedObjects;
+        private static Dictionary<int, WeakReference<JSObject>>? s_csOwnedObjects;
 
-        public static Dictionary<nint, WeakReference<JSObject>> ThreadCsOwnedObjects
+        public static Dictionary<int, WeakReference<JSObject>> ThreadCsOwnedObjects
         {
             get
             {
@@ -35,76 +35,15 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
         [ThreadStatic]
 #endif
-        private static Dictionary<object, nint>? s_jsOwnedObjects;
+        private static Dictionary<object, IntPtr>? s_jsOwnedObjects;
 
-        public static Dictionary<object, nint> ThreadJsOwnedObjects
+        public static Dictionary<object, IntPtr> ThreadJsOwnedObjects
         {
             get
             {
-                s_jsOwnedObjects ??= new Dictionary<object, nint>(ReferenceEqualityComparer.Instance);
+                s_jsOwnedObjects ??= new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
                 return s_jsOwnedObjects;
             }
-        }
-
-        // this is similar to GCHandle, but the GCVHandle is allocated on JS side and this keeps the C# proxy alive
-#if FEATURE_WASM_THREADS
-        [ThreadStatic]
-#endif
-        private static Dictionary<nint, PromiseHolder>? s_jsOwnedHolders;
-
-        public static Dictionary<nint, PromiseHolder> ThreadJsOwnedHolders
-        {
-            get
-            {
-                s_jsOwnedHolders ??= new Dictionary<nint, PromiseHolder>();
-                return s_jsOwnedHolders;
-            }
-        }
-
-        // JSVHandle is like JSHandle, but it's not tracked and allocated by the JS side
-        // It's used when we need to create JSHandle-like identity ahead of time, before calling JS.
-        // they have negative values, so that they don't collide with JSHandles.
-#if FEATURE_WASM_THREADS
-        [ThreadStatic]
-#endif
-        public static nint NextJSVHandle;
-
-#if FEATURE_WASM_THREADS
-        [ThreadStatic]
-#endif
-        private static List<nint>? s_JSVHandleFreeList;
-        public static List<nint> JSVHandleFreeList
-        {
-            get
-            {
-                s_JSVHandleFreeList ??= new();
-                return s_JSVHandleFreeList;
-            }
-        }
-
-        public static nint AllocJSVHandle()
-        {
-            if (JSVHandleFreeList.Count > 0)
-            {
-                var jsvHandle = JSVHandleFreeList[JSVHandleFreeList.Count];
-                JSVHandleFreeList.RemoveAt(JSVHandleFreeList.Count - 1);
-                return jsvHandle;
-            }
-            if (NextJSVHandle == IntPtr.Zero)
-            {
-                NextJSVHandle = -2;
-            }
-            return NextJSVHandle--;
-        }
-
-        public static void FreeJSVHandle(nint jsvHandle)
-        {
-            JSVHandleFreeList.Add(jsvHandle);
-        }
-
-        public static bool IsGCVHandle(nint gcHandle)
-        {
-            return gcHandle < -1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -115,24 +54,17 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
                 JSSynchronizationContext.AssertWebWorkerContext();
 #endif
-                ThreadCsOwnedObjects.Remove(jsHandle);
+                ThreadCsOwnedObjects.Remove((int)jsHandle);
                 Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
             }
         }
 
-        public static bool GetTaskResultDynamic(Task task, out object? value)
+        public static object? GetTaskResultDynamic(Task task)
         {
-            var type = task.GetType();
-            if (type == typeof(Task))
-            {
-                value = null;
-                return false;
-            }
-            MethodInfo method = GetTaskResultMethodInfo(type);
+            MethodInfo method = GetTaskResultMethodInfo(task.GetType());
             if (method != null)
             {
-                value = method.Invoke(task, null);
-                return true;
+                return method.Invoke(task, null);
             }
             throw new InvalidOperationException();
         }
@@ -250,7 +182,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Sigs = (JSFunctionBinding.JSBindingType*)(buffer + JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + (2 * sizeof(JSFunctionBinding.JSBindingType))),
             };
 
-            signature.Version = 2;
+            signature.Version = 1;
             signature.ArgumentCount = argsCount;
             signature.Exception = JSMarshalerType.Exception._signatureType;
             signature.Result = types[0]._signatureType;
@@ -276,12 +208,12 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
             JSObject? res;
 
-            if (!ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
+            if (!ThreadCsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
                 !reference.TryGetTarget(out res) ||
                 res.IsDisposed)
             {
                 res = new JSObject(jsHandle);
-                ThreadCsOwnedObjects[jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
+                ThreadCsOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
             }
             return res;
         }
@@ -347,7 +279,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     JSSynchronizationContext.CurrentJSSynchronizationContext = null;
                     ctx.isDisposed = true;
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
                     Environment.FailFast($"Unexpected error in UninstallWebWorkerInterop, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}. " + ex);
                 }
@@ -373,17 +305,19 @@ namespace System.Runtime.InteropServices.JavaScript
                     foreach (var gch in ThreadJsOwnedObjects.Values)
                     {
                         GCHandle gcHandle = (GCHandle)gch;
+
+                        // if this is pending promise we reject it
+                        if (gcHandle.Target is TaskCallback holder)
+                        {
+                            unsafe
+                            {
+                                holder.Callback!.Invoke(null);
+                            }
+                        }
                         gcHandle.Free();
                     }
-                    foreach (var holder in ThreadJsOwnedHolders.Values)
-                    {
-                        unsafe
-                        {
-                            holder.Callback!.Invoke(null);
-                        }
-                    }
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
                     Environment.FailFast($"Unexpected error in UninstallWebWorkerInterop, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}. " + ex);
                 }
@@ -391,8 +325,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             ThreadCsOwnedObjects.Clear();
             ThreadJsOwnedObjects.Clear();
-            JSVHandleFreeList.Clear();
-            NextJSVHandle = IntPtr.Zero;
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]

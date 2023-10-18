@@ -62,7 +62,7 @@ namespace System.Numerics.Tensors.Tests
             if (diff > tolerance &&
                 diff > Math.Max(Math.Abs(expected), Math.Abs(actual)) * tolerance)
             {
-                throw new EqualException(expected, actual);
+                throw EqualException.ForMismatchedValues(expected, actual);
             }
         }
 
