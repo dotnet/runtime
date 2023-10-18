@@ -34,7 +34,7 @@ Official Starting Page: <https://dotnet.microsoft.com>
 We welcome contributions! Many people all over the world have helped make this project better.
 
 * [Contributing](CONTRIBUTING.md) explains what kinds of contributions we welcome
-* [Workflow Instructions](docs/workflow/README.md) explains how to build and test
+* [Workflow Instructions](docs/workflow/README.md) explain how to build and test
 * [Get Up and Running on .NET Core](docs/project/dogfooding.md) explains how to get nightly builds of the runtime and its libraries to test them in your own projects.
 
 ## Reporting security issues and security bugs
@@ -45,7 +45,7 @@ Also see info about related [Microsoft .NET Core and ASP.NET Core Bug Bounty Pro
 
 ## Filing issues
 
-This repo should contain issues that are tied to the runtime, the class libraries and frameworks, the installation of the `dotnet` binary (sometimes known as the `muxer`) and installation of the .NET runtime and libraries.
+This repo should contain issues that are tied to the runtime, the class libraries and frameworks, the installation of the `dotnet` binary (sometimes known as the `muxer`) and the installation of the .NET runtime and libraries.
 
 For other issues, please file them to their appropriate sibling repos. We have links to many of them on [our new issue page](https://github.com/dotnet/runtime/issues/new/choose).
 
