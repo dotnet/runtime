@@ -11,9 +11,9 @@
 int mono_lzcnt32 (guint32 x)
 {
 #ifdef _MSC_VER
-	long index = 0;
+	unsigned long index = 0;
 	if ( _BitScanReverse( &index, x ) )
-		return index;
+		return (int)index;
 	else
 		return 32;
 #else
@@ -24,9 +24,9 @@ int mono_lzcnt32 (guint32 x)
 int mono_lzcnt64 (guint64 x)
 {
 #ifdef _MSC_VER
-	long index = 0;
-	if ( _BitScanReverse64( &index, (__int64)x ) )
-		return index;
+	unsigned long index = 0;
+	if ( _BitScanReverse64( &index, x ) )
+		return (int)index;
 	else
 		return 64;
 #else
@@ -37,9 +37,9 @@ int mono_lzcnt64 (guint64 x)
 int mono_tzcnt32 (guint32 x)
 {
 #ifdef _MSC_VER
-	long index = 0;
+	unsigned long index = 0;
 	if ( _BitScanForward( &index, x ) )
-		return index;
+		return (int)index;
 	else
 		return 32;
 #else
@@ -50,9 +50,9 @@ int mono_tzcnt32 (guint32 x)
 int mono_tzcnt64 (guint64 x)
 {
 #ifdef _MSC_VER
-	long index = 0;
-	if ( _BitScanForward64( &index, (__int64)x ) )
-		return index;
+	unsigned long index = 0;
+	if ( _BitScanForward64( &index, x ) )
+		return (int)index;
 	else
 		return 64;
 #else
