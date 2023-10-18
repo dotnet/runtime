@@ -799,27 +799,40 @@ bool GenTree::gtHasReg(Compiler* comp) const
 {
     bool hasReg = false;
 
-    if (IsMultiRegCall())
+    if (IsMultiRegCall() || OperIsHWIntrinsic())
     {
-        const GenTreeCall* call     = AsCall();
-        const unsigned     regCount = call->GetReturnTypeDesc()->GetReturnRegCount();
+        const unsigned regCount = GetMultiRegCount(comp);
 
         // A Multi-reg call node is said to have regs, if it has
         // reg assigned to each of its result registers.
         for (unsigned i = 0; i < regCount; ++i)
         {
-            hasReg = (call->GetRegNumByIdx(i) != REG_NA);
+            hasReg = (GetRegByIndex(i) != REG_NA);
             if (!hasReg)
             {
                 break;
             }
         }
     }
-    else if (IsCopyOrReloadOfMultiRegCall())
+    else if (IsCopyOrReload())
     {
         const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
-        const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
-        const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
+        const GenTree*             op1          = copyOrReload->gtGetOp1();
+        unsigned                   regCount     = 0;
+        if (op1->IsMultiRegCall())
+        {
+            regCount = op1->AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
+        }
+#ifdef FEATURE_HW_INTRINSICS
+        else if (op1->IsMultiRegHWIntrinsic())
+        {
+            regCount = HWIntrinsicInfo::GetMultiRegCount(op1->AsHWIntrinsic()->GetHWIntrinsicId());
+        }
+#endif
+        else
+        {
+            hasReg = (GetRegNum() != REG_NA);
+        }
 
         // A Multi-reg copy or reload node is said to have regs,
         // if it has valid regs in any of the positions.
@@ -984,6 +997,28 @@ bool GenTree::IsMultiRegNode() const
 }
 
 //-----------------------------------------------------------------------------------
+// IsMultiRegHWIntrinsic: whether a hwintrinisic node returning its value in more than
+// one register
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if this is GenTreeHWIntrinsic node returning in multi-reg node.
+//
+bool GenTree::IsMultiRegHWIntrinsic() const
+{
+#ifdef FEATURE_HW_INTRINSICS
+
+    if (OperIsHWIntrinsic())
+    {
+        return HWIntrinsicInfo::IsMultiReg(AsHWIntrinsic()->GetHWIntrinsicId());
+    }
+#endif
+    return false;
+}
+
+//-----------------------------------------------------------------------------------
 // GetMultiRegCount: Return the register count for a multi-reg node.
 //
 // Arguments:
@@ -1060,17 +1095,17 @@ bool GenTree::NeedsConsecutiveRegisters() const
 // Return Value:
 //    Reg Mask of GenTree node.
 //
-regMaskTP GenTree::gtGetContainedRegMask(Compiler* comp)
+regMaskTP GenTree::gtGetContainedRegMask()
 {
     if (!isContained())
     {
-        return isUsedFromReg() ? gtGetRegMask(comp) : RBM_NONE;
+        return isUsedFromReg() ? gtGetRegMask() : RBM_NONE;
     }
 
     regMaskTP mask = 0;
     for (GenTree* operand : Operands())
     {
-        mask |= operand->gtGetContainedRegMask(comp);
+        mask |= operand->gtGetContainedRegMask();
     }
     return mask;
 }
@@ -1084,7 +1119,7 @@ regMaskTP GenTree::gtGetContainedRegMask(Compiler* comp)
 // Return Value:
 //    Reg Mask of GenTree node.
 //
-regMaskTP GenTree::gtGetRegMask(Compiler* comp) const
+regMaskTP GenTree::gtGetRegMask() const
 {
     regMaskTP resultMask;
 
@@ -1093,17 +1128,18 @@ regMaskTP GenTree::gtGetRegMask(Compiler* comp) const
         resultMask = genRegMask(GetRegNum());
         resultMask |= AsCall()->GetOtherRegMask();
     }
-    else if (IsCopyOrReloadOfMultiRegNode())
+    else if (IsCopyOrReloadOfMultiRegCall())
     {
-        assert(comp != nullptr);
-        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
-        const unsigned             regCount     = copyOrReload->gtGetOp1()->GetMultiRegCount(comp);
-
         // A multi-reg copy or reload, will have valid regs for only those
         // positions that need to be copied or reloaded.  Hence we need
         // to consider only those registers for computing reg mask.
+
+        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
+        const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
+        const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
+
         resultMask = RBM_NONE;
-        for (unsigned i = 0; i < regCount; i++)
+        for (unsigned i = 0; i < regCount; ++i)
         {
             regNumber reg = copyOrReload->GetRegNumByIdx(i);
             if (reg != REG_NA)

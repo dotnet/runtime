@@ -1453,7 +1453,11 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
     }
     else
     {
-        gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask(compiler));
+        regNumber regAtIndex = tree->GetRegByIndex(multiRegIndex);
+        if (regAtIndex != REG_NA)
+        {
+            gcInfo.gcMarkRegSetNpt(genRegMask(regAtIndex));
+        }
     }
     return reg;
 }
@@ -1559,7 +1563,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     }
     else
     {
-        gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask(compiler));
+        gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask());
     }
 
     genCheckConsumeNode(tree);
@@ -1843,7 +1847,7 @@ void CodeGen::genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode)
 
     genUnspillRegIfNeeded(putArgNode);
 
-    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetRegMask(compiler));
+    gcInfo.gcMarkRegSetNpt(putArgNode->gtGetRegMask());
 
     genCheckConsumeNode(putArgNode);
 }

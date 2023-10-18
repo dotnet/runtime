@@ -1545,7 +1545,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
 
     // If there is a conflict then swap the condition anyway. LSRA should have
     // ensured the other way around has no conflict.
-    if ((trueVal->gtGetContainedRegMask(compiler) & genRegMask(dstReg)) != 0)
+    if ((trueVal->gtGetContainedRegMask() & genRegMask(dstReg)) != 0)
     {
         std::swap(trueVal, falseVal);
         cc = GenCondition::Reverse(cc);
@@ -1556,7 +1556,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     // There may also be a conflict with the falseVal in case this is an AND
     // condition. Once again, after swapping there should be no conflict as
     // ensured by LSRA.
-    if ((desc.oper == GT_AND) && (falseVal->gtGetContainedRegMask(compiler) & genRegMask(dstReg)) != 0)
+    if ((desc.oper == GT_AND) && (falseVal->gtGetContainedRegMask() & genRegMask(dstReg)) != 0)
     {
         std::swap(trueVal, falseVal);
         cc   = GenCondition::Reverse(cc);
@@ -1566,13 +1566,13 @@ void CodeGen::genCodeForSelect(GenTreeOp* select)
     inst_RV_TT(INS_mov, emitTypeSize(select), dstReg, falseVal);
 
     assert(!trueVal->isContained() || trueVal->isUsedFromMemory());
-    assert((trueVal->gtGetContainedRegMask(compiler) & genRegMask(dstReg)) == 0);
+    assert((trueVal->gtGetContainedRegMask() & genRegMask(dstReg)) == 0);
     inst_RV_TT(JumpKindToCmov(desc.jumpKind1), emitTypeSize(select), dstReg, trueVal);
 
     if (desc.oper == GT_AND)
     {
         assert(falseVal->isUsedFromReg());
-        assert((falseVal->gtGetContainedRegMask(compiler) & genRegMask(dstReg)) == 0);
+        assert((falseVal->gtGetContainedRegMask() & genRegMask(dstReg)) == 0);
         inst_RV_TT(JumpKindToCmov(emitter::emitReverseJumpKind(desc.jumpKind2)), emitTypeSize(select), dstReg,
                    falseVal);
     }
@@ -5274,7 +5274,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     GetEmitter()->emitIns_R_ARX(INS_lea, emitTypeSize(node->TypeGet()), dstReg, baseReg, tmpReg, scale,
                                 static_cast<int>(node->gtElemOffset));
 
-    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask(compiler));
+    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask());
 
     genProduceReg(node);
 }
@@ -6733,7 +6733,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
         !varTypeIsByte(targetType))
     {
         regMaskTP targetRegMask = genRegMask(targetReg);
-        if (((op1->gtGetContainedRegMask(compiler) | op2->gtGetContainedRegMask(compiler)) & targetRegMask) == 0)
+        if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
         {
             instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
             targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed
@@ -6904,7 +6904,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
             !varTypeIsByte(targetType))
         {
             regMaskTP targetRegMask = genRegMask(targetReg);
-            if (((op1->gtGetContainedRegMask(compiler) | op2->gtGetContainedRegMask(compiler)) & targetRegMask) == 0)
+            if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
             {
                 instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
                 targetType = TYP_UBYTE; // just a tip for inst_SETCC that movzx is not needed

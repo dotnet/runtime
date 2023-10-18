@@ -3915,7 +3915,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
         instGen_MemoryBarrier();
 
-        gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask(compiler));
+        gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
     }
 
     if (treeNode->GetRegNum() != REG_NA)
@@ -4040,7 +4040,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
         instGen_MemoryBarrier();
 
-        gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask(compiler));
+        gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
     }
 
     genProduceReg(treeNode);

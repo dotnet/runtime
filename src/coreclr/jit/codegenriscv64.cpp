@@ -2726,7 +2726,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     e->emitIns_J(INS_bnez, retry, storeErr);                                // retry if update failed
     genDefineTempLabel(fail);
 
-    gcInfo.gcMarkRegSetNpt(locOp->gtGetRegMask(compiler));
+    gcInfo.gcMarkRegSetNpt(locOp->gtGetRegMask());
     genProduceReg(treeNode);
 }
 
@@ -5799,7 +5799,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     // dest = dest + elemOffs
     GetEmitter()->emitIns_R_R_I(INS_addi, attr, node->GetRegNum(), node->GetRegNum(), node->gtElemOffset);
 
-    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask(compiler));
+    gcInfo.gcMarkRegSetNpt(base->gtGetRegMask());
 
     genProduceReg(node);
 }
