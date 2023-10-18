@@ -587,9 +587,6 @@ namespace System.DirectoryServices.ActiveDirectory
         [LibraryImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaDeleteTrustedDomain")]
         public static partial uint LsaDeleteTrustedDomain(SafeLsaPolicyHandle handle, IntPtr pSid);
 
-        [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "I_NetLogonControl2", StringMarshalling = StringMarshalling.Utf16)]
-        public static partial int I_NetLogonControl2(string serverName, int FunctionCode, int QueryLevel, IntPtr data, out IntPtr buffer);
-
         [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "GetSystemTimeAsFileTime")]
         public static partial void GetSystemTimeAsFileTime(IntPtr fileTime);
 

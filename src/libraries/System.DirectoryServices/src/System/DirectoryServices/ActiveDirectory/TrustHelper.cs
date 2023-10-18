@@ -400,7 +400,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     if (!forceSecureChannelReset)
                     {
-                        win32Error = UnsafeNativeMethods.I_NetLogonControl2(policyServerName, NETLOGON_CONTROL_TC_VERIFY, NETLOGON_QUERY_LEVEL, ptr, out buffer1);
+                        win32Error = Interop.Netapi32.I_NetLogonControl2(policyServerName, NETLOGON_CONTROL_TC_VERIFY, NETLOGON_QUERY_LEVEL, ptr, out buffer1);
 
                         if (win32Error == 0)
                         {
@@ -443,7 +443,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     else
                     {
                         // then try secure channel reset
-                        win32Error = UnsafeNativeMethods.I_NetLogonControl2(policyServerName, NETLOGON_CONTROL_REDISCOVER, NETLOGON_QUERY_LEVEL, ptr, out buffer2);
+                        win32Error = Interop.Netapi32.I_NetLogonControl2(policyServerName, NETLOGON_CONTROL_REDISCOVER, NETLOGON_QUERY_LEVEL, ptr, out buffer2);
                         if (win32Error != 0)
                             // don't really know which server is down, the source or the target
                             throw ExceptionHelper.GetExceptionFromErrorCode(win32Error);
