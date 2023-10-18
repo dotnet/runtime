@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.Build.Traversal">
   <!-- helper project for workload testing -->
 
-  <ItemGroup Label="Build Cross compiler package">
+  <ItemGroup>
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
     <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
     <_DefaultPropsForNuGetBuild Include="TargetArchitecture=$(TargetArchitecture)" />
     <_DefaultPropsForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
+
+    <ProjectReference Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj"
+                      AdditionalProperties="@(_DefaultPropsForNuGetBuild,';');GeneratePackageOnBuild=true" />
 
     <!-- AOT Cross compiler -->
     <_PropsForAOTCrossBuild Include="@(_DefaultPropsForNuGetBuild)" />

@@ -430,7 +430,6 @@
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmworkload+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)\wasm\workloads.proj" Category="mono" />
-    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" Category="mono" Pack="true" />
   </ItemGroup>
 
   <!-- Host sets -->
