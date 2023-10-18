@@ -176,10 +176,12 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         {
             if (IsInputNewerThanOutput(assemblyFilePath, trimmedAssemblyFilePath))
             {
+                Log.LogMessage(MessageImportance.Low, $"Re-trimming for {assemblyFilePath} because {trimmedAssemblyFilePath} is older than {assemblyFilePath}.");
                 File.Delete(trimmedAssemblyFilePath);
             }
             else
             {
+                Log.LogMessage(MessageImportance.Low, $"Skip trimming for {assemblyFilePath} because {trimmedAssemblyFilePath} is newer than {assemblyFilePath}.");
                 UpdateAssemblyItemWithTrimmedOne(ref newAssmeblyItem, trimmedAssemblyFilePath, assemblyFilePathArg);
                 _updatedAssemblies.Add(newAssmeblyItem);
                 return true;
