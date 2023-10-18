@@ -1299,6 +1299,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/93597", TestRuntimes.Mono)]
         [MemberData(nameof(Copy_SZArray_Reliable_TestData))]
         [MemberData(nameof(Copy_SZArray_PrimitiveWidening_TestData))]
         [MemberData(nameof(Copy_SZArray_UnreliableConversion_CanPerform_TestData))]
@@ -3232,6 +3233,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/93597", TestRuntimes.Mono)]
         [MemberData(nameof(Reverse_TestData))]
         public static void Reverse_SZArray(Array array, int index, int length, Array expected)
         {
@@ -4433,9 +4435,9 @@ namespace System.Tests
         {
             Array array = NonZeroLowerBoundArray(new int[] { 1, 2, 3 }, int.MinValue);
 
-            Reverse(array, int.MinValue, 0, new int[] { 1, 2, 3 });
-            Reverse(array, int.MinValue, 1, new int[] { 1, 2, 3 });
-            Reverse(array, int.MinValue, 2, new int[] { 2, 1, 3 });
+            Reverse(array, int.MinValue, 0, NonZeroLowerBoundArray(new int[] { 1, 2, 3 }, int.MinValue));
+            Reverse(array, int.MinValue, 1, NonZeroLowerBoundArray(new int[] { 1, 2, 3 }, int.MinValue));
+            Reverse(array, int.MinValue, 2, NonZeroLowerBoundArray(new int[] { 2, 1, 3 }, int.MinValue));
         }
 
         [Fact]
@@ -4559,7 +4561,6 @@ namespace System.Tests
         }
 
         private static Array NonZeroLowerBoundArray(Array szArrayContents, int lowerBound)
-
         {
             Assert.Equal(0, szArrayContents.GetLowerBound(0));
 

@@ -91,7 +91,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     throw new NotSupportedException(SR.Format(SR.ToManagedNotImplemented, slot.ElementType+ "[]"));
                 }
             }
-            else if (slot.Type == MarshalerType.Task || slot.Type == MarshalerType.TaskResolved || slot.Type == MarshalerType.TaskRejected)
+            else if (slot.Type == MarshalerType.Task)
             {
                 ToManaged(out Task<object?>? val, static (ref JSMarshalerArgument arg, out object? value) =>
                 {
@@ -277,6 +277,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 byte[] val = (byte[])value;
                 ToJS(val);
+                slot.ElementType = MarshalerType.Byte;
             }
             else if (typeof(int[]) == type)
             {

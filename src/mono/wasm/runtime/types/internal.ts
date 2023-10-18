@@ -109,7 +109,6 @@ export type LoaderHelpers = {
     assertAfterExit: boolean;
 
     exitCode: number | undefined;
-    exitReason: any | undefined;
 
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
@@ -339,8 +338,11 @@ export interface JavaScriptExports {
     // the marshaled signature is: void ReleaseJSOwnedObjectByGCHandle(GCHandle gcHandle)
     release_js_owned_object_by_gc_handle(gc_handle: GCHandle): void;
 
+    // the marshaled signature is: GCHandle CreateTaskCallback()
+    create_task_callback(): GCHandle;
+
     // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
-    complete_task(holder_gcv_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
+    complete_task(holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
 
     // the marshaled signature is: TRes? CallDelegate<T1,T2,T3TRes>(GCHandle callback, T1? arg1, T2? arg2, T3? arg3)
     call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any,
@@ -398,8 +400,6 @@ export enum MarshalerType {
 
     // only on runtime
     JSException,
-    TaskResolved,
-    TaskRejected,
 }
 
 export interface JSMarshalerArguments extends NativePointer {
@@ -512,8 +512,4 @@ export type RuntimeModuleExportsInternal = {
 
 export type NativeModuleExportsInternal = {
     default: (unificator: Function) => EmscriptenModuleInternal
-}
-
-export type WeakRefInternal<T extends object> = WeakRef<T> & {
-    dispose?: () => void
 }

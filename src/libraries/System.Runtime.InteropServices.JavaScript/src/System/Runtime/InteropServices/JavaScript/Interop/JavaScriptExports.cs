@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
-using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -32,7 +31,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     throw new MissingMethodException(SR.MissingManagedEntrypointHandle);
                 }
 
-                RuntimeMethodHandle methodHandle = GetMethodHandleFromIntPtr(entrypointPtr);
+                RuntimeMethodHandle methodHandle = JSHostImplementation.GetMethodHandleFromIntPtr(entrypointPtr);
                 // this would not work for generic types. But Main() could not be generic, so we are fine.
                 MethodInfo? method = MethodBase.GetMethodFromHandle(methodHandle) as MethodInfo;
                 if (method == null)
@@ -142,18 +141,32 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2]; // initialized and set by caller
             try
             {
-                var gcHandle = arg_1.slot.GCHandle;
-                if (IsGCVHandle(gcHandle) && ThreadJsOwnedHolders.Remove(gcHandle, out PromiseHolder? holder))
-                {
-                    holder.GCVHandle = IntPtr.Zero;
-                    holder.Callback!(null);
-                }
-                else
-                {
-                    GCHandle handle = (GCHandle)gcHandle;
-                    ThreadJsOwnedObjects.Remove(handle.Target!);
-                    handle.Free();
-                }
+                GCHandle handle = (GCHandle)arg_1.slot.GCHandle;
+
+                JSHostImplementation.ThreadJsOwnedObjects.Remove(handle.Target!);
+                handle.Free();
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
+
+        // the marshaled signature is:
+        // GCHandle CreateTaskCallback()
+        public static void CreateTaskCallback(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
+            ref JSMarshalerArgument arg_return = ref arguments_buffer[1]; // used as return value
+            try
+            {
+                JSHostImplementation.TaskCallback holder = new JSHostImplementation.TaskCallback();
+#if FEATURE_WASM_THREADS
+                holder.OwnerThreadId = Thread.CurrentThread.ManagedThreadId;
+                holder.SynchronizationContext = SynchronizationContext.Current ?? new SynchronizationContext();
+#endif
+                arg_return.slot.Type = MarshalerType.Object;
+                arg_return.slot.GCHandle = holder.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(holder);
             }
             catch (Exception ex)
             {
@@ -174,7 +187,7 @@ namespace System.Runtime.InteropServices.JavaScript
             try
             {
                 GCHandle callback_gc_handle = (GCHandle)arg_1.slot.GCHandle;
-                if (callback_gc_handle.Target is ToManagedCallback callback)
+                if (callback_gc_handle.Target is JSHostImplementation.ToManagedCallback callback)
                 {
                     // arg_2, arg_3, arg_4, arg_res are processed by the callback
                     callback(arguments_buffer);
@@ -191,7 +204,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // the marshaled signature is:
-        // void CompleteTask<T>(GCVHandle holder, Exception? exceptionResult, T? result)
+        // void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
         public static void CompleteTask(JSMarshalerArgument* arguments_buffer)
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
@@ -200,17 +213,15 @@ namespace System.Runtime.InteropServices.JavaScript
             // arg_3 set by caller when this is SetResult call
             try
             {
-                var callback_gcv_handle = arg_1.slot.GCHandle;
-                if (ThreadJsOwnedHolders.Remove(callback_gcv_handle, out PromiseHolder? promiseHolder) && promiseHolder.Callback != null)
+                GCHandle callback_gc_handle = (GCHandle)arg_1.slot.GCHandle;
+                if (callback_gc_handle.Target is JSHostImplementation.TaskCallback holder && holder.Callback is not null)
                 {
-                    promiseHolder.GCVHandle = IntPtr.Zero;
-
                     // arg_2, arg_3 are processed by the callback
-                    promiseHolder.Callback(arguments_buffer);
+                    holder.Callback(arguments_buffer);
                 }
                 else
                 {
-                    throw new InvalidOperationException(SR.NullPromiseHolder);
+                    throw new InvalidOperationException(SR.NullTaskCallback);
                 }
             }
             catch (Exception ex)
@@ -253,7 +264,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
             try
             {
-                InstallWebWorkerInterop(true, true);
+                JSHostImplementation.InstallWebWorkerInterop(true, true);
             }
             catch (Exception ex)
             {

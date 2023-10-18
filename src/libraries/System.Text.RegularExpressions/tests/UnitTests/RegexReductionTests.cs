@@ -370,7 +370,7 @@ namespace System.Text.RegularExpressions.Tests
             string expectedStr = RegexParser.Parse(expected, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
             if (actualStr != expectedStr)
             {
-                throw new Xunit.Sdk.EqualException(expectedStr, actualStr);
+                throw Xunit.Sdk.EqualException.ForMismatchedValues(expectedStr, actualStr);
             }
         }
 
@@ -503,7 +503,7 @@ namespace System.Text.RegularExpressions.Tests
             string expectedStr = RegexParser.Parse(expected, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
             if (actualStr == expectedStr)
             {
-                throw new Xunit.Sdk.NotEqualException(expectedStr, actualStr);
+                throw Xunit.Sdk.NotEqualException.ForEqualValues(expectedStr, actualStr);
             }
         }
 

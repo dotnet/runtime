@@ -158,7 +158,7 @@ namespace System.Tests
             try
             {
                 rethrownExceptionStackFrame = GetSourceInformation(1);
-                ThrowException(); Assert.True(false, "Workaround for Linux Release builds (https://github.com/dotnet/corefx/pull/28059#issuecomment-378335456)");
+                ThrowException(); Assert.Fail("Workaround for Linux Release builds (https://github.com/dotnet/corefx/pull/28059#issuecomment-378335456)");
             }
             catch
             {
