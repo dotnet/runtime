@@ -1299,7 +1299,6 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/93597", TestRuntimes.Mono)]
         [MemberData(nameof(Copy_SZArray_Reliable_TestData))]
         [MemberData(nameof(Copy_SZArray_PrimitiveWidening_TestData))]
         [MemberData(nameof(Copy_SZArray_UnreliableConversion_CanPerform_TestData))]
@@ -3233,7 +3232,6 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/93597", TestRuntimes.Mono)]
         [MemberData(nameof(Reverse_TestData))]
         public static void Reverse_SZArray(Array array, int index, int length, Array expected)
         {

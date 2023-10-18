@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="GitHub_93597.cs" />
+  </ItemGroup>
+</Project>
