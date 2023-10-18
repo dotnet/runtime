@@ -431,16 +431,6 @@ namespace System.DirectoryServices.ActiveDirectory
         public IntPtr Buffer;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct TRUSTED_DOMAIN_INFORMATION_EX
-    {
-        public global::Interop.UNICODE_STRING Name;
-        public global::Interop.UNICODE_STRING FlatName;
-        public IntPtr Sid;
-        public int TrustDirection;
-        public int TrustType;
-        public TRUST_ATTRIBUTE TrustAttributes;
-    }
 
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class LSA_FOREST_TRUST_COLLISION_INFORMATION
@@ -477,17 +467,6 @@ namespace System.DirectoryServices.ActiveDirectory
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct TRUSTED_DOMAIN_AUTH_INFORMATION
-    {
-        public int IncomingAuthInfos;
-        public IntPtr IncomingAuthenticationInformation;
-        public IntPtr IncomingPreviousAuthenticationInformation;
-        public int OutgoingAuthInfos;
-        public IntPtr OutgoingAuthenticationInformation;
-        public IntPtr OutgoingPreviousAuthenticationInformation;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal sealed class LSA_AUTH_INFORMATION
     {
         public LARGE_INTEGER? LastUpdateTime;
@@ -515,9 +494,9 @@ namespace System.DirectoryServices.ActiveDirectory
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class TRUSTED_DOMAIN_FULL_INFORMATION
     {
-        public TRUSTED_DOMAIN_INFORMATION_EX Information;
+        public Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX Information;
         internal TRUSTED_POSIX_OFFSET_INFO? PosixOffset;
-        public TRUSTED_DOMAIN_AUTH_INFORMATION? AuthInformation;
+        public Interop.Advapi32.TRUSTED_DOMAIN_AUTH_INFORMATION? AuthInformation;
     }
 
     /*
@@ -556,9 +535,6 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "GetSystemTimeAsFileTime")]
         public static partial void GetSystemTimeAsFileTime(IntPtr fileTime);
-
-        [LibraryImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaCreateTrustedDomainEx")]
-        public static partial uint LsaCreateTrustedDomainEx(SafeLsaPolicyHandle handle, in TRUSTED_DOMAIN_INFORMATION_EX domainEx, in TRUSTED_DOMAIN_AUTH_INFORMATION authInfo, int classInfo, out IntPtr domainHandle);
 
         [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "OpenThread", SetLastError = true)]
         public static partial IntPtr OpenThread(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheirted, int threadID);

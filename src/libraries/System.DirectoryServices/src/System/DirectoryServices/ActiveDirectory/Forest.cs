@@ -352,7 +352,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetForestName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetForestName));
 
-            return TrustHelper.GetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, true);
+            return TrustHelper.GetTrustedDomainInfoStatus(_context, Name, targetForestName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, true);
         }
 
         public void SetSelectiveAuthenticationStatus(string targetForestName, bool enable)
@@ -365,7 +365,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetForestName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetForestName));
 
-            TrustHelper.SetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, true);
+            TrustHelper.SetTrustedDomainInfoStatus(_context, Name, targetForestName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, true);
         }
 
         public bool GetSidFilteringStatus(string targetForestName)
@@ -378,7 +378,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetForestName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetForestName));
 
-            return TrustHelper.GetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL, true);
+            return TrustHelper.GetTrustedDomainInfoStatus(_context, Name, targetForestName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL, true);
         }
 
         public void SetSidFilteringStatus(string targetForestName, bool enable)
@@ -391,7 +391,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetForestName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetForestName));
 
-            TrustHelper.SetTrustedDomainInfoStatus(_context, Name, targetForestName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL, enable, true);
+            TrustHelper.SetTrustedDomainInfoStatus(_context, Name, targetForestName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL, enable, true);
         }
 
         public void DeleteLocalSideOfTrustRelationship(string targetForestName)
@@ -1143,7 +1143,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
 
                         // if it is up level trust and forest attribute is set
-                        if (unmanagedTrust.TrustType == TrustHelper.TRUST_TYPE_UPLEVEL && ((unmanagedTrust.TrustAttributes & (int)TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0))
+                        if (unmanagedTrust.TrustType == TrustHelper.TRUST_TYPE_UPLEVEL && ((unmanagedTrust.TrustAttributes & (int)Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0))
                         {
                             // we don't want to include self
                             if ((unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_PRIMARY) != 0)

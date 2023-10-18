@@ -9,17 +9,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    [Flags]
-    internal enum TRUST_ATTRIBUTE
-    {
-        TRUST_ATTRIBUTE_NON_TRANSITIVE = 0x00000001,
-        TRUST_ATTRIBUTE_UPLEVEL_ONLY = 0x00000002,
-        TRUST_ATTRIBUTE_QUARANTINED_DOMAIN = 0x00000004,
-        TRUST_ATTRIBUTE_FOREST_TRANSITIVE = 0x00000008,
-        TRUST_ATTRIBUTE_CROSS_ORGANIZATION = 0x00000010,
-        TRUST_ATTRIBUTE_WITHIN_FOREST = 0x00000020,
-        TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL = 0x00000040
-    }
 
     internal static class TrustHelper
     {
@@ -41,7 +30,7 @@ namespace System.DirectoryServices.ActiveDirectory
         private const int ERROR_INVALID_LEVEL = 124;
         private const string PasswordCharacterSet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-+=[{]};:>|./?";
 
-        internal static bool GetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, TRUST_ATTRIBUTE attribute, bool isForest)
+        internal static bool GetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, Interop.Advapi32.TRUST_ATTRIBUTE attribute, bool isForest)
         {
             SafeLsaPolicyHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
@@ -84,7 +73,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     Debug.Assert(buffer != (IntPtr)0);
 
-                    TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
+                    Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
                     Marshal.PtrToStructure(buffer, domainInfo);
 
                     // validate this is the trust that the user refers to
@@ -93,25 +82,25 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the attribute of the trust
 
                     // selective authentication info
-                    if (attribute == TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION)
+                    if (attribute == Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION)
                     {
-                        if ((domainInfo.TrustAttributes & TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION) == 0)
+                        if ((domainInfo.TrustAttributes & Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION) == 0)
                             return false;
                         else
                             return true;
                     }
                     // sid filtering behavior for forest trust
-                    else if (attribute == TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL)
+                    else if (attribute == Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL)
                     {
-                        if ((domainInfo.TrustAttributes & TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL) == 0)
+                        if ((domainInfo.TrustAttributes & Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL) == 0)
                             return true;
                         else
                             return false;
                     }
                     // sid filtering behavior for domain trust
-                    else if (attribute == TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN)
+                    else if (attribute == Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN)
                     {
-                        if ((domainInfo.TrustAttributes & TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN) == 0)
+                        if ((domainInfo.TrustAttributes & Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN) == 0)
                             return false;
                         else
                             return true;
@@ -137,7 +126,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch { throw; }
         }
 
-        internal static void SetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, TRUST_ATTRIBUTE attribute, bool status, bool isForest)
+        internal static void SetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, Interop.Advapi32.TRUST_ATTRIBUTE attribute, bool status, bool isForest)
         {
             SafeLsaPolicyHandle? handle = null;
             IntPtr buffer = (IntPtr)0;
@@ -181,7 +170,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     Debug.Assert(buffer != (IntPtr)0);
 
                     // get the managed structure representation
-                    TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
+                    Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
                     Marshal.PtrToStructure(buffer, domainInfo);
 
                     // validate this is the trust that the user refers to
@@ -190,45 +179,45 @@ namespace System.DirectoryServices.ActiveDirectory
                     // change the attribute value properly
 
                     // selective authentication
-                    if (attribute == TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION)
+                    if (attribute == Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION)
                     {
                         if (status)
                         {
                             // turns on selective authentication
-                            domainInfo.TrustAttributes |= TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION;
+                            domainInfo.TrustAttributes |= Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION;
                         }
                         else
                         {
                             // turns off selective authentication
-                            domainInfo.TrustAttributes &= ~(TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION);
+                            domainInfo.TrustAttributes &= ~(Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION);
                         }
                     }
                     // user wants to change sid filtering behavior for forest trust
-                    else if (attribute == TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL)
+                    else if (attribute == Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL)
                     {
                         if (status)
                         {
                             // user wants sid filtering behavior
-                            domainInfo.TrustAttributes &= ~(TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL);
+                            domainInfo.TrustAttributes &= ~(Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL);
                         }
                         else
                         {
                             // users wants to turn off sid filtering behavior
-                            domainInfo.TrustAttributes |= TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL;
+                            domainInfo.TrustAttributes |= Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL;
                         }
                     }
                     // user wants to change sid filtering behavior for external trust
-                    else if (attribute == TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN)
+                    else if (attribute == Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN)
                     {
                         if (status)
                         {
                             // user wants sid filtering behavior
-                            domainInfo.TrustAttributes |= TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN;
+                            domainInfo.TrustAttributes |= Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN;
                         }
                         else
                         {
                             // user wants to turn off sid filtering behavior
-                            domainInfo.TrustAttributes &= ~(TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN);
+                            domainInfo.TrustAttributes &= ~(Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN);
                         }
                     }
                     else
@@ -237,7 +226,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // reconstruct the unmanaged structure to set it back
-                    newInfo = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TRUSTED_DOMAIN_INFORMATION_EX)));
+                    newInfo = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX)));
                     Marshal.StructureToPtr(domainInfo, newInfo, false);
 
                     result = Interop.Advapi32.LsaSetTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, newInfo);
@@ -311,7 +300,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     try
                     {
-                        TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
+                        Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
                         Marshal.PtrToStructure(buffer, domainInfo);
 
                         // validate this is the trust that the user refers to
@@ -498,7 +487,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
-                    TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx = default;
+                    Interop.Advapi32.TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx = default;
                     if ((direction & TrustDirection.Inbound) != 0)
                     {
                         AuthInfoEx.IncomingAuthInfos = 1;
@@ -513,7 +502,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         AuthInfoEx.OutgoingPreviousAuthenticationInformation = (IntPtr)0;
                     }
 
-                    TRUSTED_DOMAIN_INFORMATION_EX tdi = new TRUSTED_DOMAIN_INFORMATION_EX()
+                    Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX tdi = new Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX()
                     {
                         FlatName = domainInfo.Name,
                         Name = domainInfo.DnsDomainName,
@@ -523,11 +512,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     };
                     if (isForest)
                     {
-                        tdi.TrustAttributes = TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
+                        tdi.TrustAttributes = Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
                     }
                     else
                     {
-                        tdi.TrustAttributes = TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN;
+                        tdi.TrustAttributes = Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN;
                     }
 
                     // get server name
@@ -537,7 +526,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     impersonated = Utils.Impersonate(sourceContext);
                     policyHandle = Utils.GetPolicyHandle(serverName);
 
-                    uint result = UnsafeNativeMethods.LsaCreateTrustedDomainEx(policyHandle, tdi, AuthInfoEx, TRUSTED_SET_POSIX | TRUSTED_SET_AUTH, out domainHandle);
+                    uint result = Interop.Advapi32.LsaCreateTrustedDomainEx(policyHandle, tdi, AuthInfoEx, TRUSTED_SET_POSIX | TRUSTED_SET_AUTH, out domainHandle);
                     if (result != 0)
                     {
                         result = global::Interop.Advapi32.LsaNtStatusToWinError(result);
@@ -653,7 +642,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
-                    TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx = default;
+                    Interop.Advapi32.TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx = default;
                     if ((direction & TrustDirection.Inbound) != 0)
                     {
                         AuthInfoEx.IncomingAuthInfos = 1;
@@ -781,7 +770,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     unmanagedAuthData = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_AUTH_INFORMATION)));
                     Marshal.StructureToPtr(AuthData, unmanagedAuthData, false);
 
-                    TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx;
+                    Interop.Advapi32.TRUSTED_DOMAIN_AUTH_INFORMATION AuthInfoEx;
                     if ((newTrustDirection & TrustDirection.Inbound) != 0)
                     {
                         AuthInfoEx.IncomingAuthInfos = 1;
@@ -876,7 +865,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
+                Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
                 Marshal.PtrToStructure(buffer, domainInfo);
 
                 // validate this is the trust that the user refers to
@@ -901,12 +890,12 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        private static void ValidateTrustAttribute(TRUSTED_DOMAIN_INFORMATION_EX domainInfo, bool isForest, string? sourceName, string? targetName)
+        private static void ValidateTrustAttribute(Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX domainInfo, bool isForest, string? sourceName, string? targetName)
         {
             if (isForest)
             {
                 // it should be a forest trust, make sure that TRUST_ATTRIBUTE_FOREST_TRANSITIVE bit is set
-                if ((domainInfo.TrustAttributes & TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) == 0)
+                if ((domainInfo.TrustAttributes & Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) == 0)
                 {
                     throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ForestTrustDoesNotExist, sourceName, targetName), typeof(ForestTrustRelationshipInformation), null);
                 }
@@ -914,7 +903,7 @@ namespace System.DirectoryServices.ActiveDirectory
             else
             {
                 // it should not be a forest trust, make sure that TRUST_ATTRIBUTE_FOREST_TRANSITIVE bit is not set
-                if ((domainInfo.TrustAttributes & TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0)
+                if ((domainInfo.TrustAttributes & Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0)
                 {
                     throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.WrongForestTrust, sourceName, targetName), typeof(TrustRelationshipInformation), null);
                 }

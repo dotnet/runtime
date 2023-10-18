@@ -540,7 +540,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetDomainName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetDomainName));
 
-            return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, false);
+            return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, false);
         }
 
         public void SetSelectiveAuthenticationStatus(string targetDomainName, bool enable)
@@ -553,7 +553,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetDomainName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetDomainName));
 
-            TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, false);
+            TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_CROSS_ORGANIZATION, enable, false);
         }
 
         public bool GetSidFilteringStatus(string targetDomainName)
@@ -566,7 +566,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetDomainName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetDomainName));
 
-            return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, false);
+            return TrustHelper.GetTrustedDomainInfoStatus(context, Name, targetDomainName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, false);
         }
 
         public void SetSidFilteringStatus(string targetDomainName, bool enable)
@@ -579,7 +579,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (targetDomainName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetDomainName));
 
-            TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, enable, false);
+            TrustHelper.SetTrustedDomainInfoStatus(context, Name, targetDomainName, Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_QUARANTINED_DOMAIN, enable, false);
         }
 
         public void DeleteLocalSideOfTrustRelationship(string targetDomainName)
@@ -1418,7 +1418,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
 
                         // external trust or forest trust
-                        if ((tmpObject.TrustAttributes & (int)TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0)
+                        if ((tmpObject.TrustAttributes & (int)Interop.Advapi32.TRUST_ATTRIBUTE.TRUST_ATTRIBUTE_FOREST_TRANSITIVE) != 0)
                         {
                             // should not happen as we specify DS_DOMAIN_IN_FOREST when enumerating the trust, so forest trust will not be returned
                             tmpObject.TrustType = TrustType.Forest;
