@@ -301,14 +301,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal const int STATUS_QUOTA_EXCEEDED = unchecked((int)0xC0000044);
 
-        /*void WINAPI DsGetDcClose(
-                        HANDLE GetDcContextHandle
-                        );*/
-        [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcCloseW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial void DsGetDcClose(
-            IntPtr getDcContextHandle);
-
-
         internal const int DsDomainControllerInfoLevel2 = 2;
         internal const int DsDomainControllerInfoLevel3 = 3;
 

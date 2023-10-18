@@ -184,7 +184,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    NativeMethods.DsGetDcClose(retGetDcContext);
+                    Interop.Netapi32.DsGetDcClose(retGetDcContext);
                 }
             }
             else if (result != 0)
