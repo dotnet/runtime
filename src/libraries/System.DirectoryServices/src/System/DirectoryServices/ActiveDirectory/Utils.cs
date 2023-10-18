@@ -874,7 +874,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string? stringGuid = null;
 
                 // encode the byte arry into binary string representation
-                int hr = UnsafeNativeMethods.ADsEncodeBinaryData(byteGuid, byteGuid.Length, ref ptr);
+                int hr = Interop.Activeds.ADsEncodeBinaryData(byteGuid, byteGuid.Length, ref ptr);
 
                 if (hr == 0)
                 {

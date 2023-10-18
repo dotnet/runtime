@@ -572,9 +572,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal static partial class UnsafeNativeMethods
     {
-        [LibraryImport(global::Interop.Libraries.Activeds, EntryPoint = "ADsEncodeBinaryData", StringMarshalling = StringMarshalling.Utf16)]
-        public static partial int ADsEncodeBinaryData(byte[] data, int length, ref IntPtr result);
-
         [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetSiteNameW", StringMarshalling = StringMarshalling.Utf16)]
         public static partial int DsGetSiteName(string? dcName, ref IntPtr ptr);
 

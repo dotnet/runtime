@@ -166,6 +166,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
              Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.ADsEncodeBinaryData.cs"
+             Link="Common\Interop\Windows\Activeds\Interop.ADsEncodeBinaryData.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.ADsOpenObject.cs"
              Link="Common\Interop\Windows\Activeds\Interop.ADsOpenObject.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.FreeADsMem.cs"
