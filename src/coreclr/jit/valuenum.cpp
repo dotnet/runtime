@@ -12193,9 +12193,10 @@ ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
                                   bool      hasOverflowCheck) /* = false */
 {
 
-    if ((castFromType == TYP_I_IMPL) && (castToType == TYP_BYREF) && IsVNHandle(srcVN))
+    if ((castFromType == TYP_I_IMPL) && varTypeIsGC(castToType) && IsVNConstant(srcVN))
     {
-        // Omit cast for (h)CNS_INT [TYP_I_IMPL -> TYP_BYREF]
+        // Omit cast for CNS_INT [TYP_I_IMPL -> TYP_BYREF/TYP_REF]
+        // We can't check `IsVNHandle(srcVN)` because we may have lost handle information with shared const CSEs.
         return srcVN;
     }
 
