@@ -55,7 +55,7 @@ export RunningIlasmRoundTrip=
 ]]>
       </IlasmRoundTripBashScript>
 
-      <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
+      <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(IlasmRoundTripIncompatible)' != 'true'"><![CDATA[
 # IlasmRoundTrip Script
 
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
@@ -70,7 +70,7 @@ then
 fi
 ]]>
       </IlasmRoundTripBashScript>
-      <BashIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
+      <BashIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(IlasmRoundTripIncompatible)' != 'true'"><![CDATA[
 if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
 then
   echo $LAUNCHER $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
@@ -102,7 +102,7 @@ set RunningIlasmRoundTrip=
 ]]>
       </IlasmRoundTripBatchScript>
 
-      <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
+      <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(IlasmRoundTripIncompatible)' != 'true'"><![CDATA[
 REM IlasmRoundTrip Script
 
 IF NOT DEFINED DoLink (
@@ -116,7 +116,7 @@ IF NOT DEFINED DoLink (
 )
 ]]>
       </IlasmRoundTripBatchScript>
-      <BatchIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
+      <BatchIlrtTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(IlasmRoundTripIncompatible)' != 'true'"><![CDATA[
 IF NOT DEFINED DoLink (
   if defined RunningIlasmRoundTrip (
     ECHO %LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments%
@@ -308,7 +308,7 @@ set DOTNET_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
   ***********************************************************************************************
   -->
 
-  <Target Name="IlasmRoundTripCommand" AfterTargets="AfterBuild">
+  <Target Name="IlasmRoundTripCommand" AfterTargets="AfterBuild" Condition="'$(IlasmRoundTripIncompatible)' != 'true'">
     <PropertyGroup>
       <InputAssemblyName>$(AssemblyName).dll</InputAssemblyName>
       <DisassemblyName>IL-RT/$(AssemblyName).il</DisassemblyName>
@@ -356,8 +356,18 @@ print("ILASM RoundTrips")
 if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
+assembliesToIgnore = [
+    "Loader/binding/tracing/BinderTracingTest.ResolutionFlow/AssemblyToLoad.dll"
+]
+
+def can_ignore_assembly(absPath):
+    for path in assembliesToIgnore:
+        if absPath.endswith(path):
+            return True
+    return False
+
 for inputAssemblyName in glob.glob("*.dll"):
-  if is_managed_assembly(inputAssemblyName):
+  if not can_ignore_assembly(os.path.abspath(inputAssemblyName).replace("\\", "/")) and is_managed_assembly(inputAssemblyName):
       print("ILASM RoundTrip for " + inputAssemblyName)
 
       ilasmSwitches = ""
