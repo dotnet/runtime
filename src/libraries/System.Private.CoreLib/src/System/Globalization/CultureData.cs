@@ -1211,7 +1211,7 @@ namespace System.Globalization
 
         /// <summary>
         /// 3 letter ISO 3166 country code
-        /// </summary>//
+        /// </summary>
         internal string ThreeLetterISOCountryName => _sISO3166CountryName2 ??= GetLocaleInfoCore(LocaleStringData.Iso3166CountryName2);
 
         internal int KeyboardLayoutId

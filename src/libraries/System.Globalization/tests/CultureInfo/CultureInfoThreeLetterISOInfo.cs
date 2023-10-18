@@ -18,8 +18,8 @@ namespace System.Globalization.Tests
             yield return new object[] { 0x40d, 117, "he-IL", "ISR", "heb" };
         }
 
-        // [Theory] implement for hybrid mode
-        // [MemberData(nameof(RegionInfo_TestData))]//
+        // [Theory]
+        // [MemberData(nameof(RegionInfo_TestData))]
         // public void MiscTest(int lcid, int geoId, string name, string threeLetterISORegionName, string threeLetterISOLanguageName)
         // {
         //     RegionInfo ri = new RegionInfo(lcid); // create it with lcid

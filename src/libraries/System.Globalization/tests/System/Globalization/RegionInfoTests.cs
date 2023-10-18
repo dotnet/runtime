@@ -212,7 +212,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData(nameof(RegionInfo_TestData))]//
+        [MemberData(nameof(RegionInfo_TestData))]
         public void MiscTest(int lcid, int geoId, string currencyEnglishName, string currencyShortName, string alternativeCurrencyEnglishName, string currencyNativeName, string threeLetterISORegionName, string threeLetterWindowsRegionName)
         {
             RegionInfo ri = new RegionInfo(lcid); // create it with lcid

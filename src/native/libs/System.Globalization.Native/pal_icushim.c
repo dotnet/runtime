@@ -264,7 +264,6 @@ static void GetVersionedLibFileName(const char* baseFileName, int majorVer, int 
 // Try to open the necessary ICU libraries
 static int OpenICULibraries(int majorVer, int minorVer, int subVer, const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
-//
     char libicuucName[VERSIONED_LIB_NAME_LEN];
     char libicui18nName[VERSIONED_LIB_NAME_LEN];
 

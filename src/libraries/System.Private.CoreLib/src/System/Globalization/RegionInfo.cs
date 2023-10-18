@@ -139,7 +139,7 @@ namespace System.Globalization
 
         /// <summary>
         /// Returns the three letter ISO region name (ie: USA)
-        /// </summary>//
+        /// </summary>
         public virtual string ThreeLetterISORegionName => _cultureData.ThreeLetterISOCountryName;
 
         /// <summary>
