@@ -464,10 +464,10 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.FreeHGlobal(data);
 
                     if (buffer1 != (IntPtr)0)
-                        UnsafeNativeMethods.NetApiBufferFree(buffer1);
+                        Interop.Netapi32.NetApiBufferFree(buffer1);
 
                     if (buffer2 != (IntPtr)0)
-                        UnsafeNativeMethods.NetApiBufferFree(buffer2);
+                        Interop.Netapi32.NetApiBufferFree(buffer2);
                 }
             }
             catch { throw; }

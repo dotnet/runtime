@@ -57,7 +57,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // what to do with error code??
                     if (pDomainControllerInfo != IntPtr.Zero)
                     {
-                        result = NativeMethods.NetApiBufferFree(pDomainControllerInfo);
+                        result = Interop.Netapi32.NetApiBufferFree(pDomainControllerInfo);
                     }
                 }
             }
@@ -170,7 +170,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                 // what to do with the error?
                                 if (dcDnsHostNamePtr != IntPtr.Zero)
                                 {
-                                    result = NativeMethods.NetApiBufferFree(dcDnsHostNamePtr);
+                                    result = Interop.Netapi32.NetApiBufferFree(dcDnsHostNamePtr);
                                 }
                             }
                         }

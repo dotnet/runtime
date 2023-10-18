@@ -1435,7 +1435,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (domains != (IntPtr)0)
-                    UnsafeNativeMethods.NetApiBufferFree(domains);
+                    Interop.Netapi32.NetApiBufferFree(domains);
             }
         }
 

@@ -357,12 +357,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static partial void DsGetDcClose(
             IntPtr getDcContextHandle);
 
-        /*NET_API_STATUS NetApiBufferFree(
-                LPVOID Buffer
-                );*/
-        [LibraryImport(global::Interop.Libraries.Netapi32)]
-        internal static partial int NetApiBufferFree(
-            IntPtr buffer);
 
         internal const int DsDomainControllerInfoLevel2 = 2;
         internal const int DsDomainControllerInfoLevel3 = 3;
