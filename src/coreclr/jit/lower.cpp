@@ -542,13 +542,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-        case GT_ARR_ELEM: // Lowered by fgMorphArrayOps()
-        case GT_MDARR_LENGTH:
-        case GT_MDARR_LOWER_BOUND:
-            // Lowered by fgSimpleLowering()
-            unreached();
-            break;
-
         case GT_ROL:
         case GT_ROR:
             LowerRotate(node);
@@ -688,11 +681,85 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
+        case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
+            return LowerArrLength(node->AsArrCommon());
+            break;
+
         default:
             break;
     }
 
     return node->gtNext;
+}
+
+//------------------------------------------------------------------------
+// LowerArrLength: lower an array length
+//
+// Arguments:
+//    node - the array length node we are lowering.
+//
+// Returns:
+//    next node that needs to be lowered.
+//
+// Notes:
+//    If base array is nullptr, this effectively
+//    turns into a nullcheck.
+//
+GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
+{
+    GenTree* const arr       = node->ArrRef();
+    int            lenOffset = 0;
+
+    switch (node->OperGet())
+    {
+        case GT_ARR_LENGTH:
+        {
+            lenOffset = node->AsArrLen()->ArrLenOffset();
+            noway_assert(lenOffset == OFFSETOF__CORINFO_Array__length ||
+                         lenOffset == OFFSETOF__CORINFO_String__stringLen);
+            break;
+        }
+
+        case GT_MDARR_LENGTH:
+            lenOffset = (int)comp->eeGetMDArrayLengthOffset(node->AsMDArr()->Rank(), node->AsMDArr()->Dim());
+            break;
+
+        case GT_MDARR_LOWER_BOUND:
+            lenOffset = (int)comp->eeGetMDArrayLowerBoundOffset(node->AsMDArr()->Rank(), node->AsMDArr()->Dim());
+            break;
+
+        default:
+            unreached();
+    }
+
+    // Create the expression `*(array_addr + lenOffset)`
+
+    GenTree* addr;
+    noway_assert(arr->gtNext == node);
+
+    if ((arr->gtOper == GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
+    {
+        // If the array is NULL, then we should get a NULL reference
+        // exception when computing its length.  We need to maintain
+        // an invariant where there is no sum of two constants node, so
+        // let's simply return an indirection of NULL.
+
+        addr = arr;
+    }
+    else
+    {
+        GenTree* con = comp->gtNewIconNode(lenOffset, TYP_I_IMPL);
+        addr         = comp->gtNewOperNode(GT_ADD, TYP_BYREF, arr, con);
+        BlockRange().InsertAfter(arr, con, addr);
+    }
+
+    // Change to a GT_IND.
+    node->ChangeOper(GT_IND);
+    node->AsIndir()->Addr() = addr;
+
+    return arr->gtNext;
 }
 
 /**  -- Switch Lowering --

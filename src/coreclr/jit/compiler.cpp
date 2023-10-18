@@ -5088,13 +5088,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     fgNodeThreading = NodeThreading::LIR;
 
-    // Here we do "simple lowering".  When the RyuJIT backend works for all
-    // platforms, this will be part of the more general lowering phase.  For now, though, we do a separate
-    // pass of "final lowering."  We must do this before (final) liveness analysis, because this creates
-    // range check throw blocks, in which the liveness must be correct.
-    //
-    DoPhase(this, PHASE_SIMPLE_LOWERING, &Compiler::fgSimpleLowering);
-
     // Enable this to gather statistical data such as
     // call and register argument info, flowgraph and loop info, etc.
     compJitStats();
