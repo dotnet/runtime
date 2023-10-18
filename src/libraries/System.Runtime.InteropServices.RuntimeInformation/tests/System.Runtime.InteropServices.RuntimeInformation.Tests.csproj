@@ -10,6 +10,10 @@
     <Compile Include="CheckPlatformTests.cs" />
     <Compile Include="RuntimeIdentifierTests.cs" />
     <Compile Include="DescriptionNameTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
+    <Compile Include="$(CommonPath)Interop\Linux\os-release\Interop.OSReleaseFile.cs"
+             Link="Interop\Linux\os-release\Interop.OSReleaseFile.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
              Link="Common\Interop\Linux\Interop.cgroups.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -18,7 +22,5 @@
              Link="Common\Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs"
              Link="Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs" />
-    <Compile Include="$(CommonPath)Interop\Linux\os-release\Interop.OSReleaseFile.cs"
-             Link="Interop\Linux\os-release\Interop.OSReleaseFile.cs" />
   </ItemGroup>
 </Project>

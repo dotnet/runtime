@@ -465,7 +465,7 @@ private:
         if (asprintf(&mem_limit_filename, "%s%s", s_memory_cgroup_path, CGROUP2_MEMORY_LIMIT_FILENAME) < 0)
             return false;
 
-        int cgroupPathLength = strlen(s_memory_cgroup_path);
+        size_t cgroupPathLength = strlen(s_memory_cgroup_path);
 
         // Iterate over the directory hierarchy representing the cgroup hierarchy until reaching the 
         // mount directory. The mount directory doesn't contain the memory.max.
