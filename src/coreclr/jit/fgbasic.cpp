@@ -96,7 +96,6 @@ void Compiler::fgInit()
     // as the code that raises an exception when an array range check fails.
 
     fgAddCodeList = nullptr;
-    fgAddCodeModf = false;
 
     for (int i = 0; i < SCK_COUNT; i++)
     {
@@ -108,6 +107,9 @@ void Compiler::fgInit()
 
     /* This global flag is set whenever we remove a statement */
     fgStmtRemoved = false;
+
+    // This global flag is set when we create throw helper blocks
+    fgRngChkThrowAdded = false;
 
     /* Keep track of whether or not EH statements have been optimized */
     fgOptimizedFinally = false;
