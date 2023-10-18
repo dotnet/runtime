@@ -11,7 +11,7 @@ import { mono_wasm_bind_js_function, mono_wasm_invoke_bound_function, mono_wasm_
 import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
-import { mono_wasm_marshal_promise } from "./marshal-to-js";
+import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
 import { mono_wasm_eventloop_has_unsettled_interop_promises } from "./pthreads/shared/eventloop";
 import { mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_detached } from "./pthreads/worker";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
@@ -108,7 +108,7 @@ export const mono_wasm_imports = [
     mono_wasm_invoke_bound_function,
     mono_wasm_invoke_import,
     mono_wasm_bind_cs_function,
-    mono_wasm_marshal_promise,
+    mono_wasm_resolve_or_reject_promise,
     mono_wasm_change_case_invariant,
     mono_wasm_change_case,
     mono_wasm_compare_string,
