@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.X509Certificates
         internal ApplePkcs12Reader(ReadOnlySpan<byte> data)
         {
             try
-            { 
+            {
                 ParsePkcs12(data);
             }
             catch (Exception)
