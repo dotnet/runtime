@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Buffers.Binary;
-
 using Internal.TypeSystem;
-
-using Melanzana.MachO;
 using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter
@@ -42,37 +37,42 @@ namespace ILCompiler.ObjectWriter
             PointerEncoding = DW_EH_PE_pcrel | DW_EH_PE_sdata4;
             LsdaEncoding = DW_EH_PE_pcrel | DW_EH_PE_sdata4;
 
-            if (targetArchitecture == TargetArchitecture.ARM64)
+            switch (targetArchitecture)
             {
-                CodeAlignFactor = 1;
-                DataAlignFactor = -4;
-                ReturnAddressRegister = 30; // LR
-                Instructions = new byte[]
-                {
-                    DW_CFA_def_cfa,
-                    31, // SP
-                    0, // Offset from SP
-                };
-                InitialCFAOffset = 0;
-            }
-            else if (targetArchitecture == TargetArchitecture.X64)
-            {
-                CodeAlignFactor = 1;
-                DataAlignFactor = -8;
-                ReturnAddressRegister = 16; // RA
-                Instructions = new byte[]
-                {
-                    DW_CFA_def_cfa,
-                    7, // RSP
-                    8, // Offset from RSP
-                    DW_CFA_offset | 16, // RIP
-                    1, // RIP is at -8
-                };
-                InitialCFAOffset = 8;
-            }
-            else
-            {
-                throw new NotSupportedException();
+                case TargetArchitecture.ARM64:
+                    CodeAlignFactor = 1;
+                    DataAlignFactor = -4;
+                    ReturnAddressRegister = 30; // LR
+                    Instructions = new byte[]
+                    {
+                        DW_CFA_def_cfa,
+                        31, // SP
+                        0, // Offset from SP
+                    };
+                    InitialCFAOffset = 0;
+                    break;
+
+                //case TargetArchitecture.ARM:
+
+                case TargetArchitecture.X64:
+                    CodeAlignFactor = 1;
+                    DataAlignFactor = -8;
+                    ReturnAddressRegister = 16; // RA
+                    Instructions = new byte[]
+                    {
+                        DW_CFA_def_cfa,
+                        7, // RSP
+                        8, // Offset from RSP
+                        DW_CFA_offset | 16, // RIP
+                        1, // RIP is at -8
+                    };
+                    InitialCFAOffset = 8;
+                    break;
+
+                //case TargetArchitecture.X86:
+
+                default:
+                    throw new NotSupportedException();
             }
         }
     }

@@ -656,10 +656,6 @@ namespace ILCompiler.ObjectWriter
             _debugFileTableBuilder.Write(_debugSymbolSectionWriter.Stream);
         }
 
-        protected override void EmitDebugStaticVars()
-        {
-        }
-
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
             using CoffObjectWriter objectWriter = new CoffObjectWriter(factory, options);

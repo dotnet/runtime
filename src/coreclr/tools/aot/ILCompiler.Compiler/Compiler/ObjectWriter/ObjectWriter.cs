@@ -4,20 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Linq;
-using System.Numerics;
-using System.Buffers;
-using System.Buffers.Binary;
-
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-
-using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
-using Internal.JitInterface;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
@@ -27,21 +18,21 @@ namespace ILCompiler.ObjectWriter
         protected sealed record SymbolDefinition(int SectionIndex, long Value, int Size = 0, bool Global = false);
         protected sealed record SymbolicRelocation(int Offset, RelocType Type, string SymbolName, int Addend = 0);
 
-        protected NodeFactory _nodeFactory;
-        protected ObjectWritingOptions _options;
-        protected bool _isSingleFileCompilation;
+        protected readonly NodeFactory _nodeFactory;
+        protected readonly ObjectWritingOptions _options;
+        protected readonly bool _isSingleFileCompilation;
 
-        private Dictionary<ISymbolNode, string> _mangledNameMap = new();
+        private readonly Dictionary<ISymbolNode, string> _mangledNameMap = new();
 
-        private byte _insPaddingByte;
+        private readonly byte _insPaddingByte;
 
         // Standard sections
-        private Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
-        private List<ObjectWriterStream> _sectionIndexToStream = new();
-        private List<List<SymbolicRelocation>> _sectionIndexToRelocations = new();
+        private readonly Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
+        protected readonly List<ObjectWriterStream> _sectionIndexToStream = new();
+        private readonly List<List<SymbolicRelocation>> _sectionIndexToRelocations = new();
 
         // Symbol table
-        private Dictionary<string, SymbolDefinition> _definedSymbols = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, SymbolDefinition> _definedSymbols = new(StringComparer.Ordinal);
 
         // Debugging
         private UserDefinedTypeDescriptor _userDefinedTypeDescriptor;
@@ -64,7 +55,7 @@ namespace ILCompiler.ObjectWriter
         public void Dispose()
         {
             // Close all the streams
-            foreach (var sectionStream in _sectionIndexToStream)
+            foreach (ObjectWriterStream sectionStream in _sectionIndexToStream)
             {
                 sectionStream.Close();
             }
@@ -124,10 +115,10 @@ namespace ILCompiler.ObjectWriter
             if (_isSingleFileCompilation)
                 return false;
 
-            if (!(node is ISymbolNode))
+            if (node is not ISymbolNode)
                 return false;
 
-            // These intentionally clash with one another, but are merged with linker directives so should not be Comdat folded
+            // These intentionally clash with one another, but are merged with linker directives so should not be COMDAT folded
             if (node is ModulesSectionNode)
                 return false;
 
@@ -272,7 +263,7 @@ namespace ILCompiler.ObjectWriter
 
         protected abstract ITypesDebugInfoWriter CreateDebugInfoBuilder();
 
-        protected virtual ulong GetSectionVirtualAddress(int sectionIndex) => 0;
+        protected virtual string GetSectionSymbolName(int sectionIndex) => null;
 
         protected abstract void EmitDebugFunctionInfo(
             uint methodTypeIndex,
@@ -282,8 +273,6 @@ namespace ILCompiler.ObjectWriter
             bool hasSequencePoints);
 
         protected abstract void EmitDebugSections();
-
-        protected abstract void EmitDebugStaticVars();
 
         protected void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
@@ -354,7 +343,7 @@ namespace ILCompiler.ObjectWriter
 
                 if (nodeContents.Relocs != null)
                 {
-                    foreach (var reloc in nodeContents.Relocs)
+                    foreach (Relocation reloc in nodeContents.Relocs)
                     {
                         string relocSymbolName = GetMangledName(reloc.Target);
 
@@ -405,11 +394,10 @@ namespace ILCompiler.ObjectWriter
                         _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
                     }
 
-                    if (node is INodeWithDebugInfo debugNode &&
-                        node is ISymbolDefinitionNode symbolDefinitionNode)
+                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode)
                     {
                         bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
-                        uint methodTypeIndex = node is IMethodNode methodNode ?
+                        uint methodTypeIndex = node is IMethodNode methodNode && hasSequencePoints ?
                             _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) :
                             0;
                         string methodName = GetMangledName(symbolDefinitionNode);
@@ -421,15 +409,13 @@ namespace ILCompiler.ObjectWriter
                     }
                 }
 
-                EmitDebugStaticVars();
-
                 EmitDebugSections();
             }
 
             EmitSymbolTable();
 
             int relocSectionIndex = 0;
-            foreach (var relocationList in _sectionIndexToRelocations)
+            foreach (List<SymbolicRelocation> relocationList in _sectionIndexToRelocations)
             {
                 EmitRelocations(relocSectionIndex, relocationList);
                 relocSectionIndex++;

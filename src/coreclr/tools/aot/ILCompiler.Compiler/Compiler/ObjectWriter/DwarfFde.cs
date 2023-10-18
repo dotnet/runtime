@@ -3,13 +3,7 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Buffers;
-using System.Buffers.Binary;
-
-using Internal.TypeSystem;
-
-using Melanzana.MachO;
 using static ILCompiler.ObjectWriter.DwarfNative;
 
 namespace ILCompiler.ObjectWriter

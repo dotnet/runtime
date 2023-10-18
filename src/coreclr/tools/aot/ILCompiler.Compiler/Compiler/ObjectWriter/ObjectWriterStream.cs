@@ -3,8 +3,11 @@
 
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -17,13 +20,13 @@ namespace ILCompiler.ObjectWriter
     /// </remarks>
     public sealed class ObjectWriterStream : Stream
     {
-        private ArrayBufferWriter<byte> _appendBuffer = new();
-        private List<ReadOnlyMemory<byte>> _buffers = new();
+        private readonly ArrayBufferWriter<byte> _appendBuffer = new();
+        private readonly List<ReadOnlyMemory<byte>> _buffers = new();
         private long _length;
         private int _bufferIndex;
         private int _bufferPosition;
         private long _position;
-        private byte[] _padding = new byte[16];
+        private readonly byte[] _padding = new byte[16];
 
         public override bool CanRead => true;
 
@@ -35,7 +38,7 @@ namespace ILCompiler.ObjectWriter
 
         public override long Position
         {
-            get => _position;
+            get => _position + _appendBuffer.WrittenCount;
             set
             {
                 // Flush any non-appended data
@@ -62,7 +65,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public ObjectWriterStream(byte paddingByte)
+        public ObjectWriterStream(byte paddingByte = 0)
         {
             _padding.AsSpan().Fill(paddingByte);
         }
@@ -81,9 +84,11 @@ namespace ILCompiler.ObjectWriter
         {
             int bytesRead = 0;
 
-            while (_bufferIndex < _buffers.Count)
+            // _bufferIndex and _bufferPosition is only valid after seeking when
+            // _position < _length
+            while (_position < _length && _bufferIndex < _buffers.Count)
             {
-                var currentBuffer = _buffers[_bufferIndex].Span.Slice(_bufferPosition);
+                ReadOnlySpan<byte> currentBuffer = _buffers[_bufferIndex].Span.Slice(_bufferPosition);
 
                 if (currentBuffer.Length >= buffer.Length)
                 {
@@ -110,11 +115,11 @@ namespace ILCompiler.ObjectWriter
             Position = origin switch
             {
                 SeekOrigin.End => Length + offset,
-                SeekOrigin.Current => _position + offset,
+                SeekOrigin.Current => Position + offset,
                 SeekOrigin.Begin => offset,
                 _ => throw new ArgumentOutOfRangeException(nameof(origin))
             };
-            return _position;
+            return Position;
         }
 
         public override void SetLength(long value)
@@ -129,32 +134,18 @@ namespace ILCompiler.ObjectWriter
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            // We only support appending to the end of the stream
-            if (_position != Length)
-            {
-                throw new NotSupportedException("ObjectWriterStream only supports appending to the end");
-            }
-
+            Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
             buffer.CopyTo(_appendBuffer.GetSpan(buffer.Length));
             _appendBuffer.Advance(buffer.Length);
-            _position += buffer.Length;
-            _bufferPosition += buffer.Length;
         }
 
         public void AppendData(ReadOnlyMemory<byte> data)
         {
-            // We only support appending to the end of the stream
-            if (_position != Length)
-            {
-                throw new NotSupportedException("ObjectWriterStream only supports appending to the end");
-            }
-
+            Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
             FlushAppendBuffer();
             _buffers.Add(data);
             _length += data.Length;
             _position += data.Length;
-            _bufferIndex++;
-            _bufferPosition = 0;
         }
 
         public void AppendPadding(int paddingLength)
@@ -165,8 +156,6 @@ namespace ILCompiler.ObjectWriter
                 {
                     _appendBuffer.GetSpan(paddingLength).Slice(0, paddingLength).Fill(_padding[0]);
                     _appendBuffer.Advance(paddingLength);
-                    _position += paddingLength;
-                    _bufferPosition += paddingLength;
                 }
                 else
                 {
@@ -175,14 +164,66 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        public void WriteULEB128(ulong value)
+        {
+            Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
+            DwarfHelper.WriteULEB128(_appendBuffer, value);
+        }
+
+        public void WriteSLEB128(long value)
+        {
+            Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
+            DwarfHelper.WriteSLEB128(_appendBuffer, value);
+        }
+
+        public void WriteUInt8(byte value)
+        {
+            Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
+            Span<byte> buffer = _appendBuffer.GetSpan(1);
+            buffer[0] = value;
+            _appendBuffer.Advance(1);
+        }
+
+        public void WriteUInt16(ushort value)
+        {
+            Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
+            Span<byte> buffer = _appendBuffer.GetSpan(sizeof(ushort));
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
+            _appendBuffer.Advance(sizeof(ushort));
+        }
+
+        public void WriteUInt32(uint value)
+        {
+            Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
+            Span<byte> buffer = _appendBuffer.GetSpan(sizeof(uint));
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer, value);
+            _appendBuffer.Advance(sizeof(uint));
+        }
+
+        public void WriteUInt64(ulong value)
+        {
+            Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
+            Span<byte> buffer = _appendBuffer.GetSpan(sizeof(ulong));
+            BinaryPrimitives.WriteUInt64LittleEndian(buffer, value);
+            _appendBuffer.Advance(sizeof(ulong));
+        }
+
+        public void WriteUtf8String(string value)
+        {
+            Debug.Assert(_position == _length, "ObjectWriterStream only supports appending to the end");
+            int size = Encoding.UTF8.GetByteCount(value) + 1;
+            Span<byte> buffer = _appendBuffer.GetSpan(size);
+            Encoding.UTF8.GetBytes(value, buffer);
+            buffer[size - 1] = 0;
+            _appendBuffer.Advance(size);
+        }
+
         private void FlushAppendBuffer()
         {
             if (_appendBuffer.WrittenCount > 0)
             {
                 _buffers.Add(_appendBuffer.WrittenSpan.ToArray());
                 _length += _appendBuffer.WrittenCount;
-                _bufferIndex++;
-                _bufferPosition = 0;
                 _appendBuffer.Clear();
             }
         }
