@@ -131,11 +131,12 @@ namespace AssemblyChecker
                             else
                                 return 1;
                         }
-                }
-                else
-                {
-                    Console.Error.WriteLine("Invalid option.");
-                    return 2;
+
+                    default:
+                        {
+                            Console.Error.WriteLine("Invalid option.");
+                            return 2;
+                        }
                 }
             }
 
