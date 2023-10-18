@@ -156,9 +156,15 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
         break;
     }
 
+    case ELEMENT_TYPE_R4:
+#ifdef TARGET_RISCV64
+        _ASSERTE(argRef != NULL);
+        // NaN-box the register value or single-float instructions will treat it as NaN
+        *(INT64 *)pArgDst = 0xffffffff00000000L | *(INT32 *)argRef;
+        break;
+#endif // TARGET_RISCV64
     case ELEMENT_TYPE_I4:
     case ELEMENT_TYPE_U4:
-    case ELEMENT_TYPE_R4:
     IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
     IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
     {
