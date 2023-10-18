@@ -413,6 +413,19 @@ namespace System.Runtime.CompilerServices
 
             public void SetResultDone()
             {
+                switch (_retValue._returnType)
+                {
+                    case TaskletReturnType.Integer:
+                        _returnData = Unsafe.As<IntPtr, T>(ref _retValue._ptr);
+                        Thread.MemoryBarrier();
+                        break;
+                    case TaskletReturnType.ObjectReference:
+                        _returnData = Unsafe.As<object, T>(ref _retValue!._obj!)!;
+                        break;
+                    default:
+                        // Other possibiilities not yet implemented
+                        throw new NotImplementedException();
+                }
                 _completed = true;
                 _taskResumer!();
             }
