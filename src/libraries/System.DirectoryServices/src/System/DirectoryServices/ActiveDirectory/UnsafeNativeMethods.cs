@@ -486,16 +486,10 @@ namespace System.DirectoryServices.ActiveDirectory
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class TRUSTED_POSIX_OFFSET_INFO
-    {
-        internal int Offset;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal sealed class TRUSTED_DOMAIN_FULL_INFORMATION
     {
         public Interop.Advapi32.TRUSTED_DOMAIN_INFORMATION_EX Information;
-        internal TRUSTED_POSIX_OFFSET_INFO? PosixOffset;
+        internal Interop.Advapi32.TRUSTED_POSIX_OFFSET_INFO? PosixOffset;
         public Interop.Advapi32.TRUSTED_DOMAIN_AUTH_INFORMATION? AuthInformation;
     }
 
