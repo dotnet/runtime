@@ -18752,10 +18752,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
             {
                 JITDUMP("Field's current class not available\n");
             }
+
+            return fieldClass;
         }
     }
 
-    return fieldClass;
+    return NO_CLASS_HANDLE;
 }
 
 //------------------------------------------------------------------------
