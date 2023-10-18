@@ -10,8 +10,6 @@
     <Compile Include="CheckPlatformTests.cs" />
     <Compile Include="RuntimeIdentifierTests.cs" />
     <Compile Include="DescriptionNameTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="$(CommonPath)Interop\Linux\os-release\Interop.OSReleaseFile.cs"
              Link="Interop\Linux\os-release\Interop.OSReleaseFile.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
