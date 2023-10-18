@@ -249,8 +249,8 @@ namespace System.Runtime.CompilerServices
                 _ptr = ptr;
                 _returnType = TaskletReturnType.Integer;
             }
-            public IntPtr _ptr;
             public object? _obj;
+            public IntPtr _ptr;
             public TaskletReturnType _returnType;
         }
 
@@ -556,6 +556,7 @@ namespace System.Runtime.CompilerServices
             maintainedData._oldTaskletNext = maintainedData._nextTasklet;
             lastTasklet->pTaskletNextInStack = maintainedData._nextTasklet;
             maintainedData._nextTasklet = nextTaskletInStack;
+            maintainedData._retValue = default(RuntimeAsyncReturnValue);
 
             maintainedData._suspendActive = framesCaptured;
 

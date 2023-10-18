@@ -79,8 +79,8 @@ struct Tasklet
 
 struct RuntimeAsyncReturnValue
 {
-    uintptr_t _ptr;
     uintptr_t _obj;
+    uintptr_t _ptr;
     TaskletReturnType _returnType;
 };
 

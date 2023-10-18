@@ -708,6 +708,10 @@ Check&RegisterName&:
         endm
 
 NESTED_ENTRY RuntimeSuspension_ResumeTaskletReferenceReturn, _TEXT
+; On entry rcx is Tasklet* 
+;          rdx is a pointer to the return value structure
+;
+;          r10 and r8 are used as scratch registers
         push_nonvol_reg rbp  ; We capture RBP to create a stack frame so that we can safely adjust the RSP register, This means that since we always capture this, async2 functions must ALWAYS be compiled with a frame pointer.
         alloc_stack             50h
         set_frame rbp, 50h
@@ -738,6 +742,7 @@ NESTED_ENTRY RuntimeSuspension_ResumeTaskletReferenceReturn, _TEXT
         mov rax, [rbp] 
         mov [rsp+40h], rax
 
+        ; Note that neither rcx or rdx has been modified from entry to this point, and are passed straight through to the PlatformIndependentRestore function
         call PlatformIndependentRestore
         ; RAX now points at the RegRestore array
         mov rcx, [rsp+20h + 10h]
