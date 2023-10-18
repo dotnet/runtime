@@ -554,9 +554,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal static partial class UnsafeNativeMethods
     {
-        [LibraryImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaQueryTrustedDomainInfoByName")]
-        public static partial uint LsaQueryTrustedDomainInfoByName(SafeLsaPolicyHandle handle, in global::Interop.UNICODE_STRING trustedDomain, Interop.Advapi32.TRUSTED_INFORMATION_CLASS infoClass, ref IntPtr buffer);
-
         [LibraryImport(global::Interop.Libraries.Advapi32, EntryPoint = "LsaSetTrustedDomainInfoByName")]
         public static partial uint LsaSetTrustedDomainInfoByName(SafeLsaPolicyHandle handle, in global::Interop.UNICODE_STRING trustedDomain, Interop.Advapi32.TRUSTED_INFORMATION_CLASS infoClass, IntPtr buffer);
 
