@@ -2374,8 +2374,8 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             }
 
             // Create a new bb for the fake filter
-            BasicBlock* filterBb  = bbNewBasicBlock(BBJ_EHFILTERRET);
             BasicBlock* handlerBb = eh->ebdHndBeg;
+            BasicBlock* filterBb  = bbNewBasicBlock(BBJ_EHFILTERRET, handlerBb);
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
@@ -2410,7 +2410,6 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             filterBb->bbCodeOffs = handlerBb->bbCodeOffs;
             filterBb->bbHndIndex = handlerBb->bbHndIndex;
             filterBb->bbTryIndex = handlerBb->bbTryIndex;
-            filterBb->SetJumpDest(handlerBb);
             filterBb->bbSetRunRarely();
             filterBb->bbFlags |= BBF_INTERNAL | BBF_DONT_REMOVE;
 

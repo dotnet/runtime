@@ -218,12 +218,15 @@ private:
         // Arguments:
         //    jumpKind - jump kind for the new basic block
         //    insertAfter - basic block, after which compiler has to insert the new one.
+        //    jumpDest - jump target for the new basic block. Defaults to nullptr.
         //
         // Return Value:
         //    new basic block.
-        BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter)
+        BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind,
+                                              BasicBlock* insertAfter,
+                                              BasicBlock* jumpDest = nullptr)
         {
-            BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true);
+            BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true, jumpDest);
             block->bbFlags |= BBF_IMPORTED;
             return block;
         }
@@ -274,12 +277,13 @@ private:
             }
 
             // checkBlock
-            checkBlock->SetJumpDest(elseBlock);
+            assert(checkBlock->KindIs(BBJ_NONE));
+            checkBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock DEBUG_ARG(compiler));
             compiler->fgAddRefPred(elseBlock, checkBlock);
             compiler->fgAddRefPred(thenBlock, checkBlock);
 
             // thenBlock
-            thenBlock->SetJumpDest(remainderBlock);
+            assert(thenBlock->HasJumpTo(remainderBlock));
             compiler->fgAddRefPred(remainderBlock, thenBlock);
 
             // elseBlock
@@ -361,7 +365,7 @@ private:
         {
             assert(checkIdx == 0);
 
-            checkBlock                 = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
+            checkBlock                 = CreateAndInsertBasicBlock(BBJ_NONE, currBlock);
             GenTree*   fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
             GenTree*   fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
             GenTree*   fatPointerAnd   = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, fptrAddressCopy, fatPointerMask);
@@ -378,7 +382,8 @@ private:
         //
         virtual void CreateThen(uint8_t checkIdx)
         {
-            thenBlock                     = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
+            assert(remainderBlock != nullptr);
+            thenBlock                     = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock, remainderBlock);
             Statement* copyOfOriginalStmt = compiler->gtCloneStmt(stmt);
             compiler->fgInsertStmtAtEnd(thenBlock, copyOfOriginalStmt);
         }
@@ -572,17 +577,18 @@ private:
             {
                 // There's no need for a new block here. We can just append to currBlock.
                 //
-                checkBlock = currBlock;
-                checkBlock->SetJumpKind(BBJ_COND DEBUG_ARG(compiler));
+                checkBlock        = currBlock;
+                checkFallsThrough = false;
             }
             else
             {
                 // In case of multiple checks, append to the previous thenBlock block
                 BasicBlock* prevCheckBlock = checkBlock;
-                checkBlock                 = CreateAndInsertBasicBlock(BBJ_COND, thenBlock);
+                checkBlock                 = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
+                checkFallsThrough          = false;
 
                 // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
-                prevCheckBlock->SetJumpDest(checkBlock);
+                prevCheckBlock->SetJumpKindAndTarget(BBJ_COND, checkBlock DEBUG_ARG(compiler));
                 compiler->fgAddRefPred(checkBlock, prevCheckBlock);
 
                 // Calculate the total likelihood for this check as a sum of likelihoods
@@ -651,8 +657,8 @@ private:
             const bool isLastCheck = (checkIdx == origCall->GetInlineCandidatesCount() - 1);
             if (isLastCheck && ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) != 0))
             {
-                checkBlock->SetJumpDest(nullptr);
-                checkBlock->SetJumpKind(BBJ_NONE DEBUG_ARG(compiler));
+                checkBlock->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(compiler));
+                checkFallsThrough = true;
                 return;
             }
 
@@ -978,13 +984,12 @@ private:
         //
         virtual void CreateThen(uint8_t checkIdx)
         {
-            thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
+            // thenBlock always jumps to remainderBlock
+            thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock, remainderBlock);
             thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
-            thenBlock->SetJumpDest(remainderBlock);
             thenBlock->inheritWeightPercentage(currBlock, origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
 
-            // thenBlock always jumps to remainderBlock. Also, it has a single pred - last checkBlock
-            thenBlock->SetJumpDest(remainderBlock);
+            // Also, thenBlock has a single pred - last checkBlock
             compiler->fgAddRefPred(thenBlock, checkBlock);
             compiler->fgAddRefPred(remainderBlock, thenBlock);
 
@@ -1001,9 +1006,9 @@ private:
 
             // CheckBlock flows into elseBlock unless we deal with the case
             // where we know the last check is always true (in case of "exact" GDV)
-            if (checkBlock->KindIs(BBJ_COND))
+            if (!checkFallsThrough)
             {
-                checkBlock->SetJumpDest(elseBlock);
+                checkBlock->SetJumpKindAndTarget(BBJ_COND, elseBlock DEBUG_ARG(compiler));
                 compiler->fgAddRefPred(elseBlock, checkBlock);
             }
             else
@@ -1126,7 +1131,7 @@ private:
             // not fall through to the check block.
             //
             compiler->fgRemoveRefPred(checkBlock, coldBlock);
-            coldBlock->SetJumpKindAndTarget(BBJ_ALWAYS, elseBlock);
+            coldBlock->SetJumpKindAndTarget(BBJ_ALWAYS, elseBlock DEBUG_ARG(compiler));
             compiler->fgAddRefPred(elseBlock, coldBlock);
         }
 
@@ -1268,6 +1273,7 @@ private:
     private:
         unsigned   returnTemp;
         Statement* lastStmt;
+        bool       checkFallsThrough;
 
         //------------------------------------------------------------------------
         // CreateTreeForLookup: Create a tree representing a lookup of a method address.

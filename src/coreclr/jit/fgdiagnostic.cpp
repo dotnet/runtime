@@ -3039,6 +3039,13 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(block->getTryIndex() < compHndBBtabCount);
         }
 
+        // Blocks with these jump kinds must have valid (non-temporary) jump targets
+        if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE))
+        {
+            assert(block->HasJump());
+            assert(!block->HasJumpTo(&BasicBlock::bbTempJumpDest));
+        }
+
         // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
         // with the finally block the BBJ_CALLFINALLY is targeting. There is one special case: if the
         // BBJ_CALLFINALLY is the first block of a `try`, then its predecessor can be outside the `try`:

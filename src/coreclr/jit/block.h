@@ -538,20 +538,26 @@ private:
     };
 
 public:
+#ifdef DEBUG
+    // When creating a block with a jump, we require its jump kind and target be initialized simultaneously.
+    // In a few edge cases (for example, in Compiler::impImportLeave), we don't know the jump target at block creation.
+    // In these cases, temporarily set the jump target to bbTempJumpDest, and update the jump target later.
+    // We won't check jump targets against bbTempJumpDest in Release builds.
+    static BasicBlock bbTempJumpDest;
+#endif // DEBUG
+
     BBjumpKinds GetJumpKind() const
     {
         return bbJumpKind;
     }
 
-    void SetJumpKind(BBjumpKinds jumpKind DEBUG_ARG(Compiler* compiler))
+    void SetJumpKind(BBjumpKinds jumpKind)
     {
-#ifdef DEBUG
-        // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
-        // TODO: Change assert to check if compiler is in appropriate optimization phase to use BBJ_NONE
-        // (right now, this assertion does the null check to avoid unused variable warnings)
-        assert((jumpKind != BBJ_NONE) || (compiler != nullptr));
-#endif // DEBUG
+        // If this block's jump kind requires a target, ensure it is already set
+        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
         bbJumpKind = jumpKind;
+        // If new jump kind requires a target, ensure a target is already set
+        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
     }
 
     BasicBlock* Prev() const
@@ -611,54 +617,84 @@ public:
         return bbJumpOffs;
     }
 
-    void SetJumpOffs(unsigned jumpOffs)
+    void SetJumpKindAndTarget(BBjumpKinds jumpKind, unsigned jumpOffs)
     {
+        bbJumpKind = jumpKind;
         bbJumpOffs = jumpOffs;
+        assert(KindIs(BBJ_ALWAYS, BBJ_COND, BBJ_LEAVE));
     }
 
     BasicBlock* GetJumpDest() const
     {
+        // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
+        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
         return bbJumpDest;
     }
 
     void SetJumpDest(BasicBlock* jumpDest)
     {
+        // If bbJumpKind indicates this block has a jump,
+        // bbJumpDest should have previously been set in SetJumpKindAndTarget().
+        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+
+        // SetJumpKindAndTarget() nulls jumpDest for non-jump kinds,
+        // so don't use SetJumpDest() to null bbJumpDest without updating bbJumpKind.
         bbJumpDest = jumpDest;
+        assert(HasJump());
     }
 
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest)
+    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest DEBUG_ARG(Compiler* compiler))
     {
-        assert(jumpDest != nullptr);
+#ifdef DEBUG
+        // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
+        // TODO: Change assert to check if compiler is in appropriate optimization phase to use BBJ_NONE
+        //
+        // (right now, this assertion does the null check to avoid unused variable warnings)
+        assert((jumpKind != BBJ_NONE) || (compiler != nullptr));
+#endif // DEBUG
+
         bbJumpKind = jumpKind;
         bbJumpDest = jumpDest;
-        assert(KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+
+        // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
+        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+    }
+
+    void SetJumpKindAndTarget(BBjumpKinds jumpKind DEBUG_ARG(Compiler* compiler))
+    {
+        BasicBlock* jumpDest = nullptr;
+        SetJumpKindAndTarget(jumpKind, jumpDest DEBUG_ARG(compiler));
+    }
+
+    bool HasJump() const
+    {
+        return (bbJumpDest != nullptr);
     }
 
     bool HasJumpTo(const BasicBlock* jumpDest) const
     {
+        assert(HasJump());
+        assert(!KindIs(BBJ_SWITCH, BBJ_EHFINALLYRET));
         return (bbJumpDest == jumpDest);
     }
 
     bool JumpsToNext() const
     {
+        assert(HasJump());
         return (bbJumpDest == bbNext);
     }
 
     BBswtDesc* GetJumpSwt() const
     {
+        assert(KindIs(BBJ_SWITCH));
+        assert(bbJumpSwt != nullptr);
         return bbJumpSwt;
     }
 
-    void SetJumpSwt(BBswtDesc* jumpSwt)
+    void SetSwitchKindAndTarget(BBswtDesc* jumpSwt)
     {
-        bbJumpSwt = jumpSwt;
-    }
-
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BBswtDesc* jumpSwt)
-    {
-        assert(jumpKind == BBJ_SWITCH);
         assert(jumpSwt != nullptr);
-        bbJumpKind = jumpKind;
+        bbJumpKind = BBJ_SWITCH;
         bbJumpSwt  = jumpSwt;
     }
 
@@ -1739,7 +1775,7 @@ inline BBArrayIterator BBEhfSuccList::end() const
 inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
-    switch (block->GetJumpKind())
+    switch (block->bbJumpKind)
     {
         case BBJ_THROW:
         case BBJ_RETURN:
@@ -1754,19 +1790,19 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            m_succs[0] = block->GetJumpDest();
+            m_succs[0] = block->bbJumpDest;
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;
 
         case BBJ_NONE:
-            m_succs[0] = block->Next();
+            m_succs[0] = block->bbNext;
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;
 
         case BBJ_COND:
-            m_succs[0] = block->Next();
+            m_succs[0] = block->bbNext;
             m_begin    = &m_succs[0];
 
             // If both fall-through and branch successors are identical, then only include
@@ -1777,7 +1813,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             }
             else
             {
-                m_succs[1] = block->GetJumpDest();
+                m_succs[1] = block->bbJumpDest;
                 m_end      = &m_succs[2];
             }
             break;
@@ -1800,10 +1836,10 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 
         case BBJ_SWITCH:
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
-            assert(block->GetJumpSwt() != nullptr);
-            assert(block->GetJumpSwt()->bbsDstTab != nullptr);
-            m_begin = block->GetJumpSwt()->bbsDstTab;
-            m_end   = block->GetJumpSwt()->bbsDstTab + block->GetJumpSwt()->bbsCount;
+            assert(block->bbJumpSwt != nullptr);
+            assert(block->bbJumpSwt->bbsDstTab != nullptr);
+            m_begin = block->bbJumpSwt->bbsDstTab;
+            m_end   = block->bbJumpSwt->bbsDstTab + block->bbJumpSwt->bbsCount;
             break;
 
         default:

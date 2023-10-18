@@ -802,12 +802,11 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         noway_assert(comp->opts.OptimizationDisabled());
         if (originalSwitchBB->NextIs(jumpTab[0]))
         {
-            originalSwitchBB->SetJumpKind(BBJ_NONE DEBUG_ARG(comp));
-            originalSwitchBB->SetJumpDest(nullptr);
+            originalSwitchBB->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(comp));
         }
         else
         {
-            originalSwitchBB->SetJumpKindAndTarget(BBJ_ALWAYS, jumpTab[0]);
+            originalSwitchBB->SetJumpKindAndTarget(BBJ_ALWAYS, jumpTab[0] DEBUG_ARG(comp));
         }
         // Remove extra predecessor links if there was more than one case.
         for (unsigned i = 1; i < jumpCnt; ++i)
@@ -900,7 +899,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // The GT_SWITCH code is still in originalSwitchBB (it will be removed later).
 
     // Turn originalSwitchBB into a BBJ_COND.
-    originalSwitchBB->SetJumpKindAndTarget(BBJ_COND, jumpTab[jumpCnt - 1]);
+    originalSwitchBB->SetJumpKindAndTarget(BBJ_COND, jumpTab[jumpCnt - 1] DEBUG_ARG(comp));
 
     // Fix the pred for the default case: the default block target still has originalSwitchBB
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
@@ -956,12 +955,11 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         }
         if (afterDefaultCondBlock->NextIs(uniqueSucc))
         {
-            afterDefaultCondBlock->SetJumpKind(BBJ_NONE DEBUG_ARG(comp));
-            afterDefaultCondBlock->SetJumpDest(nullptr);
+            afterDefaultCondBlock->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(comp));
         }
         else
         {
-            afterDefaultCondBlock->SetJumpKindAndTarget(BBJ_ALWAYS, uniqueSucc);
+            afterDefaultCondBlock->SetJumpKindAndTarget(BBJ_ALWAYS, uniqueSucc DEBUG_ARG(comp));
         }
     }
     // If the number of possible destinations is small enough, we proceed to expand the switch
@@ -1030,13 +1028,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // case: there is no need to compare against the case index, since it's
                 // guaranteed to be taken (since the default case was handled first, above).
 
-                currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, jumpTab[i]);
+                currentBlock->SetJumpKindAndTarget(BBJ_ALWAYS, jumpTab[i] DEBUG_ARG(comp));
             }
             else
             {
                 // Otherwise, it's a conditional branch. Set the branch kind, then add the
                 // condition statement.
-                currentBlock->SetJumpKindAndTarget(BBJ_COND, jumpTab[i]);
+                currentBlock->SetJumpKindAndTarget(BBJ_COND, jumpTab[i] DEBUG_ARG(comp));
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:
@@ -1069,7 +1067,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             JITDUMP("Lowering switch " FMT_BB ": all switch cases were fall-through\n", originalSwitchBB->bbNum);
             assert(currentBlock == afterDefaultCondBlock);
             assert(currentBlock->KindIs(BBJ_SWITCH));
-            currentBlock->SetJumpKind(BBJ_NONE DEBUG_ARG(comp));
+            currentBlock->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(comp));
             currentBlock->bbFlags &= ~BBF_DONT_REMOVE;
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
         }
@@ -1248,7 +1246,7 @@ bool Lowering::TryLowerSwitchToBitTest(
     {
         // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
         bbSwitchCondition = GenCondition::C;
-        bbSwitch->SetJumpKindAndTarget(BBJ_COND, bbCase1);
+        bbSwitch->SetJumpKindAndTarget(BBJ_COND, bbCase1 DEBUG_ARG(comp));
 
         comp->fgAddRefPred(bbCase0, bbSwitch);
         comp->fgAddRefPred(bbCase1, bbSwitch);
@@ -1259,7 +1257,7 @@ bool Lowering::TryLowerSwitchToBitTest(
 
         // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
         bbSwitchCondition = GenCondition::NC;
-        bbSwitch->SetJumpKindAndTarget(BBJ_COND, bbCase0);
+        bbSwitch->SetJumpKindAndTarget(BBJ_COND, bbCase0 DEBUG_ARG(comp));
 
         comp->fgAddRefPred(bbCase0, bbSwitch);
         comp->fgAddRefPred(bbCase1, bbSwitch);
