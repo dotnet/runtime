@@ -470,7 +470,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     AuthData = new LSA_AUTH_INFORMATION();
                     fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
-                    UnsafeNativeMethods.GetSystemTimeAsFileTime(fileTime);
+                    Interop.Kernel32.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
                     FileTime tmp = new FileTime();
@@ -625,7 +625,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // change the attribute value properly
                     AuthData = new LSA_AUTH_INFORMATION();
                     fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
-                    UnsafeNativeMethods.GetSystemTimeAsFileTime(fileTime);
+                    Interop.Kernel32.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
                     FileTime tmp = new FileTime();
@@ -753,7 +753,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // change the attribute value properly
                     AuthData = new LSA_AUTH_INFORMATION();
                     fileTime = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(FileTime)));
-                    UnsafeNativeMethods.GetSystemTimeAsFileTime(fileTime);
+                    Interop.Kernel32.GetSystemTimeAsFileTime(fileTime);
 
                     // set the time
                     FileTime tmp = new FileTime();

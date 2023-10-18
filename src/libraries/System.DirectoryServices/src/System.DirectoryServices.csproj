@@ -246,6 +246,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcAddress.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemTimeAsFileTime.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.GetSystemTimeAsFileTime.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibrary.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs"

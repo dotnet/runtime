@@ -519,9 +519,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal static partial class UnsafeNativeMethods
     {
-        [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "GetSystemTimeAsFileTime")]
-        public static partial void GetSystemTimeAsFileTime(IntPtr fileTime);
-
         [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "OpenThread", SetLastError = true)]
         public static partial IntPtr OpenThread(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheirted, int threadID);
     }
