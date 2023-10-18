@@ -20,7 +20,7 @@ You can use these images to build native AOT apps which work on distros as old a
 
 ### Containerized build
 
-The following Dockerfiles demonstrate how to construct a working build environment that could be use for volume-mounted docker builds. They can be modified to use other images we provide, like for Alpine.
+The following Dockerfiles demonstrate how to construct a working build environment that can be used for volume-mounted docker builds. They can be modified to use the other image flavors we provide, like Alpine.
 
 - [Dockerfile.cross-build-x64-arm64](Dockerfile.cross-build-x64-arm64)
 - [Dockerfile.cross-build-x64-x64](Dockerfile.cross-build-x64-arm64)
@@ -68,7 +68,7 @@ $ docker kill 219e1df9e66906531ee609b8cb9b9fa8eccef566a8682b897798d80b3905aaf5
 
 ### Arm64
 
-Much the same pattern can be used for `x64-arm64` Dockerfile.
+Much the same pattern can be used  to target Arm64 with the `x64-arm64` Dockerfile, again on an x64 host.
 
 
 ```bash
@@ -82,7 +82,7 @@ app-arm64/releasesapi: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (SY
 
 Note the use of `-a arm64` and `-p:SysRoot=/crossrootfs/arm64` in the `dotnet publish` command. Those are required to get the build to use and generate Arm64 compatible assets.
 
-The app can then be copied to an Arm64 and it will work as demonstrated on an Apple M1 machine.
+As expected, the Arm64 app fails to run on an x64 machine. The app can then be copied to an Arm64 machine and it will work as demonstrated on an Apple M1 machine (in an Arm64 Linux container). Note that I had to run `chmod +x` on the executable first.
 
 ```bash
 $ docker run --rm  -d -v $(pwd):/app -w /app -p 8000:8080 mcr.microsoft.com/dotnet/nightly/runtime-deps:8.0-jammy-chiseled-aot ./releasesapi
