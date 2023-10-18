@@ -142,24 +142,6 @@ namespace System.DirectoryServices.ActiveDirectory
         DsRole_MemberServerWithSharedAccountDomain
     }
 
-    /*
-    typedef enum
-    {
-        DsRolePrimaryDomainInfoBasic,
-        DsRoleUpgradeStatus,
-        DsRoleOperationState,
-        DsRolePrimaryDomainInfoBasicEx
-    }DSROLE_PRIMARY_DOMAIN_INFO_LEVEL;
-    */
-
-    internal enum DSROLE_PRIMARY_DOMAIN_INFO_LEVEL
-    {
-        DsRolePrimaryDomainInfoBasic = 1,
-        DsRoleUpgradeStatus = 2,
-        DsRoleOperationState = 3,
-        DsRolePrimaryDomainInfoBasicEx = 4
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class FileTime
     {
@@ -601,25 +583,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         [LibraryImport(global::Interop.Libraries.NtDll, EntryPoint = "RtlInitUnicodeString")]
         public static partial int RtlInitUnicodeString(out global::Interop.UNICODE_STRING result, IntPtr s);
-
-        /*
-        DWORD DsRoleGetPrimaryDomainInformation(
-          LPCWSTR lpServer,
-          DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
-          PBYTE* Buffer
-        ); */
-
-        [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsRoleGetPrimaryDomainInformation", StringMarshalling = StringMarshalling.Utf16)]
-        public static partial int DsRoleGetPrimaryDomainInformation(
-            [MarshalAs(UnmanagedType.LPTStr)] string lpServer,
-            DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
-            out IntPtr Buffer);
-
-        [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsRoleGetPrimaryDomainInformation", StringMarshalling = StringMarshalling.Utf16)]
-        public static partial int DsRoleGetPrimaryDomainInformation(
-            IntPtr lpServer,
-            DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
-            out IntPtr Buffer);
 
         /*
         void DsRoleFreeMemory(

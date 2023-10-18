@@ -240,6 +240,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Netapi32\Interop.DsGetSiteName.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.I_NetLogonControl2.cs"
              Link="Common\Interop\Windows\Netapi32\Interop.I_NetLogonControl2.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.DsRoleGetPrimaryDomainInformation.cs"
+             Link="Common\Interop\Windows\Netapi32\Interop.DsRoleGetPrimaryDomainInformation.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Netapi32\Interop.NetApiBufferFree.cs"
              Link="Common\Interop\Windows\Netapi32\Interop.NetApiBufferFree.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtStatus.cs"
