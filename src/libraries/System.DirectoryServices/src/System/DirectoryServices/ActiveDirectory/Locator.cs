@@ -139,7 +139,7 @@ namespace System.DirectoryServices.ActiveDirectory
             string? dcDnsHostName = null;
             int result = 0;
 
-            result = NativeMethods.DsGetDcOpen(domainName, (int)optionFlags, siteName, IntPtr.Zero, null, (int)dcFlags, out retGetDcContext);
+            result = Interop.Netapi32.DsGetDcOpen(domainName, (int)optionFlags, siteName, IntPtr.Zero, null, (int)dcFlags, out retGetDcContext);
             if (result == 0)
             {
                 try

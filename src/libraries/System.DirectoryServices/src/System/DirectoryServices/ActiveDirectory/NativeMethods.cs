@@ -301,25 +301,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal const int STATUS_QUOTA_EXCEEDED = unchecked((int)0xC0000044);
 
-        /* DWORD WINAPI DsGetDcOpen(
-                         LPCTSTR DnsName,
-                         ULONG OptionFlags,
-                         LPCTSTR SiteName,
-                         GUID* DomainGuid,
-                         LPCTSTR DnsForestName,
-                         ULONG DcFlags,
-                         PHANDLE RetGetDcContext
-                         );*/
-        [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsGetDcOpenW", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int DsGetDcOpen(
-            string? dnsName,
-            int optionFlags,
-            string? siteName,
-            IntPtr domainGuid,
-            string? dnsForestName,
-            int dcFlags,
-            out IntPtr retGetDcContext);
-
         /*DWORD WINAPI DsGetDcNext(
                         HANDLE GetDcContextHandle,
                         PULONG SockAddressCount,
