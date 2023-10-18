@@ -4062,9 +4062,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/NestedStruct/**">
-            <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <Target Name="GetFilteredExcludeList" Returns="@(FilteredExcludeList)">
