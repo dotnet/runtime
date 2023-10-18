@@ -1093,36 +1093,15 @@ regMaskTP GenTree::gtGetRegMask(Compiler* comp) const
         resultMask = genRegMask(GetRegNum());
         resultMask |= AsCall()->GetOtherRegMask();
     }
-    else if (IsCopyOrReloadOfMultiRegCall())
-    {
-        // A multi-reg copy or reload, will have valid regs for only those
-        // positions that need to be copied or reloaded.  Hence we need
-        // to consider only those registers for computing reg mask.
-
-        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
-        const GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
-        const unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
-
-        resultMask = RBM_NONE;
-        for (unsigned i = 0; i < regCount; ++i)
-        {
-            regNumber reg = copyOrReload->GetRegNumByIdx(i);
-            if (reg != REG_NA)
-            {
-                resultMask |= genRegMask(reg);
-            }
-        }
-    }
-#ifdef TARGET_ARM64
     else if (IsCopyOrReloadOfMultiRegNode())
     {
+        assert(comp != nullptr);
+        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
+        const unsigned             regCount     = copyOrReload->gtGetOp1()->GetMultiRegCount(comp);
+
         // A multi-reg copy or reload, will have valid regs for only those
         // positions that need to be copied or reloaded.  Hence we need
         // to consider only those registers for computing reg mask.
-
-        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
-        const unsigned             regCount     = GetMultiRegCount(comp);
-
         resultMask = RBM_NONE;
         for (unsigned i = 0; i < regCount; i++)
         {
@@ -1133,7 +1112,6 @@ regMaskTP GenTree::gtGetRegMask(Compiler* comp) const
             }
         }
     }
-#endif
 #if FEATURE_ARG_SPLIT
     else if (compFeatureArgSplit() && OperIsPutArgSplit())
     {
