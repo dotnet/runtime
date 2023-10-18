@@ -2295,27 +2295,27 @@ void Compiler::optAssertionGen(GenTree* tree)
             }
             break;
 
-        case GT_BLK:
         case GT_IND:
+            // Dynamic block copy sources could be zero-sized and so should not generate assertions.
+            if (tree->TypeIs(TYP_STRUCT))
+            {
+                break;
+            }
+            FALLTHROUGH;
+
+        case GT_XAND:
+        case GT_XORR:
+        case GT_XADD:
+        case GT_XCHG:
+        case GT_CMPXCHG:
+        case GT_BLK:
         case GT_STOREIND:
         case GT_STORE_BLK:
-            // Dynamic block copy sources should not generate non-null assertions; we detect them via NO_CSE.
-            if (tree->CanCSE())
-            {
-                assertionInfo = optCreateAssertion(tree->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);
-            }
-            break;
-
+        case GT_NULLCHECK:
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
-            // An array meta-data access is an indirection (but doesn't derive from GenTreeIndir).
-            assertionInfo = optCreateAssertion(tree->AsArrCommon()->ArrRef(), nullptr, OAK_NOT_EQUAL);
-            break;
-
-        case GT_NULLCHECK:
-            // Explicit null checks always create non-null assertions.
-            assertionInfo = optCreateAssertion(tree->AsIndir()->Addr(), nullptr, OAK_NOT_EQUAL);
+            assertionInfo = optCreateAssertion(tree->GetIndirOrArrMetaDataAddr(), nullptr, OAK_NOT_EQUAL);
             break;
 
         case GT_INTRINSIC:
