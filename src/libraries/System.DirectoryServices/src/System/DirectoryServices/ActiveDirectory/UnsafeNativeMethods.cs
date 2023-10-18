@@ -572,9 +572,6 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal static partial class UnsafeNativeMethods
     {
-        [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "DsEnumerateDomainTrustsW", StringMarshalling = StringMarshalling.Utf16)]
-        public static partial int DsEnumerateDomainTrustsW(string serverName, int flags, out IntPtr domains, out int count);
-
         [LibraryImport(global::Interop.Libraries.Netapi32, EntryPoint = "NetApiBufferFree")]
         public static partial int NetApiBufferFree(IntPtr buffer);
 
