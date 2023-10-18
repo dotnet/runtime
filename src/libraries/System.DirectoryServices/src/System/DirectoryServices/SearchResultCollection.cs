@@ -398,7 +398,7 @@ namespace System.DirectoryServices
 
             private void CleanLastError()
             {
-                SafeNativeMethods.ADsSetLastError(SafeNativeMethods.ERROR_SUCCESS, null, null);
+                Interop.Activeds.ADsSetLastError(SafeNativeMethods.ERROR_SUCCESS, null, null);
             }
 
             private unsafe int GetLastError(ref int errorCode)

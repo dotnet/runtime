@@ -172,6 +172,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Activeds\Interop.ADsGetLastError.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.ADsOpenObject.cs"
              Link="Common\Interop\Windows\Activeds\Interop.ADsOpenObject.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.ADsSetLastError.cs"
+             Link="Common\Interop\Windows\Activeds\Interop.ADsSetLastError.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Activeds\Interop.FreeADsMem.cs"
              Link="Common\Interop\Windows\Activeds\Interop.FreeADsMem.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ConvertSidToStringSid.cs"

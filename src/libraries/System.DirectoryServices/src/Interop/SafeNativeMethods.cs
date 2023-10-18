@@ -14,9 +14,6 @@ namespace System.DirectoryServices
             ERROR_MORE_DATA = 234,
             ERROR_SUCCESS = 0;
 
-        [LibraryImport(global::Interop.Libraries.Activeds, StringMarshalling = StringMarshalling.Utf16)]
-        public static partial int ADsSetLastError(int error, string? errorString, string? provider);
-
         public sealed class EnumVariant
         {
             private static readonly object s_noMoreValues = new object();
