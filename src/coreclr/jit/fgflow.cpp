@@ -346,6 +346,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
             fgRemoveRefPred(block->GetJumpDest(), block);
             break;
 
@@ -356,11 +357,6 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
         case BBJ_COND:
             fgRemoveRefPred(block->GetJumpDest(), block);
             fgRemoveRefPred(block->Next(), block);
-            break;
-
-        case BBJ_EHFILTERRET:
-            block->GetJumpDest()->bbRefs++; // To compensate the bbRefs-- inside fgRemoveRefPred
-            fgRemoveRefPred(block->GetJumpDest(), block);
             break;
 
         case BBJ_EHFINALLYRET:

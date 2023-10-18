@@ -332,21 +332,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
             <Issue>https://github.com/dotnet/runtime/issues/60152</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/IL_Conformance/Old/Conformance_Base/ldc_mul_ovf_i4/**">
-            <Issue>https://github.com/dotnet/runtime/issues/93441</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/rtchecks/overflow/overflow02_mul/**">
-            <Issue>https://github.com/dotnet/runtime/issues/93442</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b25815/**">
-            <Issue>https://github.com/dotnet/runtime/issues/93443</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b71869/**">
-            <Issue>https://github.com/dotnet/runtime/issues/93444</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/AssertionPropagation/ArrBoundElim/**">
-            <Issue>https://github.com/dotnet/runtime/issues/93441</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x64 Unix failures on CoreCLR. -->
@@ -2850,7 +2835,6 @@
         </ExcludeList>
     </ItemGroup>
 
-
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsAppleMobile)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/**">
             <Issue>https://github.com/dotnet/runtime/issues/75756</Issue>
@@ -3286,6 +3270,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
             <Issue>System.Diagnostics.Process is not supported on wasm</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/**">
+            <Issue>needs native libraries</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -3743,9 +3730,9 @@
     <Target Name="GetFilteredExcludeList" Returns="@(FilteredExcludeList)">
         <ItemGroup>
             <FilteredExcludeList
-                Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)').Replace('\', '/'))"
+                Include="$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.FullPath)').Replace('\', '/')),%(ExcludeList.Issue)"
                 Condition="'%(ExcludeList.Extension)' == '.dll'" />
-            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.Identity)'))', '.cmd').Replace('\', '/'))"
+            <FilteredExcludeList Include="$([System.IO.Path]::ChangeExtension('$([System.IO.Path]::GetRelativePath('$(XunitTestBinBase)', '%(ExcludeList.Identity)'))', '.cmd').Replace('\', '/')),%(ExcludeList.Issue)"
                 Condition="'%(ExcludeList.Extension)' == '.OutOfProcessTest'" />
       </ItemGroup>
     </Target>

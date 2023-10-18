@@ -42,7 +42,6 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
-        public bool           SkipUpdateAppRefPack { get; set; }
         public bool           OnlyUpdateManifests{ get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
@@ -159,11 +158,6 @@ namespace Microsoft.Workload.Build.Tasks
             if (!InstallPacks(req, nugetConfigContents))
                 return false;
 
-            if (!SkipUpdateAppRefPack)
-                UpdateAppRef(req.TargetPath, req.Version);
-            else
-                Log.LogMessage(MessageImportance.Low, "Skipping update of app.ref pack");
-
             return !Log.HasLoggedErrors;
         }
 
@@ -254,31 +248,6 @@ namespace Microsoft.Workload.Build.Tasks
             }
 
             return !Log.HasLoggedErrors;
-        }
-
-        private void UpdateAppRef(string sdkPath, string version)
-        {
-            Log.LogMessage(MessageImportance.Normal, $"    - Updating Targeting pack");
-
-            string pkgPath = Path.Combine(LocalNuGetsPath, $"Microsoft.NETCore.App.Ref.{version}.nupkg");
-            if (!File.Exists(pkgPath))
-                throw new LogAsErrorException($"Could not find {pkgPath} needed to update the targeting pack to the newly built one." +
-                                                " Make sure to build the subset `packs`, like `./build.sh -os browser -s mono+libs+packs`.");
-
-            string packDir = Path.Combine(sdkPath, "packs", "Microsoft.NETCore.App.Ref");
-            string[] dirs = Directory.EnumerateDirectories(packDir).ToArray();
-            if (dirs.Length != 1)
-                throw new LogAsErrorException($"Expected to find exactly one versioned directory under {packDir}, but got " +
-                                                string.Join(',', dirs));
-
-            string dstDir = dirs[0];
-
-            Directory.Delete(dstDir, recursive: true);
-            Log.LogMessage($"Deleting {dstDir}");
-
-            Directory.CreateDirectory(dstDir);
-            ZipFile.ExtractToDirectory(pkgPath, dstDir);
-            Log.LogMessage($"Extracting {pkgPath} to {dstDir}");
         }
 
         private string GetNuGetConfig()

@@ -1135,7 +1135,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     // Spill multireg struct arguments that have Assignments or Calls embedded in them.
                     SetNeedsTemp(&arg);
                 }
-                else if (!argx->OperIsLocalRead() && !argx->OperIsIndir())
+                else if (!argx->OperIsLocalRead() && !argx->OperIsLoad())
                 {
                     // TODO-CQ: handle HWI/SIMD/COMMA nodes in multi-reg morphing.
                     SetNeedsTemp(&arg);
@@ -3302,7 +3302,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // Change our argument, as needed, into a value of the appropriate type.
                     assert((structBaseType != TYP_STRUCT) && (genTypeSize(structBaseType) >= originalSize));
 
-                    if (argObj->OperIsIndir())
+                    if (argObj->OperIsLoad())
                     {
                         assert(argObj->AsIndir()->Size() == genTypeSize(structBaseType));
                         argObj->SetOper(GT_IND);
@@ -3843,7 +3843,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         }
         else
         {
-            assert(argNode->OperIsIndir());
+            assert(argNode->OperIsLoad());
 
             GenTree*  baseAddr = argNode->AsIndir()->Addr();
             var_types addrType = baseAddr->TypeGet();
@@ -4243,62 +4243,6 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
 
 #endif
 
-/*****************************************************************************/
-
-void Compiler::fgSetRngChkTarget(GenTree* tree, bool delay)
-{
-    if (tree->OperIs(GT_BOUNDS_CHECK))
-    {
-        GenTreeBoundsChk* const boundsChk = tree->AsBoundsChk();
-        BasicBlock* const       failBlock = fgSetRngChkTargetInner(boundsChk->gtThrowKind, delay);
-        if (failBlock != nullptr)
-        {
-            boundsChk->gtIndRngFailBB = failBlock;
-        }
-    }
-    else if (tree->OperIs(GT_INDEX_ADDR))
-    {
-        GenTreeIndexAddr* const indexAddr = tree->AsIndexAddr();
-        BasicBlock* const       failBlock = fgSetRngChkTargetInner(SCK_RNGCHK_FAIL, delay);
-        if (failBlock != nullptr)
-        {
-            indexAddr->gtIndRngFailBB = failBlock;
-        }
-    }
-    else
-    {
-        noway_assert(tree->OperIs(GT_ARR_ELEM));
-        fgSetRngChkTargetInner(SCK_RNGCHK_FAIL, delay);
-    }
-}
-
-BasicBlock* Compiler::fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay)
-{
-    if (opts.MinOpts())
-    {
-        delay = false;
-    }
-
-    if (!opts.compDbgCode)
-    {
-        if (!delay && !compIsForInlining())
-        {
-            // Create/find the appropriate "range-fail" label
-            return fgRngChkTarget(compCurBB, kind);
-        }
-    }
-    else
-    {
-        // Tell downstream code that we will end up with a call so that it
-        // knows this is not a leaf function. For optimized code this is
-        // handled by fgRngChkTarget that is called above either in morph or
-        // simple lowering.
-        compUsesThrowHelper = true;
-    }
-
-    return nullptr;
-}
-
 //------------------------------------------------------------------------
 // fgMorphIndexAddr: Expand a GT_INDEX_ADDR node and fully morph the child operands.
 //
@@ -4358,7 +4302,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // Note this will always be true unless JitSkipArrayBoundCheck() is used
         if (indexAddr->IsBoundsChecked())
         {
-            fgSetRngChkTarget(indexAddr);
+            fgAddCodeRef(compCurBB, SCK_RNGCHK_FAIL);
         }
 
         return indexAddr;
@@ -4562,7 +4506,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         addr->SetHasOrderingSideEffect();
 
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), boundsCheck, tree);
-        fgSetRngChkTarget(boundsCheck);
+        fgAddCodeRef(compCurBB, boundsCheck->gtThrowKind);
     }
 
     if (indexDefn != nullptr)
@@ -8962,8 +8906,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             }
         }
 
+        // TODO-Bug: Moving the null check to this indirection should nominally check for interference with
+        // the other operands in case this is a store. However, doing so unconditionally preserves previous
+        // behavior and "fixes up" field store importation that places the null check in the wrong location
+        // (before the 'value' operand is evaluated).
         MorphAddrContext indMac;
-        if (tree->OperIsIndir()) // TODO-CQ: add more operators here (e. g. atomics).
+        if (tree->OperIsIndir() && !tree->OperIsAtomicOp())
         {
             // Communicate to FIELD_ADDR morphing that the parent is an indirection.
             indMac.m_user = tree->AsIndir();
@@ -9239,7 +9187,7 @@ DONE_MORPHING_CHILDREN:
             }
             if (tree->OperIs(GT_CAST) && tree->gtOverflow())
             {
-                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
+                fgAddCodeRef(compCurBB, SCK_OVERFLOW);
             }
 
             typ  = tree->TypeGet();
@@ -9435,7 +9383,7 @@ DONE_MORPHING_CHILDREN:
 
                 if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
                 {
-                    fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
+                    fgAddCodeRef(compCurBB, SCK_OVERFLOW);
                 }
                 else
                 {
@@ -9444,7 +9392,7 @@ DONE_MORPHING_CHILDREN:
 
                 if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
                 {
-                    fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+                    fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
                 }
                 else
                 {
@@ -9461,7 +9409,7 @@ DONE_MORPHING_CHILDREN:
             ExceptionSetFlags exSetFlags = tree->OperExceptions(this);
             if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
             {
-                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+                fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
             }
             else
             {
@@ -9480,7 +9428,7 @@ DONE_MORPHING_CHILDREN:
 
                 // Add the excptn-throwing basic block to jump to on overflow
 
-                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
+                fgAddCodeRef(compCurBB, SCK_OVERFLOW);
 
                 // We can't do any commutative morphing for overflow instructions
 
@@ -9560,11 +9508,12 @@ DONE_MORPHING_CHILDREN:
 
             noway_assert(varTypeIsFloating(op1->TypeGet()));
 
-            fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_ARITH_EXCPN);
+            fgAddCodeRef(compCurBB, SCK_ARITH_EXCPN);
             break;
 
         case GT_BOUNDS_CHECK:
-            fgSetRngChkTarget(tree);
+
+            fgAddCodeRef(compCurBB, tree->AsBoundsChk()->gtThrowKind);
             break;
 
         case GT_IND:
@@ -12873,7 +12822,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
             if (fgGlobalMorph)
             {
-                fgSetRngChkTarget(tree, false);
+                fgAddCodeRef(compCurBB, SCK_RNGCHK_FAIL);
             }
             break;
 
@@ -12896,15 +12845,15 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             break;
 
         case GT_CMPXCHG:
-            tree->AsCmpXchg()->gtOpLocation  = fgMorphTree(tree->AsCmpXchg()->gtOpLocation);
-            tree->AsCmpXchg()->gtOpValue     = fgMorphTree(tree->AsCmpXchg()->gtOpValue);
-            tree->AsCmpXchg()->gtOpComparand = fgMorphTree(tree->AsCmpXchg()->gtOpComparand);
+            tree->AsCmpXchg()->Addr()      = fgMorphTree(tree->AsCmpXchg()->Addr());
+            tree->AsCmpXchg()->Data()      = fgMorphTree(tree->AsCmpXchg()->Data());
+            tree->AsCmpXchg()->Comparand() = fgMorphTree(tree->AsCmpXchg()->Comparand());
 
             tree->gtFlags &= (~GTF_EXCEPT & ~GTF_CALL);
 
-            tree->gtFlags |= tree->AsCmpXchg()->gtOpLocation->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsCmpXchg()->gtOpValue->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsCmpXchg()->gtOpComparand->gtFlags & GTF_ALL_EFFECT;
+            tree->gtFlags |= tree->AsCmpXchg()->Addr()->gtFlags & GTF_ALL_EFFECT;
+            tree->gtFlags |= tree->AsCmpXchg()->Data()->gtFlags & GTF_ALL_EFFECT;
+            tree->gtFlags |= tree->AsCmpXchg()->Comparand()->gtFlags & GTF_ALL_EFFECT;
             break;
 
         case GT_STORE_DYN_BLK:

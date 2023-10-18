@@ -32,7 +32,7 @@ namespace System.Reflection.Tests
                 return;
             }
 
-            Assert.True(false, "Expected to find MyAttr Attribute");
+            Assert.Fail("Expected to find MyAttr Attribute");
         }
 
         [Fact]
@@ -49,7 +49,7 @@ namespace System.Reflection.Tests
                 }
             }
 
-            Assert.True(false, "Expected to find MyAttr Attribute");
+            Assert.Fail("Expected to find MyAttr Attribute");
         }
 
         [Fact]
@@ -71,7 +71,7 @@ namespace System.Reflection.Tests
                 }
             }
 
-            Assert.True(false, "Expected to find MyAttr Attribute");
+            Assert.Fail("Expected to find MyAttr Attribute");
         }
 
         [Fact]

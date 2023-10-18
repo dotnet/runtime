@@ -29,18 +29,6 @@ try {
     window.muteErrors = () => {
         mute = true;
     }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const myParam = urlParams.get('memorySnapshot');
-
-    Blazor.start({
-        configureRuntime: dotnet => {
-            if (myParam === "true") {
-                dotnet.withStartupMemoryCache(true);
-            }
-        }
-    });
-
 }
 catch (err) {
     if (!mute) {

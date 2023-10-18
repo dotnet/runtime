@@ -104,7 +104,7 @@ public unsafe class Program
     [UnmanagedCallersOnly]
     public static int CallbackMethodNonBlittable(bool x1)
     {
-        Assert.True(false, $"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot have non-blittable arguments");
+        Assert.Fail($"Functions with attribute {nameof(UnmanagedCallersOnlyAttribute)} cannot have non-blittable arguments");
         return -1;
     }
 
@@ -170,7 +170,7 @@ public unsafe class Program
         try
         {
             testNativeMethod(n);
-            Assert.True(false, $"Function {nameof(CallbackViaUnmanagedCalliThrows)} should throw");
+            Assert.Fail($"Function {nameof(CallbackViaUnmanagedCalliThrows)} should throw");
         }
         catch (Exception e)
         {

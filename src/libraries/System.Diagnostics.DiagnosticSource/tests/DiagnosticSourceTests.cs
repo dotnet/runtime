@@ -789,7 +789,7 @@ namespace System.Diagnostics.Tests
 
         public void OnError(Exception error)
         {
-            Assert.True(false, "Error happened on IObserver");
+            Assert.Fail("Error happened on IObserver");
         }
 
         public void OnNext(T value)

@@ -5038,6 +5038,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
+    // Create any throw helper blocks that might be needed
+    //
+    DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
+
     if (opts.OptimizationEnabled())
     {
         // Optimize boolean conditions

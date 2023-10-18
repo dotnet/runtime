@@ -350,7 +350,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
 
             // check continuation is non-blocking, i.e., it does not block until all/one tasks finish
             if (_continuation.Status != TaskStatus.WaitingForActivation)
-                Assert.True(false, string.Format("continuation task should be created when none task finish"));
+                Assert.Fail(string.Format("continuation task should be created when none task finish"));
 
             // allow continuation to kick off later
             foreach (Task t in _tasks)
@@ -413,7 +413,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             }
 
             if (firstIncompleteTaskIndex != -1)
-                Assert.True(false, string.Format("ContinueWhenAll contract is broken -- Task at Index = {0} does not finish", firstIncompleteTaskIndex));
+                Assert.Fail(string.Format("ContinueWhenAll contract is broken -- Task at Index = {0} does not finish", firstIncompleteTaskIndex));
 
             // do the sanity check against the input tasks
             CheckSequence(_tasks, inputTasks);
@@ -436,7 +436,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             }
 
             if (firstIncompleteTaskIndex != -1)
-                Assert.True(false, string.Format("ContinueWhenAll contract is broken -- Task at Index = {0} does not finish", firstIncompleteTaskIndex));
+                Assert.Fail(string.Format("ContinueWhenAll contract is broken -- Task at Index = {0} does not finish", firstIncompleteTaskIndex));
 
             // do the sanity check against the input tasks
             CheckSequence(_tasks, inputTasks);
@@ -448,7 +448,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
         private void VerifyAny(Task inputTask)
         {
             if (!inputTask.IsCompleted)
-                Assert.True(false, string.Format("ContinueWhenAny contract is broken -- none task has completed"));
+                Assert.Fail(string.Format("ContinueWhenAny contract is broken -- none task has completed"));
 
             // do the sanity check against the input task
 
@@ -464,7 +464,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             }
 
             if (!found)
-                Assert.True(false, string.Format("input task do not exist in the expected original tasks"));
+                Assert.Fail(string.Format("input task do not exist in the expected original tasks"));
 
             Verify();
         }
@@ -473,7 +473,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
         private void VerifyAnyT(Task<double> inputTask)
         {
             if (!inputTask.IsCompleted)
-                Assert.True(false, string.Format("ContinueWhenAny contract is broken -- none task has completed"));
+                Assert.Fail(string.Format("ContinueWhenAny contract is broken -- none task has completed"));
 
             // do the sanity check against the input task
 
@@ -490,7 +490,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             }
 
             if (!found)
-                Assert.True(false, string.Format("input task do not exist in the expected original tasks"));
+                Assert.Fail(string.Format("input task do not exist in the expected original tasks"));
 
             Verify();
         }
@@ -504,18 +504,18 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
             if (TaskContinuationOptions.LazyCancellation != _tcOption)
             {
                 if (_continuation.CreationOptions != option)
-                    Assert.True(false, string.Format("Wrong TaskCreationOption of {0}, expecting {1}", _continuation.CreationOptions, _tcOption));
+                    Assert.Fail(string.Format("Wrong TaskCreationOption of {0}, expecting {1}", _continuation.CreationOptions, _tcOption));
             }
             else
             {
                 if (_continuation.CreationOptions != TaskCreationOptions.None)
-                    Assert.True(false, string.Format("Wrong TaskCreationOption of {0}, expecting {1}", _continuation.CreationOptions, TaskCreationOptions.None));
+                    Assert.Fail(string.Format("Wrong TaskCreationOption of {0}, expecting {1}", _continuation.CreationOptions, TaskCreationOptions.None));
             }
 
             // check against the taskScheduler
             // @TODO: add verification for SynchronizedTM, CustomizedTM later
             if (TaskScheduler.Current != _tm)
-                Assert.True(false, string.Format("Wrong TaskScheduler of {0}, expecting {1}", TaskScheduler.Current.Id, _tm.Id));
+                Assert.Fail(string.Format("Wrong TaskScheduler of {0}, expecting {1}", TaskScheduler.Current.Id, _tm.Id));
 
             // check for the workload results
             for (int i = 0; i < _taskInfos.Length; i++)
@@ -531,7 +531,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
                         ti.Task.Wait();
 
                         // should never come here
-                        Assert.True(false, string.Format("excepted TPLTestException in Task at Index = {0}  NOT caught", i));
+                        Assert.Fail(string.Format("excepted TPLTestException in Task at Index = {0}  NOT caught", i));
                     }
                     catch (AggregateException ex)
                     {
@@ -549,7 +549,7 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
                         ti.Task.Wait();
 
                         // should never come here
-                        Assert.True(false, string.Format("excepted TaskCanceledException in Task at Index = {0}  NOT caught", i));
+                        Assert.Fail(string.Format("excepted TaskCanceledException in Task at Index = {0}  NOT caught", i));
                     }
                     catch (AggregateException ex)
                     {
@@ -564,11 +564,11 @@ namespace System.Threading.Tasks.Tests.ContinueWithAllAny
                 {
                     double result = (ti.Task is Task<double>) ? ((Task<double>)(ti.Task)).Result : ti.Result;
                     if (ti.Task.IsCompleted && !CheckResult(result))
-                        Assert.True(false, string.Format("Failed result verification in Task at Index = {0}. Task result is {1} TaskStatus is {2}", i, result, ti.Task.Status));
+                        Assert.Fail(string.Format("Failed result verification in Task at Index = {0}. Task result is {1} TaskStatus is {2}", i, result, ti.Task.Status));
 
                     //else if (ti.Thread == null && result != -1)
                     //{
-                    //    Assert.True(false, string.Format("Result must remain uninitialized for unstarted task"));
+                    //    Assert.Fail(string.Format("Result must remain uninitialized for unstarted task"));
                     //}
                 }
             }
