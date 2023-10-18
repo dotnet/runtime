@@ -3150,6 +3150,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // DEBUG
     }
 
+    ////////////////// TESTING
+    if (!opts.optRepeat && (JitConfig.JitEnableOptRepeat() != 0))
+    {
+        opts.optRepeat      = true;
+        opts.optRepeatCount = JitConfig.JitOptRepeatCount();
+        JITDUMP("\n*************** JitOptRepeat FORCED; repetition count: %d\n\n", opts.optRepeatCount);
+    }
+////////////////// END TESTING
+
 #ifdef DEBUG
     assert(!codeGen->isGCTypeFixed());
     opts.compGcChecks = (JitConfig.JitGCChecks() != 0) || compStressCompile(STRESS_GENERIC_VARN, 5);
