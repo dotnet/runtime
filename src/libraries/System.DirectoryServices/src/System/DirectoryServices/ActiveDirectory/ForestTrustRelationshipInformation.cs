@@ -133,7 +133,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         record.Time = TLN.time;
                         ptr = Marshal.StringToHGlobalUni(TLN.Name);
                         ptrList.Add(ptr);
-                        UnsafeNativeMethods.RtlInitUnicodeString(out record.TopLevelName, ptr);
+                        Interop.NtDll.RtlInitUnicodeString(out record.TopLevelName, ptr);
 
                         tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
@@ -163,7 +163,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                         ptr = Marshal.StringToHGlobalUni(_excludedNames[i]);
                         ptrList.Add(ptr);
-                        UnsafeNativeMethods.RtlInitUnicodeString(out record.TopLevelName, ptr);
+                        Interop.NtDll.RtlInitUnicodeString(out record.TopLevelName, ptr);
                         tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);
@@ -251,7 +251,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the target name
                     global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(TargetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
+                    Interop.NtDll.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // call the unmanaged function
                     uint error = Interop.Advapi32.LsaSetForestTrustInformation(handle, trustedDomainName, forestInfo, 1, out collisionInfo);
@@ -340,7 +340,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the target name
                     global::Interop.UNICODE_STRING tmpName;
                     targetPtr = Marshal.StringToHGlobalUni(TargetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(out tmpName, targetPtr);
+                    Interop.NtDll.RtlInitUnicodeString(out tmpName, targetPtr);
 
                     serverName = Utils.GetPolicyServerName(context, true, false, source);
 

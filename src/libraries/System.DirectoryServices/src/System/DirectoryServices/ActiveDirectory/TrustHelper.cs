@@ -53,7 +53,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the target name
                     global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
+                    Interop.NtDll.RtlInitUnicodeString(out trustedDomainName, target);
 
                     uint result = Interop.Advapi32.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
                     if (result != 0)
@@ -149,7 +149,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the target name
                     global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
+                    Interop.NtDll.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get the trusted domain information
                     uint result = Interop.Advapi32.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
@@ -277,7 +277,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the target name
                     global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
+                    Interop.NtDll.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get trust information
                     uint result = Interop.Advapi32.LsaQueryTrustedDomainInfoByName(policyHandle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainInformationEx, ref buffer);
@@ -358,7 +358,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the target name
                     global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
+                    Interop.NtDll.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // validate the trust existence
                     ValidateTrust(policyHandle, trustedDomainName, sourceName, targetName, isForest, (int)direction, policyServerName);  // need to verify direction
@@ -593,7 +593,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the target name
                     global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
+                    Interop.NtDll.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get the trusted domain information
                     uint result = Interop.Advapi32.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
@@ -724,7 +724,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // get the target name
                     global::Interop.UNICODE_STRING trustedDomainName;
                     target = Marshal.StringToHGlobalUni(targetName);
-                    UnsafeNativeMethods.RtlInitUnicodeString(out trustedDomainName, target);
+                    Interop.NtDll.RtlInitUnicodeString(out trustedDomainName, target);
 
                     // get the trusted domain information
                     uint result = Interop.Advapi32.LsaQueryTrustedDomainInfoByName(handle, trustedDomainName, Interop.Advapi32.TRUSTED_INFORMATION_CLASS.TrustedDomainFullInformation, ref buffer);
