@@ -384,8 +384,29 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// Debug.Assert (IsLValueFlowCapture (operation.Id));
 				Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write),
 					$"{operation.Syntax.GetLocation ().GetLineSpan ()}");
+				Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference),
+					$"{operation.Syntax.GetLocation ().GetLineSpan ()}");
 				return TopValue;
 			}
+
+			if (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write)) {
+				// If we get here, it means we're visiting a flow capture reference that may be
+				// assigned to. Similar to the IsInitialization case, this can happen for an out param
+				// where the variable is declared before being passed as an out param, for example:
+
+				// string s;
+				// Method (out s, b ? 0 : 1);
+
+				// The second argument is necessary to create multiple branches so that the compiler
+				// turns both arguments into flow capture references, instead of just passing a local
+				// reference for s).
+
+				// Treat this the same as theh IsInitialization case.
+				Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference),
+					$"{operation.Syntax.GetLocation ().GetLineSpan ()}");
+				return TopValue;
+			}
+
 			return GetFlowCaptureValue (operation, state);
 		}
 

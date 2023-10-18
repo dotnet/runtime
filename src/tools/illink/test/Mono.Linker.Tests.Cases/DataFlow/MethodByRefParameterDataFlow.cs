@@ -36,6 +36,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type nullType4 = null;
 			TestAssigningToRefParameter_Mismatch (nullType4, ref nullType4);
 			TestPassingRefsWithImplicitThis ();
+			TestPassingCapturedOutParameter ();
 			LocalMethodsAndLambdas.Test ();
 		}
 
@@ -181,6 +182,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			param1.RequiresPublicMethods ();
 			param2.RequiresAll ();
 			param3.RequiresPublicFields ();
+		}
+
+		static bool TryGetAnnotatedValueWithExtraUnusedParameter (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] out Type typeWithMethods,
+			int unused)
+		{
+			typeWithMethods = null;
+			return false;
+		}
+
+		static void TestPassingCapturedOutParameter (bool b = true)
+		{
+			Type typeWithMethods;
+			// The ternary operator for the second argument causes _both_ arguments to
+			// become flow-capture references. The ternary operator introduces two separate
+			// branches, where a capture is created for typeWithMethods before the branch
+			// out. This capture is then passed as the first argument.
+			TryGetAnnotatedValueWithExtraUnusedParameter (out typeWithMethods, b ? 0 : 1);
+			typeWithMethods.RequiresPublicMethods ();
 		}
 
 		[return: DynamicallyAccessedMembersAttribute (DynamicallyAccessedMemberTypes.PublicFields)]
