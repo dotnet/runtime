@@ -340,15 +340,9 @@ namespace System.Numerics.Tensors
                     incrementArray[j] = Vector<float>.Count;
                 }
 
-
-                Span<int> resultIndexSpan = new Span<int>(resultIndexArray);
-                Span<int> curIndexSpan = new Span<int>(curIndexArray);
-                Span<int> incrementSpan = new Span<int>(incrementArray);
-
-
-                Vector<int> resultIndex = AsVector(ref MemoryMarshal.GetReference(resultIndexSpan), 0);
-                Vector<int> curIndex = AsVector(ref MemoryMarshal.GetReference(curIndexSpan), 0);
-                Vector<int> increment = AsVector(ref MemoryMarshal.GetReference(incrementSpan), 0);
+                Vector<int> resultIndex = new Vector<int>(resultIndexArray);
+                Vector<int> curIndex = new Vector<int>(curIndexArray);
+                Vector<int> increment = new Vector<int>(incrementArray);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
@@ -379,18 +373,17 @@ namespace System.Numerics.Tensors
                     {
                         for(int j = 0; j < Vector<float>.Count; j++)
                         {
-                            incrementSpan[j] = x.Length - i;
+                            incrementArray[j] = x.Length - i;
                         }
-                        curIndex = Vector.Add(curIndex, AsVector(ref MemoryMarshal.GetReference(incrementSpan), 0));
+                        curIndex = Vector.Add(curIndex, AsVector(ref MemoryMarshal.GetReference(incrementArray.AsSpan()), 0));
 
                         current = AsVector(ref xRef, x.Length - Vector<float>.Count);
                         if (!Vector.EqualsAll(current, current))
                         {
                             goto Scalar;
                         }
-                        Vector<float> remainderMask = CreateRemainderMaskSingleVector(x.Length - i);
 
-                        op.Invoke(ref resultVector, current, ref resultIndex, curIndex, remainderMask);
+                        op.Invoke(ref resultVector, current, ref resultIndex, curIndex);
                     }
 
                     result = op.Invoke(resultVector, resultIndex);
@@ -2462,7 +2455,6 @@ namespace System.Numerics.Tensors
             int Invoke(ReadOnlySpan<float> result);
             int Invoke(Vector<float> result, Vector<int> resultIndex);
             void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex);
-            void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex, Vector<float> remainderMask);
         }
 
         /// <summary>MathF.Max(x, y) (but without guaranteed NaN propagation)</summary>
@@ -2505,54 +2497,44 @@ namespace System.Numerics.Tensors
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(Vector<float> result, Vector<int> maxIndex)
+            public int Invoke(Vector<float> result, Vector<int> resultIndex)
             {
-                float curMax = float.MinValue;
-                int curIn = 0;
-                for (int i = 0; i < Vector<float>.Count; i++)
+                float curMax = result[0];
+                int curIn = resultIndex[0];
+                for (int i = 1; i < Vector<float>.Count; i++)
                 {
                     if (result[i] == curMax && IsNegative(curMax) && !IsNegative(result[i]))
                     {
                         curMax = result[i];
-                        curIn = maxIndex[i];
+                        curIn = resultIndex[i];
                     }
                     else if (result[i] > curMax)
                     {
                         curMax = result[i];
-                        curIn = maxIndex[i];
+                        curIn = resultIndex[i];
                     }
                 }
                 return curIn;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(ref Vector<float> max, Vector<float> current, ref Vector<int> maxIndex, Vector<int> curIndex)
+            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex)
             {
-                maxIndex = Vector.ConditionalSelect(Vector.Equals(max, current),
-                    Vector.ConditionalSelect((Vector<int>)IsNegative(max), curIndex, maxIndex),
-                    Vector.ConditionalSelect(Vector.GreaterThan(max, current), maxIndex, curIndex));
+                Vector<int> lessThanMask = Vector.GreaterThan(result, current);
 
-                max = Vector.ConditionalSelect(Vector.Equals(max, current),
-                        Vector.ConditionalSelect(IsNegative(max), current, max),
-                        Vector.Max(max, current));
-            }
+                Vector<int> equalMask = Vector.Equals(result, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(ref Vector<float> max, Vector<float> current, ref Vector<int> maxIndex, Vector<int> curIndex, Vector<float> remainderMask)
-            {
-                maxIndex = Vector.ConditionalSelect(
-                    Vector.Equals((Vector<int>)remainderMask, Vector<int>.Zero),
-                    maxIndex,
-                    Vector.ConditionalSelect(Vector.Equals(max, current),
-                    Vector.ConditionalSelect((Vector<int>)IsNegative(max), curIndex, maxIndex),
-                    Vector.ConditionalSelect(Vector.GreaterThan(max, current), maxIndex, curIndex)));
+                if (equalMask != Vector<int>.Zero)
+                {
+                    Vector<float> negativeMask = IsNegative(current);
+                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
 
-                max = Vector.ConditionalSelect(
-                    Vector.Equals(remainderMask, Vector<float>.Zero),
-                    max,
-                    Vector.ConditionalSelect(Vector.Equals(max, current),
-                    Vector.ConditionalSelect(IsNegative(max), current, max),
-                    Vector.Max(max, current)));
+                    lessThanMask |= ((Vector<int>)~negativeMask & equalMask) | ((Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
+                }
+
+                result = Vector.ConditionalSelect(lessThanMask, result, current);
+
+                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
             }
         }
 
@@ -2616,37 +2598,25 @@ namespace System.Numerics.Tensors
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(ref Vector<float> max, Vector<float> current, ref Vector<int> maxIndex, Vector<int> curIndex)
+            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex)
             {
-                Vector<float> maxMag = Vector.Abs(max), currentMag = Vector.Abs(current);
+                Vector<float> maxMag = Vector.Abs(result), currentMag = Vector.Abs(current);
 
-                maxIndex = Vector.ConditionalSelect(Vector.Equals(max, current),
-                    Vector.ConditionalSelect((Vector<int>)IsNegative(max), curIndex, maxIndex),
-                    Vector.ConditionalSelect(Vector.GreaterThan(maxMag, currentMag), maxIndex, curIndex));
+                Vector<int> lessThanMask = Vector.GreaterThan(maxMag, currentMag);
 
-                max = Vector.ConditionalSelect(Vector.Equals(max, current),
-                        Vector.ConditionalSelect(IsNegative(max), current, max),
-                        Vector.Max(maxMag, currentMag));
-            }
+                Vector<int> equalMask = Vector.Equals(result, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(ref Vector<float> max, Vector<float> current, ref Vector<int> maxIndex, Vector<int> curIndex, Vector<float> remainderMask)
-            {
-                Vector<float> maxMag = Vector.Abs(max), currentMag = Vector.Abs(current);
+                if (equalMask != Vector<int>.Zero)
+                {
+                    Vector<float> negativeMask = IsNegative(current);
+                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
 
-                maxIndex = Vector.ConditionalSelect(
-                    Vector.Equals(((Vector<int>)remainderMask), Vector<int>.Zero),
-                    maxIndex,
-                    Vector.ConditionalSelect(Vector.Equals(max, current),
-                    Vector.ConditionalSelect((Vector<int>)IsNegative(max), curIndex, maxIndex),
-                    Vector.ConditionalSelect(Vector.GreaterThan(maxMag, currentMag), maxIndex, curIndex)));
+                    lessThanMask |= ((Vector<int>)~negativeMask & equalMask) | ((Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
+                }
 
-                max = Vector.ConditionalSelect(
-                    Vector.Equals(remainderMask, Vector<float>.Zero),
-                    max,
-                    Vector.ConditionalSelect(Vector.Equals(max, current),
-                    Vector.ConditionalSelect(IsNegative(max), current, max),
-                    Vector.Max(maxMag, currentMag)));
+                result = Vector.ConditionalSelect(lessThanMask, result, current);
+
+                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
             }
         }
 
@@ -2691,9 +2661,9 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int Invoke(Vector<float> result, Vector<int> resultIndex)
             {
-                float curMin = float.MaxValue;
-                int curIn = 0;
-                for (int i = 0; i < Vector<float>.Count; i++)
+                float curMin = result[0];
+                int curIn = resultIndex[0];
+                for (int i = 1; i < Vector<float>.Count; i++)
                 {
                     if (result[i] == curMin && IsPositive(curMin) && !IsPositive(result[i]))
                     {
@@ -2712,31 +2682,21 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex)
             {
-                resultIndex = Vector.ConditionalSelect(Vector.Equals(result, current),
-                    Vector.ConditionalSelect(((Vector<int>)IsPositive(result)), curIndex, resultIndex),
-                    Vector.ConditionalSelect(Vector.LessThan(result, current), resultIndex, curIndex));
+                Vector<int> lessThanMask = Vector.LessThan(result, current);
 
-                result = Vector.ConditionalSelect(Vector.Equals(result, current),
-                        Vector.ConditionalSelect(IsPositive(result), current, result),
-                        Vector.Min(result, current));
-            }
+                Vector<int> equalMask = Vector.Equals(result, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex, Vector<float> remainderMask)
-            {
-                resultIndex = Vector.ConditionalSelect(
-                    Vector.Equals(((Vector<int>)remainderMask), Vector<int>.Zero),
-                    resultIndex,
-                    Vector.ConditionalSelect(Vector.Equals(result, current),
-                    Vector.ConditionalSelect((Vector<int>)IsPositive(result), curIndex, resultIndex),
-                    Vector.ConditionalSelect(Vector.LessThan(result, current), resultIndex, curIndex)));
+                if (equalMask != Vector<int>.Zero)
+                {
+                    Vector<float> negativeMask = IsNegative(current);
+                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
 
-                result = Vector.ConditionalSelect(
-                    Vector.Equals(remainderMask, Vector<float>.Zero),
-                    result,
-                    Vector.ConditionalSelect(Vector.Equals(result, current),
-                    Vector.ConditionalSelect(IsPositive(result), current, result),
-                    Vector.Min(result, current)));
+                    lessThanMask |= ((Vector<int>)negativeMask & equalMask) | (~(Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
+                }
+
+                result = Vector.ConditionalSelect(lessThanMask, result, current);
+
+                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
             }
         }
 
@@ -2804,33 +2764,21 @@ namespace System.Numerics.Tensors
             {
                 Vector<float> minMag = Vector.Abs(result), currentMag = Vector.Abs(current);
 
-                resultIndex = Vector.ConditionalSelect(Vector.Equals(result, current),
-                    Vector.ConditionalSelect(((Vector<int>)IsPositive(result)), curIndex, resultIndex),
-                    Vector.ConditionalSelect(Vector.LessThan(minMag, currentMag), resultIndex, curIndex));
+                Vector<int> lessThanMask = Vector.LessThan(minMag, currentMag);
 
-                result = Vector.ConditionalSelect(Vector.Equals(result, current),
-                        Vector.ConditionalSelect(IsPositive(result), current, result),
-                        Vector.Min(minMag, currentMag));
-            }
+                Vector<int> equalMask = Vector.Equals(result, current);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex, Vector<float> remainderMask)
-            {
-                Vector<float> minMag = Vector.Abs(result), currentMag = Vector.Abs(current);
+                if (equalMask != Vector<int>.Zero)
+                {
+                    Vector<float> negativeMask = IsNegative(current);
+                    Vector<int> lessThanIndexMask = Vector.LessThan(resultIndex, curIndex);
 
-                resultIndex = Vector.ConditionalSelect(
-                    Vector.Equals(((Vector<int>)remainderMask), Vector<int>.Zero),
-                    resultIndex,
-                    Vector.ConditionalSelect(Vector.Equals(result, current),
-                    Vector.ConditionalSelect(((Vector<int>)IsPositive(result)), curIndex, resultIndex),
-                    Vector.ConditionalSelect(Vector.LessThan(minMag, currentMag), resultIndex, curIndex)));
+                    lessThanMask |= ((Vector<int>)negativeMask & equalMask) | (~(Vector<int>)IsNegative(result) & equalMask & lessThanIndexMask);
+                }
 
-                result = Vector.ConditionalSelect(
-                    Vector.Equals(remainderMask, Vector<float>.Zero),
-                    result,
-                    Vector.ConditionalSelect(Vector.Equals(result, current),
-                    Vector.ConditionalSelect(IsPositive(result), current, result),
-                    Vector.Min(minMag, currentMag)));
+                result = Vector.ConditionalSelect(lessThanMask, result, current);
+
+                resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
             }
         }
 

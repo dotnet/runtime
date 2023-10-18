@@ -8163,8 +8163,6 @@ namespace System.Numerics.Tensors
                     greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
                 }
 
-                greaterThanMask = ~greaterThanMask;
-
                 max = ElementWiseSelect(greaterThanMask, max, current);
 
                 maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
@@ -8195,8 +8193,6 @@ namespace System.Numerics.Tensors
 
                     greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
                 }
-
-                greaterThanMask = ~greaterThanMask;
 
                 max = ElementWiseSelect(greaterThanMask, max, current);
 
@@ -8236,8 +8232,6 @@ namespace System.Numerics.Tensors
 
                     greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
                 }
-
-                greaterThanMask = ~greaterThanMask;
 
                 max = ElementWiseSelect(greaterThanMask, max, current);
 
@@ -8316,8 +8310,6 @@ namespace System.Numerics.Tensors
                     greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
                 }
 
-                greaterThanMask = ~greaterThanMask;
-
                 max = ElementWiseSelect(greaterThanMask, max, current);
 
                 maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
@@ -8350,8 +8342,6 @@ namespace System.Numerics.Tensors
 
                     greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
                 }
-
-                greaterThanMask = ~greaterThanMask;
 
                 max = ElementWiseSelect(greaterThanMask, max, current);
 
@@ -8392,8 +8382,6 @@ namespace System.Numerics.Tensors
 
                     greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
                 }
-
-                greaterThanMask = ~greaterThanMask;
 
                 max = ElementWiseSelect(greaterThanMask, max, current);
 
@@ -8471,8 +8459,6 @@ namespace System.Numerics.Tensors
                     lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
                 }
 
-                lessThanMask = ~lessThanMask;
-
                 result = ElementWiseSelect(lessThanMask, result, current);
 
                 resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
@@ -8504,8 +8490,6 @@ namespace System.Numerics.Tensors
 
                     lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
                 }
-
-                lessThanMask = ~lessThanMask;
 
                 result = ElementWiseSelect(lessThanMask, result, current);
 
@@ -8545,8 +8529,6 @@ namespace System.Numerics.Tensors
 
                     lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
                 }
-
-                lessThanMask = ~lessThanMask;
 
                 result = ElementWiseSelect(lessThanMask, result, current);
 
@@ -8625,8 +8607,6 @@ namespace System.Numerics.Tensors
                     lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
                 }
 
-                lessThanMask = ~lessThanMask;
-
                 result = ElementWiseSelect(lessThanMask, result, current);
 
                 resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
@@ -8659,8 +8639,6 @@ namespace System.Numerics.Tensors
 
                     lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
                 }
-
-                lessThanMask = ~lessThanMask;
 
                 result = ElementWiseSelect(lessThanMask, result, current);
 
@@ -8702,8 +8680,6 @@ namespace System.Numerics.Tensors
 
                     lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
                 }
-
-                lessThanMask = ~lessThanMask;
 
                 result = ElementWiseSelect(lessThanMask, result, current);
 
@@ -10123,7 +10099,7 @@ namespace System.Numerics.Tensors
         {
             if (Sse41.IsSupported)
             {
-                return Sse41.BlendVariable(left, right, mask);
+                return Sse41.BlendVariable(left, right, ~mask);
             }
             else return Vector128.ConditionalSelect(mask, left, right);
         }
@@ -10132,7 +10108,7 @@ namespace System.Numerics.Tensors
         {
             if (Sse41.IsSupported)
             {
-                return Sse41.BlendVariable(left, right, mask);
+                return Sse41.BlendVariable(left, right, ~mask);
             }
             else return Vector128.ConditionalSelect(mask, left, right);
         }
@@ -10141,7 +10117,7 @@ namespace System.Numerics.Tensors
         {
             if (Avx2.IsSupported)
             {
-                return Avx2.BlendVariable(left, right, mask);
+                return Avx2.BlendVariable(left, right, ~mask);
             }
             else return Vector256.ConditionalSelect(mask, left, right);
         }
@@ -10150,7 +10126,7 @@ namespace System.Numerics.Tensors
         {
             if (Avx2.IsSupported)
             {
-                return Avx2.BlendVariable(left, right, mask);
+                return Avx2.BlendVariable(left, right, ~mask);
             }
             else return Vector256.ConditionalSelect(mask, left, right);
         }
@@ -10160,7 +10136,7 @@ namespace System.Numerics.Tensors
         {
             if (Avx512F.IsSupported)
             {
-                return Avx512F.BlendVariable(left, right, mask);
+                return Avx512F.BlendVariable(left, right, ~mask);
             }
             else return Vector512.ConditionalSelect(mask, left, right);
         }
@@ -10169,7 +10145,7 @@ namespace System.Numerics.Tensors
         {
             if (Avx512F.IsSupported)
             {
-                return Avx512F.BlendVariable(left, right, mask);
+                return Avx512F.BlendVariable(left, right, ~mask);
             }
             else return Vector512.ConditionalSelect(mask, left, right);
         }
