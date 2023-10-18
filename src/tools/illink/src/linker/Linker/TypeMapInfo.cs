@@ -149,7 +149,7 @@ namespace Mono.Linker
 
 					if (!resolvedInterfaceMethod.IsVirtual
 						|| resolvedInterfaceMethod.IsFinal
-						|| !resolvedInterfaceMethod.IsNewSlot)
+						|| (resolvedInterfaceMethod.IsStatic && !resolvedInterfaceMethod.IsNewSlot))
 						continue;
 
 					// Try to find an implementation with a name/sig match on the current type
