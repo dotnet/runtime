@@ -6,6 +6,7 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
 
   <ItemGroup>
