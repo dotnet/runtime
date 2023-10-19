@@ -309,13 +309,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int DnsSrvData = 33;
         internal const int DnsQueryBypassCache = 8;
 
-        /*NTSTATUS LsaConnectUntrusted(
-              PHANDLE LsaHandle
-            );*/
-        [LibraryImport(global::Interop.Libraries.Secur32)]
-        internal static partial uint LsaConnectUntrusted(
-             out Interop.Secur32.LsaLogonProcessSafeHandle lsaHandle);
-
         internal const int NegGetCallerName = 1;
 
         /*NTSTATUS LsaCallAuthenticationPackage(
