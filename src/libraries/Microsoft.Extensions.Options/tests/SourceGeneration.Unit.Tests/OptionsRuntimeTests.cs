@@ -266,7 +266,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             }, result.Failures);
         }
 #endif // NET8_0_OR_GREATER
-        SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93723")]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93723")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void TestCustomGeneratedAttributes()
         {
