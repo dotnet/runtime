@@ -564,7 +564,7 @@ namespace System.DirectoryServices.ActiveDirectory
             uint protocolStatus;
             uint result;
 
-            LsaLogonProcessSafeHandle lsaHandle;
+            Interop.Secur32.LsaLogonProcessSafeHandle lsaHandle;
 
             //
             // since we are using safe handles, we don't need to explicitly call Interop.Secur32.LsaDeregisterLogonProcess(lsaHandle)

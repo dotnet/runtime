@@ -314,7 +314,7 @@ namespace System.DirectoryServices.ActiveDirectory
             );*/
         [LibraryImport(global::Interop.Libraries.Secur32)]
         internal static partial uint LsaConnectUntrusted(
-             out LsaLogonProcessSafeHandle lsaHandle);
+             out Interop.Secur32.LsaLogonProcessSafeHandle lsaHandle);
 
         internal const int NegGetCallerName = 1;
 
@@ -329,7 +329,7 @@ namespace System.DirectoryServices.ActiveDirectory
             );*/
         [LibraryImport(global::Interop.Libraries.Secur32)]
         internal static partial uint LsaCallAuthenticationPackage(
-            LsaLogonProcessSafeHandle lsaHandle,
+            Interop.Secur32.LsaLogonProcessSafeHandle lsaHandle,
             int authenticationPackage,
             in NegotiateCallerNameRequest protocolSubmitBuffer,
             int submitBufferLength,
