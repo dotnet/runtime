@@ -1860,6 +1860,8 @@ public:
 
     // Returns true if it is a GT_COPY or GT_RELOAD of a multi-reg call node
     inline bool IsCopyOrReloadOfMultiRegCall() const;
+    // Returns true if it is a GT_COPY or GT_RELOAD of a multi-reg node
+    inline bool IsCopyOrReloadOfMultiRegHWIntrinsic() const;
 
     bool OperRequiresAsgFlag() const;
 
@@ -9698,6 +9700,26 @@ inline bool GenTree::IsCopyOrReloadOfMultiRegCall() const
     if (IsCopyOrReload())
     {
         return gtGetOp1()->IsMultiRegCall();
+    }
+
+    return false;
+}
+
+//-----------------------------------------------------------------------------------
+// IsCopyOrReloadOfMultiRegNode: whether this is a GT_COPY or GT_RELOAD of a multi-reg
+// call node.
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if this GenTree is a copy or reload of multi-reg node.
+//
+inline bool GenTree::IsCopyOrReloadOfMultiRegHWIntrinsic() const
+{
+    if (IsCopyOrReload())
+    {
+        return gtGetOp1()->IsMultiRegHWIntrinsic();
     }
 
     return false;
