@@ -516,10 +516,4 @@ namespace System.DirectoryServices.ActiveDirectory
         public global::Interop.UNICODE_STRING DomainName;
         public IntPtr DomainSid;
     }
-
-    internal static partial class UnsafeNativeMethods
-    {
-        [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "OpenThread", SetLastError = true)]
-        public static partial IntPtr OpenThread(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheirted, int threadID);
-    }
 }

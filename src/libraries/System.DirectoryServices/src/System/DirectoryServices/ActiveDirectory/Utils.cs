@@ -44,9 +44,6 @@ namespace System.DirectoryServices.ActiveDirectory
         private const int LOGON32_LOGON_NEW_CREDENTIALS = 9;
         private const int LOGON32_PROVIDER_WINNT50 = 3;
 
-        private const uint STANDARD_RIGHTS_REQUIRED = 0x000F0000;
-        private const uint SYNCHRONIZE = 0x00100000;
-        private const uint THREAD_ALL_ACCESS = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3FF;
         internal const AuthenticationTypes DefaultAuthType = AuthenticationTypes.Secure | AuthenticationTypes.Signing | AuthenticationTypes.Sealing;
 
         /*
@@ -989,7 +986,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static void ImpersonateAnonymous()
         {
-            IntPtr hThread = UnsafeNativeMethods.OpenThread(THREAD_ALL_ACCESS, false, global::Interop.Kernel32.GetCurrentThreadId());
+            IntPtr hThread = Interop.Kernel32.OpenThread(Interop.Kernel32.THREAD_ALL_ACCESS, false, global::Interop.Kernel32.GetCurrentThreadId());
             if (hThread == (IntPtr)0)
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
 
