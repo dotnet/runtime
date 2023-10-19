@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// Supports the same types as <see cref="ComVariant.Create{T}(T)"/> as well as any types with <see cref="GeneratedComClassAttribute"/> applied.
     /// </remarks>
     [CustomMarshaller(typeof(object), MarshalMode.Default, typeof(ComVariantMarshaller))]
-    [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedRef, typeof(RefPropogate))]
+    [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedRef, typeof(RefPropagate))]
     public static partial class ComVariantMarshaller
     {
         public static ComVariant ConvertToUnmanaged(object? managed)
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 return variant;
             }
 
-            throw new ArgumentException("Type of managed object is not supported for marshalling as ComVariant.", nameof(managed));
+            throw new ArgumentException(SR.ComVariantMarshaller_ManagedTypeNotSupported, nameof(managed));
         }
 
 #pragma warning disable CA1416 // Validate platform compatibility
@@ -147,7 +147,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 case VarEnum.VT_ERROR:
                     return unmanaged.As<int>();
                 case VarEnum.VT_CY:
-                    return unmanaged.As<CurrencyWrapper>().WrappedObject;
+                    return unmanaged.As<CurrencyWrapper>()!.WrappedObject;
                 case VarEnum.VT_UNKNOWN:
                 case VarEnum.VT_DISPATCH:
                     return StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateObjectForComInstance(unmanaged.GetRawDataRef<nint>(), CreateObjectFlags.Unwrap);
@@ -188,7 +188,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 case VarEnum.VT_BYREF | VarEnum.VT_UNKNOWN:
                     return StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateObjectForComInstance(*(nint*)unmanaged.GetRawDataRef<nint>(), CreateObjectFlags.Unwrap);
                 default:
-                    throw new ArgumentException("Type of unmanaged variant is not supported for marshalling to a managed object.", nameof(unmanaged));
+                    throw new ArgumentException(SR.ComVariantMarshaller_UnmanagedTypeNotSupported, nameof(unmanaged));
             }
 #pragma warning restore CA1416 // Validate platform compatibility
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -200,7 +200,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Marshals a <see cref="object"/> to an <see cref="ComVariant"/>, propagating the value of the <see cref="object"/> back to the variant's
         /// existing data storage if the variant has <see cref="VarEnum.VT_BYREF"/> type.
         /// </summary>
-        public struct RefPropogate
+        public struct RefPropagate
         {
             private ComVariant _unmanaged;
             private object? _managed;

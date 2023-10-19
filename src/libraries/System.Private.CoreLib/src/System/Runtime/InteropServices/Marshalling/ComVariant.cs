@@ -12,12 +12,14 @@ namespace System.Runtime.InteropServices.Marshalling
     [StructLayout(LayoutKind.Explicit)]
     public struct ComVariant : IDisposable
     {
+        // See definition in wtypes.h in the Windows SDK.
         private const VarEnum VT_VERSIONED_STREAM = (VarEnum)73;
 #if DEBUG
         static unsafe ComVariant()
         {
             // Variant size is the size of 4 pointers (16 bytes) on a 32-bit processor,
             // and 3 pointers (24 bytes) on a 64-bit processor.
+            // See definition in oaidl.h in the Windows SDK.
             int variantSize = sizeof(ComVariant);
             if (IntPtr.Size == 4)
             {
@@ -74,14 +76,14 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct VersionedStream
+        private struct VersionedStream
         {
             public Guid _version;
             public IntPtr _stream;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct ClipboardData
+        private struct ClipboardData
         {
             public uint _size;
             public int _format;
@@ -126,6 +128,10 @@ namespace System.Runtime.InteropServices.Marshalling
 #if TARGET_WINDOWS
             fixed (void* pThis = &this)
             {
+                // We are using PropVariantClear instead of VariantClear
+                // as PropVariantClear covers more cases (like VT_BLOB, VT_STREAM, VT_CF, etc.)
+                // than VariantClear does. We intend for users to be able to use this ComVariant type for
+                // both VARIANT and PROPVARIANT scenarios, so we need to support all of the variant kinds that might be set.
                 Interop.Ole32.PropVariantClear((nint)pThis);
             }
 #else
@@ -136,7 +142,7 @@ namespace System.Runtime.InteropServices.Marshalling
             }
             else if (VarType.HasFlag(VarEnum.VT_ARRAY))
             {
-                throw new PlatformNotSupportedException("ComVariants containing SAFEARRAYs are not supported on this platform");
+                throw new PlatformNotSupportedException(SR.ComVariant_SafeArray_PlatformNotSupported);
             }
             else if (VarType == VarEnum.VT_UNKNOWN || VarType == VarEnum.VT_DISPATCH)
             {
@@ -240,7 +246,8 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <exception cref="ArgumentException">When <typeparamref name="T"/> does not directly correspond to a <see cref="VarEnum"/> variant type.</exception>
         public static ComVariant Create<T>([DisallowNull] T value)
         {
-            Unsafe.SkipInit(out ComVariant variant);
+            ComVariant variant;
+            Unsafe.SkipInit(out variant);
             if (typeof(T) == typeof(DBNull))
             {
                 variant = Null;
@@ -340,7 +347,7 @@ namespace System.Runtime.InteropServices.Marshalling
             }
             else
             {
-                throw new ArgumentException("Unsupported type", nameof(T));
+                throw new ArgumentException(SR.UnsupportedType, nameof(T));
             }
             // We do not support mapping nint or nuint to VT_INT and VT_UINT respectively
             // as this does not match the MS-OAUT spec.
@@ -364,15 +371,15 @@ namespace System.Runtime.InteropServices.Marshalling
             ArgumentOutOfRangeException.ThrowIfGreaterThan(Unsafe.SizeOf<T>(), sizeof(UnionTypes), nameof(T));
             if (vt == VarEnum.VT_DECIMAL)
             {
-                throw new ArgumentException("VT_DECIMAL is not supported in CreateRaw. Use the Create method.", nameof(vt));
+                throw new ArgumentException(SR.ComVariant_VT_DECIMAL_NotSupported_CreateRaw, nameof(vt));
             }
             if (vt == VarEnum.VT_VARIANT)
             {
-                throw new ArgumentException("VT_VARIANT is not supported in variants.", nameof(vt));
+                throw new ArgumentException(SR.ComVariant_VT_VARIANT_In_Variant, nameof(vt));
             }
             if (vt.HasFlag(VarEnum.VT_ARRAY) && !OperatingSystem.IsWindows())
             {
-                throw new PlatformNotSupportedException("ComVariants containing SAFEARRAYs are not supported on this platform");
+                throw new PlatformNotSupportedException(SR.ComVariant_SafeArray_PlatformNotSupported);
             }
 
             Unsafe.SkipInit(out ComVariant value);
@@ -383,7 +390,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 (VarEnum.VT_I2 or VarEnum.VT_UI2 or VarEnum.VT_BOOL, 2) => rawValue,
                 (VarEnum.VT_ERROR or VarEnum.VT_HRESULT or VarEnum.VT_I4 or VarEnum.VT_UI4 or VarEnum.VT_R4 or VarEnum.VT_INT or VarEnum.VT_UINT, 4) => rawValue,
                 (VarEnum.VT_I8 or VarEnum.VT_UI8 or VarEnum.VT_R8 or VarEnum.VT_DATE, 8) => rawValue,
-                (VarEnum.VT_INT or VarEnum.VT_UINT or VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH or VarEnum.VT_LPSTR or VarEnum.VT_BSTR or VarEnum.VT_LPWSTR or VarEnum.VT_SAFEARRAY
+                (VarEnum.VT_UNKNOWN or VarEnum.VT_DISPATCH or VarEnum.VT_LPSTR or VarEnum.VT_BSTR or VarEnum.VT_LPWSTR or VarEnum.VT_SAFEARRAY
                     or VarEnum.VT_CLSID or VarEnum.VT_STREAM or VarEnum.VT_STREAMED_OBJECT or VarEnum.VT_STORAGE or VarEnum.VT_STORED_OBJECT or VarEnum.VT_CF or VT_VERSIONED_STREAM, _) when sizeof(T) == nint.Size => rawValue,
                 (VarEnum.VT_CY or VarEnum.VT_FILETIME, 8) => rawValue,
                 (VarEnum.VT_RECORD, _) when sizeof(T) == sizeof(Record) => rawValue,
@@ -391,7 +398,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 _ when vt.HasFlag(VarEnum.VT_VECTOR) && sizeof(T) == sizeof(Vector<byte>) => rawValue,
                 _ when vt.HasFlag(VarEnum.VT_ARRAY) && sizeof(T) == nint.Size => rawValue,
                 (VarEnum.VT_BLOB or VarEnum.VT_BLOB_OBJECT, _) when sizeof(T) == sizeof(Blob) => rawValue,
-                _ => throw new ArgumentException("Size of T should be the same size as the value specified by vt")
+                _ => throw new ArgumentException(SR.Format(SR.ComVariant_SizeMustMatchVariantSize, nameof(T), nameof(vt)))
             };
 
             return value;
@@ -406,7 +413,7 @@ namespace System.Runtime.InteropServices.Marshalling
         {
             if (Array.IndexOf(requiredType, VarType) == -1)
             {
-                throw new InvalidOperationException($"Variant type {VarType} cannot be cast to any of the supported variant types: [{string.Join(", ", requiredType)}]");
+                throw new InvalidOperationException(SR.Format(SR.ComVariant_TypeIsNotSupportedType, VarType, string.Join(", ", requiredType)));
             }
         }
 
@@ -417,11 +424,11 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <typeparam name="T">The managed type to create an instance of.</typeparam>
         /// <returns>The managed value contained in this variant.</returns>
         /// <exception cref="ArgumentException">When <typeparamref name="T"/> does not match the <see cref="VarType"/> of the <see cref="ComVariant"/>.</exception>
-        public readonly T As<T>()
+        public readonly T? As<T>()
         {
             if (VarType == VarEnum.VT_EMPTY)
             {
-                return default!;
+                return default;
             }
             if (typeof(T) == typeof(DBNull))
             {
@@ -470,7 +477,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 ThrowIfNotVarType(VarEnum.VT_BSTR);
                 if (_typeUnion._unionTypes._bstr == IntPtr.Zero)
                 {
-                    return default!;
+                    return default;
                 }
                 return (T)(object)Marshal.PtrToStringBSTR(_typeUnion._unionTypes._bstr);
             }
@@ -526,7 +533,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 ThrowIfNotVarType(VarEnum.VT_UI8);
                 return (T)(object)_typeUnion._unionTypes._ui8;
             }
-            throw new ArgumentException("Unsupported type", nameof(T));
+            throw new ArgumentException(SR.UnsupportedType, nameof(T));
         }
 #pragma warning restore CS0618 // Type or member is obsolete
 
@@ -552,7 +559,7 @@ namespace System.Runtime.InteropServices.Marshalling
             ArgumentOutOfRangeException.ThrowIfGreaterThan(Unsafe.SizeOf<T>(), sizeof(UnionTypes), nameof(T));
             if (typeof(T) == typeof(decimal))
             {
-                throw new ArgumentException("VT_DECIMAL is not supported in GetRawDataRef. Use the As method.", nameof(T));
+                throw new ArgumentException(SR.ComVariant_VT_DECIMAL_NotSupported_RawDataRef, nameof(T));
             }
             return ref Unsafe.As<UnionTypes, T>(ref _typeUnion._unionTypes);
         }

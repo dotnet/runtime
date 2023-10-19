@@ -274,7 +274,7 @@ namespace System.Runtime.InteropServices.Tests
             long storage = 0;
             ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_BYREF | elementType, (nint)(&storage));
             // Set up the marshaller
-            ComVariantMarshaller.RefPropogate marshaller = default;
+            ComVariantMarshaller.RefPropagate marshaller = default;
             marshaller.FromUnmanaged(variant);
 
             // Marshal back the new value

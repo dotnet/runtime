@@ -461,14 +461,14 @@ namespace System.Runtime.InteropServices.Marshalling
         System.Runtime.InteropServices.Marshalling.VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(System.Type type);
     }
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(object), System.Runtime.InteropServices.Marshalling.MarshalMode.Default, typeof(System.Runtime.InteropServices.Marshalling.ComVariantMarshaller))]
-    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(object), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedRef, typeof(System.Runtime.InteropServices.Marshalling.ComVariantMarshaller.RefPropogate))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(object), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedRef, typeof(System.Runtime.InteropServices.Marshalling.ComVariantMarshaller.RefPropagate))]
     public static partial class ComVariantMarshaller
     {
         public static System.Runtime.InteropServices.Marshalling.ComVariant ConvertToUnmanaged(object? managed) { throw null; }
         public static object? ConvertToManaged(System.Runtime.InteropServices.Marshalling.ComVariant unmanaged) { throw null; }
         public static void Free(System.Runtime.InteropServices.Marshalling.ComVariant unmanaged) { }
 
-        public struct RefPropogate
+        public struct RefPropagate
         {
             public void FromUnmanaged(System.Runtime.InteropServices.Marshalling.ComVariant unmanaged) { }
             public void FromManaged(object? managed) { }
@@ -2525,7 +2525,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public static System.Runtime.InteropServices.Marshalling.ComVariant Create<T>([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T value) { throw null; }
         public static System.Runtime.InteropServices.Marshalling.ComVariant CreateRaw<T>(System.Runtime.InteropServices.VarEnum vt, T rawValue) where T : unmanaged { throw null; }
         public static System.Runtime.InteropServices.Marshalling.ComVariant Null { get { throw null; } }
-        public readonly T As<T>() { throw null; }
+        public readonly T? As<T>() { throw null; }
         public readonly System.Runtime.InteropServices.VarEnum VarType { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.UnscopedRefAttribute]
         public ref T GetRawDataRef<T>() where T : unmanaged { throw null; }
