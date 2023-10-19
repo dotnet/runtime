@@ -343,13 +343,6 @@ namespace System.DirectoryServices.ActiveDirectory
         [LibraryImport(global::Interop.Libraries.Secur32)]
         internal static partial uint LsaFreeReturnBuffer(
             IntPtr buffer);
-
-        /*NTSTATUS LsaDeregisterLogonProcess(
-              HANDLE LsaHandle
-            );*/
-        [LibraryImport(global::Interop.Libraries.Secur32)]
-        internal static partial int LsaDeregisterLogonProcess(
-            IntPtr lsaHandle);
     }
 
     internal sealed class NativeComInterfaces

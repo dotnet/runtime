@@ -567,7 +567,7 @@ namespace System.DirectoryServices.ActiveDirectory
             LsaLogonProcessSafeHandle lsaHandle;
 
             //
-            // since we are using safe handles, we don't need to explicitly call NativeMethods.LsaDeregisterLogonProcess(lsaHandle)
+            // since we are using safe handles, we don't need to explicitly call Interop.Secur32.LsaDeregisterLogonProcess(lsaHandle)
             //
             result = NativeMethods.LsaConnectUntrusted(out lsaHandle);
 
