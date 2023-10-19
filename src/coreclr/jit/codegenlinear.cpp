@@ -2263,7 +2263,7 @@ void CodeGen::genProduceReg(GenTree* tree)
                 {
                     if (!lclNode->IsLastUse(i))
                     {
-                        regNumber reg  = lclNode->GetRegByIndex(i);
+                        regNumber reg = lclNode->GetRegByIndex(i);
                         if (reg != REG_NA)
                         {
                             var_types type = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i)->TypeGet();

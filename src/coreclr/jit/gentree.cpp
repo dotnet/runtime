@@ -799,30 +799,43 @@ bool GenTree::gtHasReg(Compiler* comp) const
 {
     bool hasReg = false;
 
-    if (IsMultiRegCall() || IsMultiRegHWIntrinsic())
+    if (IsMultiRegNode())
     {
-        const unsigned regCount = GetMultiRegCount(comp);
+        // A Multi-reg copy or reload node is said to have regs,
+        // if it has valid regs in any of the positions.
 
-        // A Multi-reg call node is said to have regs, if it has
-        // reg assigned to each of its result registers.
-        for (unsigned i = 0; i < regCount; ++i)
+        if (IsMultiRegCall())
         {
-            hasReg = (GetRegByIndex(i) != REG_NA);
-            if (!hasReg)
+            const GenTreeCall* call     = AsCall();
+            const unsigned     regCount = call->GetReturnTypeDesc()->GetReturnRegCount();
+
+            for (unsigned i = 0; i < regCount; ++i)
             {
-                break;
+                hasReg = (call->GetRegNumByIdx(i) != REG_NA);
+                if (hasReg)
+                {
+                    break;
+                }
             }
         }
-    }
-    else if (IsCopyOrReload())
-    {
-        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
-        const GenTree*             op1          = copyOrReload->gtGetOp1();
-        if (IsMultiRegCall() || IsMultiRegHWIntrinsic())
+        else if (IsMultiRegLclVar())
         {
-            const unsigned regCount = op1->GetMultiRegCount(comp);
-            // A Multi-reg copy or reload node is said to have regs,
-            // if it has valid regs in any of the positions.
+            const GenTreeLclVar* lclVar   = AsLclVar();
+            const unsigned       regCount = lclVar->GetFieldCount(comp);
+
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                hasReg = (lclVar->GetRegNumByIdx(i) != REG_NA);
+                if (hasReg)
+                {
+                    break;
+                }
+            }
+        }
+        else if (IsCopyOrReload())
+        {
+            const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
+            const unsigned             regCount     = copy->gtGetOp1()->GetMultiRegCount(comp);
             for (unsigned i = 0; i < regCount; ++i)
             {
                 hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
@@ -832,25 +845,22 @@ bool GenTree::gtHasReg(Compiler* comp) const
                 }
             }
         }
+        else if (IsMultiRegHWIntrinsic())
+        {
+            const GenTreeHWIntrinsic* hwintrinsic = AsHWIntrinsic();
+            const unsigned            regCount    = GetMultiRegCount(comp);
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                hasReg = (hwintrinsic->GetRegNumByIdx(i) != REG_NA);
+                if (!hasReg)
+                {
+                    break;
+                }
+            }
+        }
         else
         {
             hasReg = (GetRegNum() != REG_NA);
-        }
-    }
-    else if (IsMultiRegLclVar())
-    {
-        assert(comp != nullptr);
-        const GenTreeLclVar* lclNode  = AsLclVar();
-        const unsigned       regCount = GetMultiRegCount(comp);
-        // A Multi-reg local vars is said to have regs,
-        // if it has valid regs in any of the positions.
-        for (unsigned i = 0; i < regCount; i++)
-        {
-            hasReg = (lclNode->GetRegNumByIdx(i) != REG_NA);
-            if (hasReg)
-            {
-                break;
-            }
         }
     }
     else
