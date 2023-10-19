@@ -356,18 +356,8 @@ print("ILASM RoundTrips")
 if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
-assembliesToIgnore = [
-    "Loader/binding/tracing/BinderTracingTest.ResolutionFlow/AssemblyToLoad.dll"
-]
-
-def can_ignore_assembly(absPath):
-    for path in assembliesToIgnore:
-        if absPath.endswith(path):
-            return True
-    return False
-
 for inputAssemblyName in glob.glob("*.dll"):
-  if not can_ignore_assembly(os.path.abspath(inputAssemblyName).replace("\\", "/")) and is_managed_assembly(inputAssemblyName):
+  if is_managed_assembly(inputAssemblyName):
       print("ILASM RoundTrip for " + inputAssemblyName)
 
       ilasmSwitches = ""
