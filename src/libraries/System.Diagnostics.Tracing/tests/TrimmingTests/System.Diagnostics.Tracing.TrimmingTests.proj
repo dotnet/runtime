@@ -2,8 +2,12 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <TestConsoleAppSourceFiles Include="EventSourcePropertyValueTest.cs" />
-    <TestConsoleAppSourceFiles Include="EventSourceManifestTest.cs" />
+    <TestConsoleAppSourceFiles Include="EventSourcePropertyValueTest.cs" >
+      <EnabledProperties>EventSourceSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="EventSourceManifestTest.cs" >
+      <EnabledProperties>EventSourceSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
