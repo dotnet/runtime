@@ -12,4 +12,5 @@ steps:
             -c ${{ parameters.buildConfig }}
             /p:TestReadyToRun=true
             /p:RunSmokeTestsOnly=true
+            /p:UseLocalAppHostPack=true
     displayName: Build and Run Libs Tests with TestReadyToRun

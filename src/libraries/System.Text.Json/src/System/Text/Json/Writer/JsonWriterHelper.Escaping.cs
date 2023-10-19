@@ -21,8 +21,8 @@ namespace System.Text.Json
         //
         // non-zero = allowed, 0 = disallowed
         public const int LastAsciiCharacter = 0x7F;
-        private static ReadOnlySpan<byte> AllowList => new byte[byte.MaxValue + 1]
-        {
+        private static ReadOnlySpan<byte> AllowList => // byte.MaxValue + 1
+        [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // U+0000..U+000F
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // U+0010..U+001F
             1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, // U+0020..U+002F
@@ -41,7 +41,7 @@ namespace System.Text.Json
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // U+00F0..U+00FF
-        };
+        ];
 
 #if NETCOREAPP
         private const string HexFormatString = "X4";

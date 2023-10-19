@@ -638,6 +638,8 @@ public:
 
 #ifdef DEBUG
     unsigned char lvClassInfoUpdated : 1; // true if this var has updated class handle or exactness
+    unsigned char lvIsHoist : 1;          // CSE temp for a hoisted tree
+    unsigned char lvIsMultiDefCSE : 1;    // CSE temp for a multi-def CSE
 #endif
 
     unsigned char lvImplicitlyReferenced : 1; // true if there are non-IR references to this local (prolog, epilog, gc,
@@ -658,6 +660,8 @@ public:
                                                       // disqualify it from local copy prop.
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
+
+    unsigned char lvIsSpan : 1; // The local is a Span<T>
 
 public:
     union {
@@ -960,6 +964,18 @@ public:
     void SetIsNeverNegative(bool value)
     {
         lvIsNeverNegative = value;
+    }
+
+    // Is this is local a Span<T>?
+    bool IsSpan() const
+    {
+        return lvIsSpan;
+    }
+
+    // Is this is local a Span<T>?
+    void SetIsSpan(bool value)
+    {
+        lvIsSpan = value;
     }
 
     /////////////////////
@@ -2306,11 +2322,11 @@ public:
     // lives in a filter.)
     unsigned ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTryRegion);
 
-    // Find the range of basic blocks in which all BBJ_CALLFINALLY will be found that target the 'finallyIndex' region's
-    // handler. Set begBlk to the first block, and endBlk to the block after the last block of the range
-    // (nullptr if the last block is the last block in the program).
+    // Find the range of basic blocks in which all BBJ_CALLFINALLY will be found that target the 'finallyIndex'
+    // region's handler. Set `firstBlock` to the first block, and `lastBlock` to the last block of the range
+    // (the range is inclusive of `firstBlock` and `lastBlock`). Thus, the range is [firstBlock .. lastBlock].
     // Precondition: 'finallyIndex' is the EH region of a try/finally clause.
-    void ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** begBlk, BasicBlock** endBlk);
+    void ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** firstBlock, BasicBlock** lastBlock);
 
 #ifdef DEBUG
     // Given a BBJ_CALLFINALLY block and the EH region index of the finally it is calling, return
@@ -2496,7 +2512,10 @@ public:
 
     GenTree* gtNewLconNode(__int64 value);
 
-    GenTree* gtNewDconNode(double value, var_types type = TYP_DOUBLE);
+    GenTree* gtNewDconNodeF(float value);
+    GenTree* gtNewDconNodeD(double value);
+    GenTree* gtNewDconNode(float value, var_types type) = delete; // use gtNewDconNodeF instead
+    GenTree* gtNewDconNode(double value, var_types type);
 
     GenTree* gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle);
 
@@ -2814,6 +2833,7 @@ public:
 
 #ifdef TARGET_ARM64
     GenTreeFieldList* gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount);
+    GenTreeFieldList* gtConvertParamOpToFieldList(GenTree* op, unsigned fieldCount, CORINFO_CLASS_HANDLE clsHnd);
 #endif
 #endif // FEATURE_HW_INTRINSICS
 
@@ -2898,6 +2918,9 @@ public:
 
     var_types gtTypeForNullCheck(GenTree* tree);
     void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
+
+    GenTree* gtNewAtomicNode(
+        genTreeOps oper, var_types type, GenTree* addr, GenTree* value, GenTree* comparand = nullptr);
 
     GenTree* gtNewTempStore(unsigned         tmp,
                             GenTree*         val,
@@ -3044,7 +3067,7 @@ public:
     bool gtStoreDefinesField(
         LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
 
-    void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq);
+    void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq = nullptr);
 
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
@@ -3198,7 +3221,10 @@ public:
     bool fgSafeBasicBlockCreation;
 #endif
 
-    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
+    BasicBlock* bbNewBasicBlock();
+    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
+    BasicBlock* bbNewBasicBlock(BBswtDesc* jumpSwt);
+    BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind, unsigned jumpOffs);
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -4240,7 +4266,7 @@ private:
 
     void impReimportMarkBlock(BasicBlock* block);
 
-    void impVerifyEHBlock(BasicBlock* block, bool isTryStart);
+    void impVerifyEHBlock(BasicBlock* block);
 
     void impImportBlockPending(BasicBlock* block);
 
@@ -4559,7 +4585,6 @@ public:
         }
     }
 
-    BasicBlock* fgNewBasicBlock(BBjumpKinds jumpKind);
     bool fgEnsureFirstBBisScratch();
     bool fgFirstBBisScratch();
     bool fgBBisScratch(BasicBlock* block);
@@ -4567,31 +4592,34 @@ public:
     void fgExtendEHRegionBefore(BasicBlock* block);
     void fgExtendEHRegionAfter(BasicBlock* block);
 
-    BasicBlock* fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion);
+    BasicBlock* fgNewBBbefore(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion);
+    BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion, BasicBlock* jumpDest = nullptr);
 
-    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects = false);
+    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, BasicBlock* jumpDest = nullptr, bool updateSideEffects = false);
 
     BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
                                 unsigned    tryIndex,
                                 unsigned    hndIndex,
                                 BasicBlock* nearBlk,
+                                BasicBlock* jumpDest    = nullptr,
                                 bool        putInFilter = false,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
     BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
                                 BasicBlock* srcBlk,
+                                BasicBlock* jumpDest    = nullptr,
                                 bool        runRarely   = false,
                                 bool        insertAtEnd = false);
 
-    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind);
+    BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind, BasicBlock* jumpDest = nullptr);
 
     BasicBlock* fgNewBBinRegionWorker(BBjumpKinds jumpKind,
                                       BasicBlock* afterBlk,
                                       unsigned    xcptnIndex,
-                                      bool        putInTryRegion);
+                                      bool        putInTryRegion,
+                                      BasicBlock* jumpDest = nullptr);
 
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
@@ -4866,10 +4894,6 @@ public:
     void fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
-
-    // Do "simple lowering."  This functionality is (conceptually) part of "general"
-    // lowering that is distributed between fgMorph and the lowering phase of LSRA.
-    PhaseStatus fgSimpleLowering();
 
     bool fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast);
 
@@ -5366,21 +5390,6 @@ public:
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
-    // Requires that "block" is a block that returns from
-    // a finally.  Returns the number of successors (jump targets of
-    // of blocks in the covered "try" that did a "LEAVE".)
-    unsigned fgNSuccsOfFinallyRet(BasicBlock* block);
-
-    // Requires that "block" is a block that returns (in the sense of BBJ_EHFINALLYRET) from
-    // a finally.  Returns its "i"th successor (jump targets of
-    // of blocks in the covered "try" that did a "LEAVE".)
-    // Requires that "i" < fgNSuccsOfFinallyRet(block).
-    BasicBlock* fgSuccOfFinallyRet(BasicBlock* block, unsigned i);
-
-private:
-    // Factor out common portions of the impls of the methods above.
-    void fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock** bres, unsigned* nres);
-
 public:
     // For many purposes, it is desirable to be able to enumerate the *distinct* targets of a switch statement,
     // skipping duplicate targets.  (E.g., in flow analyses that are only interested in the set of possible targets.)
@@ -5455,6 +5464,12 @@ public:
     void fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSwitchBlock);
 
     void fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* newTarget, BasicBlock* oldTarget);
+
+    void fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock);
+
+    void fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc);
+
+    void fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ);
 
     void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, BasicBlock* oldTarget);
 
@@ -5594,8 +5609,7 @@ public:
 
     void fgRemoveReturnBlock(BasicBlock* block);
 
-    /* Helper code that has been factored out */
-    inline void fgConvertBBToThrowBB(BasicBlock* block);
+    void fgConvertBBToThrowBB(BasicBlock* block);
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
 
@@ -5917,8 +5931,8 @@ private:
     // small; hence the other fields of MorphAddrContext.
     struct MorphAddrContext
     {
-        size_t m_totalOffset = 0;     // Sum of offsets between the top-level indirection and here (current context).
-        bool   m_used        = false; // Whether this context was used to elide a null check.
+        GenTreeIndir* m_user = nullptr;  // Indirection using this address.
+        size_t        m_totalOffset = 0; // Sum of offsets between the top-level indirection and here (current context).
     };
 
 #ifdef FEATURE_SIMD
@@ -6106,13 +6120,11 @@ private:
     static unsigned acdHelper(SpecialCodeKind codeKind);
 
     AddCodeDsc* fgAddCodeList;
-    bool        fgAddCodeModf;
     bool        fgRngChkThrowAdded;
     AddCodeDsc* fgExcptnTargetCache[SCK_COUNT];
 
-    BasicBlock* fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind);
-
-    BasicBlock* fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, SpecialCodeKind kind);
+    void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
+    PhaseStatus fgCreateThrowHelperBlocks();
 
 public:
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData);
@@ -6125,8 +6137,6 @@ public:
     }
 
 private:
-    bool fgIsCodeAdded();
-
     bool fgIsThrowHlpBlk(BasicBlock* block);
 
 #if !FEATURE_FIXED_OUT_ARGS
@@ -6482,7 +6492,7 @@ public:
         // Returns "true" iff this is a "top entry" loop.
         bool lpIsTopEntry() const
         {
-            if (lpHead->bbNext == lpEntry)
+            if (lpHead->NextIs(lpEntry))
             {
                 assert(lpHead->bbFallsThrough());
                 assert(lpTop == lpEntry);
@@ -6981,9 +6991,10 @@ protected:
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
-    unsigned optCSECandidateCount; // Count of CSE's candidates
+    unsigned optCSECandidateCount; // Count of CSE candidates
     unsigned optCSEstart;          // The first local variable number that is a CSE
-    unsigned optCSEcount;          // The total count of CSE's introduced.
+    unsigned optCSEattempt;        // The number of CSEs attempted so far.
+    unsigned optCSEcount;          // The total count of CSEs introduced.
     weight_t optCSEweight;         // The weight of the current block when we are doing PerformCSE
 
     bool optIsCSEcandidate(GenTree* tree);
@@ -8560,6 +8571,18 @@ private:
     bool isRuntimeIntrinsicsNamespace(const char* ns)
     {
         return strcmp(ns, "System.Runtime.Intrinsics") == 0;
+    }
+
+    bool isSpanClass(const CORINFO_CLASS_HANDLE clsHnd)
+    {
+        if (isIntrinsicType(clsHnd))
+        {
+            const char* namespaceName = nullptr;
+            const char* className     = getClassNameFromMetadata(clsHnd, &namespaceName);
+            return strcmp(namespaceName, "System") == 0 &&
+                   (strcmp(className, "Span`1") == 0 || strcmp(className, "ReadOnlySpan`1") == 0);
+        }
+        return false;
     }
 
 #ifdef FEATURE_SIMD
@@ -11264,17 +11287,17 @@ public:
             {
                 GenTreeCmpXchg* const cmpXchg = node->AsCmpXchg();
 
-                result = WalkTree(&cmpXchg->gtOpLocation, cmpXchg);
+                result = WalkTree(&cmpXchg->Addr(), cmpXchg);
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;
                 }
-                result = WalkTree(&cmpXchg->gtOpValue, cmpXchg);
+                result = WalkTree(&cmpXchg->Data(), cmpXchg);
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;
                 }
-                result = WalkTree(&cmpXchg->gtOpComparand, cmpXchg);
+                result = WalkTree(&cmpXchg->Comparand(), cmpXchg);
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;

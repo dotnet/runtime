@@ -17,17 +17,13 @@ if (MSVC)
     add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif()
 
-  # FIXME This is all questionable but the logs are flooded and nothing else is fixing them.
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4090>) # W1: const problem
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4100>) # W4: unreferenced formal parameter
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4152>) # W4: nonstandard extension, function/data pointer conversion in expression
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4201>) # W4: nonstandard extension used: nameless struct/union
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4210>) # W4: nonstandard extension used: function given file scope
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # W4: signed/unsigned mismatch
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4389>) # W4: signed/unsigned mismatch
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4505>) # W4: unreferenced function with internal linkage has been removed
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4702>) # W4: unreachable code
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4706>) # W4: assignment within conditional expression
+
+  # FIXME we should investigate these mismatches at some point
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # W4: signed/unsigned mismatch
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4389>) # W4: signed/unsigned mismatch
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
@@ -229,8 +225,8 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "linux")
   add_definitions(-D_THREAD_SAFE)
   set(HAVE_CGROUP_SUPPORT 1)
   # Enable the "full RELRO" options (RELRO & BIND_NOW) at link time
-  add_link_options(-Wl,-z,relro)
-  add_link_options(-Wl,-z,now)
+  add_link_options("LINKER:-z,relro")
+  add_link_options("LINKER:-z,now")
 elseif(CLR_CMAKE_HOST_OS STREQUAL "android")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
@@ -284,6 +280,7 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
   add_compile_options(/W4)   # set warning level 4
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4324>) # 'struct_name' : structure was padded due to __declspec(align())
   add_compile_options(/EHsc) # set exception handling behavior
   add_compile_options(/FC)   # use full pathnames in diagnostics
   add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)
@@ -655,7 +652,12 @@ if(LLVM_PREFIX)
 
   # llvm-config --cflags
   set(llvm_cflags "-I${LLVM_PREFIX}/include -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-  set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_include} ${MONO_cxx_std_version} ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+
+  if (HOST_BROWSER)
+    set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_include} ${MONO_cxx_std_version} ${MONO_stdlib} -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  else()
+    set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_include} ${MONO_cxx_std_version} ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  endif()
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
   if(HOST_LINUX)
@@ -694,6 +696,10 @@ if(LLVM_PREFIX)
     string(REPLACE "/EHs-c-" "" llvm_cxxflags "${llvm_cxxflags}")
     # /GR- already enabled and inherited from LLVM flags. Corresponds to -fno-rtti.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags}")
+  elseif(HOST_BROWSER)
+    # emscripten's handling of the different exception modes is complex, so having multiple flags
+    # passed during a single compile is undesirable. we need to set them elsewhere.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fno-rtti")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
   endif()
@@ -815,7 +821,6 @@ else()
   set(EGLIB_BREAKPOINT "G_STMT_START { raise(SIGTRAP); } G_STMT_END")
   if(GCC)
     set(EGLIB_GNUC_UNUSED "__attribute__((__unused__))")
-    set(EGLIB_GNUC_NORETURN "__attribute__((__noreturn__))")
     if(HOST_AMD64 OR HOST_X86)
       set(EGLIB_BREAKPOINT "G_STMT_START { __asm__(\"int \$03\"); } G_STMT_END")
     endif()

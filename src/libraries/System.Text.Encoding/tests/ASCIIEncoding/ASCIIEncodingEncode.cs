@@ -157,7 +157,7 @@ namespace System.Text.Tests
         public void GetChars_WithReplacementFallback(string input, string expectedResult)
         {
             Encoding encoding = Encoding.GetEncoding("ascii", EncoderFallback.ExceptionFallback, new DecoderReplacementFallback("abcde"));
-            Assert.Equal(expectedResult, encoding.GetChars(WideToNarrowStr(input)));
+            Assert.Equal(expectedResult.ToCharArray(), encoding.GetChars(WideToNarrowStr(input)));
         }
 
         [Fact]

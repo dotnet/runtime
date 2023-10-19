@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>exe</OutputType>
+    <!-- Needed for CLRTestTargetUnsupported, NativeAotIncompatible, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CustomMarshalers unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>

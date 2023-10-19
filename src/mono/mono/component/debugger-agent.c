@@ -5233,6 +5233,13 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		nfields = 0;
 		iter = NULL;
 		while ((f = mono_class_get_fields_internal (klass, &iter))) {
+			if (G_UNLIKELY (!f->type)) {
+				ERROR_DECL(error);
+				mono_field_resolve_type (f, error);
+				mono_error_cleanup (error);
+				if (!f->type)
+					continue;
+			}
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 			if (mono_field_is_deleted (f))
@@ -5250,6 +5257,13 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 
 		iter = NULL;
 		while ((f = mono_class_get_fields_internal (klass, &iter))) {
+			if (G_UNLIKELY (!f->type)) {
+				ERROR_DECL(error);
+				mono_field_resolve_type (f, error);
+				mono_error_cleanup (error);
+				if (!f->type)
+					continue;
+			}
 			if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 				continue;
 			if (mono_field_is_deleted (f))
@@ -5328,6 +5342,7 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	gpointer iter = NULL;
 	MonoDomain *d;
 	ErrorCode err;
+	int inlineArraySize = -1;
 
 	/* is_enum, ignored */
 	decode_byte (buf, &buf, limit);
@@ -5335,7 +5350,7 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
 	if (CHECK_PROTOCOL_VERSION(2, 65))
-		decode_int (buf, &buf, limit); //ignore inline array
+		inlineArraySize = decode_int (buf, &buf, limit);
 	if (err != ERR_NONE)
 		return err;
 
@@ -5350,6 +5365,13 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 
 	nfields = decode_int (buf, &buf, limit);
 	while ((f = mono_class_get_fields_internal (klass, &iter))) {
+		if (G_UNLIKELY (!f->type)) {
+			ERROR_DECL(error);
+			mono_field_resolve_type (f, error);
+			mono_error_cleanup (error);
+			if (!f->type)
+				continue;
+		}
 		if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (mono_field_is_deleted (f))
@@ -5360,6 +5382,12 @@ decode_vtype (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 		if (err != ERR_NONE)
 			return err;
 		nfields --;
+		if (CHECK_PROTOCOL_VERSION(2, 66) && inlineArraySize > 0)
+		{
+			int element_size = mono_class_instance_size (mono_class_from_mono_type_internal (f->type)) - MONO_ABI_SIZEOF (MonoObject);
+			for (int i = 1; i < inlineArraySize; i++)
+				decode_value (f->type, domain, ((char*)mono_vtype_get_field_addr (addr, f)) + (i*element_size), buf, &buf, limit, check_field_datatype, extra_space, members_in_extra_space);
+		}
 	}
 	g_assert (nfields == 0);
 
@@ -5434,6 +5462,7 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 	gpointer iter = NULL;
 	MonoDomain *d;
 	ErrorCode err;
+	int inlineArraySize = -1;
 
 	/* is_enum, ignored */
 	decode_byte (buf, &buf, limit);
@@ -5441,7 +5470,7 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 		decode_byte (buf, &buf, limit);
 	klass = decode_typeid (buf, &buf, limit, &d, &err);
 	if (CHECK_PROTOCOL_VERSION(2, 65))
-		decode_int (buf, &buf, limit); //ignore inline array
+		inlineArraySize = decode_int (buf, &buf, limit);
 	if (err != ERR_NONE)
 		goto end;
 
@@ -5451,6 +5480,13 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 
 	nfields = decode_int (buf, &buf, limit);
 	while ((f = mono_class_get_fields_internal (klass, &iter))) {
+		if (G_UNLIKELY (!f->type)) {
+			ERROR_DECL(error);
+			mono_field_resolve_type (f, error);
+			mono_error_cleanup (error);
+			if (!f->type)
+				continue;
+		}
 		if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (mono_field_is_deleted (f))
@@ -5464,6 +5500,14 @@ decode_vtype_compute_size (MonoType *t, MonoDomain *domain, gpointer void_buf, g
 		if (err != ERR_NONE)
 			return err;
 		nfields --;
+		if (CHECK_PROTOCOL_VERSION(2, 66) && inlineArraySize > 0)
+		{
+			for (int i = 1; i < inlineArraySize; i++) {
+				field_size = decode_value_compute_size (f->type, 0, domain, buf, &buf, limit, members_in_extra_space);
+				if (members_in_extra_space)
+					ret += field_size;
+			}
+		}
 	}
 	g_assert (nfields == 0);
 
@@ -8460,6 +8504,13 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		buffer_add_int (buf, nfields);
 
 		while ((f = mono_class_get_fields_internal (klass, &iter))) {
+			if (G_UNLIKELY (!f->type)) {
+				ERROR_DECL(field_error);
+				mono_field_resolve_type (f, field_error);
+				mono_error_cleanup (field_error);
+				if (!f->type)
+					continue;
+			}
 			buffer_add_fieldid (buf, domain, f);
 			buffer_add_string (buf, f->name);
 			buffer_add_typeid (buf, domain, mono_class_from_mono_type_internal (f->type));
@@ -8840,6 +8891,13 @@ set_value:
 				int nfields = 0;
 				gpointer iter = NULL;
 				while ((f = mono_class_get_fields_internal (klass, &iter))) {
+					if (G_UNLIKELY (!f->type)) {
+						ERROR_DECL(field_error);
+						mono_field_resolve_type (f, field_error);
+						mono_error_cleanup (field_error);
+						if (!f->type)
+							continue;
+					}
 					if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 						continue;
 					if (mono_field_is_deleted (f))
@@ -8850,6 +8908,13 @@ set_value:
 
 				iter = NULL;
 				while ((f = mono_class_get_fields_internal (klass, &iter))) {
+					if (G_UNLIKELY (!f->type)) {
+						ERROR_DECL(field_error);
+						mono_field_resolve_type (f, field_error);
+						mono_error_cleanup (field_error);
+						if (!f->type)
+							continue;
+					}
 					if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 						continue;
 					if (mono_field_is_deleted (f))
@@ -10315,13 +10380,21 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	case CMD_OBJECT_REF_GET_VALUES_BY_FIELD_TOKEN: {
 		len = 1;
 		i = 0;
-		MonoClass* klass =  decode_typeid (p, &p, end, NULL, &err);
+		int class_token =  decode_int (p, &p, end);
 		int field_token =  decode_int (p, &p, end);
 		gpointer iter = NULL;
 
-		while ((f = mono_class_get_fields_internal (klass, &iter))) {
-			if (mono_class_get_field_token (f) == field_token)
+		for (k = obj_type; k; k = m_class_get_parent (k)) {
+			if (m_class_get_type_token (k) == class_token) {
+				break;
+			}
+		}
+		if (!k)
+			goto invalid_fieldid;
+		while ((f = mono_class_get_fields_internal (k, &iter))) {
+			if (mono_class_get_field_token (f) == field_token) {
 				goto get_field_value;
+			}
 		}
 		goto invalid_fieldid;
 	}

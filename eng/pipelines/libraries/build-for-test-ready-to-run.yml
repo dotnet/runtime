@@ -39,4 +39,7 @@ jobs:
 
       extraStepsTemplate: '/eng/pipelines/libraries/run-test-ready-to-run.yml'
       extraStepsParameters:
+        archType: ${{ parameters.archType }}
+        buildConfig: ${{ parameters.buildConfig }}
+        osGroup: ${{ parameters.osGroup }}
         variables: ${{ parameters.variables }}

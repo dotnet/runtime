@@ -110,7 +110,7 @@ public static class XmlDictionaryWriterTest
             sb.AppendLine(e.StackTrace);
             sb.AppendLine();
             sb.AppendLine($"The last completed operation before the exception was: {lastCompletedOperation}");
-            Assert.True(false, sb.ToString());
+            Assert.Fail(sb.ToString());
         }
 
         Assert.Equal(expect, actual);

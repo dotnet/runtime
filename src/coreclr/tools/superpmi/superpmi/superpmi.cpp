@@ -441,7 +441,7 @@ int __cdecl main(int argc, char* argv[])
                 mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
             }
         }
-        else if (res.Result == ReplayResult::Success)
+        else if (res.Result == ReplayResult::Error)
         {
             errorCount++;
             LogError("Method %d of size %d failed to load and compile correctly%s (%s).",

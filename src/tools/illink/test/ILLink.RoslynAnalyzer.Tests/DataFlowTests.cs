@@ -162,6 +162,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task InterpolatedStringHandlerDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task MakeGenericDataFlow ()
 		{
 			return RunTest ();

@@ -1,3 +1,6 @@
+# Required for StaticOpenSslLinking
+cmake_minimum_required(VERSION 3.10..3.20)
+
 project(System.Security.Cryptography.Native C)
 
 # These are happening inside of OpenSSL-defined macros out of our control
@@ -76,7 +79,7 @@ if (FEATURE_DISTRO_AGNOSTIC_SSL)
     )
     add_definitions(-DFEATURE_DISTRO_AGNOSTIC_SSL)
     add_compile_options(-pthread)
-    add_linker_flag(-pthread)
+    add_link_options(-pthread)
 endif()
 
 add_library(objlib OBJECT ${NATIVECRYPTO_SOURCES} ${VERSION_FILE_PATH})

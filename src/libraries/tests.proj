@@ -57,6 +57,7 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'" >
     <!-- https://github.com/dotnet/runtime/issues/91676 -->
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-minimal-config\Wasm.Browser.Config.Sample.csproj" />
   </ItemGroup>
 
@@ -370,12 +371,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.X509Certificates\tests\System.Security.Cryptography.X509Certificates.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Cose\tests\System.Security.Cryptography.Cose.Tests.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/91538 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj" />
-    <!-- https://github.com/dotnet/runtime/issues/91593 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels\tests\System.Threading.Channels.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread' and '$(RunDisabledWasmTests)' != 'true'">
@@ -385,6 +380,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
     <!-- Issue: https://github.com/dotnet/runtime/issues/74413 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
+    <!-- https://github.com/dotnet/runtime/issues/91538 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent\tests\System.Collections.Concurrent.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
+    <!-- https://github.com/dotnet/runtime/issues/91593 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Channels\tests\System.Threading.Channels.Tests.csproj" />
   </ItemGroup>
 
   <!-- Aggressive Trimming related failures -->
@@ -433,6 +435,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\RefEmitLoadContext\System.Runtime.Loader.RefEmitLoadContext.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\System.Runtime.Loader.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\CoreCLR\System.Reflection.CoreCLR.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.HostFactoryResolver\tests\Microsoft.Extensions.HostFactoryResolver.Tests.csproj" />
 
     <!-- Most of these need tagging as "requires Ref.Emit". Not much interesting things left to run. Low priority. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.Lightweight\tests\System.Reflection.Emit.Lightweight.Tests.csproj" />
