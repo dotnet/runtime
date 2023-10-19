@@ -233,7 +233,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // Call DnsQuery
-            result = NativeMethods.DnsQuery(recordName, NativeMethods.DnsSrvData, options, IntPtr.Zero, out dnsResults, IntPtr.Zero);
+            result = Interop.Dnsapi.DnsQuery(recordName, NativeMethods.DnsSrvData, options, IntPtr.Zero, out dnsResults, IntPtr.Zero);
             if (result == 0)
             {
                 try

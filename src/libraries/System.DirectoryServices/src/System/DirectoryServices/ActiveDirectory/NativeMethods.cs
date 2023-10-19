@@ -309,23 +309,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int DnsSrvData = 33;
         internal const int DnsQueryBypassCache = 8;
 
-        /*DNS_STATUS WINAPI DnsQuery (
-            LPSTR lpstrName,
-            WORD wType,
-            DWORD fOptions,
-            PIP4_ARRAY aipServers,
-            PDNS_RECORD *ppQueryResultsSet,
-            PVOID *pReserved
-            );*/
-        [LibraryImport(global::Interop.Libraries.Dnsapi, EntryPoint = "DnsQuery_W", StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int DnsQuery(
-            string recordName,
-            short recordType,
-            int options,
-            IntPtr servers,
-            out IntPtr dnsResultList,
-            IntPtr reserved);
-
         /*VOID WINAPI DnsRecordListFree(
             PDNS_RECORD pRecordList,
             DNS_FREE_TYPE FreeType
