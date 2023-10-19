@@ -50132,8 +50132,8 @@ void gc_heap::do_post_gc()
         size_t total_begin_data_size = get_total_begin_data_size(gen_number);
         size_t total_survived_size = get_total_survived_size(gen_number);
         float rate = total_begin_data_size != 0 ? (total_survived_size / (float)total_begin_data_size) : 0;
-        dprintf (6666, ("gen %d begin_data_size %zd survived %zd rate %.3f",
-            gen_number, total_begin_data_size, total_survived_size, rate));
+        dprintf (6666, ("(%s) gen %d begin_data_size %zd survived %zd rate %.3f",
+            str_gc_type, gen_number, total_begin_data_size, total_survived_size, rate));
     }
 
     dprintf (6666, (ThreadStressLog::gcDetailedEndMsg(),
