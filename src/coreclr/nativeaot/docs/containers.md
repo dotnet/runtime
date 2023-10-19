@@ -27,95 +27,71 @@ The following Dockerfiles demonstrate how to construct a working build environme
 
 ### x64
 
-The following pattern demonstrates the approach for x64.
+The following pattern demonstrates building an app x64.
 
-First build image.
+Build a cross-build image for the x64 target.
 
 ```bash
-$ docker build --pull -t cross-build -f Dockerfile.cross-build-x64-x64 .
+$ docker build --pull -t cross-build-x64 -f Dockerfile.cross-build-x64-x64 .
 ```
 
-Then build the app, with volume mounting, using the [releasesapi](https://github.com/dotnet/dotnet-docker/tree/main/samples/releasesapi) sample.
+Then navigate to the directory where your project is located. This example creates one via `dotnet new` for demonstration purposes.
 
 ```bash
-$ docker run --rm -it -v $(pwd):/source -w /source cross-build dotnet publish -o app -p:SysRoot=/crossrootfs/x64 -p:LinkerFlavor=lld releasesapi.csproj
-$  ls app
-appsettings.Development.json  nuget.config  releasesapi.dbg
-appsettings.json              releasesapi
-$ ./app/releasesapi
-info: Microsoft.Hosting.Lifetime[14]
-      Now listening on: http://localhost:5000
-info: Microsoft.Hosting.Lifetime[0]
-      Application started. Press Ctrl+C to shut down.
-info: Microsoft.Hosting.Lifetime[0]
-      Hosting environment: Production
-info: Microsoft.Hosting.Lifetime[0]
-      Content root path: /home/rich/git/dotnet-docker/samples/releasesapi
+$ mkdir cross-build-test
+$ cd cross-build-test/
+$ dotnet new console --aot
 ```
 
-We can test the app in a container, again through volume mounting.
+Build the app, with volume mounting
 
 ```bash
-$ docker run --rm -d -v $(pwd)/app:/app -w /app -p 8000:80 mcr.microsoft.com/dotnet/runtime-deps:6.0 ./releasesapi
-219e1df9e66906531ee609b8cb9b9fa8eccef566a8682b897798d80b3905aaf5
-$ curl http://localhost:8000/healthz
-Healthy
-$ docker exec 219e1df9e66906531ee609b8cb9b9fa8eccef566a8682b897798d80b3905aaf5 cat /etc/os-release | head -n 1
+$ docker run --rm -it -v $(pwd):/source -w /source cross-build-x64 dotnet publish -o app -p:SysRoot=/crossrootfs/x64 -p:LinkerFlavor=lld 
+$ ls -l app/
+total 4004
+-rwxr-xr-x 1 root root 1407576 Oct 19 10:25 cross-build-test
+-rwxr-xr-x 1 root root 2689720 Oct 19 10:25 cross-build-test.dbg
+$ ./app/cross-build-test
+Hello, World!
+```
+
+The app can be tested in a container, again through volume mounting.
+
+```bash
+$ docker run --rm -v $(pwd)/app:/app -w /app mcr.microsoft.com/dotnet/runtime-deps:6.0 ./cross-build-test
+Hello, World!
+```
+
+That image uses an older Linux distribution.
+
+```bash
+$ docker run --rm mcr.microsoft.com/dotnet/runtime-deps:6.0 bash -c "cat /etc/os-release | head -n 1"
 PRETTY_NAME="Debian GNU/Linux 11 (bullseye)"
-$ docker kill 219e1df9e66906531ee609b8cb9b9fa8eccef566a8682b897798d80b3905aaf5
-219e1df9e66906531ee609b8cb9b9fa8eccef566a8682b897798d80b3905aaf5
 ```
 
 ### Arm64
 
-Much the same pattern can be used  to target Arm64 with the `x64-arm64` Dockerfile, again on an x64 host.
+The same pattern can be used for Arm64. The differences are demonstrated below, building the same console app.
 
+Build a cross-build image for the Arm64 target.
 
 ```bash
 $ docker build --pull -t cross-build-arm64 -f Dockerfile.cross-build-x64-arm64 .
-$ docker run --rm -it -v $(pwd):/source -w /source cross-build-arm64 dotnet publish -a arm64 -o app-arm64 -p:SysRoot=/crossrootfs/arm64 -p:LinkerFlavor=lld releasesapi.csproj
-$ ./app-arm64/releasesapi
--bash: ./app-arm64/releasesapi: cannot execute binary file: Exec format error
-$ file app-arm64/releasesapi
-app-arm64/releasesapi: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, for GNU/Linux 3.7.0, BuildID[sha1]=72212bcbd040059f1c2e6d55f640d52f7cbe2faf, stripped
 ```
 
-Note the use of `-a arm64` and `-p:SysRoot=/crossrootfs/arm64` in the `dotnet publish` command. Those are required to get the build to use and generate Arm64 compatible assets.
-
-As expected, the Arm64 app fails to run on an x64 machine. The app can then be copied to an Arm64 machine and it will work as demonstrated on an Apple M1 machine (in an Arm64 Linux container). Note that I had to run `chmod +x` on the executable first.
+Build the app, with volume mounting.
 
 ```bash
-$ docker run --rm  -d -v $(pwd):/app -w /app -p 8000:8080 mcr.microsoft.com/dotnet/nightly/runtime-deps:8.0-jammy-chiseled-aot ./releasesapi
-67fd87ef2975cd441e71ff4a3cd5dc288c4d5c9b000f2219a5c456d35c13c76e
-$ curl http://localhost:8000/healthz
-Healthy
-$ docker kill 67fd87ef2975cd441e71ff4a3cd5dc288c4d5c9b000f2219a5c456d35c13c76e
-67fd87ef2975cd441e71ff4a3cd5dc288c4d5c9b000f2219a5c456d35c13c76e
-$ uname -a
-Darwin Richs-Air.phantomdomain 23.0.0 Darwin Kernel Version 23.0.0: Fri Sep 15 14:41:34 PDT 2023; root:xnu-10002.1.13~1/RELEASE_ARM64_T8103 arm64
+$ docker run --rm -it -v $(pwd):/source -w /source cross-build-arm64 dotnet publish -a arm64 -o app-arm64 -p:SysRoot=/crossrootfs/arm64 -p:LinkerFlavor=lld 
 ```
 
-### Complete example
+Notice all the places where `arm64` is used in that command.
 
-The following Dockerfile provides a complete proof of concept for building an app and "deploying" it to Ubuntu 16.04.
-
-- [Dockerfile.cross-build-ubuntu-1604](Dockerfile.cross-build-ubuntu-1604)
-
-This Dockerfile is written as if it was run from [this directory](https://github.com/dotnet/dotnet-docker/tree/main/samples/releasesapi).
-
-It can be built and run with the following:
+The resulting executable won't run on an x64 machine and must be run on a Linux Arm64 machine (because that is what it targets). The binary can be inspected to validate its nature.
 
 ```bash
-$ docker build --pull -t app -f Dockerfile.cross-build-ubuntu-1604 .
-$ docker run --rm -it --entrypoint bash app -c "cat /etc/os-release | head -n 2"
-NAME="Ubuntu"
-VERSION="16.04.7 LTS (Xenial Xerus)"
-docker run --rm -d -p 8000:8080 app
-e72f93de034db4a1a12d25ce756c96235e5f584da8b1d440e9d6d083f8b5418d
-$ curl http://localhost:8000/healthz
-Healthy
-$ docker kill e72f93de034db4a1a12d25ce756c96235e5f584da8b1d440e9d6d083f8b5418d
-e72f93de034db4a1a12d25ce756c96235e5f584da8b1d440e9d6d083f8b5418d
+$ file app-arm64/cross-build-test
+app-arm64/cross-build-test: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, for GNU/Linux 3.7.0, BuildID[sha1]=702dc1a1411a3fe5aed949b7e1536fd92475010c, stripped
+$ ./app-arm64/cross-build-test
+-bash: ./app-arm64/cross-build-test: cannot execute binary file: Exec format error
 ```
-
-The app also has a `releases` endpoint.
