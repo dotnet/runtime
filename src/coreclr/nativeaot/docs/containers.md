@@ -55,18 +55,11 @@ $ ./app/cross-build-test
 Hello, World!
 ```
 
-The app can be tested in a container, again through volume mounting.
+The app can be tested in an old Linux container, again through volume mounting.
 
 ```bash
-$ docker run --rm -v $(pwd)/app:/app -w /app mcr.microsoft.com/dotnet/runtime-deps:6.0 ./cross-build-test
+$ docker run --rm -v $(pwd)/app:/app -w /app ubuntu:16.04 ./cross-build-test
 Hello, World!
-```
-
-That image uses an older Linux distribution.
-
-```bash
-$ docker run --rm mcr.microsoft.com/dotnet/runtime-deps:6.0 bash -c "cat /etc/os-release | head -n 1"
-PRETTY_NAME="Debian GNU/Linux 11 (bullseye)"
 ```
 
 ### Arm64
