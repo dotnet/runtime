@@ -329,6 +329,9 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
 
     uint8_t* pTopOfStackInFunction = (uint8_t*)pCf->GetRegisterSet()->SP;
     uint32_t sizeofArgStack = (uint32_t)pCf->GetFunction()->SizeOfArgStack();
+#ifdef TARGET_AMD64  // AND Target windows
+    sizeofArgStack = max(sizeofArgStack, 32); // On Windows X64 there is always a parameter area of 32 bytes, which is for use by the called function
+#endif
     uint8_t* pBottomOfStackInFunction = (uint8_t*)::GetSP(pCf->GetRegisterSet()->pCallerContext) + sizeofArgStack;
     uint32_t sizeofEntireMeaningfulStack = (uint32_t)(pBottomOfStackInFunction - pTopOfStackInFunction);
     sizeofEntireMeaningfulStack -= (uint32_t)taskletCaptureData->stackToIgnoreFromPreviousFrame;
