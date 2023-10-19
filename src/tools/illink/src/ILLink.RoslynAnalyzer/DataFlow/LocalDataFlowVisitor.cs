@@ -399,11 +399,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 				// The second argument is necessary to create multiple branches so that the compiler
 				// turns both arguments into flow capture references, instead of just passing a local
-				// reference for s).
+				// reference for s.
 
-				// Treat this the same as theh IsInitialization case.
-				Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference),
-					$"{operation.Syntax.GetLocation ().GetLineSpan ()}");
+				// This can also happen for a deconstruction assignments, where the write is not to a byref.
+				// Once the analyzer implements support for deconstruction assignments (https://github.com/dotnet/linker/issues/3158),
+				// we can try enabling this assert to ensure that this case is only hit for byrefs.
+				// Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference),
+				//     $"{operation.Syntax.GetLocation ().GetLineSpan ()}");
 				return TopValue;
 			}
 
