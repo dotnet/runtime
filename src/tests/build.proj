@@ -120,7 +120,8 @@
     </RemoveDuplicates>
     <ItemGroup>
       <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/**/*.dll" Exclude="@(NoMonoAotAssemblyPaths)" />
-      <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll;$(CORE_ROOT)/Microsoft.CodeAnalysis.VisualBasic.dll" />
+      <!-- <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll;$(CORE_ROOT)/Microsoft.CodeAnalysis.VisualBasic.dll" /> -->
+      <CoreRootDlls Include="$(CORE_ROOT)/System.Private.CoreLib.dll" />
       <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestsAndAssociatedAssemblies);@(CoreRootDlls)" />
       <AllDlls Condition="'$(MonoFullAot)' != 'true'" Include="@(TestsAndAssociatedAssemblies)" />
     </ItemGroup>
@@ -148,13 +149,13 @@
       <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
     </ItemGroup>
-    <!-- <ItemGroup Condition="'$(MonoFullAot)' == 'true' and '$(TargetOS)' == 'linux'">
+    <ItemGroup Condition="'$(MonoFullAot)' == 'true' and '$(TargetOS)' == 'linux'">
       <MonoAotOption Include="as-name=clang" />
       <MonoAotOption Include="as-options='-c -x assembler'" />
       <MonoAotOption Include="tool-prefix=''" />
       <MonoAotOption Include="ld-name=clang" />
       <MonoAotOption Include="ld-options='-fuse-ld=lld'" />
-    </ItemGroup> -->
+    </ItemGroup>
     <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64'">
       <MonoAotOption Include="mattr=crc" />
       <MonoAotOption Include="mattr=crypto" />
