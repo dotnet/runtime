@@ -94,7 +94,7 @@ namespace Microsoft.Interop
 
             if (type.SpecialType == SpecialType.System_Object && marshalAsInfo is MarshalAsScalarInfo(UnmanagedType.Struct, _))
             {
-                return CustomMarshallingInfoHelper.CreateMarshallingInfoByMarshallerTypeName(_compilation, type, TypeNames.OleVariantMarshaller);
+                return CustomMarshallingInfoHelper.CreateMarshallingInfoByMarshallerTypeName(_compilation, type, TypeNames.ComVariantMarshaller);
             }
 
             return marshalAsInfo;

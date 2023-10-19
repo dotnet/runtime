@@ -11,7 +11,7 @@ using System.Runtime.InteropServices.Marshalling;
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
     /// <summary>
-    /// VariantBuilder handles packaging of arguments into an OleVariant for a call to IDispatch.Invoke
+    /// VariantBuilder handles packaging of arguments into an ComVariant for a call to IDispatch.Invoke
     /// </summary>
     internal sealed class VariantBuilder
     {
@@ -91,8 +91,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     return null;
 
                 case VarEnum.VT_NULL:
-                    // paramVariants._elementN = OleVariant.Null;
-                    return Expression.Assign(variant, Expression.Property(null, typeof(OleVariant).GetProperty(nameof(OleVariant.Null), BindingFlags.Public | BindingFlags.Static)));
+                    // paramVariants._elementN = ComVariant.Null;
+                    return Expression.Assign(variant, Expression.Property(null, typeof(ComVariant).GetProperty(nameof(ComVariant.Null), BindingFlags.Public | BindingFlags.Static)));
 
                 default:
                     Debug.Assert(false, "Unexpected VarEnum");
@@ -130,7 +130,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 if (_argBuilder is VariantArgBuilder)
                 {
                     Debug.Assert(TempVariable != null);
-                    return Expression.Call(TempVariable, typeof(OleVariant).GetMethod(nameof(OleVariant.Dispose)));
+                    return Expression.Call(TempVariable, typeof(ComVariant).GetMethod(nameof(ComVariant.Dispose)));
                 }
                 return null;
             }
@@ -148,7 +148,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 case VarEnum.VT_RECORD:
                 case VarEnum.VT_VARIANT:
                     // paramVariants._elementN.Dispose()
-                    return Expression.Call(_variant, typeof(OleVariant).GetMethod(nameof(OleVariant.Dispose)));
+                    return Expression.Call(_variant, typeof(ComVariant).GetMethod(nameof(ComVariant.Dispose)));
 
                 default:
                     Debug.Assert(_targetComType.IsPrimitiveType(), "Unexpected VarEnum");

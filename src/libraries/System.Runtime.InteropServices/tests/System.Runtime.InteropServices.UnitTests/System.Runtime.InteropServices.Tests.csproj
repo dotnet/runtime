@@ -30,6 +30,8 @@
     <Compile Include="System\Runtime\InteropServices\ComRegisterFunctionAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComSourceInterfacesAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComUnregisterFunctionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComVariantMarshallerTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComVariantTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComVisibleAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CurrencyWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultCharSetAttributeTests.cs" />
@@ -152,8 +154,6 @@
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\MessageSendTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\PendingExceptionTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\LibObjC.cs" />
-    <Compile Include="System\Runtime\InteropServices\OleVariantMarshallerTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\OleVariantTests.cs" />
     <Compile Include="System\Runtime\InteropServices\PosixSignalContextTests.cs" />
     <Compile Include="System\Runtime\InteropServices\PosixSignalRegistrationTests.cs" />
     <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />

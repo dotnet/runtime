@@ -14,120 +14,120 @@ namespace System.Runtime.InteropServices.Tests
 {
     // NanoServer doesn't have any of the OLE Automation stack available, so we can't run these tests there.
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-    public partial class OleVariantMarshallerTests
+    public partial class ComVariantMarshallerTests
     {
         [Fact]
         public void Null_Marshals_To_Empty()
         {
-            Assert.Equal(VarEnum.VT_EMPTY, OleVariantMarshaller.ConvertToUnmanaged(null).VarType);
-            Assert.Null(OleVariantMarshaller.ConvertToManaged(default));
+            Assert.Equal(VarEnum.VT_EMPTY, ComVariantMarshaller.ConvertToUnmanaged(null).VarType);
+            Assert.Null(ComVariantMarshaller.ConvertToManaged(default));
         }
 
         [Fact]
         public void DBNull_Marshals_To_Null()
         {
-            Assert.Equal(VarEnum.VT_NULL, OleVariantMarshaller.ConvertToUnmanaged(DBNull.Value).VarType);
-            Assert.Same(DBNull.Value, OleVariantMarshaller.ConvertToManaged(OleVariant.Null));
+            Assert.Equal(VarEnum.VT_NULL, ComVariantMarshaller.ConvertToUnmanaged(DBNull.Value).VarType);
+            Assert.Same(DBNull.Value, ComVariantMarshaller.ConvertToManaged(ComVariant.Null));
         }
 
         [Fact]
         public void String_Marshals_To_BStr()
         {
             string value = "Hello";
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_BSTR, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void BStrWrapper_Marshals_To_BStr()
         {
             string value = "Hello";
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(new BStrWrapper(value));
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(new BStrWrapper(value));
             Assert.Equal(VarEnum.VT_BSTR, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void Int32_Marshals_To_I4()
         {
             int value = 42;
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_I4, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void UInt32_Marshals_To_UI4()
         {
             uint value = 42;
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_UI4, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void Int16_Marshals_To_I2()
         {
             short value = 42;
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_I2, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void UInt16_Marshals_To_UI2()
         {
             ushort value = 42;
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_UI2, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void Byte_Marshals_To_UI1()
         {
             byte value = 42;
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_UI1, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void SByte_Marshals_To_I1()
         {
             sbyte value = 42;
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_I1, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void Double_Marshals_To_R8()
         {
             double value = 42.0;
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_R8, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void Single_Marshals_To_R4()
         {
             float value = 42.0f;
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_R4, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [InlineData(true)]
@@ -135,37 +135,37 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         public void Boolean_Marshals_To_BOOL(bool value)
         {
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_BOOL, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void ErrorWrapper_Maps_To_VT_ERROR()
         {
             ErrorWrapper errorWrapper = new ErrorWrapper(42);
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(errorWrapper);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(errorWrapper);
             Assert.Equal(VarEnum.VT_ERROR, variant.VarType);
-            Assert.Equal(errorWrapper.ErrorCode, Assert.IsType<int>(OleVariantMarshaller.ConvertToManaged(variant)));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(errorWrapper.ErrorCode, Assert.IsType<int>(ComVariantMarshaller.ConvertToManaged(variant)));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void VariantWrapper_Throws()
         {
             VariantWrapper wrapper = new VariantWrapper(42);
-            Assert.Throws<ArgumentException>("managed", () => OleVariantMarshaller.ConvertToUnmanaged(wrapper));
+            Assert.Throws<ArgumentException>("managed", () => ComVariantMarshaller.ConvertToUnmanaged(wrapper));
         }
 
         [Fact]
         public void Decimal_Marshals_To_DECIMAL()
         {
             decimal value = 42.0m;
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_DECIMAL, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
@@ -174,10 +174,10 @@ namespace System.Runtime.InteropServices.Tests
             // OLE dates do not have time zones and do not support sub-millisecond precision.
             // Select a date format that includes the maximum precision that OLE supports.
             DateTime value = DateTime.Parse("2023-10-17T14:47:32.6390000");
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(value);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(value);
             Assert.Equal(VarEnum.VT_DATE, variant.VarType);
-            Assert.Equal(value, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -185,10 +185,10 @@ namespace System.Runtime.InteropServices.Tests
         public void CurrentyWrapper_Marshals_To_CY()
         {
             decimal value = 42.0m;
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(new CurrencyWrapper(value));
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(new CurrencyWrapper(value));
             Assert.Equal(VarEnum.VT_CY, variant.VarType);
-            Assert.Equal(value, Assert.IsType<decimal>(OleVariantMarshaller.ConvertToManaged(variant)));
-            OleVariantMarshaller.Free(variant);
+            Assert.Equal(value, Assert.IsType<decimal>(ComVariantMarshaller.ConvertToManaged(variant)));
+            ComVariantMarshaller.Free(variant);
         }
 #pragma warning restore CS0618 // Type or member is obsolete
 
@@ -209,41 +209,41 @@ namespace System.Runtime.InteropServices.Tests
         public unsafe void GeneratedComInterfaceType_Marshals_To_UNKNOWN()
         {
             var obj = new ComExposedType();
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(obj);
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(obj);
             Assert.Equal(VarEnum.VT_UNKNOWN, variant.VarType);
             // Validate that the correct object is wrapped.
             Assert.True(ComWrappers.TryGetObject(variant.GetRawDataRef<nint>(), out object wrappedObj));
             Assert.Same(obj, wrappedObj);
             // Validate that we use the same ComWrappers instance as ComInterfaceMarshaller<T>.
             Assert.Same(obj, ComInterfaceMarshaller<object>.ConvertToManaged((void*)variant.GetRawDataRef<nint>()));
-            Assert.Same(obj, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Same(obj, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void UnknownWrapper_Of_GeneratedComInterfaceType_Marshals_To_UNKNOWN()
         {
             var obj = new ComExposedType();
-            OleVariant variant = OleVariantMarshaller.ConvertToUnmanaged(new UnknownWrapper(obj));
+            ComVariant variant = ComVariantMarshaller.ConvertToUnmanaged(new UnknownWrapper(obj));
             Assert.Equal(VarEnum.VT_UNKNOWN, variant.VarType);
             Assert.True(ComWrappers.TryGetObject(variant.GetRawDataRef<nint>(), out object wrappedObj));
             Assert.Same(obj, wrappedObj);
-            Assert.Same(obj, OleVariantMarshaller.ConvertToManaged(variant));
-            OleVariantMarshaller.Free(variant);
+            Assert.Same(obj, ComVariantMarshaller.ConvertToManaged(variant));
+            ComVariantMarshaller.Free(variant);
         }
 
         [Fact]
         public void INT_Marshals_as_Int()
         {
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_INT, 42);
-            Assert.Equal(42, Assert.IsType<int>(OleVariantMarshaller.ConvertToManaged(variant)));
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_INT, 42);
+            Assert.Equal(42, Assert.IsType<int>(ComVariantMarshaller.ConvertToManaged(variant)));
         }
 
         [Fact]
         public void UINT_Marshals_as_UInt()
         {
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_UINT, 42u);
-            Assert.Equal(42u, Assert.IsType<uint>(OleVariantMarshaller.ConvertToManaged(variant)));
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_UINT, 42u);
+            Assert.Equal(42u, Assert.IsType<uint>(ComVariantMarshaller.ConvertToManaged(variant)));
         }
 
         [InlineData(VarEnum.VT_I1, (byte)42)]
@@ -272,22 +272,22 @@ namespace System.Runtime.InteropServices.Tests
         public unsafe void ByRef_Primitives(VarEnum elementType, object valueToSet)
         {
             long storage = 0;
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_BYREF | elementType, (nint)(&storage));
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_BYREF | elementType, (nint)(&storage));
             // Set up the marshaller
-            OleVariantMarshaller.RefPropogate marshaller = default;
+            ComVariantMarshaller.RefPropogate marshaller = default;
             marshaller.FromUnmanaged(variant);
 
             // Marshal back the new value
             marshaller.FromManaged(valueToSet);
 
-            OleVariant updated = marshaller.ToUnmanaged();
+            ComVariant updated = marshaller.ToUnmanaged();
 
             // Make sure we didn't change the pointer.
             Assert.Equal(variant.GetRawDataRef<nint>(), updated.GetRawDataRef<nint>());
 
             // Validate that the new value of the variant is the same as the value we set.
             // Go through IConvertible to handle the case of "same size, different signedness" (e.g. int and uint)
-            Assert.Equal(valueToSet, ((IConvertible)OleVariantMarshaller.ConvertToManaged(variant)).ToType(valueToSet.GetType(), null));
+            Assert.Equal(valueToSet, ((IConvertible)ComVariantMarshaller.ConvertToManaged(variant)).ToType(valueToSet.GetType(), null));
         }
     }
 }

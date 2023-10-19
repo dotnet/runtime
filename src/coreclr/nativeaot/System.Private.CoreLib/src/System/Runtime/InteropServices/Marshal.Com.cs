@@ -122,7 +122,7 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(pDstNativeVariant);
 
-            OleVariant* data = (OleVariant*)pDstNativeVariant;
+            ComVariant* data = (ComVariant*)pDstNativeVariant;
             if (obj == null)
             {
                 *data = default;
@@ -133,75 +133,75 @@ namespace System.Runtime.InteropServices
             {
                 // Int and String most used types.
                 case int value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case string value:
-                    *data = OleVariant.Create(new BStrWrapper(value));
+                    *data = ComVariant.Create(new BStrWrapper(value));
                     break;
 
                 case bool value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case byte value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case sbyte value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case short value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case ushort value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case uint value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case long value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case ulong value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case float value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case double value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case DateTime value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case decimal value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case char value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case BStrWrapper value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
 #pragma warning disable 0618 // CurrencyWrapper is obsolete
                 case CurrencyWrapper value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
 #pragma warning restore 0618
                 case UnknownWrapper value:
-                    *data = OleVariant.CreateRaw(VarEnum.VT_UNKNOWN, GetIUnknownForObject(value.WrappedObject));
+                    *data = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, GetIUnknownForObject(value.WrappedObject));
                     break;
                 case DispatchWrapper value:
-                    *data = OleVariant.CreateRaw(VarEnum.VT_DISPATCH, GetIDispatchForObject(value.WrappedObject));
+                    *data = ComVariant.CreateRaw(VarEnum.VT_DISPATCH, GetIDispatchForObject(value.WrappedObject));
                     break;
                 case ErrorWrapper value:
-                    *data = OleVariant.Create(value);
+                    *data = ComVariant.Create(value);
                     break;
                 case VariantWrapper value:
                     throw new ArgumentException();
                 case DBNull value:
-                    *data = OleVariant.Null;
+                    *data = ComVariant.Null;
                     break;
                 case Missing value:
-                    *data = OleVariant.CreateRaw(VarEnum.VT_ERROR, DISP_E_PARAMNOTFOUND);
+                    *data = ComVariant.CreateRaw(VarEnum.VT_ERROR, DISP_E_PARAMNOTFOUND);
                     break;
                 case IConvertible value:
                     switch (value.GetTypeCode())
@@ -210,55 +210,55 @@ namespace System.Runtime.InteropServices
                             *data = default;
                             break;
                         case TypeCode.Object:
-                            *data = OleVariant.CreateRaw(VarEnum.VT_UNKNOWN, GetIUnknownForObject(value));
+                            *data = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, GetIUnknownForObject(value));
                             break;
                         case TypeCode.DBNull:
-                            *data = OleVariant.Null;
+                            *data = ComVariant.Null;
                             break;
                         case TypeCode.Boolean:
-                            *data = OleVariant.Create(value.ToBoolean(null));
+                            *data = ComVariant.Create(value.ToBoolean(null));
                             break;
                         case TypeCode.Char:
-                            *data = OleVariant.Create(value.ToChar(null));
+                            *data = ComVariant.Create(value.ToChar(null));
                             break;
                         case TypeCode.SByte:
-                            *data = OleVariant.Create(value.ToSByte(null));
+                            *data = ComVariant.Create(value.ToSByte(null));
                             break;
                         case TypeCode.Byte:
-                            *data = OleVariant.Create(value.ToByte(null));
+                            *data = ComVariant.Create(value.ToByte(null));
                             break;
                         case TypeCode.Int16:
-                            *data = OleVariant.Create(value.ToInt16(null));
+                            *data = ComVariant.Create(value.ToInt16(null));
                             break;
                         case TypeCode.UInt16:
-                            *data = OleVariant.Create(value.ToUInt16(null));
+                            *data = ComVariant.Create(value.ToUInt16(null));
                             break;
                         case TypeCode.Int32:
-                            *data = OleVariant.Create(value.ToInt32(null));
+                            *data = ComVariant.Create(value.ToInt32(null));
                             break;
                         case TypeCode.UInt32:
-                            *data = OleVariant.Create(value.ToUInt32(null));
+                            *data = ComVariant.Create(value.ToUInt32(null));
                             break;
                         case TypeCode.Int64:
-                            *data = OleVariant.Create(value.ToInt64(null));
+                            *data = ComVariant.Create(value.ToInt64(null));
                             break;
                         case TypeCode.UInt64:
-                            *data = OleVariant.Create(value.ToUInt64(null));
+                            *data = ComVariant.Create(value.ToUInt64(null));
                             break;
                         case TypeCode.Single:
-                            *data = OleVariant.Create(value.ToSingle(null));
+                            *data = ComVariant.Create(value.ToSingle(null));
                             break;
                         case TypeCode.Double:
-                            *data = OleVariant.Create(value.ToDouble(null));
+                            *data = ComVariant.Create(value.ToDouble(null));
                             break;
                         case TypeCode.Decimal:
-                            *data = OleVariant.Create(value.ToDecimal(null));
+                            *data = ComVariant.Create(value.ToDecimal(null));
                             break;
                         case TypeCode.DateTime:
-                            *data = OleVariant.Create(value.ToDateTime(null));
+                            *data = ComVariant.Create(value.ToDateTime(null));
                             break;
                         case TypeCode.String:
-                            *data = OleVariant.Create(new BStrWrapper(value.ToString(null)));
+                            *data = ComVariant.Create(new BStrWrapper(value.ToString(null)));
                             break;
                         default:
                             throw new NotSupportedException();
@@ -274,7 +274,7 @@ namespace System.Runtime.InteropServices
                 case ValueType:
                     throw new NotSupportedException("VT_RECORD");
                 default:
-                    *data = OleVariant.CreateRaw(VarEnum.VT_UNKNOWN, GetIDispatchForObject(obj));
+                    *data = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, GetIDispatchForObject(obj));
                     break;
             }
         }
@@ -304,7 +304,7 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(pSrcNativeVariant);
 
-            OleVariant* data = (OleVariant*)pSrcNativeVariant;
+            ComVariant* data = (ComVariant*)pSrcNativeVariant;
 
             switch (data->VarType)
             {

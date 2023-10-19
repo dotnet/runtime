@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
 
         public Collections.IEnumerator GetEnumerator()
         {
-            OleVariant result;
+            ComVariant result;
             unsafe
             {
                 void* resultLocal = &result;

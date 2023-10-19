@@ -11,14 +11,14 @@ namespace System.Runtime.InteropServices
     [SupportedOSPlatform("windows")]
     internal static class BuiltInInteropVariantExtensions
     {
-        private static unsafe ref T GetByRefDataRef<T>(this ref OleVariant variant)
+        private static unsafe ref T GetByRefDataRef<T>(this ref ComVariant variant)
             where T : unmanaged
         {
             Debug.Assert(variant.VarType.HasFlag(VarEnum.VT_BYREF));
             return ref Unsafe.AsRef<T>((void*)variant.GetRawDataRef<nint>());
         }
 
-        public static unsafe void CopyFromIndirect(this ref OleVariant variant, object value)
+        public static unsafe void CopyFromIndirect(this ref ComVariant variant, object value)
         {
             VarEnum vt = (VarEnum)(((int)variant.VarType) & ~((int)VarEnum.VT_BYREF));
 
@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices
 
             if ((vt & VarEnum.VT_ARRAY) != 0)
             {
-                OleVariant vArray;
+                ComVariant vArray;
                 Marshal.GetNativeVariantForObject(value, (IntPtr)(void*)&vArray);
                 variant.GetRawDataRef<IntPtr>() = vArray.GetRawDataRef<IntPtr>();
                 return;
@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices
         /// Get the managed object representing the Variant.
         /// </summary>
         /// <returns></returns>
-        public static object? ToObject(this ref OleVariant variant)
+        public static object? ToObject(this ref ComVariant variant)
         {
             // Check the simple case upfront
             if (variant.VarType == VarEnum.VT_EMPTY)

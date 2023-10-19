@@ -46,7 +46,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         /// <summary>
         /// Gets the managed type that an object needs to be converted to in order for it to be able
-        /// to be represented as an OleVariant.
+        /// to be represented as an ComVariant.
         ///
         /// In general, there is a many-to-many mapping between Type and VarEnum. However, this method
         /// returns a simple mapping that is needed for the current implementation. The reason for the
@@ -375,7 +375,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         /// <summary>
-        /// Get the OleVariant type that argument should be marshaled as for a call to COM
+        /// Get the ComVariant type that argument should be marshaled as for a call to COM
         /// </summary>
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static VariantBuilder GetVariantBuilder(Type argumentType)
@@ -447,7 +447,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return GetSimpleArgBuilder(elementType, elementVarEnum);
         }
 
-        // This helper can produce a builder for types that are directly supported by OleVariant or our extension methods.
+        // This helper can produce a builder for types that are directly supported by ComVariant or our extension methods.
         private static SimpleArgBuilder GetSimpleArgBuilder(Type elementType, VarEnum elementVarEnum)
         {
             SimpleArgBuilder argBuilder;

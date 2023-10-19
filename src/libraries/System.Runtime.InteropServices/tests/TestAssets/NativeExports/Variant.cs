@@ -15,7 +15,7 @@ namespace NativeExports
     public static unsafe class Variant
     {
         [UnmanagedCallersOnly(EntryPoint = "get_variant_bstr_length")]
-        public static int GetVTBStrLength([DNNE.C99Type("void*")] OleVariant* variant)
+        public static int GetVTBStrLength([DNNE.C99Type("void*")] ComVariant* variant)
         {
             return variant->As<string>().Length;
         }

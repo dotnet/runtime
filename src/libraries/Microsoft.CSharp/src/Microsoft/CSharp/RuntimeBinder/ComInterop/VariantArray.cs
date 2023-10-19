@@ -17,25 +17,25 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     [StructLayout(LayoutKind.Sequential)]
     internal struct VariantArray1
     {
-        public OleVariant Element0;
+        public ComVariant Element0;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct VariantArray2
     {
-        public OleVariant Element0, Element1;
+        public ComVariant Element0, Element1;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct VariantArray4
     {
-        public OleVariant Element0, Element1, Element2, Element3;
+        public ComVariant Element0, Element1, Element2, Element3;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct VariantArray8
     {
-        public OleVariant Element0, Element1, Element2, Element3, Element4, Element5, Element6, Element7;
+        public ComVariant Element0, Element1, Element2, Element3, Element4, Element5, Element6, Element7;
     }
 
     //
@@ -101,7 +101,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             TypeBuilder type = UnsafeMethods.DynamicModule.DefineType("VariantArray" + size, attrs, typeof(ValueType));
             for (int i = 0; i < size; i++)
             {
-                type.DefineField("Element" + i, typeof(OleVariant), FieldAttributes.Public);
+                type.DefineField("Element" + i, typeof(ComVariant), FieldAttributes.Public);
             }
             return type.CreateType();
         }

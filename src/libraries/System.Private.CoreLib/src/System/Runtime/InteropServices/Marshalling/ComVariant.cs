@@ -10,15 +10,15 @@ namespace System.Runtime.InteropServices.Marshalling
     /// A type that represents an OLE VARIANT in managed code.
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
-    public struct OleVariant : IDisposable
+    public struct ComVariant : IDisposable
     {
         private const VarEnum VT_VERSIONED_STREAM = (VarEnum)73;
 #if DEBUG
-        static unsafe OleVariant()
+        static unsafe ComVariant()
         {
             // Variant size is the size of 4 pointers (16 bytes) on a 32-bit processor,
             // and 3 pointers (24 bytes) on a 64-bit processor.
-            int variantSize = sizeof(OleVariant);
+            int variantSize = sizeof(ComVariant);
             if (IntPtr.Size == 4)
             {
                 Debug.Assert(variantSize == (4 * IntPtr.Size));
@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
-        /// Release resources owned by this <see cref="OleVariant"/> instance.
+        /// Release resources owned by this <see cref="ComVariant"/> instance.
         /// </summary>
         public unsafe void Dispose()
         {
@@ -136,7 +136,7 @@ namespace System.Runtime.InteropServices.Marshalling
             }
             else if (VarType.HasFlag(VarEnum.VT_ARRAY))
             {
-                throw new PlatformNotSupportedException("OleVariants containing SAFEARRAYs are not supported on this platform");
+                throw new PlatformNotSupportedException("ComVariants containing SAFEARRAYs are not supported on this platform");
             }
             else if (VarType == VarEnum.VT_UNKNOWN || VarType == VarEnum.VT_DISPATCH)
             {
@@ -214,7 +214,7 @@ namespace System.Runtime.InteropServices.Marshalling
                         }
                         break;
                     case VarEnum.VT_VARIANT:
-                        foreach (var variant in GetRawDataRef<Vector<OleVariant>>().AsSpan())
+                        foreach (var variant in GetRawDataRef<Vector<ComVariant>>().AsSpan())
                         {
                             variant.Dispose();
                         }
@@ -225,22 +225,22 @@ namespace System.Runtime.InteropServices.Marshalling
                 Marshal.CoTaskMemFree((nint)GetRawDataRef<Vector<byte>>()._data);
             }
 
-            // Clear out this OleVariant instance.
+            // Clear out this ComVariant instance.
             this = default;
 #endif
         }
 
 #pragma warning disable CS0618 // We support the obsolete CurrencyWrapper type
         /// <summary>
-        /// Create an <see cref="OleVariant"/> instance from the specified value.
+        /// Create an <see cref="ComVariant"/> instance from the specified value.
         /// </summary>
         /// <typeparam name="T">The type of the specified value.</typeparam>
-        /// <param name="value">The value to wrap in an <see cref="OleVariant"/>.</param>
-        /// <returns>An <see cref="OleVariant"/> that contains the provided value.</returns>
+        /// <param name="value">The value to wrap in an <see cref="ComVariant"/>.</param>
+        /// <returns>An <see cref="ComVariant"/> that contains the provided value.</returns>
         /// <exception cref="ArgumentException">When <typeparamref name="T"/> does not directly correspond to a <see cref="VarEnum"/> variant type.</exception>
-        public static OleVariant Create<T>([DisallowNull] T value)
+        public static ComVariant Create<T>([DisallowNull] T value)
         {
-            Unsafe.SkipInit(out OleVariant variant);
+            Unsafe.SkipInit(out ComVariant variant);
             if (typeof(T) == typeof(DBNull))
             {
                 variant = Null;
@@ -285,7 +285,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 // We map string to VT_BSTR as that's the only valid option for a VARIANT.
                 // The rest of the "string" options are only supported in TYPEDESCs and PROPVARIANTs,
                 // which are different scenarios.
-                // Users who want to use the OleVariant type with VT_LPSTR or VT_LPWSTR can use CreateRaw
+                // Users who want to use the ComVariant type with VT_LPSTR or VT_LPWSTR can use CreateRaw
                 // to do so.
                 variant.VarType = VarEnum.VT_BSTR;
                 variant._typeUnion._unionTypes._bstr = Marshal.StringToBSTR((string)(object)value);
@@ -350,7 +350,7 @@ namespace System.Runtime.InteropServices.Marshalling
 #pragma warning restore CS0618
 
         /// <summary>
-        /// Create a <see cref="OleVariant"/> with the given type and provided value.
+        /// Create a <see cref="ComVariant"/> with the given type and provided value.
         /// </summary>
         /// <typeparam name="T">The type of the value to store in the variant.</typeparam>
         /// <param name="vt">The type of the variant</param>
@@ -358,7 +358,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <returns>A variant that contains the provided value.</returns>
         /// <exception cref="ArgumentException">When the provided <paramref name="vt"/> corresponds to a variant type that is not supported in VARIANTs or is <see cref="VarEnum.VT_DECIMAL"/></exception>
         /// <exception cref="PlatformNotSupportedException">When the provided <paramref name="vt"/> specifies the <see cref="VarEnum.VT_ARRAY"/> flag for SAFEARRAYs.</exception>
-        public static unsafe OleVariant CreateRaw<T>(VarEnum vt, T rawValue)
+        public static unsafe ComVariant CreateRaw<T>(VarEnum vt, T rawValue)
             where T : unmanaged
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan(Unsafe.SizeOf<T>(), sizeof(UnionTypes), nameof(T));
@@ -372,10 +372,10 @@ namespace System.Runtime.InteropServices.Marshalling
             }
             if (vt.HasFlag(VarEnum.VT_ARRAY) && !OperatingSystem.IsWindows())
             {
-                throw new PlatformNotSupportedException("OleVariants containing SAFEARRAYs are not supported on this platform");
+                throw new PlatformNotSupportedException("ComVariants containing SAFEARRAYs are not supported on this platform");
             }
 
-            Unsafe.SkipInit(out OleVariant value);
+            Unsafe.SkipInit(out ComVariant value);
             value.VarType = vt;
             value.GetRawDataRef<T>() = (vt, sizeof(T)) switch
             {
@@ -398,9 +398,9 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
-        /// A <see cref="OleVariant"/> instance that represents a null value with <see cref="VarEnum.VT_NULL"/> type.
+        /// A <see cref="ComVariant"/> instance that represents a null value with <see cref="VarEnum.VT_NULL"/> type.
         /// </summary>
-        public static OleVariant Null { get; } = new() { VarType = VarEnum.VT_NULL };
+        public static ComVariant Null { get; } = new() { VarType = VarEnum.VT_NULL };
 
         private readonly void ThrowIfNotVarType(params VarEnum[] requiredType)
         {
@@ -412,11 +412,11 @@ namespace System.Runtime.InteropServices.Marshalling
 
 #pragma warning disable CS0618 // Type or member is obsolete
         /// <summary>
-        /// Create a managed value based on the value in the <see cref="OleVariant"/> instance.
+        /// Create a managed value based on the value in the <see cref="ComVariant"/> instance.
         /// </summary>
         /// <typeparam name="T">The managed type to create an instance of.</typeparam>
         /// <returns>The managed value contained in this variant.</returns>
-        /// <exception cref="ArgumentException">When <typeparamref name="T"/> does not match the <see cref="VarType"/> of the <see cref="OleVariant"/>.</exception>
+        /// <exception cref="ArgumentException">When <typeparamref name="T"/> does not match the <see cref="VarType"/> of the <see cref="ComVariant"/>.</exception>
         public readonly T As<T>()
         {
             if (VarType == VarEnum.VT_EMPTY)
@@ -465,8 +465,8 @@ namespace System.Runtime.InteropServices.Marshalling
             }
             else if (typeof(T) == typeof(string))
             {
-                // To match the Create method, we will only support getting a string from an OleVariant
-                // when the OleVariant holds a BSTR.
+                // To match the Create method, we will only support getting a string from an ComVariant
+                // when the ComVariant holds a BSTR.
                 ThrowIfNotVarType(VarEnum.VT_BSTR);
                 if (_typeUnion._unionTypes._bstr == IntPtr.Zero)
                 {
@@ -492,7 +492,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 ThrowIfNotVarType(VarEnum.VT_DECIMAL);
                 // Create a second variant copy with the VarType set to VT_EMPTY.
                 // This will ensure that we don't leak the VT_DECMIAL flag into the decimal value itself.
-                OleVariant variantWithoutVarType = this;
+                ComVariant variantWithoutVarType = this;
                 variantWithoutVarType.VarType = VarEnum.VT_EMPTY;
                 return (T)(object)variantWithoutVarType._decimal;
             }
@@ -531,7 +531,7 @@ namespace System.Runtime.InteropServices.Marshalling
 #pragma warning restore CS0618 // Type or member is obsolete
 
         /// <summary>
-        /// The type of the data stored in this <see cref="OleVariant"/>.
+        /// The type of the data stored in this <see cref="ComVariant"/>.
         /// </summary>
         public VarEnum VarType
         {
@@ -540,11 +540,11 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
-        /// Get a reference to the storage location within this <see cref="OleVariant"/> instance.
+        /// Get a reference to the storage location within this <see cref="ComVariant"/> instance.
         /// </summary>
         /// <typeparam name="T">The type of reference to return.</typeparam>
-        /// <returns>A reference to the storage location within this <see cref="OleVariant"/>.</returns>
-        /// <exception cref="ArgumentException"><typeparamref name="T"/> is <see cref="decimal"/> or larger than the storage space in an <see cref="OleVariant"/>.</exception>
+        /// <returns>A reference to the storage location within this <see cref="ComVariant"/>.</returns>
+        /// <exception cref="ArgumentException"><typeparamref name="T"/> is <see cref="decimal"/> or larger than the storage space in an <see cref="ComVariant"/>.</exception>
         [UnscopedRef]
         public unsafe ref T GetRawDataRef<T>()
             where T : unmanaged

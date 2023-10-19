@@ -93,7 +93,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         private ParameterExpression InvokeResultVariable
         {
-            get { return EnsureVariable(ref _invokeResult, typeof(OleVariant), "invokeResult"); }
+            get { return EnsureVariable(ref _invokeResult, typeof(ComVariant), "invokeResult"); }
         }
 
         private ParameterExpression ReturnValueVariable
@@ -361,7 +361,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             finallyStatements.Add(
                 Expression.Call(
                     InvokeResultVariable,
-                    typeof(OleVariant).GetMethod(nameof(OleVariant.Dispose))
+                    typeof(ComVariant).GetMethod(nameof(ComVariant.Dispose))
                 )
             );
 

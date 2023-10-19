@@ -312,6 +312,6 @@ namespace Microsoft.Interop
         public const string CallConvMemberFunctionName = "System.Runtime.CompilerServices.CallConvMemberFunction";
         public const string Nint = "nint";
 
-        public const string OleVariantMarshaller = "System.Runtime.InteropServices.Marshalling.OleVariantMarshaller";
+        public const string ComVariantMarshaller = "System.Runtime.InteropServices.Marshalling.ComVariantMarshaller";
     }
 }

@@ -45,7 +45,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return false;
         }
 
-        public static void SetAsIConvertible(this ref OleVariant variant, IConvertible value)
+        public static void SetAsIConvertible(this ref ComVariant variant, IConvertible value)
         {
             Debug.Assert(variant.VarType == VarEnum.VT_EMPTY); // The setter can only be called once as VariantClear might be needed otherwise
 
@@ -55,23 +55,23 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             switch (tc)
             {
                 case TypeCode.Empty: break;
-                case TypeCode.Object: variant = OleVariant.CreateRaw(VarEnum.VT_UNKNOWN, Marshal.GetIUnknownForObject(value)); break;
-                case TypeCode.DBNull: variant = OleVariant.Null; break;
-                case TypeCode.Boolean: variant = OleVariant.Create<bool>(value.ToBoolean(ci)); break;
-                case TypeCode.Char: variant = OleVariant.Create<ushort>(value.ToChar(ci)); break;
-                case TypeCode.SByte: variant = OleVariant.Create<sbyte>(value.ToSByte(ci)); break;
-                case TypeCode.Byte: variant = OleVariant.Create<byte>(value.ToByte(ci)); break;
-                case TypeCode.Int16: variant = OleVariant.Create(value.ToInt16(ci)); break;
-                case TypeCode.UInt16: variant = OleVariant.Create(value.ToUInt16(ci)); break;
-                case TypeCode.Int32: variant = OleVariant.Create(value.ToInt32(ci)); break;
-                case TypeCode.UInt32: variant = OleVariant.Create(value.ToUInt32(ci)); break;
-                case TypeCode.Int64: variant = OleVariant.Create(value.ToInt64(ci)); break;
-                case TypeCode.UInt64: variant = OleVariant.Create(value.ToInt64(ci)); break;
-                case TypeCode.Single: variant = OleVariant.Create(value.ToSingle(ci)); break;
-                case TypeCode.Double: variant = OleVariant.Create(value.ToDouble(ci)); break;
-                case TypeCode.Decimal: variant = OleVariant.Create(value.ToDecimal(ci)); break;
-                case TypeCode.DateTime: variant = OleVariant.Create(value.ToDateTime(ci)); break;
-                case TypeCode.String: variant = OleVariant.Create(new BStrWrapper(value.ToString(ci))); break;
+                case TypeCode.Object: variant = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, Marshal.GetIUnknownForObject(value)); break;
+                case TypeCode.DBNull: variant = ComVariant.Null; break;
+                case TypeCode.Boolean: variant = ComVariant.Create<bool>(value.ToBoolean(ci)); break;
+                case TypeCode.Char: variant = ComVariant.Create<ushort>(value.ToChar(ci)); break;
+                case TypeCode.SByte: variant = ComVariant.Create<sbyte>(value.ToSByte(ci)); break;
+                case TypeCode.Byte: variant = ComVariant.Create<byte>(value.ToByte(ci)); break;
+                case TypeCode.Int16: variant = ComVariant.Create(value.ToInt16(ci)); break;
+                case TypeCode.UInt16: variant = ComVariant.Create(value.ToUInt16(ci)); break;
+                case TypeCode.Int32: variant = ComVariant.Create(value.ToInt32(ci)); break;
+                case TypeCode.UInt32: variant = ComVariant.Create(value.ToUInt32(ci)); break;
+                case TypeCode.Int64: variant = ComVariant.Create(value.ToInt64(ci)); break;
+                case TypeCode.UInt64: variant = ComVariant.Create(value.ToInt64(ci)); break;
+                case TypeCode.Single: variant = ComVariant.Create(value.ToSingle(ci)); break;
+                case TypeCode.Double: variant = ComVariant.Create(value.ToDouble(ci)); break;
+                case TypeCode.Decimal: variant = ComVariant.Create(value.ToDecimal(ci)); break;
+                case TypeCode.DateTime: variant = ComVariant.Create(value.ToDateTime(ci)); break;
+                case TypeCode.String: variant = ComVariant.Create(new BStrWrapper(value.ToString(ci))); break;
 
                 default:
                     throw new NotSupportedException();
@@ -79,151 +79,151 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
         // VT_I1
 
-        public static void SetAsByrefI1(ref this OleVariant variant, ref sbyte value)
+        public static void SetAsByrefI1(ref this ComVariant variant, ref sbyte value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_I1);
         }
 
         // VT_I2
 
-        public static void SetAsByrefI2(ref this OleVariant variant, ref short value)
+        public static void SetAsByrefI2(ref this ComVariant variant, ref short value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_I2);
         }
 
         // VT_I4
 
-        public static void SetAsByrefI4(ref this OleVariant variant, ref int value)
+        public static void SetAsByrefI4(ref this ComVariant variant, ref int value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_I4);
         }
 
         // VT_I8
 
-        public static void SetAsByrefI8(ref this OleVariant variant, ref long value)
+        public static void SetAsByrefI8(ref this ComVariant variant, ref long value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_I8);
         }
 
         // VT_UI1
 
-        public static void SetAsByrefUi1(ref this OleVariant variant, ref byte value)
+        public static void SetAsByrefUi1(ref this ComVariant variant, ref byte value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_UI1);
         }
 
         // VT_UI2
 
-        public static void SetAsByrefUi2(ref this OleVariant variant, ref ushort value)
+        public static void SetAsByrefUi2(ref this ComVariant variant, ref ushort value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_UI2);
         }
 
         // VT_UI4
 
-        public static void SetAsByrefUi4(ref this OleVariant variant, ref uint value)
+        public static void SetAsByrefUi4(ref this ComVariant variant, ref uint value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_UI4);
         }
 
         // VT_UI8
 
-        public static void SetAsByrefUi8(ref this OleVariant variant, ref ulong value)
+        public static void SetAsByrefUi8(ref this ComVariant variant, ref ulong value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_UI8);
         }
 
         // VT_INT
 
-        public static void SetAsByrefInt(ref this OleVariant variant, ref int value)
+        public static void SetAsByrefInt(ref this ComVariant variant, ref int value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_INT);
         }
 
         // VT_UINT
 
-        public static void SetAsByrefUint(ref this OleVariant variant, ref uint value)
+        public static void SetAsByrefUint(ref this ComVariant variant, ref uint value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_UINT);
         }
 
         // VT_BOOL
 
-        public static void SetAsByrefBool(ref this OleVariant variant, ref short value)
+        public static void SetAsByrefBool(ref this ComVariant variant, ref short value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_BOOL);
         }
 
         // VT_ERROR
 
-        public static void SetAsByrefError(ref this OleVariant variant, ref int value)
+        public static void SetAsByrefError(ref this ComVariant variant, ref int value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_ERROR);
         }
 
         // VT_R4
 
-        public static void SetAsByrefR4(ref this OleVariant variant, ref float value)
+        public static void SetAsByrefR4(ref this ComVariant variant, ref float value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_R4);
         }
 
         // VT_R8
 
-        public static void SetAsByrefR8(ref this OleVariant variant, ref double value)
+        public static void SetAsByrefR8(ref this ComVariant variant, ref double value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_R8);
         }
 
         // VT_DECIMAL
 
-        public static void SetAsByrefDecimal(ref this OleVariant variant, ref decimal value)
+        public static void SetAsByrefDecimal(ref this ComVariant variant, ref decimal value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_DECIMAL);
         }
 
         // VT_CY
 
-        public static void SetAsByrefCy(ref this OleVariant variant, ref long value)
+        public static void SetAsByrefCy(ref this ComVariant variant, ref long value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_CY);
         }
 
         // VT_DATE
 
-        public static void SetAsByrefDate(ref this OleVariant variant, ref double value)
+        public static void SetAsByrefDate(ref this ComVariant variant, ref double value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_DATE);
         }
 
         // VT_BSTR
 
-        public static void SetAsByrefBstr(ref this OleVariant variant, ref IntPtr value)
+        public static void SetAsByrefBstr(ref this ComVariant variant, ref IntPtr value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_BSTR);
         }
 
         // VT_UNKNOWN
 
-        public static void SetAsByrefUnknown(ref this OleVariant variant, ref IntPtr value)
+        public static void SetAsByrefUnknown(ref this ComVariant variant, ref IntPtr value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_UNKNOWN);
         }
 
         // VT_DISPATCH
 
-        public static void SetAsByrefDispatch(ref this OleVariant variant, ref IntPtr value)
+        public static void SetAsByrefDispatch(ref this ComVariant variant, ref IntPtr value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_DISPATCH);
         }
 
-        private static unsafe void SetAsByref<T>(ref this OleVariant variant, ref T value, VarEnum type)
+        private static unsafe void SetAsByref<T>(ref this ComVariant variant, ref T value, VarEnum type)
         {
             Debug.Assert(variant.VarType == VarEnum.VT_EMPTY); // The setter can only be called once as VariantClear might be needed otherwise
-            variant = OleVariant.CreateRaw(type | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value));
+            variant = ComVariant.CreateRaw(type | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value));
         }
 
-        public static void SetAsByrefVariant(ref this OleVariant variant, ref OleVariant value)
+        public static void SetAsByrefVariant(ref this ComVariant variant, ref ComVariant value)
         {
             variant.SetAsByref(ref value, VarEnum.VT_VARIANT);
         }
@@ -236,7 +236,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         // constructs a ByRef variant to pass contents of another variant ByRef.
-        public static unsafe void SetAsByrefVariantIndirect(this OleVariant variant, ref OleVariant value)
+        public static unsafe void SetAsByrefVariantIndirect(this ComVariant variant, ref ComVariant value)
         {
             Debug.Assert(variant.VarType == VarEnum.VT_EMPTY); // The setter can only be called once as VariantClear might be needed otherwise
             Debug.Assert((value.VarType & VarEnum.VT_BYREF) == 0, "double indirection");
@@ -251,14 +251,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 case VarEnum.VT_RECORD:
                     // VT_RECORD's are weird in that regardless of is the VT_BYREF flag is set or not
                     // they have the same internal representation.
-                    variant = OleVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, value.GetRawDataRef<Record>());
+                    variant = ComVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, value.GetRawDataRef<Record>());
                     break;
                 case VarEnum.VT_DECIMAL:
                     // The DECIMAL value in an OLE Variant is stored at the start of the structure.
-                    variant = OleVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value));
+                    variant = ComVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value));
                     break;
                 default:
-                    variant = OleVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value.GetRawDataRef<nint>()));
+                    variant = ComVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, (nint)Unsafe.AsPointer(ref value.GetRawDataRef<nint>()));
                     break;
             }
         }
@@ -299,107 +299,107 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             }
         }
 
-        public static void SetI1(this ref OleVariant variant, sbyte value)
+        public static void SetI1(this ref ComVariant variant, sbyte value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetUi1(this ref OleVariant variant, byte value)
+        public static void SetUi1(this ref ComVariant variant, byte value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetI2(this ref OleVariant variant, short value)
+        public static void SetI2(this ref ComVariant variant, short value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetUi2(this ref OleVariant variant, ushort value)
+        public static void SetUi2(this ref ComVariant variant, ushort value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetI4(this ref OleVariant variant, int value)
+        public static void SetI4(this ref ComVariant variant, int value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetUi4(this ref OleVariant variant, uint value)
+        public static void SetUi4(this ref ComVariant variant, uint value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetI8(this ref OleVariant variant, long value)
+        public static void SetI8(this ref ComVariant variant, long value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetUi8(this ref OleVariant variant, ulong value)
+        public static void SetUi8(this ref ComVariant variant, ulong value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetInt(this ref OleVariant variant, int value)
+        public static void SetInt(this ref ComVariant variant, int value)
         {
-            variant = OleVariant.CreateRaw(VarEnum.VT_INT, value);
+            variant = ComVariant.CreateRaw(VarEnum.VT_INT, value);
         }
 
-        public static void SetUint(this ref OleVariant variant, uint value)
+        public static void SetUint(this ref ComVariant variant, uint value)
         {
-            variant = OleVariant.CreateRaw(VarEnum.VT_UINT, value);
+            variant = ComVariant.CreateRaw(VarEnum.VT_UINT, value);
         }
 
-        public static void SetBool(this ref OleVariant variant, bool value)
+        public static void SetBool(this ref ComVariant variant, bool value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetR4(this ref OleVariant variant, float value)
+        public static void SetR4(this ref ComVariant variant, float value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetR8(this ref OleVariant variant, double value)
+        public static void SetR8(this ref ComVariant variant, double value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetDecimal(this ref OleVariant variant, decimal value)
+        public static void SetDecimal(this ref ComVariant variant, decimal value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetDate(this ref OleVariant variant, DateTime value)
+        public static void SetDate(this ref ComVariant variant, DateTime value)
         {
-            variant = OleVariant.Create(value);
+            variant = ComVariant.Create(value);
         }
 
-        public static void SetBstr(this ref OleVariant variant, string value)
+        public static void SetBstr(this ref ComVariant variant, string value)
         {
-            variant = OleVariant.Create(new BStrWrapper(value));
+            variant = ComVariant.Create(new BStrWrapper(value));
         }
 
-        public static void SetUnknown(this ref OleVariant variant, object value)
+        public static void SetUnknown(this ref ComVariant variant, object value)
         {
-            variant = OleVariant.CreateRaw(VarEnum.VT_UNKNOWN, Marshal.GetIUnknownForObject(value));
+            variant = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, Marshal.GetIUnknownForObject(value));
         }
 
-        public static void SetDispatch(this ref OleVariant variant, object value)
+        public static void SetDispatch(this ref ComVariant variant, object value)
         {
-            variant = OleVariant.CreateRaw(VarEnum.VT_DISPATCH, Marshal.GetIDispatchForObject(value));
+            variant = ComVariant.CreateRaw(VarEnum.VT_DISPATCH, Marshal.GetIDispatchForObject(value));
         }
 
-        public static void SetError(this ref OleVariant variant, int value)
+        public static void SetError(this ref ComVariant variant, int value)
         {
-            variant = OleVariant.CreateRaw(VarEnum.VT_ERROR, value);
+            variant = ComVariant.CreateRaw(VarEnum.VT_ERROR, value);
         }
 
-        public static void SetCy(this ref OleVariant variant, decimal value)
+        public static void SetCy(this ref ComVariant variant, decimal value)
         {
-            variant = OleVariant.CreateRaw(VarEnum.VT_CY, decimal.ToOACurrency(value));
+            variant = ComVariant.CreateRaw(VarEnum.VT_CY, decimal.ToOACurrency(value));
         }
 
-        public static unsafe void SetVariant(this ref OleVariant variant, object value)
+        public static unsafe void SetVariant(this ref ComVariant variant, object value)
         {
             Debug.Assert(variant.VarType == VarEnum.VT_EMPTY); // The setter can only be called once as VariantClear might be needed otherwise
             if (value != null)

@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices
         private const VarEnum VT_TYPEMASK = (VarEnum)0x0fff;
         private const VarEnum VT_BYREF_TYPEMASK = VT_TYPEMASK | VarEnum.VT_BYREF;
 
-        private static unsafe ref OleVariant GetVariant(ref OleVariant pSrc)
+        private static unsafe ref ComVariant GetVariant(ref ComVariant pSrc)
         {
             if (pSrc.VarType == VT_BYREF_VARIANT)
             {
@@ -129,7 +129,7 @@ namespace System.Runtime.InteropServices
                 // contains another VARIANT with VT_BYREF | VT_VARIANT, then we need to extract the
                 // inner VARIANT and use it instead of the outer one. Note that if the inner VARIANT
                 // is VT_BYREF | VT_VARIANT | VT_ARRAY, it will pass the below test too.
-                ref OleVariant pByRefVariant = ref *(OleVariant*)(pSrc.GetRawDataRef<nint>().ToPointer());
+                ref ComVariant pByRefVariant = ref *(ComVariant*)(pSrc.GetRawDataRef<nint>().ToPointer());
                 if ((pByRefVariant.VarType & VT_BYREF_TYPEMASK) == VT_BYREF_VARIANT)
                 {
                     return ref pByRefVariant;
@@ -164,7 +164,7 @@ namespace System.Runtime.InteropServices
             bool[] usedArgs = new bool[pDispParams.cArgs];
 
             int totalCount = pDispParams.cNamedArgs + pDispParams.cArgs;
-            var vars = new Span<OleVariant>(pDispParams.rgvarg.ToPointer(), totalCount);
+            var vars = new Span<ComVariant>(pDispParams.rgvarg.ToPointer(), totalCount);
             var namedArgs = new Span<int>(pDispParams.rgdispidNamedArgs.ToPointer(), totalCount);
 
             // copy the named args (positional) as specified
@@ -173,7 +173,7 @@ namespace System.Runtime.InteropServices
             for (i = 0; i < pDispParams.cNamedArgs; i++)
             {
                 pos = namedArgs[i];
-                ref OleVariant pvar = ref GetVariant(ref vars[i]);
+                ref ComVariant pvar = ref GetVariant(ref vars[i]);
                 args[pos] = pvar.ToObject()!;
                 usedArgs[pos] = true;
 
@@ -196,7 +196,7 @@ namespace System.Runtime.InteropServices
                     pos++;
                 }
 
-                ref OleVariant pvar = ref GetVariant(ref vars[pDispParams.cArgs - 1 - i]);
+                ref ComVariant pvar = ref GetVariant(ref vars[pDispParams.cArgs - 1 - i]);
                 args[pos] = pvar.ToObject()!;
 
                 int byrefIdx = InvalidIdx;
@@ -228,7 +228,7 @@ namespace System.Runtime.InteropServices
                     continue;
                 }
 
-                ref OleVariant pvar = ref GetVariant(ref vars[idxToPos]);
+                ref ComVariant pvar = ref GetVariant(ref vars[idxToPos]);
                 pvar.CopyFromIndirect(args[i]);
             }
         }

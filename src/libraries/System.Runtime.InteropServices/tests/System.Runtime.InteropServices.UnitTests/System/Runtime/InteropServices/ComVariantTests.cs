@@ -14,24 +14,24 @@ namespace System.Runtime.InteropServices.Tests
 {
     // NanoServer doesn't have any of the OLE Automation stack available, so we can't run these tests there.
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-    public class OleVariantTests
+    public class ComVariantTests
     {
         [Fact]
         public void DefaultVariantIsEmpty()
         {
-            Assert.Equal(VarEnum.VT_EMPTY, default(OleVariant).VarType);
+            Assert.Equal(VarEnum.VT_EMPTY, default(ComVariant).VarType);
         }
 
         [Fact]
         public void NullVariantIsNull()
         {
-            Assert.Equal(VarEnum.VT_NULL, OleVariant.Null.VarType);
+            Assert.Equal(VarEnum.VT_NULL, ComVariant.Null.VarType);
         }
 
         [Fact]
         public void Short()
         {
-            OleVariant variant = OleVariant.Create<short>(42);
+            ComVariant variant = ComVariant.Create<short>(42);
             Assert.Equal(VarEnum.VT_I2, variant.VarType);
             Assert.Equal(42, variant.As<short>());
             Assert.Equal(42, variant.GetRawDataRef<short>());
@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Int4()
         {
-            OleVariant variant = OleVariant.Create(42);
+            ComVariant variant = ComVariant.Create(42);
             Assert.Equal(VarEnum.VT_I4, variant.VarType);
             Assert.Equal(42, variant.As<int>());
             Assert.Equal(42, variant.GetRawDataRef<int>());
@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Float()
         {
-            OleVariant variant = OleVariant.Create(42.0f);
+            ComVariant variant = ComVariant.Create(42.0f);
             Assert.Equal(VarEnum.VT_R4, variant.VarType);
             Assert.Equal(42, variant.As<float>());
             Assert.Equal(42, variant.GetRawDataRef<float>());
@@ -58,7 +58,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Double()
         {
-            OleVariant variant = OleVariant.Create(42.0);
+            ComVariant variant = ComVariant.Create(42.0);
             Assert.Equal(VarEnum.VT_R8, variant.VarType);
             Assert.Equal(42, variant.As<double>());
             Assert.Equal(42, variant.GetRawDataRef<double>());
@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Currency()
         {
-            OleVariant variant = OleVariant.Create(new CurrencyWrapper(42.0m));
+            ComVariant variant = ComVariant.Create(new CurrencyWrapper(42.0m));
             Assert.Equal(VarEnum.VT_CY, variant.VarType);
             Assert.Equal(42.0m, variant.As<CurrencyWrapper>().WrappedObject);
             Assert.Equal(decimal.ToOACurrency(42.0m), variant.GetRawDataRef<long>());
@@ -78,7 +78,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Date()
         {
-            OleVariant variant = OleVariant.Create(new DateTime(2020, 1, 1));
+            ComVariant variant = ComVariant.Create(new DateTime(2020, 1, 1));
             Assert.Equal(VarEnum.VT_DATE, variant.VarType);
             Assert.Equal(new DateTime(2020, 1, 1), variant.As<DateTime>());
             Assert.Equal(new DateTime(2020, 1, 1).ToOADate(), variant.GetRawDataRef<double>());
@@ -87,7 +87,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void BStrWrapper()
         {
-            using OleVariant variant = OleVariant.Create(new BStrWrapper("Foo"));
+            using ComVariant variant = ComVariant.Create(new BStrWrapper("Foo"));
             Assert.Equal(VarEnum.VT_BSTR, variant.VarType);
             Assert.Equal("Foo", variant.As<BStrWrapper>().WrappedObject);
             Assert.Equal("Foo", Marshal.PtrToStringBSTR(variant.GetRawDataRef<IntPtr>()));
@@ -96,7 +96,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void BStr_String()
         {
-            using OleVariant variant = OleVariant.Create("Foo");
+            using ComVariant variant = ComVariant.Create("Foo");
             Assert.Equal(VarEnum.VT_BSTR, variant.VarType);
             Assert.Equal("Foo", variant.As<string>());
             Assert.Equal("Foo", Marshal.PtrToStringBSTR(variant.GetRawDataRef<IntPtr>()));
@@ -105,7 +105,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void BStr_String_Null()
         {
-            using OleVariant variant = OleVariant.Create<string>(null);
+            using ComVariant variant = ComVariant.Create<string>(null);
             Assert.Equal(VarEnum.VT_BSTR, variant.VarType);
             Assert.Null(variant.As<string>());
             Assert.Equal(IntPtr.Zero, variant.GetRawDataRef<IntPtr>());
@@ -116,14 +116,14 @@ namespace System.Runtime.InteropServices.Tests
         public void Dispatch_NotSupported()
         {
            DispatchWrapper wrapper = new(new IDispatchComObject());
-           Assert.Throws<ArgumentException>("T", () => OleVariant.Create(wrapper));
+           Assert.Throws<ArgumentException>("T", () => ComVariant.Create(wrapper));
         }
 #endif
 
         [Fact]
         public void Error()
         {
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_ERROR, 1);
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_ERROR, 1);
             Assert.Equal(VarEnum.VT_ERROR, variant.VarType);
             Assert.Equal(1, variant.GetRawDataRef<int>());
             Assert.Equal(1, variant.As<ErrorWrapper>().ErrorCode);
@@ -133,7 +133,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void VariantBoolTrue()
         {
-            OleVariant trueVariant = OleVariant.Create(true);
+            ComVariant trueVariant = ComVariant.Create(true);
             Assert.Equal(VarEnum.VT_BOOL, trueVariant.VarType);
             Assert.True(trueVariant.As<bool>());
             Assert.Equal(0, trueVariant.GetRawDataRef<short>());
@@ -142,7 +142,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void VariantBoolFalse()
         {
-            OleVariant falseVariant = OleVariant.Create(false);
+            ComVariant falseVariant = ComVariant.Create(false);
             Assert.Equal(VarEnum.VT_BOOL, falseVariant.VarType);
             Assert.False(falseVariant.As<bool>());
             Assert.Equal(-1, falseVariant.GetRawDataRef<short>());
@@ -151,14 +151,14 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void VTVariantNotSupported()
         {
-            Assert.Throws<ArgumentException>("vt", () => OleVariant.CreateRaw(VarEnum.VT_VARIANT, 1));
+            Assert.Throws<ArgumentException>("vt", () => ComVariant.CreateRaw(VarEnum.VT_VARIANT, 1));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void Unknown_NotSupported()
         {
             UnknownWrapper wrapper = new(new TestObject());
-            Assert.Throws<ArgumentException>("T", () => OleVariant.Create(wrapper));
+            Assert.Throws<ArgumentException>("T", () => ComVariant.Create(wrapper));
         }
 
         [ComImport]
@@ -175,7 +175,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Decimal()
         {
-            OleVariant variant = OleVariant.Create(42.0m);
+            ComVariant variant = ComVariant.Create(42.0m);
             Assert.Equal(VarEnum.VT_DECIMAL, variant.VarType);
             Assert.Equal(42.0m, variant.As<decimal>());
             Assert.Throws<ArgumentException>("T", () => variant.GetRawDataRef<decimal>());
@@ -184,7 +184,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void SByte()
         {
-            OleVariant variant = OleVariant.Create<sbyte>(42);
+            ComVariant variant = ComVariant.Create<sbyte>(42);
             Assert.Equal(VarEnum.VT_I1, variant.VarType);
             Assert.Equal(42, variant.As<sbyte>());
             Assert.Equal(42, variant.GetRawDataRef<sbyte>());
@@ -193,7 +193,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Byte()
         {
-            OleVariant variant = OleVariant.Create<byte>(42);
+            ComVariant variant = ComVariant.Create<byte>(42);
             Assert.Equal(VarEnum.VT_UI1, variant.VarType);
             Assert.Equal(42, variant.As<byte>());
             Assert.Equal(42, variant.GetRawDataRef<byte>());
@@ -202,7 +202,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void UShort()
         {
-            OleVariant variant = OleVariant.Create<ushort>(42);
+            ComVariant variant = ComVariant.Create<ushort>(42);
             Assert.Equal(VarEnum.VT_UI2, variant.VarType);
             Assert.Equal(42, variant.As<ushort>());
             Assert.Equal(42, variant.GetRawDataRef<ushort>());
@@ -211,7 +211,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void UInt4()
         {
-            OleVariant variant = OleVariant.Create<uint>(42);
+            ComVariant variant = ComVariant.Create<uint>(42);
             Assert.Equal(VarEnum.VT_UI4, variant.VarType);
             Assert.Equal(42u, variant.As<uint>());
             Assert.Equal(42u, variant.GetRawDataRef<uint>());
@@ -220,7 +220,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Long()
         {
-            OleVariant variant = OleVariant.Create<long>(42);
+            ComVariant variant = ComVariant.Create<long>(42);
             Assert.Equal(VarEnum.VT_I8, variant.VarType);
             Assert.Equal(42, variant.As<long>());
             Assert.Equal(42, variant.GetRawDataRef<long>());
@@ -229,7 +229,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void ULong()
         {
-            OleVariant variant = OleVariant.Create<ulong>(42);
+            ComVariant variant = ComVariant.Create<ulong>(42);
             Assert.Equal(VarEnum.VT_UI8, variant.VarType);
             Assert.Equal(42ul, variant.As<ulong>());
             Assert.Equal(42ul, variant.GetRawDataRef<ulong>());
@@ -238,7 +238,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Int_Raw()
         {
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_INT, 42);
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_INT, 42);
             Assert.Equal(VarEnum.VT_INT, variant.VarType);
             Assert.Equal(42, variant.As<int>());
             Assert.Equal(42, variant.GetRawDataRef<int>());
@@ -247,7 +247,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void UInt()
         {
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_UINT, 42u);
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_UINT, 42u);
             Assert.Equal(VarEnum.VT_UINT, variant.VarType);
             Assert.Equal(42u, variant.As<uint>());
             Assert.Equal(42u, variant.GetRawDataRef<uint>());
@@ -264,9 +264,9 @@ namespace System.Runtime.InteropServices.Tests
         public void Record_Raw()
         {
             // We do not support record types in the opinionated Create method.
-            Assert.Throws<ArgumentException>("T", () => OleVariant.Create(new Record()));
+            Assert.Throws<ArgumentException>("T", () => ComVariant.Create(new Record()));
             // We support creating a record-based variant with the CreateRaw method.
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_RECORD, new Record());
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_RECORD, new Record());
             Assert.Equal(VarEnum.VT_RECORD, variant.VarType);
             Assert.Equal(default, variant.GetRawDataRef<Record>());
         }
@@ -275,7 +275,7 @@ namespace System.Runtime.InteropServices.Tests
         public void LPStr_Raw()
         {
             string str = "Foo";
-            using OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_LPSTR, Marshal.StringToCoTaskMemAnsi(str));
+            using ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_LPSTR, Marshal.StringToCoTaskMemAnsi(str));
             Assert.Equal(VarEnum.VT_LPSTR, variant.VarType);
             Assert.Throws<InvalidOperationException>(variant.As<string>);
             Assert.Equal(str, Marshal.PtrToStringAnsi(variant.GetRawDataRef<IntPtr>()));
@@ -285,7 +285,7 @@ namespace System.Runtime.InteropServices.Tests
         public void LPWStr_Raw()
         {
             string str = "Foo";
-            using OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_LPWSTR, Marshal.StringToCoTaskMemUni(str));
+            using ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_LPWSTR, Marshal.StringToCoTaskMemUni(str));
             Assert.Equal(VarEnum.VT_LPWSTR, variant.VarType);
             Assert.Throws<InvalidOperationException>(variant.As<string>);
             Assert.Equal(str, Marshal.PtrToStringUni(variant.GetRawDataRef<IntPtr>()));
@@ -295,7 +295,7 @@ namespace System.Runtime.InteropServices.Tests
         public void FileTime_Raw()
         {
             long fileTime = 1039348523;
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_FILETIME, fileTime);
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_FILETIME, fileTime);
             Assert.Equal(VarEnum.VT_FILETIME, variant.VarType);
             Assert.Throws<InvalidOperationException>(() => variant.As<long>());
             Assert.Equal(fileTime, variant.GetRawDataRef<long>());
@@ -312,7 +312,7 @@ namespace System.Runtime.InteropServices.Tests
         public void Blob_Raw()
         {
             Blob blob = new Blob { Length = 3, Data = Marshal.AllocCoTaskMem(25) };
-            using OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_BLOB, blob);
+            using ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_BLOB, blob);
             Assert.Equal(VarEnum.VT_BLOB, variant.VarType);
             Assert.Throws<ArgumentException>("T", () => variant.As<Blob>());
             Assert.Equal(blob, variant.GetRawDataRef<Blob>());
@@ -322,8 +322,8 @@ namespace System.Runtime.InteropServices.Tests
         public void Stream_Raw()
         {
             IntPtr nativeStream = 42;
-            // Using a fake value so we aren't disposing the OleVariant instance.
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_STREAM, nativeStream);
+            // Using a fake value so we aren't disposing the ComVariant instance.
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_STREAM, nativeStream);
             Assert.Equal(VarEnum.VT_STREAM, variant.VarType);
             Assert.Equal(nativeStream, variant.GetRawDataRef<IntPtr>());
         }
@@ -332,8 +332,8 @@ namespace System.Runtime.InteropServices.Tests
         public void Storage_Raw()
         {
             IntPtr nativeStorage = 42;
-            // Using a fake value so we aren't disposing the OleVariant instance.
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_STORAGE, nativeStorage);
+            // Using a fake value so we aren't disposing the ComVariant instance.
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_STORAGE, nativeStorage);
             Assert.Equal(VarEnum.VT_STORAGE, variant.VarType);
             Assert.Equal(nativeStorage, variant.GetRawDataRef<IntPtr>());
         }
@@ -342,8 +342,8 @@ namespace System.Runtime.InteropServices.Tests
         public void StreamedObject_Raw()
         {
             IntPtr nativeStream = 42;
-            // Using a fake value so we aren't disposing the OleVariant instance.
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_STREAMED_OBJECT, nativeStream);
+            // Using a fake value so we aren't disposing the ComVariant instance.
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_STREAMED_OBJECT, nativeStream);
             Assert.Equal(VarEnum.VT_STREAMED_OBJECT, variant.VarType);
             Assert.Equal(nativeStream, variant.GetRawDataRef<IntPtr>());
         }
@@ -352,8 +352,8 @@ namespace System.Runtime.InteropServices.Tests
         public void StoredObject_Raw()
         {
             IntPtr nativeStorage = 42;
-            // Using a fake value so we aren't disposing the OleVariant instance.
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_STORED_OBJECT, nativeStorage);
+            // Using a fake value so we aren't disposing the ComVariant instance.
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_STORED_OBJECT, nativeStorage);
             Assert.Equal(VarEnum.VT_STORED_OBJECT, variant.VarType);
             Assert.Equal(nativeStorage, variant.GetRawDataRef<IntPtr>());
         }
@@ -362,8 +362,8 @@ namespace System.Runtime.InteropServices.Tests
         public void VersionedStream_Raw()
         {
             IntPtr nativeStream = 42;
-            // Using a fake value so we aren't disposing the OleVariant instance.
-            OleVariant variant = OleVariant.CreateRaw((VarEnum)73, nativeStream);
+            // Using a fake value so we aren't disposing the ComVariant instance.
+            ComVariant variant = ComVariant.CreateRaw((VarEnum)73, nativeStream);
             Assert.Equal((VarEnum)73, variant.VarType);
             Assert.Equal(nativeStream, variant.GetRawDataRef<IntPtr>());
         }
@@ -372,7 +372,7 @@ namespace System.Runtime.InteropServices.Tests
         public void BlobObject_Raw()
         {
             Blob blob = new Blob { Length = 3, Data = Marshal.AllocCoTaskMem(10) };
-            using OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_BLOB_OBJECT, blob);
+            using ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_BLOB_OBJECT, blob);
             Assert.Equal(VarEnum.VT_BLOB_OBJECT, variant.VarType);
             Assert.Throws<ArgumentException>("T", () => variant.As<Blob>());
             Assert.Equal(blob, variant.GetRawDataRef<Blob>());
@@ -396,7 +396,7 @@ namespace System.Runtime.InteropServices.Tests
             ((ClipboardData*)clipboardData)->_size = 10;
             ((ClipboardData*)clipboardData)->_format = 1;
 
-            using OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_CF, clipboardData);
+            using ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_CF, clipboardData);
             Assert.Equal(VarEnum.VT_CF, variant.VarType);
             Assert.Equal(clipboardData, variant.GetRawDataRef<IntPtr>());
         }
@@ -407,7 +407,7 @@ namespace System.Runtime.InteropServices.Tests
             // VT_CLSID is represented as a pointer to a GUID, not a GUID itself.
             IntPtr pClsid = Marshal.AllocCoTaskMem(sizeof(Guid));
             *(Guid*)pClsid = Guid.NewGuid();
-            using OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_CLSID, pClsid);
+            using ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_CLSID, pClsid);
             Assert.Equal(VarEnum.VT_CLSID, variant.VarType);
             Assert.Equal(pClsid, variant.GetRawDataRef<IntPtr>());
         }
@@ -423,7 +423,7 @@ namespace System.Runtime.InteropServices.Tests
         public void Vector_Raw()
         {
             Vector vector = new Vector { Length = 3, Data = Marshal.AllocCoTaskMem(sizeof(int) * 3) };
-            using OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_VECTOR | VarEnum.VT_I4, vector);
+            using ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_VECTOR | VarEnum.VT_I4, vector);
             Assert.Equal(VarEnum.VT_VECTOR | VarEnum.VT_I4, variant.VarType);
             Assert.Throws<ArgumentException>("T", () => variant.As<Vector>());
             Assert.Equal(vector, variant.GetRawDataRef<Vector>());
@@ -434,8 +434,8 @@ namespace System.Runtime.InteropServices.Tests
         public void Array_Raw()
         {
             IntPtr safeArray = 42;
-            // Using a fake value so we aren't disposing the OleVariant instance.
-            OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_ARRAY | VarEnum.VT_I4, safeArray);
+            // Using a fake value so we aren't disposing the ComVariant instance.
+            ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_ARRAY | VarEnum.VT_I4, safeArray);
             Assert.Equal(VarEnum.VT_ARRAY | VarEnum.VT_I4, variant.VarType);
             Assert.Equal(safeArray, variant.GetRawDataRef<IntPtr>());
         }
@@ -444,7 +444,7 @@ namespace System.Runtime.InteropServices.Tests
         [PlatformSpecific(~TestPlatforms.Windows)]
         public void Array_Raw_NonWindows()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => OleVariant.CreateRaw(VarEnum.VT_ARRAY | VarEnum.VT_I4, 0));
+            Assert.Throws<PlatformNotSupportedException>(() => ComVariant.CreateRaw(VarEnum.VT_ARRAY | VarEnum.VT_I4, 0));
         }
 
         [Fact]
@@ -452,7 +452,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             // byref VARIANTs don't own the memory they point to.
             IntPtr byref = Marshal.AllocCoTaskMem(4);
-            using OleVariant variant = OleVariant.CreateRaw(VarEnum.VT_BYREF | VarEnum.VT_I4, byref);
+            using ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_BYREF | VarEnum.VT_I4, byref);
             Assert.Equal(VarEnum.VT_BYREF | VarEnum.VT_I4, variant.VarType);
             Assert.Equal(byref, variant.GetRawDataRef<IntPtr>());
             Marshal.FreeCoTaskMem(byref);

@@ -10,16 +10,16 @@ using System.Threading.Tasks;
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Marshals an <see cref="object"/> to an <see cref="OleVariant"/>.
+    /// Marshals an <see cref="object"/> to an <see cref="ComVariant"/>.
     /// </summary>
     /// <remarks>
-    /// Supports the same types as <see cref="OleVariant.Create{T}(T)"/> as well as any types with <see cref="GeneratedComClassAttribute"/> applied.
+    /// Supports the same types as <see cref="ComVariant.Create{T}(T)"/> as well as any types with <see cref="GeneratedComClassAttribute"/> applied.
     /// </remarks>
-    [CustomMarshaller(typeof(object), MarshalMode.Default, typeof(OleVariantMarshaller))]
+    [CustomMarshaller(typeof(object), MarshalMode.Default, typeof(ComVariantMarshaller))]
     [CustomMarshaller(typeof(object), MarshalMode.UnmanagedToManagedRef, typeof(RefPropogate))]
-    public static partial class OleVariantMarshaller
+    public static partial class ComVariantMarshaller
     {
-        public static OleVariant ConvertToUnmanaged(object? managed)
+        public static ComVariant ConvertToUnmanaged(object? managed)
         {
             if (managed is null)
             {
@@ -30,56 +30,56 @@ namespace System.Runtime.InteropServices.Marshalling
             switch (managed)
             {
                 case sbyte s:
-                    return OleVariant.Create(s);
+                    return ComVariant.Create(s);
                 case byte b:
-                    return OleVariant.Create(b);
+                    return ComVariant.Create(b);
                 case short s:
-                    return OleVariant.Create(s);
+                    return ComVariant.Create(s);
                 case ushort s:
-                    return OleVariant.Create(s);
+                    return ComVariant.Create(s);
                 case int i:
-                    return OleVariant.Create(i);
+                    return ComVariant.Create(i);
                 case uint i:
-                    return OleVariant.Create(i);
+                    return ComVariant.Create(i);
                 case long l:
-                    return OleVariant.Create(l);
+                    return ComVariant.Create(l);
                 case ulong l:
-                    return OleVariant.Create(l);
+                    return ComVariant.Create(l);
                 case float f:
-                    return OleVariant.Create(f);
+                    return ComVariant.Create(f);
                 case double d:
-                    return OleVariant.Create(d);
+                    return ComVariant.Create(d);
                 case decimal d:
-                    return OleVariant.Create(d);
+                    return ComVariant.Create(d);
                 case bool b:
-                    return OleVariant.Create(b);
+                    return ComVariant.Create(b);
                 case char c:
-                    return OleVariant.Create((ushort)c);
+                    return ComVariant.Create((ushort)c);
                 case string s:
-                    return OleVariant.Create(s);
+                    return ComVariant.Create(s);
                 case DateTime dt:
-                    return OleVariant.Create(dt);
+                    return ComVariant.Create(dt);
                 case ErrorWrapper errorWrapper:
-                    return OleVariant.Create(errorWrapper);
+                    return ComVariant.Create(errorWrapper);
                 case CurrencyWrapper currencyWrapper:
-                    return OleVariant.Create(currencyWrapper);
+                    return ComVariant.Create(currencyWrapper);
                 case BStrWrapper bStrWrapper:
-                    return OleVariant.Create(bStrWrapper);
+                    return ComVariant.Create(bStrWrapper);
                 case DBNull:
-                    return OleVariant.Null;
+                    return ComVariant.Null;
             }
 #pragma warning restore CS0618 // Type or member is obsolete
 
-            if (TryCreateOleVariantForInterfaceWrapper(managed, out OleVariant variant))
+            if (TryCreateOleVariantForInterfaceWrapper(managed, out ComVariant variant))
             {
                 return variant;
             }
 
-            throw new ArgumentException("Type of managed object is not supported for marshalling as OleVariant.", nameof(managed));
+            throw new ArgumentException("Type of managed object is not supported for marshalling as ComVariant.", nameof(managed));
         }
 
 #pragma warning disable CA1416 // Validate platform compatibility
-        private static unsafe bool TryCreateOleVariantForInterfaceWrapper(object managed, out OleVariant variant)
+        private static unsafe bool TryCreateOleVariantForInterfaceWrapper(object managed, out ComVariant variant)
         {
             if (managed is UnknownWrapper uw)
             {
@@ -89,12 +89,12 @@ namespace System.Runtime.InteropServices.Marshalling
                     variant = default;
                     return true;
                 }
-                variant = OleVariant.CreateRaw(VarEnum.VT_UNKNOWN, StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateComInterfaceForObject(wrapped, CreateComInterfaceFlags.None));
+                variant = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateComInterfaceForObject(wrapped, CreateComInterfaceFlags.None));
                 return true;
             }
             else if (managed is not null && StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetComExposedTypeDetails(managed.GetType().TypeHandle) is not null)
             {
-                variant = OleVariant.CreateRaw(VarEnum.VT_UNKNOWN, StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateComInterfaceForObject(managed, CreateComInterfaceFlags.None));
+                variant = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateComInterfaceForObject(managed, CreateComInterfaceFlags.None));
                 return true;
             }
             variant = default;
@@ -102,7 +102,7 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 #pragma warning restore CA1416 // Validate platform compatibility
 
-        public static unsafe object? ConvertToManaged(OleVariant unmanaged)
+        public static unsafe object? ConvertToManaged(ComVariant unmanaged)
         {
 #pragma warning disable CS0618 // Type or member is obsolete
 #pragma warning disable CA1416 // Validate platform compatibility
@@ -152,7 +152,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 case VarEnum.VT_DISPATCH:
                     return StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateObjectForComInstance(unmanaged.GetRawDataRef<nint>(), CreateObjectFlags.Unwrap);
                 case VarEnum.VT_BYREF | VarEnum.VT_VARIANT:
-                    return ConvertToManaged(*(OleVariant*)unmanaged.GetRawDataRef<nint>());
+                    return ConvertToManaged(*(ComVariant*)unmanaged.GetRawDataRef<nint>());
                 case VarEnum.VT_BYREF | VarEnum.VT_I1:
                     return *(sbyte*)unmanaged.GetRawDataRef<nint>();
                 case VarEnum.VT_BYREF | VarEnum.VT_UI1:
@@ -194,22 +194,22 @@ namespace System.Runtime.InteropServices.Marshalling
 #pragma warning restore CS0618 // Type or member is obsolete
         }
 
-        public static void Free(OleVariant unmanaged) => unmanaged.Dispose();
+        public static void Free(ComVariant unmanaged) => unmanaged.Dispose();
 
         /// <summary>
-        /// Marshals a <see cref="object"/> to an <see cref="OleVariant"/>, propagating the value of the <see cref="object"/> back to the variant's
+        /// Marshals a <see cref="object"/> to an <see cref="ComVariant"/>, propagating the value of the <see cref="object"/> back to the variant's
         /// existing data storage if the variant has <see cref="VarEnum.VT_BYREF"/> type.
         /// </summary>
         public struct RefPropogate
         {
-            private OleVariant _unmanaged;
+            private ComVariant _unmanaged;
             private object? _managed;
 
             /// <summary>
             /// Initializes the marshaller with an unmanaged variant.
             /// </summary>
             /// <param name="unmanaged">The unmanaged value</param>
-            public void FromUnmanaged(OleVariant unmanaged) => _unmanaged = unmanaged;
+            public void FromUnmanaged(ComVariant unmanaged) => _unmanaged = unmanaged;
 
             /// <summary>
             /// Initializes the marshaller with a managed object.
@@ -218,11 +218,11 @@ namespace System.Runtime.InteropServices.Marshalling
             public void FromManaged(object? managed) => _managed = managed;
 
             /// <summary>
-            /// Create an unmanaged <see cref="OleVariant"/> based on the provided managed and unmanaged values.
+            /// Create an unmanaged <see cref="ComVariant"/> based on the provided managed and unmanaged values.
             /// </summary>
-            /// <returns>An <see cref="OleVariant"/> instance representing the marshaller's current state.</returns>
+            /// <returns>An <see cref="ComVariant"/> instance representing the marshaller's current state.</returns>
             /// <exception cref="ArgumentException">When the managed value must be propagated back to the unmanaged variant, but the managed value type cannot be converted to the variant's type.</exception>
-            public unsafe OleVariant ToUnmanaged()
+            public unsafe ComVariant ToUnmanaged()
             {
                 if (!_unmanaged.VarType.HasFlag(VarEnum.VT_BYREF))
                 {
@@ -244,7 +244,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 switch ((_unmanaged.VarType & ~VarEnum.VT_BYREF, _managed))
                 {
                     case (VarEnum.VT_VARIANT, _):
-                        *(OleVariant*)_unmanaged.GetRawDataRef<nint>() = ConvertToUnmanaged(_managed);
+                        *(ComVariant*)_unmanaged.GetRawDataRef<nint>() = ConvertToUnmanaged(_managed);
                         break;
                     case (VarEnum.VT_I1 or VarEnum.VT_UI1, sbyte s):
                         *(sbyte*)_unmanaged.GetRawDataRef<nint>() = s;

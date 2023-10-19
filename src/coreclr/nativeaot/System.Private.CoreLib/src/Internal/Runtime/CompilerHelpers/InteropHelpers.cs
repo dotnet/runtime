@@ -577,7 +577,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
 #if TARGET_WINDOWS
 #pragma warning disable CA1416
-            OleVariant* data = (OleVariant*)pDstNativeVariant;
+            ComVariant* data = (ComVariant*)pDstNativeVariant;
             data->Dispose();
 #pragma warning restore CA1416
 #else
