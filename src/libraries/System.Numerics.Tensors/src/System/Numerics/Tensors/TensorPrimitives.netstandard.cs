@@ -311,38 +311,24 @@ namespace System.Numerics.Tensors
             return result;
         }
 
-        /// <remarks>
-        /// This is the same as <see cref="Aggregate{TTransformOperator, TAggregationOperator}(ReadOnlySpan{float}, TTransformOperator, TAggregationOperator)"/>
-        /// with an identity transform, except it early exits on NaN.
-        /// </remarks>
         private static int IndexOfMinMaxCore<TIndexOfMinMaxOperator>(ReadOnlySpan<float> x, TIndexOfMinMaxOperator op = default)
             where TIndexOfMinMaxOperator : struct, IIndexOfOperator
         {
             // This matches the IEEE 754:2019 `maximum`/`minimum` functions.
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the greater of the inputs.
+            // otherwise returns the index of the greater of the inputs.
             // It treats +0 as greater than -0 as per the specification.
 
             int result;
             int i;
 
-            if (Vector.IsHardwareAccelerated && x.Length >= Vector<float>.Count)
+            if (Vector.IsHardwareAccelerated && Vector<int>.Count <= 8 && x.Length >= Vector<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
-                int[] resultIndexArray = new int[Vector<float>.Count];
-                int[] curIndexArray = new int[Vector<float>.Count];
-                int[] incrementArray = new int[Vector<float>.Count];
 
-                for (int j = 0; j < Vector<float>.Count; j++)
-                {
-                    resultIndexArray[j] = j;
-                    curIndexArray[j] = j;
-                    incrementArray[j] = Vector<float>.Count;
-                }
-
-                Vector<int> resultIndex = new Vector<int>(resultIndexArray);
-                Vector<int> curIndex = new Vector<int>(curIndexArray);
-                Vector<int> increment = new Vector<int>(incrementArray);
+                Vector<int> resultIndex = new Vector<int>([0, 1, 2, 3, 4, 5, 6, 7], 0);
+                Vector<int> curIndex = resultIndex;
+                Vector<int> increment = new Vector<int>(Vector<int>.Count);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
@@ -371,11 +357,7 @@ namespace System.Numerics.Tensors
                     // If any elements remain, handle them in one final vector.
                     if (i != x.Length)
                     {
-                        for(int j = 0; j < Vector<float>.Count; j++)
-                        {
-                            incrementArray[j] = x.Length - i;
-                        }
-                        curIndex = Vector.Add(curIndex, AsVector(ref MemoryMarshal.GetReference(incrementArray.AsSpan()), 0));
+                        curIndex = Vector.Add(curIndex, new Vector<int>(x.Length - i));
 
                         current = AsVector(ref xRef, x.Length - Vector<float>.Count);
                         if (!Vector.EqualsAll(current, current))

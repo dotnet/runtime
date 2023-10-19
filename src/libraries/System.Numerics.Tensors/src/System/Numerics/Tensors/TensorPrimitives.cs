@@ -320,6 +320,7 @@ namespace System.Numerics.Tensors
             {
                 return -1;
             }
+
             return IndexOfMinMaxCore<IndexOfMaxOperator>(x);
         }
 
@@ -343,6 +344,7 @@ namespace System.Numerics.Tensors
             {
                 return -1;
             }
+
             return IndexOfMinMaxCore<IndexOfMaxMagnitudeOperator>(x);
         }
 
@@ -365,6 +367,7 @@ namespace System.Numerics.Tensors
             {
                 return -1;
             }
+
             return IndexOfMinMaxCore<IndexOfMinOperator>(x);
         }
 
@@ -388,6 +391,7 @@ namespace System.Numerics.Tensors
             {
                 return -1;
             }
+
             return IndexOfMinMaxCore<IndexOfMinMagnitudeOperator>(x);
         }
 
