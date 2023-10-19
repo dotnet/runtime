@@ -622,7 +622,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if (pResponseBuffer != IntPtr.Zero)
                     {
-                        NativeMethods.LsaFreeReturnBuffer(pResponseBuffer);
+                        Interop.Secur32.LsaFreeReturnBuffer(pResponseBuffer);
                     }
                 }
             }

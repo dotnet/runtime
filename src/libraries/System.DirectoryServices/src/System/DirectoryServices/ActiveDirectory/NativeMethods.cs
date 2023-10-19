@@ -299,13 +299,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int DnsQueryBypassCache = 8;
 
         internal const int NegGetCallerName = 1;
-
-        /*NTSTATUS LsaFreeReturnBuffer(
-              PVOID Buffer
-            );*/
-        [LibraryImport(global::Interop.Libraries.Secur32)]
-        internal static partial uint LsaFreeReturnBuffer(
-            IntPtr buffer);
     }
 
     internal sealed class NativeComInterfaces
