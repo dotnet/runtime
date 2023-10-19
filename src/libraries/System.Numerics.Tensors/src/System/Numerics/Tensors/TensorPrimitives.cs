@@ -1152,7 +1152,12 @@ namespace System.Numerics.Tensors
         /// <summary>Mask used to handle alignment elements before vectorized handling of the input.</summary>
         /// <remarks>
         /// Logically 16 rows of 16 uints. The Nth row should be used to handle N alignment elements at the
-        /// begging of the input, where elements in the vector after that will be zero'd.
+        /// beginning of the input, where elements in the vector after that will be zero'd.
+        ///
+        /// There actually exists 17 rows in the table with the last row being a repeat of the first. This is
+        /// done because it allows the main algorithms to use a simplified algorithm when computing the amount
+        /// of misalignment where we always skip the first 16 elements, even if already aligned, so we don't
+        /// double process them. This allows us to avoid an additional branch.
         /// </remarks>
         private static ReadOnlySpan<uint> AlignmentUInt32Mask_16x16 =>
         [
@@ -1179,6 +1184,10 @@ namespace System.Numerics.Tensors
         /// <remarks>
         /// Logically 16 rows of 16 uints. The Nth row should be used to handle N remaining elements at the
         /// end of the input, where elements in the vector prior to that will be zero'd.
+        ///
+        /// Much as with the AlignmentMask table, we actually have 17 rows where the last row is a repeat of
+        /// the first. Doing this allows us to avoid an additional branch and instead to always process the
+        /// last 16 elements via a conditional select instead.
         /// </remarks>
         private static ReadOnlySpan<uint> RemainderUInt32Mask_16x16 =>
         [
