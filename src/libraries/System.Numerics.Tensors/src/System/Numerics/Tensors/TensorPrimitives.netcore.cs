@@ -10103,6 +10103,7 @@ namespace System.Numerics.Tensors
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<float> ElementWiseSelect(Vector128<float> mask, Vector128<float> left, Vector128<float> right)
         {
             if (Sse41.IsSupported)
@@ -10112,6 +10113,7 @@ namespace System.Numerics.Tensors
             else return Vector128.ConditionalSelect(mask, left, right);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<int> ElementWiseSelect(Vector128<int> mask, Vector128<int> left, Vector128<int> right)
         {
             if (Sse41.IsSupported)
@@ -10121,6 +10123,7 @@ namespace System.Numerics.Tensors
             else return Vector128.ConditionalSelect(mask, left, right);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<float> ElementWiseSelect(Vector256<float> mask, Vector256<float> left, Vector256<float> right)
         {
             if (Avx2.IsSupported)
@@ -10130,6 +10133,7 @@ namespace System.Numerics.Tensors
             else return Vector256.ConditionalSelect(mask, left, right);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<int> ElementWiseSelect(Vector256<int> mask, Vector256<int> left, Vector256<int> right)
         {
             if (Avx2.IsSupported)
@@ -10140,6 +10144,7 @@ namespace System.Numerics.Tensors
         }
 
 #if NET8_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<float> ElementWiseSelect(Vector512<float> mask, Vector512<float> left, Vector512<float> right)
         {
             if (Avx512F.IsSupported)
@@ -10149,6 +10154,7 @@ namespace System.Numerics.Tensors
             else return Vector512.ConditionalSelect(mask, left, right);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<int> ElementWiseSelect(Vector512<int> mask, Vector512<int> left, Vector512<int> right)
         {
             if (Avx512F.IsSupported)
