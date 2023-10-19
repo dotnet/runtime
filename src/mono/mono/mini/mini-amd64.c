@@ -1128,7 +1128,7 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 			return &ccontext->gregs [ainfo->reg];
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
-			return &ccontext->fregs [ainfo->reg];
+			return &ccontext->fregs [ainfo->reg * 2];
 		case ArgOnStack:
 		case ArgValuetypeAddrOnStack:
 			return ccontext->stack + ainfo->offset;
@@ -1144,7 +1144,7 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 					return &ccontext->gregs [ainfo->pair_regs [0]];
 				case ArgInFloatSSEReg:
 				case ArgInDoubleSSEReg:
-					return &ccontext->fregs [ainfo->pair_regs [0]];
+					return &ccontext->fregs [ainfo->pair_regs [0] * 2];
 				default:
 					g_assert_not_reached ();
 			}
@@ -1172,7 +1172,7 @@ arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
 				break;
 			case ArgInFloatSSEReg:
 			case ArgInDoubleSSEReg:
-				*(double*)dest_cast = ccontext->fregs [reg_storage];
+				*(double*)dest_cast = ccontext->fregs [reg_storage * 2];
 				break;
 			default:
 				g_assert_not_reached ();
@@ -1196,7 +1196,7 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 				break;
 			case ArgInFloatSSEReg:
 			case ArgInDoubleSSEReg:
-				ccontext->fregs [reg_storage] = *(double*)src_cast;
+				ccontext->fregs [reg_storage * 2] = *(double*)src_cast;
 				break;
 			default:
 				g_assert_not_reached ();
@@ -2612,6 +2612,7 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 	case ArgInIReg:
 	case ArgInFloatSSEReg:
 	case ArgInDoubleSSEReg:
+	case ArgSIMDInSSEReg:
 	case ArgValuetypeAddrInIReg:
 	case ArgValuetypeInReg:
 		break;
@@ -2625,6 +2626,7 @@ dyn_call_supported (MonoMethodSignature *sig, CallInfo *cinfo)
 		case ArgInIReg:
 		case ArgInFloatSSEReg:
 		case ArgInDoubleSSEReg:
+		case ArgSIMDInSSEReg:
 		case ArgValuetypeInReg:
 		case ArgValuetypeAddrInIReg:
 		case ArgValuetypeAddrOnStack:
@@ -2740,7 +2742,8 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		for (i = 0; i < PARAM_REGS; ++i)
 			general_param_reg_to_index [param_regs[i]] = i;
 		for (i = 0; i < FLOAT_PARAM_REGS; ++i)
-			float_param_reg_to_index [float_param_regs[i]] = i;
+			/* 2 entries per SIMD reg */
+			float_param_reg_to_index [float_param_regs[i]] = i * 2;
 		mono_memory_barrier ();
 		param_reg_to_index_inited = 1;
 	} else {
@@ -2775,7 +2778,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		} else if (ainfo->storage == ArgValuetypeAddrInIReg) {
 			g_assert (ainfo->pair_storage [0] == ArgInIReg && ainfo->pair_storage [1] == ArgNone);
 			slot = general_param_reg_to_index [ainfo->pair_regs [0]];
-		} else if (ainfo->storage == ArgInFloatSSEReg || ainfo->storage == ArgInDoubleSSEReg) {
+		} else if (ainfo->storage == ArgInFloatSSEReg || ainfo->storage == ArgInDoubleSSEReg || ainfo->storage == ArgSIMDInSSEReg) {
 			slot = float_param_reg_to_index [ainfo->reg];
 		} else {
 			slot = general_param_reg_to_index [ainfo->reg];
@@ -2887,6 +2890,10 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 				for (i = 0; i < ainfo->arg_size / 8; ++i)
 					p->regs [slot + i] = ((target_mgreg_t*)(arg))[i];
 				break;
+			case ArgSIMDInSSEReg:
+				p->has_fp = 1;
+				memcpy (&(p->fregs [slot]), arg, 16);
+				break;
 			default:
 				g_assert_not_reached ();
 				break;
@@ -2966,21 +2973,24 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 		} else {
 			/* Fall through */
 		}
-	case MONO_TYPE_VALUETYPE:
-		if (dinfo->cinfo->ret.storage == ArgValuetypeAddrInIReg || dinfo->cinfo->ret.storage == ArgGsharedvtVariableInReg) {
+	case MONO_TYPE_VALUETYPE: {
+		ArgInfo *ainfo = &dinfo->cinfo->ret;
+		switch (ainfo->storage) {
+		case ArgValuetypeAddrInIReg:
+		case ArgGsharedvtVariableInReg:
 			/* Nothing to do */
-		} else {
-			ArgInfo *ainfo = &dinfo->cinfo->ret;
-
-			g_assert (ainfo->storage == ArgValuetypeInReg);
-
+			break;
+		case ArgSIMDInSSEReg:
+			memcpy (ret, &dargs->fregs [0], 16);
+			break;
+		case ArgValuetypeInReg:  {
 			for (i = 0; i < 2; ++i) {
 				switch (ainfo->pair_storage [0]) {
 				case ArgInIReg:
 					((host_mgreg_t*)ret)[i] = res;
 					break;
 				case ArgInDoubleSSEReg:
-					((double*)ret)[i] = dargs->fregs [i];
+					((double*)ret)[i] = dargs->fregs [i * 2];
 					break;
 				case ArgNone:
 					break;
@@ -2989,8 +2999,14 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 					break;
 				}
 			}
+			break;
+		}
+		default:
+			g_assert_not_reached ();
+			break;
 		}
 		break;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -5631,7 +5647,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			label = code;
 			amd64_branch8 (code, X86_CC_Z, -1, 1);
 			for (i = 0; i < FLOAT_PARAM_REGS; ++i)
-				amd64_sse_movsd_reg_membase (code, i, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, fregs) + (i * sizeof (double)));
+				amd64_sse_movups_reg_membase (code, i, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, fregs) + (i * 2 * sizeof (double)));
 			amd64_patch (label, code);
 
 			/* Allocate param area */
@@ -5676,8 +5692,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Save result */
 			amd64_mov_reg_membase (code, AMD64_R11, var->inst_basereg, var->inst_offset, 8);
 			amd64_mov_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, res), AMD64_RAX, 8);
-			amd64_sse_movsd_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, fregs), AMD64_XMM0);
-			amd64_sse_movsd_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, fregs) + sizeof (double), AMD64_XMM1);
+			amd64_sse_movups_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, fregs), AMD64_XMM0);
+			amd64_sse_movups_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (DynCallArgs, fregs) + (sizeof (double) * 2), AMD64_XMM1);
 			break;
 		}
 		case OP_AMD64_SAVE_SP_TO_LMF: {

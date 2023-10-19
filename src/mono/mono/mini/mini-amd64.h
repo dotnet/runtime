@@ -277,7 +277,8 @@ struct SeqPointInfo {
 typedef struct {
 	host_mgreg_t res;
 	guint8 *ret;
-	double fregs [8];
+	/* 2 entries per SIMD reg */
+	double fregs [16];
 	host_mgreg_t has_fp;
 	host_mgreg_t nstack_args;
 	/* This should come last as the structure is dynamically extended */
