@@ -2,17 +2,16 @@
 
 <!-- A description of the package and where one can find more documentation -->
 
-Microsoft.Extensions.Caching.Abstractions offers the basics to create and use caching in your applications.
+Provides the abstractions to create and use in-memory and distributed caching in your applications.
 
-This library doesn’t hold the actual caches, but it defines how caches should behave.
-With this, you or other libraries can build various types of caches that all apps can use in the same way, whether the data is kept in memory, in files, or even across a network.
+This library defines how in-memory and distributed caches should be implemented; it doesn’t contain any cache implementation.
+With the abstractions provided in this library, various types of caches can be built and used interchangeably, whether the data is kept in memory, in files, or even across a network.
 
 ## Key Features
 
 <!-- The key features of this package -->
 
-* Basic rules and tools for building different kinds of caches.
-* Makes it easier to create or use caches in your apps, whether they're simple or complex.
+* Interfaces for building and using in-memory and distributed caches.
 
 ## How to Use
 
@@ -35,7 +34,9 @@ The main types provided by this library are:
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
 * [Conceptual documentation](https://learn.microsoft.com/dotnet/core/extensions/caching)
-* [API documentation](https://learn.microsoft.com/dotnet/api/microsoft.extensions.caching)
+* API documentation
+  * [Microsoft.Extensions.Caching.Memory](https://learn.microsoft.com/dotnet/api/microsoft.extensions.caching.memory)
+  * [Microsoft.Extensions.Caching.Distributed](https://learn.microsoft.com/dotnet/api/microsoft.extensions.caching.distributed)
 
 ## Related Packages
 
