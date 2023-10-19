@@ -147,7 +147,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for StandAlone GC, NativeAOT and MacOS builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
+#if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -363,7 +363,8 @@ const int policy_expand  = 2;
 #ifdef SIMPLE_DPRINTF
 
 void GCLog (const char *fmt, ... );
-#define dprintf(l,x) {if ((l == 6666)) {GCLog x;}}
+//#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
+#define dprintf(l,x) {if (l == 6666) {GCLog x;}}
 #else //SIMPLE_DPRINTF
 #ifdef HOST_64BIT
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
@@ -4296,11 +4297,15 @@ private:
             uint64_t    elapsed_between_gcs;    // time between gcs in microseconds (this should really be between_pauses)
             uint64_t    gc_pause_time;          // pause time for this GC
             uint64_t    msl_wait_time;
+            size_t      gc_survived_size;
         };
 
         uint32_t        sample_index;
         sample          samples[sample_size];
-        size_t          prev_num_completed_gcs;
+
+        // Instead of checking the GC index we should just check how many samples we've accumulated.
+        size_t          current_samples_count;
+        size_t          processed_samples_count;
 
         uint32_t        gen2_sample_index;
         // This is (gc_elapsed_time / time inbetween this and the last gen2 GC)
@@ -4527,6 +4532,11 @@ private:
     // at the beginning of a BGC and the PM triggered full GCs
     // fall into this case.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_start_time;
+    // TEMP BEG
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspension_end_time;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t h0_gc_start_time;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t change_heap_count_time;
+    // TEMP END
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t end_gc_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_suspended_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t process_start_time;
