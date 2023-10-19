@@ -23,31 +23,22 @@ Utilizing this package is quite simple, and it mainly revolves around two method
 
 Here, `originalData` is the data you want to protect, `optionalEntropy` is an additional byte array used to increase encryption complexity, and `DataProtectionScope` specifies whether the data protection should apply to the current user or the machine.
 
-To protect:
-
 ```csharp
 using System.Security.Cryptography;
+using System.Text;
 
-byte[] originalData = new byte[] { ... };
-byte[] optionalEntropy = new byte[] { ... };
+byte[] originalData = Encoding.UTF8.GetBytes("This is a secret");
+byte[] optionalEntropy = new byte[64];
+Random.Shared.NextBytes(optionalEntropy);
 
-// To Encrypt data
+// To protect:
 byte[] encryptedData = ProtectedData.Protect(
     originalData,
     optionalEntropy,
     DataProtectionScope.CurrentUser);
-```
 
-To unprotect:
-
-```csharp
-using System.Security.Cryptography;
-
-byte[] encryptedData = new byte[] { ... };
-byte[] optionalEntropy = new byte[] { ... };
-
-// To Decrypt data
-byte[] originalData = ProtectedData.Unprotect(
+// To unprotect:
+byte[] decryptedData = ProtectedData.Unprotect(
     encryptedData,
     optionalEntropy,
     DataProtectionScope.CurrentUser);
