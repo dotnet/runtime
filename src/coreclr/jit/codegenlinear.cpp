@@ -2251,11 +2251,10 @@ void CodeGen::genProduceReg(GenTree* tree)
                 }
             }
 #ifdef FEATURE_HW_INTRINSICS
-#ifdef TARGET_ARM64
             else if (tree->IsMultiRegHWIntrinsic())
             {
                 const GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
-                const unsigned            regCount    = tree->GetMultiRegCount(compiler);
+                const unsigned            regCount = HWIntrinsicInfo::GetMultiRegCount(hwintrinsic->GetHWIntrinsicId());
                 for (unsigned i = 0; i < regCount; ++i)
                 {
                     regNumber reg = hwintrinsic->GetRegNumByIdx(i);
@@ -2270,7 +2269,7 @@ void CodeGen::genProduceReg(GenTree* tree)
             {
                 const GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
                 const GenTreeHWIntrinsic*  hwintrinsic  = copyOrReload->gtGetOp1()->AsHWIntrinsic();
-                const unsigned             regCount     = hwintrinsic->GetMultiRegCount(compiler);
+                const unsigned regCount = HWIntrinsicInfo::GetMultiRegCount(hwintrinsic->GetHWIntrinsicId());
                 for (unsigned i = 0; i < regCount; ++i)
                 {
                     regNumber reg = hwintrinsic->GetRegNumByIdx(i);
@@ -2281,7 +2280,6 @@ void CodeGen::genProduceReg(GenTree* tree)
                     }
                 }
             }
-#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
             else
             {

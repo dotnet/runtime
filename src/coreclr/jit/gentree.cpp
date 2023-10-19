@@ -836,32 +836,13 @@ bool GenTree::gtHasReg(Compiler* comp) const
     {
         assert(comp != nullptr);
         const GenTreeLclVar* lclNode  = AsLclVar();
-        const unsigned       regCount = GetMultiRegCount(comp);
+        const unsigned       regCount = lclNode->GetFieldCount(comp);
         // A Multi-reg local vars is said to have regs,
         // if it has valid regs in any of the positions.
         for (unsigned i = 0; i < regCount; i++)
         {
             hasReg = (lclNode->GetRegNumByIdx(i) != REG_NA);
             if (hasReg)
-            {
-                break;
-            }
-        }
-    }
-#ifdef FEATURE_HW_INTRINSICS
-#ifdef TARGET_ARM64
-    else if (IsMultiRegHWIntrinsic())
-    {
-        const GenTreeHWIntrinsic* hwintrinsic = AsHWIntrinsic();
-        const unsigned            regCount    = GetMultiRegCount(comp);
-        // A Multi-reg hwintrinsic node is said to have regs, if it has
-        // reg assigned to each of its result registers.
-
-        hasReg = hwintrinsic->GetRegNum() != REG_NA;
-        for (unsigned i = 1; i < regCount; ++i)
-        {
-            hasReg &= (hwintrinsic->GetRegNumByIdx(i) != REG_NA);
-            if (!hasReg)
             {
                 break;
             }
@@ -883,8 +864,12 @@ bool GenTree::gtHasReg(Compiler* comp) const
             }
         }
     }
-#endif // TARGET_ARM64
-#endif // FEATURE_HW_INTRINSICS
+    // else if (IsMultiRegHWIntrinsic())
+    //{
+    //    // For intrinsic that returns multiple values, we always assign
+    //    // them registers to all or none and hence checking if the reg
+    //    // is assigned at 0th index using GetRegNum() is sufficient.
+    //}
     else
     {
         hasReg = (GetRegNum() != REG_NA);

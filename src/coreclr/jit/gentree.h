@@ -6108,7 +6108,6 @@ public:
     //
     regNumber GetRegNumByIdx(unsigned idx) const
     {
-#ifdef TARGET_ARM64
         assert(idx < MAX_MULTIREG_COUNT);
 
         if (idx == 0)
@@ -6116,6 +6115,7 @@ public:
             return GetRegNum();
         }
 
+#ifdef TARGET_ARM64
         if (NeedsConsecutiveRegisters())
         {
             assert(IsMultiRegNode());
