@@ -1,8 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "PalRedhawk.h"
+
 #include "CommonTypes.h"
 #include "PalRedhawkCommon.h"
+// #include "RhConfig.h"
+// #include "rhassert.h"
 #include "CommonMacros.h"
 #include "config.h"
 #include "daccess.h"
@@ -545,6 +549,37 @@ bool HardwareExceptionHandler(int code, siginfo_t *siginfo, void *context, void*
 // Handler for the SIGSEGV signal
 void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
 {
+    const char StackOverflowMessage[] = "Stack overflow.\n";
+    // First check if we have a stack overflow
+    size_t sp = ((UNIX_CONTEXT *)context)->GetSp();
+    size_t failureAddress = (size_t)siginfo->si_addr;
+
+    // If the failure address is at most one page above or below the stack pointer,
+    // we have a stack overflow.
+    if ((failureAddress - (sp - getpagesize())) < 2 * getpagesize())
+    {
+        (void)!write(STDOUT_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+        // RhFailFast();
+        // if (GetCurrentPalThread())
+        // {
+        //     size_t handlerStackTop = __sync_val_compare_and_swap((size_t*)&g_stackOverflowHandlerStack, (size_t)g_stackOverflowHandlerStack, 0);
+        //     if (handlerStackTop == 0)
+        //     {
+        //         // We have only one stack for handling stack overflow preallocated. We let only the first thread that hits stack overflow to
+        //         // run the exception handling code on that stack (which ends up just dumping the stack trace and aborting the process).
+        //         // Other threads are held spinning and sleeping here until the process exits.
+        //         while (true)
+        //         {
+        //             sleep(1);
+        //         }
+        //     }
+
+        //     if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
+        //     {
+        //         PROCAbort(SIGSEGV, siginfo);
+        //     }
+        // }
+    }
     bool isHandled = HardwareExceptionHandler(code, siginfo, context, siginfo->si_addr);
     if (isHandled)
     {
@@ -589,7 +624,8 @@ void SIGFPEHandler(int code, siginfo_t *siginfo, void *context)
 // Initialize hardware exception handling
 bool InitializeHardwareExceptionHandling()
 {
-    if (!AddSignalHandler(SIGSEGV, SIGSEGVHandler, &g_previousSIGSEGV))
+    // Run SIGSEGV handler on separate stack so we can handle stack overflow. Otherwise, the current (invalid) stack is used and another segfault is raised.
+    if (!AddSignalHandler(SIGSEGV, SIGSEGVHandler, &g_previousSIGSEGV, SA_ONSTACK))
     {
         return false;
     }
@@ -599,25 +635,39 @@ bool InitializeHardwareExceptionHandling()
         return false;
     }
 
+    stack_t oldstack;
+    stack_t newstack;
+    newstack.ss_size = 1024 * 1024 * 2 > SIGSTKSZ ? 1024 * 1024 * 2 : SIGSTKSZ;
+    newstack.ss_sp = malloc(newstack.ss_size);
+    if (newstack.ss_sp == NULL)
+    {
+        return false;
+    }
+    newstack.ss_flags = 0;
+    if (0 != sigaltstack(&newstack, &oldstack))
+    {
+        return false;
+    }
+
 #if defined(HOST_APPLE)
 #ifndef HOST_TVOS // task_set_exception_ports is not supported on tvOS
-	// LLDB installs task-wide Mach exception handlers. XNU dispatches Mach
-	// exceptions first to any registered "activation" handler and then to
-	// any registered task handler before dispatching the exception to a
-	// host-wide Mach exception handler that does translation to POSIX
-	// signals. This makes it impossible to use LLDB with implicit null
+    // LLDB installs task-wide Mach exception handlers. XNU dispatches Mach
+    // exceptions first to any registered "activation" handler and then to
+    // any registered task handler before dispatching the exception to a
+    // host-wide Mach exception handler that does translation to POSIX
+    // signals. This makes it impossible to use LLDB with implicit null
     // checks in NativeAOT; continuing execution after LLDB traps an
     // EXC_BAD_ACCESS will result in LLDB's EXC_BAD_ACCESS handler being
     // invoked again. This also interferes with the translation of SIGFPEs
     // to .NET-level ArithmeticExceptions. Work around this here by
-	// installing a no-op task-wide Mach exception handler for
-	// EXC_BAD_ACCESS and EXC_ARITHMETIC.
-	kern_return_t kr = task_set_exception_ports(
-		mach_task_self(),
-		EXC_MASK_BAD_ACCESS | EXC_MASK_ARITHMETIC, /* SIGSEGV, SIGFPE */
-		MACH_PORT_NULL,
-		EXCEPTION_STATE_IDENTITY,
-		MACHINE_THREAD_STATE);
+    // installing a no-op task-wide Mach exception handler for
+    // EXC_BAD_ACCESS and EXC_ARITHMETIC.
+    kern_return_t kr = task_set_exception_ports(
+        mach_task_self(),
+        EXC_MASK_BAD_ACCESS | EXC_MASK_ARITHMETIC, /* SIGSEGV, SIGFPE */
+        MACH_PORT_NULL,
+        EXCEPTION_STATE_IDENTITY,
+        MACHINE_THREAD_STATE);
     ASSERT(kr == KERN_SUCCESS);
 #endif
 #endif
