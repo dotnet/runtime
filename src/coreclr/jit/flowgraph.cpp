@@ -2779,120 +2779,6 @@ PhaseStatus Compiler::fgFindOperOrder()
 }
 
 //------------------------------------------------------------------------
-// fgSimpleLowering: do full walk of all IR, lowering selected operations
-// and computing lvaOutgoingArgSpaceSize.
-//
-// Returns:
-//    Suitable phase status
-//
-// Notes:
-//    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND
-//
-PhaseStatus Compiler::fgSimpleLowering()
-{
-    bool madeChanges = false;
-
-#if FEATURE_FIXED_OUT_ARGS
-    unsigned outgoingArgSpaceSize = 0;
-#endif // FEATURE_FIXED_OUT_ARGS
-
-    for (BasicBlock* const block : Blocks())
-    {
-        // Walk the statement trees in this basic block.
-        compCurBB = block; // Used in fgRngChkTarget.
-
-        LIR::Range& range = LIR::AsRange(block);
-        for (GenTree* tree : range)
-        {
-            switch (tree->OperGet())
-            {
-                case GT_ARR_LENGTH:
-                case GT_MDARR_LENGTH:
-                case GT_MDARR_LOWER_BOUND:
-                {
-                    GenTree* arr       = tree->AsArrCommon()->ArrRef();
-                    int      lenOffset = 0;
-
-                    switch (tree->OperGet())
-                    {
-                        case GT_ARR_LENGTH:
-                        {
-                            lenOffset = tree->AsArrLen()->ArrLenOffset();
-                            noway_assert(lenOffset == OFFSETOF__CORINFO_Array__length ||
-                                         lenOffset == OFFSETOF__CORINFO_String__stringLen);
-                            break;
-                        }
-
-                        case GT_MDARR_LENGTH:
-                            lenOffset = (int)eeGetMDArrayLengthOffset(tree->AsMDArr()->Rank(), tree->AsMDArr()->Dim());
-                            break;
-
-                        case GT_MDARR_LOWER_BOUND:
-                            lenOffset =
-                                (int)eeGetMDArrayLowerBoundOffset(tree->AsMDArr()->Rank(), tree->AsMDArr()->Dim());
-                            break;
-
-                        default:
-                            unreached();
-                    }
-
-                    // Create the expression `*(array_addr + lenOffset)`
-
-                    GenTree* addr;
-
-                    noway_assert(arr->gtNext == tree);
-
-                    JITDUMP("Lower %s:\n", GenTree::OpName(tree->OperGet()));
-                    DISPRANGE(LIR::ReadOnlyRange(arr, tree));
-
-                    if ((arr->gtOper == GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
-                    {
-                        // If the array is NULL, then we should get a NULL reference
-                        // exception when computing its length.  We need to maintain
-                        // an invariant where there is no sum of two constants node, so
-                        // let's simply return an indirection of NULL.
-
-                        addr = arr;
-                    }
-                    else
-                    {
-                        GenTree* con = gtNewIconNode(lenOffset, TYP_I_IMPL);
-                        addr         = gtNewOperNode(GT_ADD, TYP_BYREF, arr, con);
-                        range.InsertAfter(arr, con, addr);
-                    }
-
-                    // Change to a GT_IND.
-                    tree->ChangeOper(GT_IND);
-                    tree->AsIndir()->Addr() = addr;
-
-                    JITDUMP("After Lower %s:\n", GenTree::OpName(tree->OperGet()));
-                    DISPRANGE(LIR::ReadOnlyRange(arr, tree));
-                    madeChanges = true;
-                    break;
-                }
-
-                case GT_CAST:
-                {
-                    if (tree->AsCast()->CastOp()->OperIsSimple() && fgSimpleLowerCastOfSmpOp(range, tree->AsCast()))
-                    {
-                        madeChanges = true;
-                    }
-                    break;
-                }
-
-                default:
-                {
-                    // No other operators need processing.
-                    break;
-                }
-            } // switch on oper
-        }     // foreach tree
-    }         // foreach BB
-
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
-}
-
-//------------------------------------------------------------------------
 // fgSimpleLowerCastOfSmpOp: Optimization to remove CAST nodes from operands of some simple ops that are safe to do so
 // since the upper bits do not affect the lower bits, and result of the simple op is zero/sign-extended via a CAST.
 // Example:
@@ -2906,7 +2792,7 @@ PhaseStatus Compiler::fgSimpleLowering()
 //      problems with NOLs (normalized-on-load locals) and how they are handled in VN.
 //      Simple put, you cannot remove a CAST from CAST(LCL_VAR{nol}) in HIR.
 //
-//      Because the optimization happens after rationalization, turning into LIR, it is safe to remove the CAST.
+//      Because the optimization happens during rationalization, turning into LIR, it is safe to remove the CAST.
 //
 bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 {
