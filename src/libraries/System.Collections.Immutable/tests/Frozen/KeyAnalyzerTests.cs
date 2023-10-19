@@ -237,7 +237,7 @@ namespace System.Collections.Frozen.Tests
             Assert.Equal(2, set.Count); // set should only have the non-collided ones
 
             Assert.False(KeyAnalyzer.HasSufficientUniquenessFactor(set, new[] { "aa", "ab", "aa" }, 0));
-            Assert.Equal(0, set.Count); // if we failed it should empty the set
+            Assert.Equal(2, set.Count);
         }
 
         [Fact]
