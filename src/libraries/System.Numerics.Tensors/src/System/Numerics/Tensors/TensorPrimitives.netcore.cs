@@ -8094,7 +8094,7 @@ namespace System.Numerics.Tensors
             static virtual float IdentityValue => throw new NotSupportedException();
         }
 
-        /// <summary>MathF.Max(x, y) (but NaNs may not be propagated)</summary>
+        /// <summary>Returns the index of MathF.Max(x, y)</summary>
         private readonly struct IndexOfMaxOperator : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -8394,7 +8394,7 @@ namespace System.Numerics.Tensors
 #endif
         }
 
-        /// <summary>MathF.Min(x, y) (but NaNs may not be propagated)</summary>
+        /// <summary>Returns the index of MathF.Min(x, y)</summary>
         private readonly struct IndexOfMinOperator : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
