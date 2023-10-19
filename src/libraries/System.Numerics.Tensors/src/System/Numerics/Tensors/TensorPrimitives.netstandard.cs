@@ -2439,7 +2439,7 @@ namespace System.Numerics.Tensors
             void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex);
         }
 
-        /// <summary>MathF.Max(x, y) (but without guaranteed NaN propagation)</summary>
+        /// <summary>Returns the index of MathF.Max(x, y)</summary>
         private readonly struct IndexOfMaxOperator : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2496,6 +2496,7 @@ namespace System.Numerics.Tensors
                         curIn = resultIndex[i];
                     }
                 }
+
                 return curIn;
             }
 
@@ -2580,6 +2581,7 @@ namespace System.Numerics.Tensors
                         curIn = maxIndex[i];
                     }
                 }
+
                 return curIn;
             }
 
@@ -2662,6 +2664,7 @@ namespace System.Numerics.Tensors
                         curIn = resultIndex[i];
                     }
                 }
+
                 return curIn;
             }
 
@@ -2746,6 +2749,7 @@ namespace System.Numerics.Tensors
                         curIn = resultIndex[i];
                     }
                 }
+
                 return curIn;
             }
 
