@@ -489,10 +489,12 @@ namespace System.Collections.Generic
 
             T[] newItems = new T[newCapacity];
             if (indexToInsert != 0)
-                Array.Copy(_items, newItems, indexToInsert);
+                Array.Copy(_items, newItems, length: indexToInsert);
 
             if (_size != indexToInsert)
+            {
                 Array.Copy(_items, indexToInsert, newItems, indexToInsert + insertionCount, _size - indexToInsert);
+            }
 
             _items = newItems;
         }
