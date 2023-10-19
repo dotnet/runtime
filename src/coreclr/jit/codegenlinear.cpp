@@ -2251,6 +2251,7 @@ void CodeGen::genProduceReg(GenTree* tree)
                 }
             }
 #ifdef FEATURE_HW_INTRINSICS
+#ifdef TARGET_ARM64
             else if (tree->IsMultiRegHWIntrinsic())
             {
                 const GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
@@ -2280,6 +2281,7 @@ void CodeGen::genProduceReg(GenTree* tree)
                     }
                 }
             }
+#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
             else
             {

@@ -849,15 +849,18 @@ bool GenTree::gtHasReg(Compiler* comp) const
         }
     }
 #ifdef FEATURE_HW_INTRINSICS
+#ifdef TARGET_ARM64
     else if (IsMultiRegHWIntrinsic())
     {
         const GenTreeHWIntrinsic* hwintrinsic = AsHWIntrinsic();
         const unsigned            regCount    = GetMultiRegCount(comp);
         // A Multi-reg hwintrinsic node is said to have regs, if it has
         // reg assigned to each of its result registers.
-        for (unsigned i = 0; i < regCount; ++i)
+
+        hasReg = hwintrinsic->GetRegNum() != REG_NA;
+        for (unsigned i = 1; i < regCount; ++i)
         {
-            hasReg = (hwintrinsic->GetRegNumByIdx(i) != REG_NA);
+            hasReg &= (hwintrinsic->GetRegNumByIdx(i) != REG_NA);
             if (!hasReg)
             {
                 break;
@@ -870,6 +873,7 @@ bool GenTree::gtHasReg(Compiler* comp) const
         const unsigned             regCount     = copyOrReload->gtGetOp1()->GetMultiRegCount(comp);
         // A Multi-reg copy or reload node is said to have regs,
         // if it has valid regs in any of the positions.
+
         for (unsigned i = 0; i < regCount; ++i)
         {
             hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
@@ -879,6 +883,7 @@ bool GenTree::gtHasReg(Compiler* comp) const
             }
         }
     }
+#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
     else
     {
