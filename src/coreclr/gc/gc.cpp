@@ -25354,15 +25354,6 @@ int gc_heap::calculate_new_heap_count ()
         return n_heaps;
     }
 
-    for (int gen_number = 0; gen_number < total_generation_count; gen_number++)
-    {
-        size_t total_begin_data_size = get_total_begin_data_size(gen_number);
-        size_t total_survived_size = get_total_survived_size(gen_number);
-        float rate = total_begin_data_size != 0 ? (total_survived_size / (float)total_begin_data_size) : 0;
-        dprintf (6666, ("gen %d begin_data_size %zd survived %zd rate %.3f",
-            gen_number, total_begin_data_size, total_survived_size, rate));
-    }
-
     float median_gen2_tcp_percent = 0.0f;
     if (gc_index_full_gc_end >= (settings.gc_index - dynamic_heap_count_data_t::sample_size))
     {
@@ -50135,6 +50126,15 @@ void gc_heap::do_post_gc()
 #else
     const char* str_gc_type = "NGC";
 #endif //BACKGROUND_GC
+
+    for (int gen_number = 0; gen_number <= settings.condemned_generation; gen_number++)
+    {
+        size_t total_begin_data_size = get_total_begin_data_size(gen_number);
+        size_t total_survived_size = get_total_survived_size(gen_number);
+        float rate = total_begin_data_size != 0 ? (total_survived_size / (float)total_begin_data_size) : 0;
+        dprintf (6666, ("gen %d begin_data_size %zd survived %zd rate %.3f",
+            gen_number, total_begin_data_size, total_survived_size, rate));
+    }
 
     dprintf (6666, (ThreadStressLog::gcDetailedEndMsg(),
         VolatileLoad (&settings.gc_index),
