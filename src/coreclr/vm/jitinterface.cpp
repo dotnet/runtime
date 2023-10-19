@@ -460,6 +460,8 @@ enum ConvToJitSigFlags : int
 // localSig     - Is it a local variables declaration, or a method signature (with return type, etc).
 // contextType  - The type with any instantiaton information
 //
+AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_SIGNATURE initialSig, ULONG* offsetOfAsyncDetails);
+
 static void ConvToJitSig(
     PCCOR_SIGNATURE       pSig,
     DWORD                 cbSig,
@@ -543,6 +545,12 @@ static void ConvToJitSig(
         }
         sigRet->retType = CEEInfo::asCorInfoType(type, typeHnd, &sigRet->retTypeClass);
         sigRet->retTypeSigClass = CORINFO_CLASS_HANDLE(typeHnd.AsPtr());
+
+        auto asyncMethodClassification = ClassifyAsyncMethodCore(sig, module, NULL, NULL);
+        if ((asyncMethodClassification == AsyncTaskMethod::Async2Method) || (asyncMethodClassification == AsyncTaskMethod::Async2Method))
+        {
+            sigRet->callConv = (CorInfoCallConv)(sigRet->callConv | CORINFO_CALLCONV_ASYNCCALL);
+        }
 
         IfFailThrow(sig.SkipExactlyOne());  // must to a skip so we skip any class tokens associated with the return type
         _ASSERTE(sigRet->retType < CORINFO_TYPE_COUNT);
@@ -12600,6 +12608,9 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
     // Get the compile flags that are shared between JIT and NGen
     //
     flags.Add(CEEInfo::GetBaseCompileFlags(ftn));
+
+    if (ftn->IsAsync2Method())
+        flags.Add(CORJIT_FLAGS::CORJIT_FLAG_RUNTIMEASYNCFUNCTION);
 
     //
     // Get CPU specific flags

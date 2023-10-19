@@ -755,6 +755,7 @@ enum CorInfoCallConv
     CORINFO_CALLCONV_HASTHIS    = 0x20,
     CORINFO_CALLCONV_EXPLICITTHIS=0x40,
     CORINFO_CALLCONV_PARAMTYPE  = 0x80,     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+    CORINFO_CALLCONV_ASYNCCALL  = 0x100,    // Is this a call to an async function?
 };
 
 // Represents the calling conventions supported with the extensible calling convention syntax
@@ -1137,6 +1138,7 @@ struct CORINFO_SIG_INFO
     unsigned            totalILArgs()       { return (numArgs + (hasImplicitThis() ? 1 : 0)); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
+    bool                isAsyncCall()       { return ((callConv & CORINFO_CALLCONV_ASYNCCALL) != 0); }
 };
 
 struct CORINFO_METHOD_INFO

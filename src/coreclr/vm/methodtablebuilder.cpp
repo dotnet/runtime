@@ -2748,6 +2748,8 @@ bool IsTypeDefOrRefAByRefStruct(Module* pModule, mdToken tk)
     return false;
 }
 
+AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_SIGNATURE initialSig, ULONG* offsetOfAsyncDetails);
+
 AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails)
 {
     PCCOR_SIGNATURE initialSig = sig.GetPtr();
@@ -2761,13 +2763,20 @@ AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offs
 
     // Return argument count
     IfFailThrow(sig.GetData(&data));
+    return ClassifyAsyncMethodCore(sig, pModule, initialSig, offsetOfAsyncDetails);
+}
+
+AsyncTaskMethod ClassifyAsyncMethodCore(SigPointer sig, Module* pModule, PCCOR_SIGNATURE initialSig, ULONG* offsetOfAsyncDetails)
+{
+    uint32_t data;
 
     // Now we should be parsing the return type
 
     // If the first custommodifier is a MOD_OPT to CallConvAsync2Call
     // Then this is a async2 function
     CorElementType elemType;
-    *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig);
+    if (offsetOfAsyncDetails != NULL)
+        *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig);
     BYTE elemTypeByte;
     IfFailThrow(sig.GetByte(&elemTypeByte)); // Don't use GetElemType as it skips custom modifiers
     elemType = (CorElementType)elemTypeByte;
@@ -2835,7 +2844,8 @@ AsyncTaskMethod ClassifyAsyncMethod(SigPointer sig, Module* pModule, ULONG* offs
             }
         }
 
-        *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig) - 1;
+        if (offsetOfAsyncDetails != NULL)
+            *offsetOfAsyncDetails = (ULONG)(sig.GetPtr() - initialSig) - 1;
     }
 
     if (elemType == ELEMENT_TYPE_GENERICINST)
