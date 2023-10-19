@@ -51,7 +51,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
 
             Console.WriteLine($"### CURRENT DIRECTORY: {Environment.CurrentDirectory}");
 
-            if (osd.Contains("Linux"))
+            if (OperatingSystem.IsLinux())
             {
                 Console.WriteLine($"### CGROUPS VERSION: {Interop.cgroups.s_cgroupVersion}");
                 string cgroupsLocation = Interop.cgroups.s_cgroupMemoryPath;
