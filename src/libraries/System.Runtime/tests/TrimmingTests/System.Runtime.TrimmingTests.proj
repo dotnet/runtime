@@ -6,8 +6,12 @@
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadWindowsPrincipalTest.cs">
       <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" />
-    <TestConsoleAppSourceFiles Include="DebuggerVisualizerAttributeTests.cs" />
+    <TestConsoleAppSourceFiles Include="DebuggerTypeProxyAttributeTests.cs" >
+      <EnabledProperties>DebuggerSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="DebuggerVisualizerAttributeTests.cs" >
+      <EnabledProperties>DebuggerSupport</EnabledProperties>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="DefaultValueAttributeCtorTest.cs" />
     <TestConsoleAppSourceFiles Include="GenericArraySortHelperTest.cs" />
     <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
