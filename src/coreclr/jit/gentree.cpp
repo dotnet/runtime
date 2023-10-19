@@ -835,7 +835,7 @@ bool GenTree::gtHasReg(Compiler* comp) const
         else if (IsCopyOrReload())
         {
             const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
-            const unsigned             regCount     = copy->gtGetOp1()->GetMultiRegCount(comp);
+            const unsigned             regCount     = copyOrReload->gtGetOp1()->GetMultiRegCount(comp);
             for (unsigned i = 0; i < regCount; ++i)
             {
                 hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
