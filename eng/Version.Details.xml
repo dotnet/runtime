@@ -8,17 +8,17 @@
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>7312355e44fd230b7aa26c7190f3870391751476</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.23">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.25">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>0b73b536f6e0d0a6143387439c3308db4db9fdfe</Sha>
+      <Sha>d8bc162ccf7ce14fdbec9c2c50d6e856a7063c91</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.300" Version="6.0.23">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.300" Version="6.0.25">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>0b73b536f6e0d0a6143387439c3308db4db9fdfe</Sha>
+      <Sha>d8bc162ccf7ce14fdbec9c2c50d6e856a7063c91</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.400" Version="6.0.23">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.400" Version="6.0.25">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>0b73b536f6e0d0a6143387439c3308db4db9fdfe</Sha>
+      <Sha>d8bc162ccf7ce14fdbec9c2c50d6e856a7063c91</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0">
       <Uri>https://github.com/dotnet/wcf</Uri>
@@ -242,9 +242,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>d50065944d8b41d804448a7056351481d583ad3d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="6.0.0-alpha.0.23512.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="6.0.0-alpha.0.23518.4">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>86bddcfcc07cdbfb62df4b3068f606602919a786</Sha>
+      <Sha>453eb973df8f81461022c8a428c717ed87129055</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="6.0.0-beta.23512.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
