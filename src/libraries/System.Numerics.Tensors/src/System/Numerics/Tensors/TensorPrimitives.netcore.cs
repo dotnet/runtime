@@ -1225,15 +1225,11 @@ namespace System.Numerics.Tensors
             }
         }
 
-        /// <remarks>
-        /// This is the same as <see cref="Aggregate{TLoad, TAggregate}(ReadOnlySpan{float})"/>,
-        /// except it early exits on NaN.
-        /// </remarks>
         private static int IndexOfMinMaxCore<TIndexOfMinMax>(ReadOnlySpan<float> x) where TIndexOfMinMax : struct, IIndexOfOperator
         {
             // This matches the IEEE 754:2019 `maximum`/`minimum` functions.
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the greater of the inputs.
+            // otherwise returns the index of the greater of the inputs.
             // It treats +0 as greater than -0 as per the specification.
 
 #if NET8_0_OR_GREATER
@@ -1241,15 +1237,15 @@ namespace System.Numerics.Tensors
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
                 Vector512<int> resultIndex = Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-                Vector512<int> curIndex = Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+                Vector512<int> curIndex = resultIndex;
                 Vector512<int> increment = Vector512.Create(Vector512<float>.Count);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
                 Vector512<float> result = Vector512.LoadUnsafe(ref xRef);
                 Vector512<float> current;
-                Vector512<float> nanMask = ~Vector512.Equals(result, result);
 
+                Vector512<float> nanMask = ~Vector512.Equals(result, result);
                 if (nanMask != Vector512<float>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -1266,13 +1262,13 @@ namespace System.Numerics.Tensors
                     curIndex += increment;
 
                     nanMask = ~Vector512.Equals(current, current);
-
                     if (nanMask != Vector512<float>.Zero)
                     {
                         return i + IndexOfFirstMatch(nanMask);
                     }
 
                     TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
+
                     i += Vector512<float>.Count;
                 }
 
@@ -1283,7 +1279,6 @@ namespace System.Numerics.Tensors
                     curIndex += Vector512.Create(x.Length - i);
 
                     nanMask = ~Vector512.Equals(current, current);
-
                     if (nanMask != Vector512<float>.Zero)
                     {
                         return curIndex[IndexOfFirstMatch(nanMask)];
@@ -1293,7 +1288,6 @@ namespace System.Numerics.Tensors
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
-
                 return TIndexOfMinMax.Invoke(result, resultIndex);
             }
 #endif
@@ -1302,15 +1296,15 @@ namespace System.Numerics.Tensors
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
                 Vector256<int> resultIndex = Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7);
-                Vector256<int> curIndex = Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7);
+                Vector256<int> curIndex = resultIndex;
                 Vector256<int> increment = Vector256.Create(Vector256<float>.Count);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
                 Vector256<float> result = Vector256.LoadUnsafe(ref xRef);
                 Vector256<float> current;
-                Vector256<float> nanMask = ~Vector256.Equals(result, result);
 
+                Vector256<float> nanMask = ~Vector256.Equals(result, result);
                 if (nanMask != Vector256<float>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -1327,7 +1321,6 @@ namespace System.Numerics.Tensors
                     curIndex += increment;
 
                     nanMask = ~Vector256.Equals(current, current);
-
                     if (nanMask != Vector256<float>.Zero)
                     {
                         return i + IndexOfFirstMatch(nanMask);
@@ -1345,14 +1338,12 @@ namespace System.Numerics.Tensors
                     curIndex += Vector256.Create(x.Length - i);
 
                     nanMask = ~Vector256.Equals(current, current);
-
                     if (nanMask != Vector256<float>.Zero)
                     {
                         return curIndex[IndexOfFirstMatch(nanMask)];
                     }
 
                     TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
-
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -1363,15 +1354,15 @@ namespace System.Numerics.Tensors
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
                 Vector128<int> resultIndex = Vector128.Create(0, 1, 2, 3);
-                Vector128<int> curIndex = Vector128.Create(0, 1, 2, 3);
+                Vector128<int> curIndex = resultIndex;
                 Vector128<int> increment = Vector128.Create(Vector128<float>.Count);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
                 Vector128<float> result = Vector128.LoadUnsafe(ref xRef);
                 Vector128<float> current;
-                Vector128<float> nanMask = ~Vector128.Equals(result, result);
 
+                Vector128<float> nanMask = ~Vector128.Equals(result, result);
                 if (nanMask != Vector128<float>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -1388,7 +1379,6 @@ namespace System.Numerics.Tensors
                     curIndex += increment;
 
                     nanMask = ~Vector128.Equals(current, current);
-
                     if (nanMask != Vector128<float>.Zero)
                     {
                         return i + IndexOfFirstMatch(nanMask);
@@ -1405,15 +1395,14 @@ namespace System.Numerics.Tensors
                     curIndex += Vector128.Create(x.Length - i);
 
                     current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count));
-                    nanMask = ~Vector128.Equals(current, current);
 
+                    nanMask = ~Vector128.Equals(current, current);
                     if (nanMask != Vector128<float>.Zero)
                     {
                         return curIndex[IndexOfFirstMatch(nanMask)];
                     }
 
                     TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
-
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
@@ -1421,7 +1410,26 @@ namespace System.Numerics.Tensors
             }
 
             // Scalar path used when either vectorization is not supported or the input is too small to vectorize.
-            return TIndexOfMinMax.Invoke(x);
+            float curResult = x[0];
+            int curIn = 0;
+            if (float.IsNaN(curResult))
+            {
+                return curIn;
+            }
+
+            for (int i = 1; i < x.Length; i++)
+            {
+                float current = x[i];
+                //float currentAbs = MathF.Abs(current);
+                if (float.IsNaN(current))
+                {
+                    return i;
+                }
+
+                curIn = TIndexOfMinMax.Invoke(ref curResult, current, curIn, i);
+            }
+
+            return curIn;
         }
 
 #if NET8_0_OR_GREATER
@@ -8081,7 +8089,7 @@ namespace System.Numerics.Tensors
 
         private interface IIndexOfOperator
         {
-            static abstract int Invoke(ReadOnlySpan<float> result);
+            static abstract int Invoke(ref float result, float current, int resultIndex, int curIndex);
             static abstract int Invoke(Vector128<float> result, Vector128<int> resultIndex);
             static abstract void Invoke(ref Vector128<float> result, Vector128<float> current, ref Vector128<int> resultIndex, Vector128<int> curIndex);
             static abstract int Invoke(Vector256<float> result, Vector256<int> resultIndex);
@@ -8090,61 +8098,23 @@ namespace System.Numerics.Tensors
             static abstract int Invoke(Vector512<float> result, Vector512<int> resultIndex);
             static abstract void Invoke(ref Vector512<float> result, Vector512<float> current, ref Vector512<int> resultIndex, Vector512<int> curIndex);
 #endif
-
-            static virtual float IdentityValue => throw new NotSupportedException();
         }
 
         /// <summary>Returns the index of MathF.Max(x, y)</summary>
         private readonly struct IndexOfMaxOperator : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(ReadOnlySpan<float> result)
-            {
-                float curMax = result[0];
-                int curIn = 0;
-                if (float.IsNaN(curMax))
-                {
-                    return curIn;
-                }
-
-                for (int i = 1; i < result.Length; i++)
-                {
-                    float current = result[i];
-                    if (float.IsNaN(current))
-                    {
-                        return i;
-                    }
-
-                    if (curMax == current)
-                    {
-                        if (IsNegative(curMax) && !IsNegative(current))
-                        {
-                            curMax = current;
-                            curIn = i;
-                        }
-                    }
-                    else if (current > curMax)
-                    {
-                        curMax = current;
-                        curIn = i;
-                    }
-                }
-
-                return curIn;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector128<float> result, Vector128<int> maxIndex)
             {
-                Vector128<float> tmp128 = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
-                Vector128<int> tmpIndex128 = Vector128.Shuffle(maxIndex, Vector128.Create(2, 3, 0, 1));
+                Vector128<float> tmpResult = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
+                Vector128<int> tmpIndex = Vector128.Shuffle(maxIndex, Vector128.Create(2, 3, 0, 1));
 
-                Invoke(ref result, tmp128, ref maxIndex, tmpIndex128);
+                Invoke(ref result, tmpResult, ref maxIndex, tmpIndex);
 
-                tmp128 = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
-                tmpIndex128 = Vector128.Shuffle(maxIndex, Vector128.Create(1, 0, 3, 2));
+                tmpResult = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
+                tmpIndex = Vector128.Shuffle(maxIndex, Vector128.Create(1, 0, 3, 2));
 
-                Invoke(ref result, tmp128, ref maxIndex, tmpIndex128);
+                Invoke(ref result, tmpResult, ref maxIndex, tmpIndex);
                 return maxIndex.ToScalar();
             }
 
@@ -8154,8 +8124,7 @@ namespace System.Numerics.Tensors
                 Vector128<float> greaterThanMask = Vector128.GreaterThan(max, current);
 
                 Vector128<float> equalMask = Vector128.Equals(max, current);
-
-                if (equalMask.AsInt32() != Vector128<int>.Zero)
+               if (equalMask.AsInt32() != Vector128<int>.Zero)
                 {
                     Vector128<float> negativeMask = IsNegative(current);
                     Vector128<int> lessThanMask = Vector128.LessThan(maxIndex, curIndex);
@@ -8185,7 +8154,6 @@ namespace System.Numerics.Tensors
                 Vector256<float> greaterThanMask = Vector256.GreaterThan(max, current);
 
                 Vector256<float> equalMask = Vector256.Equals(max, current);
-
                 if (equalMask.AsInt32() != Vector256<int>.Zero)
                 {
                     Vector256<float> negativeMask = IsNegative(current);
@@ -8201,21 +8169,14 @@ namespace System.Numerics.Tensors
 
 #if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector512<float> result, Vector512<int> maxIndex)
+            public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
             {
-                // Max the upper/lower halves of the Vector512
-                Vector256<float> resultLower256 = result.GetLower();
-                Vector256<int> indexLower256 = maxIndex.GetLower();
+                // Min the upper/lower halves of the Vector512
+                Vector256<float> resultLower = result.GetLower();
+                Vector256<int> indexLower = resultIndex.GetLower();
 
-                Invoke(ref resultLower256, result.GetUpper(), ref indexLower256, maxIndex.GetUpper());
-
-                // Max the upper/lower halves of the Vector256
-                Vector128<float> resultLower128 = resultLower256.GetLower();
-                Vector128<int> indexLower128 = indexLower256.GetLower();
-
-                Invoke(ref resultLower128, resultLower256.GetUpper(), ref indexLower128, indexLower256.GetUpper());
-
-                return Invoke(resultLower128, indexLower128);
+                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
+                return Invoke(resultLower, indexLower);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -8224,7 +8185,6 @@ namespace System.Numerics.Tensors
                 Vector512<float> greaterThanMask = Vector512.GreaterThan(max, current);
 
                 Vector512<float> equalMask = Vector512.Equals(max, current);
-
                 if (equalMask.AsInt32() != Vector512<int>.Zero)
                 {
                     Vector512<float> negativeMask = IsNegative(current);
@@ -8238,62 +8198,42 @@ namespace System.Numerics.Tensors
                 maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
 #endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            {
+                if (result == current)
+                {
+                    if (IsNegative(result) && !IsNegative(current))
+                    {
+                        result = current;
+                        return curIndex;
+                    }
+                }
+                else if (current > result)
+                {
+                    result = current;
+                    return curIndex;
+                }
+
+                return resultIndex;
+            }
         }
 
         private readonly struct IndexOfMaxMagnitudeOperator : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(ReadOnlySpan<float> result)
-            {
-                float curMax = result[0];
-                float curMaxAbs = MathF.Abs(curMax);
-                int curIn = 0;
-                if (float.IsNaN(curMax))
-                {
-                    return curIn;
-                }
-
-                for (int i = 1; i < result.Length; i++)
-                {
-                    float current = result[i];
-                    float currentAbs = MathF.Abs(current);
-                    if (float.IsNaN(current))
-                    {
-                        return i;
-                    }
-
-                    if (curMaxAbs == currentAbs)
-                    {
-                        if (IsNegative(curMax) && !IsNegative(current))
-                        {
-                            curMax = current;
-                            curMaxAbs = MathF.Abs(current);
-                            curIn = i;
-                        }
-                    }
-                    else if (currentAbs > curMaxAbs)
-                    {
-                        curMax = current;
-                        curMaxAbs = MathF.Abs(current);
-                        curIn = i;
-                    }
-                }
-
-                return curIn;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector128<float> result, Vector128<int> maxIndex)
             {
-                Vector128<float> tmp128 = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
-                Vector128<int> tmpIndex128 = Vector128.Shuffle(maxIndex, Vector128.Create(2, 3, 0, 1));
+                Vector128<float> tmpResult = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
+                Vector128<int> tmpIndex = Vector128.Shuffle(maxIndex, Vector128.Create(2, 3, 0, 1));
 
-                Invoke(ref result, tmp128, ref maxIndex, tmpIndex128);
+                Invoke(ref result, tmpResult, ref maxIndex, tmpIndex);
 
-                tmp128 = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
-                tmpIndex128 = Vector128.Shuffle(maxIndex, Vector128.Create(1, 0, 3, 2));
+                tmpResult = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
+                tmpIndex = Vector128.Shuffle(maxIndex, Vector128.Create(1, 0, 3, 2));
 
-                Invoke(ref result, tmp128, ref maxIndex, tmpIndex128);
+                Invoke(ref result, tmpResult, ref maxIndex, tmpIndex);
                 return maxIndex.ToScalar();
             }
 
@@ -8305,7 +8245,6 @@ namespace System.Numerics.Tensors
                 Vector128<float> greaterThanMask = Vector128.GreaterThan(maxMag, currentMag);
 
                 Vector128<float> equalMask = Vector128.Equals(max, current);
-
                 if (equalMask.AsInt32() != Vector128<int>.Zero)
                 {
                     Vector128<float> negativeMask = IsNegative(current);
@@ -8338,7 +8277,6 @@ namespace System.Numerics.Tensors
                 Vector256<float> greaterThanMask = Vector256.GreaterThan(maxMag, currentMag);
 
                 Vector256<float> equalMask = Vector256.Equals(max, current);
-
                 if (equalMask.AsInt32() != Vector256<int>.Zero)
                 {
                     Vector256<float> negativeMask = IsNegative(current);
@@ -8354,21 +8292,14 @@ namespace System.Numerics.Tensors
 
 #if NET8_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector512<float> result, Vector512<int> maxIndex)
+            public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
             {
-                // Max the upper/lower halves of the Vector512
-                Vector256<float> resultLower256 = result.GetLower();
-                Vector256<int> indexLower256 = maxIndex.GetLower();
+                // Min the upper/lower halves of the Vector512
+                Vector256<float> resultLower = result.GetLower();
+                Vector256<int> indexLower = resultIndex.GetLower();
 
-                Invoke(ref resultLower256, result.GetUpper(), ref indexLower256, maxIndex.GetUpper());
-
-                // Max the upper/lower halves of the Vector256
-                Vector128<float> resultLower128 = resultLower256.GetLower();
-                Vector128<int> indexLower128 = indexLower256.GetLower();
-
-                Invoke(ref resultLower128, resultLower256.GetUpper(), ref indexLower128, indexLower256.GetUpper());
-
-                return Invoke(resultLower128, indexLower128);
+                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
+                return Invoke(resultLower, indexLower);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -8378,7 +8309,6 @@ namespace System.Numerics.Tensors
                 Vector512<float> greaterThanMask = Vector512.GreaterThan(maxMag, currentMag);
 
                 Vector512<float> equalMask = Vector512.Equals(max, current);
-
                 if (equalMask.AsInt32() != Vector512<int>.Zero)
                 {
                     Vector512<float> negativeMask = IsNegative(current);
@@ -8392,59 +8322,46 @@ namespace System.Numerics.Tensors
                 maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
             }
 #endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            {
+                float curMaxAbs = MathF.Abs(result);
+                float currentAbs = MathF.Abs(current);
+
+                if (curMaxAbs == currentAbs)
+                {
+                    if (IsNegative(result) && !IsNegative(current))
+                    {
+                        result = current;
+                        return curIndex;
+                    }
+                }
+                else if (currentAbs > curMaxAbs)
+                {
+                    result = current;
+                    return curIndex;
+                }
+
+                return resultIndex;
+            }
         }
 
         /// <summary>Returns the index of MathF.Min(x, y)</summary>
         private readonly struct IndexOfMinOperator : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(ReadOnlySpan<float> result)
-            {
-                float curMin = result[0];
-                int curIn = 0;
-                if (float.IsNaN(curMin))
-                {
-                    return curIn;
-                }
-
-                for (int i = 1; i < result.Length; i++)
-                {
-                    float current = result[i];
-                    if (float.IsNaN(current))
-                    {
-                        return i;
-                    }
-
-                    if (curMin == current)
-                    {
-                        if (IsPositive(curMin) && !IsPositive(current))
-                        {
-                            curMin = current;
-                            curIn = i;
-                        }
-                    }
-                    else if (current < curMin)
-                    {
-                        curMin = current;
-                        curIn = i;
-                    }
-                }
-
-                return curIn;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector128<float> result, Vector128<int> resultIndex)
             {
-                Vector128<float> tmp128 = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
-                Vector128<int> tmpIndex128 = Vector128.Shuffle(resultIndex, Vector128.Create(2, 3, 0, 1));
+                Vector128<float> tmpResult = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
+                Vector128<int> tmpIndex = Vector128.Shuffle(resultIndex, Vector128.Create(2, 3, 0, 1));
 
-                Invoke(ref result, tmp128, ref resultIndex, tmpIndex128);
+                Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
 
-                tmp128 = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
-                tmpIndex128 = Vector128.Shuffle(resultIndex, Vector128.Create(1, 0, 3, 2));
+                tmpResult = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
+                tmpIndex = Vector128.Shuffle(resultIndex, Vector128.Create(1, 0, 3, 2));
 
-                Invoke(ref result, tmp128, ref resultIndex, tmpIndex128);
+                Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
                 return resultIndex.ToScalar();
             }
 
@@ -8454,7 +8371,6 @@ namespace System.Numerics.Tensors
                 Vector128<float> lessThanMask = Vector128.LessThan(result, current);
 
                 Vector128<float> equalMask = Vector128.Equals(result, current);
-
                 if (equalMask.AsInt32() != Vector128<int>.Zero)
                 {
                     Vector128<float> negativeMask = IsNegative(current);
@@ -8486,7 +8402,6 @@ namespace System.Numerics.Tensors
                 Vector256<float> lessThanMask = Vector256.LessThan(result, current);
 
                 Vector256<float> equalMask = Vector256.Equals(result, current);
-
                 if (equalMask.AsInt32() != Vector256<int>.Zero)
                 {
                     Vector256<float> negativeMask = IsNegative(current);
@@ -8505,18 +8420,11 @@ namespace System.Numerics.Tensors
             public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
             {
                 // Min the upper/lower halves of the Vector512
-                Vector256<float> resultLower256 = result.GetLower();
-                Vector256<int> indexLower256 = resultIndex.GetLower();
+                Vector256<float> resultLower = result.GetLower();
+                Vector256<int> indexLower = resultIndex.GetLower();
 
-                Invoke(ref resultLower256, result.GetUpper(), ref indexLower256, resultIndex.GetUpper());
-
-                // Min the upper/lower halves of the Vector256
-                Vector128<float> resultLower128 = resultLower256.GetLower();
-                Vector128<int> indexLower128 = indexLower256.GetLower();
-
-                Invoke(ref resultLower128, resultLower256.GetUpper(), ref indexLower128, indexLower256.GetUpper());
-
-                return Invoke(resultLower128, indexLower128);
+                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
+                return Invoke(resultLower, indexLower);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -8525,7 +8433,6 @@ namespace System.Numerics.Tensors
                 Vector512<float> lessThanMask = Vector512.LessThan(result, current);
 
                 Vector512<float> equalMask = Vector512.Equals(result, current);
-
                 if (equalMask.AsInt32() != Vector512<int>.Zero)
                 {
                     Vector512<float> negativeMask = IsNegative(current);
@@ -8539,62 +8446,42 @@ namespace System.Numerics.Tensors
                 resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
 #endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            {
+                if (result == current)
+                {
+                    if (IsPositive(result) && !IsPositive(current))
+                    {
+                        result = current;
+                        return curIndex;
+                    }
+                }
+                else if (current < result)
+                {
+                    result = current;
+                    return curIndex;
+                }
+
+                return resultIndex;
+            }
         }
 
         private readonly struct IndexOfMinMagnitudeOperator : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(ReadOnlySpan<float> result)
-            {
-                float curMin = result[0];
-                float curMinAbs = MathF.Abs(curMin);
-                int curIn = 0;
-                if (float.IsNaN(curMin))
-                {
-                    return curIn;
-                }
-
-                for (int i = 1; i < result.Length; i++)
-                {
-                    float current = result[i];
-                    float currentAbs = MathF.Abs(current);
-                    if (float.IsNaN(current))
-                    {
-                        return i;
-                    }
-
-                    if (curMinAbs == currentAbs)
-                    {
-                        if (IsPositive(curMin) && !IsPositive(current))
-                        {
-                            curMin = current;
-                            curMinAbs = MathF.Abs(current);
-                            curIn = i;
-                        }
-                    }
-                    else if (currentAbs < curMinAbs)
-                    {
-                        curMin = current;
-                        curMinAbs = MathF.Abs(current);
-                        curIn = i;
-                    }
-                }
-
-                return curIn;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int Invoke(Vector128<float> result, Vector128<int> resultIndex)
             {
-                Vector128<float> tmp128 = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
-                Vector128<int> tmpIndex128 = Vector128.Shuffle(resultIndex, Vector128.Create(2, 3, 0, 1));
+                Vector128<float> tmpResult = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
+                Vector128<int> tmpIndex = Vector128.Shuffle(resultIndex, Vector128.Create(2, 3, 0, 1));
 
-                Invoke(ref result, tmp128, ref resultIndex, tmpIndex128);
+                Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
 
-                tmp128 = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
-                tmpIndex128 = Vector128.Shuffle(resultIndex, Vector128.Create(1, 0, 3, 2));
+                tmpResult = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
+                tmpIndex = Vector128.Shuffle(resultIndex, Vector128.Create(1, 0, 3, 2));
 
-                Invoke(ref result, tmp128, ref resultIndex, tmpIndex128);
+                Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
                 return resultIndex.ToScalar();
             }
 
@@ -8606,7 +8493,6 @@ namespace System.Numerics.Tensors
                 Vector128<float> lessThanMask = Vector128.LessThan(minMag, currentMag);
 
                 Vector128<float> equalMask = Vector128.Equals(result, current);
-
                 if (equalMask.AsInt32() != Vector128<int>.Zero)
                 {
                     Vector128<float> negativeMask = IsNegative(current);
@@ -8639,7 +8525,6 @@ namespace System.Numerics.Tensors
                 Vector256<float> lessThanMask = Vector256.LessThan(minMag, currentMag);
 
                 Vector256<float> equalMask = Vector256.Equals(result, current);
-
                 if (equalMask.AsInt32() != Vector256<int>.Zero)
                 {
                     Vector256<float> negativeMask = IsNegative(current);
@@ -8658,18 +8543,11 @@ namespace System.Numerics.Tensors
             public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
             {
                 // Min the upper/lower halves of the Vector512
-                Vector256<float> resultLower256 = result.GetLower();
-                Vector256<int> indexLower256 = resultIndex.GetLower();
+                Vector256<float> resultLower = result.GetLower();
+                Vector256<int> indexLower = resultIndex.GetLower();
 
-                Invoke(ref resultLower256, result.GetUpper(), ref indexLower256, resultIndex.GetUpper());
-
-                // Min the upper/lower halves of the Vector256
-                Vector128<float> resultLower128 = resultLower256.GetLower();
-                Vector128<int> indexLower128 = indexLower256.GetLower();
-
-                Invoke(ref resultLower128, resultLower256.GetUpper(), ref indexLower128, indexLower256.GetUpper());
-
-                return Invoke(resultLower128, indexLower128);
+                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
+                return Invoke(resultLower, indexLower);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -8680,7 +8558,6 @@ namespace System.Numerics.Tensors
                 Vector512<float> lessThanMask = Vector512.LessThan(minMag, currentMag);
 
                 Vector512<float> equalMask = Vector512.Equals(result, current);
-
                 if (equalMask.AsInt32() != Vector512<int>.Zero)
                 {
                     Vector512<float> negativeMask = IsNegative(current);
@@ -8694,6 +8571,28 @@ namespace System.Numerics.Tensors
                 resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
             }
 #endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            {
+                float curMinAbs = MathF.Abs(result);
+                float currentAbs = MathF.Abs(current);
+                if (curMinAbs == currentAbs)
+                {
+                    if (IsPositive(result) && !IsPositive(current))
+                    {
+                        result = current;
+                        return curIndex;
+                    }
+                }
+                else if (currentAbs < curMinAbs)
+                {
+                    result = current;
+                    return curIndex;
+                }
+
+                return resultIndex;
+            }
         }
 
         /// <summary>MathF.Max(x, y)</summary>
@@ -10107,40 +10006,36 @@ namespace System.Numerics.Tensors
         private static Vector128<float> ElementWiseSelect(Vector128<float> mask, Vector128<float> left, Vector128<float> right)
         {
             if (Sse41.IsSupported)
-            {
                 return Sse41.BlendVariable(left, right, ~mask);
-            }
-            else return Vector128.ConditionalSelect(mask, left, right);
+
+            return Vector128.ConditionalSelect(mask, left, right);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<int> ElementWiseSelect(Vector128<int> mask, Vector128<int> left, Vector128<int> right)
         {
             if (Sse41.IsSupported)
-            {
                 return Sse41.BlendVariable(left, right, ~mask);
-            }
-            else return Vector128.ConditionalSelect(mask, left, right);
+
+            return Vector128.ConditionalSelect(mask, left, right);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<float> ElementWiseSelect(Vector256<float> mask, Vector256<float> left, Vector256<float> right)
         {
             if (Avx2.IsSupported)
-            {
                 return Avx2.BlendVariable(left, right, ~mask);
-            }
-            else return Vector256.ConditionalSelect(mask, left, right);
+
+            return Vector256.ConditionalSelect(mask, left, right);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<int> ElementWiseSelect(Vector256<int> mask, Vector256<int> left, Vector256<int> right)
         {
             if (Avx2.IsSupported)
-            {
                 return Avx2.BlendVariable(left, right, ~mask);
-            }
-            else return Vector256.ConditionalSelect(mask, left, right);
+
+            return Vector256.ConditionalSelect(mask, left, right);
         }
 
 #if NET8_0_OR_GREATER
@@ -10148,20 +10043,18 @@ namespace System.Numerics.Tensors
         private static Vector512<float> ElementWiseSelect(Vector512<float> mask, Vector512<float> left, Vector512<float> right)
         {
             if (Avx512F.IsSupported)
-            {
                 return Avx512F.BlendVariable(left, right, ~mask);
-            }
-            else return Vector512.ConditionalSelect(mask, left, right);
+
+            return Vector512.ConditionalSelect(mask, left, right);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector512<int> ElementWiseSelect(Vector512<int> mask, Vector512<int> left, Vector512<int> right)
         {
             if (Avx512F.IsSupported)
-            {
                 return Avx512F.BlendVariable(left, right, ~mask);
-            }
-            else return Vector512.ConditionalSelect(mask, left, right);
+
+            return Vector512.ConditionalSelect(mask, left, right);
         }
 #endif
 

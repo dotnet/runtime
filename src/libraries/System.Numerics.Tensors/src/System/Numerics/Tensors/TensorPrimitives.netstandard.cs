@@ -377,7 +377,26 @@ namespace System.Numerics.Tensors
         // Scalar path used when either vectorization is not supported, the input is too small to vectorize,
         // or a NaN is encountered.
         Scalar:
-            return op.Invoke(x);
+            float curResult = x[0];
+            int curIn = 0;
+            if (float.IsNaN(curResult))
+            {
+                return curIn;
+            }
+
+            for (i = 1; i < x.Length; i++)
+            {
+                float current = x[i];
+                //float currentAbs = MathF.Abs(current);
+                if (float.IsNaN(current))
+                {
+                    return i;
+                }
+
+                curIn = op.Invoke(ref curResult, current, curIn, i);
+            }
+
+            return curIn;
         }
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
@@ -2434,7 +2453,7 @@ namespace System.Numerics.Tensors
 
         private interface IIndexOfOperator
         {
-            int Invoke(ReadOnlySpan<float> result);
+            int Invoke(ref float result, float current, int resultIndex, int curIndex);
             int Invoke(Vector<float> result, Vector<int> resultIndex);
             void Invoke(ref Vector<float> result, Vector<float> current, ref Vector<int> resultIndex, Vector<int> curIndex);
         }
@@ -2442,42 +2461,6 @@ namespace System.Numerics.Tensors
         /// <summary>Returns the index of MathF.Max(x, y)</summary>
         private readonly struct IndexOfMaxOperator : IIndexOfOperator
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(ReadOnlySpan<float> result)
-            {
-                float curMax = result[0];
-                int curIn = 0;
-                if (float.IsNaN(curMax))
-                {
-                    return curIn;
-                }
-
-                for (int i = 1; i < result.Length; i++)
-                {
-                    float current = result[i];
-                    if (float.IsNaN(current))
-                    {
-                        return i;
-                    }
-
-                    if (curMax == current)
-                    {
-                        if (IsNegative(curMax) && !IsNegative(current))
-                        {
-                            curMax = current;
-                            curIn = i;
-                        }
-                    }
-                    else if (current > curMax)
-                    {
-                        curMax = current;
-                        curIn = i;
-                    }
-                }
-
-                return curIn;
-            }
-
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int Invoke(Vector<float> result, Vector<int> resultIndex)
             {
@@ -2519,48 +2502,51 @@ namespace System.Numerics.Tensors
 
                 resultIndex = Vector.ConditionalSelect(lessThanMask, resultIndex, curIndex);
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            {
+                if (result == current)
+                {
+                    if (IsNegative(result) && !IsNegative(current))
+                    {
+                        result = current;
+                        return curIndex;
+                    }
+                }
+                else if (current > result)
+                {
+                    result = current;
+                    return curIndex;
+                }
+
+                return resultIndex;
+            }
         }
 
         private readonly struct IndexOfMaxMagnitudeOperator : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(ReadOnlySpan<float> result)
+            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
             {
-                float curMax = result[0];
-                float curMaxAbs = MathF.Abs(curMax);
-                int curIn = 0;
-                if (float.IsNaN(curMax))
-                {
-                    return curIn;
-                }
+                float curMaxAbs = MathF.Abs(result);
+                float currentAbs = MathF.Abs(current);
 
-                for (int i = 1; i < result.Length; i++)
+                if (curMaxAbs == currentAbs)
                 {
-                    float current = result[i];
-                    float currentAbs = MathF.Abs(current);
-                    if (float.IsNaN(current))
+                    if (IsNegative(result) && !IsNegative(current))
                     {
-                        return i;
-                    }
-
-                    if (curMaxAbs == currentAbs)
-                    {
-                        if (IsNegative(curMax) && !IsNegative(current))
-                        {
-                            curMax = current;
-                            curMaxAbs = MathF.Abs(current);
-                            curIn = i;
-                        }
-                    }
-                    else if (currentAbs > curMaxAbs)
-                    {
-                        curMax = current;
-                        curMaxAbs = MathF.Abs(current);
-                        curIn = i;
+                        result = current;
+                        return curIndex;
                     }
                 }
+                else if (currentAbs > curMaxAbs)
+                {
+                    result = current;
+                    return curIndex;
+                }
 
-                return curIn;
+                return resultIndex;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2611,39 +2597,23 @@ namespace System.Numerics.Tensors
         private readonly struct IndexOfMinOperator : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(ReadOnlySpan<float> result)
+            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
             {
-                float curMin = result[0];
-                int curIn = 0;
-                if (float.IsNaN(curMin))
+                if (result == current)
                 {
-                    return curIn;
-                }
-
-                for (int i = 1; i < result.Length; i++)
-                {
-                    float current = result[i];
-                    if (float.IsNaN(current))
+                    if (IsPositive(result) && !IsPositive(current))
                     {
-                        return i;
-                    }
-
-                    if (curMin == current)
-                    {
-                        if (IsPositive(curMin) && !IsPositive(current))
-                        {
-                            curMin = current;
-                            curIn = i;
-                        }
-                    }
-                    else if (current < curMin)
-                    {
-                        curMin = current;
-                        curIn = i;
+                        result = current;
+                        return curIndex;
                     }
                 }
+                else if (current < result)
+                {
+                    result = current;
+                    return curIndex;
+                }
 
-                return curIn;
+                return resultIndex;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2692,43 +2662,25 @@ namespace System.Numerics.Tensors
         private readonly struct IndexOfMinMagnitudeOperator : IIndexOfOperator
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int Invoke(ReadOnlySpan<float> result)
+            public int Invoke(ref float result, float current, int resultIndex, int curIndex)
             {
-                                float curMin = result[0];
-                float curMinAbs = MathF.Abs(curMin);
-                int curIn = 0;
-                if (float.IsNaN(curMin))
+                float curMinAbs = MathF.Abs(result);
+                float currentAbs = MathF.Abs(current);
+                if (curMinAbs == currentAbs)
                 {
-                    return curIn;
-                }
-
-                for (int i = 1; i < result.Length; i++)
-                {
-                    float current = result[i];
-                    float currentAbs = MathF.Abs(current);
-                    if (float.IsNaN(current))
+                    if (IsPositive(result) && !IsPositive(current))
                     {
-                        return i;
-                    }
-
-                    if (curMinAbs == currentAbs)
-                    {
-                        if (IsPositive(curMin) && !IsPositive(current))
-                        {
-                            curMin = current;
-                            curMinAbs = MathF.Abs(current);
-                            curIn = i;
-                        }
-                    }
-                    else if (currentAbs < curMinAbs)
-                    {
-                        curMin = current;
-                        curMinAbs = MathF.Abs(current);
-                        curIn = i;
+                        result = current;
+                        return curIndex;
                     }
                 }
+                else if (currentAbs < curMinAbs)
+                {
+                    result = current;
+                    return curIndex;
+                }
 
-                return curIn;
+                return resultIndex;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
