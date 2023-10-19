@@ -287,6 +287,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\NtDll\Interop.NtStatus.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.RtlInitUnicodeString.cs"
              Link="Common\Interop\Windows\NtDll\Interop.RtlInitUnicodeString.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Secur32\Interop.LsaCallAuthenticationPackage.cs"
+             Link="Common\Interop\Windows\Secur32\Interop.LsaCallAuthenticationPackage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Secur32\Interop.LsaConnectUntrusted.cs"
              Link="Common\Interop\Windows\Secur32\Interop.LsaConnectUntrusted.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Secur32\Interop.LsaDeregisterLogonProcess.cs"

@@ -256,17 +256,6 @@ namespace System.DirectoryServices.ActiveDirectory
         public byte reserved;
     }
 
-    /*typedef struct _NEGOTIATE_CALLER_NAME_REQUEST {
-            ULONG       MessageType ;
-            LUID        LogonId ;
-    } NEGOTIATE_CALLER_NAME_REQUEST, *PNEGOTIATE_CALLER_NAME_REQUEST ;*/
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct NegotiateCallerNameRequest
-    {
-        public int messageType;
-        public global::Interop.LUID logonId;
-    }
-
     /*typedef struct _NEGOTIATE_CALLER_NAME_RESPONSE {
             ULONG       MessageType ;
             PWSTR       CallerName ;
@@ -310,25 +299,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int DnsQueryBypassCache = 8;
 
         internal const int NegGetCallerName = 1;
-
-        /*NTSTATUS LsaCallAuthenticationPackage(
-              HANDLE LsaHandle,
-              ULONG AuthenticationPackage,
-              PVOID ProtocolSubmitBuffer,
-              ULONG SubmitBufferLength,
-              PVOID* ProtocolReturnBuffer,
-              PULONG ReturnBufferLength,
-              PNTSTATUS ProtocolStatus
-            );*/
-        [LibraryImport(global::Interop.Libraries.Secur32)]
-        internal static partial uint LsaCallAuthenticationPackage(
-            Interop.Secur32.LsaLogonProcessSafeHandle lsaHandle,
-            int authenticationPackage,
-            in NegotiateCallerNameRequest protocolSubmitBuffer,
-            int submitBufferLength,
-            out IntPtr protocolReturnBuffer,
-            out int returnBufferLength,
-            out uint protocolStatus);
 
         /*NTSTATUS LsaFreeReturnBuffer(
               PVOID Buffer

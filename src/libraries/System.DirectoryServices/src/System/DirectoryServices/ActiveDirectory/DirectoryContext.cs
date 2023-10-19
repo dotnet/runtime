@@ -555,7 +555,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             string? domainName = null;
 
-            NegotiateCallerNameRequest requestBuffer = default;
+            Interop.Secur32.NegotiateCallerNameRequest requestBuffer = default;
             int requestBufferLength = (int)Marshal.SizeOf(requestBuffer);
 
             IntPtr pResponseBuffer = IntPtr.Zero;
@@ -578,7 +578,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 //
                 requestBuffer.messageType = NativeMethods.NegGetCallerName;
 
-                result = NativeMethods.LsaCallAuthenticationPackage(lsaHandle, 0, requestBuffer, requestBufferLength, out pResponseBuffer, out responseBufferLength, out protocolStatus);
+                result = Interop.Secur32.LsaCallAuthenticationPackage(lsaHandle, 0, requestBuffer, requestBufferLength, out pResponseBuffer, out responseBufferLength, out protocolStatus);
 
                 try
                 {
