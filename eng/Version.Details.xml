@@ -48,13 +48,13 @@
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.net6.Manifest-7.0.100" Version="7.0.13">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.net6.Manifest-7.0.100" Version="7.0.14">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>44da825cb96e08d28d258c5cda0ba14bbc4f91c3</Sha>
+      <Sha>942bfc8cb73e3cfea523cb0a2f08b415b2220358</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.net7.Manifest-7.0.100" Version="7.0.13">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.net7.Manifest-7.0.100" Version="7.0.14">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>44da825cb96e08d28d258c5cda0ba14bbc4f91c3</Sha>
+      <Sha>942bfc8cb73e3cfea523cb0a2f08b415b2220358</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
@@ -278,9 +278,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>5e0b0da43f660de5798186f4fd3bc900fc90576c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="7.0.0-alpha.0.23517.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="7.0.0-alpha.0.23518.3">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>6477f50fb0c360d59fcf769381f778644e05871a</Sha>
+      <Sha>35e8f5f8842cb0675d55b2c56c6a83850682d2c4</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="7.0.0-beta.23179.6">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
