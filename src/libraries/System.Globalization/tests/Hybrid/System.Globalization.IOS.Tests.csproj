@@ -5,8 +5,8 @@
     <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\CultureInfo\CultureInfoGetCultures.cs" /> 
     <Compile Include="..\CultureInfo\CultureInfoEnglishName.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoGetCultures.cs" />
     <Compile Include="..\CultureInfo\CultureInfoNumberFormat.cs" />
     <Compile Include="..\CultureInfo\CultureInfoNames.cs" />
     <Compile Include="..\CultureInfo\CultureInfoNativeName.cs" />
