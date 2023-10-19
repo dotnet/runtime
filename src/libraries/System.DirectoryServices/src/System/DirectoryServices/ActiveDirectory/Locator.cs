@@ -269,7 +269,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // release the dns results buffer
                     if (dnsResults != IntPtr.Zero)
                     {
-                        NativeMethods.DnsRecordListFree(dnsResults, true);
+                        Interop.Dnsapi.DnsRecordListFree(dnsResults, true);
                     }
                 }
             }

@@ -309,15 +309,6 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int DnsSrvData = 33;
         internal const int DnsQueryBypassCache = 8;
 
-        /*VOID WINAPI DnsRecordListFree(
-            PDNS_RECORD pRecordList,
-            DNS_FREE_TYPE FreeType
-            );*/
-        [LibraryImport(global::Interop.Libraries.Dnsapi)]
-        internal static partial void DnsRecordListFree(
-            IntPtr dnsResultList,
-            [MarshalAs(UnmanagedType.Bool)] bool dnsFreeType);
-
         /*NTSTATUS LsaConnectUntrusted(
               PHANDLE LsaHandle
             );*/
