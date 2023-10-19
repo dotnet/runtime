@@ -422,9 +422,9 @@ namespace System.Globalization
 
             int bufferLength;
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-           if (GlobalizationMode.Hybrid)
+            if (GlobalizationMode.Hybrid)
                 bufferLength = Interop.Globalization.GetLocalesNative(null, 0);
-           else
+            else
                 bufferLength = Interop.Globalization.GetLocales(null, 0);
 #else
             bufferLength = Interop.Globalization.GetLocales(null, 0);
@@ -437,9 +437,9 @@ namespace System.Globalization
             char [] chars = new char[bufferLength];
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-           if (GlobalizationMode.Hybrid)
+            if (GlobalizationMode.Hybrid)
                 bufferLength = Interop.Globalization.GetLocalesNative(chars, bufferLength);
-           else
+            else
                 bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
 #else
             bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);

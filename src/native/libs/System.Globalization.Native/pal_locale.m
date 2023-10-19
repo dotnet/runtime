@@ -158,7 +158,7 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
                 break;
             case LocaleString_Iso4217MonetarySymbol:
                 // check if this is correct, check currencyISOCode
-                value = currentLocale.currencySymbol;
+                value = currentLocale.currencyCode;
                 break;
             case LocaleString_CurrencyEnglishName:
                 value = [gbLocale localizedStringForCurrencyCode:currentLocale.currencyCode];
@@ -678,7 +678,12 @@ int32_t GlobalizationNative_GetLocalesNative(UChar* value, int32_t length)
         NSArray<NSString*>* availableLocaleIdentifiers = [NSLocale availableLocaleIdentifiers];
         int32_t index = 0;
         int32_t totalLength = 0;
-        for (NSInteger i = 0; i < [availableLocaleIdentifiers count]; i++) 
+        int32_t availableLength = (int32_t)[availableLocaleIdentifiers count];
+
+        if (availableLength <=  0)
+            return -1; // failed
+
+        for (NSInteger i = 0; i < availableLength; i++) 
         {
             NSString *localeIdentifier = availableLocaleIdentifiers[i];
             int32_t localeNameLength = localeIdentifier.length;
