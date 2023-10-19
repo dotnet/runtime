@@ -6,6 +6,7 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 using TestLibrary;
+using Xunit;
 
 public class BestFitMapping
 {
@@ -883,7 +884,8 @@ public class BestFitMapping
 
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         ////Cdecl

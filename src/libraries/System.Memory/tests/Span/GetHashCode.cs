@@ -17,7 +17,7 @@ namespace System.SpanTests
 #pragma warning disable 0618
                 int result = span.GetHashCode();
 #pragma warning restore 0618
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (Exception ex)
             {

@@ -45,7 +45,7 @@ namespace System.Numerics.Tensors
         /// If either of the element-wise input values is equal to <see cref="float.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
         /// </remarks>
-        public static unsafe void Add(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
+        public static void Add(ReadOnlySpan<float> x, ReadOnlySpan<float> y, Span<float> destination) =>
             InvokeSpanSpanIntoSpan<AddOperator>(x, y, destination);
 
         /// <summary>Computes the element-wise addition of single-precision floating-point numbers in the specified tensors.</summary>
@@ -215,11 +215,6 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
             return MathF.Sqrt(Aggregate<SubtractSquaredOperator, AddOperator>(x, y));
         }
 
@@ -282,15 +277,8 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static float Dot(ReadOnlySpan<float> x, ReadOnlySpan<float> y)
-        {
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
-            return Aggregate<MultiplyOperator, AddOperator>(x, y);
-        }
+        public static float Dot(ReadOnlySpan<float> x, ReadOnlySpan<float> y) =>
+            Aggregate<MultiplyOperator, AddOperator>(x, y);
 
         /// <summary>Computes the element-wise result of raising <c>e</c> to the single-precision floating-point number powers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -326,12 +314,13 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static unsafe int IndexOfMax(ReadOnlySpan<float> x)
+        public static int IndexOfMax(ReadOnlySpan<float> x)
         {
             int result = -1;
 
             if (!x.IsEmpty)
             {
+                result = 0;
                 float max = float.NegativeInfinity;
 
                 for (int i = 0; i < x.Length; i++)
@@ -376,12 +365,13 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static unsafe int IndexOfMaxMagnitude(ReadOnlySpan<float> x)
+        public static int IndexOfMaxMagnitude(ReadOnlySpan<float> x)
         {
             int result = -1;
 
             if (!x.IsEmpty)
             {
+                result = 0;
                 float max = float.NegativeInfinity;
                 float maxMag = float.NegativeInfinity;
 
@@ -429,12 +419,13 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static unsafe int IndexOfMin(ReadOnlySpan<float> x)
+        public static int IndexOfMin(ReadOnlySpan<float> x)
         {
             int result = -1;
 
             if (!x.IsEmpty)
             {
+                result = 0;
                 float min = float.PositiveInfinity;
 
                 for (int i = 0; i < x.Length; i++)
@@ -479,12 +470,13 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static unsafe int IndexOfMinMagnitude(ReadOnlySpan<float> x)
+        public static int IndexOfMinMagnitude(ReadOnlySpan<float> x)
         {
             int result = -1;
 
             if (!x.IsEmpty)
             {
+                result = 0;
                 float min = float.PositiveInfinity;
                 float minMag = float.PositiveInfinity;
 
@@ -910,11 +902,6 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
             }
 
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
-            }
-
             return Aggregate<SubtractOperator, MultiplyOperator>(x, y);
         }
 
@@ -944,11 +931,6 @@ namespace System.Numerics.Tensors
             if (x.IsEmpty)
             {
                 ThrowHelper.ThrowArgument_SpansMustBeNonEmpty();
-            }
-
-            if (x.Length != y.Length)
-            {
-                ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
             return Aggregate<AddOperator, MultiplyOperator>(x, y);

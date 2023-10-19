@@ -120,15 +120,27 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [InlineData(@"\d*a", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, null, 'a')]
-        [InlineData(@"\d*abc", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, "abc", 0)]
-        public void LiteralAfterLoop(string pattern, int options, int expectedMode, string? expectedString, char expectedChar)
+        [InlineData(@"\d*a", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, null, StringComparison.Ordinal, 'a', null)]
+        [InlineData(@"\d*abc", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, "abc", StringComparison.Ordinal, 0, null)]
+        [InlineData(@"(\d*)(abc)", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, "abc", StringComparison.Ordinal, 0, null)]
+        [InlineData(@"((\d*)(abc))", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, "abc", StringComparison.Ordinal, 0, null)]
+        [InlineData(@"(?>\s*)(((abc)+){2,})", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, "abc", StringComparison.Ordinal, 0, null)]
+        [InlineData(@"((((\s*)))((((?i)abc)+){2,}))", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, "abc", StringComparison.OrdinalIgnoreCase, 0, null)]
+        [InlineData(@"((((\s*)))((((?i)a)+){2,}))", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, null, StringComparison.Ordinal, 0, new char[] { 'A', 'a' })]
+        [InlineData(@"((((?>\s*)))((([Aa][Bb][Cc])+){2,}))", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, "abc", StringComparison.OrdinalIgnoreCase, 0, null)]
+        [InlineData(@"((((\s*)))((([Aa][Bb]c)+){2,}))", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, "ab", StringComparison.OrdinalIgnoreCase, 0, null)]
+        [InlineData(@"((((?>\s*)))((([Aa]bc)+){2,}))", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, null, StringComparison.Ordinal, 0, new char[] { 'A', 'a' })]
+        [InlineData(@"((((\s*)))((([Sst])+){2,}))", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, null, StringComparison.Ordinal, 0, new char[] { 'S', 's', 't' })]
+        [InlineData(@"\d*[AaBb]{3,}", 0, (int)FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight, null, StringComparison.Ordinal, 0, new char[] { 'A', 'B', 'a', 'b' })]
+        public void LiteralAfterLoop(string pattern, int options, int expectedMode, string? expectedString, StringComparison expectedStringComparison, char expectedChar, char[]? expectedSet)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, (RegexOptions)options);
             Assert.Equal((FindNextStartingPositionMode)expectedMode, opts.FindMode);
             Assert.NotNull(opts.LiteralAfterLoop);
             Assert.Equal(expectedString, opts.LiteralAfterLoop.Value.Literal.String);
+            Assert.Equal(expectedStringComparison, opts.LiteralAfterLoop.Value.Literal.StringComparison);
             Assert.Equal(expectedChar, opts.LiteralAfterLoop.Value.Literal.Char);
+            Assert.Equal(expectedSet, opts.LiteralAfterLoop.Value.Literal.Chars);
         }
 
         [Theory]

@@ -486,18 +486,19 @@ MONO_RESTORE_WARNING
 #define arm_neon_ldrq_lit(p, rd, target) arm_emit ((p), 0b00011100000000000000000000000000 | (0b10 << 30) | (arm_get_disp19 ((p), (target)) << 5) | (rd))
 #define arm_neon_ldrq_lit_fixup(p, target) *((guint32*)p) = (*((guint32*)p) & 0xff00001f) | (arm_get_disp19 ((p), (target)) << 5)
 
+#define ARM_MAX_ARITH_IMM (0xfff)
+
 /* Arithmetic (immediate) */
 static G_GNUC_UNUSED inline guint32
 arm_encode_arith_imm (int imm, guint32 *shift)
 {
 	// FIXME:
-	g_assert ((imm >= 0) && (imm < 0xfff));
+	g_assert ((imm >= 0) && (imm < ARM_MAX_ARITH_IMM));
 	*shift = 0;
 	return (guint32)imm;
 }
-
 // FIXME:
-#define arm_is_arith_imm(imm)  (((imm) >= 0) && ((imm) < 0xfff))
+#define arm_is_arith_imm(imm)  (((imm) >= 0) && ((imm) < ARM_MAX_ARITH_IMM))
 
 #define arm_format_alu_imm(p, sf, op, S, rd, rn, imm) do { \
 	guint32 _imm12, _shift; \
@@ -1054,7 +1055,12 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define TYPE_F32 0
 #define TYPE_F64 1
 
-/* NEON :: move SIMD register*/
+/* NEON :: paired loads/stores */
+#define arm_neon_ldp_stp(p, opc, l, rt1, rt2, rn, imm7) arm_emit ((p), 0b00101101000000000000000000000000 | (opc) << 30 | (l) << 22 | (imm7) << 15 | (rt2) << 10 | (rn) << 5 | (rt1))
+#define arm_neon_stp_16b(p, rt1, rt2, rn, imm) arm_neon_ldp_stp ((p), 0b10, 0b0, (rt1), (rt2), (rn), arm_encode_imm7 (imm, 16))
+#define arm_neon_ldp_16b(p, rt1, rt2, rn, imm) arm_neon_ldp_stp ((p), 0b10, 0b1, (rt1), (rt2), (rn), arm_encode_imm7 (imm, 16))
+
+/* NEON :: move SIMD register */
 #define arm_neon_mov(p, rd, rn) arm_neon_orr ((p), VREG_FULL, (rd), (rn), (rn))
 #define arm_neon_mov_8b(p, rd, rn) arm_neon_orr ((p), VREG_LOW, (rd), (rn), (rn))
 

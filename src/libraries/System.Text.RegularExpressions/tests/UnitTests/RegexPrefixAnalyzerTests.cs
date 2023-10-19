@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions.Tests
             string actualSet = RegexPrefixAnalyzer.FindFirstCharClass(tree.Root);
             if (expectedSet != actualSet)
             {
-                throw new TrueException($"Expected {FormatSet(expectedSet)}, got {FormatSet(actualSet)}", true);
+                throw TrueException.ForNonTrueValue($"Expected {FormatSet(expectedSet)}, got {FormatSet(actualSet)}", true);
             }
         }
 

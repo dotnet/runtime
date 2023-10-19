@@ -329,7 +329,7 @@ namespace System.Threading.Tasks.Tests
 
                 if (expect != ranValue() || expect == cancel)
                 {
-                    Assert.True(false, string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue(), cancel));
+                    Assert.Fail(string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue(), cancel));
                 }
             }
 
@@ -353,7 +353,7 @@ namespace System.Threading.Tasks.Tests
 
                 if (expect != ranValue() || expect == cancel)
                 {
-                    Assert.True(false, string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue(), cancel));
+                    Assert.Fail(string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue(), cancel));
                 }
             }
         }
@@ -383,7 +383,7 @@ namespace System.Threading.Tasks.Tests
 
                 if (expect != ranValue() || expect == cancel)
                 {
-                    Assert.True(false, string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue(), cancel));
+                    Assert.Fail(string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue(), cancel));
                 }
             }
 
@@ -408,7 +408,7 @@ namespace System.Threading.Tasks.Tests
 
                 if (expect != ranValue() || expect == cancel)
                 {
-                    Assert.True(false, string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue(), cancel));
+                    Assert.Fail(string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue(), cancel));
                 }
             }
 
@@ -432,7 +432,7 @@ namespace System.Threading.Tasks.Tests
 
                 if (expect != ranValue() || expect == cancel)
                 {
-                    Assert.True(false, string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue, cancel));
+                    Assert.Fail(string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue, cancel));
                 }
             }
 
@@ -463,7 +463,7 @@ namespace System.Threading.Tasks.Tests
 
                 if (expect != ranValue() || expect == cancel)
                 {
-                    Assert.True(false, string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue(), cancel));
+                    Assert.Fail(string.Format("RunContinueWithBase: >> Failed: continuation didn't run or get canceled when expected: ran = {0}, cancel = {1}", ranValue(), cancel));
                 }
             }
         }
