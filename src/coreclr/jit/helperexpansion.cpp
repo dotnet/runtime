@@ -277,16 +277,22 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         opts.OptimizationEnabled() ? fgMakeMultiUse(&fastPathValue) : gtCloneExpr(fastPathValue);
     GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
     nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
-    BasicBlock* nullcheckBb =
-        fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp), debugInfo);
+
+    // nullcheckBb conditionally jumps to fallbackBb, but we need to initialize fallbackBb last
+    // so we can place it after nullcheckBb. So use a temporary jump target for now.
+    BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
+                                                   debugInfo DEBUG_ARG(&BasicBlock::bbTempJumpDest));
 
     // Fallback basic block
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), call);
-    BasicBlock* fallbackBb       = fgNewBBFromTreeAfter(BBJ_NONE, nullcheckBb, fallbackValueDef, debugInfo, true);
+    BasicBlock* fallbackBb = fgNewBBFromTreeAfter(BBJ_NONE, nullcheckBb, fallbackValueDef, debugInfo, nullptr, true);
+
+    // Set nullcheckBb's real jump target
+    nullcheckBb->SetJumpDest(fallbackBb);
 
     // Fast-path basic block
     GenTree*    fastpathValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), fastPathValueClone);
-    BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fastpathValueDef, debugInfo);
+    BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fastpathValueDef, debugInfo, block);
 
     BasicBlock* sizeCheckBb = nullptr;
     if (needsSizeCheck)
@@ -327,7 +333,8 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         sizeCheck->gtFlags |= GTF_RELOP_JMP_USED;
 
         GenTree* jtrue = gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck);
-        sizeCheckBb    = fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo);
+        // sizeCheckBb fails - jump to fallbackBb
+        sizeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo, fallbackBb);
     }
 
     //
@@ -336,8 +343,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     fgRemoveRefPred(block, prevBb);
     fgAddRefPred(block, fastPathBb);
     fgAddRefPred(block, fallbackBb);
-    nullcheckBb->SetJumpDest(fallbackBb);
-    fastPathBb->SetJumpDest(block);
 
     if (needsSizeCheck)
     {
@@ -350,8 +355,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fgAddRefPred(fallbackBb, sizeCheckBb);
         // fastPathBb is only reachable from successful nullcheckBb
         fgAddRefPred(fastPathBb, nullcheckBb);
-        // sizeCheckBb fails - jump to fallbackBb
-        sizeCheckBb->SetJumpDest(fallbackBb);
     }
     else
     {
@@ -737,21 +740,27 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     //      use(threadStaticBlockBase);
 
     // maxThreadStaticBlocksCondBB
-    BasicBlock* maxThreadStaticBlocksCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsValueDef, debugInfo);
+
+    // maxThreadStaticBlocksCondBB conditionally jumps to fallbackBb, but fallbackBb must be initialized last
+    // so it can be placed after it. So use a temporary jump target for now.
+    BasicBlock* maxThreadStaticBlocksCondBB =
+        fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsValueDef, debugInfo DEBUG_ARG(&BasicBlock::bbTempJumpDest));
 
     fgInsertStmtAfter(maxThreadStaticBlocksCondBB, maxThreadStaticBlocksCondBB->firstStmt(),
                       fgNewStmtFromTree(maxThreadStaticBlocksCond));
 
-    // threadStaticBlockNullCondBB
+    // Similarly, give threadStaticBlockNulLCondBB a temporary jump target for now,
+    // and update it to jump to its real target (fastPathBb) after it is initialized.
     BasicBlock* threadStaticBlockNullCondBB =
-        fgNewBBFromTreeAfter(BBJ_COND, maxThreadStaticBlocksCondBB, threadStaticBlockBaseDef, debugInfo);
+        fgNewBBFromTreeAfter(BBJ_COND, maxThreadStaticBlocksCondBB, threadStaticBlockBaseDef,
+                             debugInfo DEBUG_ARG(&BasicBlock::bbTempJumpDest));
     fgInsertStmtAfter(threadStaticBlockNullCondBB, threadStaticBlockNullCondBB->firstStmt(),
                       fgNewStmtFromTree(threadStaticBlockNullCond));
 
     // fallbackBb
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(threadStaticBlockLclNum, call);
     BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, fallbackValueDef, debugInfo, true);
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, fallbackValueDef, debugInfo, block, true);
 
     // fastPathBb
     if (isGCThreadStatic)
@@ -766,7 +775,13 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     GenTree* fastPathValueDef =
         gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
-    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
+    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
+
+    // Set maxThreadStaticBlocksCondBB's real jump target
+    maxThreadStaticBlocksCondBB->SetJumpDest(fallbackBb);
+
+    // Set threadStaticBlockNullCondBB's real jump target
+    threadStaticBlockNullCondBB->SetJumpDest(fastPathBb);
 
     //
     // Update preds in all new blocks
@@ -782,11 +797,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     fgAddRefPred(block, fastPathBb);
     fgAddRefPred(block, fallbackBb);
-
-    maxThreadStaticBlocksCondBB->SetJumpDest(fallbackBb);
-    threadStaticBlockNullCondBB->SetJumpDest(fastPathBb);
-    fastPathBb->SetJumpDest(block);
-    fallbackBb->SetJumpDest(block);
 
     // Inherit the weights
     block->inheritWeight(prevBb);
@@ -1075,12 +1085,12 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitedActualValueNode, isInitedExpectedValue);
     isInitedCmp->gtFlags |= GTF_RELOP_JMP_USED;
     BasicBlock* isInitedBb =
-        fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo);
+        fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo, block);
 
     // Fallback basic block
     // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
     // that only accepts a single argument
-    BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, call, debugInfo, true);
+    BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, call, debugInfo, nullptr, true);
 
     GenTree* replacementNode = nullptr;
     if (retValKind == SHRV_STATIC_BASE_PTR)
@@ -1151,9 +1161,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     // Both fastPathBb and helperCallBb have a single common pred - isInitedBb
     fgAddRefPred(helperCallBb, isInitedBb);
-
-    // helperCallBb unconditionally jumps to the last block (jumps over fastPathBb)
-    isInitedBb->SetJumpDest(block);
 
     //
     // Re-distribute weights
@@ -1410,7 +1417,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     //
     // Block 1: lengthCheckBb (we check that dstLen < srcLen)
     //
-    BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
+    BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true, block);
     lengthCheckBb->bbFlags |= BBF_INTERNAL;
 
     // Set bytesWritten -1 by default, if the fast path is not taken we'll return it as the result.
@@ -1494,8 +1501,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     fgAddRefPred(block, lengthCheckBb);
     // fastpathBb flows into block
     fgAddRefPred(block, fastpathBb);
-    // lengthCheckBb jumps to block if condition is met
-    lengthCheckBb->SetJumpDest(block);
 
     //
     // Re-distribute weights

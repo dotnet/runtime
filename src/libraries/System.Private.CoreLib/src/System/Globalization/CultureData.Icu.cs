@@ -420,7 +420,19 @@ namespace System.Globalization
                 return Array.Empty<CultureInfo>();
             }
 
-            int bufferLength = Interop.Globalization.GetLocales(null, 0);
+            int bufferLength;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                bufferLength = Interop.Globalization.GetLocalesNative(null, 0);
+            }
+            else
+            {
+                bufferLength = Interop.Globalization.GetLocales(null, 0);
+            }
+#else
+            bufferLength = Interop.Globalization.GetLocales(null, 0);
+#endif
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();
@@ -428,7 +440,18 @@ namespace System.Globalization
 
             char [] chars = new char[bufferLength];
 
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
+            {
+                bufferLength = Interop.Globalization.GetLocalesNative(chars, bufferLength);
+            }
+            else
+            {
+                bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
+            }
+#else
             bufferLength = Interop.Globalization.GetLocales(chars, bufferLength);
+#endif
             if (bufferLength <= 0)
             {
                 return Array.Empty<CultureInfo>();

@@ -28,6 +28,10 @@ size_t BasicBlock::s_Count;
 // The max # of tree nodes in any BB
 /* static */
 unsigned BasicBlock::s_nMaxTrees;
+
+// Temporary target to initialize blocks with jumps
+/* static */
+BasicBlock BasicBlock::bbTempJumpDest;
 #endif // DEBUG
 
 #ifdef DEBUG
@@ -1441,7 +1445,7 @@ bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tai
  *  Allocate a basic block but don't append it to the current BB list.
  */
 
-BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
+BasicBlock* Compiler::bbNewBasicBlock()
 {
     BasicBlock* block;
 
@@ -1492,15 +1496,6 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
     block->bbEntryState = nullptr;
 
-    /* Record the jump kind in the block */
-
-    block->SetJumpKind(jumpKind DEBUG_ARG(this));
-
-    if (jumpKind == BBJ_THROW)
-    {
-        block->bbSetRunRarely();
-    }
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -1548,6 +1543,33 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     block->bbPreorderNum  = 0;
     block->bbPostorderNum = 0;
 
+    return block;
+}
+
+BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
+{
+    BasicBlock* block = bbNewBasicBlock();
+    block->SetJumpKindAndTarget(jumpKind, jumpDest DEBUG_ARG(this));
+
+    if (jumpKind == BBJ_THROW)
+    {
+        block->bbSetRunRarely();
+    }
+
+    return block;
+}
+
+BasicBlock* Compiler::bbNewBasicBlock(BBswtDesc* jumpSwt)
+{
+    BasicBlock* block = bbNewBasicBlock();
+    block->SetSwitchKindAndTarget(jumpSwt);
+    return block;
+}
+
+BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind, unsigned jumpOffs)
+{
+    BasicBlock* block = bbNewBasicBlock();
+    block->SetJumpKindAndTarget(jumpKind, jumpOffs);
     return block;
 }
 
