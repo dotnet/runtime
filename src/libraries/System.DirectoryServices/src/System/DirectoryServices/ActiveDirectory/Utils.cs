@@ -1866,7 +1866,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 lpString2 = Marshal.StringToHGlobalUni(s2);
                 cchCount2 = s2.Length;
 
-                result = NativeMethods.CompareString(LCID, compareFlags, lpString1, cchCount1, lpString2, cchCount2);
+                result = Interop.Kernel32.CompareString(LCID, compareFlags, lpString1, cchCount1, lpString2, cchCount2);
                 if (result == 0)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());

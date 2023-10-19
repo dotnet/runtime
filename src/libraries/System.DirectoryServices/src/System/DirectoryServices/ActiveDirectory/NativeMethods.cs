@@ -376,22 +376,6 @@ namespace System.DirectoryServices.ActiveDirectory
         [LibraryImport(global::Interop.Libraries.Secur32)]
         internal static partial int LsaDeregisterLogonProcess(
             IntPtr lsaHandle);
-
-        /*int CompareString(LCID Locale,
-            DWORD dwCmpFlags,
-            DWORD lpString1,
-            DWORD cchCount1,
-            DWORD lpString2,
-            DWORD cchCount2
-            );*/
-        [LibraryImport(global::Interop.Libraries.Kernel32, EntryPoint = "CompareStringW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial int CompareString(
-            uint locale,
-            uint dwCmpFlags,
-            IntPtr lpString1,
-            int cchCount1,
-            IntPtr lpString2,
-            int cchCount2);
     }
 
     internal sealed class NativeComInterfaces
