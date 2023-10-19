@@ -35,18 +35,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			OwningSymbol = owningSymbol;
 		}
 
-		public TrimAnalysisReflectionAccessPattern Merge (ValueSetLattice<SingleValue> lattice, TrimAnalysisReflectionAccessPattern other)
-		{
-			Debug.Assert (Operation == other.Operation);
-			Debug.Assert (SymbolEqualityComparer.Default.Equals (ReferencedMethod, other.ReferencedMethod));
-			Debug.Assert (SymbolEqualityComparer.Default.Equals (OwningSymbol, other.OwningSymbol));
-
-			return new TrimAnalysisReflectionAccessPattern (
-				ReferencedMethod,
-				lattice.Meet (Instance, other.Instance),
-				Operation,
-				OwningSymbol);
-		}
+		// No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
+		// and there's only one way to access the referenced method.
 
 		public IEnumerable<Diagnostic> CollectDiagnostics (RequiresAnalyzerContext context)
 		{

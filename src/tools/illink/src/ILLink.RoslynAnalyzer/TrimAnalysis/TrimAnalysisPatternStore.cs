@@ -73,7 +73,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 			}
 
-			ReflectionAccessPatterns[pattern.Operation] = pattern.Merge (Lattice, existingPattern);
+			// No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
+			// and there's only one way to access the referenced method.
+			Debug.Assert (existingPattern == pattern, "Reflection access patterns should be identical");
 		}
 
 		public IEnumerable<Diagnostic> CollectDiagnostics (RequiresAnalyzerContext context)
