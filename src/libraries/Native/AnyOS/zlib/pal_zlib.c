@@ -9,7 +9,9 @@
     #define c_static_assert(e) static_assert((e),"")
 #endif
 
-#if defined(_WIN32) || defined(__EMSCRIPTEN__)
+#ifdef INTERNAL_ZLIB_INTEL
+    #include "../../Windows/System.IO.Compression.Native/zlib-intel/zlib.h"
+#elif defined(_WIN32) || defined(__EMSCRIPTEN__)
     #include "../../Windows/System.IO.Compression.Native/zlib/zlib.h"
 #else
     #include "pal_utilities.h"
@@ -40,14 +42,11 @@ Initializes the PAL_ZStream by creating and setting its underlying z_stream.
 */
 static int32_t Init(PAL_ZStream* stream)
 {
-    z_stream* zStream = (z_stream*)malloc(sizeof(z_stream));
+    z_stream* zStream = (z_stream*)calloc(1, sizeof(z_stream));
     stream->internalState = zStream;
 
     if (zStream != NULL)
     {
-        zStream->zalloc = Z_NULL;
-        zStream->zfree = Z_NULL;
-        zStream->opaque = Z_NULL;
         return PAL_Z_OK;
     }
     else
