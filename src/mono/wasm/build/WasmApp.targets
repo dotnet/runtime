@@ -155,22 +155,21 @@
 
     <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
 
-    <!-- Default values for build properties -->
+    <!-- Runtime feature defaults to trim unnecessary code -->
     <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
+    <HybridGlobalization Condition="'$(HybridGlobalization)' == ''">false</HybridGlobalization>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
+    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
+    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
+    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
+    <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">false</NullabilityInfoContextSupport>
+    <_AggressiveAttributeTrimming Condition="'$(_AggressiveAttributeTrimming)' == ''">true</_AggressiveAttributeTrimming>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
+    <WasmFingerprintDotnetJs Condition="'$(WasmFingerprintDotnetJs)' == ''">false</WasmFingerprintDotnetJs>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Runtime feature defaults to trim unnecessary code -->
-    <RuntimeHostConfigurationOption Condition="'$(HybridGlobalization)' == ''" Include="System.Globalization.Hybrid" Value="false"/>
-    <RuntimeHostConfigurationOption Condition="'$(InvariantGlobalization)' == ''" Include="System.Globalization.Invariant" Value="false" />
-    <RuntimeHostConfigurationOption Condition="'$(EventSourceSupport)' == ''" Include="System.Diagnostics.Tracing.EventSource.IsSupported" Value="false" />
-    <RuntimeHostConfigurationOption Condition="'$(UseSystemResourceKeys)' == ''" Include="System.Resources.UseSystemResourceKeys" Value="true" />
-    <RuntimeHostConfigurationOption Condition="'$(EnableUnsafeUTF7Encoding)' == ''" Include="System.Text.Encoding.EnableUnsafeUTF7Encoding" Value="false" />
-    <RuntimeHostConfigurationOption Condition="'$(HttpActivityPropagationSupport)' == ''" Include="System.Net.Http.EnableActivityPropagation" Value="false" />
-    <RuntimeHostConfigurationOption Condition="'$(NullabilityInfoContextSupport)' == ''" Include="System.Reflection.NullabilityInfoContext.IsSupported" Value="false" />
-    <RuntimeHostConfigurationOption Condition="'$(_AggressiveAttributeTrimming)' == ''" Include="System.AggressiveAttributeTrimming" Value="true" />
-    <RuntimeHostConfigurationOption Condition="'$(DebuggerSupport)' == ''and '$(Configuration)' != 'Debug'" Include="System.Diagnostics.Debugger.IsSupported" Value="false" />
-
     <!-- Allow running/debugging from VS -->
     <ProjectCapability Include="DotNetCoreWeb"/>
 
