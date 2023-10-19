@@ -2544,6 +2544,7 @@ namespace System.Numerics.Tensors
             public int Invoke(ReadOnlySpan<float> result)
             {
                 float curMax = result[0];
+                float curMaxAbs = MathF.Abs(curMax);
                 int curIn = 0;
                 if (float.IsNaN(curMax))
                 {
@@ -2553,22 +2554,25 @@ namespace System.Numerics.Tensors
                 for (int i = 1; i < result.Length; i++)
                 {
                     float current = result[i];
+                    float currentAbs = MathF.Abs(current);
                     if (float.IsNaN(current))
                     {
                         return i;
                     }
 
-                    if (MathF.Abs(curMax) == MathF.Abs(current))
+                    if (curMaxAbs == currentAbs)
                     {
                         if (IsNegative(curMax) && !IsNegative(current))
                         {
                             curMax = current;
+                            curMaxAbs = MathF.Abs(current);
                             curIn = i;
                         }
                     }
-                    else if (MathF.Abs(current) > MathF.Abs(curMax))
+                    else if (currentAbs > curMaxAbs)
                     {
                         curMax = current;
+                        curMaxAbs = MathF.Abs(current);
                         curIn = i;
                     }
                 }
@@ -2705,7 +2709,8 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int Invoke(ReadOnlySpan<float> result)
             {
-                float curMin = result[0];
+                                float curMin = result[0];
+                float curMinAbs = MathF.Abs(curMin);
                 int curIn = 0;
                 if (float.IsNaN(curMin))
                 {
@@ -2715,22 +2720,25 @@ namespace System.Numerics.Tensors
                 for (int i = 1; i < result.Length; i++)
                 {
                     float current = result[i];
+                    float currentAbs = MathF.Abs(current);
                     if (float.IsNaN(current))
                     {
                         return i;
                     }
 
-                    if (MathF.Abs(curMin) == MathF.Abs(current))
+                    if (curMinAbs == currentAbs)
                     {
                         if (IsPositive(curMin) && !IsPositive(current))
                         {
                             curMin = current;
+                            curMinAbs = MathF.Abs(current);
                             curIn = i;
                         }
                     }
-                    else if (MathF.Abs(current) < MathF.Abs(curMin))
+                    else if (currentAbs < curMinAbs)
                     {
                         curMin = current;
+                        curMinAbs = MathF.Abs(current);
                         curIn = i;
                     }
                 }
