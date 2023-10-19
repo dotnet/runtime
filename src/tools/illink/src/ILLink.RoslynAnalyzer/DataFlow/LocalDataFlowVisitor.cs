@@ -92,7 +92,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			HandleReturnValue (branchValue, branchValueOperation);
 		}
 
-		public abstract TValue GetFieldTargetValue (IFieldSymbol field);
+		public abstract TValue GetFieldTargetValue (IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation);
 
 		public abstract TValue GetParameterTargetValue (IParameterSymbol parameter);
 
@@ -165,7 +165,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			case IFieldReferenceOperation:
 			case IParameterReferenceOperation: {
 					TValue targetValue = targetOperation switch {
-						IFieldReferenceOperation fieldRef => GetFieldTargetValue (fieldRef.Field),
+						IFieldReferenceOperation fieldRef => GetFieldTargetValue (fieldRef.Field, fieldRef),
 						IParameterReferenceOperation parameterRef => GetParameterTargetValue (parameterRef.Parameter),
 						_ => throw new InvalidOperationException ()
 					};

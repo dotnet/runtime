@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -11,6 +12,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 	public readonly struct TrimAnalysisPatternStore
 	{
 		readonly Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
+		readonly Dictionary<IOperation, TrimAnalysisFieldAccessPattern> FieldAccessPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisMethodCallPattern> MethodCallPatterns;
 		readonly Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
 		readonly ValueSetLattice<SingleValue> Lattice;
@@ -18,6 +20,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public TrimAnalysisPatternStore (ValueSetLattice<SingleValue> lattice)
 		{
 			AssignmentPatterns = new Dictionary<(IOperation, bool), TrimAnalysisAssignmentPattern> ();
+			FieldAccessPatterns = new Dictionary<IOperation, TrimAnalysisFieldAccessPattern> ();
 			MethodCallPatterns = new Dictionary<IOperation, TrimAnalysisMethodCallPattern> ();
 			ReflectionAccessPatterns = new Dictionary<IOperation, TrimAnalysisReflectionAccessPattern> ();
 			Lattice = lattice;
@@ -39,6 +42,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 
 			AssignmentPatterns[(trimAnalysisPattern.Operation, isReturnValue)] = trimAnalysisPattern.Merge (Lattice, existingPattern);
+		}
+
+		public void Add (TrimAnalysisFieldAccessPattern pattern)
+		{
+			if (!FieldAccessPatterns.TryGetValue (pattern.Operation, out var existingPattern)) {
+				FieldAccessPatterns.Add (pattern.Operation, pattern);
+				return;
+			}
+
+			// No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
+			// and there's only one way to "access" a field.
+			Debug.Assert (existingPattern == pattern, "Field access patterns should be identical");
 		}
 
 		public void Add (TrimAnalysisMethodCallPattern pattern)
@@ -65,6 +80,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			foreach (var assignmentPattern in AssignmentPatterns.Values) {
 				foreach (var diagnostic in assignmentPattern.CollectDiagnostics ())
+					yield return diagnostic;
+			}
+
+			foreach (var fieldAccessPattern in FieldAccessPatterns.Values) {
+				foreach (var diagnostic in fieldAccessPattern.CollectDiagnostics (context))
 					yield return diagnostic;
 			}
 

@@ -55,11 +55,6 @@ namespace ILLink.RoslynAnalyzer
 					CheckMatchingAttributesInInterfaces (symbolAnalysisContext, typeSymbol);
 				}, SymbolKind.NamedType);
 
-				context.RegisterOperationAction (operationContext => {
-					var fieldReference = (IFieldReferenceOperation) operationContext.Operation;
-					CheckCalledMember (operationContext, fieldReference.Field, incompatibleMembers);
-				}, OperationKind.FieldReference);
-
 				context.RegisterSyntaxNodeAction (syntaxNodeAnalysisContext => {
 					var model = syntaxNodeAnalysisContext.SemanticModel;
 					if (syntaxNodeAnalysisContext.ContainingSymbol is not ISymbol containingSymbol || containingSymbol.IsInRequiresScope (RequiresAttributeName, out _))
@@ -116,33 +111,6 @@ namespace ILLink.RoslynAnalyzer
 				foreach (var extraSymbolAction in ExtraSymbolActions)
 					context.RegisterSymbolAction (extraSymbolAction.Action, extraSymbolAction.SymbolKind);
 
-				void CheckCalledMember (
-					OperationAnalysisContext operationContext,
-					ISymbol member,
-					ImmutableArray<ISymbol> incompatibleMembers)
-				{
-					// Do not emit diagnostics if the operation is nameof()
-					if (operationContext.Operation.Parent is IOperation operation && operation.Kind == OperationKind.NameOf)
-						return;
-
-					// Do not emit any diagnostics for constant fields - they can only have Requires attributes applied to them
-					// via the type, and in that case the attribute is guarding the access to the static ctor.
-					// But constant fields are never accessed at runtime, and thus they don't cause static ctor to run.
-					// Constant fields are always inlined by the compiler (required by the ECMA spec).
-					if (member is IFieldSymbol field && field.HasConstantValue)
-						return;
-
-					ISymbol containingSymbol = FindContainingSymbol (operationContext, AnalyzerDiagnosticTargets);
-
-					if (CheckAndCreateRequiresDiagnostic (
-						operationContext.Operation,
-						containingSymbol,
-						member,
-						ImmutableArray<ISymbol>.Empty,
-						out Diagnostic? diagnostic))
-						operationContext.ReportDiagnostic (diagnostic);
-				}
-
 				void CheckMatchingAttributesInOverrides (
 					SymbolAnalysisContext symbolAnalysisContext,
 					ISymbol member)
@@ -166,8 +134,8 @@ namespace ILLink.RoslynAnalyzer
 
 		public bool CheckAndCreateRequiresDiagnostic (
 			IOperation operation,
-			ISymbol containingSymbol,
 			ISymbol member,
+			ISymbol containingSymbol,
 			ImmutableArray<ISymbol> incompatibleMembers,
 			[NotNullWhen (true)] out Diagnostic? diagnostic)
 		{
@@ -329,7 +297,7 @@ namespace ILLink.RoslynAnalyzer
 
 		internal bool CheckAndCreateRequiresDiagnostic (
 			IOperation operation,
-			IMethodSymbol methodSymbol,
+			ISymbol member,
 			ISymbol owningSymbol,
 			RequiresAnalyzerContext context,
 			[NotNullWhen (true)] out Diagnostic? diagnostic)
@@ -339,8 +307,8 @@ namespace ILLink.RoslynAnalyzer
 			var incompatibleMembers = context.GetSpecialIncompatibleMembers (this);
 			return CheckAndCreateRequiresDiagnostic (
 				operation,
+				member,
 				containingSymbol,
-				methodSymbol,
 				incompatibleMembers,
 				out diagnostic);
 		}

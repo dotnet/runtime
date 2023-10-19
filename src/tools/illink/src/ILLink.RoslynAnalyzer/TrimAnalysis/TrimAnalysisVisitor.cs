@@ -142,7 +142,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (TryGetConstantValue (fieldRef, out var constValue))
 				return constValue;
 
-			return GetFieldTargetValue (fieldRef.Field);
+			return GetFieldTargetValue (fieldRef.Field, fieldRef);
 		}
 
 		public override MultiValue VisitTypeOf (ITypeOfOperation typeOfOperation, StateValue state)
@@ -185,8 +185,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		// - method calls
 		// - value returned from a method
 
-		public override MultiValue GetFieldTargetValue (IFieldSymbol field)
+		public override MultiValue GetFieldTargetValue (IFieldSymbol field, IFieldReferenceOperation fieldReferenceOperation)
 		{
+			TrimAnalysisPatterns.Add (
+				new TrimAnalysisFieldAccessPattern (field, fieldReferenceOperation, OwningSymbol)
+			);
+
 			return field.Type.IsTypeInterestingForDataflow () ? new FieldValue (field) : TopValue;
 		}
 
