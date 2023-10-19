@@ -65,17 +65,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public IEnumerable<Diagnostic> CollectDiagnostics ()
 		{
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
-			HandleCallAction handleCallAction = new (diagnosticContext, OwningSymbol, Operation);
-			MethodProxy method = new (CalledMethod);
-			IntrinsicId intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);
-			if (!handleCallAction.Invoke (method, Instance, Arguments, intrinsicId, out _)) {
-				// If this returns false it means the intrinsic needs special handling:
-				// case IntrinsicId.TypeDelegator_Ctor:
-				//    No diagnostics to report - this is an "identity" operation for data flow, can't produce diagnostics on its own
-				// case IntrinsicId.Array_Empty:
-				//    No diagnostics to report - constant value
-			}
-
+			TrimAnalysisVisitor.HandleCall(Operation, OwningSymbol, CalledMethod, Instance, Arguments, diagnosticContext, default, out var _);
 			return diagnosticContext.Diagnostics;
 		}
 	}
