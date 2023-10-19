@@ -20,6 +20,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			AssignToAnnotatedTypeReferenceWithRequirements ();
 			TestCompoundAssignment (typeof (int));
 			TestCompoundAssignmentCapture (typeof (int));
+			TestCompoundAssignmentMultipleCaptures (typeof (int), typeof (int));
 		}
 
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
