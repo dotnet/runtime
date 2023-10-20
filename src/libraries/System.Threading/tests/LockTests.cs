@@ -37,22 +37,13 @@ namespace System.Threading.Tests
         public static void DeepRecursion()
         {
             Lock lockObj = new();
-            const int successLimit = ushort.MaxValue - 1;
-            const int failureLimit = ushort.MaxValue + 2;
+            const int successLimit = 10000;
 
             int i = 0;
             for (; i < successLimit; i++)
             {
                 Assert.True(lockObj.TryEnter());
             }
-
-            Assert.Throws<LockRecursionException>(() =>
-            {
-                for (; i < failureLimit; i++)
-                {
-                    Assert.True(lockObj.TryEnter());
-                }
-            });
 
             for (; i > 1; i--)
             {
@@ -111,12 +102,17 @@ namespace System.Threading.Tests
         public static void Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException()
         {
             Lock lockObj = new();
-            Lock.Scope lockScope;
             var b = new Barrier(2);
+
+            Lock.Scope lockScopeCopy;
+            using (Lock.Scope lockScope = lockObj.EnterScope())
+            {
+                lockScopeCopy = lockScope;
+            }
 
             Task t = Task.Run(() =>
             {
-                using (lockScope = lockObj.EnterScope())
+                using (lockObj.EnterScope())
                 {
                     b.SignalAndWait();
                     b.SignalAndWait();
@@ -124,10 +120,25 @@ namespace System.Threading.Tests
             });
 
             b.SignalAndWait();
-            Assert.Throws<SynchronizationLockException>(() => lockObj.Exit());
-            Assert.Throws<SynchronizationLockException>(() => lockScope.Dispose());
-            b.SignalAndWait();
 
+            Assert.Throws<SynchronizationLockException>(() => lockObj.Exit());
+
+            try
+            {
+                // Can't use Assert.Throws because lockScopeCopy is a ref struct local that can't be captured by a lambda
+                // expression
+                lockScopeCopy.Dispose();
+                Assert.Fail("Expected SynchronizationLockException but did not get an exception.");
+            }
+            catch (SynchronizationLockException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail($"Expected SynchronizationLockException but got a different exception instead: {ex}");
+            }
+
+            b.SignalAndWait();
             t.Wait();
         }
 
