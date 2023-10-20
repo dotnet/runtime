@@ -33,8 +33,6 @@ namespace Internal.Runtime.Augments
         public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
         public abstract Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle);
 
-        public abstract RuntimeTypeHandle GetTypeHandleIfAvailable(Type type);
-
         public abstract MethodInfo GetDelegateMethod(Delegate del);
 
         public abstract Exception GetExceptionForHR(int hr);

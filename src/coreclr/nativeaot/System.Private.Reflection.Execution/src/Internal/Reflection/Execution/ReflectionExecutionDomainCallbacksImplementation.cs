@@ -63,11 +63,6 @@ namespace Internal.Reflection.Execution
             return ExecutionEnvironmentImplementation.TryGetStaticClassConstructionContext(runtimeTypeHandle);
         }
 
-        public sealed override RuntimeTypeHandle GetTypeHandleIfAvailable(Type type)
-        {
-            return _executionDomain.GetTypeHandleIfAvailable(type);
-        }
-
         public sealed override MethodInfo GetDelegateMethod(Delegate del)
         {
             return DelegateMethodInfoRetriever.GetDelegateMethodInfo(del);
