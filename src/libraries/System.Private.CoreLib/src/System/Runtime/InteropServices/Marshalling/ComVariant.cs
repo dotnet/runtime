@@ -181,13 +181,13 @@ namespace System.Runtime.InteropServices.Marshalling
             else if (VarType == VT_VERSIONED_STREAM)
             {
                 VersionedStream* versionedStream = _typeUnion._unionTypes._versionedStream;
-                if (versionedStream != null && versionedStream->_stream != null)
+                if (versionedStream != null && versionedStream->_stream != IntPtr.Zero)
                 {
                     Marshal.Release(versionedStream->_stream);
                 }
                 Marshal.FreeCoTaskMem((nint)versionedStream);
             }
-            else if (VarType == VT_CF)
+            else if (VarType == VarEnum.VT_CF)
             {
                 ClipboardData* clipboardData = _typeUnion._unionTypes.clipboardData;
                 if (clipboardData != null)
@@ -228,7 +228,7 @@ namespace System.Runtime.InteropServices.Marshalling
                     default:
                         break;
                 }
-                Marshal.CoTaskMemFree((nint)GetRawDataRef<Vector<byte>>()._data);
+                Marshal.FreeCoTaskMem((nint)GetRawDataRef<Vector<byte>>()._data);
             }
 
             // Clear out this ComVariant instance.
