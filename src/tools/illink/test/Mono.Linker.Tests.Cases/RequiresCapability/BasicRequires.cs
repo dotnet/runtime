@@ -224,8 +224,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL3002", "--EventRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3002", "--EventRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--RequiresOnEventLambda--")]
-			[ExpectedWarning ("IL3002", "--RequiresOnEventLambda--")]
-			[ExpectedWarning ("IL3050", "--RequiresOnEventLambda--")]
+			[ExpectedWarning ("IL3002", "--RequiresOnEventLambda--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--RequiresOnEventLambda--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void TestEvent ()
 			{
 				EventRequires += (object sender, EventArgs e) => throw new NotImplementedException ();
