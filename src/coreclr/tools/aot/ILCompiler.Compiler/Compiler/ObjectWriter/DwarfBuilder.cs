@@ -144,7 +144,7 @@ namespace ILCompiler.ObjectWriter
                 this,
                 _codeRelocType))
             {
-                dwarfInfoWriter.WriteStartDIE(_isOSXLike ? DwarfAbbrev.CompileUnitNoRanges : DwarfAbbrev.CompileUnit);
+                dwarfInfoWriter.WriteStartDIE(/*_isOSXLike ? DwarfAbbrev.CompileUnitNoRanges :*/ DwarfAbbrev.CompileUnit);
 
                 // DW_AT_producer
                 dwarfInfoWriter.WriteStringReference("NetRuntime");
@@ -154,7 +154,7 @@ namespace ILCompiler.ObjectWriter
                 dwarfInfoWriter.WriteStringReference("il.cpp");
                 // DW_AT_comp_dir
                 dwarfInfoWriter.WriteStringReference("/_");
-                if (_isOSXLike)
+                /*if (_isOSXLike)
                 {
                     // DW_AT_low_pc
                     dwarfInfoWriter.WriteAddressSize(0);
@@ -162,7 +162,7 @@ namespace ILCompiler.ObjectWriter
                     dwarfInfoWriter.WriteCodeReference(_sections[^1].SectionSymbolName, (uint)_sections[^1].Size);
                 }
                 else
-                {
+                {*/
                     // DW_AT_low_pc
                     dwarfInfoWriter.WriteCodeReference(_sections[0].SectionSymbolName);
                     // DW_AT_ranges
@@ -172,7 +172,7 @@ namespace ILCompiler.ObjectWriter
                         dwarfInfoWriter.WriteRangeListEntry(sectionInfo.SectionSymbolName, 0, (uint)sectionInfo.Size);
                     }
                     dwarfInfoWriter.WriteEndRangeList();
-                }
+                //}
                 // DW_AT_stmt_list
                 dwarfInfoWriter.WriteLineReference(0);
 
@@ -235,12 +235,12 @@ namespace ILCompiler.ObjectWriter
             arangeSectionWriter.Stream.Write([_targetPointerSize, 0]);
             // Ranges have to be aligned
             arangeSectionWriter.EmitAlignment(_targetPointerSize * 2);
-            if (_isOSXLike)
+            /*if (_isOSXLike)
             {
                 arangeSectionWriter.Stream.WriteUInt64(0);
                 arangeSectionWriter.EmitSymbolReference(_codeRelocType, _sections[^1].SectionSymbolName, (int)_sections[^1].Size);
             }
-            else
+            else*/
             {
                 foreach (var sectionInfo in _sections)
                 {
