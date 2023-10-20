@@ -305,6 +305,14 @@ StackWalkAction CaptureTaskletsCore(CrawlFrame* pCf, VOID* data)
     _ASSERTE(pFunc);
 
     TaskletCaptureData* taskletCaptureData = (TaskletCaptureData*) data;
+
+    // Ignore any frames before we get to the interesting methods
+    if (!pCf->IsFrameless())
+    {
+        _ASSERTE(taskletCaptureData->firstTasklet == NULL); // This should only happen for cases before we get to interesting components of the stack
+        return SWA_CONTINUE;
+    }
+
     if (taskletCaptureData->firstTasklet == NULL)
     {
         if (!IsInCurrentFrame(pCf->GetRegisterSet(), taskletCaptureData->stackMark))
