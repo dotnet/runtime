@@ -166,7 +166,6 @@
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">false</NullabilityInfoContextSupport>
     <_AggressiveAttributeTrimming Condition="'$(_AggressiveAttributeTrimming)' == ''">true</_AggressiveAttributeTrimming>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
-    <WasmFingerprintDotnetJs Condition="'$(WasmFingerprintDotnetJs)' == ''">false</WasmFingerprintDotnetJs>
   </PropertyGroup>
 
   <ItemGroup>
