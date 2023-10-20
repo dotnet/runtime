@@ -317,7 +317,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 		}
 
-		public override MultiValue HandleDelegateCreation (IMethodSymbol method, MultiValue instance, IOperation operation)
+		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation)
 		{
 			TrimAnalysisPatterns.Add (new TrimAnalysisReflectionAccessPattern (
 				method,

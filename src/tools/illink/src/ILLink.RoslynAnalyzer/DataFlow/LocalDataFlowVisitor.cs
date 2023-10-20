@@ -488,38 +488,47 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitDelegateCreation (IDelegateCreationOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			if (operation.Target is IFlowAnonymousFunctionOperation lambda) {
-				VisitFlowAnonymousFunction (lambda, state);
+			Visit (operation.Target, state);
 
-				// Instance of a lambda or local function should be the instance of the containing method.
-				// Don't need to track a dataflow value, since the delegate creation will warn if the
-				// lambda or local function has an annotated this parameter.
-				var instance = TopValue;
-				return HandleDelegateCreation (lambda.Symbol, instance, operation);
+			IMethodSymbol? targetMethodSymbol = null;
+			switch (operation.Target) {
+				case IFlowAnonymousFunctionOperation lambda:
+					// Tracking lambdas is handled by normal visiting logic for IFlowAnonymousFunctionOperation.
+
+					// Instance of a lambda or local function should be the instance of the containing method.
+					// Don't need to track a dataflow value, since the delegate creation will warn if the
+					// lambda or local function has an annotated this parameter.
+					targetMethodSymbol = lambda.Symbol;
+					break;
+				case IMethodReferenceOperation methodReference:
+					IMethodSymbol method = methodReference.Method.OriginalDefinition;
+					if (method.ContainingSymbol is IMethodSymbol) {
+						// Track references to local functions
+						var localFunction = method;
+						Debug.Assert (localFunction.MethodKind == MethodKind.LocalFunction);;
+						var localFunctionCFG = ControlFlowGraph.GetLocalFunctionControlFlowGraphInScope (localFunction);
+						InterproceduralState.TrackMethod (new MethodBodyValue (localFunction, localFunctionCFG));
+					}
+					targetMethodSymbol = method;
+					break;
+				case IMemberReferenceOperation:
+				case IInvocationOperation:
+					// No method symbol.
+					break;
+				default:
+					// Unimplemented case that might need special handling.
+					// Fail in debug mode only.
+					Debug.Fail ($"{operation.Target.GetType ()}: {operation.Target.Syntax.GetLocation ().GetLineSpan ()}");
+					break;
 			}
 
-			Debug.Assert (operation.Target is IMemberReferenceOperation,
-				$"{operation.Target.GetType ()}: {operation.Syntax.GetLocation ().GetLineSpan ()}");
-			if (operation.Target is not IMemberReferenceOperation memberReference)
+			if (targetMethodSymbol == null)
 				return TopValue;
 
-			TValue instanceValue = Visit (memberReference.Instance, state);
-
-			if (memberReference.Member is not IMethodSymbol method)
-				return TopValue;
-
-			// Track references to local functions
-			if (method.OriginalDefinition.ContainingSymbol is IMethodSymbol) {
-				var localFunction = method.OriginalDefinition;
-				Debug.Assert (localFunction.MethodKind == MethodKind.LocalFunction);;
-				var localFunctionCFG = ControlFlowGraph.GetLocalFunctionControlFlowGraphInScope (localFunction);
-				InterproceduralState.TrackMethod (new MethodBodyValue (localFunction, localFunctionCFG));
-			}
-
-			return HandleDelegateCreation (method, instanceValue, operation);
+			return HandleDelegateCreation (targetMethodSymbol, operation);
 		}
 
-		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, TValue instance, IOperation operation);
+		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, IOperation operation);
 
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
@@ -528,7 +537,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// Enable this assert once we have support for deconstruction assignments.
 				// https://github.com/dotnet/linker/issues/3158
 				// Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference),
-				//     $"{operation.Syntax.GetLocation ().GetLineSpan ()}");
+				// $"{operation.Syntax.GetLocation ().GetLineSpan ()}");
 				return TopValue;
 			}
 
