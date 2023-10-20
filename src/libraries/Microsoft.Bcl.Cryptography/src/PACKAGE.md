@@ -32,7 +32,7 @@ The main types provided by this library are:
 
 ## Additional Documentation
 
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/System.Security.Cryptography)
+* [API documentation](https://learn.microsoft.com/dotnet/api/System.Security.Cryptography)
 
 ## Feedback & Contributing
 

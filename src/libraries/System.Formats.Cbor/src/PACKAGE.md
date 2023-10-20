@@ -86,7 +86,7 @@ The main types provided by this library are:
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/system.formats.cbor)
+* [API documentation](https://learn.microsoft.com/dotnet/api/system.formats.cbor)
 
 ## Feedback & Contributing
 

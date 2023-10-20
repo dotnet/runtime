@@ -58,7 +58,7 @@ The main types provided by this library are:
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.logging.tracesource)
+* [API documentation](https://learn.microsoft.com/dotnet/api/microsoft.extensions.logging.tracesource)
 
 ## Related Packages
 

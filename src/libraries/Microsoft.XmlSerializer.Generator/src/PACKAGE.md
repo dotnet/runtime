@@ -30,8 +30,8 @@ The main types provided by this library are:
 
 <!-- Links to further documentation. Remove conceptual documentation if not available for the library. -->
 
-* [Conceptual documentation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/**LIBRARYNAME**/overview)
-* [API documentation](https://learn.microsoft.com/en-us/dotnet/api/**LIBRARYNAME**)
+* [Conceptual documentation](https://learn.microsoft.com/dotnet/standard/serialization/**LIBRARYNAME**/overview)
+* [API documentation](https://learn.microsoft.com/dotnet/api/**LIBRARYNAME**)
 
 ## Related Packages
 
