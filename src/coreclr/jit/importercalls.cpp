@@ -1255,7 +1255,7 @@ DONE:
                     dspTreeID(call), loopHead->bbNum, compCurBB->bbNum);
             fgMarkBackwardJump(loopHead, compCurBB);
 
-            compMayConvertTailCallToLoop = true;
+            setMethodHasRecursiveTailcall();
             compCurBB->bbFlags |= BBF_RECURSIVE_TAILCALL;
         }
 

@@ -7450,11 +7450,16 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     }
     else
     {
-        // Ensure we have a scratch block and then target the next
-        // block.  Loop detection needs to see a pred out of the loop,
+        // We should have ensured the first BB was scratch
+        // in morph init...
+        //
+        assert(doesMethodHaveRecursiveTailcall());
+        assert(fgFirstBBisScratch());
+
+        // Loop detection needs to see a pred out of the loop,
         // so mark the scratch block BBF_DONT_REMOVE to prevent empty
         // block removal on it.
-        fgEnsureFirstBBisScratch();
+        //
         fgFirstBB->bbFlags |= BBF_DONT_REMOVE;
         block->SetJumpKindAndTarget(BBJ_ALWAYS, fgFirstBB->Next() DEBUG_ARG(this));
     }
@@ -13852,6 +13857,14 @@ void Compiler::fgMorphBlocks()
         // this flag before we start reading it.
         // The main reason why this flag is not set is that we are running in minOpts.
         lvSetMinOptsDoNotEnreg();
+    }
+
+    // Ensure the first BB is scratch if we might need it as a pred for
+    // the recursive tail call to loop optimization.
+    //
+    if (doesMethodHaveRecursiveTailcall())
+    {
+        fgEnsureFirstBBisScratch();
     }
 
     /*-------------------------------------------------------------------------
