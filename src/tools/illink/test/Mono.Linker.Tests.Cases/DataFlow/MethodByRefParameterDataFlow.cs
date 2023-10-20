@@ -269,11 +269,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TryGetAnnotatedValueOut (out TypeWithMethodsProperty);
 		}
 
+		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		static void TestPassingRefProperty_Mismatch ()
 		{
 			TryGetAnnotatedValue (ref TypeWithFieldsProperty);
 		}
 
+		// TODO: Missing warning.
 		static void TestPassingRefProperty_OutParameter_Mismatch ()
 		{
 			TryGetAnnotatedValueOut (out TypeWithFieldsProperty);
@@ -313,12 +315,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TryGetAnnotatedValueOut (out indexer[new Index(0)]);
 		}
 
+		// https://github.com/dotnet/linker/issues/2158
+		[ExpectedWarning ("IL2068", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2072", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		static void TestPassingRefIndexer_Mismatch ()
 		{
 			var indexer = new RefIndexer_PublicFields ();
 			TryGetAnnotatedValue (ref indexer[0]);
 		}
 
+		// https://github.com/dotnet/linker/issues/2158
+		[ExpectedWarning ("IL2068", nameof (TryGetAnnotatedValue), ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 		static void TestPassingRefIndexer_OutParameter_Mismatch ()
 		{
 			var indexer = new RefIndexer_PublicFields ();

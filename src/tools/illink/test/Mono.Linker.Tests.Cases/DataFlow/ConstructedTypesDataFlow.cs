@@ -50,6 +50,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			static ref Type AnnotatedProperty => ref annotatedfield;
 
+			// https://github.com/dotnet/linker/issues/3158
+			[ExpectedWarning ("IL2062", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2078", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void DeconstructVariablePropertyReference ((Type type, object instance) input)
 			{
 				object instance;
