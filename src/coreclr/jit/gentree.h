@@ -4354,6 +4354,7 @@ enum class WellKnownArg
     ThisPointer,
     VarArgsCookie,
     InstParam,
+    AsyncContinuation,
     RetBuffer,
     PInvokeFrame,
     SecretStubParam,
@@ -4711,6 +4712,7 @@ class CallArgs
 #endif
     bool m_hasThisPointer : 1;
     bool m_hasRetBuffer : 1;
+    bool m_hasAsyncContinuation : 1;
     bool m_isVarArgs : 1;
     bool m_abiInformationDetermined : 1;
     // True if we have one or more register arguments.
@@ -4757,6 +4759,7 @@ public:
     CallArg* InsertAfter(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertAfterUnchecked(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertInstParam(Compiler* comp, GenTree* node);
+    CallArg* InsertAsyncContinuationParam(Compiler* comp, GenTree* node);
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void PushLateBack(CallArg* arg);
     void Remove(CallArg* arg);
@@ -4785,6 +4788,7 @@ public:
     // clang-format off
     bool HasThisPointer() const { return m_hasThisPointer; }
     bool HasRetBuffer() const { return m_hasRetBuffer; }
+    bool HasAsyncContinuation() const { return m_hasAsyncContinuation; }
     bool IsVarArgs() const { return m_isVarArgs; }
     void SetIsVarArgs() { m_isVarArgs = true; }
     void ClearIsVarArgs() { m_isVarArgs = false; }
@@ -4978,6 +4982,8 @@ struct GenTreeCall final : public GenTree
         gtReturnTypeDesc.Reset();
 #endif
     }
+
+    bool IsAsync2() const;
 
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th return register allocated to this call node.

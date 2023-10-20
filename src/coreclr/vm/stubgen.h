@@ -708,6 +708,7 @@ public:
     void EmitBLE_UN     (ILCodeLabel* pCodeLabel);
     void EmitBLT        (ILCodeLabel* pCodeLabel);
     void EmitBNE_UN     (ILCodeLabel* pCodeLabel);
+    void EmitBOX        (int token);
     void EmitBR         (ILCodeLabel* pCodeLabel);
     void EmitBREAK      ();
     void EmitBRFALSE    (ILCodeLabel* pCodeLabel);
@@ -799,6 +800,7 @@ public:
     void EmitSUB        ();
     void EmitTHROW      ();
     void EmitUNALIGNED  (BYTE alignment);
+    void EmitUNBOX      (int token);
 
     // Overloads to simplify common usage patterns
     void EmitNEWOBJ     (BinderMethodID id, int numInArgs);

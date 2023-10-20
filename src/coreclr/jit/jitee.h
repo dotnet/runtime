@@ -47,6 +47,7 @@ public:
 #if defined(TARGET_XARCH)
         JIT_FLAG_VECTOR512_THROTTLING    = 31, // On Xarch, 512-bit vector usage may incur CPU frequency throttling
 #endif
+        JIT_FLAG_RUNTIMEASYNCFUNCTION    = 32, // Generate code for use as an async2 function
 
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,

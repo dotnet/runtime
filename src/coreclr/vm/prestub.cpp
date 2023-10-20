@@ -1470,6 +1470,8 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
         return false;
     }
 
+    _ASSERTE(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_RuntimeAsyncViaJitGeneratedStateMachines) == 0);
+
     ULONG offsetOfAsyncDetailsUnused;
     AsyncTaskMethod asyncType = ClassifyAsyncMethod(GetSigPointer(), GetModule(), &offsetOfAsyncDetailsUnused);
     MethodDesc *pAsyncOtherVariant = this->GetAsyncOtherVariant();

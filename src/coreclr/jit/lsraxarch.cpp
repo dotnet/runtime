@@ -578,6 +578,12 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT);
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            assert(dstCount == 1);
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET);
+            break;
+
 #if !defined(FEATURE_EH_FUNCLETS)
         case GT_END_LFIN:
             srcCount = 0;

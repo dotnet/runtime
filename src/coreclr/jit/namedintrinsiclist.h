@@ -93,6 +93,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_RuntimeType_get_TypeHandle,
     NI_System_StubHelpers_GetStubContext,
     NI_System_StubHelpers_NextCallReturnAddress,
+    NI_System_StubHelpers_Async2CallContinuation,
 
     NI_Array_Address,
     NI_Array_Get,

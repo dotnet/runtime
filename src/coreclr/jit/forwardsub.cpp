@@ -498,7 +498,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Can't substitute GT_LCLHEAP.
     //
     // Don't substitute a no return call (trips up morph in some cases).
-    if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP))
+    if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP, GT_ASYNC_CONTINUATION))
     {
         JITDUMP(" tree to sub is catch arg, or lcl heap\n");
         return false;

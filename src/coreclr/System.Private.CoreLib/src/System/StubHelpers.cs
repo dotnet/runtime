@@ -1296,5 +1296,8 @@ namespace System.StubHelpers
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr NextCallReturnAddress();
+
+        [Intrinsic]
+        internal static object? Async2CallContinuation() => null;
     }  // class StubHelpers
 }

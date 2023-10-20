@@ -82,6 +82,7 @@ CORINFO_SIG_INFO*
 CORINFO_RESOLVED_TOKEN*,ref CORINFO_RESOLVED_TOKEN
 CORINFO_RESOLVED_TOKEN_PTR,CORINFO_RESOLVED_TOKEN*,CORINFO_RESOLVED_TOKEN*,CORINFO_RESOLVED_TOKEN*
 CORINFO_EE_INFO*,ref CORINFO_EE_INFO
+CORINFO_ASYNC2_INFO*,ref CORINFO_ASYNC2_INFO
 CORINFO_TAILCALL_HELPERS*,ref CORINFO_TAILCALL_HELPERS
 CORINFO_GENERICHANDLE_RESULT*,ref CORINFO_GENERICHANDLE_RESULT
 CORINFO_METHOD_INFO*,CORINFO_METHOD_INFO*
@@ -273,6 +274,7 @@ FUNCTIONS
     [ManualNativeWrapper] bool runWithErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter);
     [ManualNativeWrapper] bool runWithSPMIErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter);
     void getEEInfo(CORINFO_EE_INFO* pEEInfoOut);
+    void getAsync2Info(CORINFO_ASYNC2_INFO* pAsync2InfoOut);
     const char16_t * getJitTimeLogFilename();
     mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
     size_t printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
@@ -312,6 +314,7 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE  methHnd, CORINFO_CLASS_HANDLE   clsHnd, CORINFO_METHOD_HANDLE  targetMethodHnd, DelegateCtorArgs *     pCtorData);
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
     bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
+    CORINFO_METHOD_HANDLE getAsyncResumptionStub();
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
     bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
     void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint);

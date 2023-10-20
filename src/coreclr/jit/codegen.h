@@ -1152,6 +1152,7 @@ protected:
     void genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode);
 #endif
     void genCodeForPhysReg(GenTreePhysReg* tree);
+    void genCodeForAsyncContinuation(GenTree* tree);
     void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
     void genCodeForReuseVal(GenTree* treeNode);
@@ -1285,6 +1286,7 @@ protected:
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     void genReturn(GenTree* treeNode);
+    void genReturnSuspend(GenTreeUnOp* treeNode);
 
 #ifdef TARGET_XARCH
     void genStackPointerConstantAdjustment(ssize_t spDelta, bool trackSpAdjustments);

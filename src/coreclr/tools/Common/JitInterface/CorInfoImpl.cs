@@ -2722,6 +2722,9 @@ namespace Internal.JitInterface
                 case CorInfoClassId.CLASSID_SYSTEM_OBJECT:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object));
 
+                case CorInfoClassId.CLASSID_SYSTEM_BYTE:
+                    return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Byte));
+
                 case CorInfoClassId.CLASSID_TYPED_BYREF:
                     return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.TypedReference));
 
@@ -3243,6 +3246,11 @@ namespace Internal.JitInterface
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
         }
 
+        private void getAsync2Info(ref CORINFO_ASYNC2_INFO pAsync2InfoOut)
+        {
+            throw new NotImplementedException();
+        }
+
 #pragma warning disable CA1822 // Mark members as static
         private char* getJitTimeLogFilename()
 #pragma warning restore CA1822 // Mark members as static
@@ -3540,6 +3548,13 @@ namespace Internal.JitInterface
 #else
             return false;
 #endif
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
+#pragma warning restore CA1822 // Mark members as static
+        {
+            return null;
         }
 
         private byte[] _code;

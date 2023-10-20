@@ -5099,6 +5099,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // TARGET_ARM
 
+    if (compIsAsync2StateMachine())
+    {
+        DoPhase(this, PHASE_ASYNC2, &Compiler::TransformAsync2);
+    }
+
     // Assign registers to variables, etc.
 
     // Create LinearScan before Lowering, so that Lowering can call LinearScan methods

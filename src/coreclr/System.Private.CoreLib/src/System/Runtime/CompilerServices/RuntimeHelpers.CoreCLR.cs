@@ -380,6 +380,13 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
+
+        private static object AllocContinuation(object prevContinuation, nuint numGCRefs, nuint dataSize)
+        {
+            object newContinuation = new Continuation { Data = new byte[dataSize], GCData = new object[numGCRefs] };
+            Unsafe.Unbox<Continuation>(prevContinuation).Next = newContinuation;
+            return newContinuation;
+        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
@@ -659,5 +666,14 @@ namespace System.Runtime.CompilerServices
     {
         public PortableTailCallFrame* Frame;
         public IntPtr ArgBuffer;
+    }
+
+    internal unsafe struct Continuation
+    {
+        public object Next;
+        public delegate*<ref Continuation, Exception, object> Resume;
+        public uint State;
+        public byte[] Data;
+        public object GCData;
     }
 }

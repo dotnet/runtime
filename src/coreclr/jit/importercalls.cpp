@@ -96,7 +96,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool bIntrinsicImported = false;
 
     CORINFO_SIG_INFO calliSig;
-    NewCallArg       extraArg;
+    GenTree*         varArgsCookie = nullptr;
+    GenTree*         instParam     = nullptr;
 
     /*-------------------------------------------------------------------------
      * First create the call node
@@ -715,12 +716,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
-    /*-------------------------------------------------------------------------
-     * Create the argument list
-     */
+    // Now create the argument list.
 
     //-------------------------------------------------------------------------
-    // Special case - for varargs we have an implicit last argument
+    // Special case - for varargs we have an extra argument
 
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
     {
@@ -735,9 +734,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         varCookie = info.compCompHnd->getVarArgsHandle(sig, &pVarCookie);
         assert((!varCookie) != (!pVarCookie));
-        GenTree* cookieNode = gtNewIconEmbHndNode(varCookie, pVarCookie, GTF_ICON_VARG_HDL, sig);
-        assert(extraArg.Node == nullptr);
-        extraArg = NewCallArg::Primitive(cookieNode).WellKnown(WellKnownArg::VarArgsCookie);
+        varArgsCookie = gtNewIconEmbHndNode(varCookie, pVarCookie, GTF_ICON_VARG_HDL, sig);
     }
 
     //-------------------------------------------------------------------------
@@ -757,7 +754,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // We also set the exact type context associated with the call so we can
     // inline the call correctly later on.
 
-    if (sig->callConv & CORINFO_CALLCONV_PARAMTYPE)
+    if (sig->hasTypeArg())
     {
         assert(call->AsCall()->gtCallType == CT_USER_FUNC);
         if (clsHnd == nullptr)
@@ -767,8 +764,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         assert(opcode != CEE_CALLI);
 
-        GenTree* instParam;
-        bool     runtimeLookup;
+        bool runtimeLookup;
 
         // Instantiated generic method
         if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
@@ -858,9 +854,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 }
             }
         }
-
-        assert(extraArg.Node == nullptr);
-        extraArg = NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam);
     }
 
     if ((opcode == CEE_NEWOBJ) && ((clsFlags & CORINFO_FLG_DELEGATE) != 0))
@@ -882,18 +875,50 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // The main group of arguments
 
     impPopCallArgs(sig, call->AsCall());
-    if (extraArg.Node != nullptr)
+
+    // Extra args
+    if ((instParam != nullptr) || sig->isAsyncCall() || (varArgsCookie != nullptr))
     {
         if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
         {
-            call->AsCall()->gtArgs.PushFront(this, extraArg);
+            if (varArgsCookie != nullptr)
+            {
+                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(varArgsCookie, TYP_REF)
+                                                           .WellKnown(WellKnownArg::VarArgsCookie));
+            }
+
+            if (compIsAsync2StateMachine() && sig->isAsyncCall())
+            {
+                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                                                           .WellKnown(WellKnownArg::AsyncContinuation));
+            }
+
+            if (instParam != nullptr)
+            {
+                call->AsCall()->gtArgs.PushFront(this,
+                                                 NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
+            }
         }
         else
         {
-            call->AsCall()->gtArgs.PushBack(this, extraArg);
-        }
+            if (instParam != nullptr)
+            {
+                call->AsCall()->gtArgs.PushBack(this,
+                                                NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
+            }
 
-        call->gtFlags |= extraArg.Node->gtFlags & GTF_GLOB_EFFECT;
+            if (compIsAsync2StateMachine() && sig->isAsyncCall())
+            {
+                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                                                          .WellKnown(WellKnownArg::AsyncContinuation));
+            }
+
+            if (varArgsCookie != nullptr)
+            {
+                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(varArgsCookie, TYP_REF)
+                                                          .WellKnown(WellKnownArg::VarArgsCookie));
+            }
+        }
     }
 
     //-------------------------------------------------------------------------
@@ -2534,6 +2559,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         // the return address of.
         info.compHasNextCallRetAddr = true;
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
+    }
+
+    if (ni == NI_System_StubHelpers_Async2CallContinuation)
+    {
+        GenTree* node = new (this, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
+        node->SetHasOrderingSideEffect();
+        return node;
     }
 
     bool betterToExpand = false;
@@ -9172,6 +9204,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else if (strcmp(methodName, "NextCallReturnAddress") == 0)
                     {
                         result = NI_System_StubHelpers_NextCallReturnAddress;
+                    }
+                    else if (strcmp(methodName, "Async2CallContinuation") == 0)
+                    {
+                        result = NI_System_StubHelpers_Async2CallContinuation;
                     }
                 }
             }

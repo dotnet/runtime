@@ -1356,6 +1356,7 @@ void SystemDomain::LoadBaseSystemClasses()
         // initialize cast cache here.
         CastCache::Initialize();
         ECall::PopulateManagedCastHelpers();
+        ECall::PopulateAsyncHelpers();
 
         // used by IsImplicitInterfaceOfSZArray
         CoreLibBinder::GetClass(CLASS__IENUMERABLEGENERIC);

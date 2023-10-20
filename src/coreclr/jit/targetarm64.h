@@ -256,6 +256,9 @@
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_R15
   #define REG_DISPATCH_INDIRECT_CALL_ADDR REG_R9
 
+  #define REG_ASYNC_CONTINUATION_RET REG_R8
+  #define RBM_ASYNC_CONTINUATION_RET RBM_R8
+
   #define REG_FPBASE               REG_FP
   #define RBM_FPBASE               RBM_FP
   #define STR_FPBASE               "fp"

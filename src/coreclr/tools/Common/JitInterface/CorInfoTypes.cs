@@ -469,6 +469,7 @@ namespace Internal.JitInterface
     public enum CorInfoClassId
     {
         CLASSID_SYSTEM_OBJECT,
+        CLASSID_SYSTEM_BYTE,
         CLASSID_TYPED_BYREF,
         CLASSID_TYPE_HANDLE,
         CLASSID_FIELD_HANDLE,
@@ -868,6 +869,18 @@ namespace Internal.JitInterface
         public CORINFO_RUNTIME_ABI targetAbi;
 
         public CORINFO_OS osType;
+    }
+
+    public unsafe struct CORINFO_ASYNC2_INFO
+    {
+        // Class handle for System.Runtime.CompilerServices.Continuation
+        public CORINFO_CLASS_STRUCT_* continuationClsHnd;
+        // 'Next' field
+        public CORINFO_FIELD_STRUCT_* continuationNextFldHnd;
+        // 'Data' field
+        public CORINFO_FIELD_STRUCT_* continuationDataFldHnd;
+        // 'GCData' field
+        public CORINFO_FIELD_STRUCT_* continuationGCDataFldHnd;
     }
 
     // Flags passed from JIT to runtime.

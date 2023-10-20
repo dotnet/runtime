@@ -1107,6 +1107,14 @@ void WrapICorJitInfo::getEEInfo(
     API_LEAVE(getEEInfo);
 }
 
+void WrapICorJitInfo::getAsync2Info(
+          CORINFO_ASYNC2_INFO* pAsync2InfoOut)
+{
+    API_ENTER(getAsync2Info);
+    wrapHnd->getAsync2Info(pAsync2InfoOut);
+    API_LEAVE(getAsync2Info);
+}
+
 const char16_t* WrapICorJitInfo::getJitTimeLogFilename()
 {
     API_ENTER(getJitTimeLogFilename);
@@ -1494,6 +1502,14 @@ bool WrapICorJitInfo::getTailCallHelpers(
     API_ENTER(getTailCallHelpers);
     bool temp = wrapHnd->getTailCallHelpers(callToken, sig, flags, pResult);
     API_LEAVE(getTailCallHelpers);
+    return temp;
+}
+
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncResumptionStub()
+{
+    API_ENTER(getAsyncResumptionStub);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAsyncResumptionStub();
+    API_LEAVE(getAsyncResumptionStub);
     return temp;
 }
 

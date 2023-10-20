@@ -33,6 +33,7 @@ GTNODE(LCL_ADDR         , GenTreeLclFld      ,0,0,GTK_LEAF)             // local
 //-----------------------------------------------------------------------------
 
 GTNODE(CATCH_ARG        , GenTree            ,0,0,GTK_LEAF)             // Exception object in a catch block
+GTNODE(ASYNC_CONTINUATION, GenTree            ,0,0,GTK_LEAF)             // Returned continuation by an async2 call
 GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-target
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
@@ -278,6 +279,8 @@ GTNODE(FIELD_LIST       , GenTreeFieldList   ,0,0,GTK_SPECIAL)            // Lis
 GTNODE(RETURN           , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 GTNODE(SWITCH           , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 GTNODE(NO_OP            , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE) // A NOP that cannot be deleted.
+
+GTNODE(RETURN_SUSPEND   , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // Return a continuation in an async2 method
 
 GTNODE(START_NONGC      , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group that will be non-gc interruptible.
 GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group where preemptive GC is enabled.

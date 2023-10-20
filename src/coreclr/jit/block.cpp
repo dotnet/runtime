@@ -521,6 +521,10 @@ void BasicBlock::dspFlags()
     {
         printf("mdarr ");
     }
+    if (bbFlags & BBF_ASYNC_RESUMPTION)
+    {
+        printf("resume ");
+    }
 }
 
 /*****************************************************************************

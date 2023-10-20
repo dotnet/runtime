@@ -1117,6 +1117,11 @@ void MyICJI::getEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     jitInstance->mc->repGetEEInfo(pEEInfoOut);
 }
 
+void MyICJI::getAsync2Info(CORINFO_ASYNC2_INFO* pAsync2Info)
+{
+    // TODO
+}
+
 // Returns name of the JIT timer log
 const char16_t* MyICJI::getJitTimeLogFilename()
 {
@@ -1463,6 +1468,13 @@ bool MyICJI::getTailCallHelpers(
 {
     jitInstance->mc->cr->AddCall("getTailCallHelpers");
     return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
+}
+
+CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub()
+{
+    jitInstance->mc->cr->AddCall("getAsyncResumptionStub");
+    // TODO
+    return NULL;
 }
 
 bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)

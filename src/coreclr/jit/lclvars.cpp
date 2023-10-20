@@ -63,11 +63,12 @@ void Compiler::lvaInit()
 #ifdef TARGET_X86
     lvaVarargsBaseOfStkArgs = BAD_VAR_NUM;
 #endif // TARGET_X86
-    lvaVarargsHandleArg = BAD_VAR_NUM;
-    lvaStubArgumentVar  = BAD_VAR_NUM;
-    lvaArg0Var          = BAD_VAR_NUM;
-    lvaMonAcquired      = BAD_VAR_NUM;
-    lvaRetAddrVar       = BAD_VAR_NUM;
+    lvaVarargsHandleArg     = BAD_VAR_NUM;
+    lvaStubArgumentVar      = BAD_VAR_NUM;
+    lvaArg0Var              = BAD_VAR_NUM;
+    lvaMonAcquired          = BAD_VAR_NUM;
+    lvaRetAddrVar           = BAD_VAR_NUM;
+    lvaAsyncContinuationArg = BAD_VAR_NUM;
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
 
@@ -97,19 +98,19 @@ void Compiler::lvaInitTypeRef()
 {
 
     /* x86 args look something like this:
-        [this ptr] [hidden return buffer] [declared arguments]* [generic context] [var arg cookie]
+        [this ptr] [hidden return buffer] [declared arguments]* [generic context] [async continuation] [var arg cookie]
 
        x64 is closer to the native ABI:
-        [this ptr] [hidden return buffer] [generic context] [var arg cookie] [declared arguments]*
+        [this ptr] [hidden return buffer] [generic context] [async continuation] [var arg cookie] [declared arguments]*
         (Note: prior to .NET Framework 4.5.1 for Windows 8.1 (but not .NET Framework 4.5.1 "downlevel"),
         the "hidden return buffer" came before the "this ptr". Now, the "this ptr" comes first. This
         is different from the C++ order, where the "hidden return buffer" always comes first.)
 
        ARM and ARM64 are the same as the current x64 convention:
-        [this ptr] [hidden return buffer] [generic context] [var arg cookie] [declared arguments]*
+        [this ptr] [hidden return buffer] [generic context] [async continuation] [var arg cookie] [declared arguments]*
 
        Key difference:
-           The var arg cookie and generic context are swapped with respect to the user arguments
+           The var arg cookie, generic context and async continuations are swapped with respect to the user arguments
     */
 
     /* Set compArgsCount and compLocalsCount */
@@ -182,6 +183,11 @@ void Compiler::lvaInitTypeRef()
     else
     {
         info.compTypeCtxtArg = BAD_VAR_NUM;
+    }
+
+    if (compIsAsync2StateMachine())
+    {
+        info.compArgsCount++;
     }
 
     lvaCount = info.compLocalsCount = info.compArgsCount + info.compMethodInfo->locals.numArgs;
@@ -419,6 +425,8 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     // and shared generic struct instance methods
     lvaInitGenericsCtxt(varDscInfo);
 
+    lvaInitAsyncContinuation(varDscInfo);
+
     /* If the method is varargs, process the varargs cookie */
     lvaInitVarArgsHandle(varDscInfo);
 #endif
@@ -431,6 +439,8 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     //@GENERICS: final instantiation-info argument for shared generic methods
     // and shared generic struct instance methods
     lvaInitGenericsCtxt(varDscInfo);
+
+    lvaInitAsyncContinuation(varDscInfo);
 
     /* If the method is varargs, process the varargs cookie */
     lvaInitVarArgsHandle(varDscInfo);
@@ -1352,6 +1362,58 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
         varDscInfo->varNum++;
         varDscInfo->varDsc++;
     }
+}
+
+void Compiler::lvaInitAsyncContinuation(InitVarDscInfo* varDscInfo)
+{
+    if (!compIsAsync2StateMachine())
+    {
+        return;
+    }
+
+    lvaAsyncContinuationArg = varDscInfo->varNum;
+    LclVarDsc* varDsc       = varDscInfo->varDsc;
+    varDsc->lvType          = TYP_REF;
+    varDsc->lvIsParam       = 1;
+
+#ifdef DEBUG
+    varDsc->lvReason = "Async continuation arg";
+#endif
+
+    if (varDscInfo->canEnreg(TYP_REF))
+    {
+        // Passed in register
+
+        varDsc->lvIsRegArg = 1;
+        varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet()));
+#if FEATURE_MULTIREG_ARGS
+        varDsc->SetOtherArgReg(REG_NA);
+#endif
+        varDsc->lvOnFrame = true; // The final home for this incoming register might be our local stack frame
+
+        varDscInfo->intRegArgNum++;
+
+        JITDUMP("'AsyncContinuation' passed in register %s\n", getRegName(varDsc->GetArgReg()));
+    }
+    else
+    {
+// We need to mark these as being on the stack, as this is not done elsewhere in the case that canEnreg
+// returns false.
+#if FEATURE_FASTTAILCALL
+        varDsc->SetStackOffset(varDscInfo->stackArgSize);
+        varDscInfo->stackArgSize += TARGET_POINTER_SIZE;
+#endif // FEATURE_FASTTAILCALL
+    }
+
+    compArgSize += TARGET_POINTER_SIZE;
+
+#if defined(TARGET_X86)
+    if (info.compIsVarArgs)
+        varDsc->SetStackOffset(compArgSize);
+#endif // TARGET_X86
+
+    varDscInfo->varNum++;
+    varDscInfo->varDsc++;
 }
 
 /*****************************************************************************/
@@ -5503,6 +5565,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }
 
+    if (compIsAsync2StateMachine())
+    {
+        noway_assert(lclNum == lvaAsyncContinuationArg);
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
+                                                   argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
+    }
+
     if (info.compIsVarArgs)
     {
         argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
@@ -5608,6 +5677,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     if (info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE)
     {
         noway_assert(lclNum == (unsigned)info.compTypeCtxtArg);
+        argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
+                                                   argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
+    }
+
+    if (compIsAsync2StateMachine())
+    {
+        noway_assert(lclNum == lvaAsyncContinuationArg);
         argOffs = lvaAssignVirtualFrameOffsetToArg(lclNum++, REGSIZE_BYTES,
                                                    argOffs UNIX_AMD64_ABI_ONLY_ARG(&callerArgOffset));
     }

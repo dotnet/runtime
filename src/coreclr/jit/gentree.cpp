@@ -1733,6 +1733,9 @@ void CallArgs::AddedWellKnownArg(WellKnownArg arg)
         case WellKnownArg::RetBuffer:
             m_hasRetBuffer = true;
             break;
+        case WellKnownArg::AsyncContinuation:
+            m_hasAsyncContinuation = true;
+            break;
         default:
             break;
     }
@@ -1755,6 +1758,10 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
         case WellKnownArg::RetBuffer:
             assert(FindWellKnownArg(arg) == nullptr);
             m_hasRetBuffer = false;
+            break;
+        case WellKnownArg::AsyncContinuation:
+            assert(FindWellKnownArg(arg) == nullptr);
+            m_hasAsyncContinuation = false;
             break;
         default:
             break;
@@ -2352,6 +2359,11 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
     // then this call has side effects.
     return !helperProperties.IsPure(helper) &&
            (!helperProperties.IsAllocator(helper) || ((gtCallMoreFlags & GTF_CALL_M_ALLOC_SIDE_EFFECTS) != 0));
+}
+
+bool GenTreeCall::IsAsync2() const
+{
+    return gtArgs.HasAsyncContinuation();
 }
 
 //-------------------------------------------------------------------------
@@ -6419,6 +6431,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_LCL_FLD:
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -7152,6 +7165,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
             return true;
         default:
             return false;
@@ -9209,6 +9223,7 @@ GenTree* Compiler::gtCloneExpr(
                 goto DONE;
 
             case GT_CATCH_ARG:
+            case GT_ASYNC_CONTINUATION:
             case GT_NO_OP:
             case GT_LABEL:
                 copy = new (this, oper) GenTree(oper, tree->gtType);
@@ -10071,6 +10086,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_LCL_FLD:
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -10135,6 +10151,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
+        case GT_RETURN_SUSPEND:
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;
@@ -11618,6 +11635,10 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
         {
             ilName = "this";
         }
+        else if (lclNum == lvaAsyncContinuationArg)
+        {
+            ilName = "AsyncCont";
+        }
         else
         {
             ilKind = "arg";
@@ -12145,6 +12166,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_START_PREEMPTGC:
         case GT_PROF_HOOK:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
         case GT_MEMORYBARRIER:
         case GT_PINVOKE_PROLOG:
         case GT_JMPTABLE:
@@ -12910,6 +12932,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "va cookie";
         case WellKnownArg::InstParam:
             return "gctx";
+        case WellKnownArg::AsyncContinuation:
+            return "async";
         case WellKnownArg::RetBuffer:
             return "retbuf";
         case WellKnownArg::PInvokeFrame:

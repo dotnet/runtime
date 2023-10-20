@@ -703,6 +703,15 @@ public:
     }
 #endif // FEATURE_MULTIREG_ARGS
 
+    bool IsImplicitByRef()
+    {
+#if FEATURE_IMPLICIT_BYREFS
+        return lvIsImplicitByRef;
+#else
+        return false;
+#endif
+    }
+
     CorInfoHFAElemType GetLvHfaElemKind() const
     {
 #ifdef FEATURE_HFA_FIELDS_PRESENT
@@ -3361,6 +3370,9 @@ public:
     // where it is used to detect tail-call chains.
     unsigned lvaRetAddrVar;
 
+    // Variable representing async continuation argument passed.
+    unsigned lvaAsyncContinuationArg;
+
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
     unsigned lvaReturnSpCheck; // Stores SP to confirm it is not corrupted on return.
@@ -3475,6 +3487,7 @@ public:
     void lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, unsigned takeArgs);
     void lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo);
     void lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo);
+    void lvaInitAsyncContinuation(InitVarDscInfo* varDscInfo);
 
     void lvaInitVarDsc(LclVarDsc*              varDsc,
                        unsigned                varNum,
@@ -4900,6 +4913,8 @@ public:
 #if FEATURE_LOOP_ALIGN
     PhaseStatus placeLoopAlignInstructions();
 #endif
+
+    PhaseStatus TransformAsync2();
 
     // This field keep the R2R helper call that would be inserted to trigger the constructor
     // of the static class. It is set as nongc or gc static base if they are imported, so
@@ -10207,6 +10222,16 @@ public:
 #endif // TARGET_AMD64
     }
 
+    bool compIsAsync2() const
+    {
+        return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RUNTIMEASYNCFUNCTION);
+    }
+
+    bool compIsAsync2StateMachine() const
+    {
+        return compIsAsync2() && (JitConfig.RuntimeAsyncViaJitGeneratedStateMachines() != 0);
+    }
+
     //------------------------------------------------------------------------
     // compMethodReturnsMultiRegRetType: Does this method return a multi-reg value?
     //
@@ -11182,6 +11207,7 @@ public:
 
             // Leaf nodes
             case GT_CATCH_ARG:
+            case GT_ASYNC_CONTINUATION:
             case GT_LABEL:
             case GT_FTN_ADDR:
             case GT_RET_EXPR:

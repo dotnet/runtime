@@ -96,6 +96,8 @@ class ECall
 
         static void PopulateManagedCastHelpers();
 
+        static void PopulateAsyncHelpers();
+
 #ifdef DACCESS_COMPILE
         // Enumerates all gFCallMethods for minidumps.
         static void EnumFCallMethods();

@@ -12870,6 +12870,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 break;
             case WellKnownArg::RetBuffer:
             case WellKnownArg::InstParam:
+            case WellKnownArg::AsyncContinuation:
                 // These do not appear in the table of inline arg info; do not include them
                 continue;
             default:

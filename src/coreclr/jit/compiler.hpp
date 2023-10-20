@@ -2779,6 +2779,12 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
     }
 
+    if (ILargNum >= (unsigned)lvaAsyncContinuationArg)
+    {
+        ILargNum++;
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
+    }
+
     if (ILargNum >= (unsigned)lvaVarargsHandleArg)
     {
         ILargNum++;
@@ -4440,6 +4446,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_LCL_FLD:
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -4514,6 +4521,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
+        case GT_RETURN_SUSPEND:
             visitor(this->AsUnOp()->gtOp1);
             return;
 

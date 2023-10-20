@@ -90,6 +90,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 set( JIT_SOURCES
   alloc.cpp
+  async.cpp
   assertionprop.cpp
   bitset.cpp
   block.cpp
@@ -281,6 +282,7 @@ set( JIT_HEADERS
   ../inc/corjithost.h
   _typeinfo.h
   alloc.h
+  async.h
   arraystack.h
   bitset.h
   layout.h

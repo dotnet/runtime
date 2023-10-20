@@ -2654,6 +2654,11 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
+    if ((blockPred->bbFlags & BBF_ASYNC_RESUMPTION) != 0)
+    {
+        return true;
+    }
+
     printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
@@ -3194,6 +3199,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             break;
 
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
             expectedFlags |= GTF_ORDER_SIDEEFF;
             break;
 
@@ -3484,6 +3490,10 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
                 noway_assert(stmt->GetTreeList()->gtOper == GT_CATCH_ARG);
                 // The root of the tree should have GTF_ORDER_SIDEEFF set
                 noway_assert(stmt->GetRootNode()->gtFlags & GTF_ORDER_SIDEEFF);
+            }
+            else if (tree->OperIs(GT_ASYNC_CONTINUATION))
+            {
+                assert(tree->gtFlags & GTF_ORDER_SIDEEFF);
             }
         }
 

@@ -7608,6 +7608,11 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
+    if (treeNode->OperIs(GT_RETURN) && compiler->compIsAsync2StateMachine())
+    {
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
+    }
+
 #ifdef PROFILING_SUPPORTED
     // !! Note !!
     // TODO-AMD64-Unix: If the profiler hook is implemented on *nix, make sure for 2 register returned structs
@@ -7688,6 +7693,26 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     genStackPointerCheck(doStackPointerCheck, compiler->lvaReturnSpCheck);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
+}
+
+void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
+{
+    GenTree* op = treeNode->gtGetOp1();
+    assert(op->TypeIs(TYP_REF));
+
+    regNumber reg = genConsumeReg(op);
+    inst_Mov_Extend(TYP_REF, /* srcInReg */ true, REG_ASYNC_CONTINUATION_RET, reg, /* canSkip */ true);
+
+    ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
+    unsigned       numRetRegs  = retTypeDesc.GetReturnRegCount();
+    for (unsigned i = 0; i < numRetRegs; i++)
+    {
+        if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
+        {
+            regNumber returnReg = retTypeDesc.GetABIReturnReg(i);
+            instGen_Set_Reg_To_Zero(EA_PTRSIZE, returnReg);
+        }
+    }
 }
 
 //------------------------------------------------------------------------

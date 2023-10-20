@@ -2527,6 +2527,8 @@ public:
 
         StubVirtualStaticMethodDispatch,
 
+        StubAsyncResume,
+
         StubLast
     };
 

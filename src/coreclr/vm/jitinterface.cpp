@@ -4202,6 +4202,9 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
     case CLASSID_SYSTEM_OBJECT:
         result = CORINFO_CLASS_HANDLE(g_pObjectClass);
         break;
+    case CLASSID_SYSTEM_BYTE:
+        result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__BYTE));
+        break;
     case CLASSID_TYPED_BYREF:
         result = CORINFO_CLASS_HANDLE(g_TypedReferenceMT);
         break;
@@ -10037,6 +10040,22 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
+void CEEInfo::getAsync2Info(CORINFO_ASYNC2_INFO* pAsync2InfoOut)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    pAsync2InfoOut->continuationClsHnd = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__CONTINUATION));
+    pAsync2InfoOut->continuationNextFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__NEXT));
+    pAsync2InfoOut->continuationResumeFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__RESUME));
+    pAsync2InfoOut->continuationStateFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__STATE));
+    pAsync2InfoOut->continuationDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__DATA));
+    pAsync2InfoOut->continuationGCDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__GCDATA));
+}
+
 const char16_t * CEEInfo::getJitTimeLogFilename()
 {
     CONTRACTL {
@@ -10604,7 +10623,8 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_CHKCASTCLASS_SPECIAL ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_UNBOX ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_ARRADDR_ST ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_LDELEMA_REF)
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_LDELEMA_REF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_ALLOC_CONTINUATION)
         {
             Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
             _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
@@ -14170,6 +14190,235 @@ bool CEEInfo::getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken,
     EE_TO_JIT_TRANSITION();
 
     return success;
+}
+
+static Signature AllocateSignature(LoaderAllocator* alloc, SigBuilder& sigBuilder)
+{
+    DWORD sigLen;
+    PCCOR_SIGNATURE builderSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&sigLen);
+    AllocMemTracker pamTracker;
+    PVOID newBlob = pamTracker.Track(alloc->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sigLen)));
+    memcpy(newBlob, builderSig, sigLen);
+
+    pamTracker.SuppressRelease();
+    return Signature((PCCOR_SIGNATURE)newBlob, sigLen);
+}
+
+static Signature BuildResumptionStubSignature(LoaderAllocator* alloc)
+{
+    SigBuilder sigBuilder;
+    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    sigBuilder.AppendData(2); // 2 arguments
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // return type
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // exception
+
+    return AllocateSignature(alloc, sigBuilder);
+}
+
+static Signature BuildResumptionStubCalliSignature(MetaSig& msig, LoaderAllocator* alloc)
+{
+    unsigned numArgs = 0;
+    if (msig.HasThis())
+    {
+        numArgs++;
+    }
+
+    if ((msig.GetCallingConvention() & CORINFO_CALLCONV_PARAMTYPE) != 0)
+    {
+        numArgs++;
+    }
+
+    numArgs++; // Continuation
+
+    numArgs += msig.NumFixedArgs();
+
+    SigBuilder sigBuilder;
+    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    sigBuilder.AppendData(numArgs);
+
+    auto appendTypeHandle = [&](TypeHandle th) {
+        _ASSERTE(!th.IsByRef());
+        CorElementType ty = th.GetSignatureCorElementType();
+        if (CorTypeInfo::IsObjRef(ty))
+        {
+            // Especially to normalize System.__Canon.
+            sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
+        }
+        else if (CorTypeInfo::IsPrimitiveType(ty))
+        {
+            sigBuilder.AppendElementType(ty);
+        }
+        else
+        {
+            sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+            sigBuilder.AppendPointer(th.AsPtr());
+        }
+        };
+
+    appendTypeHandle(msig.GetRetTypeHandleThrowing()); // return type
+    if (msig.HasThis())
+    {
+        sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
+    }
+#ifndef TARGET_X86
+    if ((msig.GetCallingConvention() & CORINFO_CALLCONV_PARAMTYPE) != 0)
+    {
+        sigBuilder.AppendElementType(ELEMENT_TYPE_I);
+    }
+
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
+#endif
+
+    msig.Reset();
+    CorElementType ty;
+    while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
+    {
+        TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
+        appendTypeHandle(tyHnd);
+    }
+
+#ifdef TARGET_X86
+    if ((msig.GetCallingConvention() & CORINFO_CALLCONV_PARAMTYPE) != 0)
+    {
+        sigBuilder.AppendElementType(ELEMENT_TYPE_I);
+    }
+
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
+#endif
+
+    return AllocateSignature(alloc, sigBuilder);
+}
+
+CORINFO_METHOD_HANDLE CEEInfo::getAsyncResumptionStub()
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    MethodDesc* md = m_pMethodBeingCompiled;
+    // Not hard to support, just requires calls through a pointer and passing the
+    _ASSERTE(!md->IsSharedByGenericInstantiations());
+
+    LoaderAllocator* loaderAlloc = md->GetLoaderAllocator();
+
+    Signature stubSig = BuildResumptionStubSignature(md->GetLoaderAllocator());
+
+    MetaSig msig(md);
+    Signature calliSig = BuildResumptionStubCalliSignature(msig, md->GetLoaderAllocator());
+
+    SigTypeContext emptyCtx;
+    ILStubLinker sl(md->GetModule(), stubSig, &emptyCtx, NULL, ILSTUB_LINKER_FLAG_NONE);
+
+    ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+
+    int numArgs = 0;
+
+    if (msig.HasThis())
+    {
+        _ASSERTE(!md->GetMethodTable()->IsValueType());
+        pCode->EmitLDNULL();
+        numArgs++;
+    }
+
+#ifndef TARGET_X86
+    if ((msig.GetCallingConvention() & CORINFO_CALLCONV_PARAMTYPE) != 0)
+    {
+        _ASSERTE(!"Generic context currently unhandled");
+        // Will need JIT to store this in an agreed upon place.
+        numArgs++;
+    }
+
+    // Continuation
+    pCode->EmitLDARG(0);
+    numArgs++;
+#endif
+
+    msig.Reset();
+    CorElementType ty;
+    while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
+    {
+        TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
+        DWORD loc = pCode->NewLocal(LocalDesc(tyHnd));
+        pCode->EmitLDLOCA(loc);
+        pCode->EmitINITOBJ(pCode->GetToken(tyHnd));
+        pCode->EmitLDLOC(loc);
+        numArgs++;
+    }
+
+#ifdef TARGET_X86
+    // Continuation
+    pCode->EmitLDARG(0);
+    nmArgs++;
+#endif
+
+    // TODO: This can use indirection of precode slot directly.
+    pCode->EmitLDC(md->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+
+    pCode->EmitCALLI(pCode->GetSigToken(calliSig.GetRawSig(), calliSig.GetRawSigLen()), numArgs, msig.IsReturnTypeVoid() ? 0 : 1);
+
+    DWORD resultLoc = UINT_MAX;
+    if (!msig.IsReturnTypeVoid())
+    {
+        resultLoc = pCode->NewLocal(LocalDesc(msig.GetRetTypeHandleThrowing()));
+        pCode->EmitSTLOC(resultLoc);
+    }
+
+    DWORD newContinuationLoc = pCode->NewLocal(ELEMENT_TYPE_OBJECT);
+    pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC2_CALL_CONTINUATION, 0, 1);
+    pCode->EmitSTLOC(newContinuationLoc);
+
+    if (!msig.IsReturnTypeVoid())
+    {
+        ILCodeLabel* noResult = pCode->NewCodeLabel();
+        pCode->EmitLDLOC(newContinuationLoc);
+        pCode->EmitBRTRUE(noResult);
+
+        // Load 'next' of current continuation
+        pCode->EmitLDARG(0);
+        pCode->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
+        pCode->EmitLDFLD(FIELD__CONTINUATION__NEXT);
+
+        // Load 'gcdata' of next continuation
+        pCode->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
+        pCode->EmitLDFLD(FIELD__CONTINUATION__GCDATA);
+
+        // Now we have the GC array. At the first index is the result.
+        pCode->EmitLDC(0);
+
+        // Box the result.
+        pCode->EmitLDLOC(resultLoc);
+        pCode->EmitBOX(pCode->GetToken(msig.GetRetTypeHandleThrowing()));
+
+        // Finally store it.
+        pCode->EmitSTELEM_REF();
+
+        pCode->EmitLabel(noResult);
+    }
+
+    pCode->EmitLDLOC(newContinuationLoc);
+    pCode->EmitRET();
+
+    MethodDesc* result =
+        ILStubCache::CreateAndLinkNewILStubMethodDesc(
+            md->GetLoaderAllocator(),
+            md->GetLoaderModule()->GetILStubCache()->GetOrCreateStubMethodTable(md->GetLoaderModule()),
+            ILSTUB_ASYNC_RESUME,
+            md->GetModule(),
+            stubSig.GetRawSig(), stubSig.GetRawSigLen(),
+            &emptyCtx,
+            &sl);
+
+#ifdef _DEBUG
+    LOG((LF_STUBS, LL_INFO1000, "ASYNC: Resumption stub created\n"));
+    sl.LogILStub(CORJIT_FLAGS());
+#endif
+
+    result->DoPrestub(NULL);
+
+    return CORINFO_METHOD_HANDLE(result);
 }
 
 bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)

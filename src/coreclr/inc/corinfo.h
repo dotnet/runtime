@@ -662,6 +662,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
+    CORINFO_HELP_ALLOC_CONTINUATION,
+
     CORINFO_HELP_COUNT,
 };
 
@@ -957,6 +959,7 @@ enum CorInfoGCType
 enum CorInfoClassId
 {
     CLASSID_SYSTEM_OBJECT,
+    CLASSID_SYSTEM_BYTE,
     CLASSID_TYPED_BYREF,
     CLASSID_TYPE_HANDLE,
     CLASSID_FIELD_HANDLE,
@@ -1818,6 +1821,22 @@ struct CORINFO_EE_INFO
     CORINFO_RUNTIME_ABI targetAbi;
 
     CORINFO_OS  osType;
+};
+
+struct CORINFO_ASYNC2_INFO
+{
+    // Class handle for System.Runtime.CompilerServices.Continuation
+    CORINFO_CLASS_HANDLE continuationClsHnd;
+    // 'Next' field
+    CORINFO_FIELD_HANDLE continuationNextFldHnd;
+    // 'Resume' field
+    CORINFO_FIELD_HANDLE continuationResumeFldHnd;
+    // 'State' field
+    CORINFO_FIELD_HANDLE continuationStateFldHnd;
+    // 'Data' field
+    CORINFO_FIELD_HANDLE continuationDataFldHnd;
+    // 'GCData' field
+    CORINFO_FIELD_HANDLE continuationGCDataFldHnd;
 };
 
 // Flags passed from JIT to runtime.
@@ -2997,6 +3016,10 @@ public:
     // Returns name of the JIT timer log
     virtual const char16_t *getJitTimeLogFilename() = 0;
 
+    virtual void getAsync2Info(
+        CORINFO_ASYNC2_INFO* pAsync2InfoOut
+    ) = 0;
+
     /*********************************************************************************/
     //
     // Diagnostic methods
@@ -3328,6 +3351,8 @@ public:
             // The resulting help.
             CORINFO_TAILCALL_HELPERS* pResult
             ) = 0;
+
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
     virtual bool convertPInvokeCalliToCall(

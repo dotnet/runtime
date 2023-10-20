@@ -160,6 +160,7 @@ namespace
             case DynamicMethodDesc::StubTailCallStoreArgs:  return "IL_STUB_StoreTailCallArgs";
             case DynamicMethodDesc::StubTailCallCallTarget: return "IL_STUB_CallTailCallTarget";
             case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_bVirtualStaticMethodDispatch";
+            case DynamicMethodDesc::StubAsyncResume:        return "IL_STUB_AsyncResume";
             default:
                 UNREACHABLE_MSG("Unknown stub type");
         }
@@ -276,6 +277,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     if (SF_IsTailCallCallTargetStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubTailCallCallTarget);
+    }
+    else
+    if (SF_IsAsyncResumeStub(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubAsyncResume);
     }
     else
 #ifdef FEATURE_COMINTEROP
