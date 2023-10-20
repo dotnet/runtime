@@ -848,28 +848,6 @@ bool GenTree::gtHasReg(Compiler* comp) const
             }
         }
     }
-    else if (IsCopyOrReloadOfMultiRegHWIntrinsic())
-    {
-        const GenTreeCopyOrReload* copyOrReload = AsCopyOrReload();
-        const unsigned             regCount     = copyOrReload->gtGetOp1()->GetMultiRegCount(comp);
-        // A Multi-reg copy or reload node is said to have regs,
-        // if it has valid regs in any of the positions.
-
-        for (unsigned i = 0; i < regCount; ++i)
-        {
-            hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
-            if (hasReg)
-            {
-                break;
-            }
-        }
-    }
-    // else if (IsMultiRegHWIntrinsic())
-    //{
-    //    // For intrinsic that returns multiple values, we always assign
-    //    // them registers to all or none and hence checking if the reg
-    //    // is assigned at 0th index using GetRegNum() is sufficient.
-    //}
     else
     {
         hasReg = (GetRegNum() != REG_NA);
@@ -1002,28 +980,6 @@ bool GenTree::IsMultiRegNode() const
     {
         return true;
     }
-    return false;
-}
-
-//-----------------------------------------------------------------------------------
-// IsMultiRegHWIntrinsic: whether a hwintrinisic node returning its value in more than
-// one register
-//
-// Arguments:
-//     None
-//
-// Return Value:
-//     Returns true if this is GenTreeHWIntrinsic node returning in multi-reg node.
-//
-bool GenTree::IsMultiRegHWIntrinsic() const
-{
-#ifdef FEATURE_HW_INTRINSICS
-
-    if (OperIsHWIntrinsic())
-    {
-        return HWIntrinsicInfo::IsMultiReg(AsHWIntrinsic()->GetHWIntrinsicId());
-    }
-#endif
     return false;
 }
 

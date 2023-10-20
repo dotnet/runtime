@@ -1823,9 +1823,6 @@ public:
     // Returns true if it is a node returning its value in more than one register
     bool IsMultiRegNode() const;
 
-    // Returns true if it is a node returning its value in more than one register
-    bool IsMultiRegHWIntrinsic() const;
-
     // Returns the number of registers defined by a multireg node.
     unsigned GetMultiRegCount(Compiler* comp) const;
 
@@ -1860,8 +1857,6 @@ public:
 
     // Returns true if it is a GT_COPY or GT_RELOAD of a multi-reg call node
     inline bool IsCopyOrReloadOfMultiRegCall() const;
-    // Returns true if it is a GT_COPY or GT_RELOAD of a multi-reg node
-    inline bool IsCopyOrReloadOfMultiRegHWIntrinsic() const;
 
     bool OperRequiresAsgFlag() const;
 
@@ -6109,13 +6104,12 @@ public:
     regNumber GetRegNumByIdx(unsigned idx) const
     {
         assert(idx < MAX_MULTIREG_COUNT);
-
+#ifdef TARGET_ARM64
         if (idx == 0)
         {
             return GetRegNum();
         }
 
-#ifdef TARGET_ARM64
         if (NeedsConsecutiveRegisters())
         {
             assert(IsMultiRegNode());
@@ -9700,26 +9694,6 @@ inline bool GenTree::IsCopyOrReloadOfMultiRegCall() const
     if (IsCopyOrReload())
     {
         return gtGetOp1()->IsMultiRegCall();
-    }
-
-    return false;
-}
-
-//-----------------------------------------------------------------------------------
-// IsCopyOrReloadOfMultiRegNode: whether this is a GT_COPY or GT_RELOAD of a multi-reg
-// call node.
-//
-// Arguments:
-//     None
-//
-// Return Value:
-//     Returns true if this GenTree is a copy or reload of multi-reg node.
-//
-inline bool GenTree::IsCopyOrReloadOfMultiRegHWIntrinsic() const
-{
-    if (IsCopyOrReload())
-    {
-        return gtGetOp1()->IsMultiRegHWIntrinsic();
     }
 
     return false;

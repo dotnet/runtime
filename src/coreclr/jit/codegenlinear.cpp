@@ -2250,37 +2250,6 @@ void CodeGen::genProduceReg(GenTree* tree)
                     }
                 }
             }
-#ifdef FEATURE_HW_INTRINSICS
-            else if (tree->IsMultiRegHWIntrinsic())
-            {
-                const GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
-                const unsigned            regCount = HWIntrinsicInfo::GetMultiRegCount(hwintrinsic->GetHWIntrinsicId());
-                for (unsigned i = 0; i < regCount; ++i)
-                {
-                    regNumber reg = hwintrinsic->GetRegNumByIdx(i);
-                    if (reg != REG_NA)
-                    {
-                        var_types type = hwintrinsic->GetRegTypeByIndex(i);
-                        gcInfo.gcMarkRegPtrVal(reg, type);
-                    }
-                }
-            }
-            else if (tree->IsCopyOrReloadOfMultiRegHWIntrinsic())
-            {
-                const GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-                const GenTreeHWIntrinsic*  hwintrinsic  = copyOrReload->gtGetOp1()->AsHWIntrinsic();
-                const unsigned regCount = HWIntrinsicInfo::GetMultiRegCount(hwintrinsic->GetHWIntrinsicId());
-                for (unsigned i = 0; i < regCount; ++i)
-                {
-                    regNumber reg = hwintrinsic->GetRegNumByIdx(i);
-                    if (reg != REG_NA)
-                    {
-                        var_types type = hwintrinsic->GetRegTypeByIndex(i);
-                        gcInfo.gcMarkRegPtrVal(reg, type);
-                    }
-                }
-            }
-#endif // FEATURE_HW_INTRINSICS
             else
             {
                 gcInfo.gcMarkRegPtrVal(tree->GetRegNum(), tree->TypeGet());
