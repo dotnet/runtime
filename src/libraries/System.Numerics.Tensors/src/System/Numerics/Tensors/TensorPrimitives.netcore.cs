@@ -8126,7 +8126,7 @@ namespace System.Numerics.Tensors
                 Vector128<float> greaterThanMask = Vector128.GreaterThan(max, current);
 
                 Vector128<float> equalMask = Vector128.Equals(max, current);
-               if (equalMask.AsInt32() != Vector128<int>.Zero)
+                if (equalMask.AsInt32() != Vector128<int>.Zero)
                 {
                     Vector128<float> negativeMask = IsNegative(current);
                     Vector128<int> lessThanMask = Vector128.LessThan(maxIndex, curIndex);
