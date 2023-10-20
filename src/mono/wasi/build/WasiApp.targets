@@ -382,7 +382,7 @@
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
-      RuntimeConfigJsonPath="$(_RuntimeConfigJsonPath)"
+      RuntimeConfigJsonPath="$(_WasmRuntimeConfigFilePath)"
       />
   </Target>
 
