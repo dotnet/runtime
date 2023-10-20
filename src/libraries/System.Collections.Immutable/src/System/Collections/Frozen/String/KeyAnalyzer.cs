@@ -159,14 +159,8 @@ namespace System.Collections.Frozen
                 }
             }
 
-            ulong lengthFilter = 0;
-            foreach (string s in uniqueStrings)
-            {
-                lengthFilter |= (1UL << (s.Length % 64));
-            }
-
             // Return the analysis results.
-            return new AnalysisResults(ignoreCase, allAsciiIfIgnoreCase, index, count, minLength, maxLength, lengthFilter);
+            return new AnalysisResults(ignoreCase, allAsciiIfIgnoreCase, index, count, minLength, maxLength);
         }
 
         private delegate ReadOnlySpan<char> GetSpan(string s, int index, int count);
@@ -249,7 +243,7 @@ namespace System.Collections.Frozen
 
         internal readonly struct AnalysisResults
         {
-            public AnalysisResults(bool ignoreCase, bool allAsciiIfIgnoreCase, int hashIndex, int hashCount, int minLength, int maxLength, ulong lengthFilter)
+            public AnalysisResults(bool ignoreCase, bool allAsciiIfIgnoreCase, int hashIndex, int hashCount, int minLength, int maxLength)
             {
                 IgnoreCase = ignoreCase;
                 AllAsciiIfIgnoreCase = allAsciiIfIgnoreCase;
@@ -257,7 +251,6 @@ namespace System.Collections.Frozen
                 HashCount = hashCount;
                 MinimumLength = minLength;
                 MaximumLengthDiff = maxLength - minLength;
-                LengthFilter = lengthFilter;
             }
 
             public bool IgnoreCase { get; }
@@ -266,7 +259,6 @@ namespace System.Collections.Frozen
             public int HashCount { get; }
             public int MinimumLength { get; }
             public int MaximumLengthDiff { get; }
-            public ulong LengthFilter { get; }
 
             public bool SubstringHashing => HashCount != 0;
             public bool RightJustifiedSubstring => HashIndex < 0;

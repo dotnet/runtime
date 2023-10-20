@@ -109,10 +109,12 @@ namespace System.Collections.Frozen
 
                 // Calculate the minimum and maximum lengths of the strings in the set. Several of the analyses need this.
                 int minLength = int.MaxValue, maxLength = 0;
-                foreach (string s in entries)
+                ulong lengthFilter = 0;
+                foreach (string key in entries)
                 {
-                    if (s.Length < minLength) minLength = s.Length;
-                    if (s.Length > maxLength) maxLength = s.Length;
+                    if (key.Length < minLength) minLength = key.Length;
+                    if (key.Length > maxLength) maxLength = key.Length;
+                    lengthFilter |= (1UL << (key.Length % 64));
                 }
                 Debug.Assert(minLength >= 0 && maxLength >= minLength);
 
@@ -132,14 +134,14 @@ namespace System.Collections.Frozen
                         if (analysis.IgnoreCase)
                         {
                             frozenSet = analysis.AllAsciiIfIgnoreCase
-                                ? new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount)
-                                : new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter, analysis.HashIndex, analysis.HashCount)
+                                : new OrdinalStringFrozenSet_RightJustifiedCaseInsensitiveSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
                             frozenSet = analysis.HashCount == 1
-                                ? new OrdinalStringFrozenSet_RightJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex)
-                                : new OrdinalStringFrozenSet_RightJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenSet_RightJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter, analysis.HashIndex)
+                                : new OrdinalStringFrozenSet_RightJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                     else
@@ -147,14 +149,14 @@ namespace System.Collections.Frozen
                         if (analysis.IgnoreCase)
                         {
                             frozenSet = analysis.AllAsciiIfIgnoreCase
-                                ? new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount)
-                                : new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveAsciiSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter, analysis.HashIndex, analysis.HashCount)
+                                : new OrdinalStringFrozenSet_LeftJustifiedCaseInsensitiveSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                         else
                         {
                             frozenSet = analysis.HashCount == 1
-                                ? new OrdinalStringFrozenSet_LeftJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex)
-                                : new OrdinalStringFrozenSet_LeftJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter, analysis.HashIndex, analysis.HashCount);
+                                ? new OrdinalStringFrozenSet_LeftJustifiedSingleChar(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter, analysis.HashIndex)
+                                : new OrdinalStringFrozenSet_LeftJustifiedSubstring(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter, analysis.HashIndex, analysis.HashCount);
                         }
                     }
                 }
@@ -163,12 +165,12 @@ namespace System.Collections.Frozen
                     if (analysis.IgnoreCase)
                     {
                         frozenSet = analysis.AllAsciiIfIgnoreCase
-                            ? new OrdinalStringFrozenSet_FullCaseInsensitiveAscii(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter)
-                            : new OrdinalStringFrozenSet_FullCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter);
+                            ? new OrdinalStringFrozenSet_FullCaseInsensitiveAscii(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter)
+                            : new OrdinalStringFrozenSet_FullCaseInsensitive(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                     else
                     {
-                        frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, analysis.LengthFilter);
+                        frozenSet = new OrdinalStringFrozenSet_Full(entries, stringComparer, analysis.MinimumLength, analysis.MaximumLengthDiff, lengthFilter);
                     }
                 }
 
