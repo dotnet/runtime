@@ -53,8 +53,6 @@ namespace System.Runtime.InteropServices.Marshalling
                     return ComVariant.Create(d);
                 case bool b:
                     return ComVariant.Create(b);
-                case char c:
-                    return ComVariant.Create((ushort)c);
                 case string s:
                     return ComVariant.Create(s);
                 case DateTime dt:

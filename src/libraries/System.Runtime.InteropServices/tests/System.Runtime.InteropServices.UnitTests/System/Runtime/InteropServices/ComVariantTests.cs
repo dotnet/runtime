@@ -290,7 +290,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void FileTime_Raw()
         {
-            long fileTime = 1039348523;
+            long fileTime = DateTime.Now.ToFileTime();
             ComVariant variant = ComVariant.CreateRaw(VarEnum.VT_FILETIME, fileTime);
             Assert.Equal(VarEnum.VT_FILETIME, variant.VarType);
             Assert.Throws<InvalidOperationException>(() => variant.As<long>());

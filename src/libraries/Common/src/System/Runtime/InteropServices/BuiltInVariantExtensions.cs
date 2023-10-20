@@ -132,46 +132,39 @@ namespace System.Runtime.InteropServices
         /// <returns></returns>
         public static object? ToObject(this ref ComVariant variant)
         {
-            // Check the simple case upfront
-            if (variant.VarType == VarEnum.VT_EMPTY)
+            return variant.VarType switch
             {
-                return null;
-            }
+                VarEnum.VT_EMPTY => null,
+                VarEnum.VT_NULL => DBNull.Value,
+                VarEnum.VT_I1 => variant.As<sbyte>(),
+                VarEnum.VT_I2 => variant.As<short>(),
+                VarEnum.VT_I4 => variant.As<int>(),
+                VarEnum.VT_I8 => variant.As<long>(),
+                VarEnum.VT_UI1 => variant.As<byte>(),
+                VarEnum.VT_UI2 => variant.As<ushort>(),
+                VarEnum.VT_UI4 => variant.As<uint>(),
+                VarEnum.VT_UI8 => variant.As<ulong>(),
+                VarEnum.VT_INT => variant.As<int>(),
+                VarEnum.VT_UINT => variant.As<uint>(),
+                VarEnum.VT_BOOL => variant.As<short>() != -1,
+                VarEnum.VT_ERROR => variant.As<int>(),
+                VarEnum.VT_R4 => variant.As<float>(),
+                VarEnum.VT_R8 => variant.As<double>(),
+                VarEnum.VT_DECIMAL => variant.As<decimal>(),
+                VarEnum.VT_CY => decimal.FromOACurrency(variant.GetRawDataRef<long>()),
+                VarEnum.VT_DATE => variant.As<DateTime>(),
+                VarEnum.VT_BSTR => Marshal.PtrToStringBSTR(variant.GetRawDataRef<nint>()),
+                VarEnum.VT_UNKNOWN => Marshal.GetObjectForIUnknown(variant.GetRawDataRef<nint>()),
+                VarEnum.VT_DISPATCH => Marshal.GetObjectForIUnknown(variant.GetRawDataRef<nint>()),
+                _ => GetObjectFromNativeVariant(ref variant),
+            };
+        }
 
-            switch (variant.VarType)
+        private static unsafe object? GetObjectFromNativeVariant(ref ComVariant variant)
+        {
+            fixed (void* pVariant = &variant)
             {
-                case VarEnum.VT_NULL:
-                    return DBNull.Value;
-
-                case VarEnum.VT_I1: return variant.As<sbyte>();
-                case VarEnum.VT_I2: return variant.As<short>();
-                case VarEnum.VT_I4: return variant.As<int>();
-                case VarEnum.VT_I8: return variant.As<long>();
-                case VarEnum.VT_UI1: return variant.As<byte>();
-                case VarEnum.VT_UI2: return variant.As<ushort>();
-                case VarEnum.VT_UI4: return variant.As<uint>();
-                case VarEnum.VT_UI8: return variant.As<ulong>();
-                case VarEnum.VT_INT: return variant.As<int>();
-                case VarEnum.VT_UINT: return variant.As<uint>();
-                case VarEnum.VT_BOOL: return variant.As<short>() != -1;
-                case VarEnum.VT_ERROR: return variant.As<int>();
-                case VarEnum.VT_R4: return variant.As<float>();
-                case VarEnum.VT_R8: return variant.As<double>();
-                case VarEnum.VT_DECIMAL: return variant.As<decimal>();
-                case VarEnum.VT_CY: return decimal.FromOACurrency(variant.GetRawDataRef<long>());
-                case VarEnum.VT_DATE: return variant.As<DateTime>();
-                case VarEnum.VT_BSTR: return Marshal.PtrToStringBSTR(variant.GetRawDataRef<nint>());
-                case VarEnum.VT_UNKNOWN: return Marshal.GetObjectForIUnknown(variant.GetRawDataRef<nint>());
-                case VarEnum.VT_DISPATCH: return Marshal.GetObjectForIUnknown(variant.GetRawDataRef<nint>());
-
-                default:
-                    unsafe
-                    {
-                        fixed (void* pThis = &variant)
-                        {
-                            return Marshal.GetObjectForNativeVariant((nint)pThis);
-                        }
-                    }
+                return Marshal.GetObjectForNativeVariant((nint)pVariant);
             }
         }
     }
