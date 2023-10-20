@@ -36,8 +36,8 @@
 // #include <unicode/uenum.h>
 // #include <unicode/uidna.h>
 // #include <unicode/uldnames.h>
- #include <unicode/ulocdata.h>
- #include <unicode/uloc.h>
+//  #include <unicode/ulocdata.h>
+//  #include <unicode/uloc.h>
 // #include <unicode/unorm2.h>
 // #include <unicode/unum.h>
 // #include <unicode/ures.h>
