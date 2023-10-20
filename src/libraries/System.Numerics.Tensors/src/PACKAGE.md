@@ -1,6 +1,6 @@
 ## About
 
-Provides methods for performing mathematical operations over _tensors_ represented as spans.  These methods are accelerated to use vector operations supported by the CPU where available.
+Provides methods for performing mathematical operations over _tensors_ represented as spans.  These methods are accelerated to use SIMD (Single instruction, multiple data) operations supported by the CPU where available.
 
 ## Key Features
 
