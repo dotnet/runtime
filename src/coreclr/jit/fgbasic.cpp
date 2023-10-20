@@ -374,7 +374,7 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     // Must do this after we update bbJumpKind of block.
     if (isCallAlwaysPair)
     {
-        BasicBlock* leaveBlk = block->GetFallThroughSucc();
+        BasicBlock* leaveBlk = block->Next();
         noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
 
         leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
