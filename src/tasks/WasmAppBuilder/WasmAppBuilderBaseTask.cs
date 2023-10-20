@@ -22,8 +22,6 @@ public abstract class WasmAppBuilderBaseTask : Task
     [Required]
     public string[] Assemblies { get; set; } = Array.Empty<string>();
 
-    [NotNull]
-    [Required]
     public string? RuntimeConfigJsonPath { get; set; }
 
     // files like dotnet.native.wasm, icudt.dat etc
