@@ -223,6 +223,7 @@ namespace ILCompiler.ObjectWriter
             if (_appendBuffer.WrittenCount > 0)
             {
                 _buffers.Add(_appendBuffer.WrittenSpan.ToArray());
+                _position += _appendBuffer.WrittenCount;
                 _length += _appendBuffer.WrittenCount;
                 _appendBuffer.Clear();
             }
