@@ -246,8 +246,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <exception cref="ArgumentException">When <typeparamref name="T"/> does not directly correspond to a <see cref="VarEnum"/> variant type.</exception>
         public static ComVariant Create<T>([DisallowNull] T value)
         {
-            ComVariant variant;
-            Unsafe.SkipInit(out variant);
+            Unsafe.SkipInit(out ComVariant variant);
             if (typeof(T) == typeof(DBNull))
             {
                 variant = Null;
