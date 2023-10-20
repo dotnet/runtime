@@ -681,9 +681,9 @@ public:
     {
         // TODO: Once we allow bbFallThroughSucc to diverge from bbNext, ensure we only set bbFallThroughSucc
         // to something other than bbNext when this block is a BBJ_COND.
-        // BBJ_CALLFINALLY can fall through too, but we don't allow its fallthrough successor to diverge from bbNext
-        // because we aren't interested in splitting up call-always pairs
-        assert(KindIs(BBJ_COND, BBJ_NONE));
+        // For BBJ_CALLFINALLY blocks part of call-always pairs, bbFallThroughSucc points to the BBJ_ALWAYS block.
+        // For now, call-always pairs are always contiguous, so bbFallThroughSucc cannot diverge from bbNext.
+        assert(KindIs(BBJ_COND));
         bbFallThroughSucc = fallThroughSucc;
         // For now, bbFallThroughSucc cannot diverge from bbNext
         assert(FallsIntoNext());
