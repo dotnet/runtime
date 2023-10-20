@@ -30,6 +30,7 @@ typedef enum {
 	ArgGsharedVTOnStack,
 	ArgValuetypeAddrInIReg,
 	ArgVtypeAsScalar,
+	ArgSIMD,
 	ArgInvalid,
 } ArgStorage;
 
@@ -49,7 +50,7 @@ struct CallInfo {
 // WASM ABI: https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
 
 static ArgStorage
-get_storage (MonoType *type, gboolean is_return)
+get_storage (MonoType *type, gboolean is_return, gboolean enable_simd)
 {
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -84,6 +85,9 @@ get_storage (MonoType *type, gboolean is_return)
 		/* fall through */
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		if (enable_simd && m_class_is_simd_type (klass))
+			return ArgSIMD;
 		if (mini_wasm_is_scalar_vtype (type))
 			return ArgVtypeAsScalar;
 		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
@@ -102,7 +106,7 @@ get_storage (MonoType *type, gboolean is_return)
 }
 
 static CallInfo*
-get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
+get_call_info (MonoMemPool *mp, MonoMethodSignature *sig, gboolean enable_simd)
 {
 	int n = sig->hasthis + sig->param_count;
 	CallInfo *cinfo;
@@ -117,7 +121,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 	/* return value */
 	cinfo->ret.type = mini_get_underlying_type (sig->ret);
-	cinfo->ret.storage = get_storage (cinfo->ret.type, TRUE);
+	cinfo->ret.storage = get_storage (cinfo->ret.type, TRUE, enable_simd);
 
 	if (sig->hasthis)
 		cinfo->args [0].storage = ArgOnStack;
@@ -128,7 +132,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	int i;
 	for (i = 0; i < sig->param_count; ++i) {
 		cinfo->args [i + sig->hasthis].type = mini_get_underlying_type (sig->params [i]);
-		cinfo->args [i + sig->hasthis].storage = get_storage (cinfo->args [i + sig->hasthis].type, FALSE);
+		cinfo->args [i + sig->hasthis].storage = get_storage (cinfo->args [i + sig->hasthis].type, FALSE, enable_simd);
 	}
 
 	return cinfo;
@@ -249,7 +253,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	sig = mono_method_signature_internal (cfg->method);
 
 	if (!cfg->arch.cinfo)
-		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
+		cfg->arch.cinfo = get_call_info (cfg->mempool, sig, (cfg->opt & MONO_OPT_SIMD) != 0);
 	cinfo = (CallInfo *)cfg->arch.cinfo;
 
 	// if (cinfo->ret.storage == ArgValuetypeInReg)
@@ -341,21 +345,29 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	CallInfo *cinfo;
 	LLVMCallInfo *linfo;
 
-	cinfo = get_call_info (cfg->mempool, sig);
+	cinfo = get_call_info (cfg->mempool, sig, (cfg->opt & MONO_OPT_SIMD) != 0);
 	n = cinfo->nargs;
 
 	linfo = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMCallInfo) + (sizeof (LLVMArgInfo) * n));
 
-	if (cinfo->ret.storage == ArgVtypeAsScalar) {
+	switch (cinfo->ret.storage) {
+	case ArgVtypeAsScalar:
 		linfo->ret.storage = LLVMArgWasmVtypeAsScalar;
 		linfo->ret.esize = mono_class_value_size (mono_class_from_mono_type_internal (cinfo->ret.type), NULL);
-	} else if (mini_type_is_vtype (sig->ret)) {
-		/* Vtype returned using a hidden argument */
-		linfo->ret.storage = LLVMArgVtypeRetAddr;
-		// linfo->vret_arg_index = cinfo->vret_arg_index;
-	} else {
-		if (sig->ret->type != MONO_TYPE_VOID)
-			linfo->ret.storage = LLVMArgNormal;
+		break;
+	case ArgSIMD:
+		linfo->ret.storage = LLVMArgNormal;
+		break;
+	default:
+		if (mini_type_is_vtype (sig->ret)) {
+			/* Vtype returned using a hidden argument */
+			linfo->ret.storage = LLVMArgVtypeRetAddr;
+			// linfo->vret_arg_index = cinfo->vret_arg_index;
+		} else {
+			if (sig->ret->type != MONO_TYPE_VOID)
+				linfo->ret.storage = LLVMArgNormal;
+		}
+		break;
 	}
 
 	for (i = 0; i < n; ++i) {
@@ -363,6 +375,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 
 		switch (ainfo->storage) {
 		case ArgOnStack:
+		case ArgSIMD:
 			linfo->args [i].storage = LLVMArgNormal;
 			break;
 		case ArgValuetypeAddrOnStack:
