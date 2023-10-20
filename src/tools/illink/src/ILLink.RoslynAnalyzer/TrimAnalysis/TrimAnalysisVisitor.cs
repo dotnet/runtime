@@ -321,7 +321,6 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			TrimAnalysisPatterns.Add (new TrimAnalysisReflectionAccessPattern (
 				method,
-				instance,
 				operation,
 				OwningSymbol
 			));
