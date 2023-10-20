@@ -30,7 +30,6 @@ namespace ILCompiler.ObjectWriter
         private readonly uint _compactUnwindDwarfCode;
 
         // Symbol table
-        private readonly Dictionary<int, uint> _sectionIndexToSymbolIndex = new();
         private readonly Dictionary<string, uint> _symbolNameToIndex = new();
         private MachSymbolTable _symbolTable;
         private MachDynamicLinkEditSymbolTable _dySymbolTable;
@@ -135,6 +134,24 @@ namespace ILCompiler.ObjectWriter
             // Layout the sections
             _objectFile.UpdateLayout();
 
+            // Generate section base symbols. The section symbols are used for PC relative relocations
+            // to subtract the base of the section, and in DWARF to emit section relative relocations.
+            uint sectionIndex = 0;
+            foreach (MachSection machSection in _segment.Sections)
+            {
+                var machSymbol = new MachSymbol
+                {
+                    Name = $"lsection{sectionIndex}",
+                    Section = machSection,
+                    Value = machSection.VirtualAddress,
+                    Descriptor = 0,
+                    Type = MachSymbolType.Section,
+                };
+                _symbolTable.Symbols.Add(machSymbol);
+                _symbolNameToIndex[machSymbol.Name] = sectionIndex;
+                sectionIndex++;
+            }
+
             EmitCompactUnwindTable();
         }
 
@@ -226,45 +243,59 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             int addend)
         {
-            // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
-            MachSection machSection = _segment.Sections[sectionIndex];
-            if (machSection.Attributes.HasFlag(MachSectionAttributes.Debug) &&
-                machSection.SegmentName == "__DWARF")
+            if (relocType is RelocType.IMAGE_REL_BASED_DIR64 or RelocType.IMAGE_REL_BASED_HIGHLOW)
             {
-                if (symbolName.StartsWith('.'))
+                // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
+                MachSection machSection = _segment.Sections[sectionIndex];
+                if (machSection.Attributes.HasFlag(MachSectionAttributes.Debug) &&
+                    machSection.SegmentName == "__DWARF")
                 {
-                    switch (relocType)
+                    // DWARF section to DWARF section relocation
+                    if (symbolName.StartsWith('.'))
                     {
-                        case RelocType.IMAGE_REL_BASED_DIR64:
-                            BinaryPrimitives.WriteInt64LittleEndian(data, addend);
-                            break;
-                        case RelocType.IMAGE_REL_BASED_HIGHLOW:
-                            BinaryPrimitives.WriteInt32LittleEndian(data, addend);
-                            break;
-                        default:
-                            throw new NotSupportedException("Unsupported relocation in debug section");
+                        switch (relocType)
+                        {
+                            case RelocType.IMAGE_REL_BASED_DIR64:
+                                BinaryPrimitives.WriteInt64LittleEndian(data, addend);
+                                break;
+                            case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                                BinaryPrimitives.WriteInt32LittleEndian(data, addend);
+                                break;
+                            default:
+                                throw new NotSupportedException("Unsupported relocation in debug section");
+                        }
+                        return;
                     }
-                }
-                else if (symbolName.StartsWith('l'))
-                {
-                    Debug.Assert(relocType == RelocType.IMAGE_REL_BASED_DIR64);
-                    int targetSectionIndex = int.Parse(symbolName.AsSpan().Slice("lsection".Length), CultureInfo.InvariantCulture);
-                    BinaryPrimitives.WriteUInt64LittleEndian(data, _segment.Sections[targetSectionIndex].VirtualAddress + (ulong)addend);
-                }
-                else
-                {
-                    Debug.Assert(relocType == RelocType.IMAGE_REL_BASED_DIR64);
-                    IDictionary<string, SymbolDefinition> definedSymbols = GetDefinedSymbols();
-                    if (definedSymbols.TryGetValue(symbolName, out SymbolDefinition symbolDefinition))
+                    // DWARF section to code/data section relocation
+                    else if (IsSectionSymbolName(symbolName))
                     {
-                        BinaryPrimitives.WriteUInt64LittleEndian(data, _segment.Sections[symbolDefinition.SectionIndex].VirtualAddress + (ulong)symbolDefinition.Value + (ulong)addend);
+                        Debug.Assert(relocType == RelocType.IMAGE_REL_BASED_DIR64);
+                        int targetSectionIndex = (int)_symbolNameToIndex[symbolName];
+                        BinaryPrimitives.WriteUInt64LittleEndian(data, _segment.Sections[targetSectionIndex].VirtualAddress + (ulong)addend);
+                        base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
                     }
+                    // DWARF section to code/data symbol
                     else
                     {
-                        Console.WriteLine($"DEBUG references undefined symbol: {symbolName}");
+                        Debug.Assert(relocType == RelocType.IMAGE_REL_BASED_DIR64);
+                        IDictionary<string, SymbolDefinition> definedSymbols = GetDefinedSymbols();
+                        if (definedSymbols.TryGetValue(symbolName, out SymbolDefinition symbolDefinition))
+                        {
+                            symbolName = GetSectionSymbolName(symbolDefinition.SectionIndex);
+                            BinaryPrimitives.WriteUInt64LittleEndian(
+                                data,
+                                _segment.Sections[symbolDefinition.SectionIndex].VirtualAddress + (ulong)symbolDefinition.Value);
+                            base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"DEBUG references undefined symbol: {symbolName}");
+                            return;
+                        }
                     }
+
+                    return;
                 }
-                return;
             }
 
             // For most relocations we write the addend directly into the
@@ -338,27 +369,9 @@ namespace ILCompiler.ObjectWriter
 
         protected override void EmitSymbolTable()
         {
-            uint symbolIndex = 0;
-
-            // Create section base symbols. They're used for PC relative relocations
-            // to subtract the base of the section.
-            int sectionIndex = 0;
-            foreach (MachSection machSection in _segment.Sections)
-            {
-                var machSymbol = new MachSymbol
-                {
-                    Name = "lsection" + sectionIndex,
-                    Section = machSection,
-                    Value = machSection.VirtualAddress,
-                    Descriptor = 0,
-                    Type = MachSymbolType.Section,
-                };
-                _symbolTable.Symbols.Add(machSymbol);
-                _sectionIndexToSymbolIndex[sectionIndex] = symbolIndex;
-                symbolIndex++;
-                sectionIndex++;
-            }
-
+            // We already emitted symbols for all non-debug sections in EmitSectionsAndLayout,
+            // these symbols are local and we need to account for them.
+            uint symbolIndex = (uint)_symbolTable.Symbols.Count;
             _dySymbolTable.LocalSymbolsIndex = 0;
             _dySymbolTable.LocalSymbolsCount = symbolIndex;
 
@@ -431,14 +444,15 @@ namespace ILCompiler.ObjectWriter
 
                 if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_DIR64)
                 {
+                    bool isExternal = !IsSectionSymbolName(symbolicRelocation.SymbolName);
                     sectionRelocations.Add(
                         new MachRelocation
                         {
                             Address = symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = symbolIndex,
+                            SymbolOrSectionIndex = isExternal ? symbolIndex : symbolIndex + 1,
                             Length = 8,
                             RelocationType = MachRelocationType.X86_64Unsigned,
-                            IsExternal = true,
+                            IsExternal = isExternal,
                             IsPCRelative = false,
                         });
                 }
@@ -448,7 +462,7 @@ namespace ILCompiler.ObjectWriter
                         new MachRelocation
                         {
                             Address = symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = _sectionIndexToSymbolIndex[sectionIndex],
+                            SymbolOrSectionIndex = (uint)sectionIndex,
                             Length = 4,
                             RelocationType = MachRelocationType.X86_64Subtractor,
                             IsExternal = true,
@@ -543,14 +557,15 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (symbolicRelocation.Type == RelocType.IMAGE_REL_BASED_DIR64)
                 {
+                    bool isExternal = !IsSectionSymbolName(symbolicRelocation.SymbolName);
                     sectionRelocations.Add(
                         new MachRelocation
                         {
                             Address = symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = symbolIndex,
+                            SymbolOrSectionIndex = isExternal ? symbolIndex : symbolIndex + 1,
                             Length = 8,
                             RelocationType = MachRelocationType.Arm64Unsigned,
-                            IsExternal = true,
+                            IsExternal = isExternal,
                             IsPCRelative = false,
                         });
                 }
@@ -561,7 +576,7 @@ namespace ILCompiler.ObjectWriter
                         new MachRelocation
                         {
                             Address = symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = _sectionIndexToSymbolIndex[sectionIndex],
+                            SymbolOrSectionIndex = (uint)sectionIndex,
                             Length = 4,
                             RelocationType = MachRelocationType.Arm64Subtractor,
                             IsExternal = true,
@@ -672,64 +687,8 @@ namespace ILCompiler.ObjectWriter
             return encoding != _compactUnwindDwarfCode;
         }
 
-        protected override string GetSectionSymbolName(int sectionIndex)
-        {
-            return "lsection" + sectionIndex;
-        }
-
-
-        /*protected override void EmitDebugSections(DwarfFile dwarfFile)
-        {
-            ulong highPC = 0;
-            foreach (var machSection in _segment.Sections)
-            {
-                if (machSection.Attributes.HasFlag(MachSectionAttributes.SomeInstructions))
-                {
-                    highPC = Math.Max(highPC, machSection.VirtualAddress + machSection.Size);
-                }
-            }
-
-            foreach (var unit in dwarfFile.InfoSection.Units)
-            {
-                var rootDIE = (DwarfDIECompileUnit)unit.Root;
-                rootDIE.LowPC = 0u;
-                rootDIE.HighPC = (int)highPC;
-                dwarfFile.AddressRangeTable.AddressSize = unit.AddressSize;
-                dwarfFile.AddressRangeTable.Unit = unit;
-                dwarfFile.AddressRangeTable.Ranges.Add(new DwarfAddressRange(0, 0, highPC));
-            }
-
-            var debugInfoSection = new MachSection(_objectFile, "__DWARF", "__debug_info") { Attributes = MachSectionAttributes.Debug };
-            var debugAbbrevSection = new MachSection(_objectFile, "__DWARF", "__debug_abbrev") { Attributes = MachSectionAttributes.Debug };
-            var debugAddressRangeSection = new MachSection(_objectFile, "__DWARF", "__debug_aranges") { Attributes = MachSectionAttributes.Debug };
-            var debugStringSection = new MachSection(_objectFile, "__DWARF", "__debug_str") { Attributes = MachSectionAttributes.Debug };
-            var debugLineSection = new MachSection(_objectFile, "__DWARF", "__debug_line") { Attributes = MachSectionAttributes.Debug };
-            var debugLocationSection = new MachSection(_objectFile, "__DWARF", "__debug_loc") { Attributes = MachSectionAttributes.Debug };
-
-            var outputContext = new DwarfWriterContext
-            {
-                IsLittleEndian = _objectFile.IsLittleEndian,
-                EnableRelocation = false,
-                AddressSize = DwarfAddressSize.Bit64,
-                DebugLineStream = debugLineSection.GetWriteStream(),
-                DebugAbbrevStream = debugAbbrevSection.GetWriteStream(),
-                DebugStringStream = debugStringSection.GetWriteStream(),
-                DebugAddressRangeStream = debugAddressRangeSection.GetWriteStream(),
-                DebugInfoStream = debugInfoSection.GetWriteStream(),
-                DebugLocationStream = debugLocationSection.GetWriteStream(),
-            };
-
-            dwarfFile.Write(outputContext);
-
-            _segment.Sections.Add(debugInfoSection);
-            _segment.Sections.Add(debugAbbrevSection);
-            _segment.Sections.Add(debugAddressRangeSection);
-            _segment.Sections.Add(debugStringSection);
-            _segment.Sections.Add(debugLineSection);
-            _segment.Sections.Add(debugLocationSection);
-
-            _objectFile.UpdateLayout();
-        }*/
+        protected override string GetSectionSymbolName(int sectionIndex) => "lsection" + sectionIndex;
+        private static bool IsSectionSymbolName(string symbolName) => symbolName.StartsWith('l');
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
         {
