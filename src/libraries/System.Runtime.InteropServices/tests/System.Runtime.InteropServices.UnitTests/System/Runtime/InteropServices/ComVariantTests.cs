@@ -1,13 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices.Tests.Common;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -456,6 +452,42 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(VarEnum.VT_BYREF | VarEnum.VT_I4, variant.VarType);
             Assert.Equal(byref, variant.GetRawDataRef<IntPtr>());
             Marshal.FreeCoTaskMem(byref);
+        }
+
+        [InlineArray(5)]
+        private struct InvalidSize
+        {
+            private byte _b;
+        }
+
+        // Test a variety of types to validate the size check.
+        [InlineData(VarEnum.VT_I1)]
+        [InlineData(VarEnum.VT_UI1)]
+        [InlineData(VarEnum.VT_I2)]
+        [InlineData(VarEnum.VT_UI2)]
+        [InlineData(VarEnum.VT_I4)]
+        [InlineData(VarEnum.VT_UI4)]
+        [InlineData(VarEnum.VT_I8)]
+        [InlineData(VarEnum.VT_UI8)]
+        [InlineData(VarEnum.VT_R4)]
+        [InlineData(VarEnum.VT_R8)]
+        [InlineData(VarEnum.VT_BOOL)]
+        [InlineData(VarEnum.VT_BLOB)]
+        [InlineData(VarEnum.VT_BYREF | VarEnum.VT_I4)]
+        [InlineData(VarEnum.VT_UNKNOWN)]
+        [Theory]
+        public void Raw_WrongSize(VarEnum vt)
+        {
+            // A 5-byte struct is never a valid size for a variant type.
+            Assert.Throws<ArgumentException>(() => ComVariant.CreateRaw(vt, new InvalidSize()));
+        }
+
+        [InlineData(VarEnum.VT_INT)]
+        [InlineData(VarEnum.VT_UINT)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        public void Raw_Int_WrongSize(VarEnum vt)
+        {
+            Assert.Throws<ArgumentException>(() => ComVariant.CreateRaw(vt, (nint)42));
         }
     }
 }
