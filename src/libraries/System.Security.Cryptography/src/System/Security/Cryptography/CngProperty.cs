@@ -27,7 +27,14 @@ namespace System.Security.Cryptography
             _value = value.CloneByteArray();
         }
 
-        internal CngProperty(string name, ReadOnlySpan<byte> value, CngPropertyOptions options)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CngProperty"/> struct.
+        /// </summary>
+        /// <param name="name">The property name to initialize.</param>
+        /// <param name="value">The property value to initialize.</param>
+        /// <param name="options">A bitwise combination of the enumeration values that specify how the property is stored.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langref="null"/>.</exception>
+        public CngProperty(string name, ReadOnlySpan<byte> value, CngPropertyOptions options)
             : this()
         {
             ArgumentNullException.ThrowIfNull(name);

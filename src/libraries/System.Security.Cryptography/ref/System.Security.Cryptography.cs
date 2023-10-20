@@ -467,6 +467,7 @@ namespace System.Security.Cryptography
         private object _dummy;
         private int _dummyPrimitive;
         public CngProperty(string name, byte[]? value, System.Security.Cryptography.CngPropertyOptions options) { throw null; }
+        public CngProperty(string name, System.ReadOnlySpan<byte> value, System.Security.Cryptography.CngPropertyOptions options) { throw null; }
         public readonly string Name { get { throw null; } }
         public readonly System.Security.Cryptography.CngPropertyOptions Options { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
