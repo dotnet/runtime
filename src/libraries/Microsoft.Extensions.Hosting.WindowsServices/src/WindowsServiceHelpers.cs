@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
     /// </summary>
     public static class WindowsServiceHelpers
     {
-        private static bool? _isWindowService;
+        private static readonly bool _isWindowService = GetIsWindowsService();
 
         /// <summary>
         /// Check if the current process is hosted as a Windows Service.
@@ -21,8 +21,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// <see langword="true" /> if the current process is hosted as a Windows Service; otherwise, <see langword="false" />.
         /// </returns>
         [SupportedOSPlatformGuard("windows")]
-        public static bool IsWindowsService()
-            => _isWindowService ??= GetIsWindowsService();
+        public static bool IsWindowsService() => _isWindowService;
 
         private static bool GetIsWindowsService()
         {
