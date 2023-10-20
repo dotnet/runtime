@@ -39,9 +39,3 @@ jobs:
 
       postBuildSteps:
         - template: '/eng/pipelines/libraries/run-test-ready-to-run.yml'
-          parameters:
-            archType: ${{ parameters.archType }}
-            buildConfig: ${{ parameters.buildConfig }}
-            osGroup: ${{ parameters.osGroup }}
-            variables: ${{ parameters.variables }}
-
