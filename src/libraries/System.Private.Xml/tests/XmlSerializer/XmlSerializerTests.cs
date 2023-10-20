@@ -2368,7 +2368,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         try
         {
             SerializeAndDeserialize(new T(), string.Empty, skipStringCompare: true);
-            Assert.True(false, $"Assert.True failed for {typeof(T)}. The above operation should have thrown, but it didn't.");
+            Assert.Fail($"Assert.True failed for {typeof(T)}. The above operation should have thrown, but it didn't.");
         }
         catch (Exception e)
         {

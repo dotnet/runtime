@@ -60,6 +60,7 @@ enum SpecialCodeKind
     SCK_OVERFLOW = SCK_ARITH_EXCPN, // target on overflow
     SCK_ARG_EXCPN,                  // target on ArgumentException (currently used only for SIMD intrinsics)
     SCK_ARG_RNG_EXCPN,              // target on ArgumentOutOfRangeException (currently used only for SIMD intrinsics)
+    SCK_FAIL_FAST,                  // target for fail fast exception
     SCK_COUNT
 };
 
@@ -1537,8 +1538,9 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_IND, GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_STORE_DYN_BLK, GT_NULLCHECK));
-        return (GT_IND <= gtOper) && (gtOper <= GT_NULLCHECK);
+        static_assert_no_msg(AreContiguous(GT_LOCKADD, GT_XAND, GT_XORR, GT_XADD, GT_XCHG, GT_CMPXCHG, GT_IND,
+                                           GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_STORE_DYN_BLK, GT_NULLCHECK));
+        return (GT_LOCKADD <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
     static bool OperIsArrLength(genTreeOps gtOper)
@@ -1611,6 +1613,22 @@ public:
     bool OperIsAtomicOp() const
     {
         return OperIsAtomicOp(gtOper);
+    }
+
+    bool OperIsAtomicZeroDiffQuirk() const
+    {
+        // TODO-Cleanup: delete.
+        return OperIsAtomicOp();
+    }
+
+    static bool OperIsLoad(genTreeOps gtOper)
+    {
+        return (gtOper == GT_IND) || (gtOper == GT_BLK);
+    }
+
+    bool OperIsLoad() const
+    {
+        return OperIsLoad(gtOper);
     }
 
     static bool OperIsStore(genTreeOps gtOper)
@@ -5640,31 +5658,6 @@ struct GenTreeCall final : public GenTree
 #endif
 };
 
-struct GenTreeCmpXchg : public GenTree
-{
-    GenTree* gtOpLocation;
-    GenTree* gtOpValue;
-    GenTree* gtOpComparand;
-
-    GenTreeCmpXchg(var_types type, GenTree* loc, GenTree* val, GenTree* comparand)
-        : GenTree(GT_CMPXCHG, type), gtOpLocation(loc), gtOpValue(val), gtOpComparand(comparand)
-    {
-        // There's no reason to do a compare-exchange on a local location, so we'll assume that all of these
-        // have global effects.
-        gtFlags |= (GTF_GLOB_REF | GTF_ASG);
-
-        // Merge in flags from operands
-        gtFlags |= gtOpLocation->gtFlags & GTF_ALL_EFFECT;
-        gtFlags |= gtOpValue->gtFlags & GTF_ALL_EFFECT;
-        gtFlags |= gtOpComparand->gtFlags & GTF_ALL_EFFECT;
-    }
-#if DEBUGGABLE_GENTREE
-    GenTreeCmpXchg() : GenTree()
-    {
-    }
-#endif
-};
-
 #if !defined(TARGET_64BIT)
 struct GenTreeMultiRegOp : public GenTreeOp
 {
@@ -7223,7 +7216,7 @@ struct GenTreeIndir : public GenTreeOp
 
     GenTree*& Data()
     {
-        assert(OperIs(GT_STOREIND) || OperIsStoreBlk());
+        assert(OperIs(GT_STOREIND) || OperIsStoreBlk() || OperIsAtomicOp());
         return gtOp2;
     }
 
@@ -7523,6 +7516,30 @@ protected:
         SetRMWStatusDefault();
     }
 #endif
+};
+
+struct GenTreeCmpXchg : public GenTreeIndir
+{
+private:
+    GenTree* m_comparand;
+
+public:
+    GenTreeCmpXchg(var_types type, GenTree* loc, GenTree* val, GenTree* comparand)
+        : GenTreeIndir(GT_CMPXCHG, type, loc, val), m_comparand(comparand)
+    {
+        gtFlags |= comparand->gtFlags & GTF_ALL_EFFECT;
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeCmpXchg() : GenTreeIndir()
+    {
+    }
+#endif
+
+    GenTree*& Comparand()
+    {
+        return m_comparand;
+    }
 };
 
 /* gtRetExp -- Place holder for the return expression from an inline candidate (GT_RET_EXPR) */

@@ -225,8 +225,8 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "linux")
   add_definitions(-D_THREAD_SAFE)
   set(HAVE_CGROUP_SUPPORT 1)
   # Enable the "full RELRO" options (RELRO & BIND_NOW) at link time
-  add_link_options(-Wl,-z,relro)
-  add_link_options(-Wl,-z,now)
+  add_link_options("LINKER:-z,relro")
+  add_link_options("LINKER:-z,now")
 elseif(CLR_CMAKE_HOST_OS STREQUAL "android")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
@@ -280,6 +280,7 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
   add_compile_options(/W4)   # set warning level 4
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4324>) # 'struct_name' : structure was padded due to __declspec(align())
   add_compile_options(/EHsc) # set exception handling behavior
   add_compile_options(/FC)   # use full pathnames in diagnostics
   add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)

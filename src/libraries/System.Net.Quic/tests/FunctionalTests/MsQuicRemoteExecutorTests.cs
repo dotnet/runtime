@@ -22,7 +22,7 @@ namespace System.Net.Quic.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SslKeyLogFile_IsCreatedAndFilled()
         {
-            if (PlatformDetection.IsReleaseRuntime)
+            if (PlatformDetection.IsReleaseLibrary(typeof(QuicConnection).Assembly))
             {
                 throw new SkipTestException("Retrieving SSL secrets is not supported in Release mode.");
             }

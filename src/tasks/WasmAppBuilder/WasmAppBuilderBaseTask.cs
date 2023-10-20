@@ -155,7 +155,7 @@ public abstract class WasmAppBuilderBaseTask : Task
         AddToRuntimeConfig(wasmHostProperties: wasmHostProperties, runtimeArgsArray: runtimeArgsArray, perHostConfigs: perHostConfigs);
 
         string dstPath = Path.Combine(AppDir!, Path.GetFileName(RuntimeConfigJsonPath));
-        using FileStream? fs = File.OpenWrite(dstPath);
+        using FileStream? fs = new FileStream(dstPath, FileMode.Create, FileAccess.Write, FileShare.None);
         using var writer = new Utf8JsonWriter(fs, new JsonWriterOptions { Indented = true });
         rootObject.WriteTo(writer);
         _fileWrites.Add(dstPath);

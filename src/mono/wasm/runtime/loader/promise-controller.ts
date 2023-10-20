@@ -51,5 +51,5 @@ export function isControllablePromise<T>(promise: Promise<T>): promise is Contro
 }
 
 export function assertIsControllablePromise<T>(promise: Promise<T>): asserts promise is ControllablePromise<T> {
-    mono_assert(isControllablePromise(promise), "Promise is not controllable");
+    mono_assert(promise && isControllablePromise(promise), "Promise is not controllable");
 }
