@@ -13,14 +13,9 @@ namespace System.Net.Http.Json
     {
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            Encoding? targetEncoding = JsonHelpers.GetEncoding(this);
-            if (targetEncoding != null && targetEncoding != Encoding.UTF8)
+            if (JsonHelpers.GetEncoding(this) is Encoding targetEncoding && targetEncoding != Encoding.UTF8)
             {
-                // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
-                using Stream transcodingStream = Encoding.CreateTranscodingStream(stream, targetEncoding, Encoding.UTF8, leaveOpen: true);
-                JsonSerializer.Serialize(transcodingStream, Value, _typeInfo);
-                // Dispose will flush any partial write buffers. In practice our partial write
-                // buffers should be empty as we expect JsonSerializer to emit only well-formed UTF-8 data.
+                SerializeToStreamAsyncTranscoding(stream, async: false, targetEncoding, cancellationToken).GetAwaiter().GetResult();
             }
             else
             {

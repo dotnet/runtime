@@ -107,26 +107,42 @@ namespace System.Net.Http.Json
             Encoding? targetEncoding = JsonHelpers.GetEncoding(this);
 
             return targetEncoding != null && targetEncoding != Encoding.UTF8
-                ? SerializeToStreamAsyncTranscoding(targetStream, targetEncoding, cancellationToken)
+                ? SerializeToStreamAsyncTranscoding(targetStream, async: true, targetEncoding, cancellationToken)
                 : JsonSerializer.SerializeAsync(targetStream, Value, _typeInfo, cancellationToken);
         }
 
-        private async Task SerializeToStreamAsyncTranscoding(Stream targetStream, Encoding targetEncoding, CancellationToken cancellationToken)
+        private async Task SerializeToStreamAsyncTranscoding(Stream targetStream, bool async, Encoding targetEncoding, CancellationToken cancellationToken)
         {
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
 #if NETCOREAPP
             Stream transcodingStream = Encoding.CreateTranscodingStream(targetStream, targetEncoding, Encoding.UTF8, leaveOpen: true);
             try
             {
-                await JsonSerializer.SerializeAsync(transcodingStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
+                if (async)
+                {
+                    await JsonSerializer.SerializeAsync(transcodingStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    JsonSerializer.Serialize(transcodingStream, Value, _typeInfo);
+                }
             }
             finally
             {
-                // DisposeAsync will flush any partial write buffers. In practice our partial write
+                // Dispose/DisposeAsync will flush any partial write buffers. In practice our partial write
                 // buffers should be empty as we expect JsonSerializer to emit only well-formed UTF-8 data.
-                await transcodingStream.DisposeAsync().ConfigureAwait(false);
+                if (async)
+                {
+                    await transcodingStream.DisposeAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    transcodingStream.Dispose();
+                }
             }
 #else
+            Debug.Assert(async, "HttpContent synchronous serialization is only supported since .NET 5.0");
+
             using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
             {
                 await JsonSerializer.SerializeAsync(transcodingStream, Value, _typeInfo, cancellationToken).ConfigureAwait(false);
