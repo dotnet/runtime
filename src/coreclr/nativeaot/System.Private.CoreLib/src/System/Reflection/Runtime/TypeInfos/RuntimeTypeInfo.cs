@@ -604,7 +604,9 @@ namespace System.Reflection.Runtime.TypeInfos
         private Type CreateType()
         {
             RuntimeTypeHandle runtimeTypeHandle = InternalTypeHandleIfAvailable;
-            Type type = runtimeTypeHandle.IsNull ? new MetadataOnlyType(this) : Type.GetTypeFromHandle(runtimeTypeHandle)!;
+            // TODO!!!
+            Debug.Assert(!runtimeTypeHandle.IsNull);
+            Type type = Type.GetTypeFromHandle(runtimeTypeHandle)!;
             Interlocked.CompareExchange(ref _type, type, null);
             return _type;
         }

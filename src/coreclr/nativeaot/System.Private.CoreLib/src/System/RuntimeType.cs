@@ -392,7 +392,6 @@ namespace System
             if (object.ReferenceEquals(c, this))
                 return true;
 
-            // TODO: This pattern does not work for MetadataOnly runtime types!!!
             if (c.UnderlyingSystemType is not RuntimeType fromRuntimeType)
                 return false;  // Desktop compat: If typeInfo is null, or implemented by a different Reflection implementation, return "false."
 
@@ -415,7 +414,7 @@ namespace System
             => RuntimeImports.IsInstanceOf(_pUnderlyingEEType, o) != null;
 
         //
-        // Implementation shared with MetadataType
+        // Methods that do not directly depend on _pUnderlyingEEType
         //
 
         public override string ToString()

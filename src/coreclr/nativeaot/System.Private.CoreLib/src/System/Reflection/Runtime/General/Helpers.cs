@@ -71,10 +71,6 @@ namespace System.Reflection.Runtime.General
             {
                 return runtimeType.GetRuntimeTypeInfo();
             }
-            if (type is MetadataOnlyType metadataOnlyType)
-            {
-                return metadataOnlyType.GetRuntimeTypeInfo();
-            }
             Debug.Assert(false);
             return null;
         }
