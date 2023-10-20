@@ -13,6 +13,7 @@
     <InstallWorkloadUsingArtifactsDependsOn>
       $(InstallWorkloadUsingArtifactsDependsOn);
       _ProvisionDotNetForWorkloadTesting;
+      _InstallSharedFrameworksForWorkloadTesting;
       _GetDotNetVersion;
       _SetPackageVersionForWorkloadsTesting;
       GetNuGetsToBuildForWorkloadTesting;
@@ -23,9 +24,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--<AdditionalSharedFrameworkToInstallArguments Include="-Version 8.0.0-rc.2.23457.7" />-->
     <!-- Required for running apps built with 9.0 sdk, but the sdk does
          not yet support *running* with 9.0 sdk -->
-    <AdditionalSharedFrameworkToInstall Include="8.0.0-rc.2.23457.7" />
+    <AdditionalSharedFrameworkToInstallArguments Condition="!$([MSBuild]::IsOSPlatform('windows'))" Include="-Version latest -c 8.0 -q daily" />
+    <AdditionalSharedFrameworkToInstallArguments Condition=" $([MSBuild]::IsOSPlatform('windows'))" Include="-Version latest -Channel 8.0 -Quality daily" />
 
     <_DefaultPropsForNuGetBuild Include="Configuration=$(Configuration)" />
     <_DefaultPropsForNuGetBuild Include="TargetOS=$(TargetOS)" />
@@ -83,18 +86,17 @@
           IgnoreStandardErrorWarningFormat="true"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
 
-    <!-- Install additional shared frameworks -->
-    <PropertyGroup>
-      <_DotNetInstallCommand>$(_DotNetInstallScriptPath) -Version %(AdditionalSharedFrameworkToInstall.Identity) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime dotnet -SkipNonVersionedFiles</_DotNetInstallCommand>
-    </PropertyGroup>
-    <Message Text="Installing shared frameworks for @(AdditionalSharedFrameworkToInstall)" Importance="High" />
-    <Exec Condition="'%(AdditionalSharedFrameworkToInstall.Identity)' != '' and !$([MSBuild]::IsOSPlatform('windows'))"
-          IgnoreStandardErrorWarningFormat="true"
-          Command="$(_DotNetInstallCommand)" />
+  </Target>
 
-    <Exec Condition="'%(AdditionalSharedFrameworkToInstall.Identity)' != '' and $([MSBuild]::IsOSPlatform('windows'))"
+  <!-- TODO: stamps -->
+  <Target Name="_InstallSharedFrameworksForWorkloadTesting">
+    <Exec Condition="'%(AdditionalSharedFrameworkToInstallArguments.Identity)' != '' and !$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
-          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
+          Command="$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime dotnet -SkipNonVersionedFiles %(AdditionalSharedFrameworkToInstallArguments.Identity)" />
+
+    <Exec Condition="'%(AdditionalSharedFrameworkToInstallArguments.Identity)' != '' and $([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
+          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime dotnet -SkipNonVersionedFiles %(AdditionalSharedFrameworkToInstallArguments.Identity)"' />
   </Target>
 
   <Target Name="_GetDotNetVersion">
