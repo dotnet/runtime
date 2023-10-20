@@ -1109,7 +1109,7 @@ namespace System.Globalization
 
         /// <summary>
         /// iso 639 language name, ie: eng
-        /// </summary>//
+        /// </summary>
         internal string ThreeLetterISOLanguageName => _sISO639Language2 ??= GetLocaleInfoCore(LocaleStringData.Iso639LanguageThreeLetterName);
 
         /// <summary>

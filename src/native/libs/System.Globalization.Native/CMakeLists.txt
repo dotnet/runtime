@@ -106,7 +106,6 @@ if (CLR_CMAKE_TARGET_APPLE)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} ${NATIVEGLOBALIZATION_SOURCES_OBJC})
 endif()
 
-
 # time zone names are filtered out of icu data for the browser and associated functionality is disabled
 #if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
 #    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_timeZoneInfo.c)

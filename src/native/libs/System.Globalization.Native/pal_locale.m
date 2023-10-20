@@ -760,38 +760,4 @@ const char* GlobalizationNative_GetDefaultLocaleNameNative(void)
     }
 }
 
-int32_t GlobalizationNative_GetLocalesNative(char* value, int32_t length)
-{
-    NSArray<NSString*>* availableLocaleIdentifiers = [NSLocale availableLocaleIdentifiers];
-    int32_t index = 0;
-    int32_t totalLength = 0;
-    for (NSInteger i = 0; i < [availableLocaleIdentifiers count]; i++) 
-    {
-        NSString *localeIdentifier = availableLocaleIdentifiers[i];
-        const char* pLocaleName = [localeIdentifier UTF8String];
-        int32_t localeNameLength = (int32_t)strlen(pLocaleName);
-        totalLength += localeNameLength + 1; // add 1 for the name length
-        if (value != NULL)
-        {
-            if (totalLength > length)
-                return -3;
-
-            value[index++] = (UChar) localeNameLength;
-
-            for (int j=0; j<localeNameLength; j++)
-            {
-                if (pLocaleName[j] == '_') // fix the locale name
-                {
-                    value[index++] = (UChar) '-';
-                }
-                else
-                {
-                    value[index++] = (UChar) pLocaleName[j];
-                }
-            }
-        }
-    }
-    return availableLocaleIdentifiers.count;
-}
-
 #endif
