@@ -27,6 +27,7 @@ namespace ILCompiler.ObjectWriter
         private readonly int _frameRegister;
         private readonly byte _minimumInstructionLength;
         private readonly RelocType _codeRelocType;
+        private readonly bool _isOSXLike;
 
         private readonly Dictionary<int, DwarfLineSequenceWriter> _lineSequences = new();
         private readonly Dictionary<string, int> _fileNameMap = new(); // fileName -> _fileNames index (1-based)
@@ -46,40 +47,38 @@ namespace ILCompiler.ObjectWriter
 
         public DwarfBuilder(
             NameMangler nameMangler,
-            TargetArchitecture targetArchitecture,
+            TargetDetails target,
             bool useDwarf5)
         {
             _nameMangler = nameMangler;
-            _architecture = targetArchitecture;
+            _architecture = target.Architecture;
             _useDwarf5 = useDwarf5;
+            _isOSXLike = target.IsOSXLike;
+            _minimumInstructionLength = (byte)target.MinimumCodeAlignment;
 
-            switch (targetArchitecture)
+            switch (target.Architecture)
             {
                 case TargetArchitecture.ARM64:
                     _targetPointerSize = 8;
                     _frameRegister = 29; // FP
-                    _minimumInstructionLength = 4;
                     _codeRelocType = RelocType.IMAGE_REL_BASED_DIR64;
                     break;
 
                 case TargetArchitecture.ARM:
                     _targetPointerSize = 4;
                     _frameRegister = 7; // R7
-                    _minimumInstructionLength = 4;
                     _codeRelocType = RelocType.IMAGE_REL_BASED_HIGHLOW;
                     break;
 
                 case TargetArchitecture.X64:
                     _targetPointerSize = 8;
                     _frameRegister = 6; // RBP
-                    _minimumInstructionLength = 1;
                     _codeRelocType = RelocType.IMAGE_REL_BASED_DIR64;
                     break;
 
                 case TargetArchitecture.X86:
                     _targetPointerSize = 4;
                     _frameRegister = 5; // EBP
-                    _minimumInstructionLength = 1;
                     _codeRelocType = RelocType.IMAGE_REL_BASED_HIGHLOW;
                     break;
 
@@ -92,10 +91,8 @@ namespace ILCompiler.ObjectWriter
         public byte TargetPointerSize => _targetPointerSize;
         public int FrameRegister => _frameRegister;
 
-        public uint ResolveOffset(uint typeIndex)
-        {
-            return typeIndex == 0 ? 0u : _dwarfTypeOffsets[typeIndex - 1];
-        }
+        public uint ResolveOffset(uint typeIndex) => typeIndex == 0 ? 0u : _dwarfTypeOffsets[typeIndex - 1];
+        public string ExternCName(string name) => _isOSXLike ? "_" + name : name;
 
         public void Write(
             SectionWriter infoSectionWriter,
@@ -147,7 +144,7 @@ namespace ILCompiler.ObjectWriter
                 this,
                 _codeRelocType))
             {
-                dwarfInfoWriter.WriteStartDIE(DwarfAbbrev.CompileUnit);
+                dwarfInfoWriter.WriteStartDIE(_isOSXLike ? DwarfAbbrev.CompileUnitNoRanges : DwarfAbbrev.CompileUnit);
 
                 // DW_AT_producer
                 dwarfInfoWriter.WriteStringReference("NetRuntime");
@@ -157,15 +154,25 @@ namespace ILCompiler.ObjectWriter
                 dwarfInfoWriter.WriteStringReference("il.cpp");
                 // DW_AT_comp_dir
                 dwarfInfoWriter.WriteStringReference("/_");
-                // DW_AT_low_pc
-                dwarfInfoWriter.WriteCodeReference(_sections[0].SectionSymbolName);
-                // DW_AT_ranges
-                dwarfInfoWriter.WriteStartRangeList();
-                foreach (var sectionInfo in _sections)
+                if (_isOSXLike)
                 {
-                    dwarfInfoWriter.WriteRangeListEntry(sectionInfo.SectionSymbolName, 0, (uint)sectionInfo.Size);
+                    // DW_AT_low_pc
+                    dwarfInfoWriter.WriteAddressSize(0);
+                    // DW_AT_high_pc
+                    dwarfInfoWriter.WriteCodeReference(_sections[^1].SectionSymbolName, (uint)_sections[^1].Size);
                 }
-                dwarfInfoWriter.WriteEndRangeList();
+                else
+                {
+                    // DW_AT_low_pc
+                    dwarfInfoWriter.WriteCodeReference(_sections[0].SectionSymbolName);
+                    // DW_AT_ranges
+                    dwarfInfoWriter.WriteStartRangeList();
+                    foreach (var sectionInfo in _sections)
+                    {
+                        dwarfInfoWriter.WriteRangeListEntry(sectionInfo.SectionSymbolName, 0, (uint)sectionInfo.Size);
+                    }
+                    dwarfInfoWriter.WriteEndRangeList();
+                }
                 // DW_AT_stmt_list
                 dwarfInfoWriter.WriteLineReference(0);
 
@@ -228,14 +235,22 @@ namespace ILCompiler.ObjectWriter
             arangeSectionWriter.Stream.Write([_targetPointerSize, 0]);
             // Ranges have to be aligned
             arangeSectionWriter.EmitAlignment(_targetPointerSize * 2);
-            foreach (var sectionInfo in _sections)
+            if (_isOSXLike)
             {
-                arangeSectionWriter.EmitSymbolReference(_codeRelocType, sectionInfo.SectionSymbolName, 0);
-                switch (_targetPointerSize)
+                arangeSectionWriter.Stream.WriteUInt64(0);
+                arangeSectionWriter.EmitSymbolReference(_codeRelocType, _sections[^1].SectionSymbolName, (int)_sections[^1].Size);
+            }
+            else
+            {
+                foreach (var sectionInfo in _sections)
                 {
-                    case 8: arangeSectionWriter.Stream.WriteUInt64(sectionInfo.Size); break;
-                    case 4: arangeSectionWriter.Stream.WriteUInt32((uint)sectionInfo.Size); break;
-                    default: throw new NotSupportedException();
+                    arangeSectionWriter.EmitSymbolReference(_codeRelocType, sectionInfo.SectionSymbolName, 0);
+                    switch (_targetPointerSize)
+                    {
+                        case 8: arangeSectionWriter.Stream.WriteUInt64(sectionInfo.Size); break;
+                        case 4: arangeSectionWriter.Stream.WriteUInt32((uint)sectionInfo.Size); break;
+                        default: throw new NotSupportedException();
+                    }
                 }
             }
             arangeSectionWriter.Stream.Write(stackalloc byte[_targetPointerSize * 2]);

@@ -562,7 +562,7 @@ namespace ILCompiler.ObjectWriter
                 length += 1 + DwarfHelper.SizeOfULEB128(_descriptor.StaticOffset); // DW_OP_plus_uconst <const>
             writer.WriteULEB128(length);
             writer.Write([DW_OP_addr]);
-            writer.WriteCodeReference(_descriptor.StaticDataName);
+            writer.WriteCodeReference(writer.ExternCName(_descriptor.StaticDataName));
             if (_descriptor.IsStaticDataInObject != 0)
                 writer.Write([DW_OP_deref, DW_OP_deref]);
             if (_descriptor.StaticOffset != 0)

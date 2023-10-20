@@ -222,7 +222,7 @@ namespace ILCompiler.ObjectWriter
         {
             return _dwarfBuilder = new DwarfBuilder(
                 _nodeFactory.NameMangler,
-                _nodeFactory.Target.Architecture,
+                _nodeFactory.Target,
                 _options.HasFlag(ObjectWritingOptions.UseDwarf5));
         }
     }
