@@ -49,6 +49,8 @@ namespace ILCompiler.ObjectWriter
         public byte TargetPointerSize => _builder.TargetPointerSize;
         public long Position => _infoSectionWriter.Stream.Position;
 
+        public string ExternCName(string name) => _builder.ExternCName(name);
+
         public void WriteStartDIE(DwarfAbbrev abbrev)
         {
             if (_dieStack.Count > 0 && !_dieStack.Peek().HasChildren)

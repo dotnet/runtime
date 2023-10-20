@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.IO;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Buffers.Binary;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
@@ -81,7 +82,6 @@ namespace ILCompiler.ObjectWriter
                 // Preset the size of the compact unwind section which is not generated yet
                 Size = 32u * (ulong)_compactUnwindCodes.Count,
             };
-            _segment.Sections.Add(_compactUnwindSection);
 
             // Insert all the load commands to ensure we have correct layout
             _symbolTable = new MachSymbolTable(_objectFile);
@@ -140,6 +140,8 @@ namespace ILCompiler.ObjectWriter
 
         protected override void EmitObjectFile(string objectFilePath)
         {
+            _segment.Sections.Add(_compactUnwindSection);
+
             // Update layout again to account for symbol table and relocation tables
             _objectFile.UpdateLayout();
 
@@ -172,6 +174,7 @@ namespace ILCompiler.ObjectWriter
                 ".eh_frame" => "__eh_frame",
                 ".debug_info" => "__debug_info",
                 ".debug_abbrev" => "__debug_abbrev",
+                ".debug_ranges" => "__debug_ranges",
                 ".debug_aranges" => "__debug_aranges",
                 ".debug_str" => "__debug_str",
                 ".debug_line" => "__debug_line",
@@ -223,27 +226,45 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             int addend)
         {
-            if (symbolName.StartsWith('.')) // Code symbols are prefixed with `_`, so `.` implies section relocation
+            // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
+            MachSection machSection = _segment.Sections[sectionIndex];
+            if (machSection.Attributes.HasFlag(MachSectionAttributes.Debug) &&
+                machSection.SegmentName == "__DWARF")
             {
-                // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
-                MachSection machSection = _segment.Sections[sectionIndex];
-                if (machSection.Attributes.HasFlag(MachSectionAttributes.Debug))
+                if (symbolName.StartsWith('.'))
                 {
                     switch (relocType)
                     {
                         case RelocType.IMAGE_REL_BASED_DIR64:
                             BinaryPrimitives.WriteInt64LittleEndian(data, addend);
                             break;
-
                         case RelocType.IMAGE_REL_BASED_HIGHLOW:
                             BinaryPrimitives.WriteInt32LittleEndian(data, addend);
                             break;
-
                         default:
                             throw new NotSupportedException("Unsupported relocation in debug section");
                     }
-                    return;
                 }
+                else if (symbolName.StartsWith('l'))
+                {
+                    Debug.Assert(relocType == RelocType.IMAGE_REL_BASED_DIR64);
+                    int targetSectionIndex = int.Parse(symbolName.AsSpan().Slice("lsection".Length), CultureInfo.InvariantCulture);
+                    BinaryPrimitives.WriteUInt64LittleEndian(data, _segment.Sections[targetSectionIndex].VirtualAddress + (ulong)addend);
+                }
+                else
+                {
+                    Debug.Assert(relocType == RelocType.IMAGE_REL_BASED_DIR64);
+                    IDictionary<string, SymbolDefinition> definedSymbols = GetDefinedSymbols();
+                    if (definedSymbols.TryGetValue(symbolName, out SymbolDefinition symbolDefinition))
+                    {
+                        BinaryPrimitives.WriteUInt64LittleEndian(data, _segment.Sections[symbolDefinition.SectionIndex].VirtualAddress + (ulong)symbolDefinition.Value + (ulong)addend);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"DEBUG references undefined symbol: {symbolName}");
+                    }
+                }
+                return;
             }
 
             // For most relocations we write the addend directly into the
@@ -653,8 +674,7 @@ namespace ILCompiler.ObjectWriter
 
         protected override string GetSectionSymbolName(int sectionIndex)
         {
-            MachSection machSection = _segment.Sections[sectionIndex];
-            return machSection.SectionName;
+            return "lsection" + sectionIndex;
         }
 
 
