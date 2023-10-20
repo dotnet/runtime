@@ -121,8 +121,9 @@ bool OptIfConversionDsc::IfConvertCheckInnerBlockFlow(BasicBlock* block)
 //
 bool OptIfConversionDsc::IfConvertCheckThenFlow()
 {
+    assert(m_startBlock->KindIs(BBJ_COND));
     m_flowFound           = false;
-    BasicBlock* thenBlock = m_startBlock->Next();
+    BasicBlock* thenBlock = m_startBlock->GetFallThroughSucc();
 
     for (int thenLimit = 0; thenLimit < m_checkLimit; thenLimit++)
     {
@@ -575,7 +576,7 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Check the Then and Else blocks have a single operation each.
-    if (!IfConvertCheckStmts(m_startBlock->Next(), &m_thenOperation))
+    if (!IfConvertCheckStmts(m_startBlock->GetFallThroughSucc(), &m_thenOperation))
     {
         return false;
     }
@@ -742,7 +743,7 @@ bool OptIfConversionDsc::optIfConvert()
     }
 
     // Update the flow from the original block.
-    m_comp->fgRemoveAllRefPreds(m_startBlock->Next(), m_startBlock);
+    m_comp->fgRemoveAllRefPreds(m_startBlock->GetFallThroughSucc(), m_startBlock);
     assert(m_startBlock->HasJump());
     m_startBlock->SetJumpKind(BBJ_ALWAYS);
 

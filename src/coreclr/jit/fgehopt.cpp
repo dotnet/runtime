@@ -807,7 +807,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             if (block->KindIs(BBJ_NONE) && (block == lastTryBlock))
             {
-                jumpDest = block->Next();
+                jumpDest = block->GetFallThroughSucc();
             }
             else if (block->KindIs(BBJ_ALWAYS))
             {
@@ -1032,7 +1032,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
                 // If the clone ends up just after the finally, adjust
                 // the stopping point for finally traversal.
-                if (newBlock->NextIs(nextBlock))
+                if (newBlock->FallsInto(nextBlock))
                 {
                     assert(newBlock->PrevIs(lastBlock));
                     nextBlock = newBlock;
@@ -2178,7 +2178,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
                 case BBJ_COND:
                 {
                     // Flow to non canonical block could be via fall through or jump or both.
-                    if (predBlock->NextIs(nonCanonicalBlock))
+                    if (predBlock->FallsInto(nonCanonicalBlock))
                     {
                         fgTailMergeThrowsFallThroughHelper(predBlock, nonCanonicalBlock, canonicalBlock, predEdge);
                     }
@@ -2254,7 +2254,8 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                                   BasicBlock* canonicalBlock,
                                                   FlowEdge*   predEdge)
 {
-    assert(predBlock->NextIs(nonCanonicalBlock));
+    assert(predBlock->bbFallsThrough());
+    assert(predBlock->FallsInto(nonCanonicalBlock));
 
     BasicBlock* const newBlock = fgNewBBafter(BBJ_ALWAYS, predBlock, true, canonicalBlock);
 

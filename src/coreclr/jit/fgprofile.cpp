@@ -529,7 +529,7 @@ void BlockCountInstrumentor::RelocateProbes()
 
                 // Handle case where we had a fall through critical edge
                 //
-                if (pred->NextIs(intermediary))
+                if (pred->FallsInto(intermediary))
                 {
                     m_comp->fgRemoveRefPred(pred, block);
                     m_comp->fgAddRefPred(intermediary, block);
@@ -984,7 +984,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     break;
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             case BBJ_RETURN:
             {
@@ -2688,7 +2688,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                     }
                 }
 
-                __fallthrough;
+                FALLTHROUGH;
 
             default:
                 JITDUMP("Unknown PGO record type 0x%x in schema entry %u (offset 0x%x count 0x%x other 0x%x)\n",
@@ -4428,7 +4428,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     // Does this block flow into only one other block
                     if (bSrc->KindIs(BBJ_NONE))
                     {
-                        bOnlyNext = bSrc->Next();
+                        bOnlyNext = bSrc->GetFallThroughSucc();
                     }
                     else if (bSrc->KindIs(BBJ_ALWAYS))
                     {
@@ -4449,7 +4449,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                 // Does this block flow into only one other block
                 if (bDst->KindIs(BBJ_NONE))
                 {
-                    bOnlyNext = bDst->Next();
+                    bOnlyNext = bDst->GetFallThroughSucc();
                 }
                 else if (bDst->KindIs(BBJ_ALWAYS))
                 {
@@ -4758,13 +4758,13 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                     weight_t    diff;
                     FlowEdge*   otherEdge;
                     BasicBlock* otherDst;
-                    if (bSrc->NextIs(bDst))
+                    if (bSrc->FallsInto(bDst))
                     {
                         otherDst = bSrc->GetJumpDest();
                     }
                     else
                     {
-                        otherDst = bSrc->Next();
+                        otherDst = bSrc->GetFallThroughSucc();
                     }
                     otherEdge = fgGetPredForBlock(otherDst, bSrc);
 

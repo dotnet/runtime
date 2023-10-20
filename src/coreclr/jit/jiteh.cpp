@@ -2281,7 +2281,7 @@ bool Compiler::fgNormalizeEHCase2()
                                 fgReplaceJumpTarget(predBlock, newTryStart, insertBeforeBlk);
                             }
 
-                            if (predBlock->NextIs(newTryStart) && predBlock->bbFallsThrough())
+                            if (predBlock->bbFallsThrough() && predBlock->FallsInto(newTryStart))
                             {
                                 fgRemoveRefPred(insertBeforeBlk, predBlock);
                                 fgAddRefPred(newTryStart, predBlock);

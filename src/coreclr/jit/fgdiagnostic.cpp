@@ -2697,11 +2697,12 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
     switch (blockPred->GetJumpKind())
     {
         case BBJ_COND:
-            assert(blockPred->NextIs(block) || blockPred->HasJumpTo(block));
+            assert(blockPred->FallsInto(block) || blockPred->HasJumpTo(block));
             return true;
 
         case BBJ_NONE:
-            assert(blockPred->NextIs(block));
+            assert(blockPred->FallsInto(block));
+            assert(blockPred->FallsIntoNext());
             return true;
 
         case BBJ_CALLFINALLY:
@@ -4871,7 +4872,7 @@ void Compiler::fgDebugCheckLoopTable()
             else
             {
                 assert(h->KindIs(BBJ_NONE));
-                assert(h->NextIs(e));
+                assert(h->FallsInto(e));
                 assert(loop.lpTop == e);
                 assert(loop.lpIsTopEntry());
             }

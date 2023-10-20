@@ -134,7 +134,7 @@ bool Compiler::fgReachable(BasicBlock* b1, BasicBlock* b2)
     {
         noway_assert(b1->KindIs(BBJ_NONE, BBJ_ALWAYS, BBJ_COND));
 
-        if (b1->KindIs(BBJ_NONE, BBJ_COND) && fgReachable(b1->Next(), b2))
+        if (b1->KindIs(BBJ_NONE, BBJ_COND) && fgReachable(b1->GetFallThroughSucc(), b2))
         {
             return true;
         }
@@ -1946,12 +1946,15 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         return false;
     }
 
-    noway_assert(block->NextIs(bNext));
-
     if (!block->KindIs(BBJ_NONE))
     {
         return false;
     }
+
+    // If block is BBJ_NONE, then its fallthrough successor must be block->bbNext.
+    // If not, compacting the two will mess up the flowgraph.
+    noway_assert(block->FallsInto(bNext));
+    assert(block->FallsIntoNext());
 
     // If the next block has multiple incoming edges, we can still compact if the first block is empty.
     // However, not if it is the beginning of a handler.
@@ -2060,7 +2063,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     noway_assert((block->bbFlags & BBF_REMOVED) == 0);
     noway_assert((bNext->bbFlags & BBF_REMOVED) == 0);
     noway_assert(block->KindIs(BBJ_NONE));
-    noway_assert(block->NextIs(bNext));
+    noway_assert(block->FallsInto(bNext));
     noway_assert(bNext->countOfInEdges() == 1 || block->isEmpty());
     noway_assert(bNext->bbPreds != nullptr);
 
@@ -2365,25 +2368,26 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             FALLTHROUGH;
 
         case BBJ_COND:
+            /* Update the predecessor list for bNext->bbFallThroughSucc if it is different than 'bNext->bbJumpDest' */
+            if (!bNext->JumpsToNext())
+            {
+                fgReplacePred(bNext->GetFallThroughSucc(), bNext, block);
+            }
+
+            FALLTHROUGH;
+
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
             block->SetJumpKindAndTarget(bNext->GetJumpKind(), bNext->GetJumpDest() DEBUG_ARG(this));
-
             /* Update the predecessor list for 'bNext->bbJumpDest' */
             fgReplacePred(bNext->GetJumpDest(), bNext, block);
-
-            /* Update the predecessor list for 'bNext->bbNext' if it is different than 'bNext->bbJumpDest' */
-            if (bNext->KindIs(BBJ_COND) && !bNext->JumpsToNext())
-            {
-                fgReplacePred(bNext->Next(), bNext, block);
-            }
             break;
 
         case BBJ_NONE:
             block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
             /* Update the predecessor list for 'bNext->bbNext' */
-            fgReplacePred(bNext->Next(), bNext, block);
+            fgReplacePred(bNext->GetFallThroughSucc(), bNext, block);
             break;
 
         case BBJ_EHFINALLYRET:
@@ -2634,15 +2638,16 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 //
 void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 {
-    noway_assert(block->KindIs(BBJ_COND) && block->JumpsToNext());
+    noway_assert(block->KindIs(BBJ_COND) && block->HasJumpTo(block->GetFallThroughSucc()));
     assert(compRationalIRForm == block->IsLIR());
 
     FlowEdge* flow = fgGetPredForBlock(block->Next(), block);
     noway_assert(flow->getDupCount() == 2);
 
     // Change the BBJ_COND to BBJ_NONE, and adjust the refCount and dupCount.
+    // TODO: Once bbFallThroughSucc can diverge from bbNext, we may have to use BBJ_ALWAYS instead of BBJ_NONE.
     block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
-    --block->Next()->bbRefs;
+    --block->GetFallThroughSucc()->bbRefs;
     flow->decrementDupCount();
 
 #ifdef DEBUG
@@ -2650,7 +2655,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     {
         printf("Block " FMT_BB " becoming a BBJ_NONE to " FMT_BB " (jump target is the same whether the condition"
                " is true or false)\n",
-               block->bbNum, block->Next()->bbNum);
+               block->bbNum, block->GetFallThroughSucc()->bbNum);
     }
 #endif
 
@@ -2992,7 +2997,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 }
                 else
                 {
-                    succBlock = block->Next();
+                    succBlock = block->GetFallThroughSucc();
                 }
 
                 if ((succBlock != nullptr) && !BasicBlock::sameEHRegion(block, succBlock))
@@ -3746,10 +3751,10 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     {
         assert(target->KindIs(BBJ_COND));
 
-        if ((target->Next()->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0)
+        if ((target->GetFallThroughSucc()->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0)
         {
             JITDUMP("Deferring: " FMT_BB " --> " FMT_BB "; latter looks like loop top\n", target->bbNum,
-                    target->Next()->bbNum);
+                    target->GetFallThroughSucc()->bbNum);
             return false;
         }
 
@@ -4041,8 +4046,8 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 
     // do not jump into another try region
-    BasicBlock* bDestNext = bDest->Next();
-    if (bDestNext->hasTryIndex() && !BasicBlock::sameTryRegion(bJump, bDestNext))
+    BasicBlock* bDestFallThrough = bDest->GetFallThroughSucc();
+    if (bDestFallThrough->hasTryIndex() && !BasicBlock::sameTryRegion(bJump, bDestFallThrough))
     {
         return false;
     }
@@ -4234,21 +4239,21 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->bbFlags |= bDest->bbFlags & BBF_COPY_PROPAGATE;
 
-    bJump->SetJumpKindAndTarget(BBJ_COND, bDest->Next() DEBUG_ARG(this));
+    bJump->SetJumpKindAndTarget(BBJ_COND, bDestFallThrough DEBUG_ARG(this));
 
     /* Update bbRefs and bbPreds */
 
     // bJump now falls through into the next block
     //
-    fgAddRefPred(bJump->Next(), bJump);
+    fgAddRefPred(bJump->GetFallThroughSucc(), bJump);
 
     // bJump no longer jumps to bDest
     //
     fgRemoveRefPred(bDest, bJump);
 
-    // bJump now jumps to bDest->bbNext
+    // bJump now jumps to bDest->bbFallThroughSucc
     //
-    fgAddRefPred(bDest->Next(), bJump);
+    fgAddRefPred(bDestFallThrough, bJump);
 
     if (weightJump > 0)
     {
@@ -6123,7 +6128,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
                     change   = true;
                     modified = true;
                     bDest    = block->GetJumpDest();
-                    bNext    = block->Next();
+                    bNext    = block->GetFallThroughSucc();
                 }
             }
 
@@ -7114,7 +7119,8 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
     Statement* nextFirstStmt;
     Statement* destFirstStmt;
 
-    if (!getSuccCandidate(block->Next(), &nextFirstStmt) || !getSuccCandidate(block->GetJumpDest(), &destFirstStmt))
+    if (!getSuccCandidate(block->GetFallThroughSucc(), &nextFirstStmt) ||
+        !getSuccCandidate(block->GetJumpDest(), &destFirstStmt))
     {
         return false;
     }
@@ -7142,10 +7148,10 @@ bool Compiler::fgTryOneHeadMerge(BasicBlock* block, bool early)
 
     JITDUMP("We can; moving statement\n");
 
-    fgUnlinkStmt(block->Next(), nextFirstStmt);
+    fgUnlinkStmt(block->GetFallThroughSucc(), nextFirstStmt);
     fgInsertStmtNearEnd(block, nextFirstStmt);
     fgUnlinkStmt(block->GetJumpDest(), destFirstStmt);
-    block->bbFlags |= block->Next()->bbFlags & BBF_COPY_PROPAGATE;
+    block->bbFlags |= block->GetFallThroughSucc()->bbFlags & BBF_COPY_PROPAGATE;
 
     return true;
 }

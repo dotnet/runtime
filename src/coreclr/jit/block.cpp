@@ -1278,7 +1278,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
             return bbJumpDest;
 
         case BBJ_NONE:
-            return bbNext;
+            return GetFallThroughSucc();
 
         case BBJ_COND:
             if (i == 0)

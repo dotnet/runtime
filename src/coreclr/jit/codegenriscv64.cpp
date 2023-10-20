@@ -1174,6 +1174,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
     else
     {
+        assert(block->isBBCallAlwaysPair());
+
         // Because of the way the flowgraph is connected, the liveness info for this one instruction
         // after the call is not (can not be) correct in cases where a variable has a last use in the
         // handler.  So turn off GC reporting for this single instruction.
@@ -1196,17 +1198,14 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
 
         GetEmitter()->emitEnableGC();
-    }
 
-    // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
-    // jump target using bbJumpDest - that is already used to point
-    // to the finally block. So just skip past the BBJ_ALWAYS unless the
-    // block is RETLESS.
-    if (!(block->bbFlags & BBF_RETLESS_CALL))
-    {
-        assert(block->isBBCallAlwaysPair());
+        // The BBJ_ALWAYS is used because the BBJ_CALLFINALLY can't point to the
+        // jump target using bbJumpDest - that is already used to point
+        // to the finally block. So just skip past the BBJ_ALWAYS unless the
+        // block is RETLESS.
         block = nextBlock;
     }
+
     return block;
 }
 

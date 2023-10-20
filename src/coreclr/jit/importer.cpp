@@ -7325,7 +7325,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (block->KindIs(BBJ_COND))
                     {
                         JITDUMP(FMT_BB " both branches and falls through to " FMT_BB ", changing to BBJ_NONE\n",
-                                block->bbNum, block->Next()->bbNum);
+                                block->bbNum, block->GetFallThroughSucc()->bbNum);
                         fgRemoveRefPred(block->GetJumpDest(), block);
                         block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
                     }
@@ -7391,7 +7391,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         if (foldedJumpKind == BBJ_NONE)
                         {
-                            JITDUMP("\nThe block falls through into the next " FMT_BB "\n", block->Next()->bbNum);
+                            JITDUMP("\nThe block falls through into the next " FMT_BB "\n",
+                                    block->GetFallThroughSucc()->bbNum);
                             fgRemoveRefPred(block->GetJumpDest(), block);
                             block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
                         }
@@ -7399,7 +7400,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             JITDUMP("\nThe conditional jump becomes an unconditional jump to " FMT_BB "\n",
                                     block->GetJumpDest()->bbNum);
-                            fgRemoveRefPred(block->Next(), block);
+                            fgRemoveRefPred(block->GetFallThroughSucc(), block);
                             assert(foldedJumpKind == BBJ_ALWAYS);
                             block->SetJumpKind(BBJ_ALWAYS);
                         }
@@ -7578,7 +7579,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (block->KindIs(BBJ_COND))
                     {
                         JITDUMP(FMT_BB " both branches and falls through to " FMT_BB ", changing to BBJ_NONE\n",
-                                block->bbNum, block->Next()->bbNum);
+                                block->bbNum, block->GetFallThroughSucc()->bbNum);
                         fgRemoveRefPred(block->GetJumpDest(), block);
                         block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
                     }
@@ -11257,14 +11258,15 @@ SPILLSTACK:
 
                 assert(addStmt->GetRootNode()->gtOper == GT_JTRUE);
 
+                tgtBlock = block->GetFallThroughSucc();
+
                 /* Note if the next block has more than one ancestor */
 
-                multRef |= block->Next()->bbRefs;
+                multRef |= tgtBlock->bbRefs;
 
                 /* Does the next block have temps assigned? */
 
-                baseTmp  = block->Next()->bbStkTempsIn;
-                tgtBlock = block->Next();
+                baseTmp = tgtBlock->bbStkTempsIn;
 
                 if (baseTmp != NO_BASE_TMP)
                 {
@@ -11273,21 +11275,18 @@ SPILLSTACK:
 
                 /* Try the target of the jump then */
 
-                multRef |= block->GetJumpDest()->bbRefs;
-                baseTmp  = block->GetJumpDest()->bbStkTempsIn;
-                tgtBlock = block->GetJumpDest();
-                break;
+                FALLTHROUGH;
 
             case BBJ_ALWAYS:
-                multRef |= block->GetJumpDest()->bbRefs;
-                baseTmp  = block->GetJumpDest()->bbStkTempsIn;
                 tgtBlock = block->GetJumpDest();
+                multRef |= tgtBlock->bbRefs;
+                baseTmp = tgtBlock->bbStkTempsIn;
                 break;
 
             case BBJ_NONE:
-                multRef |= block->Next()->bbRefs;
-                baseTmp  = block->Next()->bbStkTempsIn;
-                tgtBlock = block->Next();
+                tgtBlock = block->GetFallThroughSucc();
+                multRef |= tgtBlock->bbRefs;
+                baseTmp = tgtBlock->bbStkTempsIn;
                 break;
 
             case BBJ_SWITCH:
@@ -12096,7 +12095,7 @@ void Compiler::impImport()
 
         if (entryBlock->KindIs(BBJ_NONE))
         {
-            entryBlock = entryBlock->Next();
+            entryBlock = entryBlock->GetFallThroughSucc();
         }
         else if (opts.IsOSR() && entryBlock->KindIs(BBJ_ALWAYS))
         {

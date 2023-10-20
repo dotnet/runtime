@@ -374,7 +374,7 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     // Must do this after we update bbJumpKind of block.
     if (isCallAlwaysPair)
     {
-        BasicBlock* leaveBlk = block->Next();
+        BasicBlock* leaveBlk = block->GetFallThroughSucc();
         noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
 
         leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
@@ -2958,7 +2958,7 @@ void Compiler::fgLinkBasicBlocks()
                 FALLTHROUGH;
 
             case BBJ_NONE:
-                fgAddRefPred<initializingPreds>(curBBdesc->Next(), curBBdesc, oldEdge);
+                fgAddRefPred<initializingPreds>(curBBdesc->GetFallThroughSucc(), curBBdesc, oldEdge);
                 break;
 
             case BBJ_EHFILTERRET:
@@ -4180,7 +4180,7 @@ void Compiler::fgFixEntryFlowForOSR()
     //
     fgEnsureFirstBBisScratch();
     assert(fgFirstBB->KindIs(BBJ_NONE));
-    fgRemoveRefPred(fgFirstBB->Next(), fgFirstBB);
+    fgRemoveRefPred(fgFirstBB->GetFallThroughSucc(), fgFirstBB);
     fgFirstBB->SetJumpKindAndTarget(BBJ_ALWAYS, fgOSREntryBB DEBUG_ARG(this));
     FlowEdge* const edge = fgAddRefPred(fgOSREntryBB, fgFirstBB);
     edge->setLikelihood(1.0);
@@ -4224,7 +4224,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
         {
             case BBJ_NONE: // block flows into the next one (no jump)
 
-                fgControlFlowPermitted(blk, blk->Next());
+                fgControlFlowPermitted(blk, blk->GetFallThroughSucc());
 
                 break;
 
@@ -4236,7 +4236,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
 
             case BBJ_COND: // block conditionally jumps to the target
 
-                fgControlFlowPermitted(blk, blk->Next());
+                fgControlFlowPermitted(blk, blk->GetFallThroughSucc());
 
                 fgControlFlowPermitted(blk, blk->GetJumpDest());
 
@@ -5042,6 +5042,10 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
             curr->SetJumpDest(newBlock);
         }
         fgAddRefPred(newBlock, curr);
+
+        // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
+        // branch 50% of the time.
+        newBlock->inheritWeightPercentage(curr, 50);
     }
     else if (curr->KindIs(BBJ_SWITCH))
     {
@@ -5050,6 +5054,10 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 
         // And 'succ' has 'newBlock' as a new predecessor.
         fgAddRefPred(succ, newBlock);
+
+        // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
+        // branch 50% of the time.
+        newBlock->inheritWeightPercentage(curr, 50);
     }
     else
     {
@@ -5062,14 +5070,6 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     fgFixFinallyTargetFlags(curr, succ, newBlock);
 #endif
-
-    // This isn't accurate, but it is complex to compute a reasonable number so just assume that we take the
-    // branch 50% of the time.
-    //
-    if (!curr->KindIs(BBJ_ALWAYS))
-    {
-        newBlock->inheritWeightPercentage(curr, 50);
-    }
 
     // The bbLiveIn and bbLiveOut are both equal to the bbLiveIn of 'succ'
     if (fgLocalVarLivenessDone)
@@ -5218,7 +5218,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             NO_WAY("No retless call finally blocks; need unwind target instead");
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
-        else if (bPrev->KindIs(BBJ_ALWAYS) && block->NextIs(bPrev->GetJumpDest()) &&
+        else if (bPrev->KindIs(BBJ_ALWAYS) && bPrev->HasJumpTo(block->Next()) &&
                  !(bPrev->bbFlags & BBF_KEEP_BBJ_ALWAYS) && !block->IsFirstColdBlock(this) &&
                  !block->IsLastHotBlock(this))
         {
@@ -5246,7 +5246,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
          */
         if (block->isBBCallAlwaysPair())
         {
-            BasicBlock* leaveBlk = block->Next();
+            BasicBlock* leaveBlk = block->GetFallThroughSucc();
             noway_assert(leaveBlk->KindIs(BBJ_ALWAYS));
 
             leaveBlk->bbFlags &= ~BBF_DONT_REMOVE;
@@ -5325,7 +5325,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         }
         else
         {
-            succBlock = block->Next();
+            succBlock = block->GetFallThroughSucc();
         }
 
         bool skipUnmarkLoop = false;
@@ -5437,7 +5437,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                     }
 
                     /* Check if both side of the BBJ_COND now jump to the same block */
-                    if (predBlock->NextIs(succBlock))
+                    if (predBlock->FallsInto(succBlock))
                     {
                         // Make sure we are replacing "block" with "succBlock" in predBlock->bbJumpDest.
                         noway_assert(predBlock->HasJumpTo(block));
@@ -5502,7 +5502,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
             case BBJ_COND:
                 /* Check for branch to next block */
-                if (bPrev->JumpsToNext())
+                if (bPrev->HasJumpTo(bPrev->GetFallThroughSucc()))
                 {
                     fgRemoveConditionalJump(bPrev);
                 }
@@ -5538,7 +5538,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
     {
         /* If bSrc falls through to a block that is not bDst, we will insert a jump to bDst */
 
-        if (bSrc->bbFallsThrough() && !bSrc->NextIs(bDst))
+        if (bSrc->bbFallsThrough() && !bSrc->FallsInto(bDst))
         {
             switch (bSrc->GetJumpKind())
             {
@@ -5622,7 +5622,7 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                 bSrc->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
                 JITDUMP("Changed an unconditional jump from " FMT_BB " to the next block " FMT_BB
                         " into a BBJ_NONE block\n",
-                        bSrc->bbNum, bSrc->Next()->bbNum);
+                        bSrc->bbNum, bSrc->GetFallThroughSucc()->bbNum);
             }
         }
     }
@@ -6413,7 +6413,7 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     }
 
     // Currently bNext is the fall through for bCur
-    BasicBlock* bNext = bCur->Next();
+    BasicBlock* bNext = bCur->GetFallThroughSucc();
     noway_assert(bNext != nullptr);
 
     // We will set result to true if bAlt is a better fall through than bCur

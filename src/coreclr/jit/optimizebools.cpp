@@ -107,7 +107,7 @@ private:
 //              B3: GT_RETURN (BBJ_RETURN)
 //              B4: GT_RETURN (BBJ_RETURN)
 //
-//      Case 2: if B2->NextIs(B1.bbJumpDest), it transforms
+//      Case 2: if B2->FallsInto(B1.bbJumpDest), it transforms
 //          B1 : brtrue(t1, B3)
 //          B2 : brtrue(t2, Bx)
 //          B3 :
@@ -117,7 +117,9 @@ private:
 //
 bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 {
-    assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
+    assert((m_b1 != nullptr) && (m_b2 != nullptr) && (m_b3 == nullptr));
+    assert(m_b1->KindIs(BBJ_COND));
+    assert(m_b2->KindIs(BBJ_COND));
 
     // Check if m_b1 and m_b2 jump to the same target and get back pointers to m_testInfo1 and t2 tree nodes
 
@@ -137,7 +139,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
         m_sameTarget = true;
     }
-    else if (m_b2->NextIs(m_b1->GetJumpDest()))
+    else if (m_b2->FallsInto(m_b1->GetJumpDest()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, B3)
@@ -637,7 +639,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
 {
     // At this point we have two consecutive conditional blocks (BBJ_COND): m_b1 and m_b2
     assert((m_b1 != nullptr) && (m_b2 != nullptr) && (m_b3 == nullptr));
-    assert(m_b1->KindIs(BBJ_COND) && m_b2->KindIs(BBJ_COND) && m_b1->NextIs(m_b2));
+    assert(m_b1->KindIs(BBJ_COND) && m_b2->KindIs(BBJ_COND) && m_b1->FallsInto(m_b2));
 
     if (m_b2->isRunRarely())
     {
@@ -662,7 +664,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     //
     BasicBlock* notInRangeBb = m_b1->GetJumpDest();
     BasicBlock* inRangeBb;
-    if (notInRangeBb == m_b2->GetJumpDest())
+    if (m_b2->HasJumpTo(notInRangeBb))
     {
         // Shape 1: both conditions jump to NotInRange
         //
@@ -674,9 +676,9 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         //
         // InRange:
         // ...
-        inRangeBb = m_b2->Next();
+        inRangeBb = m_b2->GetFallThroughSucc();
     }
-    else if (notInRangeBb == m_b2->Next())
+    else if (m_b2->FallsInto(notInRangeBb))
     {
         // Shape 2: 2nd block jumps to InRange
         //
@@ -809,16 +811,18 @@ bool OptBoolsDsc::optOptimizeRangeTests()
 bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
 {
     assert((m_b1 != nullptr) && (m_b2 != nullptr) && (m_b3 == nullptr));
+    assert(m_b1->KindIs(BBJ_COND));
+    assert(m_b2->KindIs(BBJ_COND));
     m_t3 = nullptr;
 
     bool foundEndOfOrConditions = false;
-    if (m_b1->NextIs(m_b2) && m_b2->NextIs(m_b1->GetJumpDest()))
+    if (m_b1->FallsInto(m_b2) && m_b2->FallsInto(m_b1->GetJumpDest()))
     {
         // Found the end of two (or more) conditions being ORed together.
         // The final condition has been inverted.
         foundEndOfOrConditions = true;
     }
-    else if (m_b1->NextIs(m_b2) && m_b1->HasJumpTo(m_b2->GetJumpDest()))
+    else if (m_b1->FallsInto(m_b2) && m_b1->HasJumpTo(m_b2->GetJumpDest()))
     {
         // Found two conditions connected together.
     }
@@ -1180,7 +1184,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         }
         else
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->Next(), m_b2);
+            edge2 = m_comp->fgGetPredForBlock(m_b2->GetFallThroughSucc(), m_b2);
 
             m_comp->fgRemoveRefPred(m_b1->GetJumpDest(), m_b1);
 
@@ -1206,19 +1210,19 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     /* Modify the target of the conditional jump and update bbRefs and bbPreds */
 
+    assert(m_b1->KindIs(BBJ_COND));
+    assert(m_b1->FallsInto(m_b2));
+
     if (optReturnBlock)
     {
         m_b1->SetJumpKindAndTarget(BBJ_RETURN DEBUG_ARG(m_comp));
         assert(m_b2->KindIs(BBJ_RETURN));
-        assert(m_b1->NextIs(m_b2));
         assert(m_b3 != nullptr);
     }
     else
     {
-        assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_COND));
         assert(m_b1->HasJumpTo(m_b2->GetJumpDest()));
-        assert(m_b1->NextIs(m_b2));
         assert(!m_b2->IsLast());
     }
 
@@ -1228,7 +1232,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         //
         // Replace pred 'm_b2' for 'm_b2->bbNext' with 'm_b1'
         // Remove  pred 'm_b2' for 'm_b2->bbJumpDest'
-        m_comp->fgReplacePred(m_b2->Next(), m_b2, m_b1);
+        m_comp->fgReplacePred(m_b2->GetFallThroughSucc(), m_b2, m_b1);
         m_comp->fgRemoveRefPred(m_b2->GetJumpDest(), m_b2);
     }
 
@@ -1288,6 +1292,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
 {
     assert(m_b1 != nullptr && m_b2 != nullptr);
+    assert(m_b1->KindIs(BBJ_COND));
+    assert(m_b2->KindIs(BBJ_RETURN));
+    assert(b3->KindIs(BBJ_RETURN));
 
     // m_b3 is set for cond/return/return case
     m_b3 = b3;
@@ -1802,9 +1809,9 @@ PhaseStatus Compiler::optOptimizeBools()
                 continue;
             }
 
-            // If there is no next block, we're done
+            // If there is no fallthrough block, we're done
 
-            BasicBlock* b2 = b1->Next();
+            BasicBlock* b2 = b1->GetFallThroughSucc();
             if (b2 == nullptr)
             {
                 break;
@@ -1822,7 +1829,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             if (b2->KindIs(BBJ_COND))
             {
-                if (!b1->HasJumpTo(b2->GetJumpDest()) && !b2->NextIs(b1->GetJumpDest()))
+                if (!b1->HasJumpTo(b2->GetJumpDest()) && !b2->FallsInto(b1->GetJumpDest()))
                 {
                     continue;
                 }

@@ -256,7 +256,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         if (top->KindIs(BBJ_COND))
         {
-            topFallThrough     = top->Next();
+            topFallThrough     = top->GetFallThroughSucc();
             lpIndexFallThrough = topFallThrough->bbNatLoopNum;
         }
 
@@ -380,7 +380,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         switch (oldJumpKind)
         {
             case BBJ_NONE:
-                fgReplacePred(bottom->Next(), top, bottom);
+                fgReplacePred(bottom->GetFallThroughSucc(), top, bottom);
                 break;
             case BBJ_RETURN:
             case BBJ_THROW:
@@ -389,7 +389,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             case BBJ_COND:
                 // replace predecessor in the fall through block.
                 noway_assert(!bottom->IsLast());
-                fgReplacePred(bottom->Next(), top, bottom);
+                fgReplacePred(bottom->GetFallThroughSucc(), top, bottom);
 
                 // fall through for the jump target
                 FALLTHROUGH;

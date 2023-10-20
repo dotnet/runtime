@@ -94,9 +94,18 @@ bool IsConstantTestCondBlock(const BasicBlock* block,
                     return false;
                 }
 
-                *isReversed   = rootNode->gtGetOp1()->OperIs(GT_NE);
-                *blockIfTrue  = *isReversed ? block->Next() : block->GetJumpDest();
-                *blockIfFalse = *isReversed ? block->GetJumpDest() : block->Next();
+                *isReversed = rootNode->gtGetOp1()->OperIs(GT_NE);
+
+                if (*isReversed)
+                {
+                    *blockIfTrue  = block->GetFallThroughSucc();
+                    *blockIfFalse = block->GetJumpDest();
+                }
+                else
+                {
+                    *blockIfTrue  = block->GetJumpDest();
+                    *blockIfFalse = block->GetFallThroughSucc();
+                }
 
                 if (block->JumpsToNext() || block->HasJumpTo(block))
                 {

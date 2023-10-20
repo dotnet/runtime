@@ -48,7 +48,7 @@ PhaseStatus Compiler::optRedundantBranches()
             {
                 bool madeChangesThisBlock = m_compiler->optRedundantRelop(block);
 
-                BasicBlock* const bbNext = block->Next();
+                BasicBlock* const bbNext = block->GetFallThroughSucc();
                 BasicBlock* const bbJump = block->GetJumpDest();
 
                 madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
@@ -568,7 +568,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                                                 (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Swap);
 
                     BasicBlock* const trueSuccessor  = domBlock->GetJumpDest();
-                    BasicBlock* const falseSuccessor = domBlock->Next();
+                    BasicBlock* const falseSuccessor = domBlock->GetFallThroughSucc();
 
                     // If we can trace the flow from the dominating relop, we can infer its value.
                     //
@@ -613,7 +613,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         //
                         const bool relopIsFalse = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
                         JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
-                                domBlock->Next()->bbNum, domBlock->bbNum, dspTreeID(tree),
+                                domBlock->GetFallThroughSucc()->bbNum, domBlock->bbNum, dspTreeID(tree),
                                 relopIsFalse ? "false" : "true");
                         relopValue = relopIsFalse ? 0 : 1;
                         break;
@@ -711,7 +711,7 @@ struct JumpThreadInfo
     JumpThreadInfo(Compiler* comp, BasicBlock* block)
         : m_block(block)
         , m_trueTarget(block->GetJumpDest())
-        , m_falseTarget(block->Next())
+        , m_falseTarget(block->GetFallThroughSucc())
         , m_fallThroughPred(nullptr)
         , m_ambiguousVNBlock(nullptr)
         , m_truePreds(BlockSetOps::MakeEmpty(comp))
@@ -1072,9 +1072,20 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
     // latter should prove useful in subsequent work, where we aim to enable jump
     // threading in cases where block has side effects.
     //
-    BasicBlock* const domTrueSuccessor  = domIsSameRelop ? domBlock->GetJumpDest() : domBlock->Next();
-    BasicBlock* const domFalseSuccessor = domIsSameRelop ? domBlock->Next() : domBlock->GetJumpDest();
-    JumpThreadInfo    jti(this, block);
+    BasicBlock*    domTrueSuccessor;
+    BasicBlock*    domFalseSuccessor;
+    JumpThreadInfo jti(this, block);
+
+    if (domIsSameRelop)
+    {
+        domTrueSuccessor  = domBlock->GetJumpDest();
+        domFalseSuccessor = domBlock->GetFallThroughSucc();
+    }
+    else
+    {
+        domTrueSuccessor  = domBlock->GetFallThroughSucc();
+        domFalseSuccessor = domBlock->GetJumpDest();
+    }
 
     for (BasicBlock* const predBlock : block->PredBlocks())
     {
@@ -1143,7 +1154,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
 
         // Note if the true or false pred is the fall through pred.
         //
-        if (predBlock->NextIs(block))
+        if (predBlock->bbFallsThrough() && predBlock->FallsInto(block))
         {
             JITDUMP(FMT_BB " is the fall-through pred\n", predBlock->bbNum);
             assert(jti.m_fallThroughPred == nullptr);
@@ -1403,7 +1414,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
 
         // Note if the true or false pred is the fall through pred.
         //
-        if (predBlock->NextIs(block))
+        if (predBlock->bbFallsThrough() && predBlock->FallsInto(block))
         {
             JITDUMP(FMT_BB " is the fall-through pred\n", predBlock->bbNum);
             assert(jti.m_fallThroughPred == nullptr);

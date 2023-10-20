@@ -537,6 +537,8 @@ private:
         BBehfDesc*  bbJumpEhf;  // BBJ_EHFINALLYRET descriptor
     };
 
+    BasicBlock* bbFallThroughSucc;
+
 public:
 #ifdef DEBUG
     // When creating a block with a jump, we require its jump kind and target be initialized simultaneously.
@@ -581,7 +583,8 @@ public:
 
     void SetNext(BasicBlock* next)
     {
-        bbNext = next;
+        bbNext            = next;
+        bbFallThroughSucc = bbNext;
         if (next)
         {
             next->bbPrev = this;
@@ -666,6 +669,38 @@ public:
         SetJumpKindAndTarget(jumpKind, jumpDest DEBUG_ARG(compiler));
     }
 
+    BasicBlock* GetFallThroughSucc() const
+    {
+        assert(bbFallsThrough());
+        // For now, bbFallThroughSucc cannot diverge from bbNext
+        assert(FallsIntoNext());
+        return bbFallThroughSucc;
+    }
+
+    void SetFallThroughSucc(BasicBlock* fallThroughSucc)
+    {
+        // TODO: Once we allow bbFallThroughSucc to diverge from bbNext, ensure we only set bbFallThroughSucc
+        // to something other than bbNext when this block is a BBJ_COND.
+        // BBJ_CALLFINALLY can fall through too, but we don't allow its fallthrough successor to diverge from bbNext
+        // because we aren't interested in splitting up call-always pairs
+        assert(KindIs(BBJ_COND, BBJ_NONE));
+        bbFallThroughSucc = fallThroughSucc;
+        // For now, bbFallThroughSucc cannot diverge from bbNext
+        assert(FallsIntoNext());
+    }
+
+    bool FallsInto(const BasicBlock* dest) const
+    {
+        assert(bbFallsThrough());
+        return (bbFallThroughSucc == dest);
+    }
+
+    bool FallsIntoNext() const
+    {
+        assert(bbFallsThrough());
+        return (bbFallThroughSucc == bbNext);
+    }
+
     bool HasJump() const
     {
         return (bbJumpDest != nullptr);
@@ -681,7 +716,7 @@ public:
     bool JumpsToNext() const
     {
         assert(HasJump());
-        return (bbJumpDest == bbNext);
+        return (bbJumpDest == bbFallThroughSucc);
     }
 
     BBswtDesc* GetJumpSwt() const

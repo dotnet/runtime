@@ -2184,17 +2184,16 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         // Add predecessor edges for the new successors, as well as the fall-through paths.
         switch (newblk->GetJumpKind())
         {
+            case BBJ_COND:
+                fgAddRefPred(newblk->GetJumpDest(), newblk);
+                FALLTHROUGH;
+
             case BBJ_NONE:
-                fgAddRefPred(newblk->Next(), newblk);
+                fgAddRefPred(newblk->GetFallThroughSucc(), newblk);
                 break;
 
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLY:
-                fgAddRefPred(newblk->GetJumpDest(), newblk);
-                break;
-
-            case BBJ_COND:
-                fgAddRefPred(newblk->Next(), newblk);
                 fgAddRefPred(newblk->GetJumpDest(), newblk);
                 break;
 
@@ -2242,17 +2241,17 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
 
     assert(context->HasBlockConditions(loopInd));
     assert(h->KindIs(BBJ_NONE));
-    assert(h->NextIs(h2));
+    assert(h->FallsInto(h2));
 
     // If any condition is false, go to slowHead (which branches or falls through to e2).
     BasicBlock* e2      = nullptr;
     bool        foundIt = blockMap->Lookup(loop.lpEntry, &e2);
     assert(foundIt && e2 != nullptr);
 
-    if (!slowHead->NextIs(e2))
+    assert(slowHead->KindIs(BBJ_NONE));
+    if (!slowHead->FallsInto(e2))
     {
         // We can't just fall through to the slow path entry, so make it an unconditional branch.
-        assert(slowHead->KindIs(BBJ_NONE)); // This is how we created it above.
         slowHead->SetJumpKindAndTarget(BBJ_ALWAYS, e2 DEBUG_ARG(this));
     }
 
@@ -2264,8 +2263,8 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // Add the fall-through path pred (either to T/E for fall-through from conditions to fast path,
     // or H2 if branch to E of fast path).
     assert(condLast->KindIs(BBJ_COND));
-    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->Next()->bbNum);
-    fgAddRefPred(condLast->Next(), condLast);
+    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->GetFallThroughSucc()->bbNum);
+    fgAddRefPred(condLast->GetFallThroughSucc(), condLast);
 
     // Don't unroll loops that we've cloned -- the unroller expects any loop it should unroll to
     // initialize the loop counter immediately before entering the loop, but we've left a shared
@@ -2917,8 +2916,20 @@ bool Compiler::optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneV
 
     // Check for (4)
     //
-    BasicBlock* const hotSuccessor  = guard->OperIs(GT_EQ) ? typeTestBlock->GetJumpDest() : typeTestBlock->Next();
-    BasicBlock* const coldSuccessor = guard->OperIs(GT_EQ) ? typeTestBlock->Next() : typeTestBlock->GetJumpDest();
+    assert(typeTestBlock->KindIs(BBJ_COND));
+    BasicBlock* hotSuccessor;
+    BasicBlock* coldSuccessor;
+
+    if (guard->OperIs(GT_EQ))
+    {
+        hotSuccessor  = typeTestBlock->GetJumpDest();
+        coldSuccessor = typeTestBlock->GetFallThroughSucc();
+    }
+    else
+    {
+        hotSuccessor  = typeTestBlock->GetFallThroughSucc();
+        coldSuccessor = typeTestBlock->GetJumpDest();
+    }
 
     if (!hotSuccessor->hasProfileWeight() || !coldSuccessor->hasProfileWeight())
     {
