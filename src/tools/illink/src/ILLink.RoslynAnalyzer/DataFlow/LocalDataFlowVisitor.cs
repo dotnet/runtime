@@ -525,7 +525,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			if (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write)) {
 				// Property references may be passed as ref/out parameters.
-				Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference));
+				// Enable this assert once we have support for deconstruction assignments.
+				// https://github.com/dotnet/linker/issues/3158
+				// Debug.Assert (operation.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Reference),
+				//     $"{operation.Syntax.GetLocation ().GetLineSpan ()}");
 				return TopValue;
 			}
 
