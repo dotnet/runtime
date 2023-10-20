@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -1970,6 +1971,61 @@ namespace System.Text.Json.Serialization.Tests
         public void VerifyMinimal()
         {
             MyTuple.Item4.Verify();
+        }
+    }
+    public class Class_With_Parameters_Default_Values
+    {
+        public int I { get; }
+        public float F { get; }
+        public double D { get; }
+        public decimal M { get; }
+        public StringComparison SC { get; }
+        public char C { get; }
+        public int? NI { get; }
+        public float? NF { get; }
+        public double? ND { get; }
+        public decimal? NM { get; }
+        public StringComparison? NSC { get; }
+        public char? NC { get; }
+
+        public Class_With_Parameters_Default_Values(
+                int i = 21, float f = 42.0f, double d = 3.14159, decimal m = 3.1415926535897932384626433M, StringComparison sc = StringComparison.Ordinal, char c = 'q',
+                int? ni = 21, float? nf = 42.0f, double? nd = 3.14159, decimal? nm = 3.1415926535897932384626433M, StringComparison? nsc = StringComparison.Ordinal, char? nc = 'q')
+        {
+            I = i;
+            F = f;
+            D = d;
+            M = m;
+            SC = sc;
+            C = c;
+            NI = ni;
+            NF = nf;
+            ND = nd;
+            NM = nm;
+            NSC = nsc;
+            NC = nc;
+        }
+
+        public void Initialize() { }
+
+        public static readonly string s_json = @"{}";
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
+
+        public void Verify()
+        {
+            Assert.Equal(21, I);
+            Assert.Equal(42.0f, F);
+            Assert.Equal(3.14159, D);
+            Assert.Equal(3.1415926535897932384626433M, M);
+            Assert.Equal(StringComparison.Ordinal, SC);
+            Assert.Equal('q', C);
+            Assert.Equal(21, NI);
+            Assert.Equal(42.0f, NF);
+            Assert.Equal(3.14159, ND);
+            Assert.Equal(3.1415926535897932384626433M, NM);
+            Assert.Equal(StringComparison.Ordinal, NSC);
+            Assert.Equal('q', NC);
         }
     }
 

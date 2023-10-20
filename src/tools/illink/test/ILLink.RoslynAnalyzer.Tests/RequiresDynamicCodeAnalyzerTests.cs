@@ -44,7 +44,7 @@ namespace System.Diagnostics.CodeAnalysis
 			var test = new VerifyCS.Test {
 				TestCode = source + dynamicCodeAttribute,
 				FixedCode = fixedSource + dynamicCodeAttribute,
-				ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
+				ReferenceAssemblies = TestCaseUtils.NetCoreAppReferencessemblies
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (

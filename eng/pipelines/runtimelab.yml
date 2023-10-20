@@ -65,9 +65,10 @@ extends:
               timeoutInMinutes: 100
               testGroup: innerloop
               buildArgs: -s clr+libs+host+packs -c debug -runtimeConfiguration Checked
-              extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
-              extraStepsParameters:
-                uploadRuntimeTests: true
+              postBuildSteps:
+                - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
+                  parameters:
+                    uploadRuntimeTests: true
 
       #
       # Build with Release config and Release runtimeConfiguration
@@ -83,10 +84,11 @@ extends:
             timeoutInMinutes: 100
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             testGroup: innerloop
-            extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
-            extraStepsParameters:
-              uploadLibrariesTests: ${{ eq(variables.isOfficialBuild, false) }}
-              uploadIntermediateArtifacts: false
+            postBuildSteps:
+              - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
+                parameters:
+                  uploadLibrariesTests: ${{ eq(variables.isOfficialBuild, false) }}
+                  uploadIntermediateArtifacts: false
             ${{ if eq(variables.isOfficialBuild, false) }}:
               buildArgs: -s clr+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true
             ${{ if eq(variables.isOfficialBuild, true) }}:
@@ -107,11 +109,12 @@ extends:
             nameSuffix: AllConfigurations
             buildArgs: -s libs -c $(_BuildConfig) -allConfigurations
             ${{ if eq(variables.isOfficialBuild, true) }}:
-              extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
-              extraStepsParameters:
-                uploadIntermediateArtifacts: true
-                isOfficialBuild: true
-                librariesBinArtifactName: libraries_bin_official_allconfigurations
+              postBuildSteps:
+                - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
+                  parameters:
+                    uploadIntermediateArtifacts: true
+                    isOfficialBuild: true
+                    librariesBinArtifactName: libraries_bin_official_allconfigurations
 
       # Installer official builds need to build installers and need the libraries all configurations build
       - ${{ if eq(variables.isOfficialBuild, true) }}:

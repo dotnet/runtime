@@ -11,6 +11,11 @@ namespace System.Reflection.Emit.Tests
 {
     internal static class AssemblySaveTools
     {
+        private static readonly AssemblyName s_assemblyName = new AssemblyName("MyDynamicAssembly")
+        {
+            Version = new Version("1.2.3.4"),
+        };
+
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation)
         {
             AssemblyBuilder assemblyBuilder = PopulateAssemblyBuilderAndSaveMethod(
@@ -57,6 +62,13 @@ namespace System.Reflection.Emit.Tests
             saveMethod.Invoke(assemblyBuilder, new object[] { stream });
         }
 
+        internal static AssemblyBuilder PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder typeBuilder, out MethodInfo saveMethod)
+        {
+            AssemblyBuilder ab = PopulateAssemblyBuilderAndSaveMethod(s_assemblyName, null, typeof(string), out saveMethod);
+            typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public);
+            return ab;
+        }
+        
         internal static AssemblyBuilder PopulateAssemblyBuilderAndSaveMethod(AssemblyName assemblyName,
             List<CustomAttributeBuilder>? assemblyAttributes, Type parameterType, out MethodInfo saveMethod)
         {

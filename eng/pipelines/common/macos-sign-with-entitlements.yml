@@ -11,9 +11,6 @@ steps:
       installationPath: '$(Agent.TempDirectory)/dotnet'
 
   - ${{ each file in parameters.filesToSign }}:
-    - script: codesign -s - -f --entitlements ${{ file.entitlementsFile }} ${{ file.path }}/${{ file.name }}
-      displayName: 'Add entitlements to ${{ file.name }}'
-
     - task: CopyFiles@2
       displayName: 'Copy entitled file ${{ file.name }}'
       inputs:
@@ -49,7 +46,7 @@ steps:
             "toolName": "sign",
             "toolVersion": "1.0"
           }
-        ]  
+        ]
       SessionTimeout: ${{ parameters.timeoutInMinutes }}
       MaxConcurrency: '50'
       MaxRetryAttempts: '5'

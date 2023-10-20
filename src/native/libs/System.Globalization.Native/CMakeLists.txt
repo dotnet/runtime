@@ -1,3 +1,6 @@
+# Required for StaticICULinking
+cmake_minimum_required(VERSION 3.10..3.20)
+
 project(System.Globalization.Native C)
 
 if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
@@ -72,7 +75,7 @@ endif()
 
 if (CMAKE_USE_PTHREADS)
     add_compile_options(-pthread)
-    add_linker_flag(-pthread)
+    add_link_options(-pthread)
 endif()
 
 if (LOCAL_BUILD)

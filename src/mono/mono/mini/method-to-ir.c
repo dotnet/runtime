@@ -10704,7 +10704,7 @@ field_access_end:
 				int index_reg = sp [1]->dreg;
 				size_t offset = (mono_class_array_element_size (klass) * sp [1]->inst_c0) + MONO_STRUCT_OFFSET (MonoArray, vector);
 
-				if (SIZEOF_REGISTER == 8 && COMPILE_LLVM (cfg))
+				if (SIZEOF_REGISTER == 8 && COMPILE_LLVM (cfg) && sp [1]->inst_c0 < 0)
 					MONO_EMIT_NEW_UNALU (cfg, OP_ZEXT_I4, index_reg, index_reg);
 
 				MONO_EMIT_BOUNDS_CHECK (cfg, array_reg, MonoArray, max_length, index_reg, FALSE);
@@ -12746,6 +12746,14 @@ mono_op_no_side_effects (int opcode)
 	case OP_NOT_NULL:
 	case OP_IL_SEQ_POINT:
 	case OP_RTTYPE:
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM) || defined(TARGET_ARM64)
+	case OP_EXTRACT_I1:
+	case OP_EXTRACT_I2:
+	case OP_EXTRACT_I4:
+	case OP_EXTRACT_I8:
+	case OP_EXTRACT_R4:
+	case OP_EXTRACT_R8:
+#endif
 		return TRUE;
 	default:
 		return FALSE;

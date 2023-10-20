@@ -1044,7 +1044,7 @@ namespace System
             // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
             const uint ExponentOffset = 0x3800_0000u;
             // Mask for sign bit in Single
-            const uint FloatSignMask = float.SignMask;
+            const uint SingleSignMask = float.SignMask;
             // Mask for exponent bits in Half
             const uint HalfExponentMask = BiasedExponentMask;
             // Mask for bits in Single converted from Half
@@ -1052,7 +1052,7 @@ namespace System
             // Extract the internal representation of value
             short valueInInt16Bits = BitConverter.HalfToInt16Bits(value);
             // Extract sign bit of value
-            uint sign = (uint)(int)valueInInt16Bits & FloatSignMask;
+            uint sign = (uint)(int)valueInInt16Bits & SingleSignMask;
             // Copy sign bit to upper bits
             uint bitValueInProcess = (uint)valueInInt16Bits;
             // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
