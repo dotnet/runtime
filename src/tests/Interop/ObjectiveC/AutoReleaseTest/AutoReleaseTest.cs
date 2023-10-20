@@ -18,7 +18,8 @@ internal static unsafe class ObjectiveC
 
 public class AutoReleaseTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -331,7 +331,7 @@ namespace System.Buffers
             Debug.Assert(char.IsHighSurrogate(h));
             Debug.Assert(char.IsLowSurrogate(l));
 
-            Span<char> chars = stackalloc char[] { h, l };
+            ReadOnlySpan<char> chars = [h, l];
             Span<char> destination = stackalloc char[2];
 
             int written = Ordinal.ToUpperOrdinal(chars, destination);

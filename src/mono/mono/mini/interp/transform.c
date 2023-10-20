@@ -3696,6 +3696,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	int call_offset = -1;
 
+	StackInfo *sp_args = td->sp;
+
 	if (!td->optimized && op == -1) {
 		int param_offset;
 		if (num_args)
@@ -3776,9 +3778,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (num_sregs == 1)
 				interp_ins_set_sreg (td->last_ins, first_sreg);
 			else if (num_sregs == 2)
-				interp_ins_set_sregs2 (td->last_ins, first_sreg, td->sp [!has_dreg].local);
+				interp_ins_set_sregs2 (td->last_ins, first_sreg, sp_args [1].local);
 			else if (num_sregs == 3)
-				interp_ins_set_sregs3 (td->last_ins, first_sreg, td->sp [!has_dreg].local, td->sp [!has_dreg + 1].local);
+				interp_ins_set_sregs3 (td->last_ins, first_sreg, sp_args [1].local, sp_args [2].local);
 			else
 				g_error ("Unsupported opcode");
 		}
@@ -3798,7 +3800,16 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			interp_ins_set_dreg (td->last_ins, dreg);
 			interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 			td->last_ins->data [0] = GUINT32_TO_UINT16 (params_stack_size);
-			td->last_ins->data [1] = get_data_item_index (td, (void *)csignature);
+			td->last_ins->data [1] = GUINT32_TO_UINT16 (csignature->param_count);
+			if (csignature->param_count) {
+				// Check if the first arg (after the delegate pointer) is simd
+				// In case the delegate represents static method with no target, the instruction
+				// needs to be able to access the actual arguments to continue with the call so it
+				// needs to know whether there is an empty stack slot between the delegate ptr and the
+				// rest of the args
+				gboolean first_arg_is_simd = td->locals [sp_args [1].local].flags & INTERP_LOCAL_FLAG_SIMD;
+				td->last_ins->data [2] = first_arg_is_simd ? MINT_SIMD_ALIGNMENT : MINT_STACK_SLOT_SIZE;
+			}
 		} else if (calli) {
 			MintICallSig icall_sig = MINT_ICALLSIG_MAX;
 #ifndef MONO_ARCH_HAS_NO_PROPER_MONOCTX
@@ -4783,6 +4794,19 @@ is_ip_protected (MonoMethodHeader *header, int offset)
 }
 
 static gboolean
+should_insert_seq_point (TransformData *td)
+{
+	//following the CoreCLR's algorithm for adding the sequence points
+	if ((*td->ip == CEE_NOP) ||
+		(*td->ip == CEE_CALLVIRT) ||
+		(*td->ip == CEE_CALLI) ||
+		(*td->ip == CEE_CALL) ||
+		(GPTRDIFF_TO_INT (td->sp - td->stack) == 0))
+		return TRUE;
+	return FALSE;
+}
+
+static gboolean
 generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error)
 {
 	int mt, i32;
@@ -4813,6 +4837,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	gboolean save_last_error = FALSE;
 	gboolean link_bblocks = TRUE;
 	gboolean inlining = td->method != method;
+	gboolean generate_enc_seq_points_without_debug_info = FALSE;
 	InterpBasicBlock *exit_bb = NULL;
 
 	original_bb = bb = mono_basic_block_split (method, error, header);
@@ -4859,6 +4884,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			int n_il_offsets;
 
 			mono_debug_get_seq_points (minfo, NULL, NULL, NULL, &sps, &n_il_offsets);
+			if (n_il_offsets == 0)
+				generate_enc_seq_points_without_debug_info = mono_debug_generate_enc_seq_points_without_debug_info (minfo);
 			// FIXME: Free
 			seq_point_locs = mono_bitset_mem_new (mono_mempool_alloc0 (td->mempool, mono_bitset_alloc_size (header->code_size, 0)), header->code_size, 0);
 			sym_seq_points = TRUE;
@@ -5083,6 +5110,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			interp_add_ins (td, MINT_PROF_COVERAGE_STORE);
 			WRITE64_INS (td->last_ins, 0, &counter);
 		}
+
+		if (G_UNLIKELY (generate_enc_seq_points_without_debug_info) && should_insert_seq_point (td))
+			last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
 
 		switch (*td->ip) {
 		case CEE_NOP:
@@ -5353,7 +5383,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if (!interp_transform_call (td, method, NULL, generic_context, constrained_class, readonly, error, TRUE, save_last_error, tailcall))
 				goto exit;
 
-			if (need_seq_point) {
+			if (need_seq_point && !generate_enc_seq_points_without_debug_info) {
 				// check if it is a nested call and remove the MONO_INST_NONEMPTY_STACK of the last breakpoint, only for non native methods
 				if (!(method->flags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 					if (emitted_funccall_seq_point)	{

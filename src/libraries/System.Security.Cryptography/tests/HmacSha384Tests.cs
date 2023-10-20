@@ -17,6 +17,8 @@ namespace System.Security.Cryptography.Tests
             public static int HashSizeInBytes => HMACSHA384.HashSizeInBytes;
         }
 
+
+        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.SHA384;
         protected override int BlockSize => 128;
         protected override int MacSize => HMACSHA384.HashSizeInBytes;
 

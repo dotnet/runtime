@@ -175,7 +175,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     optPropKind propKind     = optPropKind::OPK_INVALID;
     bool        folded       = false;
 
-    if (tree->OperIsIndirOrArrMetaData())
+    if (tree->OperIsIndirOrArrMetaData() && !tree->OperIsAtomicZeroDiffQuirk())
     {
         // optFoldNullCheck takes care of updating statement info if a null check is removed.
         folded = optFoldNullCheck(tree, nullCheckMap);
@@ -454,7 +454,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         nullCheckTree->gtFlags &= ~(GTF_EXCEPT | GTF_DONT_CSE);
 
         // Set this flag to prevent reordering
-        nullCheckTree->gtFlags |= GTF_ORDER_SIDEEFF;
+        nullCheckTree->SetHasOrderingSideEffect();
         nullCheckTree->gtFlags |= GTF_IND_NONFAULTING;
 
         if (nullCheckParent != nullptr)

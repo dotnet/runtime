@@ -301,7 +301,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 }
             }
 
-            Assert.False(true, $"{RetryCount} {signFormat} signatures verified as {verifyFormat} signatures");
+            Assert.Fail($"{RetryCount} {signFormat} signatures verified as {verifyFormat} signatures");
         }
 
         [Fact]

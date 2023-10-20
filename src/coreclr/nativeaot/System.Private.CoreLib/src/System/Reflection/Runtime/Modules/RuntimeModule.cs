@@ -65,7 +65,7 @@ namespace System.Reflection.Runtime.Modules
 
         public abstract override int MetadataToken { get; }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public sealed override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
             return Assembly.GetType(name, throwOnError, ignoreCase);

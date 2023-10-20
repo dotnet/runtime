@@ -430,7 +430,7 @@ namespace System.Globalization.Tests
             Assert.All(DateTime_TestData(calendar), dt =>
             {
                 // JapaneseCalendar throws on ICU, but not on NLS or in HybridGlobalization on Browser
-                if ((calendar is JapaneseCalendar && (PlatformDetection.IsNlsGlobalization || PlatformDetection.IsHybridGlobalizationOnBrowser || PlatformDetection.IsHybridGlobalizationOnOSX)) || calendar is HebrewCalendar || calendar is TaiwanLunisolarCalendar || calendar is JapaneseLunisolarCalendar)
+                if ((calendar is JapaneseCalendar && (PlatformDetection.IsNlsGlobalization || PlatformDetection.IsHybridGlobalizationOnBrowser)) || calendar is HebrewCalendar || calendar is TaiwanLunisolarCalendar || calendar is JapaneseLunisolarCalendar)
                 {
                     calendar.GetEra(dt);
                 }

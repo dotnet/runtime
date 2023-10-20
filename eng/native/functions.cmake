@@ -588,19 +588,6 @@ function(disable_pax_mprotect targetName)
   endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 endfunction()
 
-# add_linker_flag(Flag [Config1 Config2 ...])
-function(add_linker_flag Flag)
-  if (ARGN STREQUAL "")
-    set("CMAKE_EXE_LINKER_FLAGS" "${CMAKE_EXE_LINKER_FLAGS} ${Flag}" PARENT_SCOPE)
-    set("CMAKE_SHARED_LINKER_FLAGS" "${CMAKE_SHARED_LINKER_FLAGS} ${Flag}" PARENT_SCOPE)
-  else()
-    foreach(Config ${ARGN})
-      set("CMAKE_EXE_LINKER_FLAGS_${Config}" "${CMAKE_EXE_LINKER_FLAGS_${Config}} ${Flag}" PARENT_SCOPE)
-      set("CMAKE_SHARED_LINKER_FLAGS_${Config}" "${CMAKE_SHARED_LINKER_FLAGS_${Config}} ${Flag}" PARENT_SCOPE)
-    endforeach()
-  endif()
-endfunction()
-
 function(link_natvis_sources_for_target targetName linkKind)
     if (NOT CLR_CMAKE_HOST_WIN32)
         return()
@@ -648,4 +635,17 @@ function(add_library_clr targetName kind)
   if("${kind}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
     strip_symbols(${ARGV0} symbolFile)
   endif()
+endfunction()
+
+# Adhoc sign targetName with the entitlements in entitlementsFile.
+function(adhoc_sign_with_entitlements targetName entitlementsFile)
+    # Add a dependency from a source file for the target on the entitlements file to ensure that the target is rebuilt if only the entitlements file changes.
+    get_target_property(sources ${targetName} SOURCES)
+    list(GET sources 0 firstSource)
+    set_source_files_properties(${firstSource} PROPERTIES OBJECT_DEPENDS ${entitlementsFile})
+
+    add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        COMMAND codesign -s - -f --entitlements ${entitlementsFile} $<TARGET_FILE:${targetName}>)
 endfunction()
