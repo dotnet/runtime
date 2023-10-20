@@ -206,6 +206,7 @@
 #endif // FEATURE_GDBJIT
 
 #include "genanalysis.h"
+#include "runtimesuspension.h"
 
 static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
@@ -693,7 +694,7 @@ void EEStartupHelper()
 
         Frame::Init();
 
-
+        InitializeTasklets();
 
 
 #ifdef LOGGING

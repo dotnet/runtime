@@ -12,3 +12,8 @@ EXTERN_C FCDECL1(void, RuntimeSuspension_UnwindToFunctionWithAsyncFrame, AsyncDa
 
 EXTERN_C FCDECL2(Object*, RuntimeSuspension_ResumeTaskletReferenceReturn, Tasklet* tasklet, RuntimeAsyncReturnValue *resumptionReturnValue);
 EXTERN_C FCDECL2(Object*, RuntimeSuspension_ResumeTaskletIntegerRegisterReturn, Tasklet* tasklet, RuntimeAsyncReturnValue *resumptionReturnValue);
+
+void RegisterTasklet(Tasklet* pTasklet);
+void InitializeTasklets();
+void UnregisterTasklet(Tasklet* pTasklet);
+void IterateTaskletsForGC(promote_func* pCallback, ScanContext* sc);

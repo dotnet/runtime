@@ -525,6 +525,7 @@ PORTABILIT_ASSERT()
     pTasklet->restoreIPAddress = (uintptr_t)GetControlPC(pCf->GetRegisterSet());
     pTasklet->pStackDataInfo = pStackDataInfo;
     pTasklet->taskletReturnType = taskletReturnType;
+    RegisterTasklet(pTasklet);
 
     if (taskletCaptureData->firstTasklet == NULL)
     {
@@ -568,8 +569,85 @@ extern "C" Tasklet* QCALLTYPE RuntimeSuspension_CaptureTasklets(QCall::StackCraw
 
 extern "C" void QCALLTYPE RuntimeSuspension_DeleteTasklet(Tasklet* tasklet)
 {
+    UnregisterTasklet(tasklet);
     tasklet->pStackDataInfo->CleanupStackDataInfo();
     free(tasklet->pStackData);
     free(tasklet->pStackDataInfo);
     free(tasklet);
+}
+
+void RegisterTasklet(Tasklet* pTasklet);
+void InitializeTasklets();
+void UnregisterTasklet(Tasklet* pTasklet);
+
+Tasklet *g_pTaskletSentinel = NULL;
+
+CrstStatic g_taskletCrst;
+
+void InitializeTasklets()
+{
+    g_taskletCrst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
+
+}
+
+void RegisterTasklet(Tasklet* pTasklet)
+{
+    CrstHolder crstHolder(&g_taskletCrst);
+    if (g_pTaskletSentinel == NULL)
+    {
+        g_pTaskletSentinel = (Tasklet*)malloc(sizeof(Tasklet));
+        memset(g_pTaskletSentinel, 0, sizeof(Tasklet));
+        g_pTaskletSentinel->pTaskletNextInLiveList = g_pTaskletSentinel;
+        g_pTaskletSentinel->pTaskletPrevInLiveList = g_pTaskletSentinel;
+    }
+
+    pTasklet->pTaskletNextInLiveList = g_pTaskletSentinel->pTaskletNextInLiveList;
+    pTasklet->pTaskletPrevInLiveList = g_pTaskletSentinel;
+    g_pTaskletSentinel->pTaskletNextInLiveList = pTasklet;
+    pTasklet->pTaskletNextInLiveList->pTaskletPrevInLiveList = pTasklet;
+}
+
+void UnregisterTasklet(Tasklet* pTasklet)
+{
+    CrstHolder crstHolder(&g_taskletCrst);
+    pTasklet->pTaskletPrevInLiveList->pTaskletNextInLiveList = pTasklet->pTaskletNextInLiveList;
+    pTasklet->pTaskletNextInLiveList->pTaskletPrevInLiveList = pTasklet->pTaskletPrevInLiveList;
+}
+
+void IterateTaskletsForGC(promote_func* pCallback, ScanContext* sc)
+{
+    CrstHolder crstHolder(&g_taskletCrst);
+    Tasklet *pCurTasklet = g_pTaskletSentinel->pTaskletNextInLiveList;
+    while (pCurTasklet != g_pTaskletSentinel)
+    {
+        // Report GC pointers
+        auto pStackDataInfo = pCurTasklet->pStackDataInfo;
+        uint8_t *pLogicalRSP = pCurTasklet->pStackData - pStackDataInfo->UnrecordedDataSize;
+        uint32_t iRef;
+        for (iRef = 0; iRef < pStackDataInfo->cObjectRefs; iRef++)
+        {
+            pCallback((PTR_PTR_Object)(pLogicalRSP + pStackDataInfo->ObjectRefOffsets[iRef]), sc, 0);
+        }
+        
+        for (iRef = 0; iRef < pStackDataInfo->cObjectRefs; iRef++)
+        {
+            int32_t offset = pStackDataInfo->ByRefOffsets[iRef];
+            uint32_t flags = GC_CALL_INTERIOR;
+            if (offset < 0)
+            {
+                offset = -offset;
+                flags |= GC_CALL_PINNED;
+            }
+
+            pCallback((PTR_PTR_Object)(pLogicalRSP + offset), sc, flags);
+        }
+
+        pCurTasklet = pCurTasklet->pTaskletNextInLiveList;
+    }
+}
+
+extern "C" void ForceThisThreadHasNoHijackForUnwind()
+{
+    // If there is a hijack of a frame in place and we unwind, who knows what's going to happen. This code just forces the hijack to disappear. The runtime should put it back later if it matters.
+    GetThread()->UnhijackThread();
 }

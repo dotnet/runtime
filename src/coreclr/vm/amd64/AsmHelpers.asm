@@ -683,6 +683,7 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 endif ; FEATURE_TIERED_COMPILATION
 
 extern PlatformIndependentRestore:proc
+extern ForceThisThreadHasNoHijackForUnwind:proc
 
 ; regRestore swaps whats in the register for the value in the restoration location. The idea is that the
 ; value in the restoration location is the value that has been stored away for use in this function
@@ -811,7 +812,7 @@ Unwind&RegisterName&:
     jmp RegUnwindLoop
         endm
 
-LEAF_ENTRY RuntimeSuspension_UnwindToFunctionWithAsyncFrame, _TEXT
+NESTED_ENTRY RuntimeSuspension_UnwindToFunctionWithAsyncFrame, _TEXT
 
 ;    // Psuedocode...
 ;    Tasklet* pCurTasklet = topTasklet;
@@ -829,6 +830,14 @@ LEAF_ENTRY RuntimeSuspension_UnwindToFunctionWithAsyncFrame, _TEXT
 ;    }
 ;    Jmp ip
 
+    alloc_stack             38h
+    END_PROLOGUE
+    mov [rsp+20h], rcx
+    mov [rsp+28h], rdx
+    call ForceThisThreadHasNoHijackForUnwind
+    mov rcx, [rsp+20h]
+    mov rdx, [rsp+28h]
+    add rsp, 40h
 
 ; rcx is pCurTasklet
 ; rdx is count of tasklets to unwind
@@ -838,7 +847,6 @@ LEAF_ENTRY RuntimeSuspension_UnwindToFunctionWithAsyncFrame, _TEXT
 ; r10 is second scratch register
 ; r8 is pRegRestore
 ; r9 is pStackDataInfo
-        pop rax; Pop off saved IP, so that we start with the right SP set_frame
 NewTaskletUnwind:
         mov r9, [rcx+28h] ; Load r9 with the pStackDataInfo value on the current tasklet
         mov r8, [r9+30h] ; Load r8 with the pRegRestore value
@@ -888,5 +896,6 @@ TaskletUnwindDone:
         mov rcx, rax ; Move return address into rcx
         xor rax, rax ; Clear return register in case it is supposed to be an object reference or something  -- TODO, note that for structure returns this will mean we need to slightly adjust the calling convention so that we don't rely on this being a pointer to the return buffer
         jmp rcx
-LEAF_END RuntimeSuspension_UnwindToFunctionWithAsyncFrame, _TEXT
+NESTED_END RuntimeSuspension_UnwindToFunctionWithAsyncFrame, _TEXT
+
         end
