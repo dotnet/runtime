@@ -4,7 +4,7 @@ Provides methods for performing mathematical operations over _tensors_ represent
 
 ## Key Features
 
-* Numerical operations on Vectors represented as `ReadOnlySpan<float>`
+* Numerical operations on tensors represented as `ReadOnlySpan<float>`
 * Element-wise arithmetic: Add, Subtract, Multiply, Divide, Exp, Log, Cosh, Tanh, etc.
 * Vector arithmetic: CosineSimilarity, Distance, Dot, Normalize, Softmax, Sigmoid, etc.
 
