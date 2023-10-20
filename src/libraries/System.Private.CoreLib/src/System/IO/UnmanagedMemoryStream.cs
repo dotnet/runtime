@@ -362,7 +362,12 @@ namespace System.IO
             // Use a local variable to avoid a race where another thread
             // changes our position after we decide we can read some bytes.
             long pos = _position;
+
+            // Use a volatile read to prevent reading of the uninitialized memory. This volatile read
+            // and matching volatile write that set _length avoids reordering of NativeMemory.Clear
+            // operations with reading of the buffer below.
             long len = (long)Volatile.Read(ref _length);
+
             long n = Math.Min(len - pos, buffer.Length);
             if (n <= 0)
             {
@@ -479,7 +484,12 @@ namespace System.IO
             EnsureReadable();
 
             long pos = _position;  // Use a local to avoid a race condition
+
+            // Use a volatile read to prevent reading of the uninitialized memory. This volatile read
+            // and matching volatile write that set _length avoids reordering of NativeMemory.Clear
+            // operations with reading of the buffer below.
             long len = (long)Volatile.Read(ref _length);
+
             if (pos >= len)
                 return -1;
             _position = pos + 1;
