@@ -37,9 +37,11 @@ jobs:
       timeoutInMinutes: 120
       variables: ${{ parameters.variables }}
 
-      extraStepsTemplate: '/eng/pipelines/libraries/run-test-ready-to-run.yml'
-      extraStepsParameters:
-        archType: ${{ parameters.archType }}
-        buildConfig: ${{ parameters.buildConfig }}
-        osGroup: ${{ parameters.osGroup }}
-        variables: ${{ parameters.variables }}
+      postBuildSteps:
+        - template: '/eng/pipelines/libraries/run-test-ready-to-run.yml'
+          parameters:
+            archType: ${{ parameters.archType }}
+            buildConfig: ${{ parameters.buildConfig }}
+            osGroup: ${{ parameters.osGroup }}
+            variables: ${{ parameters.variables }}
+
