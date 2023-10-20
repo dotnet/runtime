@@ -28,6 +28,10 @@ size_t BasicBlock::s_Count;
 // The max # of tree nodes in any BB
 /* static */
 unsigned BasicBlock::s_nMaxTrees;
+
+// Temporary target to initialize blocks with jumps
+/* static */
+BasicBlock BasicBlock::bbTempJumpDest;
 #endif // DEBUG
 
 #ifdef DEBUG
@@ -399,10 +403,6 @@ void BasicBlock::dspFlags()
     {
         printf("failV ");
     }
-    if (bbFlags & BBF_TRY_BEG)
-    {
-        printf("try ");
-    }
     if (bbFlags & BBF_RUN_RARELY)
     {
         printf("rare ");
@@ -613,15 +613,35 @@ void BasicBlock::dspJumpKind()
     switch (bbJumpKind)
     {
         case BBJ_EHFINALLYRET:
+        {
+            printf(" ->");
+
+            // Early in compilation, we display the jump kind before the BBJ_EHFINALLYRET successors have been set.
+            if (bbJumpEhf == nullptr)
+            {
+                printf(" ????");
+            }
+            else
+            {
+                const unsigned     jumpCnt = bbJumpEhf->bbeCount;
+                BasicBlock** const jumpTab = bbJumpEhf->bbeSuccs;
+
+                for (unsigned i = 0; i < jumpCnt; i++)
+                {
+                    printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                }
+            }
+
             printf(" (finret)");
             break;
+        }
 
         case BBJ_EHFAULTRET:
             printf(" (falret)");
             break;
 
         case BBJ_EHFILTERRET:
-            printf(" (fltret)");
+            printf(" -> " FMT_BB " (fltret)", bbJumpDest->bbNum);
             break;
 
         case BBJ_EHCATCHRET:
@@ -1065,14 +1085,13 @@ unsigned BasicBlock::NumSucc() const
     {
         case BBJ_THROW:
         case BBJ_RETURN:
-        case BBJ_EHFINALLYRET:
         case BBJ_EHFAULTRET:
-        case BBJ_EHFILTERRET:
             return 0;
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
         case BBJ_NONE:
             return 1;
@@ -1086,6 +1105,23 @@ unsigned BasicBlock::NumSucc() const
             {
                 return 2;
             }
+
+        case BBJ_EHFINALLYRET:
+            // We may call this method before we realize we have invalid IL. Tolerate.
+            //
+            if (!hasHndIndex())
+            {
+                return 0;
+            }
+
+            // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
+            //
+            if (bbJumpEhf == nullptr)
+            {
+                return 0;
+            }
+
+            return bbJumpEhf->bbeCount;
 
         case BBJ_SWITCH:
             return bbJumpSwt->bbsCount;
@@ -1112,6 +1148,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
             return bbJumpDest;
 
@@ -1126,8 +1163,12 @@ BasicBlock* BasicBlock::GetSucc(unsigned i) const
             else
             {
                 assert(i == 1);
+                assert(bbNext != bbJumpDest);
                 return bbJumpDest;
             }
+
+        case BBJ_EHFINALLYRET:
+            return bbJumpEhf->bbeSuccs[i];
 
         case BBJ_SWITCH:
             return bbJumpSwt->bbsDstTab[i];
@@ -1164,7 +1205,15 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
             {
                 return 0;
             }
-            return comp->fgNSuccsOfFinallyRet(this);
+
+            // We may call this before we've computed the BBJ_EHFINALLYRET successors in the importer. Tolerate.
+            //
+            if (bbJumpEhf == nullptr)
+            {
+                return 0;
+            }
+
+            return bbJumpEhf->bbeCount;
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1213,15 +1262,14 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
     switch (bbJumpKind)
     {
         case BBJ_EHFILTERRET:
-        {
             // Handler is the (sole) normal successor of the filter.
             assert(comp->fgFirstBlockOfHandler(this) == bbJumpDest);
             return bbJumpDest;
-        }
 
         case BBJ_EHFINALLYRET:
-            // Note: the following call is expensive.
-            return comp->fgSuccOfFinallyRet(this, i);
+            assert(bbJumpEhf != nullptr);
+            assert(i < bbJumpEhf->bbeCount);
+            return bbJumpEhf->bbeSuccs[i];
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1240,6 +1288,7 @@ BasicBlock* BasicBlock::GetSucc(unsigned i, Compiler* comp)
             else
             {
                 assert(i == 1);
+                assert(bbNext != bbJumpDest);
                 return bbJumpDest;
             }
 
@@ -1396,7 +1445,7 @@ bool BasicBlock::endsWithTailCallConvertibleToLoop(Compiler* comp, GenTree** tai
  *  Allocate a basic block but don't append it to the current BB list.
  */
 
-BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
+BasicBlock* Compiler::bbNewBasicBlock()
 {
     BasicBlock* block;
 
@@ -1447,15 +1496,6 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 
     block->bbEntryState = nullptr;
 
-    /* Record the jump kind in the block */
-
-    block->SetBBJumpKind(jumpKind DEBUG_ARG(this));
-
-    if (jumpKind == BBJ_THROW)
-    {
-        block->bbSetRunRarely();
-    }
-
 #ifdef DEBUG
     if (verbose)
     {
@@ -1503,6 +1543,33 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     block->bbPreorderNum  = 0;
     block->bbPostorderNum = 0;
 
+    return block;
+}
+
+BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind, BasicBlock* jumpDest /* = nullptr */)
+{
+    BasicBlock* block = bbNewBasicBlock();
+    block->SetJumpKindAndTarget(jumpKind, jumpDest DEBUG_ARG(this));
+
+    if (jumpKind == BBJ_THROW)
+    {
+        block->bbSetRunRarely();
+    }
+
+    return block;
+}
+
+BasicBlock* Compiler::bbNewBasicBlock(BBswtDesc* jumpSwt)
+{
+    BasicBlock* block = bbNewBasicBlock();
+    block->SetSwitchKindAndTarget(jumpSwt);
+    return block;
+}
+
+BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind, unsigned jumpOffs)
+{
+    BasicBlock* block = bbNewBasicBlock();
+    block->SetJumpKindAndTarget(jumpKind, jumpOffs);
     return block;
 }
 
@@ -1642,6 +1709,24 @@ BBswtDesc::BBswtDesc(Compiler* comp, const BBswtDesc* other)
     for (unsigned i = 0; i < bbsCount; i++)
     {
         bbsDstTab[i] = other->bbsDstTab[i];
+    }
+}
+
+//------------------------------------------------------------------------
+// BBehfDesc copy ctor: copy a EHFINALLYRET descriptor
+//
+// Arguments:
+//    comp - compiler instance
+//    other - existing descriptor to copy
+//
+BBehfDesc::BBehfDesc(Compiler* comp, const BBehfDesc* other) : bbeCount(other->bbeCount)
+{
+    // Allocate and fill in a new dst tab
+    //
+    bbeSuccs = new (comp, CMK_BasicBlock) BasicBlock*[bbeCount];
+    for (unsigned i = 0; i < bbeCount; i++)
+    {
+        bbeSuccs[i] = other->bbeSuccs[i];
     }
 }
 

@@ -30,7 +30,5 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocalesNative", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int GetLocalesNative([Out] char[]? value, int valueLength);
-
-
     }
 }

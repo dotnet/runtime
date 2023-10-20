@@ -1603,6 +1603,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task TestClassWithManyDefaultParams()
+        {
+            string json = "{}";
+            Class_With_Parameters_Default_Values result = await Serializer.DeserializeWrapper<Class_With_Parameters_Default_Values>(json);
+            result.Verify();
+        }
+        
+        [Fact]
         public async Task TestClassWithCustomConverterOnCtorParameter_ShouldPassCorrectTypeToConvertParameter()
         {
             ClassWithCustomConverterOnCtorParameter result = await Serializer.DeserializeWrapper<ClassWithCustomConverterOnCtorParameter>("""{"Id":"id"}""");

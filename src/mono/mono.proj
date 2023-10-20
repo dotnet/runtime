@@ -360,6 +360,7 @@
       <_MonoCPPFLAGS Include="-DWIN32_LEAN_AND_MEAN" />
       <!--<_MonoCPPFLAGS Include="-D_WINDOWS" />--> <!-- set in monow.vcxproj, not sure we really need it -->
       <_MonoCPPFLAGS Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'arm64'" Include="-DWIN64" />
+      <_MonoCPPFLAGS Condition="'$(Platform)' == 'arm64'" Include="-DUSE_SOFT_INTRINSICS" />
       <_MonoCPPFLAGS Condition="'$(Configuration)' == 'Release'" Include="-DNDEBUG" />
       <_MonoCPPFLAGS Condition="'$(Configuration)' == 'Debug'" Include="-D_DEBUG" />
       <!-- <_MonoCPPFLAGS Include="-D__default_codegen__" /> --> <!-- doesn't seem to be used -->
@@ -749,6 +750,7 @@
       <_MonoAOTCPPFLAGS Include="-DWIN32_LEAN_AND_MEAN" />
       <!--<_MonoAOTCPPFLAGS Include="-D_WINDOWS" />--> <!-- set in monow.vcxproj, not sure we really need it -->
       <_MonoAOTCPPFLAGS Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'arm64'" Include="-DWIN64" />
+      <_MonoAOTCPPFLAGS Condition="'$(AotHostArchitecture)' == 'arm64'" Include="-DUSE_SOFT_INTRINSICS" />
       <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Release' or '$(_ForceRelease)' == 'true'" Include="-DNDEBUG" />
       <_MonoAOTCPPFLAGS Condition="'$(Configuration)' == 'Debug' and '$(_ForceRelease)' != 'true'" Include="-D_DEBUG" />
       <!-- <_MonoAOTCPPFLAGS Include="-D__default_codegen__" /> --> <!-- doesn't seem to be used -->

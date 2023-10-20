@@ -26,5 +26,5 @@ PALEXPORT const char* GlobalizationNative_GetLocaleNameNative(const char* locale
 
 PALEXPORT const char* GlobalizationNative_GetLocaleTimeFormatNative(const char* localeName, int shortFormat);
 
-PALEXPORT int32_t GlobalizationNative_GetLocalesNative(char* locales, int32_t length);
+PALEXPORT int32_t GlobalizationNative_GetLocalesNative(UChar* locales, int32_t length);
 #endif

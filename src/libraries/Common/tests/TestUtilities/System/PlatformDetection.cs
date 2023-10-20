@@ -103,6 +103,9 @@ namespace System
         public static bool IsReleaseRuntime => s_isReleaseRuntime.Value;
         public static bool IsDebugRuntime => s_isDebugRuntime.Value;
 
+        public static bool IsReleaseLibrary(Assembly assembly) => !IsDebuggable(assembly);
+        public static bool IsDebugLibrary(Assembly assembly) => IsDebuggable(assembly);
+
         // For use as needed on tests that time out when run on a Debug runtime.
         // Not relevant for timeouts on external activities, such as network timeouts.
         public static int SlowRuntimeTimeoutModifier = (PlatformDetection.IsDebugRuntime ? 5 : 1);
@@ -659,6 +662,13 @@ namespace System
 
             return assemblyConfigurationAttribute != null &&
                 string.Equals(assemblyConfigurationAttribute.Configuration, configuration, StringComparison.InvariantCulture);
+        }
+
+        private static bool IsDebuggable(Assembly assembly)
+        {
+            DebuggableAttribute debuggableAttribute = assembly.GetCustomAttribute<DebuggableAttribute>();
+
+            return debuggableAttribute != null && debuggableAttribute.IsJITTrackingEnabled;
         }
 
         private static bool GetSupportsSha3()

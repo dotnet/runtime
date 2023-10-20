@@ -292,7 +292,7 @@ public partial class GetChromeVersions : MBU.Task
             {
                 Log.LogMessage(MessageImportance.Low, $"Downloading {url} ...");
                 using Stream stream = await s_httpClient.GetStreamAsync(url).ConfigureAwait(false);
-                using FileStream fs = File.OpenWrite(filePath);
+                using FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
                 await stream.CopyToAsync(fs).ConfigureAwait(false);
             }
             catch (HttpRequestException hre)

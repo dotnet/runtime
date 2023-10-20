@@ -135,10 +135,10 @@ namespace System.Globalization.Tests
         {
             if (!EqualityComparer<T>.Default.Equals(expected, actual))
             {
-                throw new AssertActualExpectedException(
+                throw EqualException.ForMismatchedValues(
                     expected: expected,
                     actual: actual,
-                    userMessage: FormattableString.Invariant($"CharUnicodeInfo.{methodName}({codePoint}) returned unexpected value."));
+                    banner: FormattableString.Invariant($"CharUnicodeInfo.{methodName}({codePoint}) returned unexpected value."));
             }
         }
     }

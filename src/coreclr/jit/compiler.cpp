@@ -2738,9 +2738,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
         // Optionally, disable use of profile data.
         //
-        else if (JitConfig.JitDisablePgo() > 0)
+        else if (JitConfig.JitDisablePGO() > 0)
         {
-            fgPgoFailReason  = "PGO data available, but JitDisablePgo > 0";
+            fgPgoFailReason  = "PGO data available, but JitDisablePGO > 0";
             fgPgoQueryResult = E_FAIL;
             fgPgoData        = nullptr;
             fgPgoSchema      = nullptr;
@@ -2751,16 +2751,16 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         else
         {
-            static ConfigMethodRange JitEnablePgoRange;
-            JitEnablePgoRange.EnsureInit(JitConfig.JitEnablePgoRange());
+            static ConfigMethodRange JitEnablePGORange;
+            JitEnablePGORange.EnsureInit(JitConfig.JitEnablePGORange());
 
             // Base this decision on the root method hash, so a method either sees all available
             // profile data (including that for inlinees), or none of it.
             //
             const unsigned hash = impInlineRoot()->info.compMethodHash();
-            if (!JitEnablePgoRange.Contains(hash))
+            if (!JitEnablePGORange.Contains(hash))
             {
-                fgPgoFailReason  = "PGO data available, but method hash NOT within JitEnablePgoRange";
+                fgPgoFailReason  = "PGO data available, but method hash NOT within JitEnablePGORange";
                 fgPgoQueryResult = E_FAIL;
                 fgPgoData        = nullptr;
                 fgPgoSchema      = nullptr;
@@ -5038,6 +5038,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
+    // Create any throw helper blocks that might be needed
+    //
+    DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
+
     if (opts.OptimizationEnabled())
     {
         // Optimize boolean conditions
@@ -5083,13 +5087,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     rat.Run();
 
     fgNodeThreading = NodeThreading::LIR;
-
-    // Here we do "simple lowering".  When the RyuJIT backend works for all
-    // platforms, this will be part of the more general lowering phase.  For now, though, we do a separate
-    // pass of "final lowering."  We must do this before (final) liveness analysis, because this creates
-    // range check throw blocks, in which the liveness must be correct.
-    //
-    DoPhase(this, PHASE_SIMPLE_LOWERING, &Compiler::fgSimpleLowering);
 
     // Enable this to gather statistical data such as
     // call and register argument info, flowgraph and loop info, etc.
