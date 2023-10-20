@@ -437,10 +437,14 @@ namespace ILCompiler.DependencyAnalysis
                 // Add conditional dependencies for interface methods the type implements. For example, if the type T implements
                 // interface IFoo which has a method M1, add a dependency on T.M1 dependent on IFoo.M1 being called, since it's
                 // possible for any IFoo object to actually be an instance of T.
+                DefType defTypeDefinition = (DefType)defType.GetTypeDefinition();
                 DefType[] defTypeRuntimeInterfaces = defType.RuntimeInterfaces;
+                DefType[] defTypeDefinitionRuntimeInterfaces = defTypeDefinition.RuntimeInterfaces;
+                Debug.Assert(defTypeDefinitionRuntimeInterfaces.Length == defTypeRuntimeInterfaces.Length);
                 for (int interfaceIndex = 0; interfaceIndex < defTypeRuntimeInterfaces.Length; interfaceIndex++)
                 {
                     DefType interfaceType = defTypeRuntimeInterfaces[interfaceIndex];
+                    DefType interfaceDefinitionType = defTypeDefinitionRuntimeInterfaces[interfaceIndex];
 
                     Debug.Assert(interfaceType.IsInterface);
 
@@ -457,11 +461,22 @@ namespace ILCompiler.DependencyAnalysis
                         if (!isStaticInterfaceMethod && !needsDependenciesForInstanceInterfaceMethodImpls)
                             continue;
 
+                        MethodDesc interfaceMethodDefinition = interfaceMethod;
+                        if (interfaceType != interfaceDefinitionType)
+                            interfaceMethodDefinition = factory.TypeSystemContext.GetMethodForInstantiatedType(interfaceMethodDefinition.GetTypicalMethodDefinition(), (InstantiatedType)interfaceDefinitionType);
+
                         MethodDesc implMethod = isStaticInterfaceMethod ?
-                            defType.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod) :
-                            defType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                            defTypeDefinition.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethodDefinition) :
+                            defTypeDefinition.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethodDefinition);
                         if (implMethod != null)
                         {
+                            TypeDesc implType = defType;
+                            while (!implType.HasSameTypeDefinition(implMethod.OwningType))
+                                implType = implType.BaseType;
+
+                            if (!implType.IsTypeDefinition)
+                                implMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(implMethod.GetTypicalMethodDefinition(), (InstantiatedType)implType);
+
                             if (isStaticInterfaceMethod)
                             {
                                 Debug.Assert(!implMethod.IsVirtual);
@@ -500,12 +515,7 @@ namespace ILCompiler.DependencyAnalysis
                             // Is the implementation provided by a default interface method?
                             // If so, add a dependency on the entrypoint directly since nobody else is going to do that
                             // (interface types have an empty vtable, modulo their generic dictionary).
-                            TypeDesc interfaceOnDefinition = defType.GetTypeDefinition().RuntimeInterfaces[interfaceIndex];
-                            MethodDesc interfaceMethodDefinition = interfaceMethod;
-                            if (!interfaceType.IsTypeDefinition)
-                                interfaceMethodDefinition = factory.TypeSystemContext.GetMethodForInstantiatedType(interfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceOnDefinition);
-
-                            var resolution = defType.GetTypeDefinition().ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethodDefinition, out implMethod);
+                            var resolution = defTypeDefinition.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethodDefinition, out implMethod);
                             if (resolution == DefaultInterfaceMethodResolution.DefaultImplementation)
                             {
                                 DefType providingInterfaceDefinitionType = (DefType)implMethod.OwningType;
