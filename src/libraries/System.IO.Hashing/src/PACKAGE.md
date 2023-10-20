@@ -8,7 +8,7 @@ Hash code algorithms are pivotal for generating unique values for objects based 
 The namespace encompasses algorithms like CRC-32, CRC-64, xxHash3, xxHash32, xxHash64, and xxHash128, all engineered for swift and efficient hash code generation, with xxHash being an "Extremely fast hash algorithm".
 
 **Warning**: The hash functions provided by System.IO.Hashing are not suitable for security purposes such as handling passwords or verifying untrusted content.
-For such security-critical applications, consider using cryptographic hash functions provided by the [System.Security.Cryptography](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography) namespace.
+For such security-critical applications, consider using cryptographic hash functions provided by the [System.Security.Cryptography](https://learn.microsoft.com/dotnet/api/system.security.cryptography) namespace.
 
 ## Key Features
 
