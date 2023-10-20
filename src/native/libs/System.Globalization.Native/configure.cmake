@@ -1,7 +1,13 @@
 if(CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(HAVE_SET_MAX_VARIABLE 1)
     set(HAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS 1)
-    set(HAVE_UCOL_CLONE 0)
+    
+    # Android uses its own system ICU
+    if(CLR_CMAKE_TARGET_ANDROID)
+        set(HAVE_UCOL_CLONE 0)
+    else()
+        set(HAVE_UCOL_CLONE 1)
+    endif()
 else()
     include(CheckCSourceCompiles)
     include(CheckSymbolExists)
