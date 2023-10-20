@@ -1420,7 +1420,6 @@ namespace System.Numerics.Tensors
             for (int i = 1; i < x.Length; i++)
             {
                 float current = x[i];
-                //float currentAbs = MathF.Abs(current);
                 if (float.IsNaN(current))
                 {
                     return i;
@@ -1432,20 +1431,23 @@ namespace System.Numerics.Tensors
             return curIn;
         }
 
+        private static int IndexOfFirstMatch(Vector128<float> mask)
+        {
+            return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
+        }
+
+        private static int IndexOfFirstMatch(Vector256<float> mask)
+        {
+            return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
+        }
+
 #if NET8_0_OR_GREATER
         private static int IndexOfFirstMatch(Vector512<float> mask)
         {
             return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
         }
 #endif
-        private static int IndexOfFirstMatch(Vector256<float> mask)
-        {
-            return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
-        }
-        private static int IndexOfFirstMatch(Vector128<float> mask)
-        {
-            return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
-        }
+
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
         /// <typeparam name="TUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
         private static void InvokeSpanIntoSpan<TUnaryOperator>(

@@ -311,6 +311,8 @@ namespace System.Numerics.Tensors
             return result;
         }
 
+        private static readonly int[] s_0through7 = [0, 1, 2, 3, 4, 5, 6, 7];
+
         private static int IndexOfMinMaxCore<TIndexOfMinMaxOperator>(ReadOnlySpan<float> x, TIndexOfMinMaxOperator op = default)
             where TIndexOfMinMaxOperator : struct, IIndexOfOperator
         {
@@ -320,13 +322,13 @@ namespace System.Numerics.Tensors
             // It treats +0 as greater than -0 as per the specification.
 
             int result;
-            int i;
+            int i = 0;
 
             if (Vector.IsHardwareAccelerated && Vector<int>.Count <= 8 && x.Length >= Vector<float>.Count)
             {
                 ref float xRef = ref MemoryMarshal.GetReference(x);
 
-                Vector<int> resultIndex = new Vector<int>([0, 1, 2, 3, 4, 5, 6, 7], 0);
+                Vector<int> resultIndex = new Vector<int>(s_0through7);
                 Vector<int> curIndex = resultIndex;
                 Vector<int> increment = new Vector<int>(Vector<int>.Count);
 
@@ -377,17 +379,16 @@ namespace System.Numerics.Tensors
         // Scalar path used when either vectorization is not supported, the input is too small to vectorize,
         // or a NaN is encountered.
         Scalar:
-            float curResult = x[0];
-            int curIn = 0;
+            float curResult = x[i];
+            int curIn = i;
             if (float.IsNaN(curResult))
             {
                 return curIn;
             }
 
-            for (i = 1; i < x.Length; i++)
+            for (; i < x.Length; i++)
             {
                 float current = x[i];
-                //float currentAbs = MathF.Abs(current);
                 if (float.IsNaN(current))
                 {
                     return i;
