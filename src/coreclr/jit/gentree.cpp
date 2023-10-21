@@ -8073,10 +8073,10 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtCallType    = callType;
     node->gtCallMethHnd = callHnd;
     INDEBUG(node->callSig = nullptr;)
-    node->tailCallInfo      = nullptr;
-    node->gtRetClsHnd       = nullptr;
-    node->gtControlExpr     = nullptr;
-    node->gtCallMoreFlags   = GTF_CALL_M_EMPTY;
+    node->tailCallInfo    = nullptr;
+    node->gtRetClsHnd     = nullptr;
+    node->gtControlExpr   = nullptr;
+    node->gtCallMoreFlags = GTF_CALL_M_EMPTY;
     INDEBUG(node->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     node->gtInlineInfoCount = 0;
 

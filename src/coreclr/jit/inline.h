@@ -865,29 +865,29 @@ public:
 private:
     InlineContext(InlineStrategy* strategy);
 
-    InlineStrategy*        m_InlineStrategy;    // overall strategy
-    InlineContext*         m_Parent;            // logical caller (parent)
-    InlineContext*         m_Child;             // first child
-    InlineContext*         m_Sibling;           // next child of the parent
-    const BYTE*            m_Code;              // address of IL buffer for the method
-    CORINFO_METHOD_HANDLE  m_Callee;            // handle to the method
-    CORINFO_CONTEXT_HANDLE m_RuntimeContext;    // handle to the exact context
-    unsigned               m_ILSize;            // size of IL buffer for the method
-    unsigned               m_ImportedILSize;    // estimated size of imported IL
-    ILLocation             m_Location;          // inlining statement location within parent
-    IL_OFFSET              m_ActualCallOffset;  // IL offset of actual call instruction leading to the inline
-    InlineObservation      m_Observation;       // what lead to this inline success or failure
-    int                    m_CodeSizeEstimate;  // in bytes * 10
-    unsigned               m_Ordinal;           // Ordinal number of this inline
-    bool                   m_Success : 1;       // true if this was a successful inline
+    InlineStrategy*        m_InlineStrategy;   // overall strategy
+    InlineContext*         m_Parent;           // logical caller (parent)
+    InlineContext*         m_Child;            // first child
+    InlineContext*         m_Sibling;          // next child of the parent
+    const BYTE*            m_Code;             // address of IL buffer for the method
+    CORINFO_METHOD_HANDLE  m_Callee;           // handle to the method
+    CORINFO_CONTEXT_HANDLE m_RuntimeContext;   // handle to the exact context
+    unsigned               m_ILSize;           // size of IL buffer for the method
+    unsigned               m_ImportedILSize;   // estimated size of imported IL
+    ILLocation             m_Location;         // inlining statement location within parent
+    IL_OFFSET              m_ActualCallOffset; // IL offset of actual call instruction leading to the inline
+    InlineObservation      m_Observation;      // what lead to this inline success or failure
+    int                    m_CodeSizeEstimate; // in bytes * 10
+    unsigned               m_Ordinal;          // Ordinal number of this inline
+    bool                   m_Success : 1;      // true if this was a successful inline
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
-    InlinePolicy* m_Policy; // policy that evaluated this inline
-    unsigned      m_TreeID; // ID of the GenTreeCall in the parent
-    bool                   m_Devirtualized : 1; // true if this was a devirtualized call
-    bool                   m_Guarded : 1;       // true if this was a guarded call
-    bool                   m_Unboxed : 1;       // true if this call now invokes the unboxed entry
+    InlinePolicy* m_Policy;            // policy that evaluated this inline
+    unsigned      m_TreeID;            // ID of the GenTreeCall in the parent
+    bool          m_Devirtualized : 1; // true if this was a devirtualized call
+    bool          m_Guarded : 1;       // true if this was a guarded call
+    bool          m_Unboxed : 1;       // true if this call now invokes the unboxed entry
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 

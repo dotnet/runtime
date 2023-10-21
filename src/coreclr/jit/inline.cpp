@@ -1325,7 +1325,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     context->m_Devirtualized = call->IsDevirtualized();
     context->m_Guarded       = call->IsGuarded();
     context->m_Unboxed       = call->IsUnboxed();
-    context->m_TreeID = call->gtTreeID;
+    context->m_TreeID        = call->gtTreeID;
 #endif
 
     return context;
