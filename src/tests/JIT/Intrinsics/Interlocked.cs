@@ -169,7 +169,7 @@ namespace InterlockedTest
             ThrowsNRE(() => { ExchangeSByte()(ref Unsafe.NullRef<sbyte>(), 0); });
             ThrowsNRE(() => { ExchangeShort()(ref Unsafe.NullRef<short>(), 0); });
             ThrowsNRE(() => { ExchangeUShort()(ref Unsafe.NullRef<ushort>(), 0); });
-            ThrowsNRE(() => { CompareExchangeByte()(ref Unsafe.NullRef<byte>(), 0, 0)); };
+            ThrowsNRE(() => { CompareExchangeByte()(ref Unsafe.NullRef<byte>(), 0, 0); });
             ThrowsNRE(() => { CompareExchangeSByte()(ref Unsafe.NullRef<sbyte>(), 0, 0); });
             ThrowsNRE(() => { CompareExchangeShort()(ref Unsafe.NullRef<short>(), 0, 0); });
             ThrowsNRE(() => { CompareExchangeUShort()(ref Unsafe.NullRef<ushort>(), 0, 0); });
