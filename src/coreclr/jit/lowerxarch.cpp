@@ -1780,10 +1780,24 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     GenTree*     op2    = node->Op(2);
     GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE;
 
-    if (!varTypeIsFloating(simdBaseType) && (simdSize != 64) && op2->IsVectorZero() &&
+    if (!varTypeIsFloating(simdBaseType) && (simdSize != 64) &&
         comp->compOpportunisticallyDependsOn(InstructionSet_SSE41) &&
         !op1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
     {
+        if (!op2->IsVectorZero())
+        {
+            // Optimize "X == Y" to "(X ^ Y) == 0"
+            GenTree* zeroVec = comp->gtNewZeroConNode(simdType);
+            GenTree* xorVec  = comp->gtNewSimdBinOpNode(GT_XOR, simdType, op1, op2, simdBaseJitType, simdSize);
+            node->Op(1)      = xorVec;
+            node->Op(2)      = zeroVec;
+            BlockRange().InsertBefore(node, xorVec);
+            BlockRange().InsertBefore(node, zeroVec);
+
+            // We'll re-visit the comparison node again
+            return xorVec;
+        }
+
         // On SSE4.1 or higher we can optimize comparisons against zero to
         // just use PTEST. We can't support it for floating-point, however,
         // as it has both +0.0 and -0.0 where +0.0 == -0.0
