@@ -2214,7 +2214,7 @@ bool Compiler::fgNormalizeEHCase2()
 
                         // Note that we don't need to clear any flags on the old try start, since it is still a 'try'
                         // start.
-                        newTryStart->bbFlags |= (BBF_TRY_BEG | BBF_DONT_REMOVE | BBF_INTERNAL);
+                        newTryStart->bbFlags |= (BBF_DONT_REMOVE | BBF_INTERNAL);
 
                         if (insertBeforeBlk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
                         {
@@ -2374,8 +2374,8 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             }
 
             // Create a new bb for the fake filter
-            BasicBlock* filterBb  = bbNewBasicBlock(BBJ_EHFILTERRET);
             BasicBlock* handlerBb = eh->ebdHndBeg;
+            BasicBlock* filterBb  = bbNewBasicBlock(BBJ_EHFILTERRET, handlerBb);
 
             // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
             GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
@@ -2410,7 +2410,6 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             filterBb->bbCodeOffs = handlerBb->bbCodeOffs;
             filterBb->bbHndIndex = handlerBb->bbHndIndex;
             filterBb->bbTryIndex = handlerBb->bbTryIndex;
-            filterBb->SetJumpDest(handlerBb);
             filterBb->bbSetRunRarely();
             filterBb->bbFlags |= BBF_INTERNAL | BBF_DONT_REMOVE;
 
@@ -3007,7 +3006,6 @@ void Compiler::fgVerifyHandlerTab()
         assert(HBtab->ebdHndBeg != nullptr);
         assert(HBtab->ebdHndLast != nullptr);
 
-        assert(HBtab->ebdTryBeg->bbFlags & BBF_TRY_BEG);
         assert(HBtab->ebdTryBeg->bbFlags & BBF_DONT_REMOVE);
 
         assert(HBtab->ebdHndBeg->bbFlags & BBF_DONT_REMOVE);
@@ -3075,19 +3073,16 @@ void Compiler::fgVerifyHandlerTab()
 #endif
 
     // To verify that bbCatchTyp is set properly on all blocks, and that some BBF_* flags are only set on the first
-    // block of 'try' or handlers, create two bool arrays indexed by block number: one for the set of blocks that
-    // are the beginning blocks of 'try' regions, and one for blocks that are the beginning of handlers (including
-    // filters). Note that since this checking function runs before EH normalization, we have to handle the case
-    // where blocks can be both the beginning of a 'try' as well as the beginning of a handler. After we've iterated
-    // over the EH table, loop over all blocks and verify that only handler begin blocks have bbCatchTyp == BBCT_NONE,
-    // and some other things.
+    // block of handlers, create a bool arrays indexed by block number for blocks that are the beginning of handlers
+    // (including filters). Note that since this checking function runs before EH normalization, we have to handle
+    // the case where blocks can be both the beginning of a 'try' as well as the beginning of a handler. After we've
+    // iterated over the EH table, loop over all blocks and verify that only handler begin blocks have
+    // bbCatchTyp != BBCT_NONE, and some other things.
 
     size_t blockBoolSetBytes = (bbNumMax + 1) * sizeof(bool);
-    bool*  blockTryBegSet    = (bool*)_alloca(blockBoolSetBytes);
     bool*  blockHndBegSet    = (bool*)_alloca(blockBoolSetBytes);
     for (unsigned i = 0; i <= bbNumMax; i++)
     {
-        blockTryBegSet[i] = false;
         blockHndBegSet[i] = false;
     }
 
@@ -3366,12 +3361,7 @@ void Compiler::fgVerifyHandlerTab()
             }
         }
 
-        // Set up blockTryBegSet and blockHndBegSet.
-        // We might want to have this assert:
-        //    if (fgNormalizeEHDone) assert(!blockTryBegSet[HBtab->ebdTryBeg->bbNum]);
-        // But we can't, because if we have mutually-protect 'try' regions, we'll see exactly the same tryBeg twice
-        // (or more).
-        blockTryBegSet[HBtab->ebdTryBeg->bbNum] = true;
+        // Set up blockHndBegSet.
         assert(!blockHndBegSet[HBtab->ebdHndBeg->bbNum]);
         blockHndBegSet[HBtab->ebdHndBeg->bbNum] = true;
 
@@ -3497,12 +3487,6 @@ void Compiler::fgVerifyHandlerTab()
                 assert((block->bbFlags & BBF_FUNCLET_BEG) == 0);
             }
 #endif // FEATURE_EH_FUNCLETS
-        }
-
-        // Only the first block of 'try' regions should have BBF_TRY_BEG set.
-        if (!blockTryBegSet[block->bbNum])
-        {
-            assert((block->bbFlags & BBF_TRY_BEG) == 0);
         }
 
         // Check for legal block types
@@ -4339,12 +4323,18 @@ bool Compiler::fgRelocateEHRegions()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-/*****************************************************************************
- * We've inserted a new block before 'block' that should be part of the same EH region as 'block'.
- * Update the EH table to make this so. Also, set the new block to have the right EH region data
- * (copy the bbTryIndex, bbHndIndex, and bbCatchTyp from 'block' to the new predecessor, and clear
- * 'bbCatchTyp' from 'block').
- */
+//------------------------------------------------------------------------
+// fgExtendEHRegionBefore: Modify the EH table to account for a new block.
+//
+// We've inserted a new block before 'block' that should be part of the same
+// EH region as 'block'. Update the EH table to make this so. Also, set the
+// new block to have the right EH region data (copy the bbTryIndex, bbHndIndex,
+// and bbCatchTyp from 'block' to the new predecessor, and clear 'bbCatchTyp'
+// from 'block').
+//
+// Arguments:
+//    block - The block before which a new block has been inserted
+//
 void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 {
     assert(!block->IsFirst());
@@ -4369,13 +4359,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             }
 #endif // DEBUG
             HBtab->ebdTryBeg = bPrev;
-            bPrev->bbFlags |= BBF_TRY_BEG | BBF_DONT_REMOVE;
-
-            // clear the TryBeg flag unless it begins another try region
-            if (!bbIsTryBeg(block))
-            {
-                block->bbFlags &= ~BBF_TRY_BEG;
-            }
+            bPrev->bbFlags |= BBF_DONT_REMOVE;
         }
 
         if (HBtab->ebdHndBeg == block)
@@ -4387,12 +4371,13 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
             }
 #endif // DEBUG
 
+            HBtab->ebdHndBeg = bPrev;
+            bPrev->bbFlags |= BBF_DONT_REMOVE;
+
             // The first block of a handler has an artificial extra refcount. Transfer that to the new block.
             noway_assert(block->countOfInEdges() > 0);
             block->bbRefs--;
-
-            HBtab->ebdHndBeg = bPrev;
-            bPrev->bbFlags |= BBF_DONT_REMOVE;
+            bPrev->bbRefs++;
 
 #if defined(FEATURE_EH_FUNCLETS)
             if (fgFuncletsCreated)
@@ -4402,8 +4387,6 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 block->bbFlags &= ~BBF_FUNCLET_BEG;
             }
 #endif // FEATURE_EH_FUNCLETS
-
-            bPrev->bbRefs++;
 
             // If this is a handler for a filter, the last block of the filter will end with
             // a BBJ_EHFILTERRET block that has a bbJumpDest that jumps to the first block of

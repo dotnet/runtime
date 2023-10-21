@@ -9,6 +9,7 @@
     <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true'">-2146233082</CLRTestExitCode>
     <CLRTestPriority>1</CLRTestPriority>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="UnmanagedCallersOnlyNegativeTest.cs" />

@@ -2173,7 +2173,7 @@ public static partial class DataContractSerializerTests
                 messageBuilder.AppendLine($"Actual exception type: {actualExceptionType.FullName}, {actualExceptionType.GetTypeInfo().Assembly.FullName}");
                 messageBuilder.AppendLine($"The type of {nameof(expectedExceptionType)} was: {expectedExceptionType.GetType()}");
                 messageBuilder.AppendLine($"The type of {nameof(actualExceptionType)} was: {actualExceptionType.GetType()}");
-                Assert.True(false, messageBuilder.ToString());
+                Assert.Fail(messageBuilder.ToString());
             }
 
             exceptionThrown = true;

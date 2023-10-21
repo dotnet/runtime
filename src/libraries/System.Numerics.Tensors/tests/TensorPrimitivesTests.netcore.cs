@@ -37,7 +37,6 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/92885", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [MemberData(nameof(TensorLengths))]
         public static void ConvertToHalf_SpecialValues(int tensorLength)
         {

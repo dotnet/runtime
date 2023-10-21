@@ -4,8 +4,6 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
-    <NativeAotIncompatible>true</NativeAotIncompatible>
-
     <RunAnalyzers>true</RunAnalyzers>
     <NoWarn>$(NoWarn);xUnit1013</NoWarn>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>

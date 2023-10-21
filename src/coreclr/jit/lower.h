@@ -333,6 +333,8 @@ private:
     void LowerLclHeap(GenTree* node);
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
+    GenTree* LowerArrLength(GenTreeArrCommon* node);
+
 #ifdef TARGET_XARCH
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
@@ -385,7 +387,6 @@ private:
     void LowerModPow2(GenTree* node);
     GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
-
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
                                                  GenTree*    op1,
                                                  CorInfoType simdBaseJitType,

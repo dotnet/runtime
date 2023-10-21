@@ -386,7 +386,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_IMPORTED             = MAKE_BBFLAG( 4), // BB byte-code has been imported
     BBF_INTERNAL             = MAKE_BBFLAG( 5), // BB has been added by the compiler
     BBF_FAILED_VERIFICATION  = MAKE_BBFLAG( 6), // BB has verification exception
-    BBF_TRY_BEG              = MAKE_BBFLAG( 7), // BB starts a 'try' block
+//  BBF_UNUSED               = MAKE_BBFLAG( 7),
     BBF_FUNCLET_BEG          = MAKE_BBFLAG( 8), // BB is the beginning of a funclet
     BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 9), // First block of a cloned finally region
     BBF_CLONED_FINALLY_END   = MAKE_BBFLAG(10), // Last block of a cloned finally region
@@ -538,20 +538,26 @@ private:
     };
 
 public:
+#ifdef DEBUG
+    // When creating a block with a jump, we require its jump kind and target be initialized simultaneously.
+    // In a few edge cases (for example, in Compiler::impImportLeave), we don't know the jump target at block creation.
+    // In these cases, temporarily set the jump target to bbTempJumpDest, and update the jump target later.
+    // We won't check jump targets against bbTempJumpDest in Release builds.
+    static BasicBlock bbTempJumpDest;
+#endif // DEBUG
+
     BBjumpKinds GetJumpKind() const
     {
         return bbJumpKind;
     }
 
-    void SetJumpKind(BBjumpKinds jumpKind DEBUG_ARG(Compiler* compiler))
+    void SetJumpKind(BBjumpKinds jumpKind)
     {
-#ifdef DEBUG
-        // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
-        // TODO: Change assert to check if compiler is in appropriate optimization phase to use BBJ_NONE
-        // (right now, this assertion does the null check to avoid unused variable warnings)
-        assert((jumpKind != BBJ_NONE) || (compiler != nullptr));
-#endif // DEBUG
+        // If this block's jump kind requires a target, ensure it is already set
+        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
         bbJumpKind = jumpKind;
+        // If new jump kind requires a target, ensure a target is already set
+        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
     }
 
     BasicBlock* Prev() const
@@ -611,54 +617,84 @@ public:
         return bbJumpOffs;
     }
 
-    void SetJumpOffs(unsigned jumpOffs)
+    void SetJumpKindAndTarget(BBjumpKinds jumpKind, unsigned jumpOffs)
     {
+        bbJumpKind = jumpKind;
         bbJumpOffs = jumpOffs;
+        assert(KindIs(BBJ_ALWAYS, BBJ_COND, BBJ_LEAVE));
     }
 
     BasicBlock* GetJumpDest() const
     {
+        // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
+        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
         return bbJumpDest;
     }
 
     void SetJumpDest(BasicBlock* jumpDest)
     {
+        // If bbJumpKind indicates this block has a jump,
+        // bbJumpDest should have previously been set in SetJumpKindAndTarget().
+        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+
+        // SetJumpKindAndTarget() nulls jumpDest for non-jump kinds,
+        // so don't use SetJumpDest() to null bbJumpDest without updating bbJumpKind.
         bbJumpDest = jumpDest;
+        assert(HasJump());
     }
 
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest)
+    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BasicBlock* jumpDest DEBUG_ARG(Compiler* compiler))
     {
-        assert(jumpDest != nullptr);
+#ifdef DEBUG
+        // BBJ_NONE should only be assigned when optimizing jumps in Compiler::optOptimizeLayout
+        // TODO: Change assert to check if compiler is in appropriate optimization phase to use BBJ_NONE
+        //
+        // (right now, this assertion does the null check to avoid unused variable warnings)
+        assert((jumpKind != BBJ_NONE) || (compiler != nullptr));
+#endif // DEBUG
+
         bbJumpKind = jumpKind;
         bbJumpDest = jumpDest;
-        assert(KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+
+        // If bbJumpKind indicates this block has a jump, bbJumpDest cannot be null
+        assert(HasJump() || !KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_COND, BBJ_EHCATCHRET, BBJ_LEAVE));
+    }
+
+    void SetJumpKindAndTarget(BBjumpKinds jumpKind DEBUG_ARG(Compiler* compiler))
+    {
+        BasicBlock* jumpDest = nullptr;
+        SetJumpKindAndTarget(jumpKind, jumpDest DEBUG_ARG(compiler));
+    }
+
+    bool HasJump() const
+    {
+        return (bbJumpDest != nullptr);
     }
 
     bool HasJumpTo(const BasicBlock* jumpDest) const
     {
+        assert(HasJump());
+        assert(!KindIs(BBJ_SWITCH, BBJ_EHFINALLYRET));
         return (bbJumpDest == jumpDest);
     }
 
     bool JumpsToNext() const
     {
+        assert(HasJump());
         return (bbJumpDest == bbNext);
     }
 
     BBswtDesc* GetJumpSwt() const
     {
+        assert(KindIs(BBJ_SWITCH));
+        assert(bbJumpSwt != nullptr);
         return bbJumpSwt;
     }
 
-    void SetJumpSwt(BBswtDesc* jumpSwt)
+    void SetSwitchKindAndTarget(BBswtDesc* jumpSwt)
     {
-        bbJumpSwt = jumpSwt;
-    }
-
-    void SetJumpKindAndTarget(BBjumpKinds jumpKind, BBswtDesc* jumpSwt)
-    {
-        assert(jumpKind == BBJ_SWITCH);
         assert(jumpSwt != nullptr);
-        bbJumpKind = jumpKind;
+        bbJumpKind = BBJ_SWITCH;
         bbJumpSwt  = jumpSwt;
     }
 
@@ -887,15 +923,7 @@ public:
     // GetSucc() without a Compiler*.
     //
     // The behavior of NumSucc()/GetSucc() is different when passed a Compiler* for blocks that end in:
-    // (1) BBJ_EHFINALLYRET (a return from a finally block)
-    // (2) BBJ_EHFILTERRET (a return from EH filter block)
-    // (3) BBJ_SWITCH
-    //
-    // For BBJ_EHFINALLYRET, if no Compiler* is passed, then the block is considered to have no
-    // successor. If Compiler* is passed, we use the actual successors.
-    //
-    // Similarly, BBJ_EHFILTERRET blocks are assumed to have no successors if Compiler* is not passed; if
-    // Compiler* is passed, NumSucc/GetSucc yields the first block of the try block's handler.
+    // (1) BBJ_SWITCH
     //
     // For BBJ_SWITCH, if Compiler* is not passed, then all switch successors are returned. If Compiler*
     // is passed, then only unique switch successors are returned; the duplicate successors are omitted.
@@ -1747,13 +1775,11 @@ inline BBArrayIterator BBEhfSuccList::end() const
 inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 {
     assert(block != nullptr);
-    switch (block->GetJumpKind())
+    switch (block->bbJumpKind)
     {
         case BBJ_THROW:
         case BBJ_RETURN:
-        case BBJ_EHFINALLYRET:
         case BBJ_EHFAULTRET:
-        case BBJ_EHFILTERRET:
             // We don't need m_succs.
             m_begin = nullptr;
             m_end   = nullptr;
@@ -1762,20 +1788,21 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
         case BBJ_LEAVE:
-            m_succs[0] = block->GetJumpDest();
+            m_succs[0] = block->bbJumpDest;
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;
 
         case BBJ_NONE:
-            m_succs[0] = block->Next();
+            m_succs[0] = block->bbNext;
             m_begin    = &m_succs[0];
             m_end      = &m_succs[1];
             break;
 
         case BBJ_COND:
-            m_succs[0] = block->Next();
+            m_succs[0] = block->bbNext;
             m_begin    = &m_succs[0];
 
             // If both fall-through and branch successors are identical, then only include
@@ -1786,17 +1813,33 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
             }
             else
             {
-                m_succs[1] = block->GetJumpDest();
+                m_succs[1] = block->bbJumpDest;
                 m_end      = &m_succs[2];
+            }
+            break;
+
+        case BBJ_EHFINALLYRET:
+            // We don't use the m_succs in-line data; use the existing successor table in the block.
+            // We must tolerate iterating successors early in the system, before EH_FINALLYRET successors have
+            // been computed.
+            if (block->GetJumpEhf() == nullptr)
+            {
+                m_begin = nullptr;
+                m_end   = nullptr;
+            }
+            else
+            {
+                m_begin = block->GetJumpEhf()->bbeSuccs;
+                m_end   = block->GetJumpEhf()->bbeSuccs + block->GetJumpEhf()->bbeCount;
             }
             break;
 
         case BBJ_SWITCH:
             // We don't use the m_succs in-line data for switches; use the existing jump table in the block.
-            assert(block->GetJumpSwt() != nullptr);
-            assert(block->GetJumpSwt()->bbsDstTab != nullptr);
-            m_begin = block->GetJumpSwt()->bbsDstTab;
-            m_end   = block->GetJumpSwt()->bbsDstTab + block->GetJumpSwt()->bbsCount;
+            assert(block->bbJumpSwt != nullptr);
+            assert(block->bbJumpSwt->bbsDstTab != nullptr);
+            m_begin = block->bbJumpSwt->bbsDstTab;
+            m_end   = block->bbJumpSwt->bbsDstTab + block->bbJumpSwt->bbsCount;
             break;
 
         default:
