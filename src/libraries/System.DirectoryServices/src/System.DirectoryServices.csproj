@@ -147,8 +147,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Compile Include="Interop\AdsType.cs" />
     <Compile Include="Interop\AdsValue2.cs" />
     <Compile Include="Interop\AdsValueHelper2.cs" />
+    <Compile Include="Interop\EnumVariant.cs" />
     <Compile Include="Interop\NativeMethods.cs" />
-    <Compile Include="Interop\SafeNativeMethods.cs" />
     <Compile Include="Interop\UnsafeNativeMethods.cs" />
 
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
