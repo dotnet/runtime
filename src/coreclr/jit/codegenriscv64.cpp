@@ -7770,8 +7770,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     assert(genIsValidFloatReg(varDsc->GetArgInitReg()));
                     if (genIsValidIntReg(varDsc->GetArgReg()))
                     {
-                        GetEmitter()->emitIns_Mov(INS_fmv_d_x, EA_PTRSIZE, varDsc->GetArgInitReg(), varDsc->GetArgReg(),
-                                                  false);
+                        emitAttr size = (varDsc->TypeGet() == TYP_FLOAT) ? EA_4BYTE : EA_PTRSIZE;
+                        GetEmitter()->emitIns_Mov(size, varDsc->GetArgInitReg(), varDsc->GetArgReg(), false);
                         regArgMaskLive &= ~genRegMask(varDsc->GetArgReg());
                     }
                     else if (varDsc->GetArgInitReg() > REG_ARG_FP_LAST)
