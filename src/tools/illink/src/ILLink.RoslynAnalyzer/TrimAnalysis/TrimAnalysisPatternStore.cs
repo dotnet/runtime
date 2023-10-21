@@ -78,7 +78,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			Debug.Assert (existingPattern == pattern, "Reflection access patterns should be identical");
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (RequiresAnalyzerContext context)
+		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			foreach (var assignmentPattern in AssignmentPatterns.Values) {
 				foreach (var diagnostic in assignmentPattern.CollectDiagnostics ())

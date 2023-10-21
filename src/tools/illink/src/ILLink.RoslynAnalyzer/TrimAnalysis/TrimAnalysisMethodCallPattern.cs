@@ -62,11 +62,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				OwningSymbol);
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (RequiresAnalyzerContext context)
+		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
 
-			if (!OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _)) {
+			if (context.EnableTrimAnalyzer && !OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope (out _)) {
 				HandleCallAction handleCallAction = new (diagnosticContext, OwningSymbol, Operation);
 				MethodProxy method = new (CalledMethod);
 				IntrinsicId intrinsicId = Intrinsics.GetIntrinsicIdForMethod (method);

@@ -84,16 +84,15 @@ namespace ILLink.RoslynAnalyzer
 				context.EnableConcurrentExecution ();
 			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.ReportDiagnostics);
 			context.RegisterCompilationStartAction (context => {
-				if (!context.Options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer) &&
-					!context.Options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableSingleFileAnalyzer) &&
-					!context.Options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableAotAnalyzer))
+				var dataFlowAnalyzerContext = DataFlowAnalyzerContext.Create (context.Options, context.Compilation, RequiresAnalyzers.Value);
+				if (!dataFlowAnalyzerContext.AnyAnalyzersEnabled)
 					return;
 
 				context.RegisterOperationBlockAction (context => {
 					foreach (var operationBlock in context.OperationBlocks) {
 						TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, operationBlock);
 						trimDataFlowAnalysis.InterproceduralAnalyze ();
-						foreach (var diagnostic in trimDataFlowAnalysis.CollectDiagnostics ())
+						foreach (var diagnostic in trimDataFlowAnalysis.CollectDiagnostics (dataFlowAnalyzerContext))
 							context.ReportDiagnostic (diagnostic);
 					}
 				});

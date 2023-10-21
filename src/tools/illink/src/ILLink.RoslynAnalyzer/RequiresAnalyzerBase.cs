@@ -299,7 +299,7 @@ namespace ILLink.RoslynAnalyzer
 			IOperation operation,
 			ISymbol member,
 			ISymbol owningSymbol,
-			RequiresAnalyzerContext context,
+			DataFlowAnalyzerContext context,
 			[NotNullWhen (true)] out Diagnostic? diagnostic)
 		{
 			ISymbol containingSymbol = operation.FindContainingSymbol (owningSymbol);

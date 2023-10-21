@@ -8,9 +8,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer
 {
-	public struct RequiresAnalyzerContext
+	public readonly struct DataFlowAnalyzerContext
 	{
-		private Dictionary<RequiresAnalyzerBase, ImmutableArray<ISymbol>> _enabledAnalyzers;
+		private readonly Dictionary<RequiresAnalyzerBase, ImmutableArray<ISymbol>> _enabledAnalyzers;
 
 		public IEnumerable<RequiresAnalyzerBase> EnabledRequiresAnalyzers => _enabledAnalyzers.Keys;
 
@@ -21,21 +21,28 @@ namespace ILLink.RoslynAnalyzer
 			return members;
 		}
 
-		RequiresAnalyzerContext (Dictionary<RequiresAnalyzerBase, ImmutableArray<ISymbol>> enabledAnalyzers)
+		public readonly bool EnableTrimAnalyzer { get; }
+
+		public readonly bool AnyAnalyzersEnabled => EnableTrimAnalyzer || _enabledAnalyzers.Count > 0;
+
+		DataFlowAnalyzerContext (Dictionary<RequiresAnalyzerBase, ImmutableArray<ISymbol>> enabledAnalyzers, bool enableTrimAnalyzer)
 		{
 			_enabledAnalyzers = enabledAnalyzers;
+			EnableTrimAnalyzer = enableTrimAnalyzer;
 		}
 
-		public static RequiresAnalyzerContext Create (OperationBlockAnalysisContext context, ImmutableArray<RequiresAnalyzerBase> requiresAnalyzers)
+		public static DataFlowAnalyzerContext Create (AnalyzerOptions options, Compilation compilation, ImmutableArray<RequiresAnalyzerBase> requiresAnalyzers)
 		{
 			var enabledAnalyzers = new Dictionary<RequiresAnalyzerBase, ImmutableArray<ISymbol>> ();
 			foreach (var analyzer in requiresAnalyzers) {
-				if (analyzer.IsAnalyzerEnabled (context.Options)) {
-					var incompatibleMembers = analyzer.GetSpecialIncompatibleMembers (context.Compilation);
+				if (analyzer.IsAnalyzerEnabled (options)) {
+					var incompatibleMembers = analyzer.GetSpecialIncompatibleMembers (compilation);
 					enabledAnalyzers.Add (analyzer, incompatibleMembers);
 				}
 			}
-			return new RequiresAnalyzerContext (enabledAnalyzers);
+			return new DataFlowAnalyzerContext (
+				enabledAnalyzers,
+				options.IsMSBuildPropertyValueTrue (MSBuildPropertyOptionNames.EnableTrimAnalyzer));
 		}
 	}
 }

@@ -29,10 +29,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			TrimAnalysisPatterns = new TrimAnalysisPatternStore (Lattice.Lattice.ValueLattice);
 		}
 
-		public IEnumerable<Diagnostic> CollectDiagnostics ()
+		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext dataFlowAnalyzerContext)
 		{
-			var requiresAnalyzerContext = RequiresAnalyzerContext.Create (Context, DynamicallyAccessedMembersAnalyzer.RequiresAnalyzers.Value);
-			return TrimAnalysisPatterns.CollectDiagnostics (requiresAnalyzerContext);
+			return TrimAnalysisPatterns.CollectDiagnostics (dataFlowAnalyzerContext);
 		}
 
 		protected override TrimAnalysisVisitor GetVisitor (

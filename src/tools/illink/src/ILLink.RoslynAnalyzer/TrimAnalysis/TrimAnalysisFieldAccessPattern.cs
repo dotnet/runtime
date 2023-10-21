@@ -27,7 +27,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		// No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
 		// and there's only one way to "access" a field.
 
-		public IEnumerable<Diagnostic> CollectDiagnostics (RequiresAnalyzerContext context)
+		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			DiagnosticContext diagnosticContext = new (Operation.Syntax.GetLocation ());
 			foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers) {
