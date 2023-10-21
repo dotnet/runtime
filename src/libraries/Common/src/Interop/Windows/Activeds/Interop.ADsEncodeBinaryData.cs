@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Activeds
     {
-        [LibraryImport(Libraries.Activeds, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Activeds)]
         internal static partial int ADsEncodeBinaryData(byte[] data, int length, ref IntPtr result);
     }
 }

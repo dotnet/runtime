@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Netapi32
     {
-        [LibraryImport(Libraries.Netapi32, EntryPoint = "DsGetDcNextW", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Netapi32, EntryPoint = "DsGetDcNextW")]
         internal static partial int DsGetDcNext(
             IntPtr getDcContextHandle,
             ref IntPtr sockAddressCount,

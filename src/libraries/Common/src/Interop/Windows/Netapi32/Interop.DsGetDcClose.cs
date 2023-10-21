@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Netapi32
     {
-        [LibraryImport(Libraries.Netapi32, EntryPoint = "DsGetDcCloseW", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Netapi32, EntryPoint = "DsGetDcCloseW")]
         internal static partial void DsGetDcClose(IntPtr getDcContextHandle);
     }
 }
