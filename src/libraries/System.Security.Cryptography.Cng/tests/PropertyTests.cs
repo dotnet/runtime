@@ -174,7 +174,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [Fact]
-        public void TestConstructorSpan_NameNull()
+        public static void TestConstructorSpan_NameNull()
         {
             var name = "dotnet-test";
             var value = new byte[12];
