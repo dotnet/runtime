@@ -7,10 +7,6 @@ namespace System.DirectoryServices
 {
     internal static partial class SafeNativeMethods
     {
-        public const int
-            ERROR_MORE_DATA = 234,
-            ERROR_SUCCESS = 0;
-
         public sealed class EnumVariant
         {
             private static readonly object s_noMoreValues = new object();

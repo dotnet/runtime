@@ -351,7 +351,7 @@ namespace System.DirectoryServices
                         }
 
                         // not the case that server still has result, we are done here
-                        if (errorCode != SafeNativeMethods.ERROR_MORE_DATA)
+                        if (errorCode != Interop.Activeds.ERROR_MORE_DATA)
                         {
                             // get the dirsync cookie as we finished all the rows
                             if (_results.srch.directorySynchronizationSpecified)
@@ -398,13 +398,13 @@ namespace System.DirectoryServices
 
             private void CleanLastError()
             {
-                Interop.Activeds.ADsSetLastError(SafeNativeMethods.ERROR_SUCCESS, null, null);
+                Interop.Activeds.ADsSetLastError(Interop.Activeds.ERROR_SUCCESS, null, null);
             }
 
             private unsafe int GetLastError(ref int errorCode)
             {
                 char c1 = '\0', c2 = '\0';
-                errorCode = SafeNativeMethods.ERROR_SUCCESS;
+                errorCode = Interop.Activeds.ERROR_SUCCESS;
                 return Interop.Activeds.ADsGetLastError(out errorCode, &c1, 0, &c2, 0);
             }
         }
