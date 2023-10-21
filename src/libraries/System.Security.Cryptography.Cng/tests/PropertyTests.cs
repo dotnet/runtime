@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [Fact]
-        public void TestConstructorSpan()
+        public static void TestConstructorSpan()
         {
             var name = "dotnet-test";
             ReadOnlySpan<byte> value = new byte[12];
