@@ -18,7 +18,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Netapi32, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DsRoleGetPrimaryDomainInformation(
-            [MarshalAs(UnmanagedType.LPTStr)] string lpServer,
+            string lpServer,
             DSROLE_PRIMARY_DOMAIN_INFO_LEVEL InfoLevel,
             out IntPtr Buffer);
 
