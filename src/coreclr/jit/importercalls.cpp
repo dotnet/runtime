@@ -3258,7 +3258,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     break;
                 }
 
-                if ((retType == TYP_REF) && (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
+                if ((retType == TYP_REF) &&
+                    (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
@@ -3290,7 +3291,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     break;
                 }
 
-                if ((retType == TYP_REF) && (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
+                if ((retType == TYP_REF) &&
+                    (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
                     // Intrinsify "object" overload in case of null assignment
                     // since we don't need the write barrier.
@@ -3309,7 +3311,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 //   val
                 //   field_addr (for example)
                 //
-                retNode = gtNewAtomicNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG, callType, op1, op2);
+                retNode = gtNewAtomicNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
+                                          callType, op1, op2);
                 break;
             }
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
