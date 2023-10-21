@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Netapi32
     {
-        [LibraryImport(Libraries.Netapi32, EntryPoint = "DsEnumerateDomainTrustsW", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Netapi32, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int DsEnumerateDomainTrustsW(string serverName, int flags, out IntPtr domains, out int count);
     }
 }

@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [LibraryImport(Libraries.Advapi32, EntryPoint = "LsaSetTrustedDomainInfoByName")]
+        [LibraryImport(Libraries.Advapi32)]
         internal static partial uint LsaSetTrustedDomainInfoByName(SafeLsaPolicyHandle handle, in UNICODE_STRING trustedDomain, TRUSTED_INFORMATION_CLASS infoClass, IntPtr buffer);
     }
 }

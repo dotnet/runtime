@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class NtDll
     {
-        [LibraryImport(Libraries.NtDll, EntryPoint = "RtlInitUnicodeString")]
+        [LibraryImport(Libraries.NtDll)]
         internal static partial int RtlInitUnicodeString(out UNICODE_STRING result, IntPtr s);
     }
 }
