@@ -3,7 +3,7 @@
 
 namespace System.Reflection.Emit
 {
-    public sealed class LocalBuilder : LocalVariableInfo
+    internal sealed class RuntimeLocalBuilder : LocalBuilder
     {
         #region Private Data Members
         private readonly int m_localIndex;
@@ -13,9 +13,9 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Constructor
-        internal LocalBuilder(int localIndex, Type localType, MethodInfo methodBuilder)
+        internal RuntimeLocalBuilder(int localIndex, Type localType, MethodInfo methodBuilder)
             : this(localIndex, localType, methodBuilder, false) { }
-        internal LocalBuilder(int localIndex, Type localType, MethodInfo methodBuilder, bool isPinned)
+        internal RuntimeLocalBuilder(int localIndex, Type localType, MethodInfo methodBuilder, bool isPinned)
         {
             m_isPinned = isPinned;
             m_localIndex = localIndex;
@@ -24,21 +24,11 @@ namespace System.Reflection.Emit
         }
         #endregion
 
-        #region Internal Members
-        internal int GetLocalIndex()
-        {
-            return m_localIndex;
-        }
-        internal MethodInfo GetMethodBuilder()
-        {
-            return m_methodBuilder;
-        }
-        #endregion
-
         #region LocalVariableInfo Override
         public override bool IsPinned => m_isPinned;
         public override Type LocalType => m_localType;
         public override int LocalIndex => m_localIndex;
+        public override MethodInfo Method => m_methodBuilder;
         #endregion
     }
 }
