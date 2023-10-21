@@ -12,9 +12,9 @@ internal static partial class Interop
         internal static partial int CompareString(
             uint locale,
             uint dwCmpFlags,
-            IntPtr lpString1,
+            string lpString1,
             int cchCount1,
-            IntPtr lpString2,
+            string lpString2,
             int cchCount2);
     }
 }

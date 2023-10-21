@@ -1843,7 +1843,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static int Compare(string? s1, string? s2, uint compareFlags)
         {
             // This code block was specifically written for handling string comparison
-            // involving null strings. The unmanged API "NativeMethods.CompareString"
+            // involving null strings. The unmanaged API "Interop.Kernel32.CompareString"
             // does not handle null strings elegantly.
             //
             // This method handles comparison of the specified strings
@@ -1854,34 +1854,17 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             int result = 0;
-            IntPtr lpString1 = IntPtr.Zero;
-            IntPtr lpString2 = IntPtr.Zero;
             int cchCount1 = 0;
             int cchCount2 = 0;
 
-            try
-            {
-                lpString1 = Marshal.StringToHGlobalUni(s1);
-                cchCount1 = s1.Length;
-                lpString2 = Marshal.StringToHGlobalUni(s2);
-                cchCount2 = s2.Length;
+            cchCount1 = s1.Length;
+            cchCount2 = s2.Length;
 
-                result = Interop.Kernel32.CompareString(LCID, compareFlags, lpString1, cchCount1, lpString2, cchCount2);
-                if (result == 0)
-                {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
-                }
-            }
-            finally
+            result = Interop.Kernel32.CompareString(LCID, compareFlags, s1, cchCount1, s2, cchCount2);
+
+            if (result == 0)
             {
-                if (lpString1 != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(lpString1);
-                }
-                if (lpString2 != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(lpString2);
-                }
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             return (result - 2); // to give the semantics of <0, ==0, >0
