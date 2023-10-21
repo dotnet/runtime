@@ -3786,14 +3786,16 @@ private:
     {
         PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
         PREFIX_TAILCALL_IMPLICIT =
-            0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
-        PREFIX_TAILCALL_STRESS =
-            0x00000100, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
-        PREFIX_TAILCALL    = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT | PREFIX_TAILCALL_STRESS),
-        PREFIX_VOLATILE    = 0x00001000,
-        PREFIX_UNALIGNED   = 0x00010000,
-        PREFIX_CONSTRAINED = 0x00100000,
-        PREFIX_READONLY    = 0x01000000
+            0x00000002, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
+        PREFIX_TAILCALL    = PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT,
+        PREFIX_VOLATILE    = 0x00000004,
+        PREFIX_UNALIGNED   = 0x00000008,
+        PREFIX_CONSTRAINED = 0x00000010,
+        PREFIX_READONLY    = 0x00000020,
+
+#ifdef DEBUG
+        PREFIX_TAILCALL_STRESS = 0x00000040, // call doesn't "tail" IL prefix but is treated as explicit because of tail call stress
+#endif
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);

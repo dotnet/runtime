@@ -825,6 +825,7 @@ public:
         return m_Parent == nullptr;
     }
 
+#if defined(DEBUG) || defined(INLINE_DATA)
     bool IsDevirtualized() const
     {
         return m_Devirtualized;
@@ -839,6 +840,7 @@ public:
     {
         return m_Unboxed;
     }
+#endif
 
     unsigned GetImportedILSize() const
     {
@@ -878,14 +880,14 @@ private:
     int                    m_CodeSizeEstimate;  // in bytes * 10
     unsigned               m_Ordinal;           // Ordinal number of this inline
     bool                   m_Success : 1;       // true if this was a successful inline
-    bool                   m_Devirtualized : 1; // true if this was a devirtualized call
-    bool                   m_Guarded : 1;       // true if this was a guarded call
-    bool                   m_Unboxed : 1;       // true if this call now invokes the unboxed entry
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     InlinePolicy* m_Policy; // policy that evaluated this inline
     unsigned      m_TreeID; // ID of the GenTreeCall in the parent
+    bool                   m_Devirtualized : 1; // true if this was a devirtualized call
+    bool                   m_Guarded : 1;       // true if this was a guarded call
+    bool                   m_Unboxed : 1;       // true if this call now invokes the unboxed entry
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 

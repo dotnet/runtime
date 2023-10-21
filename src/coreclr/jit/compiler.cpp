@@ -10028,6 +10028,21 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                     {
                         chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
                     }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_STRESS_TAILCALL)
+                    {
+                        chars += printf("[CALL_MD_STRESS_TAILCALL]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_GUARDED)
+                    {
+                        chars += printf("[CALL_MD_GUARDED]");
+                    }
+
+                    if (call->gtCallDebugFlags & GTF_CALL_MD_UNBOXED)
+                    {
+                        chars += printf("[CALL_MD_UNBOXED]");
+                    }
                 }
                 break;
             default:

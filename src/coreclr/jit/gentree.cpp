@@ -8077,6 +8077,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     node->gtRetClsHnd       = nullptr;
     node->gtControlExpr     = nullptr;
     node->gtCallMoreFlags   = GTF_CALL_M_EMPTY;
+    INDEBUG(node->gtCallDebugFlags = GTF_CALL_MD_EMPTY);
     node->gtInlineInfoCount = 0;
 
     if (callType == CT_INDIRECT)
@@ -9703,6 +9704,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     GenTreeCall* copy = new (this, GT_CALL) GenTreeCall(tree->TypeGet());
 
     copy->gtCallMoreFlags = tree->gtCallMoreFlags;
+    INDEBUG(copy->gtCallDebugFlags = tree->gtCallDebugFlags);
 
     copy->gtArgs.InternalCopyFrom(this, &tree->gtArgs,
                                   [=](GenTree* node) { return gtCloneExpr(node, addFlags, deepVarNum, deepVarVal); });

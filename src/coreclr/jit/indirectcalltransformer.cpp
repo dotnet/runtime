@@ -864,7 +864,7 @@ private:
             GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
 
-            call->SetIsGuarded();
+            INDEBUG(call->SetIsGuarded());
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
 
@@ -1057,7 +1057,7 @@ private:
 
             call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
 
-            call->SetIsGuarded();
+            INDEBUG(call->SetIsGuarded());
 
             JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), elseBlock->bbNum);
 
