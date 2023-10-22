@@ -220,6 +220,27 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Security.Permissions.FileIOPermissionAttribute.All:[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Security.Permissions.ReflectionPermissionAttribute.ReflectionEmit:[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.Security.Permissions.ReflectionPermissionAttribute.TypeInformation:[T:System.ObsoleteAttribute]</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.Security.Permissions.RegistryPermissionAttribute.All:[T:System.ObsoleteAttribute]</Target>
     <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
     <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
