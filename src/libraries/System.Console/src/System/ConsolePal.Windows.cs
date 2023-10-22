@@ -18,7 +18,7 @@ namespace System
         static ConsolePal() => Debug.Assert(UnicodeCodePage == Encoding.Unicode.CodePage);
 #endif
 
-        private static IntPtr InvalidHandleValue => new IntPtr(-1);
+        private const IntPtr InvalidHandleValue = -1;
 
         /// <summary>Ensures that the console has been initialized for use.</summary>
         internal static void EnsureConsoleInitialized()
@@ -67,7 +67,7 @@ namespace System
             // stderr, & stdin could independently be set to INVALID_HANDLE_VALUE.
             // Additionally they might use 0 as an invalid handle.  We also need to
             // ensure that if the handle is meant to be writable it actually is.
-            if (handle == IntPtr.Zero ||
+            if (handle == 0 ||
                 handle == InvalidHandleValue ||
                 (access != FileAccess.Read && !ConsoleHandleIsWritable(handle)))
             {
@@ -94,7 +94,7 @@ namespace System
             // writable.  Verify this by calling WriteFile in the
             // appropriate modes. This must handle console-less Windows apps.
             byte junkByte = 0x41;
-            int r = Interop.Kernel32.WriteFile(outErrHandle, &junkByte, 0, out _, IntPtr.Zero);
+            int r = Interop.Kernel32.WriteFile(outErrHandle, &junkByte, 0, out _, 0);
             return r != 0; // In Win32 apps w/ no console, bResult should be 0 for failure.
         }
 
@@ -1079,16 +1079,14 @@ namespace System
             // is Encoding.Unicode implying 2 bytes per character:
             private const int BytesPerWChar = 2;
 
-            private readonly bool _isPipe; // When reading from pipes, we need to properly handle EOF cases.
             private IntPtr _handle;
             private readonly bool _useFileAPIs;
 
             internal WindowsConsoleStream(IntPtr handle, FileAccess access, bool useFileAPIs)
                 : base(access)
             {
-                Debug.Assert(handle != IntPtr.Zero && handle != InvalidHandleValue, "ConsoleStream expects a valid handle!");
+                Debug.Assert(handle != 0 && handle != InvalidHandleValue, "ConsoleStream expects a valid handle!");
                 _handle = handle;
-                _isPipe = Interop.Kernel32.GetFileType(handle) == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
                 _useFileAPIs = useFileAPIs;
             }
 
@@ -1099,88 +1097,55 @@ namespace System
                 // around the same OS handle, so closing one handle would invalidate
                 // them all.  Additionally, we want a second AppDomain to be able to
                 // write to stdout if a second AppDomain quits.
-                _handle = IntPtr.Zero;
+                _handle = 0;
                 base.Dispose(disposing);
-            }
-
-            public override int Read(Span<byte> buffer)
-            {
-                int errCode = ReadFileNative(_handle, buffer, _isPipe, out int bytesRead, _useFileAPIs);
-                if (Interop.Errors.ERROR_SUCCESS != errCode)
-                {
-                    throw Win32Marshal.GetExceptionForWin32Error(errCode);
-                }
-
-                return bytesRead;
-            }
-
-            public override void Write(ReadOnlySpan<byte> buffer)
-            {
-                int errCode = WriteFileNative(_handle, buffer, _useFileAPIs);
-                if (Interop.Errors.ERROR_SUCCESS != errCode)
-                {
-                    throw Win32Marshal.GetExceptionForWin32Error(errCode);
-                }
             }
 
             public override void Flush()
             {
-                if (_handle == IntPtr.Zero) throw Error.GetFileNotOpen();
-                base.Flush();
+                if (_handle == 0) throw Error.GetFileNotOpen();
             }
 
-            // P/Invoke wrappers for writing to and from a file, nearly identical
-            // to the ones on FileStream.  These are duplicated to save startup/hello
-            // world working set and to avoid requiring a reference to the
-            // System.IO.FileSystem contract.
-
-            private static unsafe int ReadFileNative(IntPtr hFile, Span<byte> buffer, bool isPipe, out int bytesRead, bool useFileAPIs)
+            public override unsafe int Read(Span<byte> buffer)
             {
                 if (buffer.IsEmpty)
-                {
-                    bytesRead = 0;
-                    return Interop.Errors.ERROR_SUCCESS;
-                }
+                    return 0;
 
-                bool readSuccess;
                 fixed (byte* p = buffer)
                 {
-                    if (useFileAPIs)
+                    if (_useFileAPIs)
                     {
-                        readSuccess = (0 != Interop.Kernel32.ReadFile(hFile, p, buffer.Length, out bytesRead, IntPtr.Zero));
+                        if (0 != Interop.Kernel32.ReadFile(_handle, p, buffer.Length, out int bytesRead, 0))
+                            return bytesRead;
                     }
                     else
                     {
                         // If the code page could be Unicode, we should use ReadConsole instead, e.g.
-                        int charsRead;
-                        readSuccess = Interop.Kernel32.ReadConsole(hFile, p, buffer.Length / BytesPerWChar, out charsRead, IntPtr.Zero);
-                        bytesRead = charsRead * BytesPerWChar;
+                        if (Interop.Kernel32.ReadConsole(_handle, p, buffer.Length / BytesPerWChar, out int charsRead, 0))
+                            return charsRead * BytesPerWChar;
                     }
                 }
-                if (readSuccess)
-                    return Interop.Errors.ERROR_SUCCESS;
 
                 // For pipes that are closing or broken, just stop.
                 // (E.g. ERROR_NO_DATA ("pipe is being closed") is returned when we write to a console that is closing;
                 // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is not an error, but EOF.)
                 int errorCode = Marshal.GetLastPInvokeError();
                 if (errorCode == Interop.Errors.ERROR_NO_DATA || errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
-                    return Interop.Errors.ERROR_SUCCESS;
-                return errorCode;
+                    return 0;
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
 
-            private static unsafe int WriteFileNative(IntPtr hFile, ReadOnlySpan<byte> bytes, bool useFileAPIs)
+            public override unsafe void Write(ReadOnlySpan<byte> buffer)
             {
-                if (bytes.IsEmpty)
-                    return Interop.Errors.ERROR_SUCCESS;
+                if (buffer.IsEmpty)
+                    return;
 
-                bool writeSuccess;
-                fixed (byte* p = bytes)
+                fixed (byte* p = buffer)
                 {
-                    if (useFileAPIs)
+                    if (_useFileAPIs)
                     {
-                        int numBytesWritten;
-                        writeSuccess = (0 != Interop.Kernel32.WriteFile(hFile, p, bytes.Length, out numBytesWritten, IntPtr.Zero));
+                        if (0 != Interop.Kernel32.WriteFile(_handle, p, buffer.Length, out _, 0))
+                            return;
                         // In some cases we have seen numBytesWritten returned that is twice count;
                         // so we aren't asserting the value of it. See https://github.com/dotnet/runtime/issues/23776
                     }
@@ -1192,21 +1157,21 @@ namespace System
                         // [https://docs.microsoft.com/en-us/windows/console/writeconsole]
                         // However, we do not need to worry about that because the StreamWriter in Console has
                         // a much shorter buffer size anyway.
-                        int charsWritten;
-                        writeSuccess = Interop.Kernel32.WriteConsole(hFile, p, bytes.Length / BytesPerWChar, out charsWritten, IntPtr.Zero);
-                        Debug.Assert(!writeSuccess || bytes.Length / BytesPerWChar == charsWritten);
+                        if (Interop.Kernel32.WriteConsole(_handle, p, buffer.Length / BytesPerWChar, out int charsWritten, 0))
+                        {
+                            Debug.Assert(buffer.Length / BytesPerWChar == charsWritten);
+                            return;
+                        }
                     }
                 }
-                if (writeSuccess)
-                    return Interop.Errors.ERROR_SUCCESS;
 
                 // For pipes that are closing or broken, just stop.
                 // (E.g. ERROR_NO_DATA ("pipe is being closed") is returned when we write to a console that is closing;
                 // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is not an error, but EOF.)
                 int errorCode = Marshal.GetLastPInvokeError();
                 if (errorCode == Interop.Errors.ERROR_NO_DATA || errorCode == Interop.Errors.ERROR_BROKEN_PIPE || errorCode == Interop.Errors.ERROR_PIPE_NOT_CONNECTED)
-                    return Interop.Errors.ERROR_SUCCESS;
-                return errorCode;
+                    return;
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
         }
     }
