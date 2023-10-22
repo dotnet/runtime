@@ -603,7 +603,7 @@ bool FoldNeverNegativeRangeTest(
         return false;
     }
 
-    if ((upperBound->gtFlags & GTF_ALL_EFFECT) != 0)
+    if ((upperBound->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
         // We can't fold "X >= 0 && X < NN" to "X u< NN" if NN has side effects.
         return false;
