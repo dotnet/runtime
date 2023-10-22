@@ -77,7 +77,7 @@ namespace System.Collections.Frozen
         {
             if ((uint)(key.Length - _minimumLength) <= (uint)_maximumLengthDiff)
             {
-                if ((_lengthFilter & (1UL << (key.Length & 0x3F))) > 0)
+                if ((_lengthFilter & (1UL << (key.Length % 64))) > 0)
                 {
                     int hashCode = GetHashCode(key);
                     _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);

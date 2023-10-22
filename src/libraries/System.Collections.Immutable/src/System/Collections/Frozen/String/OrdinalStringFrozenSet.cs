@@ -67,7 +67,7 @@ namespace System.Collections.Frozen
             if (item is not null && // this implementation won't be used for null values
                 (uint)(item.Length - _minimumLength) <= (uint)_maximumLengthDiff)
             {
-                if ((_lengthFilter & (1UL << (item.Length & 0x3F))) > 0)
+                if ((_lengthFilter & (1UL << (item.Length % 64))) > 0)
                 {
                     int hashCode = GetHashCode(item);
                     _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);

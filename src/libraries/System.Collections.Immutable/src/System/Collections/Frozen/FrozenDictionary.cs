@@ -166,7 +166,7 @@ namespace System.Collections.Frozen
                 {
                     if (key.Length < minLength) minLength = key.Length;
                     if (key.Length > maxLength) maxLength = key.Length;
-                    lengthFilter |= (1UL << (key.Length & 0x3F));
+                    lengthFilter |= (1UL << (key.Length % 64));
                 }
                 Debug.Assert(minLength >= 0 && maxLength >= minLength);
 
