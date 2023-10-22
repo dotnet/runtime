@@ -12,12 +12,9 @@ public partial class LazyLoadingTest
     {
         // System.Text.Json is marked as lazy loaded in the csproj ("BlazorWebAssemblyLazyLoad"), this method can be called only after the assembly is lazy loaded
         // In the test case it is done in the JS before call to this method
-        var text = JsonSerializer.Serialize(new Person("John", "Doe"), SourceGenerationContext.Default.Person);
+        var text = JsonSerializer.Serialize(new Person("John", "Doe"));
         TestOutput.WriteLine(text);
     }
 
-    internal partial class SourceGenerationContext : JsonSerializerContext
-    {
-    }
     public record Person(string FirstName, string LastName);
 }
