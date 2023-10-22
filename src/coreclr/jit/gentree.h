@@ -5632,7 +5632,7 @@ struct GenTreeCall final : public GenTree
     GenTreeCallDebugFlags gtCallDebugFlags;
 #endif
 
-#if defined(DEBUG) || defined(INLINE_DATA)
+#if defined(DEBUG)
     // For non-inline candidates, track the first observation
     // that blocks candidacy.
     InlineObservation gtInlineObservation;
@@ -5644,7 +5644,7 @@ struct GenTreeCall final : public GenTree
     // fgNoteNonInlineCandidate. We need to keep around the inline context for
     // this as normally it's part of the candidate info.
     class InlineContext* gtInlineContext;
-#endif // defined(DEBUG) || defined(INLINE_DATA)
+#endif // defined(DEBUG)
 
     bool IsHelperCall() const
     {
