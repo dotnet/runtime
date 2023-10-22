@@ -1711,6 +1711,10 @@ namespace System.Runtime.InteropServices
         public VariantWrapper(object? obj) { }
         public object? WrappedObject { get { throw null; } }
     }
+    [AttributeUsage(System.AttributeTargets.Assembly | System.AttributeTargets.Class | AttributeTargets.Method, Inherited = false)]
+    public sealed class WasmImportAttribute : Attribute
+    {
+    }
 }
 namespace System.Runtime.InteropServices.ComTypes
 {
