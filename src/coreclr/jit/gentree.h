@@ -5630,9 +5630,7 @@ struct GenTreeCall final : public GenTree
 
 #ifdef DEBUG
     GenTreeCallDebugFlags gtCallDebugFlags;
-#endif
 
-#if defined(DEBUG)
     // For non-inline candidates, track the first observation
     // that blocks candidacy.
     InlineObservation gtInlineObservation;
