@@ -168,7 +168,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected override void CreateSection(ObjectNodeSection section, Stream sectionStream)
+        protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
         {
             string segmentName = section.Name switch
             {
@@ -225,7 +225,10 @@ namespace ILCompiler.ObjectWriter
                 Attributes = attributes,
             };
 
+            int sectionIndex = _segment.Sections.Count;
             _segment.Sections.Add(machSection);
+
+            base.CreateSection(section, comdatName, symbolName ?? $"lsection{sectionIndex}", sectionStream);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -281,7 +284,7 @@ namespace ILCompiler.ObjectWriter
                         IDictionary<string, SymbolDefinition> definedSymbols = GetDefinedSymbols();
                         if (definedSymbols.TryGetValue(symbolName, out SymbolDefinition symbolDefinition))
                         {
-                            symbolName = GetSectionSymbolName(symbolDefinition.SectionIndex);
+                            symbolName = $"lsection{symbolDefinition.SectionIndex}";
                             BinaryPrimitives.WriteUInt64LittleEndian(
                                 data,
                                 _segment.Sections[symbolDefinition.SectionIndex].VirtualAddress + (ulong)symbolDefinition.Value);
@@ -687,7 +690,6 @@ namespace ILCompiler.ObjectWriter
             return encoding != _compactUnwindDwarfCode;
         }
 
-        protected override string GetSectionSymbolName(int sectionIndex) => "lsection" + sectionIndex;
         private static bool IsSectionSymbolName(string symbolName) => symbolName.StartsWith('l');
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)

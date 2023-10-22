@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Buffers.Binary;
 using ILCompiler.DependencyAnalysis;
@@ -12,8 +14,11 @@ namespace ILCompiler.ObjectWriter
 {
     public abstract class UnixObjectWriter : ObjectWriter
     {
+        private sealed record SectionDefinition(string SymbolName, Stream SectionStream);
+
         // Debugging
         private DwarfBuilder _dwarfBuilder;
+        private readonly List<SectionDefinition> _sections = new();
 
         // Exception handling sections
         private SectionWriter _lsdaSectionWriter;
@@ -24,10 +29,27 @@ namespace ILCompiler.ObjectWriter
         protected int EhFrameSectionIndex => _ehFrameSectionIndex;
 
         private static ObjectNodeSection LsdaSection = new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly, null);
+        private static ObjectNodeSection EhFrameSection = new ObjectNodeSection(".eh_frame", SectionType.ReadOnly, null);
 
         protected UnixObjectWriter(NodeFactory factory, ObjectWritingOptions options)
             : base(factory, options)
         {
+        }
+
+        protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        {
+            if (section.Type != SectionType.Debug &&
+                section != LsdaSection &&
+                section != EhFrameSection &&
+                (comdatName is null || Equals(comdatName, symbolName)))
+            {
+                // Record code and data sections that can be referenced from debugging information
+                _sections.Add(new SectionDefinition(symbolName, sectionStream));
+            }
+            else
+            {
+                _sections.Add(null);
+            }
         }
 
         protected virtual bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob) => false;
@@ -45,7 +67,7 @@ namespace ILCompiler.ObjectWriter
 
                 if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
                 {
-                    lsdaSectionWriter = GetOrCreateSection(GetSharedSection(LsdaSection, currentSymbolName));
+                    lsdaSectionWriter = GetOrCreateSection(LsdaSection, currentSymbolName, $"_lsda0{currentSymbolName}");
                 }
                 else
                 {
@@ -150,17 +172,15 @@ namespace ILCompiler.ObjectWriter
                 debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
                 clauses ?? []);
 
-            if (hasSequencePoints)
+            if (hasSequencePoints && _sections[methodSymbol.SectionIndex] is SectionDefinition section)
             {
                 _dwarfBuilder.EmitLineInfo(
                     methodSymbol.SectionIndex,
-                    GetSectionSymbolName(methodSymbol.SectionIndex),
+                    section.SymbolName,
                     (ulong)methodSymbol.Value,
                     debugNode.GetNativeSequencePoints());
             }
         }
-
-        //protected abstract void EmitDebugSections(DwarfFile dwarfFile);
 
         private readonly ObjectNodeSection DebugInfoSection = new ObjectNodeSection(".debug_info", SectionType.Debug);
         private readonly ObjectNodeSection DebugStringSection = new ObjectNodeSection(".debug_str", SectionType.Debug);
@@ -172,9 +192,12 @@ namespace ILCompiler.ObjectWriter
 
         protected override void EmitDebugSections()
         {
-            for (int i = 0; i < _sectionIndexToStream.Count; i++)
+            foreach (SectionDefinition section in _sections)
             {
-                _dwarfBuilder.EmitSectionInfo(GetSectionSymbolName(i), (ulong)_sectionIndexToStream[i].Length);
+                if (section is not null)
+                {
+                    _dwarfBuilder.EmitSectionInfo(section.SymbolName, (ulong)section.SectionStream.Length);
+                }
             }
 
             SectionWriter infoSectionWriter = GetOrCreateSection(DebugInfoSection);
@@ -201,7 +224,7 @@ namespace ILCompiler.ObjectWriter
 
             // Create sections for exception handling
             _lsdaSectionWriter = GetOrCreateSection(LsdaSection);
-            ehFrameSectionWriter = GetOrCreateSection(new ObjectNodeSection(".eh_frame", SectionType.ReadOnly, null));
+            ehFrameSectionWriter = GetOrCreateSection(EhFrameSection);
             _lsdaSectionWriter.EmitAlignment(8);
             ehFrameSectionWriter.EmitAlignment(8);
             _ehFrameSectionIndex = ehFrameSectionWriter.SectionIndex;

@@ -26,8 +26,10 @@ namespace ILCompiler.ObjectWriter
 {
     public sealed class CoffObjectWriter : ObjectWriter
     {
+        private sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName, string SymbolName);
+
         private Machine _machine;
-        private List<(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName)> _sections = new();
+        private List<SectionDefinition> _sections = new();
 
         // Symbol table
         private List<CoffSymbolRecord> _symbols = new();
@@ -62,7 +64,7 @@ namespace ILCompiler.ObjectWriter
             };
         }
 
-        protected override void CreateSection(ObjectNodeSection section, Stream sectionStream)
+        protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
         {
             var sectionHeader = new CoffSectionHeader
             {
@@ -94,13 +96,12 @@ namespace ILCompiler.ObjectWriter
                     SectionCharacteristics.MemDiscardable;
             }
 
-            if (section.ComdatName != null)
+            if (comdatName is not null)
             {
-                sectionHeader.SectionCharacteristics |=
-                    SectionCharacteristics.LinkerComdat;
+                sectionHeader.SectionCharacteristics |= SectionCharacteristics.LinkerComdat;
             }
 
-            _sections.Add((sectionHeader, sectionStream, new List<CoffRelocation>(), section.ComdatName));
+            _sections.Add(new SectionDefinition(sectionHeader, sectionStream, new List<CoffRelocation>(), comdatName, symbolName));
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -195,25 +196,15 @@ namespace ILCompiler.ObjectWriter
         protected override void EmitSymbolTable()
         {
             var definedSymbols = GetDefinedSymbols();
-            var sectionSymbol = new string[_sections.Count];
-
-            foreach (var (symbolName, symbolDefinition) in definedSymbols)
-            {
-                if (symbolDefinition.Value == 0 &&
-                    sectionSymbol[symbolDefinition.SectionIndex] is null)
-                {
-                    sectionSymbol[symbolDefinition.SectionIndex] = symbolName;
-                }
-            }
 
             int sectionIndex = 0;
-            foreach (var (sectionHeader, _, _, comdatName) in _sections)
+            foreach (SectionDefinition section in _sections)
             {
-                if (sectionHeader.SectionCharacteristics.HasFlag(SectionCharacteristics.LinkerComdat))
+                if (section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.LinkerComdat))
                 {
                     // We find the defining section of the COMDAT symbol. That one is marked
                     // as "ANY" selection type. All the other ones are marked as associated.
-                    SymbolDefinition definingSymbol = definedSymbols[comdatName];
+                    SymbolDefinition definingSymbol = definedSymbols[section.ComdatName];
                     int definingSectionIndex = definingSymbol.SectionIndex;
 
                     var auxRecord = new CoffSectionSymbol
@@ -230,7 +221,7 @@ namespace ILCompiler.ObjectWriter
                     _sectionNumberToComdatAuxRecord[sectionIndex] = auxRecord;
                     _symbols.Add(new CoffSymbol
                     {
-                        Name = sectionHeader.Name,
+                        Name = section.Header.Name,
                         Value = 0,
                         SectionIndex = (uint)(1 + sectionIndex),
                         StorageClass = 3, // IMAGE_SYM_CLASS_STATIC
@@ -240,21 +231,21 @@ namespace ILCompiler.ObjectWriter
 
                     if (definingSectionIndex == sectionIndex)
                     {
-                        _symbolNameToIndex.Add(comdatName, (uint)_symbols.Count);
+                        _symbolNameToIndex.Add(section.ComdatName, (uint)_symbols.Count);
                         _symbols.Add(new CoffSymbol
                         {
-                            Name = comdatName,
+                            Name = section.ComdatName,
                             Value = (uint)definingSymbol.Value,
                             SectionIndex = (uint)(1 + definingSymbol.SectionIndex),
                             StorageClass = 2 // IMAGE_SYM_CLASS_EXTERNAL
                         });
                     }
-                    else if (sectionSymbol[sectionIndex] is not null)
+                    else if (section.SymbolName is not null)
                     {
-                        _symbolNameToIndex.Add(sectionSymbol[sectionIndex], (uint)_symbols.Count);
+                        _symbolNameToIndex.Add(section.SymbolName, (uint)_symbols.Count);
                         _symbols.Add(new CoffSymbol
                         {
-                            Name = sectionSymbol[sectionIndex],
+                            Name = section.SymbolName,
                             Value = 0,
                             SectionIndex = (uint)(1 + sectionIndex),
                             StorageClass = 3 // IMAGE_SYM_CLASS_STATIC
@@ -416,8 +407,8 @@ namespace ILCompiler.ObjectWriter
                         // and produces errors about duplicate symbols that point into the
                         // associative section, so we are stuck with one section per each
                         // unwind symbol.
-                        xdataSectionWriter = GetOrCreateSection(GetSharedSection(ObjectNodeSection.XDataSection, currentSymbolName));
-                        pdataSectionWriter = GetOrCreateSection(GetSharedSection(PDataSection, currentSymbolName));
+                        xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection, currentSymbolName, unwindSymbolName);
+                        pdataSectionWriter = GetOrCreateSection(PDataSection, currentSymbolName, null);
                     }
                     else
                     {
@@ -501,7 +492,7 @@ namespace ILCompiler.ObjectWriter
             // Calculate size of section data and assign offsets
             uint dataOffset = (uint)(coffHeader.Size + _sections.Count * CoffSectionHeader.Size);
             int sectionIndex = 0;
-            foreach (var section in _sections)
+            foreach (SectionDefinition section in _sections)
             {
                 section.Header.SizeOfRawData = (uint)section.Stream.Length;
 
@@ -530,7 +521,7 @@ namespace ILCompiler.ObjectWriter
 
             // Write COFF section headers
             sectionIndex = 0;
-            foreach (var section in _sections)
+            foreach (SectionDefinition section in _sections)
             {
                 section.Header.Write(outputFileStream, stringTable);
 
@@ -552,7 +543,7 @@ namespace ILCompiler.ObjectWriter
             }
 
             // Writer section content and relocations
-            foreach (var section in _sections)
+            foreach (SectionDefinition section in _sections)
             {
                 if (!section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
                 {
@@ -625,7 +616,7 @@ namespace ILCompiler.ObjectWriter
             {
                 // If the method is emitted in COMDAT section then we need to create an
                 // associated COMDAT section for the debugging symbols.
-                var sectionWriter = GetOrCreateSection(GetSharedSection(DebugSymbolSection, methodName));
+                var sectionWriter = GetOrCreateSection(DebugSymbolSection, methodName, null);
                 debugSymbolsBuilder = new CodeViewSymbolsBuilder(_nodeFactory.Target.Architecture, sectionWriter);
             }
             else

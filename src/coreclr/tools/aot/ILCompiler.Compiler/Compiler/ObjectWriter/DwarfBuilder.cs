@@ -154,25 +154,15 @@ namespace ILCompiler.ObjectWriter
                 dwarfInfoWriter.WriteStringReference("il.cpp");
                 // DW_AT_comp_dir
                 dwarfInfoWriter.WriteStringReference("/_");
-                /*if (_isOSXLike)
+                // DW_AT_low_pc
+                dwarfInfoWriter.WriteCodeReference(_sections[0].SectionSymbolName);
+                // DW_AT_ranges
+                dwarfInfoWriter.WriteStartRangeList();
+                foreach (var sectionInfo in _sections)
                 {
-                    // DW_AT_low_pc
-                    dwarfInfoWriter.WriteAddressSize(0);
-                    // DW_AT_high_pc
-                    dwarfInfoWriter.WriteCodeReference(_sections[^1].SectionSymbolName, (uint)_sections[^1].Size);
+                    dwarfInfoWriter.WriteRangeListEntry(sectionInfo.SectionSymbolName, 0, (uint)sectionInfo.Size);
                 }
-                else
-                {*/
-                    // DW_AT_low_pc
-                    dwarfInfoWriter.WriteCodeReference(_sections[0].SectionSymbolName);
-                    // DW_AT_ranges
-                    dwarfInfoWriter.WriteStartRangeList();
-                    foreach (var sectionInfo in _sections)
-                    {
-                        dwarfInfoWriter.WriteRangeListEntry(sectionInfo.SectionSymbolName, 0, (uint)sectionInfo.Size);
-                    }
-                    dwarfInfoWriter.WriteEndRangeList();
-                //}
+                dwarfInfoWriter.WriteEndRangeList();
                 // DW_AT_stmt_list
                 dwarfInfoWriter.WriteLineReference(0);
 
@@ -235,22 +225,14 @@ namespace ILCompiler.ObjectWriter
             arangeSectionWriter.Stream.Write([_targetPointerSize, 0]);
             // Ranges have to be aligned
             arangeSectionWriter.EmitAlignment(_targetPointerSize * 2);
-            /*if (_isOSXLike)
+            foreach (var sectionInfo in _sections)
             {
-                arangeSectionWriter.Stream.WriteUInt64(0);
-                arangeSectionWriter.EmitSymbolReference(_codeRelocType, _sections[^1].SectionSymbolName, (int)_sections[^1].Size);
-            }
-            else*/
-            {
-                foreach (var sectionInfo in _sections)
+                arangeSectionWriter.EmitSymbolReference(_codeRelocType, sectionInfo.SectionSymbolName, 0);
+                switch (_targetPointerSize)
                 {
-                    arangeSectionWriter.EmitSymbolReference(_codeRelocType, sectionInfo.SectionSymbolName, 0);
-                    switch (_targetPointerSize)
-                    {
-                        case 8: arangeSectionWriter.Stream.WriteUInt64(sectionInfo.Size); break;
-                        case 4: arangeSectionWriter.Stream.WriteUInt32((uint)sectionInfo.Size); break;
-                        default: throw new NotSupportedException();
-                    }
+                    case 8: arangeSectionWriter.Stream.WriteUInt64(sectionInfo.Size); break;
+                    case 4: arangeSectionWriter.Stream.WriteUInt32((uint)sectionInfo.Size); break;
+                    default: throw new NotSupportedException();
                 }
             }
             arangeSectionWriter.Stream.Write(stackalloc byte[_targetPointerSize * 2]);
