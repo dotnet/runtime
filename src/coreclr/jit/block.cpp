@@ -521,6 +521,10 @@ void BasicBlock::dspFlags()
     {
         printf("mdarr ");
     }
+    if (bbFlags & BBF_NEEDS_GCPOLL)
+    {
+        printf("gcpoll ");
+    }
 }
 
 /*****************************************************************************
