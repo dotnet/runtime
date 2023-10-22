@@ -45,7 +45,7 @@ namespace ILCompiler.ObjectWriter
             _symbolTable = new ElfSymbolTable { Link = stringSection };
         }
 
-        protected override void CreateSection(ObjectNodeSection section, Stream sectionStream)
+        protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
         {
             ElfSection elfSection;
             ElfGroupSection groupSection = null;
@@ -53,8 +53,8 @@ namespace ILCompiler.ObjectWriter
                 section.Name == "rdata" ? ".rodata" :
                 (section.Name.StartsWith('_') || section.Name.StartsWith('.') ? section.Name : "." + section.Name);
 
-            if (section.ComdatName != null &&
-                !_comdatNameToElfSection.TryGetValue(section.ComdatName, out groupSection))
+            if (comdatName is not null &&
+                !_comdatNameToElfSection.TryGetValue(comdatName, out groupSection))
             {
                 groupSection = new ElfGroupSection
                 {
@@ -62,7 +62,7 @@ namespace ILCompiler.ObjectWriter
                     Link = _symbolTable,
                     // Info = <symbol index> of the COMDAT symbol, to be filled later
                 };
-                _comdatNameToElfSection.Add(section.ComdatName, groupSection);
+                _comdatNameToElfSection.Add(comdatName, groupSection);
             }
 
             if (section.Type == SectionType.Uninitialized)
@@ -111,6 +111,8 @@ namespace ILCompiler.ObjectWriter
             _elfSectionToSectionIndex[elfSection] = _sectionIndex;
             _sectionIndexToElfSection[_sectionIndex++] = elfSection;
             groupSection?.AddSection(elfSection);
+
+            base.CreateSection(section, comdatName, symbolName ?? elfSection.Name.Value, sectionStream);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -315,12 +317,6 @@ namespace ILCompiler.ObjectWriter
             {
                 Debug.Assert(relocationList.Count == 0);
             }
-        }
-
-        protected override string GetSectionSymbolName(int sectionIndex)
-        {
-            // FIXME: We really want symbol name for relocations and it has to be unique for COMDAT
-            return _sectionIndexToElfSection[sectionIndex].Name.Value;
         }
 
         protected override void EmitDebugSections()

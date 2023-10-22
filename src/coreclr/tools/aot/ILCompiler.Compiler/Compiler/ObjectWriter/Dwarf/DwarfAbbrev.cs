@@ -60,16 +60,6 @@ namespace ILCompiler.ObjectWriter
             DW_AT_ranges, DW_FORM_sec_offset,
             DW_AT_stmt_list, DW_FORM_sec_offset]);
 
-        public static DwarfAbbrev CompileUnitNoRanges = new([
-            DW_TAG_compile_unit, DW_CHILDREN_yes,
-            DW_AT_producer, DW_FORM_strp,
-            DW_AT_language, DW_FORM_data2,
-            DW_AT_name, DW_FORM_strp,
-            DW_AT_comp_dir, DW_FORM_strp,
-            DW_AT_low_pc, DW_FORM_addr,
-            DW_AT_high_pc, DW_FORM_size,
-            DW_AT_stmt_list, DW_FORM_sec_offset]);
-
         public static DwarfAbbrev BaseType = new([
             DW_TAG_base_type, DW_CHILDREN_no,
             DW_AT_name, DW_FORM_strp,

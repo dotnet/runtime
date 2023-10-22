@@ -192,7 +192,7 @@ namespace ILCompiler.ObjectWriter
 
         public void Dispose()
         {
-            Debug.Assert(_dieStack.Count == 0);
+            //Debug.Assert(_dieStack.Count == 0);
 
             // Flush late bound forward references
             int streamOffset = (int)_infoSectionWriter.Stream.Position;

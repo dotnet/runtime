@@ -28,7 +28,7 @@ namespace ILCompiler.ObjectWriter
 
         // Standard sections
         private readonly Dictionary<string, int> _sectionNameToSectionIndex = new(StringComparer.Ordinal);
-        protected readonly List<ObjectWriterStream> _sectionIndexToStream = new();
+        private readonly List<ObjectWriterStream> _sectionIndexToStream = new();
         private readonly List<List<SymbolicRelocation>> _sectionIndexToRelocations = new();
 
         // Symbol table
@@ -61,23 +61,37 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        protected abstract void CreateSection(ObjectNodeSection section, Stream sectionStream);
+        protected abstract void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream);
 
         protected internal abstract void UpdateSectionAlignment(int sectionIndex, int alignment);
 
-        protected SectionWriter GetOrCreateSection(ObjectNodeSection section)
+        /// <summary>
+        /// Get or creates an object file section.
+        /// </summary>
+        /// <param name="section">Base section name and type definition.</param>
+        /// <param name="comdatName">Name of the COMDAT symbol or null.</param>
+        /// <param name="symbolName">Name of the section definiting symbol for COMDAT or null</param>
+        /// <returns>Writer for a given section.</returns>
+        /// <remarks>
+        /// When creating a COMDAT section both <paramref name="comdatName"/> and <paramref name="symbolName"/>
+        /// has to be specified. <paramref name="comdatName"/> specifies the group section. For the primary
+        /// symbol both <paramref name="comdatName"/> and <paramref name="symbolName"/> will be the same.
+        /// For associated sections, such as exception or debugging information, the <paramref name="symbolName"/>
+        /// will be different.
+        /// </remarks>
+        protected SectionWriter GetOrCreateSection(ObjectNodeSection section, string comdatName = null, string symbolName = null)
         {
             int sectionIndex;
             ObjectWriterStream sectionStream;
 
-            if (section.ComdatName is not null || !_sectionNameToSectionIndex.TryGetValue(section.Name, out sectionIndex))
+            if (comdatName is not null || !_sectionNameToSectionIndex.TryGetValue(section.Name, out sectionIndex))
             {
                 sectionStream = new ObjectWriterStream(section.Type == SectionType.Executable ? _insPaddingByte : (byte)0);
-                CreateSection(section, sectionStream);
                 sectionIndex = _sectionIndexToStream.Count;
+                CreateSection(section, comdatName, symbolName, sectionStream);
                 _sectionIndexToStream.Add(sectionStream);
                 _sectionIndexToRelocations.Add(new());
-                if (section.ComdatName is null)
+                if (comdatName is null)
                 {
                     _sectionNameToSectionIndex.Add(section.Name, sectionIndex);
                 }
@@ -263,8 +277,6 @@ namespace ILCompiler.ObjectWriter
 
         protected abstract ITypesDebugInfoWriter CreateDebugInfoBuilder();
 
-        protected virtual string GetSectionSymbolName(int sectionIndex) => null;
-
         protected abstract void EmitDebugFunctionInfo(
             uint methodTypeIndex,
             string methodName,
@@ -315,12 +327,9 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 ObjectNodeSection section = node.GetSection(_nodeFactory);
-                if (ShouldShareSymbol(node, section))
-                {
-                    section = GetSharedSection(section, currentSymbolName);
-                }
-
-                SectionWriter sectionWriter = GetOrCreateSection(section);
+                SectionWriter sectionWriter = ShouldShareSymbol(node, section) ?
+                    GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
+                    GetOrCreateSection(section);
 
                 sectionWriter.EmitAlignment(nodeContents.Alignment);
 
