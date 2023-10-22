@@ -5,7 +5,7 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-class SetLastErrorTest
+public class SetLastErrorTest
 {
     private static class SetLastErrorNative
     {
@@ -62,7 +62,8 @@ class SetLastErrorTest
         Assert.Equal(0, actual);
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

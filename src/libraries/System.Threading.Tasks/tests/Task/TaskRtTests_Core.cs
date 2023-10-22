@@ -59,13 +59,13 @@ namespace System.Threading.Tasks.Tests
 
                 if (failureCount != concurrencyLevel - 1)
                 {
-                    Assert.True(false, string.Format("RunTCSCompletionStateTests:    > FAILED! Expected {0} failures on TrySetResult, got {1}",
+                    Assert.Fail(string.Format("RunTCSCompletionStateTests:    > FAILED! Expected {0} failures on TrySetResult, got {1}",
                         concurrencyLevel - 1, failureCount));
                 }
 
                 if (errorCount > 0)
                 {
-                    Assert.True(false, string.Format("RunTCSCompletionStateTests:    > FAILED! Saw {0} instances of Result != 10", errorCount));
+                    Assert.Fail(string.Format("RunTCSCompletionStateTests:    > FAILED! Saw {0} instances of Result != 10", errorCount));
                 }
             }
         }
@@ -113,13 +113,13 @@ namespace System.Threading.Tasks.Tests
 
                 if (failureCount != concurrencyLevel - 1)
                 {
-                    Assert.True(false, string.Format("RunTCSCompletionStateTests:    > FAILED! Expected {0} failures on TrySetCanceled, got {1}",
+                    Assert.Fail(string.Format("RunTCSCompletionStateTests:    > FAILED! Expected {0} failures on TrySetCanceled, got {1}",
                         concurrencyLevel - 1, failureCount));
                 }
 
                 if (errorCount > 0)
                 {
-                    Assert.True(false, string.Format("RunTCSCompletionStateTests:    > FAILED! Saw {0} instances of !tcs.Task.IsCanceled", errorCount));
+                    Assert.Fail(string.Format("RunTCSCompletionStateTests:    > FAILED! Saw {0} instances of !tcs.Task.IsCanceled", errorCount));
                 }
             }
         }
@@ -167,13 +167,13 @@ namespace System.Threading.Tasks.Tests
 
                 if (failureCount != concurrencyLevel - 1)
                 {
-                    Assert.True(false, string.Format("RunTCSCompletionStateTests:    > FAILED! Expected {0} failures on TrySetException, got {1}",
+                    Assert.Fail(string.Format("RunTCSCompletionStateTests:    > FAILED! Expected {0} failures on TrySetException, got {1}",
                         concurrencyLevel - 1, failureCount));
                 }
 
                 if (errorCount > 0)
                 {
-                    Assert.True(false, string.Format("RunTCSCompletionStateTests:    > FAILED! saw {0} instances of post-call Exception == null", errorCount));
+                    Assert.Fail(string.Format("RunTCSCompletionStateTests:    > FAILED! saw {0} instances of post-call Exception == null", errorCount));
                 }
             }
         }
@@ -209,7 +209,7 @@ namespace System.Threading.Tasks.Tests
                 }
                 catch (Exception e)
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! TrySet*-after-Dispose should not have thrown an exception, but instead threw {0}", e.GetType()));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! TrySet*-after-Dispose should not have thrown an exception, but instead threw {0}", e.GetType()));
                 }
             }
         }
@@ -247,51 +247,51 @@ namespace System.Threading.Tasks.Tests
                 tcs.SetException(new Exception("Some recorded exception"));
                 if (tcs.Task.Status != TaskStatus.Faulted)
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, Status should be Faulted, is {0}", tcs.Task.Status));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, Status should be Faulted, is {0}", tcs.Task.Status));
                 }
                 cts.Cancel();
                 if (tcs.Task.Status != TaskStatus.Faulted)
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, canceled, Status should be Faulted, is {0}", tcs.Task.Status));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, canceled, Status should be Faulted, is {0}", tcs.Task.Status));
                 }
                 if (tcs.TrySetResult(15))
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, canceled, TrySetResult succeeded"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, canceled, TrySetResult succeeded"));
                 }
                 if (tcs.TrySetException(new Exception("blah")))
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, canceled, TrySetException succeeded"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, canceled, TrySetException succeeded"));
                 }
                 if (tcs.TrySetCanceled())
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, canceled, TrySetCanceled succeeded"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, canceled, TrySetCanceled succeeded"));
                 }
                 try
                 {
                     tcs.SetResult(10);
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, Canceled, no exception on setting result"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, Canceled, no exception on setting result"));
                 }
                 catch { }
                 try
                 {
                     tcs.SetException(new Exception("bar"));
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, Canceled, no exception on re-setting exception"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, Canceled, no exception on re-setting exception"));
                 }
                 catch { }
                 try
                 {
                     tcs.SetCanceled();
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, Canceled, no exception on Cancel"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, Canceled, no exception on Cancel"));
                 }
                 catch { }
                 if (tcs.Task.Status != TaskStatus.Faulted)
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, final Status should be Faulted, is {0}", tcs.Task.Status));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, final Status should be Faulted, is {0}", tcs.Task.Status));
                 }
                 try
                 {
                     tcs.Task.Wait();
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, Wait()-ed, expected exception, got none."));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Set exception, Wait()-ed, expected exception, got none."));
                 }
                 catch { }
             }
@@ -303,11 +303,11 @@ namespace System.Threading.Tasks.Tests
                     tcs.TrySetException(new Exception[] { new Exception("Exception A"), new Exception("Exception B") });
                 if (!succeeded)
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() attempt did not succeed"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() attempt did not succeed"));
                 }
                 if (tcs.Task.Status != TaskStatus.Faulted)
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() attempt did not result in Faulted status (got {0})", tcs.Task.Status));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() attempt did not result in Faulted status (got {0})", tcs.Task.Status));
                 }
                 try
                 {
@@ -317,48 +317,48 @@ namespace System.Threading.Tasks.Tests
                 {
                     if (ae.InnerExceptions.Count != 2)
                     {
-                        Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! Expected TrySetException() to result in 2 inner exceptions, got {0}", ae.InnerExceptions.Count));
+                        Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! Expected TrySetException() to result in 2 inner exceptions, got {0}", ae.InnerExceptions.Count));
                     }
                 }
                 catch (Exception e)
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() resulted in wrong exception type: {0}", e.GetType().ToString()));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() resulted in wrong exception type: {0}", e.GetType().ToString()));
                 }
 
                 tcs = new TaskCompletionSource<int>();
                 try
                 {
                     tcs.TrySetException(new Exception[] { new Exception("Exception A"), null });
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with null array element should have thrown an exception"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with null array element should have thrown an exception"));
                 }
                 catch (ArgumentException) { }
                 catch (Exception e)
                 {
-                    Assert.True(false, string.Format("    > Error! TrySetException() with null array element should have thrown an ArgumentException, got {0}",
+                    Assert.Fail(string.Format("    > Error! TrySetException() with null array element should have thrown an ArgumentException, got {0}",
                         e.GetType().ToString()));
                 }
 
                 try
                 {
                     tcs.TrySetException((IEnumerable<Exception>)null);
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with null IEnumerable should have thrown an exception"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with null IEnumerable should have thrown an exception"));
                 }
                 catch (ArgumentNullException) { }
                 catch (Exception e)
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with null IEnumerable should have thrown an ArgumentNullException, got {0}",
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with null IEnumerable should have thrown an ArgumentNullException, got {0}",
                         e.GetType().ToString()));
                 }
 
                 try
                 {
                     tcs.TrySetException(new Exception[0]);
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with no elements should have thrown an exception"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with no elements should have thrown an exception"));
                 }
                 catch (ArgumentException) { }
                 catch (Exception e)
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with no elements should have thrown an ArgumentException, got {0}",
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with no elements should have thrown an ArgumentException, got {0}",
                         e.GetType().ToString()));
                 }
 
@@ -366,24 +366,24 @@ namespace System.Threading.Tasks.Tests
                 try
                 {
                     tcs.TrySetException((Exception)null);
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with null Exception should have thrown an exception"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with null Exception should have thrown an exception"));
                 }
                 catch (ArgumentNullException) { }
                 catch (Exception e)
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with null Exception should have thrown an ArgumentNullException, got {0}",
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! TrySetException() with null Exception should have thrown an ArgumentNullException, got {0}",
                         e.GetType().ToString()));
                 }
 
                 try
                 {
                     tcs.SetException((Exception)null);
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! SetException() with null Exception should have thrown an exception"));
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! SetException() with null Exception should have thrown an exception"));
                 }
                 catch (ArgumentNullException) { }
                 catch (Exception e)
                 {
-                    Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error! SetException() with null Exception should have thrown an ArgumentNullException, got {0}",
+                    Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error! SetException() with null Exception should have thrown an ArgumentNullException, got {0}",
                         e.GetType().ToString()));
                 }
             }
@@ -418,54 +418,54 @@ namespace System.Threading.Tasks.Tests
 
             if (tcs.Task.Status == TaskStatus.Canceled)
             {
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Task Canceled, Should not have seen status = Canceled, did"));
+                Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Task Canceled, Should not have seen status = Canceled, did"));
             }
             tcs.SetCanceled(); // cancel it for real
             if (tcs.Task.Status != TaskStatus.Canceled)
             {
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, Status should be Canceled, is {0}", tcs.Task.Status));
+                Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, Status should be Canceled, is {0}", tcs.Task.Status));
             }
             if (tcs.TrySetException(new Exception("spam")))
             {
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, TrySetException succeeded"));
+                Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, TrySetException succeeded"));
             }
             if (tcs.TrySetResult(10))
             {
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, TrySetResult succeeded"));
+                Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, TrySetResult succeeded"));
             }
             if (tcs.TrySetCanceled())
             {
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, TrySetCanceled succeeded"));
+                Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, TrySetCanceled succeeded"));
             }
             try
             {
                 tcs.SetResult(15);
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, no exception on setting Result"));
+                Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, no exception on setting Result"));
             }
             catch { }
             try
             {
                 tcs.SetException(new Exception("yet another exception"));
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, no exception on setting Exception"));
+                Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, no exception on setting Exception"));
             }
             catch { }
             try
             {
                 tcs.SetCanceled();
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, no exception on re-Cancel"));
+                Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, no exception on re-Cancel"));
             }
             catch { }
             try
             {
                 int i = tcs.Task.Result;
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, but get-Result threw no exception"));
+                Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, but get-Result threw no exception"));
             }
             catch { }
 
 
             if (tcs.Task.Status != TaskStatus.Canceled)
             {
-                Assert.True(false, string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, final status should be Canceled, is {0}", tcs.Task.Status));
+                Assert.Fail(string.Format("RunTaskCompletionSourceTests:    > Error!  Canceled, final status should be Canceled, is {0}", tcs.Task.Status));
             }
         }
 
@@ -475,7 +475,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 Task t = new Task(delegate { }, (TaskCreationOptions)0x100);
-                Assert.True(false, string.Format("RunTaskCreateTests:    > FAILED!  Failed to throw exception on use of internal TCO"));
+                Assert.Fail(string.Format("RunTaskCreateTests:    > FAILED!  Failed to throw exception on use of internal TCO"));
             }
             catch { }
         }
@@ -765,44 +765,44 @@ namespace System.Threading.Tasks.Tests
             TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
             if (((IAsyncResult)tcs.Task).AsyncState != null)
             {
-                Assert.True(false, string.Format("RunBasicFutureTest - TaskCompletionSource:   > FAILED! non-null state when not spec'd in empty tcs ctor"));
+                Assert.Fail(string.Format("RunBasicFutureTest - TaskCompletionSource:   > FAILED! non-null state when not spec'd in empty tcs ctor"));
             }
             if (tcs.Task.CreationOptions != TaskCreationOptions.None)
             {
-                Assert.True(false, string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in empty ctor"));
+                Assert.Fail(string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in empty ctor"));
             }
             tcs.SetResult(10);
 
             tcs = new TaskCompletionSource<int>(testOptions);
             if (tcs.Task.CreationOptions != testOptions)
             {
-                Assert.True(false, string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! TCO in tcs ctor not persistent"));
+                Assert.Fail(string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! TCO in tcs ctor not persistent"));
             }
             if (((IAsyncResult)tcs.Task).AsyncState != null)
             {
-                Assert.True(false, string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-null state when not spec'd in tcs ctor"));
+                Assert.Fail(string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-null state when not spec'd in tcs ctor"));
             }
             tcs.SetResult(10);
 
             tcs = new TaskCompletionSource<int>(testState);
             if (((IAsyncResult)tcs.Task).AsyncState != testState)
             {
-                Assert.True(false, string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! state in tcs ctor not persistent"));
+                Assert.Fail(string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! state in tcs ctor not persistent"));
             }
             if (tcs.Task.CreationOptions != TaskCreationOptions.None)
             {
-                Assert.True(false, string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in ctor"));
+                Assert.Fail(string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! non-None TCO in tcs ctor when not spec'd in ctor"));
             }
             tcs.SetResult(10);
 
             tcs = new TaskCompletionSource<int>(testState, testOptions);
             if (tcs.Task.CreationOptions != testOptions)
             {
-                Assert.True(false, string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! TCO with state in tcs ctor not persistent"));
+                Assert.Fail(string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! TCO with state in tcs ctor not persistent"));
             }
             if (((IAsyncResult)tcs.Task).AsyncState != testState)
             {
-                Assert.True(false, string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! state with options in tcs ctor not persistent"));
+                Assert.Fail(string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! state with options in tcs ctor not persistent"));
             }
             tcs.SetResult(10);
         }
@@ -872,31 +872,31 @@ namespace System.Threading.Tasks.Tests
 
             if (promise2.Task.Result != 5678)
             {
-                Assert.True(false, string.Format("RunBasicFutureTest - Promise Test:  > error: Promise value unblocked, but wrong value was read"));
+                Assert.Fail(string.Format("RunBasicFutureTest - Promise Test:  > error: Promise value unblocked, but wrong value was read"));
             }
 
             if (cancellationExceptionReceived == false || someotherExceptionReceived == true)
             {
-                Assert.True(false, string.Format("RunBasicFutureTest - Promise Test:  > error: Cancel()ed promise didn't throw TaskCanceledException on value accessor"));
+                Assert.Fail(string.Format("RunBasicFutureTest - Promise Test:  > error: Cancel()ed promise didn't throw TaskCanceledException on value accessor"));
             }
 
             if (unexpectedStateObserved)
             {
-                Assert.True(false, string.Format("RunBasicFutureTest - Promise Test:  > error: unexpected state observed in Promise test"));
+                Assert.Fail(string.Format("RunBasicFutureTest - Promise Test:  > error: unexpected state observed in Promise test"));
             }
 
             // Creating a TCS with a promise-style constructor that only allows TaskCreationOptions.AttachedToParent
             try
             {
                 TaskCompletionSource<int> tcs = new TaskCompletionSource<int>(TaskCreationOptions.PreferFairness);
-                Assert.True(false, string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! illegal tcs ctor TCO did not cause exception"));
+                Assert.Fail(string.Format("RunBasicFutureTest - TaskCompletionSource:    > FAILED! illegal tcs ctor TCO did not cause exception"));
             }
             catch (ArgumentOutOfRangeException)
             {
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("Wrong exception thrown. " + e));
+                Assert.Fail(string.Format("Wrong exception thrown. " + e));
             }
         }
 
@@ -915,15 +915,15 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t1.RunSynchronously();
-                Assert.True(false, string.Format("RunSynchronouslyTest:    > error: Should have thrown an exception"));
+                Assert.Fail(string.Format("RunSynchronouslyTest:    > error: Should have thrown an exception"));
             }
             catch (InvalidOperationException)
             {
-                // Assert.True(false, string.Format("RunSynchronouslyTest:    > properly threw exception: {0}", e.Message));
+                // Assert.Fail(string.Format("RunSynchronouslyTest:    > properly threw exception: {0}", e.Message));
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("RunSynchronouslyTest:    > error: threw wrong exception: {0}", e.Message));
+                Assert.Fail(string.Format("RunSynchronouslyTest:    > error: threw wrong exception: {0}", e.Message));
             }
 
 
@@ -933,15 +933,15 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t2.RunSynchronously();
-                Assert.True(false, string.Format("RunSynchronouslyTest - continuation task:    > error: Should have thrown an exception"));
+                Assert.Fail(string.Format("RunSynchronouslyTest - continuation task:    > error: Should have thrown an exception"));
             }
             catch (InvalidOperationException)
             {
-                // Assert.True(false, string.Format("    > properly threw exception: {0}", e.Message));
+                // Assert.Fail(string.Format("    > properly threw exception: {0}", e.Message));
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("RunSynchronouslyTest - continuation task:    > error: threw wrong exception: {0}", e.Message));
+                Assert.Fail(string.Format("RunSynchronouslyTest - continuation task:    > error: threw wrong exception: {0}", e.Message));
             }
             t1.Start();
             t1.Wait();
@@ -951,15 +951,15 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 f1.RunSynchronously();
-                Assert.True(false, string.Format("RunSynchronouslyTest - promise-style Task:    > error: Should have thrown an exception"));
+                Assert.Fail(string.Format("RunSynchronouslyTest - promise-style Task:    > error: Should have thrown an exception"));
             }
             catch (InvalidOperationException)
             {
-                //Assert.True(false, string.Format("    > properly threw exception: {0}", e.Message));
+                //Assert.Fail(string.Format("    > properly threw exception: {0}", e.Message));
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("RunSynchronouslyTest - promise-style Task:    > error: threw wrong exception: {0}", e.Message));
+                Assert.Fail(string.Format("RunSynchronouslyTest - promise-style Task:    > error: threw wrong exception: {0}", e.Message));
             }
         }
 
@@ -981,12 +981,12 @@ namespace System.Threading.Tasks.Tests
             t.RunSynchronously();
             if (!bExecuted || t.Status != TaskStatus.RanToCompletion)
             {
-                Assert.True(false, string.Format("CoreRunSynchronouslyTest:  > error: task invoked through RunSynchronously() didn't execute or ended up in wrong state"));
+                Assert.Fail(string.Format("CoreRunSynchronouslyTest:  > error: task invoked through RunSynchronously() didn't execute or ended up in wrong state"));
             }
 
             if (observedTaskscheduler != TaskScheduler.Current)
             {
-                Assert.True(false, string.Format("CoreRunSynchronouslyTest:  > error: task invoked through RunSynchronously() didn't observe correct TaskScheduler.Current"));
+                Assert.Fail(string.Format("CoreRunSynchronouslyTest:  > error: task invoked through RunSynchronously() didn't observe correct TaskScheduler.Current"));
             }
 
             // Wait() should work on a task that was RunSynchronously()
@@ -994,12 +994,12 @@ namespace System.Threading.Tasks.Tests
             {
                 if (!t.Wait(500))
                 {
-                    Assert.True(false, string.Format("CoreRunSynchronouslyTest:  > error: Wait timed out on a task which was previously RunSynchronously()"));
+                    Assert.Fail(string.Format("CoreRunSynchronouslyTest:  > error: Wait timed out on a task which was previously RunSynchronously()"));
                 }
             }
             catch
             {
-                Assert.True(false, string.Format("CoreRunSynchronouslyTest:  > error: Wait threw on a task which was previously RunSynchronously()"));
+                Assert.Fail(string.Format("CoreRunSynchronouslyTest:  > error: Wait threw on a task which was previously RunSynchronously()"));
             }
         }
 
@@ -1019,7 +1019,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t.Start();
-                Assert.True(false, string.Format("CoreRunSynchronouslyTest:  > error: Start() should have thrown on a task which was previously RunSynchronously()"));
+                Assert.Fail(string.Format("CoreRunSynchronouslyTest:  > error: Start() should have thrown on a task which was previously RunSynchronously()"));
             }
             catch { }
 
@@ -1028,7 +1028,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t.RunSynchronously();
-                Assert.True(false, string.Format("CoreRunSynchronouslyTest:  > error: RunSynchronously() should have thrown on a task which was previously started"));
+                Assert.Fail(string.Format("CoreRunSynchronouslyTest:  > error: RunSynchronously() should have thrown on a task which was previously started"));
             }
             catch { }
 
@@ -1043,14 +1043,14 @@ namespace System.Threading.Tasks.Tests
             }
             catch
             {
-                Assert.True(false, string.Format("CoreRunSynchronouslyTest:  > error: RunSynchronously() should not have thrown itself on exceptional task"));
+                Assert.Fail(string.Format("CoreRunSynchronouslyTest:  > error: RunSynchronously() should not have thrown itself on exceptional task"));
             }
 
 
             try
             {
                 t.Wait();
-                Assert.True(false, string.Format("CoreRunSynchronouslyTest:  > error: Wait() should not have thrown on exceptional task invoked through RunSynchronously()"));
+                Assert.Fail(string.Format("CoreRunSynchronouslyTest:  > error: Wait() should not have thrown on exceptional task invoked through RunSynchronously()"));
             }
             catch
             { }
@@ -1067,12 +1067,12 @@ namespace System.Threading.Tasks.Tests
                 var e2 = t.Exception;
                 if (e2 != null)
                 {
-                    Assert.True(false, string.Format("RunTaskExceptionTest:    > error: non-null Exception from cleanly completed task."));
+                    Assert.Fail(string.Format("RunTaskExceptionTest:    > error: non-null Exception from cleanly completed task."));
                 }
             }
             catch
             {
-                Assert.True(false, string.Format("RunTaskExceptionTest:    > error: exception thrown when trying to retrieve Exception from cleanly completed task."));
+                Assert.Fail(string.Format("RunTaskExceptionTest:    > error: exception thrown when trying to retrieve Exception from cleanly completed task."));
             }
             ManualResetEvent mre = new ManualResetEvent(false);
             ManualResetEvent mre2 = new ManualResetEvent(false);
@@ -1092,7 +1092,7 @@ namespace System.Threading.Tasks.Tests
 
             if (outer.Exception != null)
             {
-                Assert.True(false, string.Format("RunTaskExceptionTest:    > FAILED.  Task.Exception seen before task completes"));
+                Assert.Fail(string.Format("RunTaskExceptionTest:    > FAILED.  Task.Exception seen before task completes"));
             }
             mre.Set(); // Allow inner to finish
             try { outer.Wait(); }
@@ -1111,7 +1111,7 @@ namespace System.Threading.Tasks.Tests
                     return;
             }
 
-            Assert.True(false, string.Format("RunTaskExceptionTest:  > error: expected an AggregateException w/ a single InnerException to be thrown"));
+            Assert.Fail(string.Format("RunTaskExceptionTest:  > error: expected an AggregateException w/ a single InnerException to be thrown"));
         }
 
         private static int NestedLevels(Exception e)
@@ -1167,7 +1167,7 @@ namespace System.Threading.Tasks.Tests
 
             if (Task.WaitAny(t2, t1, t3, t4) != 1)
             {
-                Assert.True(false, string.Format("RunTaskWaitAnyTests:    > FAILED pre-completed task test.  Wrong index returned."));
+                Assert.Fail(string.Format("RunTaskWaitAnyTests:    > FAILED pre-completed task test.  Wrong index returned."));
             }
         }
 
@@ -1236,14 +1236,14 @@ namespace System.Threading.Tasks.Tests
             {
                 Debug.WriteLine("CoreWaitAnyTest:    Testing WaitAny with {0} tasks, expected winner = {1}",
                     fillerTasks + finishMeFirst.Length, nExpectedReturnCode);
-                Assert.True(false, string.Format("CoreWaitAnyTest:   > error: WaitAny() return code not matching expected."));
+                Assert.Fail(string.Format("CoreWaitAnyTest:   > error: WaitAny() return code not matching expected."));
             }
 
             if (staRetCode != nExpectedReturnCode)
             {
                 Debug.WriteLine("CoreWaitAnyTest:    Testing WaitAny with {0} tasks, expected winner = {1}",
                     fillerTasks + finishMeFirst.Length, nExpectedReturnCode);
-                Assert.True(false, string.Format("CoreWaitAnyTest:   > error: WaitAny() return code not matching expected for STA Thread."));
+                Assert.Fail(string.Format("CoreWaitAnyTest:   > error: WaitAny() return code not matching expected for STA Thread."));
             }
         }
 
@@ -1279,13 +1279,13 @@ namespace System.Threading.Tasks.Tests
                     {
                         Task.WaitAny(tasks, ctForWaitAny);
                         Debug.WriteLine("WaitAnyWithCancellationTokenTests:    --Testing {0} pending tasks, STA={1}, preCancel={2}", nTasks, useSTA, preCancel);
-                        Assert.True(false, string.Format("WaitAnyWithCancellationTokenTests:    > error: WaitAny() w/ {0} tasks should have thrown OCE, threw no exception.", nTasks));
+                        Assert.Fail(string.Format("WaitAnyWithCancellationTokenTests:    > error: WaitAny() w/ {0} tasks should have thrown OCE, threw no exception.", nTasks));
                     }
                     catch (OperationCanceledException) { }
                     catch
                     {
                         Debug.WriteLine("WaitAnyWithCancellationTokenTests:    --Testing {0} pending tasks, STA={1}, preCancel={2}", nTasks, useSTA, preCancel);
-                        Assert.True(false, string.Format("    > error: WaitAny() w/ {0} tasks should have thrown OCE, threw different exception.", nTasks));
+                        Assert.Fail(string.Format("    > error: WaitAny() w/ {0} tasks should have thrown OCE, threw different exception.", nTasks));
                     }
                 });
 
@@ -1379,7 +1379,7 @@ namespace System.Threading.Tasks.Tests
 
             if (e != null)
             {
-                Assert.True(false, string.Format(methodInput + ":  RunTaskWaitAllTest:  > error: WaitAll() threw exception unexpectedly."));
+                Assert.Fail(string.Format(methodInput + ":  RunTaskWaitAllTest:  > error: WaitAll() threw exception unexpectedly."));
             }
 
             // test case 2: WaitAll() on a group of tasks half of which is already completed, half of which is blocked when we start the wait
@@ -1389,7 +1389,7 @@ namespace System.Threading.Tasks.Tests
 
             if (e != null)
             {
-                Assert.True(false, string.Format(methodInput + " : RunTaskWaitAllTest:  > error: WaitAll() threw exception unexpectedly."));
+                Assert.Fail(string.Format(methodInput + " : RunTaskWaitAllTest:  > error: WaitAll() threw exception unexpectedly."));
             }
 
             // test case 3: WaitAll() on a group of tasks half of which is Canceled, half of which is blocked when we start the wait
@@ -1399,7 +1399,7 @@ namespace System.Threading.Tasks.Tests
 
             if (!(e is AggregateException) || !((e as AggregateException).InnerExceptions[0] is TaskCanceledException))
             {
-                Assert.True(false, string.Format(methodInput + " : RunTaskWaitAllTest:  > error: WaitAll() didn't throw TaskCanceledException while waiting on a group of already canceled tasks.> {0}", e));
+                Assert.Fail(string.Format(methodInput + " : RunTaskWaitAllTest:  > error: WaitAll() didn't throw TaskCanceledException while waiting on a group of already canceled tasks.> {0}", e));
             }
 
             // test case 4: WaitAll() on a group of tasks some of which throws an exception
@@ -1408,7 +1408,7 @@ namespace System.Threading.Tasks.Tests
 
             if (!(e is AggregateException) || ((e as AggregateException).InnerExceptions[0].Message != excpMsg))
             {
-                Assert.True(false, string.Format(methodInput + "RunTaskWaitAllTest:  > error: WaitAll() didn't throw AggregateException while waiting on a group tasks that throw. > {0}", e));
+                Assert.Fail(string.Format(methodInput + "RunTaskWaitAllTest:  > error: WaitAll() didn't throw AggregateException while waiting on a group tasks that throw. > {0}", e));
             }
 
             //////////////////////////////////////////////////////
@@ -1422,7 +1422,7 @@ namespace System.Threading.Tasks.Tests
 
             if (e != null)
             {
-                Assert.True(false, string.Format(methodInput + ": RunTaskWaitAllTest:  > error: WaitAll() threw exception unexpectedly."));
+                Assert.Fail(string.Format(methodInput + ": RunTaskWaitAllTest:  > error: WaitAll() threw exception unexpectedly."));
             }
 
             // test case 6: WaitAll() on a group of already completed tasks with an already signaled token
@@ -1431,7 +1431,7 @@ namespace System.Threading.Tasks.Tests
 
             if (!(e is OperationCanceledException))
             {
-                Assert.True(false, string.Format(methodInput + "RunTaskWaitAllTest:  > error: WaitAll() should have thrown OperationCanceledException."));
+                Assert.Fail(string.Format(methodInput + "RunTaskWaitAllTest:  > error: WaitAll() should have thrown OperationCanceledException."));
             }
 
             // test case 7: WaitAll() on a group of long tasks with a token that gets canceled after a delay
@@ -1440,7 +1440,7 @@ namespace System.Threading.Tasks.Tests
 
             if (!(e is OperationCanceledException))
             {
-                Assert.True(false, string.Format(methodInput + "RunTaskWaitAllTest:  > error: WaitAll() should have thrown OperationCanceledException."));
+                Assert.Fail(string.Format(methodInput + "RunTaskWaitAllTest:  > error: WaitAll() should have thrown OperationCanceledException."));
             }
         }
 
@@ -1614,7 +1614,7 @@ namespace System.Threading.Tasks.Tests
                 int count = cde.CurrentCount;
                 int initialCount = cde.InitialCount;
                 Debug.WriteLine("Wait failed. CDE.CurrentCount: {0}, CDE.Initial Count: {1}", count, initialCount);
-                Assert.True(false, string.Format("RunLongRunningTaskTests - TaskCreationOptions.LongRunning:    > FAILED.  Timed out waiting for tasks to start."));
+                Assert.Fail(string.Format("RunLongRunningTaskTests - TaskCreationOptions.LongRunning:    > FAILED.  Timed out waiting for tasks to start."));
             }
 
             mre.Set();
@@ -1633,52 +1633,52 @@ namespace System.Threading.Tasks.Tests
             Task<int> f;
             if (t.Status != TaskStatus.Created)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task(action):   > FAILED.  Status after ctor != Created."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task(action):   > FAILED.  Status after ctor != Created."));
             }
             t.Start();
             t.Wait();
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task(action):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task(action):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
             t = new Task(delegate { temp = 1; }, TaskCreationOptions.None);
             if (t.Status != TaskStatus.Created)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task(action, options):    > FAILED.  Status after ctor != Created."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task(action, options):    > FAILED.  Status after ctor != Created."));
             }
             t.Start();
             t.Wait();
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task(action, options):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task(action, options):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
             t = new Task(delegate (object i) { temp = (int)i; }, 1);
             if (t.Status != TaskStatus.Created)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task(action<object>, object):    > FAILED.  Status after ctor != Created."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task(action<object>, object):    > FAILED.  Status after ctor != Created."));
             }
             t.Start();
             t.Wait();
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task(action<object>, object):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task(action<object>, object):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
             t = new Task(delegate (object i) { temp = (int)i; }, 1, CancellationToken.None, TaskCreationOptions.None);
             if (t.Status != TaskStatus.Created)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task(action<object>, object, options):    > FAILED.  Status after ctor != Created."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task(action<object>, object, options):    > FAILED.  Status after ctor != Created."));
             }
             t.Start();
             t.Wait();
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task(action<object>, object, options):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task(action<object>, object, options):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1686,7 +1686,7 @@ namespace System.Threading.Tasks.Tests
             t.Wait();
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew(action):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew(action):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1694,7 +1694,7 @@ namespace System.Threading.Tasks.Tests
             t.Wait();
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew(action, options):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew(action, options):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1702,7 +1702,7 @@ namespace System.Threading.Tasks.Tests
             t.Wait();
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew(action, CT, options, TaskScheduler):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew(action, CT, options, TaskScheduler):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1710,7 +1710,7 @@ namespace System.Threading.Tasks.Tests
             t.Wait();
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew(action<object>, object):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew(action<object>, object):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1718,7 +1718,7 @@ namespace System.Threading.Tasks.Tests
             t.Wait();
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew(action<object>, object, options):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew(action<object>, object, options):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1726,72 +1726,72 @@ namespace System.Threading.Tasks.Tests
             t.Wait();
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew(action<object>, object, CT, options, TaskScheduler):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew(action<object>, object, CT, options, TaskScheduler):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
             TaskCompletionSource<int> tr = new TaskCompletionSource<int>();
             if (tr.Task.Status != TaskStatus.WaitingForActivation)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new TaskCompletionSource<int>():    > FAILED.  Status after ctor != WaitingForActivation."));
+                Assert.Fail(string.Format("RunRefactoringTests - new TaskCompletionSource<int>():    > FAILED.  Status after ctor != WaitingForActivation."));
             }
             tr.SetResult(1);
             temp = tr.Task.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new TaskCompletionSource<int>():    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - new TaskCompletionSource<int>():    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
             f = new Task<int>(delegate () { return 1; });
             if (f.Status != TaskStatus.Created)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task<int>(Func<int>):    > FAILED.  Status after ctor != Created."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task<int>(Func<int>):    > FAILED.  Status after ctor != Created."));
             }
             f.Start();
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task<int>(Func<int>):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task<int>(Func<int>):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
             f = new Task<int>(delegate () { return 1; }, TaskCreationOptions.None);
             if (f.Status != TaskStatus.Created)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task<int>(Func<int>, options):    > FAILED.  Status after ctor != Created."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task<int>(Func<int>, options):    > FAILED.  Status after ctor != Created."));
             }
             f.Start();
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task<int>(Func<int>, options):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task<int>(Func<int>, options):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
             f = new Task<int>(delegate (object i) { return (int)i; }, 1);
             if (f.Status != TaskStatus.Created)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task<int>(Func<object, int>, object):    > FAILED.  Status after ctor != Created."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task<int>(Func<object, int>, object):    > FAILED.  Status after ctor != Created."));
             }
             f.Start();
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - new Task<int>(Func<object, int>, object)    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - new Task<int>(Func<object, int>, object)    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
             f = new Task<int>(delegate (object i) { return (int)i; }, 1, CancellationToken.None, TaskCreationOptions.None);
             if (f.Status != TaskStatus.Created)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task<int>(Func<object, int>, object, options):    > FAILED.  Status after ctor != Created."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task<int>(Func<object, int>, object, options):    > FAILED.  Status after ctor != Created."));
             }
             f.Start();
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task<int>(Func<object, int>, object, options):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task<int>(Func<object, int>, object, options):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1799,7 +1799,7 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<int>):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<int>):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1807,7 +1807,7 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<int>, options):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<int>, options):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1815,7 +1815,7 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<int>, CT, options, TaskScheduler):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<int>, CT, options, TaskScheduler):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1823,7 +1823,7 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<object, int>, object):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<object, int>, object):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1831,7 +1831,7 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<object, int>, object, options):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<object, int>, object, options):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1839,7 +1839,7 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<object, int>, object, CT, options, TaskScheduler):     > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task<int>.Factory.StartNew(Func<object, int>, object, CT, options, TaskScheduler):     > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1847,7 +1847,7 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<int>):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<int>):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1855,7 +1855,7 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<int>, options):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<int>, options):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1863,7 +1863,7 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<int>, CT, options, TaskScheduler, options):    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<int>, CT, options, TaskScheduler, options):    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1872,7 +1872,7 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<object, int>, object)    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<object, int>, object)    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1880,7 +1880,7 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<object, int>, object, options).    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<object, int>, object, options).    > FAILED.  Delegate failed to execute."));
             }
 
             temp = 0;
@@ -1892,12 +1892,12 @@ namespace System.Threading.Tasks.Tests
                 f.ContinueWith((tt) => { temp = 1; }).Wait();
                 if (temp != 1)
                 {
-                    Assert.True(false, string.Format("RunRefactoringTests - Continuation off of TaskCompletionSource.Task:    > FAILED!  temp should be 1, is {0}", temp));
+                    Assert.Fail(string.Format("RunRefactoringTests - Continuation off of TaskCompletionSource.Task:    > FAILED!  temp should be 1, is {0}", temp));
                 }
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Continuation off of TaskCompletionSource.Task:    > FAILED! exception: {0}", e.Message));
+                Assert.Fail(string.Format("RunRefactoringTests - Continuation off of TaskCompletionSource.Task:    > FAILED! exception: {0}", e.Message));
             }
         }
 
@@ -1911,18 +1911,18 @@ namespace System.Threading.Tasks.Tests
             temp = f.Result;
             if (temp != 1)
             {
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<object, int>, object, CT, options, TaskScheduler).    > FAILED.  Delegate failed to execute."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew<int>(Func<object, int>, object, CT, options, TaskScheduler).    > FAILED.  Delegate failed to execute."));
             }
 
             f = new TaskCompletionSource<int>().Task;
             try
             {
                 f.Start();
-                Assert.True(false, string.Format("RunRefactoringTests - TaskCompletionSource<int>.Task (should throw exception):    > FAILED.  No exception thrown."));
+                Assert.Fail(string.Format("RunRefactoringTests - TaskCompletionSource<int>.Task (should throw exception):    > FAILED.  No exception thrown."));
             }
             catch (Exception)
             {
-                //Assert.True(false, string.Format("    > caught exception: {0}", e.Message));
+                //Assert.Fail(string.Format("    > caught exception: {0}", e.Message));
             }
 
             t = new Task(delegate { temp = 100; });
@@ -1930,11 +1930,11 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t.Start();
-                Assert.True(false, string.Format("RunRefactoringTests - Restarting Task:    > FAILED.  No exception thrown, when there should be."));
+                Assert.Fail(string.Format("RunRefactoringTests - Restarting Task:    > FAILED.  No exception thrown, when there should be."));
             }
             catch (Exception)
             {
-                //Assert.True(false, string.Format("    > caught exception: {0}", e.Message));
+                //Assert.Fail(string.Format("    > caught exception: {0}", e.Message));
             }
 
             // If we don't do this, the asynchronous setting of temp=100 in the delegate could
@@ -1944,21 +1944,21 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t = new Task(delegate { temp = 100; }, (TaskCreationOptions)10000);
-                Assert.True(false, string.Format("RunRefactoringTests - Illegal Options CTor Task:    > FAILED.  No exception thrown, when there should be."));
+                Assert.Fail(string.Format("RunRefactoringTests - Illegal Options CTor Task:    > FAILED.  No exception thrown, when there should be."));
             }
             catch (Exception) { }
 
             try
             {
                 t = new Task(null);
-                Assert.True(false, string.Format("RunRefactoringTests - Task ctor w/ null action:    > FAILED.  No exception thrown."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task ctor w/ null action:    > FAILED.  No exception thrown."));
             }
             catch (Exception) { }
 
             try
             {
                 t = Task.Factory.StartNew(null);
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew() w/ Null Action:    > FAILED.  No exception thrown."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew() w/ Null Action:    > FAILED.  No exception thrown."));
             }
             catch (Exception) { }
 
@@ -1967,7 +1967,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t2.Start();
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Start() on Continuation Task:    > FAILED.  No exception thrown."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Start() on Continuation Task:    > FAILED.  No exception thrown."));
             }
             catch (Exception) { }
 
@@ -1975,7 +1975,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t.Start(null);
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Start() with null taskScheduler:    > FAILED.  No exception thrown."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Start() with null taskScheduler:    > FAILED.  No exception thrown."));
             }
             catch (Exception) { }
 
@@ -1983,7 +1983,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t = Task.Factory.StartNew(delegate { }, CancellationToken.None, TaskCreationOptions.None, (TaskScheduler)null);
-                Assert.True(false, string.Format("RunRefactoringTests - Task.Factory.StartNew() with null taskScheduler:    > FAILED.  No exception thrown."));
+                Assert.Fail(string.Format("RunRefactoringTests - Task.Factory.StartNew() with null taskScheduler:    > FAILED.  No exception thrown."));
             }
             catch (Exception) { }
 
@@ -1992,7 +1992,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 tr.SetResult(5);
-                Assert.True(false, string.Format("RunRefactoringTests - TaskCompletionSource set Result after setting Exception:     > FAILED.  No exception thrown."));
+                Assert.Fail(string.Format("RunRefactoringTests - TaskCompletionSource set Result after setting Exception:     > FAILED.  No exception thrown."));
             }
             catch (Exception)
             { }
@@ -2007,7 +2007,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 tr.SetException(new Exception("some exception"));
-                Assert.True(false, string.Format("RunRefactoringTests - TaskCompletionSource set Exception after setting Result    > FAILED.  No exception thrown."));
+                Assert.Fail(string.Format("RunRefactoringTests - TaskCompletionSource set Exception after setting Result    > FAILED.  No exception thrown."));
             }
             catch (Exception)
             { }
@@ -2035,11 +2035,11 @@ namespace System.Threading.Tasks.Tests
                 ts = t.Status;
                 if (ts != TaskStatus.Created)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.Create:    > FAILED.  Expected Created status, got {0}", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.Create:    > FAILED.  Expected Created status, got {0}", ts));
                 }
                 if (t.IsCompleted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.Create:    > FAILED.  Expected IsCompleted to be false."));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.Create:    > FAILED.  Expected IsCompleted to be false."));
                 }
             }
 
@@ -2051,22 +2051,22 @@ namespace System.Threading.Tasks.Tests
                 ts = ct.Status;
                 if (ts != TaskStatus.WaitingForActivation)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForActivation:    > FAILED.  Expected WaitingForActivation status (continuation), got {0}", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForActivation:    > FAILED.  Expected WaitingForActivation status (continuation), got {0}", ts));
                 }
                 if (ct.IsCompleted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForActivation:    > FAILED.  Expected IsCompleted to be false."));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForActivation:    > FAILED.  Expected IsCompleted to be false."));
                 }
 
                 TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
                 ts = tcs.Task.Status;
                 if (ts != TaskStatus.WaitingForActivation)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForActivation:    > FAILED.  Expected WaitingForActivation status (TCS), got {0}", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForActivation:    > FAILED.  Expected WaitingForActivation status (TCS), got {0}", ts));
                 }
                 if (tcs.Task.IsCompleted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForActivation:    > FAILED.  Expected IsCompleted to be false."));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForActivation:    > FAILED.  Expected IsCompleted to be false."));
                 }
                 tcs.TrySetCanceled();
             }
@@ -2084,7 +2084,7 @@ namespace System.Threading.Tasks.Tests
                 ts = t.Status;
                 if (ts != TaskStatus.Canceled)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.Canceled (unstarted Task) (already signaled CTS):    > FAILED.  Expected Canceled status, got {0}", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.Canceled (unstarted Task) (already signaled CTS):    > FAILED.  Expected Canceled status, got {0}", ts));
                 }
             }
 
@@ -2102,7 +2102,7 @@ namespace System.Threading.Tasks.Tests
                 ts = t.Status;
                 if (ts != TaskStatus.Canceled)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.Canceled (unstarted Task) (CTS signaled after ctor):   > FAILED.  Expected Canceled status, got {0}", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.Canceled (unstarted Task) (CTS signaled after ctor):   > FAILED.  Expected Canceled status, got {0}", ts));
                 }
             }
 
@@ -2121,11 +2121,11 @@ namespace System.Threading.Tasks.Tests
                 ts = t.Status;
                 if (ts != TaskStatus.RanToCompletion)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - Internal Cancellation:    > FAILED.  Expected RanToCompletion status, got {0}", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - Internal Cancellation:    > FAILED.  Expected RanToCompletion status, got {0}", ts));
                 }
                 if (!t.IsCompleted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - Internal Cancellation:    > FAILED.  Expected IsCompleted to be true."));
+                    Assert.Fail(string.Format("RunTaskStatusTests - Internal Cancellation:    > FAILED.  Expected IsCompleted to be true."));
                 }
             }
 
@@ -2141,11 +2141,11 @@ namespace System.Threading.Tasks.Tests
             ts = t.Status;
             if (ts != TaskStatus.Running)
             {
-                Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.Running:    > FAILED.  Expected Running status, got {0}", ts));
+                Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.Running:    > FAILED.  Expected Running status, got {0}", ts));
             }
             if (t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.Running:    > FAILED.  Expected IsCompleted to be false."));
+                Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.Running:    > FAILED.  Expected IsCompleted to be false."));
             }
 
             // Causes previously created task to finish
@@ -2171,11 +2171,11 @@ namespace System.Threading.Tasks.Tests
             ts = t.Status;
             if (ts != TaskStatus.WaitingForChildrenToComplete)
             {
-                Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > FAILED.  Expected WaitingForChildrenToComplete status, got {0}", ts));
+                Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > FAILED.  Expected WaitingForChildrenToComplete status, got {0}", ts));
             }
             if (t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > FAILED.  Expected IsCompleted to be false."));
+                Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > FAILED.  Expected IsCompleted to be false."));
             }
 
             // Causes previously created Task(s) to finish
@@ -2192,11 +2192,11 @@ namespace System.Threading.Tasks.Tests
                 ts = t.Status;
                 if (ts != TaskStatus.RanToCompletion)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.RanToCompletion:    > FAILED.  Expected RanToCompletion status, got {0}", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.RanToCompletion:    > FAILED.  Expected RanToCompletion status, got {0}", ts));
                 }
                 if (!t.IsCompleted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.RanToCompletion:    > FAILED.  Expected IsCompleted to be true."));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.RanToCompletion:    > FAILED.  Expected IsCompleted to be true."));
                 }
             }
         }
@@ -2231,11 +2231,11 @@ namespace System.Threading.Tasks.Tests
                 ts = t.Status;
                 if (ts != TaskStatus.Canceled)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.Canceled:    > FAILED.  Expected Canceled status, got {0}", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.Canceled:    > FAILED.  Expected Canceled status, got {0}", ts));
                 }
                 if (!t.IsCompleted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.Canceled:    > FAILED.  Expected IsCompleted to be true."));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.Canceled:    > FAILED.  Expected IsCompleted to be true."));
                 }
             }
 
@@ -2259,7 +2259,7 @@ namespace System.Threading.Tasks.Tests
                 ts = t.Status;
                 if (ts != TaskStatus.Canceled)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - AcknowledgeCancellation:     > FAILED.  Expected Canceled after AcknowledgeCancellation, got {0}", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - AcknowledgeCancellation:     > FAILED.  Expected Canceled after AcknowledgeCancellation, got {0}", ts));
                 }
             }
 
@@ -2286,15 +2286,15 @@ namespace System.Threading.Tasks.Tests
                 ts = tCanceled.Status;
                 if (ts != TaskStatus.WaitingForChildrenToComplete)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > canceledTask FAILED.  Expected status = WaitingForChildrenToComplete, got {0}.", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > canceledTask FAILED.  Expected status = WaitingForChildrenToComplete, got {0}.", ts));
                 }
                 if (tCanceled.IsCanceled)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > canceledTask FAILED.  IsFaulted is true before children have completed."));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > canceledTask FAILED.  IsFaulted is true before children have completed."));
                 }
                 if (tCanceled.IsCompleted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > canceledTask FAILED.  IsCompleted is true before children have completed."));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > canceledTask FAILED.  IsCompleted is true before children have completed."));
                 }
 
                 mreFaulted.Set();
@@ -2318,11 +2318,11 @@ namespace System.Threading.Tasks.Tests
                 ts = t.Status;
                 if (ts != TaskStatus.Faulted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.Faulted:    > FAILED.  Expected Faulted status, got {0}", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.Faulted:    > FAILED.  Expected Faulted status, got {0}", ts));
                 }
                 if (!t.IsCompleted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.Faulted:    > FAILED.  Expected IsCompleted to be true."));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.Faulted:    > FAILED.  Expected IsCompleted to be true."));
                 }
             }
 
@@ -2347,15 +2347,15 @@ namespace System.Threading.Tasks.Tests
                 ts = tFaulted.Status;
                 if (ts != TaskStatus.WaitingForChildrenToComplete)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > faultedTask FAILED.  Expected status = WaitingForChildrenToComplete, got {0}.", ts));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > faultedTask FAILED.  Expected status = WaitingForChildrenToComplete, got {0}.", ts));
                 }
                 if (tFaulted.IsFaulted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > faultedTask FAILED.  IsFaulted is true before children have completed."));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > faultedTask FAILED.  IsFaulted is true before children have completed."));
                 }
                 if (tFaulted.IsCompleted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > faultedTask FAILED.  IsCompleted is true before children have completed."));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.WaitingForChildrenToComplete:    > faultedTask FAILED.  IsCompleted is true before children have completed."));
                 }
 
                 mreFaulted.Set();
@@ -2382,7 +2382,7 @@ namespace System.Threading.Tasks.Tests
                 ts = t.Status;
                 if (ts != TaskStatus.Faulted)
                 {
-                    Assert.True(false, string.Format("RunTaskStatusTests - TaskStatus.Faulted trumps Cancelled:    > FAILED.  Expected Faulted to trump Canceled"));
+                    Assert.Fail(string.Format("RunTaskStatusTests - TaskStatus.Faulted trumps Cancelled:    > FAILED.  Expected Faulted to trump Canceled"));
                 }
             }
         }
@@ -2397,7 +2397,7 @@ namespace System.Threading.Tasks.Tests
 
             if (!t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskWaitTest:  > error: task reported back !IsCompleted"));
+                Assert.Fail(string.Format("RunTaskWaitTest:  > error: task reported back !IsCompleted"));
             }
 
             // wait on non-exceptional delay started task
@@ -2412,7 +2412,7 @@ namespace System.Threading.Tasks.Tests
 
             if (!t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskWaitTest:  > error: constructed task reported back !IsCompleted"));
+                Assert.Fail(string.Format("RunTaskWaitTest:  > error: constructed task reported back !IsCompleted"));
             }
 
             // This keeps a reference to the Timer so that it does not get GC'd
@@ -2431,7 +2431,7 @@ namespace System.Threading.Tasks.Tests
             t.Wait();
             if (!cntEv.IsSet)
             {
-                Assert.True(false, string.Format("RunTaskWaitTest:  > error: Wait on a task with attached children returned before all children completed."));
+                Assert.Fail(string.Format("RunTaskWaitTest:  > error: Wait on a task with attached children returned before all children completed."));
             }
         }
 
@@ -2466,7 +2466,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t.Wait();
-                Assert.True(false, string.Format("RunTaskWaitTest:  > error: Wait on exceptional task show have thrown."));
+                Assert.Fail(string.Format("RunTaskWaitTest:  > error: Wait on exceptional task show have thrown."));
             }
             catch (Exception e)
             {
@@ -2474,7 +2474,7 @@ namespace System.Threading.Tasks.Tests
                     ((AggregateException)e).InnerExceptions.Count != 1 ||
                     !(((AggregateException)e).InnerExceptions[0] is TaskCanceledException))
                 {
-                    Assert.True(false, string.Format("RunTaskWaitTest:  > error: Wait on exceptional task threw wrong exception."));
+                    Assert.Fail(string.Format("RunTaskWaitTest:  > error: Wait on exceptional task threw wrong exception."));
                 }
             }
 
@@ -2483,7 +2483,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t.Wait();
-                Assert.True(false, string.Format("RunTaskWaitTest:  > error: Wait on exceptional task show have thrown."));
+                Assert.Fail(string.Format("RunTaskWaitTest:  > error: Wait on exceptional task show have thrown."));
             }
             catch (Exception e)
             {
@@ -2491,7 +2491,7 @@ namespace System.Threading.Tasks.Tests
                     ((AggregateException)e).InnerExceptions.Count != 1 ||
                     ((AggregateException)e).InnerExceptions[0].Message != exceptionMsg)
                 {
-                    Assert.True(false, string.Format("RunTaskWaitTest:  > error: Wait on exceptional task threw wrong exception."));
+                    Assert.Fail(string.Format("RunTaskWaitTest:  > error: Wait on exceptional task threw wrong exception."));
                 }
             }
 
@@ -2505,7 +2505,7 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 t.Wait();
-                Assert.True(false, string.Format("RunTaskWaitTest:  > error: Wait on a task with an exceptional child should have thrown."));
+                Assert.Fail(string.Format("RunTaskWaitTest:  > error: Wait on a task with an exceptional child should have thrown."));
             }
             catch (Exception e)
             {
@@ -2516,7 +2516,7 @@ namespace System.Threading.Tasks.Tests
                     outerAggExp.InnerExceptions.Count != 1 ||
                     !(outerAggExp.InnerExceptions[0] is AggregateException))
                 {
-                    Assert.True(false, string.Format("RunTaskWaitTest:  > error: Wait on task with exceptional child threw an exception other than AggExp(AggExp(childsException))."));
+                    Assert.Fail(string.Format("RunTaskWaitTest:  > error: Wait on task with exceptional child threw an exception other than AggExp(AggExp(childsException))."));
                 }
 
                 innerAggExp = outerAggExp.InnerExceptions[0] as AggregateException;
@@ -2524,7 +2524,7 @@ namespace System.Threading.Tasks.Tests
                 if (innerAggExp.InnerExceptions.Count != 1 ||
                     innerAggExp.InnerExceptions[0].Message != exceptionMsg)
                 {
-                    Assert.True(false, string.Format("RunTaskWaitTest:  > error: Wait on task with exceptional child threw AggExp(AggExp(childsException)), but contained wrong child exception."));
+                    Assert.Fail(string.Format("RunTaskWaitTest:  > error: Wait on task with exceptional child threw AggExp(AggExp(childsException)), but contained wrong child exception."));
                 }
             }
         }
@@ -2543,12 +2543,12 @@ namespace System.Threading.Tasks.Tests
 
             if (!t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTest:  > error: task reported back !t.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTest:  > error: task reported back !t.IsCompleted"));
             }
 
             if (!t2.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTest:  > error: task reported back !t2.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTest:  > error: task reported back !t2.IsCompleted"));
             }
 
             t2 = null;
@@ -2563,12 +2563,12 @@ namespace System.Threading.Tasks.Tests
 
             if (!t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTest:  > error: constructed task reported back !t.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTest:  > error: constructed task reported back !t.IsCompleted"));
             }
 
             if (!t2.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTest:  > error: constructed task reported back !t2.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTest:  > error: constructed task reported back !t2.IsCompleted"));
             }
         }
 
@@ -2582,7 +2582,7 @@ namespace System.Threading.Tasks.Tests
 
             if (t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskWaitTimeoutTest:  > error: task reported back IsCompleted"));
+                Assert.Fail(string.Format("RunTaskWaitTimeoutTest:  > error: task reported back IsCompleted"));
             }
 
             mre.Set();
@@ -2590,7 +2590,7 @@ namespace System.Threading.Tasks.Tests
 
             if (!t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskWaitTimeoutTest:  > error: task reported back !IsCompleted"));
+                Assert.Fail(string.Format("RunTaskWaitTimeoutTest:  > error: task reported back !IsCompleted"));
             }
         }
 
@@ -2616,12 +2616,12 @@ namespace System.Threading.Tasks.Tests
 
             if (t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: task reported back t.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: task reported back t.IsCompleted"));
             }
 
             if (t2.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: task reported back t2.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: task reported back t2.IsCompleted"));
             }
 
             mre.Set();
@@ -2629,12 +2629,12 @@ namespace System.Threading.Tasks.Tests
 
             if (!t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: task reported back !t.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: task reported back !t.IsCompleted"));
             }
 
             if (!t2.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: task reported back !t2.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: task reported back !t2.IsCompleted"));
             }
 
             mre.Reset();
@@ -2657,12 +2657,12 @@ namespace System.Threading.Tasks.Tests
 
             if (t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: constructed task reported back t.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: constructed task reported back t.IsCompleted"));
             }
 
             if (t2.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: constructed task reported back t2.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: constructed task reported back t2.IsCompleted"));
             }
 
             mre.Set();
@@ -2670,12 +2670,12 @@ namespace System.Threading.Tasks.Tests
 
             if (!t.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: constructed task reported back !t.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: constructed task reported back !t.IsCompleted"));
             }
 
             if (!t2.IsCompleted)
             {
-                Assert.True(false, string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: constructed task reported back !t2.IsCompleted"));
+                Assert.Fail(string.Format("RunTaskRecursiveWaitTimeoutTest:  > error: constructed task reported back !t2.IsCompleted"));
             }
         }
 

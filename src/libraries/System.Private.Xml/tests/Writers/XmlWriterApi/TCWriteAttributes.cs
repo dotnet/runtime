@@ -60,7 +60,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Call WriteAttributes when reader is located on element
@@ -87,7 +87,7 @@ namespace System.Xml.XmlWriterApiTests
                         CError.WriteLine(xr.LocalName);
                         xr.Dispose();
                         w.Dispose();
-                        Assert.True(false);
+                        Assert.Fail();
                     }
                     w.WriteStartElement("Root");
                     w.WriteAttributes(xr, false);
@@ -122,7 +122,7 @@ namespace System.Xml.XmlWriterApiTests
                         CError.WriteLine(xr.LocalName);
                         xr.Dispose();
                         w.Dispose();
-                        Assert.True(false);
+                        Assert.Fail();
                     }
                     w.WriteStartElement("Root");
                     w.WriteAttributes(xr, false);
@@ -159,7 +159,7 @@ namespace System.Xml.XmlWriterApiTests
                         CError.WriteLine(xr.LocalName);
                         xr.Dispose();
                         w.Dispose();
-                        Assert.True(false);
+                        Assert.Fail();
                     }
                     w.WriteStartElement("Root");
                     w.WriteAttributes(xr, false);
@@ -190,7 +190,7 @@ namespace System.Xml.XmlWriterApiTests
                         CError.WriteLine(xr.LocalName);
                         xr.Dispose();
                         w.Dispose();
-                        Assert.True(false);
+                        Assert.Fail();
                     }
                     w.WriteStartElement("Root");
                     w.WriteAttributes(xr, false);
@@ -273,7 +273,7 @@ namespace System.Xml.XmlWriterApiTests
                 CError.WriteLine("Reader not positioned on correct node");
                 CError.WriteLine("ReadState: {0}", xr.ReadState);
                 CError.WriteLine("NodeType: {0}", xr.NodeType);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             using (XmlWriter w = utils.CreateWriter())
@@ -296,7 +296,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Call WriteAttribute with double quote char in the value
@@ -377,7 +377,7 @@ namespace System.Xml.XmlWriterApiTests
                     {
                         CError.WriteLine("Reader positioned on {0}", xr.NodeType.ToString());
                         xr.Dispose();
-                        Assert.True(false);
+                        Assert.Fail();
                     }
                     w.WriteStartElement("OneHundredAttributes");
                     w.WriteAttributes(xr, false);
@@ -402,7 +402,7 @@ namespace System.Xml.XmlWriterApiTests
                 {
                     CError.WriteLine("Reader positioned on {0}", xr.NodeType.ToString());
                     xr.Dispose();
-                    Assert.True(false);
+                    Assert.Fail();
                 }
 
                 using (XmlWriter w = utils.CreateWriter())
@@ -429,7 +429,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 CError.WriteLine("Reader positioned on {0}", xr.NodeType.ToString());
                 xr.Dispose();
-                Assert.True(false);
+                Assert.Fail();
             }
 
             using (XmlWriter w = utils.CreateWriter())
@@ -453,7 +453,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 }

@@ -12,13 +12,15 @@ using Microsoft.Diagnostics.Tracing;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Xunit;
 
 namespace Tracing.Tests.RundownValidation
 {
 
     public class RundownValidation
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // This test validates that the rundown events are present
             // and that the rundown contains the necessary events to get

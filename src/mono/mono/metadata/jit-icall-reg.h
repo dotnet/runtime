@@ -312,6 +312,7 @@ MONO_JIT_ICALL (mono_throw_bad_image) \
 MONO_JIT_ICALL (mono_throw_not_supported) \
 MONO_JIT_ICALL (mono_throw_platform_not_supported) \
 MONO_JIT_ICALL (mono_throw_invalid_program) \
+MONO_JIT_ICALL (mono_throw_type_load) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
 MONO_JIT_ICALL (mono_trace_tail_method) \
@@ -355,6 +356,7 @@ MONO_JIT_ICALLS
 #undef MONO_JIT_ICALL
 } MonoJitICallId;
 
+MONO_DISABLE_WARNING(4201) // nonstandard extension used: nameless struct/union
 typedef union MonoJitICallInfos {
 	struct {
 #define MONO_JIT_ICALL(x) MonoJitICallInfo x;
@@ -363,6 +365,7 @@ MONO_JIT_ICALLS
 	};
 	MonoJitICallInfo array [MONO_JIT_ICALL_count];
 } MonoJitICallInfos;
+MONO_RESTORE_WARNING
 
 extern MonoJitICallInfos mono_jit_icall_info;
 

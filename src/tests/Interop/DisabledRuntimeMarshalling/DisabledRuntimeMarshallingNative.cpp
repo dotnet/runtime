@@ -3,6 +3,11 @@
 
 #include <xplatform.h>
 
+// MSVC versions before 19.38 generate incorrect code for this file when compiling with /O2 
+#if defined(_MSC_VER) && (_MSC_VER < 1938)
+#pragma optimize("", off)
+#endif
+
 struct StructWithShortAndBool
 {
     bool b;

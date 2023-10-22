@@ -310,6 +310,9 @@ public:
     static Range SeqTree(Compiler* compiler, GenTree* tree);
 
     static void InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range);
+
+    static GenTree* LastNode(GenTree* node1, GenTree* node2);
+    static GenTree* LastNode(GenTree** nodes, size_t numNodes);
 };
 
 inline void GenTree::SetUnusedValue()
