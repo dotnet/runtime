@@ -672,6 +672,8 @@ namespace ILCompiler
                 {
                     if (NodeFactory.Target.OperatingSystem != TargetOS.Windows)
                     {
+                        bool marked;
+
                         StaticDataFieldDescriptor staticDesc = new StaticDataFieldDescriptor
                         {
                             StaticOffset = (ulong)fieldOffsetEmit
@@ -683,12 +685,20 @@ namespace ILCompiler
                         if (fieldDesc.IsThreadStatic) {
                             staticDesc.StaticDataName = threadStaticDataName;
                             staticDesc.IsStaticDataInObject = isNativeAOT ? 1 : 0;
+                            marked = NodeFactory.TypeThreadStaticsSymbol((MetadataType)defType).Marked;
                         } else if (fieldDesc.HasGCStaticBase) {
                             staticDesc.StaticDataName = gcStaticDataName;
                             staticDesc.IsStaticDataInObject = isNativeAOT ? 1 : 0;
+                            marked = NodeFactory.TypeGCStaticsSymbol((MetadataType)defType).Marked;
                         } else {
                             staticDesc.StaticDataName = nonGcStaticDataName;
                             staticDesc.IsStaticDataInObject = 0;
+                            marked = NodeFactory.TypeNonGCStaticsSymbol((MetadataType)defType).Marked;
+                        }
+
+                        if (!marked)
+                        {
+                            continue;
                         }
 
                         staticsDescs.Add(staticDesc);
